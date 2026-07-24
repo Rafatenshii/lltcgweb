@@ -1473,7 +1473,9 @@ function beginPerformancePhase(array $state): array {
         $state['_yell_reveal_snapshot'],
         $state['_yell_blade_snapshot'],
         $state['_live_perf_snapshot'],
-        $state['_live_round_success_snapshot']
+        $state['_live_round_success_snapshot'],
+        $state['_stage_hearts_snapshot'],
+        $state['_deferred_mp_extra_hearts']
     );
     if (liveStorageHasAnyCards($state)) {
         $state = revealAllLiveStorage($state);
@@ -2652,6 +2654,17 @@ function completeLiveRoundTurnAdvance(array $state, array $meta): array {
     } else {
         $state['_live_perf_snapshot'] = $state['live_perf_success'] ?? ['p1' => [], 'p2' => []];
         $state['_live_round_success_snapshot'] = $state['live_round_success'] ?? [];
+        // Stage + Live-Start bonus hearts for spectacle after clearLiveModifiers (#73).
+        $state['_stage_hearts_snapshot'] = [
+            'p1' => mergeHeartColorCounts(
+                aggregateStageHeartsByColor($state['players']['p1']['stage'] ?? []),
+                aggregateFlatHeartColors(getBonusHeartsFlat($state, 'p1'))
+            ),
+            'p2' => mergeHeartColorCounts(
+                aggregateStageHeartsByColor($state['players']['p2']['stage'] ?? []),
+                aggregateFlatHeartColors(getBonusHeartsFlat($state, 'p2'))
+            ),
+        ];
         if (!empty($state['yell_reveal'])) {
             $state['_yell_reveal_snapshot'] = $state['yell_reveal'];
         }
@@ -3934,6 +3947,13 @@ function filterStateForPlayer(array $state, string $token): array {
             $oppStageHearts,
             aggregateFlatHeartColors(getBonusHeartsFlat($state, $oppId))
         );
+        // After Live ends, bonus hearts are cleared — prefer Performance snapshot for spectacle (#73).
+        if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$myId])) {
+            $mineStageHearts = $state['_stage_hearts_snapshot'][$myId];
+        }
+        if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$oppId])) {
+            $oppStageHearts = $state['_stage_hearts_snapshot'][$oppId];
+        }
         $showYellHearts = isInPerformancePhase($state);
         $mineYellHearts = $showYellHearts
             ? aggregateYellHeartsByColor($state['yell_reveal'][$myId] ?? [])
@@ -4045,6 +4065,7 @@ function filterStateForPlayer(array $state, string $token): array {
             $filtered['_yell_blade_snapshot'],
             $filtered['yell_reveal']
         );
+        unset($filtered['_stage_hearts_snapshot']);
     }
 
     if (!empty($state['stamp_pop']) && is_array($state['stamp_pop'])) {

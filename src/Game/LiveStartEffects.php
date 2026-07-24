@@ -432,6 +432,8 @@ function finishLiveStartEffects(array $state, bool $advancePerformance = true): 
     unset($state['live_start_mandatory_resolved']);
     unset($state['live_start_entry_applied']);
     unset($state['_live_start_resume_from']);
+    // Heart-dependent Live Starts (Zenhoui Kyun♡) after optional Member buffs (#73).
+    $state = flushDeferredMpExtraHeartsLiveStart($state);
     if (($state['phase'] ?? '') === 'live_start_effects' && $advancePerformance && empty($GLOBALS['TUT_PERF_MANUAL_PHASES'])) {
         $state['phase'] = 'live_performance_first';
         $state = addLog($state, '=== Live Show ===');

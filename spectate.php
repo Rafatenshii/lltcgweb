@@ -387,6 +387,12 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         );
     }
 
+    $carryPhase = $state['phase'] ?? '';
+    $exposePerfCarryover = in_array($carryPhase, [
+        'main_first', 'main_second', 'active_first', 'active_second',
+        'live_start_effects', 'live_performance_first', 'live_performance_second',
+        'live_success_effects', 'live_judge',
+    ], true) || ($state['status'] ?? '') === 'finished';
     $mineStageHearts = aggregateStageHeartsByColor($state['players'][$viewPid]['stage'] ?? []);
     $oppStageHearts = aggregateStageHeartsByColor($state['players'][$oppId]['stage'] ?? []);
     $mineStageHearts = mergeHeartColorCounts(
@@ -397,6 +403,12 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         $oppStageHearts,
         aggregateFlatHeartColors(getBonusHeartsFlat($state, $oppId))
     );
+    if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$viewPid])) {
+        $mineStageHearts = $state['_stage_hearts_snapshot'][$viewPid];
+    }
+    if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$oppId])) {
+        $oppStageHearts = $state['_stage_hearts_snapshot'][$oppId];
+    }
     $showYellHearts = isInPerformancePhase($state);
     $mineYellHearts = $showYellHearts
         ? aggregateYellHeartsByColor($state['yell_reveal'][$viewPid] ?? [])
@@ -410,12 +422,6 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         ? collectContinuousPerformanceHeartGrants($state, $oppId) : [];
     $mineContinuousHearts = aggregateFlatHeartColors(getContinuousPerformanceHearts($state, $viewPid));
     $oppContinuousHearts = aggregateFlatHeartColors(getContinuousPerformanceHearts($state, $oppId));
-    $carryPhase = $state['phase'] ?? '';
-    $exposePerfCarryover = in_array($carryPhase, [
-        'main_first', 'main_second', 'active_first', 'active_second',
-        'live_start_effects', 'live_performance_first', 'live_performance_second',
-        'live_success_effects', 'live_judge',
-    ], true) || ($state['status'] ?? '') === 'finished';
     $yellBladeMine = computeYellBladeTotal($state, $viewPid);
     $yellBladeOpp = computeYellBladeTotal($state, $oppId);
     if ($exposePerfCarryover && !empty($state['_yell_blade_snapshot'])) {

@@ -1209,7 +1209,14 @@ function liveRequiredHeartColorCount(array $live, string $color): int {
 }
 
 function memberContinuousHeartCount(array $member, array $state, string $pid): int {
-    $n = count($member['bonus_hearts'] ?? []);
+    $n = 0;
+    foreach ($member['bonus_hearts'] ?? [] as $bh) {
+        if (is_array($bh)) {
+            $n += max(1, intval($bh['count'] ?? 1));
+        } else {
+            $n += 1;
+        }
+    }
     foreach ($member['abilities'] ?? [] as $ab) {
         if (($ab['trigger'] ?? '') !== 'continuous') continue;
         if (($ab['type'] ?? '') === 'heart_if_opp_wait_min') {

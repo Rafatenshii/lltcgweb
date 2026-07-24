@@ -801,30 +801,17 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             break;
 
         case 'live_start_mp_extra_hearts_draw_reduce':
-            $sub = $ab['subunit'] ?? '';
-            $cnt = 0;
-            foreach ($p['stage'] as $mbr) {
-                if (!$mbr || !cardMatchesSubunit($mbr, $sub)) continue;
-                $printed = memberHeartCount($mbr);
-                $current = $printed + memberContinuousHeartCount($mbr, $state, $pid);
-                if ($current > $printed) $cnt++;
+            // Defer until after optional Live Starts (Member heart buffs like Rurino
+            // PL!HS-bp5-003) so "more hearts than original" sees those grants (#73).
+            if (!isset($state['_deferred_mp_extra_hearts']) || !is_array($state['_deferred_mp_extra_hearts'])) {
+                $state['_deferred_mp_extra_hearts'] = [];
             }
-            if ($cnt >= 1) {
-                $drawn = drawCardsForPlayer($state, $pid, 1);
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] drew $drawn ($sub with extra hearts).");
-            }
-            if ($cnt >= 2) {
-                foreach ($p['live_zone'] as &$lc) {
-                    if ($lc && ($lc['instance_id'] ?? '') === ($source['instance_id'] ?? '')) {
-                        $lc['heart_reduction'] = intval($lc['heart_reduction'] ?? 0) + intval($ab['reduce'] ?? 2);
-                        break;
-                    }
-                }
-                unset($lc);
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . $name . '] Required any-color hearts -' . intval($ab['reduce'] ?? 2) . '.');
-            }
+            $state['_deferred_mp_extra_hearts'][] = [
+                'pid'       => $pid,
+                'source_id' => (string)($source['instance_id'] ?? ''),
+                'name'      => $name,
+                'ability'   => $ab,
+            ];
             break;
 
         case 'live_start_edel_note_dual_pick_buff':
@@ -1322,4 +1309,58 @@ function hsPb1NotifyHandDiscard(array &$state, string $pid): void {
         }
     }
     unset($member);
+}
+
+/**
+ * Apply Zenhoui Kyun♡-style Live Start after optional Member heart buffs (#73).
+ */
+function flushDeferredMpExtraHeartsLiveStart(array $state): array {
+    $queue = $state['_deferred_mp_extra_hearts'] ?? [];
+    unset($state['_deferred_mp_extra_hearts']);
+    if (!is_array($queue) || empty($queue)) {
+        return $state;
+    }
+    foreach ($queue as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $pid = (string)($item['pid'] ?? '');
+        $sourceId = (string)($item['source_id'] ?? '');
+        $name = (string)($item['name'] ?? 'Live');
+        $ab = is_array($item['ability'] ?? null) ? $item['ability'] : [];
+        if ($pid === '' || $sourceId === '' || empty($state['players'][$pid])) {
+            continue;
+        }
+        $p = &$state['players'][$pid];
+        $sub = (string)($ab['subunit'] ?? '');
+        $cnt = 0;
+        foreach ($p['stage'] as $mbr) {
+            if (!$mbr || !cardMatchesSubunit($mbr, $sub)) {
+                continue;
+            }
+            $printed = memberHeartCount($mbr);
+            $current = $printed + memberContinuousHeartCount($mbr, $state, $pid);
+            if ($current > $printed) {
+                $cnt++;
+            }
+        }
+        if ($cnt >= 1) {
+            $drawn = drawCardsForPlayer($state, $pid, 1);
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] drew $drawn ($sub with extra hearts).");
+        }
+        if ($cnt >= 2) {
+            foreach ($p['live_zone'] as &$lc) {
+                if ($lc && ($lc['instance_id'] ?? '') === $sourceId) {
+                    $lc['hearts_reduction'] = intval($lc['hearts_reduction'] ?? 0) + intval($ab['reduce'] ?? 2);
+                    break;
+                }
+            }
+            unset($lc);
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . $name . '] Required any-color hearts -' . intval($ab['reduce'] ?? 2) . '.');
+        }
+        unset($p);
+    }
+    return $state;
 }
