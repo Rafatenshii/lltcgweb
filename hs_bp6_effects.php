@@ -408,10 +408,10 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
         case 'auto_yell_mill_extra_yell':
             if (!empty($state['pending_prompt'])) break;
             $yellCards = $ctx['yell_cards'] ?? [];
+            $group = $ab['group'] ?? 'Hasunosora';
             $candidates = array_values(array_filter(
                 $yellCards,
-                fn($c) => ($c['group'] ?? '') === ($ab['group'] ?? 'Hasunosora')
-                    && !yellCardHasBladeHeart($c)
+                fn($c) => yellCardEligibleForKurageMill($c, $group)
             ));
             if (empty($candidates)) break;
             // max_pick caps how many you may mill; candidates must list every eligible Yell card.
@@ -427,7 +427,7 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
                 'ability_index' => $ctx['ability_index'] ?? null,
                 'candidates'    => array_map('cardPromptSummary', $candidates),
                 'max_pick'      => $max,
-                'prompt'        => "Put up to $max non-Blade-heart Hasunosora Yell card(s) into the Waiting Room for extra Yell?",
+                'prompt'        => "Put up to $max Hasunosora Yell card(s) without Blade hearts or Score icons into the Waiting Room for extra Yell?",
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => ['Yes', 'No — Skip'],
                 'ability'       => $ab,
@@ -551,6 +551,23 @@ function hsWaitOpponentByMaxBladeExclSubunit(
 
 function yellCardHasBladeHeart(array $card): bool {
     return !empty($card['blade_hearts']);
+}
+
+/** Official FAQ Q251: Auto mill may not put [Score]-icon cards into WR. */
+function yellCardHasScoreIcon(array $card): bool {
+    return cardYellScoreIconCount($card) > 0;
+}
+
+/** Eligible for Tsukuyomi Kurage Auto: Hasunosora, no Blade hearts, no Score icon. */
+function yellCardEligibleForKurageMill(array $card, string $group = 'Hasunosora'): bool {
+    mergeYellCardCatalogFields($card);
+    if (($card['group'] ?? '') !== $group) {
+        return false;
+    }
+    if (yellCardHasBladeHeart($card) || yellCardHasScoreIcon($card)) {
+        return false;
+    }
+    return true;
 }
 
 function hsResolveAutoOnOtherMemberEnter(array $state, string $pid, array $entered): array {
@@ -1027,7 +1044,7 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
             if ($iid === '' || !in_array($iid, $ids, true)) {
                 continue;
             }
-            if (($c['group'] ?? '') !== $group || yellCardHasBladeHeart($c)) {
+            if (!yellCardEligibleForKurageMill($c, $group)) {
                 continue;
             }
             $validIds[] = $iid;

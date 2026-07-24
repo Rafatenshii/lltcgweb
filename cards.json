@@ -24009,7 +24009,7 @@
         "green"
       ],
       "rarity": "L",
-      "text": "[Auto] [Once per turn] When you Yell, you may put up to 3 of your Hasunosora cards revealed for Yell that do not have Blade hearts into the Waiting Room. If you do, perform additional Yell equal to the number put into the Waiting Room.",
+      "text": "[Auto] [Once per turn] When you Yell, you may put up to 3 of your Hasunosora cards revealed for Yell that do not have Blade hearts or Score icons into the Waiting Room. If you do, perform additional Yell equal to the number put into the Waiting Room.",
       "text_jp": "自分がエールしたとき、エールにより公開された自分のブレードハートを持たない『蓮ノ空』のカードを3枚まで控え室に置いてもよい。そうした場合、これにより控え室に置いた数に等しい枚数のエールを追加で行う。",
       "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP06/PL!HS-bp6-027-L.png",
       "subunit": "スリーズブーケ",
@@ -24038,7 +24038,8 @@
           "type": "auto_yell_mill_extra_yell",
           "group": "Hasunosora",
           "max_mill": 3,
-          "once_per_turn": true
+          "once_per_turn": true,
+          "exclude_score_icon": true
         }
       ],
       "text_es": "[Automático] [Una vez por turno] Cuando haces Yell, puedes colocar hasta 3 de tus cartas Hasunosora reveladas para Yell que no tengan corazones de Blade en la Sala de espera. Si lo haces, realiza Yell adicional igual al número colocado en la Sala de espera.",

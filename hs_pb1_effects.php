@@ -254,11 +254,14 @@ function hsPb1ApplyContinuousPurpleHeart(array $member, array $state, string $pi
 function hsPb1ExtendAutoOnOtherMemberEnter(array $state, string $pid, array $entered): array {
     $p = &$state['players'][$pid];
     foreach ($p['stage'] as $slot => &$member) {
-        if (!$member || ($member['instance_id'] ?? '') === ($entered['instance_id'] ?? '')) continue;
+        if (!$member) continue;
+        $isSelf = ($member['instance_id'] ?? '') === ($entered['instance_id'] ?? '');
         foreach ($member['abilities'] ?? [] as $idx => $ab) {
             if (($ab['trigger'] ?? '') !== 'auto') continue;
             $type = $ab['type'] ?? '';
             if ($type === 'auto_subunit_enter_pay_activate_energy') {
+                // Pay-to-activate Auto watches other Members enter, not self.
+                if ($isSelf) continue;
                 $sub = $ab['subunit'] ?? '';
                 if ($sub !== '' && !cardMatchesSubunit($entered, $sub)) continue;
                 if (!empty($ab['max_uses_per_turn'])) {
@@ -284,6 +287,7 @@ function hsPb1ExtendAutoOnOtherMemberEnter(array $state, string $pid, array $ent
                 break 2;
             }
             if ($type === 'auto_group_enter_blade') {
+                // FAQ Q245: also fires when this Member herself enters Center.
                 $group = $ab['group'] ?? '';
                 if ($group !== '' && ($entered['group'] ?? '') !== $group) continue;
                 if (!empty($ab['center_only'])) {
