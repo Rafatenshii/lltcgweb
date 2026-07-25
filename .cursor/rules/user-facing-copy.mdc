@@ -73,6 +73,7 @@ See `docs/locales/TH_PROGRESS.md` and `docs/locales/TH_NAMES.md`.
 | Surface | English source | JA / ES / KO / ZH / TH |
 |---------|----------------|-------------------------|
 | Menus, screens, buttons, toasts, overlays | `i18n.js` → `STRINGS.en.*` | Matching `STRINGS.ja.*` / `STRINGS.es.*` / `STRINGS.ko.*` / `STRINGS.zh.*` / `STRINGS.th.*` |
+| **Sticker Shop** (hub tile, shop screen, seal guide, deck convert-to-seal, related toasts/missions) | `STRINGS.en.hub.stickerShop*` + `STRINGS.en.sticker.*` (+ `toast.signInStickerShop` / `toast.sticker*`) | Same keys in **every** locale pack via `locales/{es,ko,zh,th}.json` → `inject_i18n_*.py`. Hub HTML uses `hub.sticker.title` / `hub.sticker.sub` (aliased from `hub.stickerShop` / `hub.stickerShopSub` in `mergeLocaleAliases`). |
 | Static HTML labels | `data-i18n="dotted.key"` | Same key in `STRINGS.ja`, `STRINGS.es`, `STRINGS.ko`, `STRINGS.zh`, and `STRINGS.th` |
 | JS-built UI | `t('dotted.key', { vars })` | Same |
 | Interactive tutorial bubbles | `tutorial.json` dialogue | `tutorial_ja.json` / `tutorial_es.json` / `tutorial_ko.json` / `tutorial_zh.json` / **`tutorial_th.json`** |
@@ -87,7 +88,7 @@ See `docs/locales/TH_PROGRESS.md` and `docs/locales/TH_NAMES.md`.
 2. Wire HTML via **`data-i18n`** or JS via **`t()`** — avoid raw English in templates.
 3. If UI is rebuilt on locale change, ensure **`refreshDynamicI18n()`** (or `onLocaleChange`) refreshes it.
 4. Bump **`?v=`** on `i18n.js` / `tutorial_*.json` / `log_i18n.js` when those files change.
-5. Run **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, zh, **th** against en).
+5. Run **`python scripts/extract_i18n_en.py`** then **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, zh, **th** against en). Sticker Shop belongs in this check (`sticker.*`, `hub.stickerShop*`, sticker toasts/missions) — do not leave those EN/JA-only.
 6. For **interactive tutorial** steps:
    - Curate under **`locales/{locale}.json` → `tutorial.*`** (or `TUTORIAL_EXACT_OVERRIDES`).
    - Run **`python scripts/build_tutorial_locale_json.py --locale {locale}`**.

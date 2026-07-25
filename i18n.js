@@ -2279,7 +2279,9 @@
       "backHub": "← Hub",
       "missions": "Misiones",
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)"
+      "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
+      "stickerShop": "Tienda de stickers",
+      "stickerShopSub": "Canjea sellos por cartas de tus sobres"
     },
     "language": {
       "label": "Idioma",
@@ -2322,7 +2324,14 @@
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} esperando · {inGame} en partidas casuales",
       "casualSearching": "Buscando oponente… ({seconds}s)",
-      "roomCodePlaceholder": "ABCD1234"
+      "roomCodePlaceholder": "ABCD1234",
+      "cpuEasyShort": "Fácil",
+      "cpuNormalShort": "Normal",
+      "cpuHardShort": "Difícil",
+      "cpuExpertShort": "Experto",
+      "soloStarting": "Iniciando vs CPU ({diff})",
+      "player1Default": "Jugador 1",
+      "player2Default": "Jugador 2"
     },
     "deck": {
       "title": "Constructor de mazos",
@@ -2468,7 +2477,15 @@
         "liella": "Mazo inicial Liella!",
         "hasunosora": "Mazo inicial Hasunosora",
         "sunshine": "Mazo inicial Sunshine!!"
-      }
+      },
+      "collectionMatchPlural": "Colección · {match} coincidencias",
+      "collectionMatchAddable": "Colección · {match} coincidencias · {addable} añadibles",
+      "poolNoMatch": "Ninguna carta coincide con tu búsqueda o filtros.",
+      "poolNoDeckable": "No hay cartas disponibles para el mazo.",
+      "fullPoolZero": "Pool completo · 0 coincidencias",
+      "fullPoolBrowse": "Pool completo · desplázate para ver todas las cartas",
+      "fullPoolMatches": "Pool completo · {n} coincidencias",
+      "fullPoolCards": "Pool completo · {n} cartas"
     },
     "booster": {
       "title": "Abrir sobres",
@@ -2782,7 +2799,12 @@
       "liveJudge": "Juez de Live",
       "liveWinLoss": "Verificación de victoria/derrota de Live",
       "yourScore": "Tu puntuación",
-      "oppScore": "Puntuación del opo."
+      "oppScore": "Puntuación del opo.",
+      "combinedHearts": "Corazones requeridos combinados",
+      "livesSelected": "{n} Lives",
+      "livesSelectedOne": "1 Live",
+      "plusMembers": "+{n} Miembros",
+      "plusMembersOne": "+1 Miembro"
     },
     "prompt": {
       "confirm": "Confirmar",
@@ -2825,7 +2847,8 @@
       "yellNoCards": "No hay cartas Yell para elegir",
       "noLiveSuccess": "No hay cartas Live para colocar en Live exitoso",
       "searchDeckFor": "Buscar en el mazo…",
-      "deckTopPick": "Parte superior del mazo"
+      "deckTopPick": "Parte superior del mazo",
+      "surveilHintReturnAll": "El hueco 1 es la cima del mazo. Arrastra cartas entre huecos numerados, o toca dos cartas para intercambiarlas. Todas deben permanecer en la cima del mazo."
     },
     "skill": {
       "alreadyUsed": "Ya usado este turno",
@@ -3178,7 +3201,12 @@
       "logCopied": "Registro copiado",
       "couldNotCopyLog": "No se pudo copiar el registro",
       "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
-      "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo."
+      "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo.",
+      "signInStickerShop": "Inicia sesión para usar la tienda de stickers.",
+      "stickerLoadFailed": "No se pudo cargar la tienda de stickers",
+      "stickerCardsLoadFailed": "No se pudieron cargar las cartas",
+      "stickerExchangeFailed": "Canje fallido",
+      "stickerConvertFailed": "Conversión fallida"
     },
     "tutorialUi": {
       "exitTitle": "Salir al título",
@@ -3201,7 +3229,9 @@
       "count": "Espectadores: {n}",
       "matchEnded": "La partida terminó — volviendo al lobby.",
       "sessionEnded": "La sesión de espectador terminó.",
-      "switchPerspective": "Cambiar perspectiva"
+      "switchPerspective": "Cambiar perspectiva",
+      "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
+      "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…"
     },
     "missions": {
       "claim": "Reclamar",
@@ -3236,7 +3266,11 @@
         "winHasunosora": "Gana con un mazo principal solo Hasunosora",
         "winLiella": "Gana con un mazo principal solo Liella!",
         "winMuse": "Gana con un mazo principal solo μ's",
-        "winNijigasaki": "Gana con un mazo principal solo Nijigasaki"
+        "winNijigasaki": "Gana con un mazo principal solo Nijigasaki",
+        "sticker1": "Canjeaste sellos en la tienda de stickers",
+        "sticker10": "Canjeaste sellos en la tienda de stickers 10 veces",
+        "sticker50": "Canjeaste sellos en la tienda de stickers 50 veces",
+        "sticker100": "Canjeaste sellos en la tienda de stickers 100 veces"
       },
       "rewardStarter": "Elige un mazo inicial",
       "rewardStarterOwned": "Ya lo tienes",
@@ -3284,6 +3318,27 @@
       "member": "Miembro",
       "live": "Live",
       "energy": "Energía"
+    },
+    "sticker": {
+      "title": "Tienda de stickers",
+      "backHub": "← Hub",
+      "backProducts": "← Productos",
+      "hint": "Convierte cartas gacha sobrantes en el Constructor de mazos en sellos, luego canjéalos por cartas aquí.",
+      "buy": "Canjear",
+      "buyOk": "Carta canjeada",
+      "convertOne": "Convertir en sello {seal}",
+      "convertConfirm": "¿Convertir 1 copia sobrante de {name} en 1 sello {seal}?\n\nEsto no se puede deshacer.",
+      "convertOk": "Convertido a 1 sello {tier}",
+      "convertOkBalance": "Convertido · sellos {tier}: {n}",
+      "yourSeals": "Tus sellos",
+      "spareCopies": "{n} sobrante(s)",
+      "reservedCopies": "Reservado por mazos guardados ({n})",
+      "sealsAria": "Sellos",
+      "infoAria": "Guía de sellos",
+      "infoTitle": "Guía de sellos",
+      "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
+      "infoRarities": "Rarezas",
+      "infoCost": "Coste de canje"
     }
   },
   "ko": {
@@ -3346,7 +3401,9 @@
       "backHub": "← 허브",
       "missions": "미션",
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)"
+      "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
+      "stickerShop": "스티커 샵",
+      "stickerShopSub": "실을 팩 카드로 교환"
     },
     "language": {
       "label": "언어",
@@ -3389,7 +3446,14 @@
       "secondsLabel": "{n}초",
       "casualQueueStats": "대기 {waiting}명 · 캐주얼 진행 중 {inGame}명",
       "casualSearching": "상대 찾는 중… ({seconds}초)",
-      "roomCodePlaceholder": "ABCD1234"
+      "roomCodePlaceholder": "ABCD1234",
+      "cpuEasyShort": "쉬움",
+      "cpuNormalShort": "보통",
+      "cpuHardShort": "어려움",
+      "cpuExpertShort": "전문가",
+      "soloStarting": "CPU전 시작 중 ({diff})",
+      "player1Default": "플레이어 1",
+      "player2Default": "플레이어 2"
     },
     "deck": {
       "title": "덱 빌더",
@@ -3545,7 +3609,15 @@
         "saintsnow": "Saint Snow",
         "arise": "A-RISE",
         "sunnypassion": "Sunny Passion"
-      }
+      },
+      "collectionMatchPlural": "컬렉션 · {match}개 일치",
+      "collectionMatchAddable": "컬렉션 · {match}개 일치 · {addable}개 추가 가능",
+      "poolNoMatch": "검색이나 필터에 맞는 카드가 없습니다.",
+      "poolNoDeckable": "덱에 넣을 수 있는 카드가 없습니다.",
+      "fullPoolZero": "전체 카드 풀 · 0개 일치",
+      "fullPoolBrowse": "전체 카드 풀 · 스크롤하여 모든 카드 보기",
+      "fullPoolMatches": "전체 카드 풀 · {n}개 일치",
+      "fullPoolCards": "전체 카드 풀 · {n}장"
     },
     "booster": {
       "title": "부스터 개봉",
@@ -3859,7 +3931,12 @@
       "liveJudge": "Live 심판",
       "liveWinLoss": "Live 승패 확인",
       "yourScore": "내 스코어",
-      "oppScore": "상대 스코어"
+      "oppScore": "상대 스코어",
+      "combinedHearts": "필요 하트 합계",
+      "livesSelected": "Live {n}장",
+      "livesSelectedOne": "Live 1장",
+      "plusMembers": "+멤버 {n}",
+      "plusMembersOne": "+멤버 1"
     },
     "prompt": {
       "confirm": "확인",
@@ -3902,7 +3979,8 @@
       "yellNoCards": "선택할 Yell 카드가 없습니다",
       "noLiveSuccess": "성공 Live에 놓을 Live 카드가 없습니다",
       "searchDeckFor": "덱에서 검색…",
-      "deckTopPick": "덱 상단"
+      "deckTopPick": "덱 상단",
+      "surveilHintReturnAll": "1번 칸이 덱 맨 위입니다. 번호 칸 사이로 카드를 드래그하거나 두 장을 탭해 바꾸세요. 모든 카드는 덱 맨 위에 있어야 합니다."
     },
     "skill": {
       "alreadyUsed": "이번 턴에 이미 사용함",
@@ -4269,7 +4347,12 @@
       "logCopied": "로그 복사됨",
       "couldNotCopyLog": "로그를 복사할 수 없음",
       "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
-      "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+      "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+      "signInStickerShop": "스티커 샵을 쓰려면 로그인하세요.",
+      "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
+      "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
+      "stickerExchangeFailed": "교환 실패",
+      "stickerConvertFailed": "변환 실패"
     },
     "tutorialUi": {
       "exitTitle": "타이틀로 나가기",
@@ -4292,7 +4375,9 @@
       "count": "관전자: {n}",
       "matchEnded": "매치가 종료되어 로비로 돌아갑니다.",
       "sessionEnded": "관전 세션이 종료되었습니다.",
-      "switchPerspective": "시점 전환"
+      "switchPerspective": "시점 전환",
+      "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
+      "waitingJudgeResolve": "Live 승패 — {name} 대기 중…"
     },
     "missions": {
       "claim": "수령",
@@ -4327,7 +4412,11 @@
         "winHasunosora": "하스노소라 전용 메인 덱으로 승리",
         "winLiella": "Liella! 전용 메인 덱으로 승리",
         "winMuse": "μ's 전용 메인 덱으로 승리",
-        "winNijigasaki": "니지가사키 전용 메인 덱으로 승리"
+        "winNijigasaki": "니지가사키 전용 메인 덱으로 승리",
+        "sticker1": "스티커 샵에서 실을 교환했다",
+        "sticker10": "스티커 샵에서 실을 10회 교환했다",
+        "sticker50": "스티커 샵에서 실을 50회 교환했다",
+        "sticker100": "스티커 샵에서 실을 100회 교환했다"
       },
       "rewardStarter": "스타터 덱 선택",
       "rewardStarterOwned": "이미 보유 중",
@@ -4375,6 +4464,27 @@
       "member": "멤버",
       "live": "라이브",
       "energy": "에너지"
+    },
+    "sticker": {
+      "title": "스티커 샵",
+      "backHub": "← 허브",
+      "backProducts": "← 상품",
+      "hint": "덱 빌더에서 여분의 가챠 카드를 실로 바꾼 뒤, 여기서 실을 카드로 교환하세요.",
+      "buy": "교환",
+      "buyOk": "카드를 교환했습니다",
+      "convertOne": "{seal} 실로 변환",
+      "convertConfirm": "여분인 「{name}」 1장을 {seal} 실 1장으로 변환할까요?\n\n이 작업은 되돌릴 수 없습니다.",
+      "convertOk": "{tier} 실 1장으로 변환됨",
+      "convertOkBalance": "변환됨 · {tier} 실: {n}",
+      "yourSeals": "보유 실",
+      "spareCopies": "여분 {n}",
+      "reservedCopies": "저장된 덱에서 예약됨 ({n})",
+      "sealsAria": "실",
+      "infoAria": "실 가이드",
+      "infoTitle": "실 가이드",
+      "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
+      "infoRarities": "희귀도",
+      "infoCost": "교환 비용"
     }
   },
   "zh": {
@@ -4437,7 +4547,9 @@
       "backHub": "← 主页",
       "missions": "任务",
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）"
+      "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）",
+      "stickerShop": "贴纸商店",
+      "stickerShopSub": "用印章兑换你补充包中的卡牌"
     },
     "language": {
       "label": "语言",
@@ -4480,7 +4592,14 @@
       "secondsLabel": "{n} 秒",
       "casualQueueStats": "{waiting} 人等待 · {inGame} 场休闲对战中",
       "casualSearching": "正在寻找对手…（{seconds} 秒）",
-      "roomCodePlaceholder": "ABCD1234"
+      "roomCodePlaceholder": "ABCD1234",
+      "cpuEasyShort": "简单",
+      "cpuNormalShort": "普通",
+      "cpuHardShort": "困难",
+      "cpuExpertShort": "专家",
+      "soloStarting": "正在开始对战 CPU（{diff}）",
+      "player1Default": "玩家 1",
+      "player2Default": "玩家 2"
     },
     "deck": {
       "title": "牌组构筑",
@@ -4636,7 +4755,15 @@
         "saintsnow": "Saint Snow",
         "arise": "ARISE",
         "sunnypassion": "Sunny Passion"
-      }
+      },
+      "collectionMatchPlural": "收藏 · {match} 张匹配",
+      "collectionMatchAddable": "收藏 · {match} 张匹配 · {addable} 张可添加",
+      "poolNoMatch": "没有符合搜索或筛选的卡牌。",
+      "poolNoDeckable": "没有可放入牌组的卡牌。",
+      "fullPoolZero": "完整卡池 · 0 张匹配",
+      "fullPoolBrowse": "完整卡池 · 滚动浏览全部卡牌",
+      "fullPoolMatches": "完整卡池 · {n} 张匹配",
+      "fullPoolCards": "完整卡池 · {n} 张卡"
     },
     "booster": {
       "title": "开启补充包",
@@ -4951,7 +5078,12 @@
       "liveJudge": "现场裁判",
       "liveWinLoss": "实时赢/输检查",
       "yourScore": "你的分数",
-      "oppScore": "奥普分数"
+      "oppScore": "奥普分数",
+      "combinedHearts": "合计所需心形",
+      "livesSelected": "{n} 张 Live",
+      "livesSelectedOne": "1 张 Live",
+      "plusMembers": "+{n} 名成员",
+      "plusMembersOne": "+1 名成员"
     },
     "prompt": {
       "confirm": "确认",
@@ -4994,7 +5126,8 @@
       "yellNoCards": "没有可供选择的Yell卡",
       "noLiveSuccess": "没有可在 Success Live 中放置的 Live 卡",
       "searchDeckFor": "搜索甲板...",
-      "deckTopPick": "甲板顶"
+      "deckTopPick": "甲板顶",
+      "surveilHintReturnAll": "位置 1 是牌组顶。在编号位置之间拖动卡牌，或点选两张互换。所有卡牌都必须留在牌组顶。"
     },
     "skill": {
       "alreadyUsed": "本回合已使用",
@@ -5361,7 +5494,12 @@
       "logCopied": "日志已复制",
       "couldNotCopyLog": "无法复制日志",
       "resolveSkillFirst": "在继续之前解决待处理的技能。",
-      "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。"
+      "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。",
+      "signInStickerShop": "请登录后使用贴纸商店。",
+      "stickerLoadFailed": "贴纸商店加载失败",
+      "stickerCardsLoadFailed": "卡牌加载失败",
+      "stickerExchangeFailed": "兑换失败",
+      "stickerConvertFailed": "转换失败"
     },
     "tutorialUi": {
       "exitTitle": "退出到标题",
@@ -5384,7 +5522,9 @@
       "count": "观众：{n}",
       "matchEnded": "对战已结束 — 返回大厅。",
       "sessionEnded": "观战已结束。",
-      "switchPerspective": "切换视角"
+      "switchPerspective": "切换视角",
+      "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
+      "waitingJudgeResolve": "Live 胜负 — 等待 {name}…"
     },
     "missions": {
       "claim": "领取",
@@ -5419,7 +5559,11 @@
         "winHasunosora": "使用仅含莲之空的主牌组获胜",
         "winLiella": "使用仅含 Liella! 的主牌组获胜",
         "winMuse": "使用仅含 μ's 的主牌组获胜",
-        "winNijigasaki": "使用仅含虹咲学园的主牌组获胜"
+        "winNijigasaki": "使用仅含虹咲学园的主牌组获胜",
+        "sticker1": "在贴纸商店兑换了印章",
+        "sticker10": "在贴纸商店兑换印章 10 次",
+        "sticker50": "在贴纸商店兑换印章 50 次",
+        "sticker100": "在贴纸商店兑换印章 100 次"
       },
       "rewardStarter": "选择入门牌组",
       "rewardStarterOwned": "已拥有",
@@ -5467,6 +5611,27 @@
       "member": "成员",
       "live": "Live",
       "energy": "能量"
+    },
+    "sticker": {
+      "title": "贴纸商店",
+      "backHub": "← 主页",
+      "backProducts": "← 商品",
+      "hint": "在牌组构筑中把多余的扭蛋卡换成印章，再在这里用印章兑换卡牌。",
+      "buy": "兑换",
+      "buyOk": "已兑换卡牌",
+      "convertOne": "转换为 {seal} 印章",
+      "convertConfirm": "将 1 张多余的「{name}」转换为 1 枚 {seal} 印章？\n\n此操作无法撤销。",
+      "convertOk": "已转换为 1 枚 {tier} 印章",
+      "convertOkBalance": "已转换 · {tier} 印章：{n}",
+      "yourSeals": "你的印章",
+      "spareCopies": "多余 {n}",
+      "reservedCopies": "已被已存牌组预留（{n}）",
+      "sealsAria": "印章",
+      "infoAria": "印章指南",
+      "infoTitle": "印章指南",
+      "infoLead": "将 1 张多余的补充包卡或你拥有的入门卡转换为 1 枚对应印章。按下方费用用印章兑换卡牌。",
+      "infoRarities": "稀有度",
+      "infoCost": "兑换费用"
     }
   },
   "th": {

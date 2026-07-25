@@ -58,7 +58,9 @@
     "backHub": "← 허브",
     "missions": "미션",
     "rankedPrCount": "{remaining} / {limit}",
-    "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)"
+    "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
+    "stickerShop": "스티커 샵",
+    "stickerShopSub": "실을 팩 카드로 교환"
   },
   "language": {
     "label": "언어",
@@ -101,7 +103,14 @@
     "secondsLabel": "{n}초",
     "casualQueueStats": "대기 {waiting}명 · 캐주얼 진행 중 {inGame}명",
     "casualSearching": "상대 찾는 중… ({seconds}초)",
-    "roomCodePlaceholder": "ABCD1234"
+    "roomCodePlaceholder": "ABCD1234",
+    "cpuEasyShort": "쉬움",
+    "cpuNormalShort": "보통",
+    "cpuHardShort": "어려움",
+    "cpuExpertShort": "전문가",
+    "soloStarting": "CPU전 시작 중 ({diff})",
+    "player1Default": "플레이어 1",
+    "player2Default": "플레이어 2"
   },
   "deck": {
     "title": "덱 빌더",
@@ -257,7 +266,15 @@
       "saintsnow": "Saint Snow",
       "arise": "A-RISE",
       "sunnypassion": "Sunny Passion"
-    }
+    },
+    "collectionMatchPlural": "컬렉션 · {match}개 일치",
+    "collectionMatchAddable": "컬렉션 · {match}개 일치 · {addable}개 추가 가능",
+    "poolNoMatch": "검색이나 필터에 맞는 카드가 없습니다.",
+    "poolNoDeckable": "덱에 넣을 수 있는 카드가 없습니다.",
+    "fullPoolZero": "전체 카드 풀 · 0개 일치",
+    "fullPoolBrowse": "전체 카드 풀 · 스크롤하여 모든 카드 보기",
+    "fullPoolMatches": "전체 카드 풀 · {n}개 일치",
+    "fullPoolCards": "전체 카드 풀 · {n}장"
   },
   "booster": {
     "title": "부스터 개봉",
@@ -571,7 +588,12 @@
     "liveJudge": "Live 심판",
     "liveWinLoss": "Live 승패 확인",
     "yourScore": "내 스코어",
-    "oppScore": "상대 스코어"
+    "oppScore": "상대 스코어",
+    "combinedHearts": "필요 하트 합계",
+    "livesSelected": "Live {n}장",
+    "livesSelectedOne": "Live 1장",
+    "plusMembers": "+멤버 {n}",
+    "plusMembersOne": "+멤버 1"
   },
   "prompt": {
     "confirm": "확인",
@@ -614,7 +636,8 @@
     "yellNoCards": "선택할 Yell 카드가 없습니다",
     "noLiveSuccess": "성공 Live에 놓을 Live 카드가 없습니다",
     "searchDeckFor": "덱에서 검색…",
-    "deckTopPick": "덱 상단"
+    "deckTopPick": "덱 상단",
+    "surveilHintReturnAll": "1번 칸이 덱 맨 위입니다. 번호 칸 사이로 카드를 드래그하거나 두 장을 탭해 바꾸세요. 모든 카드는 덱 맨 위에 있어야 합니다."
   },
   "skill": {
     "alreadyUsed": "이번 턴에 이미 사용함",
@@ -981,7 +1004,12 @@
     "logCopied": "로그 복사됨",
     "couldNotCopyLog": "로그를 복사할 수 없음",
     "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
-    "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+    "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+    "signInStickerShop": "스티커 샵을 쓰려면 로그인하세요.",
+    "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
+    "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
+    "stickerExchangeFailed": "교환 실패",
+    "stickerConvertFailed": "변환 실패"
   },
   "tutorialUi": {
     "exitTitle": "타이틀로 나가기",
@@ -1004,7 +1032,9 @@
     "count": "관전자: {n}",
     "matchEnded": "매치가 종료되어 로비로 돌아갑니다.",
     "sessionEnded": "관전 세션이 종료되었습니다.",
-    "switchPerspective": "시점 전환"
+    "switchPerspective": "시점 전환",
+    "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
+    "waitingJudgeResolve": "Live 승패 — {name} 대기 중…"
   },
   "missions": {
     "claim": "수령",
@@ -1039,7 +1069,11 @@
       "winHasunosora": "하스노소라 전용 메인 덱으로 승리",
       "winLiella": "Liella! 전용 메인 덱으로 승리",
       "winMuse": "μ's 전용 메인 덱으로 승리",
-      "winNijigasaki": "니지가사키 전용 메인 덱으로 승리"
+      "winNijigasaki": "니지가사키 전용 메인 덱으로 승리",
+      "sticker1": "스티커 샵에서 실을 교환했다",
+      "sticker10": "스티커 샵에서 실을 10회 교환했다",
+      "sticker50": "스티커 샵에서 실을 50회 교환했다",
+      "sticker100": "스티커 샵에서 실을 100회 교환했다"
     },
     "rewardStarter": "스타터 덱 선택",
     "rewardStarterOwned": "이미 보유 중",
@@ -1087,5 +1121,26 @@
     "member": "멤버",
     "live": "라이브",
     "energy": "에너지"
+  },
+  "sticker": {
+    "title": "스티커 샵",
+    "backHub": "← 허브",
+    "backProducts": "← 상품",
+    "hint": "덱 빌더에서 여분의 가챠 카드를 실로 바꾼 뒤, 여기서 실을 카드로 교환하세요.",
+    "buy": "교환",
+    "buyOk": "카드를 교환했습니다",
+    "convertOne": "{seal} 실로 변환",
+    "convertConfirm": "여분인 「{name}」 1장을 {seal} 실 1장으로 변환할까요?\n\n이 작업은 되돌릴 수 없습니다.",
+    "convertOk": "{tier} 실 1장으로 변환됨",
+    "convertOkBalance": "변환됨 · {tier} 실: {n}",
+    "yourSeals": "보유 실",
+    "spareCopies": "여분 {n}",
+    "reservedCopies": "저장된 덱에서 예약됨 ({n})",
+    "sealsAria": "실",
+    "infoAria": "실 가이드",
+    "infoTitle": "실 가이드",
+    "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
+    "infoRarities": "희귀도",
+    "infoCost": "교환 비용"
   }
 }

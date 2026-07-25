@@ -58,7 +58,9 @@
     "backHub": "← Hub",
     "missions": "Misiones",
     "rankedPrCount": "{remaining} / {limit}",
-    "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)"
+    "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
+    "stickerShop": "Tienda de stickers",
+    "stickerShopSub": "Canjea sellos por cartas de tus sobres"
   },
   "language": {
     "label": "Idioma",
@@ -101,7 +103,14 @@
     "secondsLabel": "{n}s",
     "casualQueueStats": "{waiting} esperando · {inGame} en partidas casuales",
     "casualSearching": "Buscando oponente… ({seconds}s)",
-    "roomCodePlaceholder": "ABCD1234"
+    "roomCodePlaceholder": "ABCD1234",
+    "cpuEasyShort": "Fácil",
+    "cpuNormalShort": "Normal",
+    "cpuHardShort": "Difícil",
+    "cpuExpertShort": "Experto",
+    "soloStarting": "Iniciando vs CPU ({diff})",
+    "player1Default": "Jugador 1",
+    "player2Default": "Jugador 2"
   },
   "deck": {
     "title": "Constructor de mazos",
@@ -247,7 +256,15 @@
       "liella": "Mazo inicial Liella!",
       "hasunosora": "Mazo inicial Hasunosora",
       "sunshine": "Mazo inicial Sunshine!!"
-    }
+    },
+    "collectionMatchPlural": "Colección · {match} coincidencias",
+    "collectionMatchAddable": "Colección · {match} coincidencias · {addable} añadibles",
+    "poolNoMatch": "Ninguna carta coincide con tu búsqueda o filtros.",
+    "poolNoDeckable": "No hay cartas disponibles para el mazo.",
+    "fullPoolZero": "Pool completo · 0 coincidencias",
+    "fullPoolBrowse": "Pool completo · desplázate para ver todas las cartas",
+    "fullPoolMatches": "Pool completo · {n} coincidencias",
+    "fullPoolCards": "Pool completo · {n} cartas"
   },
   "booster": {
     "title": "Abrir sobres",
@@ -561,7 +578,12 @@
     "liveJudge": "Juez de Live",
     "liveWinLoss": "Verificación de victoria/derrota de Live",
     "yourScore": "Tu puntuación",
-    "oppScore": "Puntuación del opo."
+    "oppScore": "Puntuación del opo.",
+    "combinedHearts": "Corazones requeridos combinados",
+    "livesSelected": "{n} Lives",
+    "livesSelectedOne": "1 Live",
+    "plusMembers": "+{n} Miembros",
+    "plusMembersOne": "+1 Miembro"
   },
   "prompt": {
     "confirm": "Confirmar",
@@ -604,7 +626,8 @@
     "yellNoCards": "No hay cartas Yell para elegir",
     "noLiveSuccess": "No hay cartas Live para colocar en Live exitoso",
     "searchDeckFor": "Buscar en el mazo…",
-    "deckTopPick": "Parte superior del mazo"
+    "deckTopPick": "Parte superior del mazo",
+    "surveilHintReturnAll": "El hueco 1 es la cima del mazo. Arrastra cartas entre huecos numerados, o toca dos cartas para intercambiarlas. Todas deben permanecer en la cima del mazo."
   },
   "skill": {
     "alreadyUsed": "Ya usado este turno",
@@ -957,7 +980,12 @@
     "logCopied": "Registro copiado",
     "couldNotCopyLog": "No se pudo copiar el registro",
     "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
-    "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo."
+    "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo.",
+    "signInStickerShop": "Inicia sesión para usar la tienda de stickers.",
+    "stickerLoadFailed": "No se pudo cargar la tienda de stickers",
+    "stickerCardsLoadFailed": "No se pudieron cargar las cartas",
+    "stickerExchangeFailed": "Canje fallido",
+    "stickerConvertFailed": "Conversión fallida"
   },
   "tutorialUi": {
     "exitTitle": "Salir al título",
@@ -980,7 +1008,9 @@
     "count": "Espectadores: {n}",
     "matchEnded": "La partida terminó — volviendo al lobby.",
     "sessionEnded": "La sesión de espectador terminó.",
-    "switchPerspective": "Cambiar perspectiva"
+    "switchPerspective": "Cambiar perspectiva",
+    "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
+    "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…"
   },
   "missions": {
     "claim": "Reclamar",
@@ -1015,7 +1045,11 @@
       "winHasunosora": "Gana con un mazo principal solo Hasunosora",
       "winLiella": "Gana con un mazo principal solo Liella!",
       "winMuse": "Gana con un mazo principal solo μ's",
-      "winNijigasaki": "Gana con un mazo principal solo Nijigasaki"
+      "winNijigasaki": "Gana con un mazo principal solo Nijigasaki",
+      "sticker1": "Canjeaste sellos en la tienda de stickers",
+      "sticker10": "Canjeaste sellos en la tienda de stickers 10 veces",
+      "sticker50": "Canjeaste sellos en la tienda de stickers 50 veces",
+      "sticker100": "Canjeaste sellos en la tienda de stickers 100 veces"
     },
     "rewardStarter": "Elige un mazo inicial",
     "rewardStarterOwned": "Ya lo tienes",
@@ -1063,5 +1097,26 @@
     "member": "Miembro",
     "live": "Live",
     "energy": "Energía"
+  },
+  "sticker": {
+    "title": "Tienda de stickers",
+    "backHub": "← Hub",
+    "backProducts": "← Productos",
+    "hint": "Convierte cartas gacha sobrantes en el Constructor de mazos en sellos, luego canjéalos por cartas aquí.",
+    "buy": "Canjear",
+    "buyOk": "Carta canjeada",
+    "convertOne": "Convertir en sello {seal}",
+    "convertConfirm": "¿Convertir 1 copia sobrante de {name} en 1 sello {seal}?\n\nEsto no se puede deshacer.",
+    "convertOk": "Convertido a 1 sello {tier}",
+    "convertOkBalance": "Convertido · sellos {tier}: {n}",
+    "yourSeals": "Tus sellos",
+    "spareCopies": "{n} sobrante(s)",
+    "reservedCopies": "Reservado por mazos guardados ({n})",
+    "sealsAria": "Sellos",
+    "infoAria": "Guía de sellos",
+    "infoTitle": "Guía de sellos",
+    "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
+    "infoRarities": "Rarezas",
+    "infoCost": "Coste de canje"
   }
 }
