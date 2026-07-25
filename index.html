@@ -32608,14 +32608,23 @@ function stageYellBladeFor(s, pid, myId) {
   const board = s?.stage_board;
   const side = pid === myId ? board?.mine : board?.opp;
   const fromBoard = Number(side?.yell);
+  const estimated = estimateYellBlade(s, pid);
+  // During Main/Active, do not pull last Live's yell snapshot into the HUD.
+  if (!shouldShowYellHeartsOnStageBoard(s?.phase) && (s?.status || '') !== 'finished') {
+    return Math.max(
+      Number.isFinite(fromBoard) ? fromBoard : 0,
+      estimated,
+    );
+  }
+  const fromPerf = Number(side?.perf_yell);
   const fromSnap = Number(s?._yell_blade_snapshot?.[pid]);
   const fromLog = perfYellBladeFromLog(s, pid);
-  const estimated = estimateYellBlade(s, pid);
   // Do NOT use yell_reveal.length here. Extra Yell effects (e.g. Kurage mill)
   // stack many reveal cards while Blade stays fixed — Math.max(..., yellCount)
   // was showing 45+ "Blades" after ~3 extra draws.
   return Math.max(
     Number.isFinite(fromBoard) ? fromBoard : 0,
+    Number.isFinite(fromPerf) ? fromPerf : 0,
     Number.isFinite(fromSnap) ? fromSnap : 0,
     fromLog || 0,
     estimated,
@@ -37125,7 +37134,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=30"></script>
+<script src="client/js/spectacle.js?v=31"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>

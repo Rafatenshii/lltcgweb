@@ -273,9 +273,15 @@ final class Issue73RurinoZenhouiTest extends TestCase
         $this->assertArrayNotHasKey('bonus_hearts', $state['players']['p1']['stage']['center'] ?? []);
 
         $filtered = \filterStateForPlayer($state, 'tok1');
+        // Live HUD must use current stage (bonus cleared); snapshot stays for spectacle.
+        $liveHearts = \aggregateStageHeartsByColor($state['players']['p1']['stage']);
+        $this->assertSame(
+            $liveHearts,
+            $filtered['stage_board']['mine']['stage_hearts'] ?? null
+        );
         $this->assertSame(
             $before,
-            $filtered['stage_board']['mine']['stage_hearts'] ?? null
+            $filtered['stage_board']['mine']['perf_stage_hearts'] ?? null
         );
     }
 }

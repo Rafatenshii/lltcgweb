@@ -3935,13 +3935,17 @@ function buildHeartPoolFromRows(rows) {
 function perfRawStageHeartsForPlayer(ctx, pid) {
   const board = ctx?.next?.stage_board;
   const isMine = pid === ctx?.myId;
+  // Prefer perf_stage_hearts after Live ends (modifiers cleared) so spectacle still
+  // shows the hearts that were used; live stage_hearts is the Main/Active HUD.
+  const fromPerf = isMine ? board?.mine?.perf_stage_hearts : board?.opp?.perf_stage_hearts;
   const fromBoard = isMine ? board?.mine?.stage_hearts : board?.opp?.stage_hearts;
-  let stageHearts = fromBoard
+  let stageHearts = fromPerf
+    || fromBoard
     || (typeof aggregateStageHeartsFromStage === 'function'
       ? aggregateStageHeartsFromStage(ctx?.next?.players?.[pid]?.stage)
       : []);
   // Older payloads / missing stage_board: fold live_modifiers bonus hearts (Eli/Kotori).
-  if (!fromBoard && typeof aggregateModifierBonusHearts === 'function') {
+  if (!fromPerf && !fromBoard && typeof aggregateModifierBonusHearts === 'function') {
     stageHearts = mergeHeartStatRows(stageHearts, aggregateModifierBonusHearts(ctx.next, pid));
   }
   return stageHearts || [];

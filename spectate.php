@@ -403,12 +403,13 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         $oppStageHearts,
         aggregateFlatHeartColors(getBonusHeartsFlat($state, $oppId))
     );
-    if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$viewPid])) {
-        $mineStageHearts = $state['_stage_hearts_snapshot'][$viewPid];
-    }
-    if ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$oppId])) {
-        $oppStageHearts = $state['_stage_hearts_snapshot'][$oppId];
-    }
+    // Snapshot is spectacle-only — keep stage_board.stage_hearts as live HUD totals.
+    $minePerfStageHearts = ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$viewPid]))
+        ? $state['_stage_hearts_snapshot'][$viewPid]
+        : null;
+    $oppPerfStageHearts = ($exposePerfCarryover && !empty($state['_stage_hearts_snapshot'][$oppId]))
+        ? $state['_stage_hearts_snapshot'][$oppId]
+        : null;
     $showYellHearts = isInPerformancePhase($state);
     $mineYellHearts = $showYellHearts
         ? aggregateYellHeartsByColor($state['yell_reveal'][$viewPid] ?? [])
@@ -424,9 +425,11 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
     $oppContinuousHearts = aggregateFlatHeartColors(getContinuousPerformanceHearts($state, $oppId));
     $yellBladeMine = computeYellBladeTotal($state, $viewPid);
     $yellBladeOpp = computeYellBladeTotal($state, $oppId);
+    $yellBladeMinePerf = null;
+    $yellBladeOppPerf = null;
     if ($exposePerfCarryover && !empty($state['_yell_blade_snapshot'])) {
-        $yellBladeMine = intval($state['_yell_blade_snapshot'][$viewPid] ?? $yellBladeMine);
-        $yellBladeOpp = intval($state['_yell_blade_snapshot'][$oppId] ?? $yellBladeOpp);
+        $yellBladeMinePerf = intval($state['_yell_blade_snapshot'][$viewPid] ?? $yellBladeMine);
+        $yellBladeOppPerf = intval($state['_yell_blade_snapshot'][$oppId] ?? $yellBladeOpp);
     }
     $filtered['stage_board'] = [
         'mine' => [
@@ -435,10 +438,12 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
                 $mineContinuousHearts
             ),
             'stage_hearts' => $mineStageHearts,
+            'perf_stage_hearts' => $minePerfStageHearts,
             'yell_hearts' => $mineYellHearts,
             'continuous_hearts' => $mineContinuousHearts,
             'continuous_heart_grants' => $mineContinuousGrants,
             'yell'   => $yellBladeMine,
+            'perf_yell' => $yellBladeMinePerf,
             'live_score_bonus' => getLiveScoreBonus($state, $viewPid),
             'active_effects' => collectActiveContinuousEffects($state, $viewPid),
         ],
@@ -448,10 +453,12 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
                 $oppContinuousHearts
             ),
             'stage_hearts' => $oppStageHearts,
+            'perf_stage_hearts' => $oppPerfStageHearts,
             'yell_hearts' => $oppYellHearts,
             'continuous_hearts' => $oppContinuousHearts,
             'continuous_heart_grants' => $oppContinuousGrants,
             'yell'   => $yellBladeOpp,
+            'perf_yell' => $yellBladeOppPerf,
             // Omit face-down Live storage — Active effects / bonus text would spoil Lives set.
             'live_score_bonus' => getLiveScoreBonusBreakdown($state, $oppId, true)['total'],
             'active_effects' => collectActiveContinuousEffects($state, $oppId, true),
