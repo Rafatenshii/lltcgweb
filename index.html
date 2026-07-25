@@ -34021,14 +34021,16 @@ function confirmMull(){
     ids = [...G.mullMarked];
   }
   closeM('overlay-mull'); G.mullMarked.clear();
+  G.mulliganPending = true;
+  sfxPlay('mulligan_keep');
+  // Send while the guide step is still "mulligan" — checkGoalNow advances the
+  // step synchronously, and sendAct's tutBlocks('mulligan') would then drop it.
+  sendAct('mulligan',{card_ids:ids});
   if (G.tutorialLive) {
     G._tutMulliganDone = true;
     // Don't wait for turn-start animations — update guide text immediately.
     if (typeof TutorialInteractive?.checkGoalNow === 'function') TutorialInteractive.checkGoalNow();
   }
-  G.mulliganPending = true;
-  sfxPlay('mulligan_keep');
-  sendAct('mulligan',{card_ids:ids});
 }
 
 // --- LIVE Phase hand selection (live_set) --------------------------------------
@@ -34442,7 +34444,10 @@ function updatePhaseActionButton(s, myId) {
   bar.classList.toggle('show', show);
   bar.setAttribute('aria-hidden', show ? 'false' : 'true');
   btn.textContent = label;
-  if (G.isTutorial) {
+  // Slideshow tutorial: keep the phase button inert. Live tutorial unlocks it
+  // via .tut-locked CSS + click handler when the current goal is end_main /
+  // end_live_set — do not force disabled=true here or those steps softlock.
+  if (G.isTutorial && !G.tutorialLive) {
     btn.disabled = true;
     btn.classList.toggle('waiting', waiting);
     btn.setAttribute('aria-disabled', 'true');
@@ -34462,7 +34467,7 @@ function updateLiveSetButton(s, myId) {
 }
 
 function toggleLiveSelect(iid, s, myId) {
-  if (G.isTutorial || isReplayViewing()) return;
+  if ((G.isTutorial && !G.tutorialLive) || isReplayViewing()) return;
   if (!isLiveSetSelecting(s, myId)) return;
   if (!iid) return;
   G.liveSel = G.liveSel.filter(id => id && (s?.players?.[myId]?.hand || []).some(c => c.instance_id === id));
