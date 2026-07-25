@@ -175,9 +175,22 @@ function tcgDbMigrate(PDO $db): void {
         }
     }
 
-    if (is_file(__DIR__ . '/vendor/autoload.php')) {
+    // Only invoke the SQL migrator when migration files change. Its
+    // CREATE TABLE IF NOT EXISTS on every PHP request acquired schema locks
+    // and made unrelated account/button requests wait behind matchmaking.
+    $migrationFingerprint = tcgDbMigrationFingerprint();
+    $appliedFingerprint = null;
+    try {
+        $stmt = $db->prepare('SELECT value FROM tcg_schema_meta WHERE key = ?');
+        $stmt->execute(['migration_fingerprint']);
+        $appliedFingerprint = $stmt->fetchColumn() ?: null;
+    } catch (Throwable $e) { /* bootstrap path handles a missing meta table */ }
+
+    if ($migrationFingerprint !== $appliedFingerprint && is_file(__DIR__ . '/vendor/autoload.php')) {
         require_once __DIR__ . '/vendor/autoload.php';
         \LLTCG\Db\Migrator::run($db);
+        $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
+            ->execute(['migration_fingerprint', $migrationFingerprint]);
     }
 
     tcgDbRunMigrationOnce($db, 'replay_preserved_backfill_20260712', function (PDO $db): void {
@@ -192,6 +205,16 @@ function tcgDbMigrate(PDO $db): void {
     });
 
     $done = true;
+}
+
+/** Stable fingerprint used to avoid running the schema migrator per request. */
+function tcgDbMigrationFingerprint(): string {
+    $parts = [];
+    foreach (glob(__DIR__ . '/migrations/*.sql') ?: [] as $file) {
+        $parts[] = basename($file) . ':' . (int)filemtime($file) . ':' . (int)filesize($file);
+    }
+    sort($parts, SORT_STRING);
+    return hash('sha256', implode('|', $parts));
 }
 
 /** One-time full schema create + column ensures (skipped once bootstrap_v2 is set). */

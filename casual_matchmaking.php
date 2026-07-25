@@ -6,6 +6,52 @@
 require_once __DIR__ . '/db.php';
 
 const TCG_CASUAL_QUEUE_MAX_WAIT = 300;
+const TCG_CASUAL_LOCK_TIMEOUT_MS = 5000;
+
+/**
+ * Serialize each complete queue operation (join + match + cleanup).
+ *
+ * Those steps span several SQLite statements and game-file writes. Allowing
+ * multiple PHP workers to interleave them caused lock storms where every
+ * request waited for SQLite's 15-second busy timeout. A short outer file lock
+ * keeps the critical section atomic and leaves the account DB available.
+ *
+ * @template T
+ * @param callable():T $fn
+ * @return T
+ */
+function tcgWithCasualQueueLock(callable $fn) {
+    $path = rtrim(tcgPath('data'), '/\\') . DIRECTORY_SEPARATOR . 'casual_queue.lock';
+    $dir = dirname($path);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $handle = @fopen($path, 'c+');
+    if ($handle === false) {
+        throw new RuntimeException('Casual queue is temporarily unavailable');
+    }
+
+    $deadline = microtime(true) + (TCG_CASUAL_LOCK_TIMEOUT_MS / 1000);
+    $locked = false;
+    do {
+        $locked = flock($handle, LOCK_EX | LOCK_NB);
+        if (!$locked) {
+            usleep(20000);
+        }
+    } while (!$locked && microtime(true) < $deadline);
+
+    if (!$locked) {
+        fclose($handle);
+        throw new RuntimeException('Casual queue is busy; please try again');
+    }
+
+    try {
+        return $fn();
+    } finally {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
+}
 
 function tcgCasualGameFilePath(string $roomId): string {
     return tcgPath('games') . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
@@ -502,72 +548,78 @@ function tcgNormalizeCasualQueueKey(string $key): string {
 
 function apiCasualJoin(array $body): array {
     tcgRateLimitForAction('casual_join', $body);
-    $queueKey = (string)($body['queue_id'] ?? '');
-    $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));
-    $selfDiscordId = tcgOptionalAuthUserId($body);
-    if ($challengeId !== '') {
-        if (!$selfDiscordId) {
-            throw new Exception('Sign in to accept a match challenge', 401);
+    return tcgWithCasualQueueLock(function () use ($body): array {
+        $queueKey = (string)($body['queue_id'] ?? '');
+        $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));
+        $selfDiscordId = tcgOptionalAuthUserId($body);
+        if ($challengeId !== '') {
+            if (!$selfDiscordId) {
+                throw new Exception('Sign in to accept a match challenge', 401);
+            }
+            if ($challengeId === $selfDiscordId) {
+                throw new Exception('You cannot challenge yourself', 400);
+            }
         }
-        if ($challengeId === $selfDiscordId) {
-            throw new Exception('You cannot challenge yourself', 400);
+        $join = tcgCasualQueueJoin($queueKey, $body);
+        if ($challengeId !== '') {
+            $match = tcgTryCasualMatchmake($queueKey, $challengeId);
+            if (!$match) {
+                tcgCasualQueueLeave($queueKey, $selfDiscordId);
+                throw new Exception('That player is no longer waiting for an unranked match', 409);
+            }
+            return [
+                'success' => true,
+                'queue' => $join,
+                'match' => $match,
+                'casual' => $match,
+                'queue_stats' => tcgCasualQueuePublicStats(),
+            ];
         }
-    }
-    $join = tcgCasualQueueJoin($queueKey, $body);
-    if ($challengeId !== '') {
-        $match = tcgTryCasualMatchmake($queueKey, $challengeId);
-        if (!$match) {
-            tcgCasualQueueLeave($queueKey, $selfDiscordId);
-            throw new Exception('That player is no longer waiting for an unranked match', 409);
-        }
-        return [
+        $match = tcgTryCasualMatchmake($queueKey);
+        $out = [
             'success' => true,
             'queue' => $join,
             'match' => $match,
-            'casual' => $match,
             'queue_stats' => tcgCasualQueuePublicStats(),
         ];
-    }
-    $match = tcgTryCasualMatchmake($queueKey);
-    $out = [
-        'success' => true,
-        'queue' => $join,
-        'match' => $match,
-        'queue_stats' => tcgCasualQueuePublicStats(),
-    ];
-    if (!$match) {
-        $out['casual'] = tcgCasualQueueStatus($queueKey);
-    } else {
-        $out['casual'] = $match;
-    }
-    return $out;
+        if (!$match) {
+            $out['casual'] = tcgCasualQueueStatus($queueKey);
+        } else {
+            $out['casual'] = $match;
+        }
+        return $out;
+    });
 }
 
 function apiCasualLeave(array $body): array {
-    $queueKey = (string)($body['queue_id'] ?? '');
-    $discordId = tcgOptionalAuthUserId($body);
-    return [
-        'success' => true,
-        'queue' => tcgCasualQueueLeave($queueKey, $discordId),
-        'queue_stats' => tcgCasualQueuePublicStats(),
-    ];
+    return tcgWithCasualQueueLock(function () use ($body): array {
+        $queueKey = (string)($body['queue_id'] ?? '');
+        $discordId = tcgOptionalAuthUserId($body);
+        return [
+            'success' => true,
+            'queue' => tcgCasualQueueLeave($queueKey, $discordId),
+            'queue_stats' => tcgCasualQueuePublicStats(),
+        ];
+    });
 }
 
 function apiCasualStatus(array $body): array {
-    $queueKey = (string)($body['queue_id'] ?? '');
-    if ($queueKey === '' && isset($_GET['queue_id'])) {
-        $queueKey = (string)$_GET['queue_id'];
-    }
-    $status = tcgCasualQueueStatus($queueKey);
-    if (($status['status'] ?? '') === 'searching') {
-        $match = tcgTryCasualMatchmake($queueKey);
-        if ($match) {
-            $status = $match;
+    return tcgWithCasualQueueLock(function () use ($body): array {
+        $queueKey = (string)($body['queue_id'] ?? '');
+        if ($queueKey === '' && isset($_GET['queue_id'])) {
+            $queueKey = (string)$_GET['queue_id'];
         }
-    }
-    return [
-        'success' => true,
-        'casual' => $status,
-        'queue_stats' => tcgCasualQueuePublicStats(),
-    ];
+        $status = tcgCasualQueueStatus($queueKey);
+        if (($status['status'] ?? '') === 'searching') {
+            $match = tcgTryCasualMatchmake($queueKey);
+            if ($match) {
+                $status = $match;
+            }
+        }
+        return [
+            'success' => true,
+            'casual' => $status,
+            'queue_stats' => tcgCasualQueuePublicStats(),
+        ];
+    });
 }
