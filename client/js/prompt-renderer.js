@@ -778,7 +778,7 @@ global.promptSourceDisplayName = function promptSourceDisplayName(pr, s) {
 }
 
 function isLocalizedPromptLocale(loc) {
-  return loc === 'ja' || loc === 'es' || loc === 'ko' || loc === 'zh';
+  return loc === 'ja' || loc === 'es' || loc === 'ko' || loc === 'zh' || loc === 'th';
 }
 
 /** Prefer printed ability text in the active locale when the server sent English effect/prompt. */

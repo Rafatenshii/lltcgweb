@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 I18N = ROOT / "i18n.js"
 
-LOCALE_ORDER = ["en", "ja", "es", "ko", "zh"]
+LOCALE_ORDER = ["en", "ja", "es", "ko", "zh", "th"]
 
 
 def format_locale_block(code: str, data: dict) -> str:
@@ -48,7 +48,7 @@ def split_top_level_locales(body: str) -> dict[str, str]:
     inner = body[1:-1]
     locales: dict[str, str] = {}
     # Find each "code": {
-    for m in re.finditer(r'\n  "(en|ja|es|ko|zh)": \{', inner):
+    for m in re.finditer(r'\n  "(en|ja|es|ko|zh|th)": \{', inner):
         code = m.group(1)
         brace_at = m.end() - 1
         depth = 0

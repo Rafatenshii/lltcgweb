@@ -24,6 +24,7 @@ LOCALE_FILES = {
     "ja": ROOT / "tutorial_ja.json",
     "ko": ROOT / "tutorial_ko.json",
     "zh": ROOT / "tutorial_zh.json",
+    "th": ROOT / "tutorial_th.json",
 }
 
 
@@ -51,7 +52,7 @@ def main() -> int:
     if missing:
         ok = False
         print(f"{args.locale}: missing {len(missing)} step(s):", ", ".join(missing[:20]), file=sys.stderr)
-    if leaks and args.locale in ("es", "ko", "zh"):
+    if leaks and args.locale in ("es", "ko", "zh", "th"):
         ok = False
         print(f"{args.locale}: {len(leaks)} step(s) with English game terms:", ", ".join(leaks[:20]), file=sys.stderr)
         for i in leaks[:3]:

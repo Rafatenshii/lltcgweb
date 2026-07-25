@@ -1,6 +1,6 @@
 <?php
 /**
- * Assert STRINGS.es, STRINGS.ko, and STRINGS.zh each have every leaf key present in
+ * Assert STRINGS.es, STRINGS.ko, STRINGS.zh, and STRINGS.th each have every leaf key present in
  * STRINGS.en (locales/*.json source).
  * Exit 0 on success; exit 1 and print missing keys on failure.
  */
@@ -12,6 +12,7 @@ $locales = [
     'es' => $root . '/locales/es.json',
     'ko' => $root . '/locales/ko.json',
     'zh' => $root . '/locales/zh.json',
+    'th' => $root . '/locales/th.json',
 ];
 
 if (!is_readable($enPath)) {

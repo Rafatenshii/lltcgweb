@@ -23,7 +23,7 @@ Load order in `index.html`: i18n → sfx → **client/js/** (`api-client` → `g
 
 - **Do not** add large new features inline in `index.html` — add a `client/js/*.js` module and a thin wrapper if needed.
 - **Do not** introduce a bundler for Hostinger deploy unless explicitly requested.
-- i18n remains `i18n.js` / `log_i18n.js`.
+- i18n remains `i18n.js` / `log_i18n.js` / `tutorial_ja.json`. **All new player-visible copy must include Japanese, Spanish, Korean, Chinese, and Thai** — see `.cursor/rules/user-facing-copy.mdc` (i18n section).
 
 ## Deploy
 

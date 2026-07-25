@@ -26,7 +26,7 @@ Apply the same rules when mirroring copy to `tutorial_ja.json` or localized `tut
 
 ## i18n (required for all player-visible text)
 
-Supported locales live in `i18n.js` (`LOCALES`, **en** + **ja** + **es** + **ko** + **zh**). **Every new or changed player-facing string must ship in all locales in the same change** — not English-only.
+Supported locales live in `i18n.js` (`LOCALES`, **en** + **ja** + **es** + **ko** + **zh** + **th**). **Every new or changed player-facing string must ship in all locales in the same change** — not English-only.
 
 ### Korean (required — do not skip)
 
@@ -50,32 +50,50 @@ Simplified Chinese (`zh`, `document.documentElement.lang = zh-Hans`) is a **firs
 
 See `docs/locales/ZH_PROGRESS.md` and `docs/locales/ZH_NAMES.md`.
 
+### Thai (required — do not skip)
+
+Thai (`th`, `document.documentElement.lang = 'th'`) is a **first-class locale**, same enforcement as Korean and Chinese. **Every new or changed player-facing string must include Thai in the same change** — menus, missions, toasts, overlays, news posts, tutorials, logs, stamps, and JS-built UI. Do not ship en+ja+es+ko+zh without `th`.
+
+Infrastructure (`LOCALE_ORDER`, `inject_i18n_th.py`, `inject_i18n_th_maps.py`, `validate_i18n.php`, flag asset) exists as of M0; the actual `locales/th.json` / `locales/th_names.json` / `locales/th_songs.json` content ships starting at M1 — see `docs/locales/TH_PROGRESS.md` for current milestone status before assuming a given surface already has Thai coverage.
+
+| Surface | Thai files / fields |
+|---------|----------------------|
+| UI strings | `locales/th.json` → `python scripts/inject_i18n_th.py` → `STRINGS.th` |
+| Names / songs | `locales/th_names.json` / `locales/th_songs.json` → `python scripts/inject_i18n_th_maps.py` |
+| Card rules text | `cards.json` → `text_th` (brackets: `[เมื่อเข้าสนาม]`, `[เริ่ม Live]`, `[เปิดใช้]`, `[ต่อเนื่อง]`, `[เทิร์นละ 1 ครั้ง]`, `[เซ็นเตอร์]`, …) |
+| Tutorial | `tutorial_th.json` via `build_tutorial_locale_json.py --locale th` |
+| Logs / prompts | `log_i18n.js` TH rules (`localizeLogMessageTh` / `localizePromptTextTh`) |
+| News | `news.json` posts → `title.th` / `body.th` |
+| Stamps | `stamps_i18n.json` → `th` (builder / `inject_stamps_th.py`) |
+
+See `docs/locales/TH_PROGRESS.md` and `docs/locales/TH_NAMES.md`.
+
 ### Where strings go
 
-| Surface | English source | JA / ES / KO / ZH |
-|---------|----------------|-------------------|
-| Menus, screens, buttons, toasts, overlays | `i18n.js` → `STRINGS.en.*` | Matching `STRINGS.ja.*` / `STRINGS.es.*` / `STRINGS.ko.*` / `STRINGS.zh.*` |
-| Static HTML labels | `data-i18n="dotted.key"` | Same key in `STRINGS.ja`, `STRINGS.es`, `STRINGS.ko`, and `STRINGS.zh` |
+| Surface | English source | JA / ES / KO / ZH / TH |
+|---------|----------------|-------------------------|
+| Menus, screens, buttons, toasts, overlays | `i18n.js` → `STRINGS.en.*` | Matching `STRINGS.ja.*` / `STRINGS.es.*` / `STRINGS.ko.*` / `STRINGS.zh.*` / `STRINGS.th.*` |
+| Static HTML labels | `data-i18n="dotted.key"` | Same key in `STRINGS.ja`, `STRINGS.es`, `STRINGS.ko`, `STRINGS.zh`, and `STRINGS.th` |
 | JS-built UI | `t('dotted.key', { vars })` | Same |
-| Interactive tutorial bubbles | `tutorial.json` dialogue | `tutorial_ja.json` / `tutorial_es.json` / `tutorial_ko.json` / **`tutorial_zh.json`** |
+| Interactive tutorial bubbles | `tutorial.json` dialogue | `tutorial_ja.json` / `tutorial_es.json` / `tutorial_ko.json` / `tutorial_zh.json` / **`tutorial_th.json`** |
 | Legacy slideshow tutorial | `tutorial.*` | `tutorial.*` in all STRINGS packs **and/or** tutorial_*.json |
-| Title-screen news posts | `news.json` | `en` / `ja` / `es` / `ko` / **`zh`** on each post |
-| Server log lines | `log_i18n.js` | JA / ES / KO / **ZH** rules + `STRINGS.*.log` |
-| Card skill oracle text | `cards.json` `text` | `text_jp` / `text_es` / `text_ko` / **`text_zh`** with localized skill brackets matching `skillKw` |
+| Title-screen news posts | `news.json` | `en` / `ja` / `es` / `ko` / `zh` / **`th`** on each post |
+| Server log lines | `log_i18n.js` | JA / ES / KO / ZH / **TH** rules + `STRINGS.*.log` |
+| Card skill oracle text | `cards.json` `text` | `text_jp` / `text_es` / `text_ko` / `text_zh` / **`text_th`** with localized skill brackets matching `skillKw` |
 
 ### Checklist before finishing a feature with text
 
-1. Add **`STRINGS.en` + `STRINGS.ja` + `STRINGS.es` + `STRINGS.ko` + `STRINGS.zh`** keys (or matching `tutorial_*.json` for interactive tutorial steps).
+1. Add **`STRINGS.en` + `STRINGS.ja` + `STRINGS.es` + `STRINGS.ko` + `STRINGS.zh` + `STRINGS.th`** keys (or matching `tutorial_*.json` for interactive tutorial steps).
 2. Wire HTML via **`data-i18n`** or JS via **`t()`** — avoid raw English in templates.
 3. If UI is rebuilt on locale change, ensure **`refreshDynamicI18n()`** (or `onLocaleChange`) refreshes it.
 4. Bump **`?v=`** on `i18n.js` / `tutorial_*.json` / `log_i18n.js` when those files change.
-5. Run **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, **zh** against en).
+5. Run **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, zh, **th** against en).
 6. For **interactive tutorial** steps:
    - Curate under **`locales/{locale}.json` → `tutorial.*`** (or `TUTORIAL_EXACT_OVERRIDES`).
    - Run **`python scripts/build_tutorial_locale_json.py --locale {locale}`**.
-   - Run **`python scripts/validate_tutorial_i18n.py --locale {locale}`** (es/ko/**zh** leak checks).
+   - Run **`python scripts/validate_tutorial_i18n.py --locale {locale}`** (es/ko/zh/**th** leak checks).
    - Translate game terms/skill keywords; **do not** translate character names, group brands (Liella!, μ's), or Live/song titles in tutorial dialogue.
-7. For **new/changed card rules text**: populate **`text_es` + `text_ko` + `text_zh`** in the same change (localized brackets; quoted names use locale name maps for ko/zh).
+7. For **new/changed card rules text**: populate **`text_es` + `text_ko` + `text_zh` + `text_th`** in the same change (localized brackets; quoted names use locale name maps for ko/zh/th).
 
 ### Korean specifics
 
@@ -91,17 +109,24 @@ See `docs/locales/ZH_PROGRESS.md` and `docs/locales/ZH_NAMES.md`.
 - Source of truth for UI: `locales/zh.json` → `inject_i18n_zh.py`.
 - Skill bracket lock: 入场时 / 离场时 / Live开始 / Live成功 / 起动 / 永续 / 自动 / 每回合1次 / 中央 / Yell — keep identical across `text_zh`, `skillKw`, tutorial, and `log_i18n.js`.
 
+### Thai specifics
+
+- `cardLocaleName` resolves TH via `TH_NAME_MAP` / `TH_SONG_MAP` (from `th_names.json` / `th_songs.json`, once authored — see `docs/locales/TH_NAMES.md`).
+- `cardLocaleText` → `card.text_th`.
+- Source of truth for UI: `locales/th.json` → `inject_i18n_th.py`.
+- Skill bracket lock (from the localization plan): เมื่อเข้าสนาม (On Enter) / เมื่อออกจากสนาม (On Leave) / เริ่ม Live (Live Start) / Live สำเร็จ (Live Success) / เปิดใช้ (Activated) / ต่อเนื่อง (Always) / เทิร์นละ 1 ครั้ง (Once per Turn) / เซ็นเตอร์ (Center) — keep identical across `text_th`, `skillKw`, tutorial, and `log_i18n.js` once each surface ships Thai. See `docs/locales/TH_PROGRESS.md` for the full glossary (game terms: เฟสหลัก, เฟส Live, เวที, ห้องรอ, พลังงาน, หัวใจ, เบลด, มัลลิแกน, สมาชิก, บาตองทัช, การแสดง, สำเร็จ).
+
 ### Do not
 
 - Ship new menus, replay UI, error popups, or tutorial lines in English only.
-- Add `data-i18n` without Japanese, Spanish, Korean, **and Chinese** strings.
-- Rely on English fallback for JA/ES/KO/**ZH** tutorial step ids.
-- Ship new printed abilities without `text_es` / `text_ko` / **`text_zh`**.
+- Add `data-i18n` without Japanese, Spanish, Korean, Chinese, **and Thai** strings.
+- Rely on English fallback for JA/ES/KO/ZH/**TH** tutorial step ids.
+- Ship new printed abilities without `text_es` / `text_ko` / `text_zh` / **`text_th`**.
 
 ### Title-screen news posts (`news.json`)
 
 - Explain **what changes for the player** — gameplay, deck building, ranked/casual rules, balance.
 - Use **card names and point values**, not file paths, repo names, deploy steps, or dev jargon.
 - Do **not** mention `news.json`, Hostinger, git, APIs, or implementation details.
-- Ship **en + ja + es + ko + zh** for every post title and body in the same change.
+- Ship **en + ja + es + ko + zh + th** for every post title and body in the same change.
 - **Card IDs** in post body are auto-linked — use exact catalog `card_no` values.

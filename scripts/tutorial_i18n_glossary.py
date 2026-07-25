@@ -285,6 +285,105 @@ TUTORIAL_EN_TO_KO: list[tuple[str, str]] = [
     ("you may", "해도 돼요"),
 ]
 
+# Skill bracket labels (EN → th), aligned with i18n.js skillKw.*.title (th) and the
+# curated locales/th.json skillKw block ([เมื่อเข้าสนาม], [เริ่ม Live], [เปิดใช้], …).
+SKILL_BRACKET_EN_TO_TH: dict[str, str] = {
+    "[On Enter]": "[เมื่อเข้าสนาม]",
+    "[On Leave]": "[เมื่อออกจากสนาม]",
+    "[Live Start]": "[เริ่ม Live]",
+    "[Live Success]": "[Live สำเร็จ]",
+    "[Activated]": "[เปิดใช้]",
+    "[Always]": "[ต่อเนื่อง]",
+    "[Automatic]": "[อัตโนมัติ]",
+    "[Auto]": "[อัตโนมัติ]",
+    "[Once per Turn]": "[เทิร์นละ 1 ครั้ง]",
+    "[Once per turn]": "[เทิร์นละ 1 ครั้ง]",
+    "[Center]": "[เซ็นเตอร์]",
+    "[Yell]": "[Yell]",
+    "[Left]": "[ซ้าย]",
+    "[Left Side]": "[ซ้าย]",
+    "[Right]": "[ขวา]",
+    "[Right Side]": "[ขวา]",
+}
+
+# Longest-first EN → th game terms for tutorial dialogue (**bold** and plain).
+# Mirrors the curated locales/th.json tutorial.* conventions: Live / Yell stay as Latin
+# loanwords (like the plan), other game terms are translated (Blade → เบลด).
+TUTORIAL_EN_TO_TH: list[tuple[str, str]] = [
+    ("two-player", "สองผู้เล่น"),
+    ("You'll recruit", "คุณจะเรียก"),
+    ("outshine", "เอาชนะ"),
+    ("your opponent", "คู่ต่อสู้"),
+    ("Win condition", "เงื่อนไขชนะ"),
+    ("Successfully perform", "แสดงสำเร็จ"),
+    ("successfully", "สำเร็จ"),
+    ("This game uses three types of cards", "เกมนี้ใช้การ์ดสามประเภท"),
+    ("This game uses", "เกมนี้ใช้"),
+    ("Activatable skills", "สกิลที่เปิดใช้ได้"),
+    ("Success Live card storage", "ที่เก็บการ์ด Live สำเร็จ"),
+    ("success storage", "ที่เก็บสำเร็จ"),
+    ("Live successful card storage", "ที่เก็บการ์ด Live สำเร็จ"),
+    ("Live card storage", "ที่เก็บการ์ด Live"),
+    ("Live Storage", "ที่เก็บ Live"),
+    ("Live storage", "ที่เก็บ Live"),
+    ("End Main Phase", "จบเฟสหลัก"),
+    ("End Main", "จบเฟสหลัก"),
+    ("Main Phase", "เฟสหลัก"),
+    ("main phase", "เฟสหลัก"),
+    ("Live Phase", "เฟส Live"),
+    ("live phase", "เฟส Live"),
+    ("Performance Phase", "เฟสการแสดง"),
+    ("Performance!", "การแสดง!"),
+    ("Performance", "การแสดง"),
+    ("LIVE START", "เริ่ม Live"),
+    ("Live Judge", "ตัดสิน Live"),
+    ("Success pile", "ที่เก็บสำเร็จ"),
+    ("Success Lives", "Live สำเร็จ"),
+    ("Success Live", "Live สำเร็จ"),
+    ("Success", "สำเร็จ"),
+    ("Baton Passes", "บาตองทัช"),
+    ("Baton Pass", "บาตองทัช"),
+    ("baton pass", "บาตองทัช"),
+    ("Member cards", "การ์ดสมาชิก"),
+    ("Member card", "การ์ดสมาชิก"),
+    ("Energy cards", "การ์ดพลังงาน"),
+    ("Energy card", "การ์ดพลังงาน"),
+    ("Energy deck", "เด็คพลังงาน"),
+    ("Energy Deck", "เด็คพลังงาน"),
+    ("Main deck", "เด็คหลัก"),
+    ("Main Deck", "เด็คหลัก"),
+    ("Waiting Room", "ห้องรอ"),
+    ("Blade hearts", "หัวใจเบลด"),
+    ("Blade Hearts", "หัวใจเบลด"),
+    ("Blade heart", "หัวใจเบลด"),
+    ("Blade Heart", "หัวใจเบลด"),
+    ("school idols", "ไอดอลโรงเรียน"),
+    ("coin flip", "โยนเหรียญ"),
+    ("You go first", "คุณไปก่อน"),
+    ("Go first", "ไปก่อน"),
+    ("Keep Hand", "เก็บมือนี้"),
+    ("Keep hand", "เก็บมือนี้"),
+    ("Members", "สมาชิก"),
+    ("Member", "สมาชิก"),
+    ("Hearts", "หัวใจ"),
+    ("Heart", "หัวใจ"),
+    ("Energy", "พลังงาน"),
+    ("Blades", "เบลด"),
+    ("Blade", "เบลด"),
+    ("Stage", "เวที"),
+    ("mulligan", "มัลลิแกน"),
+    ("Yell", "Yell"),
+    ("Lives", "Live"),
+    ("Live", "Live"),
+    ("Center", "เซ็นเตอร์"),
+    ("Left", "ซ้าย"),
+    ("Right", "ขวา"),
+    ("Turn", "เทิร์น"),
+    ("score", "คะแนน"),
+    ("You may", "คุณอาจ"),
+    ("you may", "คุณอาจ"),
+]
+
 # Substrings that must stay as-is (character / group / song / product names).
 PROTECTED_LITERALS: tuple[str, ...] = (
     "Shibuya Kanon",
@@ -359,12 +458,14 @@ SKILL_BRACKETS_BY_LOCALE: dict[str, dict[str, str]] = {
     "es": SKILL_BRACKET_EN_TO_ES,
     "ko": SKILL_BRACKET_EN_TO_KO,
     "zh": SKILL_BRACKET_EN_TO_ZH,
+    "th": SKILL_BRACKET_EN_TO_TH,
 }
 
 TUTORIAL_GLOSSARY_BY_LOCALE: dict[str, list[tuple[str, str]]] = {
     "es": TUTORIAL_EN_TO_ES,
     "ko": TUTORIAL_EN_TO_KO,
     "zh": TUTORIAL_EN_TO_ZH,
+    "th": TUTORIAL_EN_TO_TH,
 }
 
 
@@ -478,6 +579,10 @@ TUTORIAL_EXACT_OVERRIDES: dict[str, dict[str, str]] = {
     # of a curated locales/ko.json line ever leaves an English leak.
     "ko": {},
     "zh": {},
+    # Thai tutorial dialogue is fully curated in locales/th.json (tutorial.* block) — no
+    # exact overrides needed. Add step-specific overrides here only if the glossary pass
+    # of a curated locales/th.json line ever leaves an English leak.
+    "th": {},
 }
 
 

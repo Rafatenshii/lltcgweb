@@ -30,6 +30,7 @@ LOCALE_FILES = {
     "ja": ROOT / "tutorial_ja.json",
     "ko": ROOT / "tutorial_ko.json",
     "zh": ROOT / "tutorial_zh.json",
+    "th": ROOT / "tutorial_th.json",
 }
 
 
