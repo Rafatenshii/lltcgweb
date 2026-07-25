@@ -84,37 +84,41 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
     resolveRoomDeckLists($body, $cards);
 
     $discordId = tcgOptionalAuthUserId($body);
-    $db = tcgDb();
     $now = time();
     $joinBody = json_encode($body, JSON_UNESCAPED_UNICODE);
     if ($joinBody === false) {
         throw new Exception('Invalid queue payload');
     }
 
-    tcgCasualPurgeExpiredQueue($now);
+    return tcgDbRetry(function () use ($queueKey, $discordId, $name, $joinBody, $now) {
+        $db = tcgDb();
+        tcgCasualPurgeExpiredQueue($now);
 
-    if ($discordId) {
-        $db->prepare('DELETE FROM tcg_casual_queue WHERE discord_id = ?')->execute([$discordId]);
-    }
-    $db->prepare('DELETE FROM tcg_casual_queue WHERE queue_key = ?')->execute([$queueKey]);
+        if ($discordId) {
+            $db->prepare('DELETE FROM tcg_casual_queue WHERE discord_id = ?')->execute([$discordId]);
+        }
+        $db->prepare('DELETE FROM tcg_casual_queue WHERE queue_key = ?')->execute([$queueKey]);
 
-    $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at)
-        VALUES (?, ?, ?, ?, ?)')
-        ->execute([$queueKey, $discordId, $name, $joinBody, $now]);
+        $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at)
+            VALUES (?, ?, ?, ?, ?)')
+            ->execute([$queueKey, $discordId, $name, $joinBody, $now]);
 
-    return ['queued' => true, 'joined_at' => $now];
+        return ['queued' => true, 'joined_at' => $now];
+    });
 }
 
 function tcgCasualQueueLeave(string $queueKey, ?string $discordId = null): array {
     $queueKey = tcgNormalizeCasualQueueKey($queueKey);
-    $db = tcgDb();
-    if ($queueKey !== '') {
-        $db->prepare('DELETE FROM tcg_casual_queue WHERE queue_key = ?')->execute([$queueKey]);
-    }
-    if ($discordId) {
-        $db->prepare('DELETE FROM tcg_casual_queue WHERE discord_id = ?')->execute([$discordId]);
-    }
-    return ['queued' => false];
+    return tcgDbRetry(function () use ($queueKey, $discordId) {
+        $db = tcgDb();
+        if ($queueKey !== '') {
+            $db->prepare('DELETE FROM tcg_casual_queue WHERE queue_key = ?')->execute([$queueKey]);
+        }
+        if ($discordId) {
+            $db->prepare('DELETE FROM tcg_casual_queue WHERE discord_id = ?')->execute([$discordId]);
+        }
+        return ['queued' => false];
+    });
 }
 
 function tcgCasualQueueLeaveByKey(string $queueKey): void {
@@ -231,45 +235,47 @@ function tcgTryCasualMatchmake(string $queueKey, ?string $challengeDiscordId = n
         return null;
     }
 
-    $db = tcgDb();
-    $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE queue_key = ?');
-    $stmt->execute([$queueKey]);
-    $self = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$self) {
-        return null;
-    }
-
-    $opp = null;
-    if ($challengeDiscordId !== null && $challengeDiscordId !== '') {
-        $opp = tcgFindCasualOpponentByDiscordId($challengeDiscordId, $queueKey);
-        if (!$opp) {
+    return tcgDbRetry(function () use ($queueKey, $challengeDiscordId) {
+        $db = tcgDb();
+        $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE queue_key = ?');
+        $stmt->execute([$queueKey]);
+        $self = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$self) {
             return null;
         }
-    } else {
-        $opp = tcgFindCasualOpponent($queueKey);
-        if (!$opp) {
+
+        $opp = null;
+        if ($challengeDiscordId !== null && $challengeDiscordId !== '') {
+            $opp = tcgFindCasualOpponentByDiscordId($challengeDiscordId, $queueKey);
+            if (!$opp) {
+                return null;
+            }
+        } else {
+            $opp = tcgFindCasualOpponent($queueKey);
+            if (!$opp) {
+                return null;
+            }
+        }
+
+        $p1Row = intval($self['joined_at']) <= intval($opp['joined_at']) ? $self : $opp;
+        $p2Row = $p1Row['queue_key'] === $self['queue_key'] ? $opp : $self;
+
+        $pair = tcgCreateCasualRoomPair($p1Row, $p2Row);
+        if (!$pair) {
             return null;
         }
-    }
 
-    $p1Row = intval($self['joined_at']) <= intval($opp['joined_at']) ? $self : $opp;
-    $p2Row = $p1Row['queue_key'] === $self['queue_key'] ? $opp : $self;
+        tcgCasualQueueLeaveByKey((string)$p1Row['queue_key']);
+        tcgCasualQueueLeaveByKey((string)$p2Row['queue_key']);
 
-    $pair = tcgCreateCasualRoomPair($p1Row, $p2Row);
-    if (!$pair) {
-        return null;
-    }
-
-    tcgCasualQueueLeaveByKey((string)$p1Row['queue_key']);
-    tcgCasualQueueLeaveByKey((string)$p2Row['queue_key']);
-
-    $isP1 = (string)$p1Row['queue_key'] === $queueKey;
-    return [
-        'status' => 'matched',
-        'room_id' => $pair['room_id'],
-        'player_token' => $isP1 ? $pair['p1_token'] : $pair['p2_token'],
-        'player_id' => $isP1 ? 'p1' : 'p2',
-    ];
+        $isP1 = (string)$p1Row['queue_key'] === $queueKey;
+        return [
+            'status' => 'matched',
+            'room_id' => $pair['room_id'],
+            'player_token' => $isP1 ? $pair['p1_token'] : $pair['p2_token'],
+            'player_id' => $isP1 ? 'p1' : 'p2',
+        ];
+    });
 }
 
 function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {

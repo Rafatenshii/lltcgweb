@@ -85,14 +85,117 @@ function tcgDb(): PDO {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     // Hostinger shared hosting: concurrent create_room/casual_join used to fail
     // immediately with "database is locked" while other workers decoded cards.json.
-    $pdo->exec('PRAGMA busy_timeout=10000');
+    // ATTR_TIMEOUT is seconds; busy_timeout is milliseconds.
+    try {
+        $pdo->setAttribute(PDO::ATTR_TIMEOUT, 15);
+    } catch (Throwable $e) { /* driver may ignore */ }
+    $pdo->exec('PRAGMA busy_timeout=15000');
     $pdo->exec('PRAGMA journal_mode=WAL');
     $pdo->exec('PRAGMA foreign_keys=ON');
+    $pdo->exec('PRAGMA synchronous=NORMAL');
     tcgDbMigrate($pdo);
     return $pdo;
 }
 
+/** True when a PDO/SQLite error is a transient lock contention. */
+function tcgDbIsLockedException(Throwable $e): bool {
+    $msg = $e->getMessage();
+    return str_contains($msg, 'database is locked')
+        || str_contains($msg, 'SQLITE_BUSY')
+        || str_contains($msg, 'SQLSTATE[HY000]: General error: 5');
+}
+
+/**
+ * Retry a DB-touching callable on SQLite busy/locked (shared hosting NFS-ish locks).
+ *
+ * @template T
+ * @param callable():T $fn
+ * @return T
+ */
+function tcgDbRetry(callable $fn, int $attempts = 12, int $baseDelayUs = 25000) {
+    $delay = $baseDelayUs;
+    $last = null;
+    for ($i = 0; $i < $attempts; $i++) {
+        try {
+            return $fn();
+        } catch (Throwable $e) {
+            $last = $e;
+            if (!tcgDbIsLockedException($e) || $i === $attempts - 1) {
+                throw $e;
+            }
+            usleep($delay);
+            $delay = min(400000, (int)($delay * 1.6));
+        }
+    }
+    throw $last ?? new RuntimeException('tcgDbRetry failed');
+}
+
 function tcgDbMigrate(PDO $db): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    // Fast path: production DBs already have the full bootstrap schema. Re-running
+    // dozens of CREATE IF NOT EXISTS / PRAGMA table_info on every new PHP-FPM
+    // worker was stacking write locks and breaking casual_join under concurrency.
+    $bootstrapped = false;
+    try {
+        $stmt = $db->query("SELECT 1 FROM tcg_schema_meta WHERE key = 'bootstrap_v2' LIMIT 1");
+        $bootstrapped = (bool)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $bootstrapped = false;
+    }
+
+    if (!$bootstrapped) {
+        $alreadyProvisioned = false;
+        try {
+            $db->query('SELECT 1 FROM tcg_casual_queue LIMIT 1');
+            $alreadyProvisioned = true;
+        } catch (Throwable $e) {
+            $alreadyProvisioned = false;
+        }
+
+        if ($alreadyProvisioned) {
+            // Existing production DB: mark bootstrap complete without re-locking on CREATE.
+            try {
+                $db->exec('CREATE TABLE IF NOT EXISTS tcg_schema_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )');
+                $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
+                    ->execute(['bootstrap_v2', (string)time()]);
+            } catch (Throwable $e) { /* ignore */ }
+        } else {
+            tcgDbMigrateBootstrap($db);
+            try {
+                $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
+                    ->execute(['bootstrap_v2', (string)time()]);
+            } catch (Throwable $e) { /* ignore */ }
+        }
+    }
+
+    if (is_file(__DIR__ . '/vendor/autoload.php')) {
+        require_once __DIR__ . '/vendor/autoload.php';
+        \LLTCG\Db\Migrator::run($db);
+    }
+
+    tcgDbRunMigrationOnce($db, 'replay_preserved_backfill_20260712', function (PDO $db): void {
+        // Pre-feature library rows were all manual saves — keep them forever.
+        $db->exec('UPDATE tcg_replays SET preserved = 1 WHERE COALESCE(preserved, 0) = 0');
+    });
+
+    tcgDbRunMigrationOnce($db, 'daily_pull_reset_20260622', function (PDO $db): void {
+        $today = tcgTodayJst();
+        $db->prepare('UPDATE tcg_daily_state SET packs_opened_today = 0 WHERE last_open_date = ?')
+            ->execute([$today]);
+    });
+
+    $done = true;
+}
+
+/** One-time full schema create + column ensures (skipped once bootstrap_v2 is set). */
+function tcgDbMigrateBootstrap(PDO $db): void {
     if (is_file(__DIR__ . '/vendor/autoload.php')) {
         require_once __DIR__ . '/vendor/autoload.php';
         \LLTCG\Db\Migrator::run($db);
@@ -285,17 +388,6 @@ function tcgDbMigrate(PDO $db): void {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )');
-
-    tcgDbRunMigrationOnce($db, 'replay_preserved_backfill_20260712', function (PDO $db): void {
-        // Pre-feature library rows were all manual saves — keep them forever.
-        $db->exec('UPDATE tcg_replays SET preserved = 1 WHERE COALESCE(preserved, 0) = 0');
-    });
-
-    tcgDbRunMigrationOnce($db, 'daily_pull_reset_20260622', function (PDO $db): void {
-        $today = tcgTodayJst();
-        $db->prepare('UPDATE tcg_daily_state SET packs_opened_today = 0 WHERE last_open_date = ?')
-            ->execute([$today]);
-    });
 }
 
 function tcgDbRunMigrationOnce(PDO $db, string $key, callable $fn): void {
