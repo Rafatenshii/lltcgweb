@@ -141,7 +141,49 @@ function getCards(): string {
     if (!file_exists(CARDS_FILE)) {
         return json_encode(['cards' => [], 'starter_decks' => []]);
     }
-    return file_get_contents(CARDS_FILE);
+    $raw = file_get_contents(CARDS_FILE);
+    if ($raw === false || $raw === '') {
+        return json_encode(['cards' => [], 'starter_decks' => []]);
+    }
+
+    // Optional locale trim: keep English `text` + one locale body (text_ja/es/ko/zh/th).
+    // Full multi-locale cards.json is ~4MB; trimming unused oracle text avoids client
+    // fetch timeouts that leave G.allCards empty and grey out deck Save.
+    $locale = strtolower(trim((string)($_GET['locale'] ?? '')));
+    if ($locale === '' || $locale === 'all') {
+        return $raw;
+    }
+    if (!in_array($locale, ['en', 'ja', 'es', 'ko', 'zh', 'th'], true)) {
+        $locale = 'en';
+    }
+
+    $data = json_decode($raw, true);
+    if (!is_array($data) || !isset($data['cards']) || !is_array($data['cards'])) {
+        return $raw;
+    }
+
+    $keepKeys = ['text'];
+    if ($locale === 'ja') {
+        $keepKeys[] = 'text_jp';
+    } elseif ($locale !== 'en') {
+        $keepKeys[] = 'text_' . $locale;
+    }
+    $dropKeys = ['text_jp', 'text_es', 'text_ko', 'text_zh', 'text_th'];
+
+    foreach ($data['cards'] as &$card) {
+        if (!is_array($card)) {
+            continue;
+        }
+        foreach ($dropKeys as $k) {
+            if (!in_array($k, $keepKeys, true)) {
+                unset($card[$k]);
+            }
+        }
+    }
+    unset($card);
+
+    $out = json_encode($data, JSON_UNESCAPED_UNICODE);
+    return $out !== false ? $out : $raw;
 }
 
 function cacheCardImage(array $body): array {

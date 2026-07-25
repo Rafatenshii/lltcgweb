@@ -945,7 +945,8 @@
     "liveStorageFull": "ที่เก็บ Live เต็มแล้ว",
     "logCopied": "คัดลอกล็อกแล้ว",
     "couldNotCopyLog": "คัดลอกล็อกไม่ได้",
-    "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ"
+    "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ",
+    "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง"
   },
   "tutorialUi": {
     "exitTitle": "ออกไปหน้าชื่อเรื่อง",

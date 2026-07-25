@@ -1046,6 +1046,7 @@
       "cardIdCopied": "Card ID copied",
       "couldNotCopyCardId": "Could not copy card ID",
       "signInDeckBuilder": "Sign in to use the Deck Builder.",
+      "cardsLoadFailed": "Could not load the card catalog. Check your connection and try again.",
       "signInStickerShop": "Sign in to use the Sticker Shop.",
       "stickerLoadFailed": "Failed to load sticker shop",
       "stickerCardsLoadFailed": "Failed to load cards",
@@ -2143,6 +2144,7 @@
       "cardIdCopied": "カードIDをコピーしました",
       "couldNotCopyCardId": "カードIDをコピーできませんでした",
       "signInDeckBuilder": "デッキビルダーを使うにはサインインしてください。",
+      "cardsLoadFailed": "カードデータを読み込めませんでした。接続を確認して再試行してください。",
       "signInStickerShop": "シールショップを使うにはサインインしてください。",
       "stickerLoadFailed": "シールショップの読み込みに失敗しました",
       "stickerCardsLoadFailed": "カードの読み込みに失敗しました",
@@ -3155,7 +3157,8 @@
       "liveStorageFull": "El almacenamiento de Live está lleno",
       "logCopied": "Registro copiado",
       "couldNotCopyLog": "No se pudo copiar el registro",
-      "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar."
+      "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
+      "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo."
     },
     "tutorialUi": {
       "exitTitle": "Salir al título",
@@ -4245,7 +4248,8 @@
       "liveStorageFull": "Live 스토리지가 가득 찼습니다",
       "logCopied": "로그 복사됨",
       "couldNotCopyLog": "로그를 복사할 수 없음",
-      "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요."
+      "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
+      "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
     },
     "tutorialUi": {
       "exitTitle": "타이틀로 나가기",
@@ -5336,7 +5340,8 @@
       "liveStorageFull": "实时存储已满",
       "logCopied": "日志已复制",
       "couldNotCopyLog": "无法复制日志",
-      "resolveSkillFirst": "在继续之前解决待处理的技能。"
+      "resolveSkillFirst": "在继续之前解决待处理的技能。",
+      "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。"
     },
     "tutorialUi": {
       "exitTitle": "退出到标题",
@@ -6391,7 +6396,8 @@
       "liveStorageFull": "ที่เก็บ Live เต็มแล้ว",
       "logCopied": "คัดลอกล็อกแล้ว",
       "couldNotCopyLog": "คัดลอกล็อกไม่ได้",
-      "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ"
+      "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ",
+      "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง"
     },
     "tutorialUi": {
       "exitTitle": "ออกไปหน้าชื่อเรื่อง",

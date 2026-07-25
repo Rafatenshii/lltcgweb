@@ -956,7 +956,8 @@
     "liveStorageFull": "El almacenamiento de Live está lleno",
     "logCopied": "Registro copiado",
     "couldNotCopyLog": "No se pudo copiar el registro",
-    "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar."
+    "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
+    "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo."
   },
   "tutorialUi": {
     "exitTitle": "Salir al título",

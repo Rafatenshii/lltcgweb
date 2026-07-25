@@ -8332,7 +8332,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=61"></script>
+<script src="i18n.js?v=62"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=15"></script>
 <script src="client/js/news.js?v=16"></script>
@@ -8463,6 +8463,8 @@ const LOVECA_SPECTATE_KEY = 'tcg_loveca_spectate';
 const AUTH_FETCH_TIMEOUT_MS = 12000;
 const AUTH_BOOT_WATCHDOG_MS = 15000;
 const RECONNECT_FETCH_TIMEOUT_MS = 8000;
+/** Full cards.json (~4MB with locale text_*) — do not reuse the short reconnect budget. */
+const CARDS_FETCH_TIMEOUT_MS = 45000;
 const RANKED_MATCH_SOUND_KEY = 'tcg_ranked_match_sound';
 const RANKED_SEARCH_ACTIVE_KEY = 'tcg_ranked_search_active';
 const CASUAL_QUEUE_ID_KEY = 'tcg_casual_queue_id';
@@ -9118,6 +9120,11 @@ function syncFoilFxSetting() {
 
 function onLocaleChanged() {
   refreshDynamicI18n();
+  // Reload catalog trimmed to the active locale so card rules text stays in sync.
+  void loadCards().then(() => {
+    renderLobbyDeckOptions();
+    updateDeckPrev();
+  });
 }
 
 function fitAccountScreenHeadTitles(root) {
@@ -13229,6 +13236,12 @@ async function openDeckBuilder() {
   const searchInp = el('inp-deck-card-search');
   if (searchInp) searchInp.value = '';
   el('deck-err').textContent = '';
+  // Catalog must be loaded before legality checks — otherwise Save stays greyed out.
+  if (!Object.keys(G.allCards).length) await loadCards();
+  if (!Object.keys(G.allCards).length) {
+    toast(t('toast.cardsLoadFailed'), 4000);
+    return;
+  }
   if (!A.profile?.user?.starter_deck) {
     const me = await accountGet('me');
     if (me.success) A.profile = me;
@@ -19066,12 +19079,29 @@ function layoutHandFan(fanEl, opts = {}) {
 
 async function loadCards() {
   try {
-    const r = await fetchWithTimeout(`${API}?action=get_cards`, {}, RECONNECT_FETCH_TIMEOUT_MS);
+    const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
+    const r = await fetchWithTimeout(
+      `${API}?action=get_cards&locale=${encodeURIComponent(loc)}`,
+      {},
+      CARDS_FETCH_TIMEOUT_MS
+    );
+    if (!r.ok) throw new Error('get_cards HTTP ' + r.status);
     const d = await r.json();
-    G.starterDecks = d.starter_decks||{};
-    (d.cards||[]).forEach(c => G.allCards[c.card_no]=c);
+    G.starterDecks = d.starter_decks || {};
+    const next = {};
+    (d.cards || []).forEach(c => {
+      if (c && c.card_no) next[c.card_no] = c;
+    });
+    // Replace map so a partial/failed prior load cannot leave a half-empty catalog.
+    G.allCards = next;
     clearLogNameCache();
-  } catch(e){ console.warn(e); }
+    if (el('screen-deck')?.classList.contains('active')) {
+      syncDeckBuilderChrome();
+      renderDeckBuilder({ deferPool: true });
+    }
+  } catch (e) {
+    console.warn(e);
+  }
 }
 
 function updateDeckPrev() {

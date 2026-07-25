@@ -981,7 +981,8 @@
     "liveStorageFull": "实时存储已满",
     "logCopied": "日志已复制",
     "couldNotCopyLog": "无法复制日志",
-    "resolveSkillFirst": "在继续之前解决待处理的技能。"
+    "resolveSkillFirst": "在继续之前解决待处理的技能。",
+    "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。"
   },
   "tutorialUi": {
     "exitTitle": "退出到标题",

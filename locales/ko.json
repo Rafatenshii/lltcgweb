@@ -980,7 +980,8 @@
     "liveStorageFull": "Live 스토리지가 가득 찼습니다",
     "logCopied": "로그 복사됨",
     "couldNotCopyLog": "로그를 복사할 수 없음",
-    "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요."
+    "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
+    "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
   },
   "tutorialUi": {
     "exitTitle": "타이틀로 나가기",

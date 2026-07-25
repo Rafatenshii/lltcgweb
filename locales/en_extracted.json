@@ -925,7 +925,8 @@
     "liveStorageFull": "Live storage is full",
     "logCopied": "Log copied",
     "couldNotCopyLog": "Could not copy log",
-    "resolveSkillFirst": "Resolve the pending skill before continuing."
+    "resolveSkillFirst": "Resolve the pending skill before continuing.",
+    "cardsLoadFailed": "Could not load the card catalog. Check your connection and try again."
   },
   "tutorialUi": {
     "exitTitle": "Exit to Title",
