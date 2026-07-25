@@ -17877,6 +17877,12 @@ async function bootApp() {
   bindPhoneFullscreen();
   bindPlaymatResize();
   bindMobilePhaseDock();
+  // Bind room actions before any auth/card/audio awaits. Guests can enter the
+  // lobby immediately; previously these three buttons looked enabled but were
+  // inert until account resume (which may long-poll a stale game) completed.
+  on('btn-create','click', doCreate);
+  on('btn-join',  'click', doJoin);
+  on('btn-solo',  'click', doSolo);
   const cardsReady = loadCards().then(() => {
     renderLobbyDeckOptions();
     updateDeckPrev();
@@ -17929,9 +17935,6 @@ async function bootApp() {
   on('inp-phase-timer', 'change', syncLobbyPhaseTimerUI);
   on('inp-phase-timer-sec', 'input', syncLobbyPhaseTimerUI);
   syncLobbyPhaseTimerUI();
-  on('btn-create','click', doCreate);
-  on('btn-join',  'click', doJoin);
-  on('btn-solo',  'click', doSolo);
   on('btn-tut-exit','click', exitTutorial);
   on('btn-tut-back','click', () => tutorialNav(-1));
   on('btn-tut-next','click', () => tutorialNav(1));
@@ -19542,6 +19545,12 @@ async function doJoin() {
 }
 
 async function doSolo() {
+  const soloBtn = el('btn-solo');
+  if (soloBtn?.dataset.busy === '1') return;
+  if (soloBtn) {
+    soloBtn.dataset.busy = '1';
+    soloBtn.disabled = true;
+  }
   if (tcgIsSmallPhone()) tcgRequestFullscreen();
   const name=el('inp-name').value.trim()||defaultPlayerName(1);
   const deckSel = el('sel-deck').value;
@@ -19565,7 +19574,12 @@ async function doSolo() {
     const startMsg = typeof t === 'function' ? t('lobby.soloStarting', { diff: label }) : '';
     toast((startMsg && startMsg !== 'lobby.soloStarting') ? startMsg : `Starting vs CPU (${label})`, 2200);
     showScr('game'); startPoll();
-  } catch(e){ setErr(e.message); }
+  } catch(e){
+    setErr(e.message);
+    if (soloBtn) soloBtn.disabled = false;
+  } finally {
+    if (soloBtn) delete soloBtn.dataset.busy;
+  }
 }
 
 function copyCode(){
