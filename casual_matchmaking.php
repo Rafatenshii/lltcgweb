@@ -414,6 +414,91 @@ function tcgCasualPurgeExpiredQueue(int $now): void {
     tcgDb()->prepare('DELETE FROM tcg_casual_queue WHERE joined_at < ?')->execute([$cutoff]);
 }
 
+function tcgCasualEnsureApiHelpers(): void {
+    if (function_exists('isPvpMatch') && function_exists('readPresence') && function_exists('isCpuPlayer')) {
+        return;
+    }
+    if (!defined('TCG_API_LIB_ONLY')) {
+        define('TCG_API_LIB_ONLY', true);
+    }
+    require_once __DIR__ . '/api.php';
+}
+
+/**
+ * Live unranked human-PvP player count without scanning every games/*.json.
+ * Uses casual match rows + recently-touched room files (friend-code games).
+ */
+function tcgCasualCountLivePvpPlayers(): int {
+    tcgCasualEnsureApiHelpers();
+
+    $now = time();
+    $inGame = 0;
+    $seenRooms = [];
+    $db = tcgDb();
+
+    // Queue-matched rooms: verify each file (finished/abandoned rows get cleaned).
+    $stmt = $db->query('SELECT DISTINCT room_id FROM tcg_casual_matches');
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $roomId = preg_replace('/[^A-Z0-9]/', '', strtoupper((string)($row['room_id'] ?? '')));
+        if ($roomId === '' || isset($seenRooms[$roomId])) {
+            continue;
+        }
+        $seenRooms[$roomId] = true;
+        $path = tcgCasualGameFilePath($roomId);
+        if (!is_file($path)) {
+            $db->prepare('DELETE FROM tcg_casual_matches WHERE room_id = ?')->execute([$roomId]);
+            continue;
+        }
+        $state = json_decode((string)file_get_contents($path), true);
+        if (!is_array($state) || ($state['status'] ?? '') === 'finished') {
+            $db->prepare('DELETE FROM tcg_casual_matches WHERE room_id = ?')->execute([$roomId]);
+            continue;
+        }
+        $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
+    }
+
+    // Friend-code / create+join rooms are not in tcg_casual_matches. Only open
+    // recently modified game files so we never re-decode the whole archive.
+    $grace = defined('PRESENCE_DISCONNECT_SEC') ? (int)PRESENCE_DISCONNECT_SEC : 120;
+    $recentSec = max(180, $grace * 2);
+    $gamesDir = rtrim(tcgPath('games'), '/\\');
+    if (is_dir($gamesDir)) {
+        $dh = @opendir($gamesDir);
+        if ($dh !== false) {
+            while (($name = readdir($dh)) !== false) {
+                if ($name === '.' || $name === '..' || !str_ends_with($name, '.json')) {
+                    continue;
+                }
+                if (str_starts_with($name, 'lock_') || str_starts_with($name, 'presence_')) {
+                    continue;
+                }
+                $roomId = preg_replace('/[^A-Z0-9]/', '', strtoupper(pathinfo($name, PATHINFO_FILENAME)));
+                if ($roomId === '' || isset($seenRooms[$roomId])) {
+                    continue;
+                }
+                $path = $gamesDir . DIRECTORY_SEPARATOR . $name;
+                $mtime = @filemtime($path);
+                if ($mtime === false || ($now - $mtime) > $recentSec) {
+                    continue;
+                }
+                $seenRooms[$roomId] = true;
+                $raw = @file_get_contents($path);
+                if ($raw === false) {
+                    continue;
+                }
+                $state = json_decode($raw, true);
+                if (!is_array($state)) {
+                    continue;
+                }
+                $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
+            }
+            closedir($dh);
+        }
+    }
+
+    return $inGame;
+}
+
 function tcgCasualQueuePublicStats(): array {
     $cacheFile = tcgPath('data') . 'casual_queue_stats_cache.json';
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 5) {
@@ -423,16 +508,9 @@ function tcgCasualQueuePublicStats(): array {
         }
     }
 
-    // Never scan every game JSON in an interactive queue request. Production has
-    // thousands of room files; that analytics scan took 15–20 seconds and held
-    // the queue lock, making all buttons backed by the same PHP/SQLite workers lag.
-    // Recent match rows are a cheap, intentionally approximate public counter.
     $db = tcgDb();
     $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_casual_queue')->fetchColumn();
-    $cutoff = time() - GAME_TIMEOUT;
-    $stmt = $db->prepare('SELECT COUNT(DISTINCT room_id) FROM tcg_casual_matches WHERE created_at >= ?');
-    $stmt->execute([$cutoff]);
-    $inGame = (int)$stmt->fetchColumn() * 2;
+    $inGame = tcgCasualCountLivePvpPlayers();
     $stats = ['waiting' => $waiting, 'in_game' => $inGame];
     @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
     return $stats;
@@ -513,34 +591,7 @@ function tcgCasualLivePlayersInRoom(array $state, string $roomId, int $now): int
 
 /** Players currently in active unranked human PvP games (friend codes + casual queue). */
 function tcgCasualActivePvpPlayerCount(): int {
-    if (!defined('TCG_API_LIB_ONLY')) {
-        define('TCG_API_LIB_ONLY', true);
-    }
-    require_once __DIR__ . '/api.php';
-
-    $inGame = 0;
-    $now = time();
-    $files = glob(GAMES_DIR . '*.json') ?: [];
-    foreach ($files as $file) {
-        $base = basename($file);
-        if (str_starts_with($base, 'lock_') || str_starts_with($base, 'presence_')) {
-            continue;
-        }
-        $raw = @file_get_contents($file);
-        if ($raw === false) {
-            continue;
-        }
-        $state = json_decode($raw, true);
-        if (!is_array($state)) {
-            continue;
-        }
-        $roomId = (string)($state['room_id'] ?? pathinfo($base, PATHINFO_FILENAME));
-        if ($roomId === '') {
-            continue;
-        }
-        $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
-    }
-    return $inGame;
+    return tcgCasualCountLivePvpPlayers();
 }
 
 function tcgNormalizeCasualQueueKey(string $key): string {
