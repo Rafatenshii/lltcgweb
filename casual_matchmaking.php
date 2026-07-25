@@ -423,8 +423,16 @@ function tcgCasualQueuePublicStats(): array {
         }
     }
 
-    $waiting = (int)tcgDb()->query('SELECT COUNT(*) FROM tcg_casual_queue')->fetchColumn();
-    $inGame = tcgCasualActivePvpPlayerCount();
+    // Never scan every game JSON in an interactive queue request. Production has
+    // thousands of room files; that analytics scan took 15–20 seconds and held
+    // the queue lock, making all buttons backed by the same PHP/SQLite workers lag.
+    // Recent match rows are a cheap, intentionally approximate public counter.
+    $db = tcgDb();
+    $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_casual_queue')->fetchColumn();
+    $cutoff = time() - GAME_TIMEOUT;
+    $stmt = $db->prepare('SELECT COUNT(DISTINCT room_id) FROM tcg_casual_matches WHERE created_at >= ?');
+    $stmt->execute([$cutoff]);
+    $inGame = (int)$stmt->fetchColumn() * 2;
     $stats = ['waiting' => $waiting, 'in_game' => $inGame];
     @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
     return $stats;
