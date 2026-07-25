@@ -8332,7 +8332,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=63"></script>
+<script src="i18n.js?v=64"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=15"></script>
 <script src="client/js/news.js?v=16"></script>
@@ -13030,17 +13030,17 @@ function renderExperimentPoolChunked(searchQ, savedScrollTop = null) {
     const empty = document.createElement('div');
     empty.className = 'deck-card-empty';
     empty.textContent = searchQ || filtered
-      ? 'No cards match your search or filters.'
-      : 'No deckable cards available.';
+      ? t('deck.poolNoMatch')
+      : t('deck.poolNoDeckable');
     pool.appendChild(empty);
     el('deck-collection-stats').textContent = searchQ || filtered
-      ? 'Full card pool · 0 matches'
-      : 'Full card pool · scroll to browse all cards';
+      ? t('deck.fullPoolZero')
+      : t('deck.fullPoolBrowse');
     return;
   }
   el('deck-collection-stats').textContent = searchQ || filtered
-    ? ('Full card pool · ' + entries.length + ' match' + (entries.length === 1 ? '' : 'es'))
-    : ('Full card pool · ' + entries.length + ' cards');
+    ? t('deck.fullPoolMatches', { n: entries.length })
+    : t('deck.fullPoolCards', { n: entries.length });
   let idx = 0;
   const CHUNK = 40;
   const step = () => {
@@ -13173,8 +13173,9 @@ function renderDeckBuilder(opts = {}) {
       appendDeckCardTile(pool, entry.c0, entry.available, () => addCardToDeck(entry.row.card_no, entry.type));
     });
     if (searchQ || filtered) {
-      el('deck-collection-stats').textContent = 'Collection · ' + matchCount + ' match'
-        + (matchCount === 1 ? '' : 'es') + (poolCount ? (' · ' + poolCount + ' addable') : '');
+      el('deck-collection-stats').textContent = poolCount
+        ? t('deck.collectionMatchAddable', { match: matchCount, addable: poolCount })
+        : t('deck.collectionMatchPlural', { match: matchCount });
     }
     if (!poolCount) {
       const empty = document.createElement('div');
