@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build stamps_i18n.json — UI labels for stamp voice lines (ja / en / es / ko / zh).
+"""Build stamps_i18n.json — UI labels for stamp voice lines (ja / en / es / ko / zh / th).
 
-Preserves existing ko/zh when re-running so Korean/Chinese are not dropped.
+Preserves existing ko/zh/th when re-running so Korean/Chinese/Thai are not dropped.
 """
 
 from __future__ import annotations
@@ -116,6 +116,7 @@ def main() -> None:
                 out[sid] = {
                     'ja': '', 'en': '', 'es': '',
                     'ko': old.get('ko', ''), 'zh': old.get('zh', ''),
+                    'th': old.get('th', ''),
                 }
                 continue
             en = official_en.get(ja)
@@ -132,10 +133,11 @@ def main() -> None:
                 'es': es,
                 'ko': old.get('ko', ''),
                 'zh': old.get('zh', ''),
+                'th': old.get('th', ''),
             }
     dest = ROOT / 'stamps_i18n.json'
     dest.write_text(json.dumps({'version': 2, 'labels': out}, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(f'Wrote {dest} ({len(out)} stamps); preserved ko/zh from prior file')
+    print(f'Wrote {dest} ({len(out)} stamps); preserved ko/zh/th from prior file')
     if missing_en:
         print('Missing official EN:', ', '.join(sorted(missing_en)))
     if missing_es:
