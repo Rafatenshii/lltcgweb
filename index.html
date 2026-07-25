@@ -8334,7 +8334,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 
 <script src="i18n.js?v=64"></script>
 <script src="log_i18n.js?v=13"></script>
-<script src="sfx.js?v=15"></script>
+<script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=16"></script>
 <script src="client/js/api-client.js?v=11"></script>
 <script src="client/js/ranked-pr-reward.js?v=2"></script>
@@ -17944,22 +17944,82 @@ async function bootApp() {
     if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); tutorialNav(1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); tutorialNav(-1); }
   });
+  // Prompt / drag / win controls must also bind before card/SFX waits — reconnect
+  // and CPU matches can surface these UIs while get_cards is still in flight.
+  on('btn-again', 'click', onWinPlayAgain);
+  on('btn-win-hub', 'click', onWinReturnToMenu);
+  on('btn-win-leaderboard', 'click', onWinViewLeaderboard);
+  on('btn-pick-ok','click', confirmMemberPick);
+  on('btn-pick-cancel','click', cancelMemberPick);
+  on('btn-hpick-ok','click', confirmHandPick);
+  on('btn-hpick-cancel','click', cancelHandPick);
+  on('btn-heart-cancel','click', () => { G.heartCtx=null; closeM('overlay-heart'); });
+  on('btn-surveil-ok','click', confirmSurveil);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const s = G.gameState;
+    const myId = G.playerId;
+    if (s?.phase === 'coin_flip' && s.coin_flip && !G._coinFlipAnimComplete) {
+      finishCoinFlipAnimation(s, myId);
+    }
+    if (G.polling && G.roomId && G.token && !G.isTutorial) {
+      const oppWait = el('opp-skill-wait')?.classList.contains('show');
+      if (oppWait || (!G.animating && !G._perfSpectacleActive)) {
+        void pullLatestState(!!oppWait);
+      }
+    }
+  });
+  on('modal-card','click', e => { if(e.target===el('modal-card')) closeM('modal-card'); });
+  document.addEventListener('pointermove', onDocPointerMove);
+  document.addEventListener('pointerup', onDocPointerUp);
+  document.addEventListener('pointercancel', onDocPointerUp);
+  document.addEventListener('click', e => {
+    const tutPinned = G.isTutorial && document.body.classList.contains('tut-pin-card-info');
+    if (!tutPinned) {
+      const tutChromeClick = G.tutorialLive
+        && e.target.closest('#overlay-tutorial');
+      if (!tutChromeClick
+          && !e.target.closest('.hcard')
+          && !e.target.closest('.mbox')
+          && !e.target.closest('.stage-slot')
+          && !e.target.closest('#card-hover-panel')) {
+        if (G.selCard) clearPlaySelection();
+      }
+      if (!e.target.closest('#hand-row') && !e.target.closest('.stage-slot') && !G.drag && !G.selCard) clearHoverCardPreview();
+    }
+  });
+  initRuleKeywordTooltips();
+  initGameLogScrollFollow();
+  const codeInp = el('inp-code');
+  if (codeInp) {
+    codeInp.maxLength = ROOM_CODE_LEN;
+    codeInp.addEventListener('input', e => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, ROOM_CODE_LEN);
+    });
+  }
+  // Catalog load must never block game controls. Deck UI refreshes when ready.
   const cardsReady = loadCards().then(() => {
     renderLobbyDeckOptions();
     updateDeckPrev();
+    if (G.gameState?.players && el('screen-game')?.classList.contains('active')) {
+      renderGame(G.gameState);
+    }
   });
   await accountReady;
-  if (window.LLTCG_SFX?.init) await window.LLTCG_SFX.init();
+  // SFX warm is best-effort — never stall gameplay bindings on a hung manifest fetch.
+  if (window.LLTCG_SFX?.init) {
+    await Promise.race([
+      window.LLTCG_SFX.init().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+  }
   initFoilFxSetting();
   initSfxSetting();
   bindMenuSfx();
   bindGameplayCardHoverSfx();
   initLocale(onLocaleChanged);
   localizeNameInputDefault();
-  await cardsReady.catch(() => {});
-  if (G.gameState?.players && el('screen-game')?.classList.contains('active')) {
-    renderGame(G.gameState);
-  }
+  void cardsReady.catch(() => {});
   ensureCpuDiffSelectOptions();
   try {
     const savedDiff = localStorage.getItem('tcg_cpu_difficulty');
@@ -18344,59 +18404,6 @@ async function bootApp() {
   on('btn-win-debug-save-log', 'click', onDebugSaveLogClick);
   on('btn-win-debug-copy-log', 'click', onDebugCopyLogClick);
   on('btn-win-debug-save-bundle', 'click', () => { void saveDebugBundle(); });
-  on('btn-again', 'click', onWinPlayAgain);
-  on('btn-win-hub', 'click', onWinReturnToMenu);
-  on('btn-win-leaderboard', 'click', onWinViewLeaderboard);
-  on('btn-pick-ok','click', confirmMemberPick);
-  on('btn-pick-cancel','click', cancelMemberPick);
-  on('btn-hpick-ok','click', confirmHandPick);
-  on('btn-hpick-cancel','click', cancelHandPick);
-  on('btn-heart-cancel','click', () => { G.heartCtx=null; closeM('overlay-heart'); });
-  on('btn-surveil-ok','click', confirmSurveil);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    const s = G.gameState;
-    const myId = G.playerId;
-    if (s?.phase === 'coin_flip' && s.coin_flip && !G._coinFlipAnimComplete) {
-    finishCoinFlipAnimation(s, myId);
-    }
-    if (G.polling && G.roomId && G.token && !G.isTutorial) {
-      const oppWait = el('opp-skill-wait')?.classList.contains('show');
-      if (oppWait || (!G.animating && !G._perfSpectacleActive)) {
-        void pullLatestState(!!oppWait);
-      }
-    }
-  });
-  on('modal-card','click', e => { if(e.target===el('modal-card')) closeM('modal-card'); });
-  document.addEventListener('pointermove', onDocPointerMove);
-  document.addEventListener('pointerup', onDocPointerUp);
-  document.addEventListener('pointercancel', onDocPointerUp);
-  document.addEventListener('click', e => {
-    const tutPinned = G.isTutorial && document.body.classList.contains('tut-pin-card-info');
-    if (!tutPinned) {
-      // Live tutorial: Next/Back/Exit sit in #overlay-tutorial. Advancing into
-      // play_member auto-selects the guided card — that same click must not clear it.
-      const tutChromeClick = G.tutorialLive
-        && e.target.closest('#overlay-tutorial');
-      if (!tutChromeClick
-          && !e.target.closest('.hcard')
-          && !e.target.closest('.mbox')
-          && !e.target.closest('.stage-slot')
-          && !e.target.closest('#card-hover-panel')) {
-        if (G.selCard) clearPlaySelection();
-      }
-      if (!e.target.closest('#hand-row') && !e.target.closest('.stage-slot') && !G.drag && !G.selCard) clearHoverCardPreview();
-    }
-  });
-  initRuleKeywordTooltips();
-  initGameLogScrollFollow();
-  const codeInp = el('inp-code');
-  if (codeInp) {
-    codeInp.maxLength = ROOM_CODE_LEN;
-    codeInp.addEventListener('input', e => {
-      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, ROOM_CODE_LEN);
-    });
-  }
 }
 
 async function applyPlaymatZones() {
@@ -36934,7 +36941,14 @@ async function sendAct(type,data){
   tcgDebugRecordAction(type, data, 'player');
   TCG_DEBUG.log('action', 'sendAct →', type, data);
   try {
-    await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, { silent: type === 'send_stamp' });
+    const res = await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, { silent: type === 'send_stamp' });
+    // Duplicate resolve_prompt that the server treated as a no-op must not latch
+    // the client into a permanently unclickable prompt.
+    if (type === 'resolve_prompt' && res && res.noop) {
+      G._resolvePromptSentKey = null;
+      G._lastResolvedPromptKey = null;
+      G._promptSubmitKey = null;
+    }
     if (type === 'resolve_prompt') clearDeferredPromptState();
     if (G.polling) {
       if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
@@ -36953,6 +36967,10 @@ async function sendAct(type,data){
   catch(e){
     G._promptSubmitKey = null;
     G._resolvePromptSentKey = null;
+    if (type === 'mulligan') {
+      // Overlay closed optimistically — clear the latch so the next render reopens it.
+      G.mulliganPending = false;
+    }
     if (type === 'resolve_prompt' && G.gameState && G.playerId) {
       G._lastSurfacedPromptKey = null;
       G._lastResolvedPromptKey = null;

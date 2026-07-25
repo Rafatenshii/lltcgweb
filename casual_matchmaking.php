@@ -462,7 +462,7 @@ function tcgCasualCountLivePvpPlayers(): int {
 
 function tcgCasualQueuePublicStats(): array {
     $cacheFile = tcgPath('data') . 'casual_queue_stats_cache.json';
-    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 5) {
+    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 15) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
             return $cached;

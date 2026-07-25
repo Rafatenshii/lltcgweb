@@ -142,72 +142,92 @@ function getCards(): string {
     if (!file_exists(CARDS_FILE)) {
         return json_encode(['cards' => [], 'starter_decks' => []]);
     }
-    $raw = file_get_contents(CARDS_FILE);
-    if ($raw === false || $raw === '') {
-        return json_encode(['cards' => [], 'starter_decks' => []]);
-    }
 
     // Optional locale trim: keep English `text` + one locale body (text_ja/es/ko/zh/th).
     // Full multi-locale cards.json is ~4MB; trimming unused oracle text avoids client
     // fetch timeouts that leave G.allCards empty and grey out deck Save.
     $locale = strtolower(trim((string)($_GET['locale'] ?? '')));
     if ($locale === '' || $locale === 'all') {
-        return $raw;
+        $rawAll = file_get_contents(CARDS_FILE);
+        return ($rawAll !== false && $rawAll !== '') ? $rawAll : json_encode(['cards' => [], 'starter_decks' => []]);
     }
     if (!in_array($locale, ['en', 'ja', 'es', 'ko', 'zh', 'th'], true)) {
         $locale = 'en';
     }
 
-    // Serve a pre-trimmed per-locale cache when fresh. Decoding + re-encoding the
-    // ~4MB catalog on every request is ~30s on shared hosting, which timed out the
-    // client (empty G.allCards → greyed deck Save, CPU match couldn't start).
+    $cardsMtime = (int)filemtime(CARDS_FILE);
     $cacheFile = rtrim(TCG_DATA_DIR, '/\\') . DIRECTORY_SEPARATOR . 'cards_cache_' . $locale . '.json';
-    if (is_file($cacheFile) && filemtime($cacheFile) >= filemtime(CARDS_FILE)) {
+    // Cache hit: never read the 4MB source. Concurrent boots used to stampede the
+    // PHP pool by each decoding cards.json before noticing the cache existed.
+    if (is_file($cacheFile) && (int)filemtime($cacheFile) >= $cardsMtime) {
         $cached = file_get_contents($cacheFile);
         if ($cached !== false && $cached !== '') {
             return $cached;
         }
     }
 
-    $data = json_decode($raw, true);
-    if (!is_array($data) || !isset($data['cards']) || !is_array($data['cards'])) {
-        return $raw;
-    }
-
-    $keepKeys = ['text'];
-    if ($locale === 'ja') {
-        $keepKeys[] = 'text_jp';
-    } elseif ($locale !== 'en') {
-        $keepKeys[] = 'text_' . $locale;
-    }
-    $dropKeys = ['text_jp', 'text_es', 'text_ko', 'text_zh', 'text_th'];
-
-    foreach ($data['cards'] as &$card) {
-        if (!is_array($card)) {
-            continue;
-        }
-        foreach ($dropKeys as $k) {
-            if (!in_array($k, $keepKeys, true)) {
-                unset($card[$k]);
+    $rebuild = static function () use ($cacheFile, $cardsMtime, $locale): string {
+        if (is_file($cacheFile) && (int)filemtime($cacheFile) >= $cardsMtime) {
+            $cached = file_get_contents($cacheFile);
+            if ($cached !== false && $cached !== '') {
+                return $cached;
             }
         }
-    }
-    unset($card);
+        $raw = file_get_contents(CARDS_FILE);
+        if ($raw === false || $raw === '') {
+            return json_encode(['cards' => [], 'starter_decks' => []]);
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data) || !isset($data['cards']) || !is_array($data['cards'])) {
+            return $raw;
+        }
 
-    $out = json_encode($data, JSON_UNESCAPED_UNICODE);
-    if ($out === false) {
-        return $raw;
+        $keepKeys = ['text'];
+        if ($locale === 'ja') {
+            $keepKeys[] = 'text_jp';
+        } elseif ($locale !== 'en') {
+            $keepKeys[] = 'text_' . $locale;
+        }
+        $dropKeys = ['text_jp', 'text_es', 'text_ko', 'text_zh', 'text_th'];
+
+        foreach ($data['cards'] as &$card) {
+            if (!is_array($card)) {
+                continue;
+            }
+            foreach ($dropKeys as $k) {
+                if (!in_array($k, $keepKeys, true)) {
+                    unset($card[$k]);
+                }
+            }
+        }
+        unset($card);
+
+        $out = json_encode($data, JSON_UNESCAPED_UNICODE);
+        if ($out === false) {
+            return $raw;
+        }
+
+        $tmp = $cacheFile . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, $out, LOCK_EX) !== false) {
+            @rename($tmp, $cacheFile);
+        } else {
+            @unlink($tmp);
+        }
+        return $out;
+    };
+
+    $lockPath = $cacheFile . '.lock';
+    $lock = @fopen($lockPath, 'c+');
+    if ($lock && flock($lock, LOCK_EX)) {
+        try {
+            return $rebuild();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
     }
 
-    // Best-effort atomic cache write (ignore failures on read-only mounts).
-    $tmp = $cacheFile . '.' . getmypid() . '.tmp';
-    if (@file_put_contents($tmp, $out, LOCK_EX) !== false) {
-        @rename($tmp, $cacheFile);
-    } else {
-        @unlink($tmp);
-    }
-
-    return $out;
+    return $rebuild();
 }
 
 function cacheCardImage(array $body): array {
@@ -571,11 +591,16 @@ function handleAction(array $body): array {
         if ($phaseTimeoutChanged) {
             saveGame($roomId, $state);
         }
-        if (applyCoinFlipStalemate($state)) {
+        $stalemateApplied = applyCoinFlipStalemate($state);
+        if ($stalemateApplied) {
             refreshPvpPhaseTimers($state);
             saveGame($roomId, $state);
         }
-        $state = loadGame($roomId);
+        // Only re-read when a timeout/stalemate write may have raced another worker.
+        if ($phaseTimeoutChanged || $stalemateApplied) {
+            $state = loadGame($roomId);
+            if (!$state) throw new Exception('Room not found');
+        }
 
         if (applyDisconnectForfeits($state, $roomId)) {
             saveGame($roomId, $state);
@@ -661,10 +686,12 @@ function handleAction(array $body): array {
         if (!empty($missionCompletions)) {
             $out['mission_completions'] = $missionCompletions;
         }
-        require_once __DIR__ . '/ranked_pr_rewards.php';
-        $prReward = tcgRankedPrRewardForPlayer($state, $playerId);
-        if ($prReward !== null) {
-            $out['ranked_pr_reward'] = $prReward;
+        if (($state['mode'] ?? '') === 'ranked' && ($state['status'] ?? '') === 'finished') {
+            require_once __DIR__ . '/ranked_pr_rewards.php';
+            $prReward = tcgRankedPrRewardForPlayer($state, $playerId);
+            if ($prReward !== null) {
+                $out['ranked_pr_reward'] = $prReward;
+            }
         }
         return $out;
     });
