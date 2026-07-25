@@ -820,10 +820,32 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
                 " — [$name] drew $drawn (μ's Member without Blade heart on Stage).");
             break;
 
+        case 'optional_discard2_add_wr_blade_member_and_heart_live':
+            if (!empty($state['pending_prompt'])) break;
+            $discard = max(1, intval($ab['discard'] ?? 2));
+            if (count($p['hand'] ?? []) < $discard) break;
+            $then = plMuseGapBladeMemberHeartLiveThen($ab);
+            if (!plMuseGapWrPickSequenceHasCandidate($p, $then['steps'])) break;
+            $state['pending_prompt'] = buildInternalOptionalDiscardConfirmPrompt(
+                $state,
+                $pid,
+                $source,
+                [
+                    'type'    => 'optional_discard_prompt',
+                    'discard' => $discard,
+                    'prompt'  => "Put $discard cards from your hand into the Waiting Room: add up to 1 Member with a "
+                        . ucfirst($then['color']) . ' Blade heart and up to 1 Live requiring a '
+                        . ucfirst($then['color']) . ' heart from your Waiting Room to your hand?',
+                    'then'    => $then,
+                ],
+                $name,
+                false
+            );
+            break;
+
         case 'hearts_if_distinct_stage_names':
         case 'auto_yell_blade_if_no_blade_count':
         case 'auto_yell_mus_draw_discard':
-        case 'optional_discard2_add_wr_blade_member_and_heart_live':
         case 'auto_position_change_center_on_ability':
         case 'score_if_center_moved_this_turn':
         case 'reduce_hearts_mus_live_min_score_success':
@@ -899,6 +921,101 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             break;
     }
     return $state;
+}
+
+/**
+ * Rin (PL!-bp6-005): after the optional 2-card discard, add up to 1 Member with a
+ * coloured Blade heart and up to 1 Live requiring that colour from the Waiting Room.
+ */
+function plMuseGapBladeMemberHeartLiveThen(array $ab): array {
+    $color = (string)($ab['heart_color'] ?? $ab['color'] ?? 'yellow');
+    $label = ucfirst($color);
+    return [
+        'type'  => 'add_wr_blade_member_and_heart_live',
+        'color' => $color,
+        'steps' => [
+            [
+                'step'   => 'pick_member',
+                'cfg'    => ['filter' => 'member', 'blade_heart_color' => $color],
+                'prompt' => "Choose up to 1 Member with a $label Blade heart from your Waiting Room to add to your hand (or skip).",
+            ],
+            [
+                'step'   => 'pick_live',
+                'cfg'    => [
+                    'filter'                   => 'live',
+                    'min_required_hearts'      => 1,
+                    'min_required_heart_color' => $color,
+                ],
+                'prompt' => "Choose up to 1 Live requiring a $label heart from your Waiting Room to add to your hand (or skip).",
+            ],
+        ],
+    ];
+}
+
+function plMuseGapWrPickSequenceHasCandidate(array $p, array $steps): bool {
+    foreach ($steps as $step) {
+        if (!empty(wrCandidatesMatching($p, $step['cfg'] ?? []))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Open the first remaining step of a Waiting Room pick sequence (steps with no
+ * candidate are skipped). Clears pending_prompt when every step is exhausted.
+ */
+function plMuseGapOpenWrPickSequence(
+    array $state,
+    string $owner,
+    string $sourceName,
+    string $sourceId,
+    array $steps,
+    int $index = 0
+): array {
+    $p = &$state['players'][$owner];
+    for ($i = max(0, $index); $i < count($steps); $i++) {
+        $cfg = $steps[$i]['cfg'] ?? [];
+        $cands = wrCandidatesMatching($p, $cfg);
+        if (empty($cands)) {
+            continue;
+        }
+        $state['pending_prompt'] = [
+            'type'        => 'pl_muse_wr_pick_sequence',
+            'owner'       => $owner,
+            'responder'   => $owner,
+            'source_id'   => $sourceId,
+            'source_name' => $sourceName,
+            'step'        => $steps[$i]['step'] ?? (($cfg['filter'] ?? '') === 'live' ? 'pick_live' : 'pick_member'),
+            'step_index'  => $i,
+            'steps'       => $steps,
+            'allow_skip'  => true,
+            'candidates'  => array_map('cardPromptSummary', $cands),
+            'wr_pick_cfg' => $cfg,
+            'pick_count'  => 1,
+            'prompt'      => $steps[$i]['prompt']
+                ?? 'Choose up to 1 card from your Waiting Room to add to your hand (or skip).',
+        ];
+        return $state;
+    }
+    unset($state['pending_prompt']);
+    return $state;
+}
+
+function plMuseGapAdvanceWrPickSequence(array $state, string $owner, array $prompt, int $nextIndex): array {
+    $state = plMuseGapOpenWrPickSequence(
+        $state,
+        $owner,
+        $prompt['source_name'] ?? 'Member',
+        $prompt['source_id'] ?? '',
+        $prompt['steps'] ?? [],
+        $nextIndex
+    );
+    $state['seq']++;
+    if (!empty($state['pending_prompt'])) {
+        return $state;
+    }
+    return finishPromptEffects($state);
 }
 
 function plMuseGapLiveReplaceSuccessAbility(array $card): ?array {
@@ -981,6 +1098,45 @@ function plMuseGapFinishReplaceSuccessJudge(array $state, string $owner): array 
 
 function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $type = $prompt['type'] ?? '';
+
+    if ($type === 'pl_muse_wr_pick_sequence') {
+        $index = intval($prompt['step_index'] ?? 0);
+        $sourceName = $prompt['source_name'] ?? 'Member';
+        $pickId = (string)($data['card_id'] ?? '');
+        if ($pickId === '' && !empty($data['card_ids']) && is_array($data['card_ids'])) {
+            $pickId = (string)($data['card_ids'][0] ?? '');
+        }
+        if ($pickId === '' && !in_array($choice, ['', 'skip', 'no', 'cancel'], true)) {
+            $pickId = $choice;
+        }
+        // "Up to 1": an empty pick is a legal answer, not an error.
+        if ($pickId === '' || $pickId === 'NO_CARD_NEEDED') {
+            return plMuseGapAdvanceWrPickSequence($state, $owner, $prompt, $index + 1);
+        }
+        $ownerP = &$state['players'][$owner];
+        $cfg = $prompt['wr_pick_cfg'] ?? [];
+        $picked = null;
+        foreach ($ownerP['waiting_room'] as $i => &$c) {
+            if (($c['instance_id'] ?? '') !== $pickId) {
+                continue;
+            }
+            hydrateWrCardForPick($c);
+            if (!cardMatchesWrPick($c, $cfg)) {
+                throw new Exception('Invalid Waiting Room card');
+            }
+            $picked = $c;
+            array_splice($ownerP['waiting_room'], $i, 1);
+            break;
+        }
+        unset($c);
+        if (!$picked) {
+            throw new Exception('Invalid Waiting Room card');
+        }
+        $ownerP['hand'][] = $picked;
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            " — [$sourceName] added " . cardDisplayName($picked) . ' from Waiting Room to hand.');
+        return plMuseGapAdvanceWrPickSequence($state, $owner, $prompt, $index + 1);
+    }
 
     if ($type === 'replace_success_with_wr_live') {
         $step = $prompt['step'] ?? 'confirm';

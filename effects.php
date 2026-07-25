@@ -3843,6 +3843,10 @@ function cardMatchesWrPick(array $card, array $cfg): bool {
         return $subunit !== '' || cardMatchesGroup($card, $group, '');
     }
     if (!cardMatchesGroup($card, $group, $filter)) return false;
+    if (!empty($cfg['blade_heart_color'])
+        && !cardHasBladeHeartColor($card, (string)$cfg['blade_heart_color'])) {
+        return false;
+    }
     if (($filter === 'member' || ($card['card_type'] ?? '') === 'メンバー')
         && isset($cfg['max_cost'])) {
         return intval($card['cost'] ?? 0) <= intval($cfg['max_cost']);
@@ -3904,6 +3908,24 @@ function cardMatchesYellPick(array $card, array $cfg): bool {
         return intval($card['cost'] ?? 0) >= intval($cfg['min_cost']);
     }
     return true;
+}
+
+/** Blade heart icons are stored as plain colors ("yellow") or {type|color: …} entries. */
+function cardHasBladeHeartColor(array $card, string $color): bool {
+    if ($color === '') {
+        return true;
+    }
+    foreach ($card['blade_hearts'] ?? [] as $bh) {
+        if (is_string($bh)) {
+            if ($bh === $color || $bh === 'all') return true;
+            continue;
+        }
+        if (is_array($bh)) {
+            $c = (string)($bh['color'] ?? $bh['type'] ?? '');
+            if ($c === $color || $c === 'all') return true;
+        }
+    }
+    return false;
 }
 
 function memberHasHeartColor(array $card, string $color): bool {

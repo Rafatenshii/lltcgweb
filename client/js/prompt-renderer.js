@@ -2025,7 +2025,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     else openActivateWrMemberPick(pr, pickOpts);
     return;
   }
-  if(pr?.type==='hsbp6_pick_wr_live_and_member'&&pr.responder===myId){
+  if((pr?.type==='hsbp6_pick_wr_live_and_member'||pr?.type==='pl_muse_wr_pick_sequence')&&pr.responder===myId){
     ovl.classList.remove('open');
     const filter = pr.wr_pick_cfg?.filter || (pr.step==='pick_live' ? 'live' : 'member');
     const pickOpts = {

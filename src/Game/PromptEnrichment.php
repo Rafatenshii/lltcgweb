@@ -994,6 +994,19 @@ function resolveOptionalDiscardPromptChoice(
                 ];
                 $state['seq']++;
                 return $state;
+            } elseif (($then['type'] ?? '') === 'add_wr_blade_member_and_heart_live') {
+                $state = plMuseGapOpenWrPickSequence(
+                    $state,
+                    $owner,
+                    $prompt['source_name'] ?? 'Member',
+                    $prompt['source_id'] ?? '',
+                    $then['steps'] ?? []
+                );
+                if (empty($state['pending_prompt'])) {
+                    $state = addLog($state, $state['players'][$owner]['name'] .
+                        ' — [' . ($prompt['source_name'] ?? 'Member') .
+                        '] no matching card in Waiting Room.');
+                }
             } elseif (($then['type'] ?? '') === 'blade_per_discarded_pick_member') {
                 $source = findSourceCard($state, $owner, $prompt['source_id'] ?? '');
                 if ($source) {

@@ -386,6 +386,9 @@ function wrPickCfgFromAbility(array $ab): array {
     if (!empty($ab['min_required_heart_color'])) {
         $cfg['min_required_heart_color'] = (string)$ab['min_required_heart_color'];
     }
+    if (!empty($ab['blade_heart_color'])) {
+        $cfg['blade_heart_color'] = (string)$ab['blade_heart_color'];
+    }
     return $cfg;
 }
 

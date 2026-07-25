@@ -8329,7 +8329,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=37"></script>
 <script src="client/js/stamps.js?v=16"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=47"></script>
+<script src="client/js/prompt-renderer.js?v=48"></script>
 <script src="client/js/tutorial-interactive.js?v=20"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -16994,6 +16994,13 @@ function cardMatchesWrPickClient(card, cfg) {
   if (cfg.max_live_score != null && (card.score || 0) > cfg.max_live_score) return false;
   if (cfg.min_live_score != null && (card.score || 0) < cfg.min_live_score) return false;
   if (cfg.min_score != null && (card.score || 0) < cfg.min_score) return false;
+  if (cfg.blade_heart_color) {
+    const ok = (card.blade_hearts || []).some(bh => {
+      const c = typeof bh === 'string' ? bh : (bh?.color || bh?.type || '');
+      return c === cfg.blade_heart_color || c === 'all';
+    });
+    if (!ok) return false;
+  }
   if (cfg.min_required_hearts != null && countRequiredHearts(card) < cfg.min_required_hearts) return false;
   if (cfg.min_required_heart_color) {
     if ((card.card_type || '') !== 'ライブ' && card.card_type_en !== 'Live') return false;
@@ -27340,7 +27347,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
     else cpuAct('anti_softlock_skip',{});
     return;
   }
-  if(pr.type==='hsbp6_pick_wr_live_and_member'){
+  if(pr.type==='hsbp6_pick_wr_live_and_member'||pr.type==='pl_muse_wr_pick_sequence'){
     const filter=pr.wr_pick_cfg?.filter||(pr.step==='pick_live'?'live':'member');
     const cands=(pr.candidates||[]).filter(c=>{
       if(filter==='live') return c.card_type==='ライブ'||c.card_type_en==='Live';
@@ -33273,6 +33280,7 @@ function wrPickCfgFromPrompt(pr) {
     min_live_score: pr?.wr_pick_cfg?.min_live_score ?? pr?.ability?.min_live_score,
     min_required_hearts: pr?.wr_pick_cfg?.min_required_hearts ?? pr?.ability?.min_required_hearts,
     min_required_heart_color: pr?.wr_pick_cfg?.min_required_heart_color ?? pr?.ability?.min_required_heart_color,
+    blade_heart_color: pr?.wr_pick_cfg?.blade_heart_color ?? pr?.ability?.blade_heart_color,
     subunit: pr?.wr_pick_cfg?.subunit ?? pr?.ability?.subunit ?? '',
   };
 }
@@ -33304,6 +33312,7 @@ function wrToHandPickCards(pr, s, myId) {
       score: card.score,
       subunit: card.subunit,
       required_hearts: card.required_hearts,
+      blade_hearts: card.blade_hearts,
     };
   }).filter(Boolean);
 }
