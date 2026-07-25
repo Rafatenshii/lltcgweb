@@ -18,6 +18,7 @@ require_once __DIR__ . '/config/cors.php';
 require_once __DIR__ . '/config/errors.php';
 require_once __DIR__ . '/config/rate_limit.php';
 require_once __DIR__ . '/flags.php';
+require_once __DIR__ . '/cards_data.php';
 tcgDefinePathConstants();
 
 header('Content-Type: application/json');
@@ -102,13 +103,6 @@ try {
     http_response_code($code);
     echo json_encode(['success' => false, 'error' => tcgPublicErrorMessage($e, $code)]);
 }
-}
-
-function tcgLoadCardsData(): array {
-    if (!file_exists(TCG_CARDS_FILE)) {
-        return ['cards' => [], 'starter_decks' => []];
-    }
-    return json_decode(file_get_contents(TCG_CARDS_FILE), true) ?: ['cards' => [], 'starter_decks' => []];
 }
 
 function tcgApiMe(array $body): array {
