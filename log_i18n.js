@@ -1,10 +1,11 @@
-/* Client-side game log / skill-prompt localization (English server text → ja / es / ko / zh) */
+/* Client-side game log / skill-prompt localization (English server text → ja / es / ko / zh / th) */
 (function (global) {
   'use strict';
 
   var namePairs = null;
   var namePairsKo = null;
   var namePairsZh = null;
+  var namePairsTh = null;
 
   var SKILL_BRACKETS = {
     'On Enter': '登場時',
@@ -51,10 +52,28 @@
     'Right Side': '右侧',
   };
 
+  var SKILL_BRACKETS_TH = {
+    'On Enter': 'เมื่อเข้าสนาม',
+    'On Leave': 'เมื่อออกจากสนาม',
+    'Live Start': 'เริ่ม Live',
+    'Live Success': 'Live สำเร็จ',
+    'Activated': 'เปิดใช้',
+    'Always': 'ต่อเนื่อง',
+    'Continuous': 'ต่อเนื่อง',
+    'Automatic': 'อัตโนมัติ',
+    'Auto': 'อัตโนมัติ',
+    'Once per turn': 'เทิร์นละ 1 ครั้ง',
+    'Center': 'เซ็นเตอร์',
+    'Yell': 'Yell',
+    'Left Side': 'ฝั่งซ้าย',
+    'Right Side': 'ฝั่งขวา',
+  };
+
   var SLOT_JA = { left: '左', center: 'センター', right: '右' };
 
   var SLOT_KO = { left: '왼쪽', center: '센터', right: '오른쪽' };
   var SLOT_ZH = { left: '左侧', center: '中央', right: '右侧' };
+  var SLOT_TH = { left: 'ซ้าย', center: 'เซ็นเตอร์', right: 'ขวา' };
 
   var HEART_COLOR_JA = {
     red: '赤',
@@ -274,6 +293,47 @@
 
     m = msg.match(/^🪙 Coin flip: (.+) won — first player chosen automatically \(time expired\)\.$/);
     if (m) return '🪙 抛硬币：' + m[1] + '获胜 — 超时，已自动决定先攻。';
+
+    return null;
+  }
+
+  function translateStructuredLineTh(msg) {
+    var m;
+
+    m = msg.match(/^(.+?) performed Live! Blades: (\d+) \| Hearts: \[([^\]]*)\] \| Live success: (\d+) \| Failed: (\d+)( \| Round: failed \(not all Lives succeeded\))?$/);
+    if (m) {
+      var roundNote = m[6] ? ' | รอบล้มเหลว (Live ไม่สำเร็จครบทุกใบ)' : '';
+      return m[1] + ' ทำการแสดง Live! เบลด: ' + m[2] +
+        ' | หัวใจ: [' + m[3] + ']' +
+        ' | Live สำเร็จ: ' + m[4] + ' | ล้มเหลว: ' + m[5] + roundNote;
+    }
+
+    m = msg.match(/^Live Scores: (.+?) = (\d+) \| (.+?) = (\d+)$/);
+    if (m) return 'คะแนน Live: ' + m[1] + ' = ' + m[2] + ' | ' + m[3] + ' = ' + m[4];
+
+    m = msg.match(/^(.+?) wins the Live — (.+) failed\.$/);
+    if (m) return m[1] + ' ชนะ Live — ' + m[2] + ' ล้มเหลว';
+
+    m = msg.match(/^(.+?) wins this Live! "(.+)" added to successes\.$/);
+    if (m) return m[1] + ' ชนะ Live นี้! "' + m[2] + '" ถูกเพิ่มเป็น Live สำเร็จ';
+
+    m = msg.match(/^(.+) has no valid Live cards!$/);
+    if (m) return m[1] + tLog('log.hasNoValidLive');
+
+    m = msg.match(/^(.+) — choose a Live card for Success Live\.$/);
+    if (m) return m[1] + tLog('log.chooseSuccessLive');
+
+    if (msg.endsWith(' — score tied; Success Live blocked; Live cards sent to Waiting Room.')) {
+      return msg.slice(0, -' — score tied; Success Live blocked; Live cards sent to Waiting Room.'.length) +
+        tLog('log.scoreTiedBlocked');
+    }
+    if (msg.endsWith(' — score tied, but already has 2 Success Lives; Live cards sent to Waiting Room.')) {
+      return msg.slice(0, -' — score tied, but already has 2 Success Lives; Live cards sent to Waiting Room.'.length) +
+        tLog('log.scoreTiedCap');
+    }
+
+    m = msg.match(/^🪙 Coin flip: (.+) won — first player chosen automatically \(time expired\)\.$/);
+    if (m) return '🪙 โยนเหรียญ: ' + m[1] + ' ชนะ — หมดเวลา จึงเลือกผู้เล่นก่อนอัตโนมัติ';
 
     return null;
   }
@@ -538,6 +598,50 @@
     [/Both players drew \(([^)]+)\)\.$/, '双方都抽了牌（$1）。'],
   ];
 
+  var STRUCTURAL_PHRASE_RULES_TH = [
+    [/ — End Main Phase\.$/, ' — จบเฟสหลัก'],
+    [/ completed mulligan\.$/, ' มัลลิแกนเสร็จแล้ว'],
+    [/ resigned\. (.+) wins!$/, ' ยอมแพ้ $1 ชนะ!'],
+    [/ WINS with 3 successful Lives!$/, ' ชนะด้วย Live สำเร็จ 3 ครั้ง!'],
+    [/ used Baton Touch! Cost reduced to (\d+)\.$/, ' ใช้บาตองทัช! ต้นทุนลดเหลือ $1'],
+    [/ used second Baton Touch! Cost reduced to (\d+)\.$/, ' ใช้บาตองทัชครั้งที่สอง! ต้นทุนลดเหลือ $1'],
+    [/ placed (\d+) card\(s\) face-down in storage \((\d+)\/3\)\.$/, ' วางการ์ด $1 ใบคว่ำหน้าในที่เก็บ ($2/3)'],
+    [/ placed card\(s\) in Live storage\.$/, ' วางการ์ดในที่เก็บ Live'],
+    [/ — locked in LIVE selection \((\d+) card\(s\) in storage\)\.$/, ' — ล็อกการเลือก Live แล้ว (ที่เก็บ $1 ใบ)'],
+    [/ — locked in LIVE selection\.$/, ' — ล็อกการเลือก Live แล้ว'],
+    [/ — Draw Phase: could not draw \(deck and Waiting Room empty\)\.$/, ' — เฟสจั่ว: จั่วไม่ได้ (เด็คและห้องรอว่าง)'],
+    [/ — Draw Phase\.$/, ' — เฟสจั่ว'],
+    [/ — Active Phase: Energy and Members refreshed\.$/, ' — เฟสแอคทีฟ: พลังงานและสมาชิกถูกรีเฟรชแล้ว'],
+    [/ — Energy Phase: storage full \((\d+)\/(\d+)\), no Energy added\.$/, ' — เฟสพลังงาน: ที่เก็บเต็ม ($1/$2) ไม่ได้เพิ่มพลังงาน'],
+    [/ — Energy Phase: no cards left in Energy deck\.$/, ' — เฟสพลังงาน: ไม่มีการ์ดเหลือในเด็คพลังงาน'],
+    [/ — Energy Phase: placed 1 Energy in storage \((\d+)\/(\d+)\)\.$/, ' — เฟสพลังงาน: วางพลังงาน 1 ใบในที่เก็บ ($1/$2)'],
+    [/ — Main Phase time expired \(auto end\)\.$/, ' — เฟสหลักหมดเวลา (จบอัตโนมัติ)'],
+    [/ — LIVE Phase time expired \(auto lock-in\)\.$/, ' — เฟส Live หมดเวลา (ล็อกอัตโนมัติ)'],
+    [/^(.+?)(?:'s|') Live Phase\.$/, 'เฟส Live ของ $1'],
+    [/ — \[([^\]]+)\] drew (\d+) \(Active → Wait\)\.$/, ' — [$1] จั่ว $2 (แอคทีฟ → Wait)'],
+    [/ — \[([^\]]+)\] optional skill skipped\.$/, ' — [$1] ข้ามสกิลทางเลือก'],
+    [/ — \[([^\]]+)\] activated\.$/, ' — [$1] เปิดใช้'],
+    [/ — \[([^\]]+)\] Live Start skipped\.$/, ' — [$1] ข้ามเริ่ม Live'],
+    [/ — \[([^\]]+)\] Live Success skipped\.$/, ' — [$1] ข้าม Live สำเร็จ'],
+    [/Live SUCCESS/, 'Live สำเร็จ'],
+    [/Live FAIL/, 'Live ล้มเหลว'],
+    [/Live failed/, 'Live ล้มเหลว'],
+    [/Live succeeded/, 'Live สำเร็จ'],
+    [/^(.+)'s turn — Main Phase \(Active · Energy · Draw complete\)\.$/, 'เทิร์นของ $1 — เฟสหลัก (แอคทีฟ · พลังงาน · จั่ว เสร็จแล้ว)'],
+    [/^(.+) turn — Main Phase \(Active · Energy · Draw complete\)\.$/, 'เทิร์นของ $1 — เฟสหลัก (แอคทีฟ · พลังงาน · จั่ว เสร็จแล้ว)'],
+    [/^(.+) turn — Main Phase…$/, 'เทิร์นของ $1 — เฟสหลัก…'],
+    [/^🪙 Coin flip: (.+) won and chose to go first!$/, '🪙 โยนเหรียญ: $1 ชนะ — เลือกไปก่อน!'],
+    [/^🪙 Coin flip: (.+) won and chose (.+) to go first!$/, '🪙 โยนเหรียญ: $1 ชนะ — เลือกให้ $2 ไปก่อน!'],
+    [/^🎉 (.+) WINS with 3 successful Lives!$/, '🎉 $1 ชนะด้วย Live สำเร็จ 3 ครั้ง!'],
+    [/ disconnected\. (.+) wins!$/, ' ตัดการเชื่อมต่อ $1 ชนะ!'],
+    [/ had no card in hand to discard\.$/, ' ไม่มีการ์ดในมือให้ทิ้ง'],
+    [/ had no cards in hand to discard\.$/, ' ไม่มีการ์ดในมือให้ทิ้ง'],
+    [/ drew (\d+) but had no cards in hand to discard\.$/, ' จั่ว $1 แต่ไม่มีการ์ดในมือให้ทิ้ง'],
+    [/ is performing Live with (.+)\.$/, ' กำลังแสดง Live ด้วย $1'],
+    [/Both players put (\d+) cards? into the Waiting Room\.$/, 'ผู้เล่นทั้งสองวางการ์ด $1 ใบลงห้องรอ'],
+    [/Both players drew \(([^)]+)\)\.$/, 'ผู้เล่นทั้งสองจั่วแล้ว ($1)'],
+  ];
+
   /** Term replacement for Spanish (order matters; Baton Touch stays English). */
   var PHRASE_RULES_ES = [
     [/Success Live card storage/g, 'almacenamiento de Live exitoso'],
@@ -619,6 +723,18 @@
     [/Put 1 card from your hand into the Waiting Room\?/, '将1张手牌放入等候室？'],
     [/Use optional Live Start effect\?/, '使用此Live开始效果吗？'],
     [/Use optional effect\?/, '使用此效果吗？'],
+  ];
+
+  var PROMPT_QUESTION_RULES_TH = [
+    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\?$/,
+      'วางการ์ด 1 ใบจากมือลงห้องรอ: ดูการ์ดบนสุดของเด็ค $1 ใบ เพิ่ม 1 ใบเข้ามือ และที่เหลือไปห้องรอ?'],
+    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\./,
+      'วางการ์ด 1 ใบจากมือลงห้องรอ: ดูการ์ดบนสุดของเด็ค $1 ใบ เพิ่ม 1 ใบเข้ามือ และที่เหลือไปห้องรอ'],
+    [/Put 1 card from your hand into the Waiting Room: add 1 Nijigasaki Live card from your Waiting Room to your hand\?$/,
+      'วางการ์ด 1 ใบจากมือลงห้องรอ: เพิ่มการ์ด Live Nijigasaki 1 ใบจากห้องรอเข้ามือ?'],
+    [/Put 1 card from your hand into the Waiting Room\?/, 'วางการ์ด 1 ใบจากมือลงห้องรอ?'],
+    [/Use optional Live Start effect\?/, 'ใช้เอฟเฟกต์เริ่ม Live ทางเลือกนี้ไหม?'],
+    [/Use optional effect\?/, 'ใช้เอฟเฟกต์นี้ไหม?'],
   ];
 
   /** Effect-detail suffix rules for Spanish (draw / discard / play). */
@@ -789,10 +905,45 @@
     [/Live Success choice\./, 'Live成功选择。'],
   ].concat(PROMPT_QUESTION_RULES_ZH);
 
+  var PHRASE_RULES_TH = [
+    [/Success Live card storage/g, 'ที่เก็บการ์ด Live สำเร็จ'],
+    [/Live storage/g, 'ที่เก็บ Live'],
+    [/Success Live/g, 'Live สำเร็จ'],
+    [/Waiting Room/g, 'ห้องรอ'],
+    [/Energy deck/g, 'เด็คพลังงาน'],
+    [/Main Deck/g, 'เด็คหลัก'],
+    [/Stage Member/g, 'สมาชิกบนเวที'],
+    [/from your hand/g, 'จากมือของคุณ'],
+    [/your hand/g, 'มือของคุณ'],
+    [/your deck/g, 'เด็คของคุณ'],
+    [/your Stage/g, 'เวทีของคุณ'],
+    [/Member card/g, 'การ์ดสมาชิก'],
+    [/Live card/g, 'การ์ด Live'],
+    [/Energy/g, 'พลังงาน'],
+    [/Member/g, 'สมาชิก'],
+    [/Baton Touch/g, 'บาตองทัช'],
+    [/ overplayed onto (.+)\.$/, ' วางทับบน $1'],
+    [/ played (.+) to (left|center|right) area\.$/, function (_m, card, slot) {
+      return ' เล่น ' + card + ' ลงพื้นที่' + (SLOT_TH[slot] || slot);
+    }],
+  ];
+
+  var EFFECT_RULES_TH = [
+    [/drew a card\./, 'จั่วการ์ด 1 ใบ'],
+    [/drew (.+)\./, 'จั่ว $1'],
+    [/discarded a card\./, 'ทิ้งการ์ด 1 ใบ'],
+    [/put (.+) into the Waiting Room\./, 'วาง $1 ลงห้องรอ'],
+    [/put a card into the Waiting Room\./, 'วางการ์ด 1 ใบลงห้องรอ'],
+    [/optional Live Start \(choose\)\./, 'เริ่ม Live ทางเลือก (เลือก)'],
+    [/optional Live Start effect \(choose\)\./, 'เอฟเฟกต์เริ่ม Live ทางเลือก (เลือก)'],
+    [/Live Success choice\./, 'ตัวเลือก Live สำเร็จ'],
+  ].concat(PROMPT_QUESTION_RULES_TH);
+
   function clearLogNameCache() {
     namePairs = null;
     namePairsKo = null;
     namePairsZh = null;
+    namePairsTh = null;
   }
 
   function buildNamePairs(catalog) {
@@ -905,6 +1056,47 @@
     return msg;
   }
 
+  /**
+   * English name → Thai name pairs, built from `LLTCG_I18N.cardLocaleName()`
+   * (TH_NAME_MAP / TH_SONG_MAP). Cards with no Thai mapping fall back to their
+   * English name inside `cardLocaleName`, so they are skipped here (no-op).
+   */
+  function buildNamePairsTh(catalog) {
+    if (!catalog) return [];
+    var i18n = global.LLTCG_I18N;
+    if (!i18n || typeof i18n.cardLocaleName !== 'function') return [];
+    var pairs = [];
+    var seen = Object.create(null);
+    Object.keys(catalog).forEach(function (no) {
+      var c = catalog[no];
+      if (!c) return;
+      var en = String(c.name_en || '').trim();
+      if (!en) return;
+      var th = String(i18n.cardLocaleName(c) || '').trim();
+      if (!th || th === en) return;
+      var key = en.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = 1;
+      pairs.push([en, th]);
+    });
+    pairs.sort(function (a, b) { return b[0].length - a[0].length; });
+    return pairs;
+  }
+
+  function getNamePairsTh(catalog) {
+    if (!namePairsTh) namePairsTh = buildNamePairsTh(catalog);
+    return namePairsTh;
+  }
+
+  function replaceCardNamesTh(msg, catalog) {
+    if (!msg) return msg;
+    getNamePairsTh(catalog).forEach(function (pair) {
+      if (msg.indexOf(pair[0]) === -1) return;
+      msg = msg.split(pair[0]).join(pair[1]);
+    });
+    return msg;
+  }
+
   function replaceSkillBrackets(msg, map) {
     var brackets = map || SKILL_BRACKETS;
     return msg.replace(/\[([^\]]+)\]/g, function (full, inner) {
@@ -969,6 +1161,17 @@
     return out;
   }
 
+  function localizePromptTextTh(msg, catalog) {
+    if (!msg) return msg;
+    catalog = catalog || (global.G && global.G.allCards);
+    var out = String(msg);
+    out = replaceCardNamesTh(out, catalog);
+    out = replaceSkillBrackets(out, SKILL_BRACKETS_TH);
+    out = applyRules(out, PHRASE_RULES_TH);
+    out = applyRules(out, EFFECT_RULES_TH);
+    return out;
+  }
+
   function localizePromptText(msg, catalog) {
     if (!msg) return msg;
     var i18n = global.LLTCG_I18N;
@@ -979,6 +1182,7 @@
     if (loc === 'es') return localizePromptTextEs(msg, catalog);
     if (loc === 'ko') return localizePromptTextKo(msg, catalog);
     if (loc === 'zh') return localizePromptTextZh(msg, catalog);
+    if (loc === 'th') return localizePromptTextTh(msg, catalog);
     return msg;
   }
 
@@ -1057,6 +1261,25 @@
     return out;
   }
 
+  function localizeLogMessageTh(msg, catalog) {
+    if (!msg) return msg;
+
+    var exact = translateExact(msg);
+    if (exact != null) return exact;
+
+    var structured = translateStructuredLineTh(msg);
+    if (structured != null) return structured;
+
+    catalog = catalog || (global.G && global.G.allCards);
+    var out = String(msg);
+    out = applyRules(out, STRUCTURAL_PHRASE_RULES_TH);
+    out = replaceCardNamesTh(out, catalog);
+    out = replaceSkillBrackets(out, SKILL_BRACKETS_TH);
+    out = applyRules(out, PHRASE_RULES_TH);
+    out = applyRules(out, EFFECT_RULES_TH);
+    return out;
+  }
+
   function localizeLogMessage(msg, catalog) {
     if (!msg) return msg;
     var i18n = global.LLTCG_I18N;
@@ -1067,6 +1290,7 @@
     if (loc === 'es') return localizeLogMessageEs(msg, catalog);
     if (loc === 'ko') return localizeLogMessageKo(msg, catalog);
     if (loc === 'zh') return localizeLogMessageZh(msg, catalog);
+    if (loc === 'th') return localizeLogMessageTh(msg, catalog);
     return msg;
   }
 
