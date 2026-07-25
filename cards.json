@@ -21924,7 +21924,7 @@
           "trigger": "live_start",
           "type": "score_if_distinct_subunit",
           "subunit": "みらくらぱーく!",
-          "min_distinct": 3,
+          "min_count": 3,
           "amount": 1
         }
       ],

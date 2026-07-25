@@ -83,11 +83,20 @@ function tryResolveAbilityEffectSwitchScore(
             break;
 
         case 'score_if_distinct_subunit':
-            if (countDistinctNamedSubunit($p, $ab['subunit'] ?? '') >= intval($ab['min_distinct'] ?? 2)) {
+            $subunit = $ab['subunit'] ?? '';
+            // min_count = raw Member count (Joushou Kiryuu); min_distinct = unique names.
+            if (isset($ab['min_count'])) {
+                $ok = countSubunitMembersOnStage($p, $subunit) >= intval($ab['min_count']);
+                $note = intval($ab['min_count']) . '+ ' . $subunit . ' Members';
+            } else {
+                $ok = countDistinctNamedSubunit($p, $subunit) >= intval($ab['min_distinct'] ?? 2);
+                $note = intval($ab['min_distinct'] ?? 2) . '+ distinct ' . $subunit . ' Members';
+            }
+            if ($ok) {
                 bumpLiveCardScore($state, $pid, $source['instance_id'] ?? '', intval($ab['amount'] ?? 1));
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     ' — [' . $name . '] score +' . intval($ab['amount'] ?? 1) .
-                    ' (2+ distinct ' . ($ab['subunit'] ?? '') . ' Members).');
+                    ' (' . $note . ').');
             }
             break;
 

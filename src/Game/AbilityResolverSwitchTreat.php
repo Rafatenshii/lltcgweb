@@ -37,16 +37,27 @@ function tryResolveAbilityEffectSwitchTreat(
                 $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
             }
             if (empty($candidates)) break;
+            $color = $ab['color'] ?? 'pink';
+            // Single Hasunosora on Stage — apply immediately (no pick UI).
+            if (count($candidates) === 1) {
+                $slot = $candidates[0]['slot'];
+                $p['stage'][$slot]['hearts_treat_as'] = $color;
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] ' .
+                    ($p['stage'][$slot]['name_en'] ?? $p['stage'][$slot]['name'] ?? 'Member') .
+                    " hearts treated as $color until Live ends.");
+                break;
+            }
             $state['pending_prompt'] = [
                 'type'          => 'treat_pick_group_member_hearts_as',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
-                'color'         => $ab['color'] ?? 'pink',
+                'color'         => $color,
                 'candidates'    => $candidates,
                 'prompt'        => "Choose 1 $grp Member — until this Live ends, all hearts on that Member are treated as " .
-                    ($ab['color'] ?? 'pink') . ' ♡.',
+                    $color . ' ♡.',
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] choose a Member for heart treatment.");

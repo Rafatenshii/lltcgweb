@@ -2041,8 +2041,12 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
     }
 
     if ($promptType === 'treat_pick_group_member_hearts_as') {
-        $slot = $choice;
-        if (!isset($ownerP['stage'][$slot]) || !$ownerP['stage'][$slot]) {
+        // openStageSlotPick sends {slot}; accept choice/card_id for back-compat.
+        $slot = $data['slot'] ?? $choice;
+        if (($slot === '' || empty($ownerP['stage'][$slot])) && !empty($data['card_id'])) {
+            $slot = findMemberSlot($ownerP, (string)$data['card_id']);
+        }
+        if ($slot === '' || empty($ownerP['stage'][$slot])) {
             throw new Exception('Choose a Stage Member');
         }
         $color = $prompt['color'] ?? 'pink';

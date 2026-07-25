@@ -3378,11 +3378,22 @@ function waitSwapHasValidTarget(array $p, string $group, int $bonus, string $exc
 function countDistinctNamedSubunit(array $p, string $subunit): int {
     $names = [];
     foreach ($p['stage'] as $mbr) {
-        if (!$mbr || ($mbr['subunit'] ?? '') !== $subunit) continue;
+        if (!$mbr || !cardMatchesSubunit($mbr, $subunit)) continue;
         $n = $mbr['name_en'] ?? $mbr['name'] ?? '';
         $names[$n] = true;
     }
     return count($names);
+}
+
+/** Count Stage Members matching a subunit (not distinct names). */
+function countSubunitMembersOnStage(array $p, string $subunit): int {
+    $n = 0;
+    foreach ($p['stage'] as $mbr) {
+        if ($mbr && cardMatchesSubunit($mbr, $subunit)) {
+            $n++;
+        }
+    }
+    return $n;
 }
 
 function stageFullDistinctGroupMembers(array $p, string $group, string $filter = 'member'): bool {
