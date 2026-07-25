@@ -2601,6 +2601,31 @@ function cardMatchesNames(array $card, array $names): bool {
     return false;
 }
 
+/** Hand Members legal for optional_pay/play_hand_member (names or group + max_cost). */
+function handMembersMatchingPlayAbility(array $p, array $ab): array {
+    $names = $ab['names'] ?? [];
+    $group = $ab['group'] ?? 'Nijigasaki';
+    $maxCost = intval($ab['max_cost'] ?? 4);
+    $out = [];
+    foreach ($p['hand'] ?? [] as $c) {
+        if (($c['card_type'] ?? '') !== 'メンバー') {
+            continue;
+        }
+        if (intval($c['cost'] ?? 0) > $maxCost) {
+            continue;
+        }
+        if (!empty($names)) {
+            if (!cardMatchesNames($c, $names)) {
+                continue;
+            }
+        } elseif (($c['group'] ?? '') !== $group) {
+            continue;
+        }
+        $out[] = $c;
+    }
+    return $out;
+}
+
 function getEffectiveHandCost(array $state, string $pid, array $card): int {
     $base = intval($card['cost'] ?? 0);
     if (!cardHasAbilities($card)) {

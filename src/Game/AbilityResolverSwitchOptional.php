@@ -653,9 +653,37 @@ function tryResolveAbilityEffectSwitchOptional(
             if (!empty($state['pending_prompt'])) {
                 break;
             }
+            // Skip when hand has no legal Member (Ayumu pb1-013 etc.) — otherwise the
+            // client opens an empty / wrong-filter hand pick and softlocks.
+            $handCands = handMembersMatchingPlayAbility($p, $ab);
+            if (empty($handCands)) {
+                break;
+            }
+            $allowOverlap = !empty($ab['allow_overlap']);
+            $blockEntered = !empty($ab['block_entered_this_turn']);
+            $turn = intval($state['turn'] ?? 1);
+            $hasSlot = false;
+            foreach (['left', 'center', 'right'] as $s) {
+                $existing = $p['stage'][$s] ?? null;
+                if ($blockEntered && $existing && intval($existing['entered_turn'] ?? 0) === $turn) {
+                    continue;
+                }
+                if (!$allowOverlap && $existing) {
+                    continue;
+                }
+                $hasSlot = true;
+                break;
+            }
+            if (!$hasSlot) {
+                break;
+            }
             $cost = intval($ab['cost'] ?? 0);
             $group = $ab['group'] ?? 'Nijigasaki';
             $maxCost = intval($ab['max_cost'] ?? 4);
+            $names = $ab['names'] ?? [];
+            $targetLabel = !empty($names)
+                ? implode('/', $names)
+                : ($group . ' Member');
             $promptPay = $cost > 0
                 ? 'Pay ' . $cost . ' Energy: '
                 : '';
@@ -666,7 +694,7 @@ function tryResolveAbilityEffectSwitchOptional(
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
                 'prompt'        => $promptPay .
-                    'put 1 ' . $group . ' Member (cost ≤' . $maxCost .
+                    'put 1 ' . $targetLabel . ' (cost ≤' . $maxCost .
                     ') from your hand onto your Stage?',
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => [
@@ -674,6 +702,7 @@ function tryResolveAbilityEffectSwitchOptional(
                     'No — Skip',
                 ],
                 'ability'       => $ab,
+                'candidates'    => array_map('cardPromptSummary', $handCands),
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ' — [' . $name . '] optional On Enter (choose).');

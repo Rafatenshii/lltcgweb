@@ -427,6 +427,11 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
             $cardId = $prompt['card_id'] ?? '';
             $ability = $prompt['ability'] ?? [];
             $group = $ability['group'] ?? 'Nijigasaki';
+            $cost = intval($ability['cost'] ?? 0);
+            // Pay when placing (deferred from confirm so failed picks do not spend Energy).
+            if ($cost > 0 && empty($prompt['energy_paid']) && !payEnergyCost($ownerP, $cost)) {
+                throw new Exception("Need $cost active Energy");
+            }
             $played = null;
             $ownerP['hand'] = array_values(array_filter(
                 $ownerP['hand'],
@@ -477,13 +482,15 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         }
         if ($choice === 'yes') {
             $cost = intval($ability['cost'] ?? 0);
-            if ($cost > 0 && !payEnergyCost($ownerP, $cost)) {
-                throw new Exception("Need $cost active Energy");
-            }
             $cardId = $data['card_id'] ?? '';
             $slot = $data['slot'] ?? '';
-            if ($cardId === '') {
-                throw new Exception('Choose a Member from hand');
+            // Empty pick = decline (empty hand overlay / no matching Ayumu).
+            if ($cardId === '' || $cardId === 'NO_CARD_NEEDED') {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional effect.');
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishPromptEffects($state);
             }
             $group = $ability['group'] ?? 'Nijigasaki';
             $played = null;
@@ -529,6 +536,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 if (count($validSlots) === 1) {
                     $slot = $validSlots[0];
                 } elseif (count($validSlots) > 1) {
+                    // Defer energy payment until a Stage area is chosen.
                     $state['pending_prompt'] = [
                         'type'          => 'optional_pay_play_hand_member',
                         'owner'         => $owner,
@@ -540,12 +548,21 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                         'card_id'       => $cardId,
                         'slots'         => $validSlots,
                         'ability'       => $ability,
+                        'energy_paid'   => false,
                     ];
                     $state['seq']++;
                     return $state;
                 } else {
-                    throw new Exception('No valid Stage area');
+                    $state = addLog($state, $state['players'][$owner]['name'] .
+                        ' — [' . ($prompt['source_name'] ?? 'Member') .
+                        '] skipped optional effect (no Stage area).');
+                    unset($state['pending_prompt']);
+                    $state['seq']++;
+                    return finishPromptEffects($state);
                 }
+            }
+            if ($cost > 0 && !payEnergyCost($ownerP, $cost)) {
+                throw new Exception("Need $cost active Energy");
             }
             $ownerP['hand'] = array_values(array_filter(
                 $ownerP['hand'],

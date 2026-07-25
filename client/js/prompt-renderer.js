@@ -2133,13 +2133,31 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     ovl.classList.remove('open');
     const me=s.players?.[myId];
-    const grp=pr.ability?.group||'Nijigasaki';
-    const maxCost=pr.ability?.max_cost??4;
+    const ab=pr.ability||{};
+    const names=ab.names||[];
+    const grp=ab.group||'Nijigasaki';
+    const maxCost=ab.max_cost??4;
+    const hand=(me?.hand||[]).filter(c=>{
+      if(c.card_type!=='メンバー') return false;
+      if((c.cost||0)>maxCost) return false;
+      if(names.length){
+        const label=c.name_en||c.name||'';
+        return names.some(n=>label===n||label.includes(n));
+      }
+      return (c.group||'')===grp;
+    });
+    // No legal target (e.g. no Ayumu ≤4 in hand): decline — empty single-tap
+    // overlay hides Cancel and softlocks the game.
+    if(!hand.length){
+      sendAct('resolve_prompt',{choice:'no'});
+      return;
+    }
+    const label=names.length?names.join('/'):grp;
     openHandPick({
-      hand: (me?.hand||[]).filter(c=>c.card_type==='メンバー'&&(c.group||'')===grp&&(c.cost||0)<=maxCost),
+      hand,
       count: 1,
       title: pr.source_name||'Play Member',
-      msg: pr.prompt||`Choose a ${grp} Member (cost ≤${maxCost}) from hand.`,
+      msg: pr.prompt||`Choose a ${label} Member (cost ≤${maxCost}) from hand.`,
       onConfirm: (ids)=> sendAct('resolve_prompt',{choice:'yes',card_id:ids[0]}),
       onCancel: ()=> sendAct('resolve_prompt',{choice:'no'})
     });
