@@ -8343,7 +8343,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=37"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=50"></script>
+<script src="client/js/prompt-renderer.js?v=51"></script>
 <script src="client/js/tutorial-interactive.js?v=20"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -24328,17 +24328,26 @@ function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
     || (pr.step === 'discard' || pr.step === 'discard_hand' || pr.step === 'pick_discard'
       ? (pr.ability?.discard || pr.ability?.max_discard || 1) : 0);
   if (discardNeed > 0) {
-    let ids = cpuPickDiscardIds(hand, discardNeed, tier, winPressure, read);
-    if (ids.length < discardNeed) ids = cpuHandDiscardFallback(hand, discardNeed);
+    let pool = hand;
+    if (pr.ability?.filter === 'live') pool = hand.filter(c => isCpuLiveCard(c));
+    else if (pr.ability?.filter === 'member') pool = hand.filter(c => isCpuMemberCard(c));
+    let ids = cpuPickDiscardIds(pool, discardNeed, tier, winPressure, read);
+    if (ids.length < discardNeed) ids = cpuHandDiscardFallback(pool, discardNeed);
     if (ids.length >= discardNeed) {
       const slice = ids.slice(0, discardNeed);
       const payload = (pr.pick_mode === 'deck_top')
         ? { card_ids: slice }
-        : { discard_ids: slice };
+        : (pr.type === 'optional_live_start' || pr.type === 'optional_discard_prompt')
+          ? { choice: 'yes', discard_ids: slice }
+          : { discard_ids: slice };
       cpuAct('resolve_prompt', payload);
       return true;
     }
-    if (!hand.length) {
+    if (!hand.length || (pr.ability?.filter && !pool.length)) {
+      if (pr.choices?.includes('no')) {
+        cpuAct('resolve_prompt', { choice: 'no' });
+        return true;
+      }
       cpuAct('anti_softlock_skip', {});
       return true;
     }
@@ -24757,6 +24766,13 @@ function cpuScoreOptionalAbility(ab, cpu, tier, ae, hand, winPressure = 0, read 
     const maxD = ab.max_discard || 0;
     const need = maxD > 0 ? Math.min(maxD, handLen) : (ab.discard || 1);
     if (handLen < (maxD > 0 ? 1 : need) + 1) return -1;
+    if (ab.filter === 'live') {
+      const liveCount = (hand || []).filter(c => isCpuLiveCard(c)).length;
+      if (liveCount < (maxD > 0 ? 1 : need)) return -1;
+    } else if (ab.filter === 'member') {
+      const memberCount = (hand || []).filter(c => isCpuMemberCard(c)).length;
+      if (memberCount < (maxD > 0 ? 1 : need)) return -1;
+    }
     if (!cpuThenNeedsDeckCards(ab.then, cpuDeckCount(cpu))) return -1;
     if (read && ab.then?.type === 'wait_opponent_stage_max_cost') {
       const maxCost = ab.then.max_cost ?? 4;
@@ -24839,6 +24855,11 @@ function cpuBuildOptionalYesPayload(pr, cpu, tier, winPressure, discardFn) {
     pickPool = hand.filter(c => cardMatchesNamedHand(c, ab.names || [], ab.include_self, pr.source_id));
   } else if (discardGroup) {
     pickPool = hand.filter(c => c.card_type === 'メンバー' && (c.group || '') === discardGroup);
+  }
+  if (ab.filter === 'live') {
+    pickPool = pickPool.filter(c => isCpuLiveCard(c));
+  } else if (ab.filter === 'member') {
+    pickPool = pickPool.filter(c => isCpuMemberCard(c));
   }
   if (maxDiscard > 0) {
     const n = Math.min(maxDiscard, pickPool.length);
@@ -28339,7 +28360,18 @@ async function cpuAct(type,data) {
     try {
       if (G.polling) {
         ensurePollHoldReleased(G.gameState);
-        await pullLatestState();
+        // During Live Start / spectacle, poll hold blocks pullLatestState — use the
+        // skill-resolution pull so chained prompts (Mia optional_live_start → heart)
+        // are visible to the next doCPU tick.
+        const presentationHeld = !!(G._livePollHold || G.animating || G._liveSpectacleGateRunning
+          || G._perfSpectacleActive || G._liveRoundPlaybackActive);
+        if ((type === 'resolve_prompt' || type === 'anti_softlock_skip')
+            && presentationHeld
+            && typeof pullSkillResolutionState === 'function') {
+          await pullSkillResolutionState();
+        } else {
+          await pullLatestState(true);
+        }
       }
     } catch (pullErr) {
       TCG_DEBUG.warn('cpu', 'pullLatestState after cpuAct failed', type, pullErr);
@@ -37303,7 +37335,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=31"></script>
+<script src="client/js/spectacle.js?v=32"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>

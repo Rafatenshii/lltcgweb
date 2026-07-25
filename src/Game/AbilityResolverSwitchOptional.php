@@ -432,8 +432,30 @@ function tryResolveAbilityEffectSwitchOptional(
         case 'optional_discard_hand':
             if (empty($ctx['discard_ids']) && empty($ctx['confirm'])) break;
             $need = intval($ab['discard'] ?? 1);
+            $filter = (string)($ab['filter'] ?? '');
             if (!empty($ctx['discard_ids'])) {
-                discardFromHandByIds($p, $ctx['discard_ids']);
+                $ids = $ctx['discard_ids'];
+                if ($filter === 'live' || $filter === 'member') {
+                    $matched = [];
+                    foreach ($p['hand'] as $c) {
+                        if (!in_array($c['instance_id'] ?? '', $ids, true)) {
+                            continue;
+                        }
+                        if ($filter === 'live' && !isLiveTypeCard($c)) {
+                            throw new Exception('Must discard a Live card');
+                        }
+                        if ($filter === 'member' && !isMemberCard($c)) {
+                            throw new Exception('Must discard a Member card');
+                        }
+                        $matched[] = $c['instance_id'];
+                    }
+                    if (count($matched) !== count($ids)) {
+                        throw new Exception($filter === 'live'
+                            ? 'Must discard a Live card'
+                            : 'Must discard a Member card');
+                    }
+                }
+                discardFromHandByIds($p, $ids);
             } else {
                 autoDiscardFromHand($p, $need);
             }

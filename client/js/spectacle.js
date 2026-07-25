@@ -298,7 +298,10 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
     }
     if (G.isCPU && pr?.responder === 'p2') {
       doCPU(cur);
-      await sleep(200);
+      // cpuAct's normal pullLatestState is blocked while live presentation holds polls;
+      // without a direct skill pull the client keeps the stale optional_live_start and softlocks.
+      await pullPromptResolutionState();
+      await sleep(120);
       continue;
     }
     const seqBefore = G.lastSeq ?? 0;

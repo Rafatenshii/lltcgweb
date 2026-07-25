@@ -232,6 +232,19 @@ function collectOptionalLiveStartAbilities(array $state): array {
                     && empty(stageMembersWithStackedEnergy($p))) {
                     continue;
                 }
+                if (($ab['type'] ?? '') === 'optional_discard_hand'
+                    && ($ab['filter'] ?? '') === 'live') {
+                    $hasLive = false;
+                    foreach ($p['hand'] ?? [] as $hc) {
+                        if (isLiveTypeCard($hc)) {
+                            $hasLive = true;
+                            break;
+                        }
+                    }
+                    if (!$hasLive) {
+                        continue;
+                    }
+                }
                 $queue[] = [
                     'owner'         => $pid,
                     'source_id'     => $card['instance_id'] ?? '',

@@ -1343,6 +1343,13 @@ function optionalLiveStartDiscardHand(pr, s, myId) {
   } else if (grp) {
     pickHand = pickHand.filter(c => c.card_type === 'メンバー' && (c.group || '') === grp);
   }
+  // Mia Taylor (PL!N-bp4-011) etc.: discard cost is a Live card only.
+  const filter = ab.filter || '';
+  if (filter === 'live') {
+    pickHand = pickHand.filter(c => c.card_type === 'ライブ' || c.card_type_en === 'Live');
+  } else if (filter === 'member') {
+    pickHand = pickHand.filter(c => c.card_type === 'メンバー' || c.card_type_en === 'Member');
+  }
   return pickHand;
 }
 
