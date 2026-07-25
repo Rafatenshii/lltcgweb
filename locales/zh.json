@@ -28,7 +28,8 @@
     "deckExperiment": "牌组实验",
     "deckExperimentSub": "用全部卡牌构筑——仅限访客，不计入排名",
     "howToPlay": "怎么玩",
-    "howToPlaySub": "与香音一起的新手实战教学"
+    "howToPlaySub": "与香音一起的新手实战教学",
+    "officialVideo": "官方8分钟视频 ↗"
   },
   "hub": {
     "signedIn": "已登录",
@@ -60,7 +61,8 @@
     "rankedPrCount": "{remaining} / {limit}",
     "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）",
     "stickerShop": "贴纸商店",
-    "stickerShopSub": "用印章兑换你补充包中的卡牌"
+    "stickerShopSub": "用印章兑换你补充包中的卡牌",
+    "officialVideo": "官方8分钟视频 ↗"
   },
   "language": {
     "label": "语言",

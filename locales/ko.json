@@ -28,7 +28,8 @@
     "deckExperiment": "덱 실험",
     "deckExperimentSub": "모든 카드로 덱 구성 — 게스트 전용, 일반전",
     "howToPlay": "플레이 방법",
-    "howToPlaySub": "카논과 함께하는 초보자 실습 강의"
+    "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
+    "officialVideo": "공식 8분 영상 ↗"
   },
   "hub": {
     "signedIn": "로그인됨",
@@ -60,7 +61,8 @@
     "rankedPrCount": "{remaining} / {limit}",
     "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
     "stickerShop": "스티커 샵",
-    "stickerShopSub": "실을 팩 카드로 교환"
+    "stickerShopSub": "실을 팩 카드로 교환",
+    "officialVideo": "공식 8분 영상 ↗"
   },
   "language": {
     "label": "언어",

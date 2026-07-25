@@ -28,7 +28,8 @@
     "deckExperiment": "Experimento de mazo",
     "deckExperimentSub": "Construye con todas las cartas: solo invitados, no clasificada",
     "howToPlay": "Cómo jugar",
-    "howToPlaySub": "Lección práctica para principiantes con Kanon"
+    "howToPlaySub": "Lección práctica para principiantes con Kanon",
+    "officialVideo": "Vídeo oficial de 8 min ↗"
   },
   "hub": {
     "signedIn": "Sesión iniciada",
@@ -60,7 +61,8 @@
     "rankedPrCount": "{remaining} / {limit}",
     "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
     "stickerShop": "Tienda de stickers",
-    "stickerShopSub": "Canjea sellos por cartas de tus sobres"
+    "stickerShopSub": "Canjea sellos por cartas de tus sobres",
+    "officialVideo": "Vídeo oficial de 8 min ↗"
   },
   "language": {
     "label": "Idioma",

@@ -41,7 +41,8 @@
       "deckExperiment": "Deck Experiment",
       "deckExperimentSub": "Build with every card — guests only, unranked",
       "howToPlay": "How to Play",
-      "howToPlaySub": "Hands-on beginner lesson with Kanon"
+      "howToPlaySub": "Hands-on beginner lesson with Kanon",
+      "officialVideo": "Official 8-min video ↗"
     },
     "hub": {
       "signedIn": "Signed in",
@@ -72,6 +73,7 @@
       "tournamentModeSub": "Coming Soon",
       "howToPlay": "How to Play",
       "howToPlaySub": "Hands-on beginner lesson with Kanon",
+      "officialVideo": "Official 8-min video ↗",
       "backHub": "← Hub",
       "missions": "Missions"
     },
@@ -1147,7 +1149,8 @@
       "deckExperiment": "デッキ実験",
       "deckExperimentSub": "全カードで構築——ゲスト限定、非ランク",
       "howToPlay": "遊び方",
-      "howToPlaySub": "かのんと一緒に体験する初心者レッスン"
+      "howToPlaySub": "かのんと一緒に体験する初心者レッスン",
+      "officialVideo": "公式8分動画 ↗"
     },
     "hub": {
       "signedIn": "サインイン済み",
@@ -1178,6 +1181,7 @@
       "tournamentModeSub": "近日公開",
       "howToPlay": "遊び方",
       "howToPlaySub": "かのんと一緒に体験する初心者レッスン",
+      "officialVideo": "公式8分動画 ↗",
       "backHub": "← ハブ",
       "missions": "ミッション"
     },
@@ -2249,7 +2253,8 @@
       "deckExperiment": "Experimento de mazo",
       "deckExperimentSub": "Construye con todas las cartas: solo invitados, no clasificada",
       "howToPlay": "Cómo jugar",
-      "howToPlaySub": "Lección práctica para principiantes con Kanon"
+      "howToPlaySub": "Lección práctica para principiantes con Kanon",
+      "officialVideo": "Vídeo oficial de 8 min ↗"
     },
     "hub": {
       "signedIn": "Sesión iniciada",
@@ -2276,6 +2281,7 @@
       "tournamentModeSub": "Próximamente",
       "howToPlay": "Cómo jugar",
       "howToPlaySub": "Lección práctica para principiantes con Kanon",
+      "officialVideo": "Vídeo oficial de 8 min ↗",
       "backHub": "← Hub",
       "missions": "Misiones",
       "rankedPrCount": "{remaining} / {limit}",
@@ -3371,7 +3377,8 @@
       "deckExperiment": "덱 실험",
       "deckExperimentSub": "모든 카드로 덱 구성 — 게스트 전용, 일반전",
       "howToPlay": "플레이 방법",
-      "howToPlaySub": "카논과 함께하는 초보자 실습 강의"
+      "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
+      "officialVideo": "공식 8분 영상 ↗"
     },
     "hub": {
       "signedIn": "로그인됨",
@@ -3398,6 +3405,7 @@
       "tournamentModeSub": "곧 공개",
       "howToPlay": "플레이 방법",
       "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
+      "officialVideo": "공식 8분 영상 ↗",
       "backHub": "← 허브",
       "missions": "미션",
       "rankedPrCount": "{remaining} / {limit}",
@@ -4517,7 +4525,8 @@
       "deckExperiment": "牌组实验",
       "deckExperimentSub": "用全部卡牌构筑——仅限访客，不计入排名",
       "howToPlay": "怎么玩",
-      "howToPlaySub": "与香音一起的新手实战教学"
+      "howToPlaySub": "与香音一起的新手实战教学",
+      "officialVideo": "官方8分钟视频 ↗"
     },
     "hub": {
       "signedIn": "已登录",
@@ -4544,6 +4553,7 @@
       "tournamentModeSub": "即将推出",
       "howToPlay": "怎么玩",
       "howToPlaySub": "与香音一起的新手实战教学",
+      "officialVideo": "官方8分钟视频 ↗",
       "backHub": "← 主页",
       "missions": "任务",
       "rankedPrCount": "{remaining} / {limit}",
@@ -5664,7 +5674,8 @@
       "deckExperiment": "ทดลองเด็ค",
       "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะแขก อันแรงก์",
       "howToPlay": "วิธีเล่น",
-      "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง"
+      "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
+      "officialVideo": "วิดีโอทางการ 8 นาที ↗"
     },
     "hub": {
       "signedIn": "เข้าสู่ระบบแล้ว",
@@ -5689,6 +5700,7 @@
       "unrankedSub": "ห้อง เพื่อน หรือฝึกกับ CPU",
       "howToPlay": "วิธีเล่น",
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
+      "officialVideo": "วิดีโอทางการ 8 นาที ↗",
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
       "rankedPrCount": "{remaining} / {limit}",
@@ -6806,6 +6818,10 @@
     loc.hub.tutorial = loc.hub.tutorial || {};
     loc.hub.tutorial.title = loc.menu && loc.menu.howToPlay;
     loc.hub.tutorial.sub = loc.menu && loc.menu.howToPlaySub;
+    if (!loc.hub.tutorial.officialVideo) {
+      loc.hub.tutorial.officialVideo = (loc.hub && loc.hub.officialVideo)
+        || 'Official 8-min video ↗';
+    }
     loc.auth.replay = loc.auth.replay || {};
     loc.auth.replay.title = loc.replay && loc.replay.menuTitle;
     loc.auth.replay.sub = loc.replay && loc.replay.menuSubAuth;
@@ -8235,7 +8251,7 @@
 
   function loadTutorialJa() {
     if (_tutorialJa) return Promise.resolve(_tutorialJa);
-    return fetch('./tutorial_ja.json?v=6', { cache: 'no-store' })
+    return fetch('./tutorial_ja.json?v=7', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_ja HTTP ' + r.status);
         return r.json();
@@ -8252,7 +8268,7 @@
 
   function loadTutorialEs() {
     if (_tutorialEs) return Promise.resolve(_tutorialEs);
-    return fetch('./tutorial_es.json?v=6', { cache: 'no-store' })
+    return fetch('./tutorial_es.json?v=7', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_es HTTP ' + r.status);
         return r.json();
@@ -8269,7 +8285,7 @@
 
   function loadTutorialKo() {
     if (_tutorialKo) return Promise.resolve(_tutorialKo);
-    return fetch('./tutorial_ko.json?v=2', { cache: 'no-store' })
+    return fetch('./tutorial_ko.json?v=3', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_ko HTTP ' + r.status);
         return r.json();
@@ -8286,7 +8302,7 @@
 
   function loadTutorialZh() {
     if (_tutorialZh) return Promise.resolve(_tutorialZh);
-    return fetch('./tutorial_zh.json?v=1', { cache: 'no-store' })
+    return fetch('./tutorial_zh.json?v=2', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_zh HTTP ' + r.status);
         return r.json();
@@ -8304,7 +8320,7 @@
 
   function loadTutorialTh() {
     if (_tutorialTh) return Promise.resolve(_tutorialTh);
-    return fetch('./tutorial_th.json?v=2', { cache: 'no-store' })
+    return fetch('./tutorial_th.json?v=3', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_th HTTP ' + r.status);
         return r.json();

@@ -139,7 +139,17 @@
     return true;
   }
 
+  /**
+   * Steps that teach a phase before it plays out (Live set → Performance rules) mark
+   * themselves `hold_cpu` so the opponent waits until the player has read them.
+   */
+  function applyStepCpuHold() {
+    if (!isLive() || G()._tutCpuScriptRunning) return;
+    G().tutorialHoldCpu = !!step()?.hold_cpu;
+  }
+
   function syncStepUi() {
+    applyStepCpuHold();
     const st = step();
     const nextBtn = global.el?.('btn-tut-next');
     const backBtn = global.el?.('btn-tut-back');
@@ -218,6 +228,7 @@
   async function runCpuScript(actions) {
     if (!actions?.length || !G().cpuToken) return;
     G().tutorialHoldCpu = true;
+    G()._tutCpuScriptRunning = true;
     try {
       for (const act of actions) {
         await sleep(400);
@@ -236,10 +247,17 @@
         } else if (type === 'mulligan') {
           data = { card_ids: act.card_ids || [] };
         }
-        await tutorialCpuAct(type, data);
+        // The opponent may already have taken this action on its own; a rejected
+        // scripted action must not stop the guide from advancing.
+        try {
+          await tutorialCpuAct(type, data);
+        } catch (e) {
+          if (global.TCG_DEBUG?.warn) global.TCG_DEBUG.warn('tutorial', 'cpu script step failed', type, e);
+        }
         await sleep(350);
       }
     } finally {
+      G()._tutCpuScriptRunning = false;
       G().tutorialHoldCpu = false;
     }
   }
@@ -371,6 +389,23 @@
     return payload;
   }
 
+  /**
+   * Every locale pack must be in memory before the first bubble renders, otherwise
+   * non-English players see the English `dialogue` fallback on the opening steps.
+   */
+  async function loadTutorialLocalePacks() {
+    const loaders = ['loadTutorialJa', 'loadTutorialEs', 'loadTutorialKo', 'loadTutorialZh', 'loadTutorialTh'];
+    for (const name of loaders) {
+      const fn = global.LLTCG_I18N?.[name] || global[name];
+      if (typeof fn !== 'function') continue;
+      try {
+        await fn();
+      } catch (e) {
+        if (global.TCG_DEBUG?.warn) global.TCG_DEBUG.warn('tutorial', name + ' failed', e);
+      }
+    }
+  }
+
   async function boot() {
     if (G()._tutorialBooting) return;
     try {
@@ -380,10 +415,8 @@
       G()._tutorialBooting = true;
       const bootEpoch = G()._gameSessionEpoch;
       const g = G();
-      if (typeof global.loadTutorialJa === 'function') await global.loadTutorialJa();
-      if (typeof global.loadTutorialEs === 'function') await global.loadTutorialEs();
-      if (typeof global.loadTutorialKo === 'function') await global.loadTutorialKo();
-      const r = await fetch('./tutorial_guide.json?v=15', { cache: 'no-store' });
+      await loadTutorialLocalePacks();
+      const r = await fetch('./tutorial_guide.json?v=16', { cache: 'no-store' });
       if (!r.ok) throw new Error('Could not load tutorial guide (HTTP ' + r.status + ')');
       const data = await r.json();
       if (!data?.steps?.length) throw new Error('Tutorial guide has no steps');
@@ -397,6 +430,7 @@
       G().tutorialStep = 0;
       G().tutorialAdvancing = false;
       G().tutorialHoldCpu = false;
+      G()._tutCpuScriptRunning = false;
       G()._tutChooseFirstDone = false;
       G()._tutMulliganDone = false;
       G()._tutGoalPending = false;

@@ -2,11 +2,14 @@
 """
 Validate tutorial locale JSON: coverage + no English game-term leaks (es).
 
+Checks both the legacy slideshow (`tutorial.json`) and the interactive guide
+(`tutorial_guide.json`) so new official-video step ids cannot ship missing.
+
 Usage:
   python scripts/validate_tutorial_i18n.py
   python scripts/validate_tutorial_i18n.py --locale es
+  python scripts/validate_tutorial_i18n.py --locale ja --interactive-only
 """
-
 from __future__ import annotations
 
 import argparse
@@ -28,13 +31,40 @@ LOCALE_FILES = {
 }
 
 
+def step_ids_from(path: Path) -> list[str]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return [s["id"] for s in data.get("steps", []) if s.get("id")]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--locale", default="es", choices=sorted(LOCALE_FILES.keys()))
+    ap.add_argument(
+        "--interactive-only",
+        action="store_true",
+        help="Only validate interactive tutorial_guide.json step ids",
+    )
+    ap.add_argument(
+        "--slideshow-only",
+        action="store_true",
+        help="Only validate legacy tutorial.json step ids",
+    )
     args = ap.parse_args()
 
-    tutorial = json.loads((ROOT / "tutorial.json").read_text(encoding="utf-8"))
-    step_ids = [s["id"] for s in tutorial.get("steps", []) if s.get("id")]
+    ids: list[str] = []
+    if not args.interactive_only:
+        ids.extend(step_ids_from(ROOT / "tutorial.json"))
+    if not args.slideshow_only:
+        ids.extend(step_ids_from(ROOT / "tutorial_guide.json"))
+    # Preserve order, drop duplicates
+    seen: set[str] = set()
+    step_ids: list[str] = []
+    for i in ids:
+        if i in seen:
+            continue
+        seen.add(i)
+        step_ids.append(i)
+
     loc_path = LOCALE_FILES[args.locale]
     if not loc_path.is_file():
         print(f"Missing {loc_path}", file=sys.stderr)
@@ -51,10 +81,18 @@ def main() -> int:
     ok = True
     if missing:
         ok = False
-        print(f"{args.locale}: missing {len(missing)} step(s):", ", ".join(missing[:20]), file=sys.stderr)
+        print(
+            f"{args.locale}: missing {len(missing)} step(s):",
+            ", ".join(missing[:30]),
+            file=sys.stderr,
+        )
     if leaks and args.locale in ("es", "ko", "zh", "th"):
         ok = False
-        print(f"{args.locale}: {len(leaks)} step(s) with English game terms:", ", ".join(leaks[:20]), file=sys.stderr)
+        print(
+            f"{args.locale}: {len(leaks)} step(s) with English game terms:",
+            ", ".join(leaks[:20]),
+            file=sys.stderr,
+        )
         for i in leaks[:3]:
             print(f"  {i}: {loc[i][:120]}", file=sys.stderr)
 

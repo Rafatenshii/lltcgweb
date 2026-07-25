@@ -4673,6 +4673,12 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
   content:'';position:absolute;left:0;top:.45em;width:11px;height:18px;transform:translateY(-50%);
   background:url("data:image/svg+xml,%3Csvg viewBox='0 0 11 18' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 9C3.03757 9 5.5 4.97056 5.5 0C5.5 4.97056 7.96243 9 11 9C7.96243 9 5.5 13.0294 5.5 18C5.5 13.0294 3.03757 9 0 9Z' fill='white'/%3E%3C/svg%3E") center/contain no-repeat}
 .llc-menu-item-sub{font-size:12px;line-height:1.45;color:rgba(255,255,255,.78);margin:2px 0 0 18px;letter-spacing:.04em}
+.llc-menu-item-note{
+  display:inline-block;margin:-4px 0 10px 18px;padding:0;border:0;background:none;
+  font-size:11px;line-height:1.4;letter-spacing:.03em;color:rgba(186,228,255,.82);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;
+}
+.llc-menu-item-note:hover{color:#ffb8dc}
 .llc-menu-item.tcg-debug-only{display:none}
 body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
 .llc-menu-screen .logo{text-align:center;align-self:center}
@@ -7008,6 +7014,9 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span class="llc-menu-item-sub" data-i18n="hub.tutorial.sub">Interactive rules walkthrough</span>
           </span>
         </button>
+        <a class="llc-menu-item-note" id="hub-tutorial-official-video"
+           href="https://www.youtube.com/watch?v=hZhCHykfCnI" target="_blank" rel="noopener noreferrer"
+           data-i18n="hub.tutorial.officialVideo">Official 8-min video ↗</a>
         <button class="llc-menu-item llc-menu-hover tcg-debug-only" id="btn-hub-bug-reports" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title">Bug Reports</span>
@@ -8332,7 +8341,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=65"></script>
+<script src="i18n.js?v=66"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=16"></script>
@@ -8344,7 +8353,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=51"></script>
-<script src="client/js/tutorial-interactive.js?v=20"></script>
+<script src="client/js/tutorial-interactive.js?v=21"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
 (function () {
@@ -8421,7 +8430,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 if (!window.LLTCG_I18N) {
   console.error('LLTCG_I18N failed to load — check i18n.js for syntax errors');
 }
-const { getLocale, setLocale, t, cardLocaleName, cardLocaleText, cardLocaleType, deckLocaleName, loadTutorialJa, loadTutorialEs, loadTutorialKo, loadTutorialTh, tutorialDialogue, applyI18n, initLocale } = window.LLTCG_I18N || {
+const { getLocale, setLocale, t, cardLocaleName, cardLocaleText, cardLocaleType, deckLocaleName, loadTutorialJa, loadTutorialEs, loadTutorialKo, loadTutorialZh, loadTutorialTh, tutorialDialogue, applyI18n, initLocale } = window.LLTCG_I18N || {
   getLocale: () => 'en',
   setLocale: () => {},
   t: (k) => k,
@@ -8432,6 +8441,7 @@ const { getLocale, setLocale, t, cardLocaleName, cardLocaleText, cardLocaleType,
   loadTutorialJa: () => Promise.resolve({}),
   loadTutorialEs: () => Promise.resolve({}),
   loadTutorialKo: () => Promise.resolve({}),
+  loadTutorialZh: () => Promise.resolve({}),
   loadTutorialTh: () => Promise.resolve({}),
   tutorialDialogue: (s) => (s && s.dialogue) || '',
   applyI18n: () => {},
@@ -35078,6 +35088,13 @@ const TUTORIAL_TARGETS = {
   'overlay-mull': () => el('overlay-mull')?.classList.contains('open')
     ? (el('overlay-mull')?.querySelector('.mbox') || el('overlay-mull'))
     : null,
+  'coin-choice-btns': () => {
+    const btns = el('coin-choice-btns');
+    if (!btns || btns.hidden) return null;
+    const r = btns.getBoundingClientRect();
+    if (r.width < 2 && r.height < 2) return null;
+    return btns;
+  },
 };
 
 function tutorialLiveSlotNode(target) {
@@ -36506,6 +36523,7 @@ async function startTutorial() {
     await loadTutorialJa();
     await loadTutorialEs();
     await loadTutorialKo();
+    await loadTutorialZh();
     await loadTutorialTh();
     const r = await fetch('./tutorial.json?v=3', { cache: 'no-store' });
     if (!r.ok) throw new Error('Could not load tutorial (HTTP ' + r.status + ')');

@@ -28,7 +28,8 @@
     "deckExperiment": "ทดลองเด็ค",
     "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะแขก อันแรงก์",
     "howToPlay": "วิธีเล่น",
-    "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง"
+    "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
+    "officialVideo": "วิดีโอทางการ 8 นาที ↗"
   },
   "hub": {
     "signedIn": "เข้าสู่ระบบแล้ว",
@@ -60,7 +61,8 @@
     "stickerShop": "ร้านสติกเกอร์",
     "stickerShopSub": "แลกซีลเป็นการ์ดจากแพ็กของคุณ",
     "tournamentMode": "โหมดทัวร์นาเมนต์",
-    "tournamentModeSub": "เร็ว ๆ นี้"
+    "tournamentModeSub": "เร็ว ๆ นี้",
+    "officialVideo": "วิดีโอทางการ 8 นาที ↗"
   },
   "language": {
     "label": "ภาษา",
