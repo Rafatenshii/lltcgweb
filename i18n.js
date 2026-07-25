@@ -158,6 +158,8 @@
       "cpuHardShort": "Hard",
       "cpuExpertShort": "Expert",
       "soloStarting": "Starting vs CPU ({diff})",
+      "player1Default": "Player 1",
+      "player2Default": "Player 2",
       "findRandomMatch": "Find Random Match",
       "spectate": "Spectate Match",
       "cancelSearch": "Cancel search",
@@ -1254,6 +1256,8 @@
       "cpuHardShort": "ハード",
       "cpuExpertShort": "エキスパート",
       "soloStarting": "CPU（{diff}）との対戦を開始",
+      "player1Default": "プレイヤー1",
+      "player2Default": "プレイヤー2",
       "findRandomMatch": "ランダムマッチ",
       "spectate": "観戦",
       "cancelSearch": "検索キャンセル",
@@ -5460,7 +5464,8 @@
       "backToList": "← ข่าวทั้งหมด",
       "empty": "ยังไม่มีโพสต์ข่าว",
       "untitled": "ไม่มีชื่อ",
-      "cardUnknown": "ไม่พบการ์ด: {id}"
+      "cardUnknown": "ไม่พบการ์ด: {id}",
+      "newBadge": "ใหม่!"
     },
     "auth": {
       "checking": "กำลังตรวจสอบการเข้าสู่ระบบ Discord…",
@@ -5506,7 +5511,11 @@
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "รางวัล PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST)"
+      "rankedPrTitle": "รางวัล PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST)",
+      "stickerShop": "ร้านสติกเกอร์",
+      "stickerShopSub": "แลกซีลเป็นการ์ดจากแพ็กของคุณ",
+      "tournamentMode": "โหมดทัวร์นาเมนต์",
+      "tournamentModeSub": "เร็ว ๆ นี้"
     },
     "language": {
       "label": "ภาษา",
@@ -5549,7 +5558,14 @@
       "secondsLabel": "{n} วินาที",
       "casualQueueStats": "{waiting} รอคิว · {inGame} ในเกมแคชชวล",
       "casualSearching": "กำลังค้นหาคู่ต่อสู้… ({seconds} วินาที)",
-      "roomCodePlaceholder": "ABCD1234"
+      "roomCodePlaceholder": "ABCD1234",
+      "cpuEasyShort": "ง่าย",
+      "cpuNormalShort": "ปกติ",
+      "cpuHardShort": "ยาก",
+      "cpuExpertShort": "ผู้เชี่ยวชาญ",
+      "soloStarting": "กำลังเริ่มปะทะ CPU ({diff})",
+      "player1Default": "ผู้เล่น 1",
+      "player2Default": "ผู้เล่น 2"
     },
     "deck": {
       "title": "สร้างเด็ค",
@@ -5760,7 +5776,15 @@
       "saveBanner": "บันทึกแบนเนอร์",
       "selectCardFirst": "เลือกการ์ดก่อน",
       "jumpToYou": "ไปที่รายการของฉัน",
-      "yourRank": "อันดับของคุณ: #{rank}"
+      "yourRank": "อันดับของคุณ: #{rank}",
+      "profileFlag": "ธงโปรไฟล์",
+      "flagLead": "เลือกธงเพื่อแสดงข้างชื่อของคุณบนกระดานผู้นำ",
+      "flagSearchPlaceholder": "ค้นหาธง…",
+      "equipFlag": "ติดตั้งธง",
+      "flagNone": "ไม่มี",
+      "flagEquipped": "ติดตั้งอยู่แล้ว",
+      "flagReady": "ติดตั้ง {name}?",
+      "flagLoading": "กำลังโหลดธง…"
     },
     "options": {
       "title": "ตัวเลือก",
@@ -5772,7 +5796,8 @@
       "resetTitle": "รีเซ็ตบัญชี",
       "resetLead": "ลบการ์ดในคอลเลกชันทั้งหมด พรีเซ็ตเด็ค สถิติแรงก์ และความคืบหน้าบูสเตอร์ คุณจะเลือกเด็คสตาร์ทเตอร์ใหม่และเริ่มใหม่ ไม่สามารถย้อนกลับได้",
       "resetAccount": "รีเซ็ตบัญชี",
-      "backHub": "← ฮับ"
+      "backHub": "← ฮับ",
+      "leaveActive": "ออกจากแมตช์ที่กำลังเล่น"
     },
     "starter": {
       "title": "เลือกเด็คสตาร์ทเตอร์",
@@ -6001,7 +6026,12 @@
       "liveJudge": "ตัดสิน Live",
       "liveWinLoss": "ตรวจผลแพ้ชนะ Live",
       "yourScore": "คะแนนของคุณ",
-      "oppScore": "คะแนนคู่ต่อสู้"
+      "oppScore": "คะแนนคู่ต่อสู้",
+      "combinedHearts": "หัวใจที่ต้องใช้รวม",
+      "livesSelected": "{n} Live",
+      "livesSelectedOne": "1 Live",
+      "plusMembers": "+{n} สมาชิก",
+      "plusMembersOne": "+1 สมาชิก"
     },
     "prompt": {
       "confirm": "ยืนยัน",
@@ -6044,7 +6074,8 @@
       "yellNoCards": "ไม่มีการ์ด Yell ให้เลือก",
       "noLiveSuccess": "ไม่มีการ์ด Live สำหรับวางใน Live สำเร็จ",
       "searchDeckFor": "ค้นหาเด็คหา…",
-      "deckTopPick": "บนสุดของเด็ค"
+      "deckTopPick": "บนสุดของเด็ค",
+      "surveilHintReturnAll": "ช่อง 1 คือบนสุดของเด็ค ลากการ์ดระหว่างช่องหมายเลขเพื่อจัดเรียง หรือแตะสองใบเพื่อสลับ การ์ดทั้งหมดต้องอยู่บนสุดของเด็ค"
     },
     "skill": {
       "alreadyUsed": "ใช้ไปแล้วในเทิร์นนี้",
@@ -6397,7 +6428,12 @@
       "logCopied": "คัดลอกล็อกแล้ว",
       "couldNotCopyLog": "คัดลอกล็อกไม่ได้",
       "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ",
-      "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง"
+      "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
+      "signInStickerShop": "เข้าสู่ระบบเพื่อใช้ร้านสติกเกอร์",
+      "stickerLoadFailed": "โหลดร้านสติกเกอร์ไม่สำเร็จ",
+      "stickerCardsLoadFailed": "โหลดการ์ดไม่สำเร็จ",
+      "stickerExchangeFailed": "แลกไม่สำเร็จ",
+      "stickerConvertFailed": "แปลงไม่สำเร็จ"
     },
     "tutorialUi": {
       "exitTitle": "ออกไปหน้าชื่อเรื่อง",
@@ -6420,7 +6456,9 @@
       "count": "ผู้ชม: {n}",
       "matchEnded": "แมตช์จบแล้ว — กลับล็อบบี้",
       "sessionEnded": "เซสชันผู้ชมจบแล้ว",
-      "switchPerspective": "สลับมุมมอง"
+      "switchPerspective": "สลับมุมมอง",
+      "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
+      "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…"
     },
     "missions": {
       "claim": "รับ",
@@ -6452,7 +6490,14 @@
         "winHasunosora": "ชนะด้วยเด็คหลักฮาซุโนะโซระอย่างเดียว",
         "winLiella": "ชนะด้วยเด็คหลัก Liella! อย่างเดียว",
         "winMuse": "ชนะด้วยเด็คหลัก μ's อย่างเดียว",
-        "winNijigasaki": "ชนะด้วยเด็คหลักนิจิกะซากิอย่างเดียว"
+        "winNijigasaki": "ชนะด้วยเด็คหลักนิจิกะซากิอย่างเดียว",
+        "profileFlag": "ตั้งธงบนโปรไฟล์ของคุณ",
+        "ranked500": "เล่นแมตช์จัดอันดับ 500 นัด",
+        "ranked1000": "เล่นแมตช์จัดอันดับ 1,000 นัด",
+        "sticker1": "แลกซีลในร้านสติกเกอร์",
+        "sticker10": "แลกซีลในร้านสติกเกอร์ 10 ครั้ง",
+        "sticker50": "แลกซีลในร้านสติกเกอร์ 50 ครั้ง",
+        "sticker100": "แลกซีลในร้านสติกเกอร์ 100 ครั้ง"
       },
       "rewardStarter": "เลือกเด็คสตาร์ทเตอร์",
       "rewardStarterOwned": "มีอยู่แล้ว",
@@ -6486,7 +6531,8 @@
       "send": "💬 แสตมป์",
       "tabEn": "English",
       "tabFavorites": "★ รายการโปรด",
-      "tabJa": "日本語"
+      "tabJa": "日本語",
+      "voiceVolume": "ระดับเสียงพากย์แสตมป์"
     },
     "ui": {
       "fullscreen": "เต็มจอ",
@@ -6499,6 +6545,27 @@
       "member": "สมาชิก",
       "live": "Live",
       "energy": "พลังงาน"
+    },
+    "sticker": {
+      "title": "ร้านสติกเกอร์",
+      "backHub": "← ฮับ",
+      "backProducts": "← สินค้า",
+      "hint": "แปลงการ์ดกาชาที่มีเกินในหน้าสร้างเด็คเป็นซีล แล้วนำซีลมาแลกการ์ดที่นี่",
+      "buy": "แลก",
+      "buyOk": "แลกการ์ดแล้ว",
+      "convertOne": "แปลงเป็นซีล {seal}",
+      "convertConfirm": "แปลง {name} ที่มีเกิน 1 ใบ เป็นซีล {seal} 1 ชิ้น?\n\nการกระทำนี้ย้อนกลับไม่ได้",
+      "convertOk": "แปลงเป็นซีล {tier} 1 ชิ้นแล้ว",
+      "convertOkBalance": "แปลงแล้ว · ซีล {tier}: {n}",
+      "yourSeals": "ซีลของคุณ",
+      "spareCopies": "เกิน {n}",
+      "reservedCopies": "ถูกจองโดยเด็คที่บันทึกไว้ ({n})",
+      "sealsAria": "ซีล",
+      "infoAria": "คู่มือซีล",
+      "infoTitle": "คู่มือซีล",
+      "infoLead": "แปลงการ์ดบูสเตอร์ที่มีเกินหรือการ์ดสตาร์ทเตอร์ที่คุณมี 1 ใบ เป็นซีลที่ตรงกัน 1 ชิ้น แล้วนำซีลมาแลกการ์ดตามราคาด้านล่าง",
+      "infoRarities": "ความหายาก",
+      "infoCost": "ราคาแลก"
     }
   }
 };

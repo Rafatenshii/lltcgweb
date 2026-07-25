@@ -8332,7 +8332,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=62"></script>
+<script src="i18n.js?v=63"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=15"></script>
 <script src="client/js/news.js?v=16"></script>
@@ -9118,8 +9118,30 @@ function syncFoilFxSetting() {
   if (chk) chk.checked = foilFxUserEnabled();
 }
 
+// Keep the pre-filled idol name localized unless the user typed their own.
+function localizeNameInputDefault() {
+  const inp = el('inp-name');
+  if (!inp) return;
+  const cur = (inp.value || '').trim();
+  const defaults = new Set(['Player 1', 'Player 2']);
+  try {
+    const S = window.LLTCG_I18N && LLTCG_I18N.STRINGS;
+    if (S) {
+      for (const l of Object.keys(S)) {
+        const lb = S[l] && S[l].lobby;
+        if (lb && lb.player1Default) defaults.add(lb.player1Default);
+        if (lb && lb.player2Default) defaults.add(lb.player2Default);
+      }
+    }
+  } catch (e) {}
+  if (cur === '' || defaults.has(cur)) {
+    inp.value = defaultPlayerName(1);
+  }
+}
+
 function onLocaleChanged() {
   refreshDynamicI18n();
+  localizeNameInputDefault();
   // Reload catalog trimmed to the active locale so card rules text stays in sync.
   void loadCards().then(() => {
     renderLobbyDeckOptions();
@@ -17861,6 +17883,7 @@ async function bootApp() {
   bindMenuSfx();
   bindGameplayCardHoverSfx();
   initLocale(onLocaleChanged);
+  localizeNameInputDefault();
   void loadCards().then(() => {
     renderLobbyDeckOptions();
     updateDeckPrev();
@@ -19322,7 +19345,7 @@ function captureRematchSettings(s) {
     casualRandom: !!G.casualRandomMatch,
     cpuSolo: !!(s.cpu_solo || G.isCPU),
     cpuDifficulty: cpuDiff,
-    name: me?.name || el('inp-name')?.value?.trim() || 'Player 1',
+    name: me?.name || el('inp-name')?.value?.trim() || defaultPlayerName(1),
     deckChoice: me?.deck_choice || el('sel-deck')?.value || 'nijigasaki',
     phaseTimer: s.phase_timer_cfg ? { ...s.phase_timer_cfg } : null,
   };
@@ -19380,18 +19403,34 @@ function applyRematchToLobbyUI(rematch) {
   }
 }
 
+// Localized short difficulty label (Easy/Normal/Hard/Expert) for the active locale.
+function cpuDiffLabel(diff) {
+  const tier = normalizeCpuDifficultyClient(diff || G.cpuDifficulty || 'easy');
+  const key = { easy: 'lobby.cpuEasyShort', normal: 'lobby.cpuNormalShort', hard: 'lobby.cpuHardShort', expert: 'lobby.cpuExpertShort' }[tier];
+  const v = (typeof t === 'function') ? t(key) : '';
+  if (v && v !== key) return v;
+  return ({ easy: 'Easy', normal: 'Normal', hard: 'Hard', expert: 'Expert' })[tier] || tier;
+}
+
+// Localized default idol name used when the name field is left blank.
+function defaultPlayerName(n) {
+  const key = n === 2 ? 'lobby.player2Default' : 'lobby.player1Default';
+  const v = (typeof t === 'function') ? t(key) : '';
+  if (v && v !== key) return v;
+  return n === 2 ? 'Player 2' : 'Player 1';
+}
+
 function cpuOpponentName() {
   const diff = G.cpuDifficulty || 'easy';
+  // Keep the Latin "CPU"/"COM" tag (brand mark + isCpuPlayerName detection); localize the tier.
   if (getLocale() === 'ja') {
-    const ja = { easy: 'イージー', normal: 'ノーマル', hard: 'ハード', expert: 'エキスパート' };
-    return `COM（${ja[diff] || ja.easy}）`;
+    return `COM（${cpuDiffLabel(diff)}）`;
   }
-  const en = { easy: 'Easy', normal: 'Normal', hard: 'Hard', expert: 'Expert' };
-  return `CPU (${en[diff] || en.easy})`;
+  return `CPU (${cpuDiffLabel(diff)})`;
 }
 
 async function startSoloRematch(rematch) {
-  const name = (rematch.name || '').trim() || 'Player 1';
+  const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const deckSel = rematch.deckChoice || 'nijigasaki';
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
@@ -19408,7 +19447,7 @@ async function startSoloRematch(rematch) {
 }
 
 async function startUnrankedRematch(rematch) {
-  const name = (rematch.name || '').trim() || 'Player 1';
+  const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   const r = await apiPost('create_room', {
     name,
@@ -19470,7 +19509,7 @@ function updateWaitingTimerInfo(cfg) {
 }
 
 async function doCreate() {
-  const name=el('inp-name').value.trim()||'Player 1';
+  const name=el('inp-name').value.trim()||defaultPlayerName(1);
   const timerOpts = lobbyPhaseTimerOpts();
   setErr('');
   try {
@@ -19489,7 +19528,7 @@ async function doJoin() {
   if (tcgIsSmallPhone()) tcgRequestFullscreen();
   const code=el('inp-code').value.trim().toUpperCase();
   if(!code){ setErr('Enter a room code!'); return; }
-  const name=el('inp-name').value.trim()||'Player 2';
+  const name=el('inp-name').value.trim()||defaultPlayerName(2);
   setErr(''); G.roomId=code;
   try {
     const r = await apiPost('join_room',{room_id:code,name,...lobbyDeckPayload()});
@@ -19501,7 +19540,7 @@ async function doJoin() {
 
 async function doSolo() {
   if (tcgIsSmallPhone()) tcgRequestFullscreen();
-  const name=el('inp-name').value.trim()||'Player 1';
+  const name=el('inp-name').value.trim()||defaultPlayerName(1);
   const deckSel = el('sel-deck').value;
   const timerOpts = lobbyPhaseTimerOpts();
   // Prefer pill-driven G.cpuDifficulty; hidden select is kept in sync by setCpuDifficulty.
@@ -19519,7 +19558,7 @@ async function doSolo() {
     G.cpuToken = r2.player_token;
     captureSyncMeta(r2);
     if (r2.cpu_difficulty) setCpuDifficulty(r2.cpu_difficulty, { persist: true });
-    const label = ({ easy: 'Easy', normal: 'Normal', hard: 'Hard', expert: 'Expert' })[diff] || diff;
+    const label = cpuDiffLabel(diff);
     const startMsg = typeof t === 'function' ? t('lobby.soloStarting', { diff: label }) : '';
     toast((startMsg && startMsg !== 'lobby.soloStarting') ? startMsg : `Starting vs CPU (${label})`, 2200);
     showScr('game'); startPoll();
@@ -30070,8 +30109,8 @@ function renderPhaseBar(s,me,opp,myId,oppId) {
   btnsE.innerHTML='';
   if (G.isSpectator) {
     msgE.textContent = t('phaseMsg.spectating', {
-      p1: me.name || 'Player 1',
-      p2: opp.name || 'Player 2',
+      p1: me.name || defaultPlayerName(1),
+      p2: opp.name || defaultPlayerName(2),
     });
     return;
   }
@@ -33614,7 +33653,7 @@ window.tutorialInitialLabels = tutorialInitialLabels;
 
 function tutorialPlayerDisplayName(s, pid) {
   if (G.isTutorial && G.tutorialLabels?.[pid]) return G.tutorialLabels[pid];
-  return s?.players?.[pid]?.name || (pid === 'p1' ? 'Player 1' : 'Player 2');
+  return s?.players?.[pid]?.name || (pid === 'p1' ? defaultPlayerName(1) : defaultPlayerName(2));
 }
 
 function coinFlipAnimationActive() {
@@ -35855,8 +35894,8 @@ function maybeShowTutorialCoinFlip(s) {
     G._coinFlipTimer = null;
   }
 
-  const p1 = s.players?.p1?.name || 'Player 1';
-  const p2 = s.players?.p2?.name || 'Player 2';
+  const p1 = s.players?.p1?.name || defaultPlayerName(1);
+  const p2 = s.players?.p2?.name || defaultPlayerName(2);
   el('coin-heads').textContent = coinFaceLabel(winner === 'p1' ? p1 : p2);
   el('coin-tails').textContent = coinFaceLabel(winner === 'p1' ? p2 : p1);
   el('coin-msg').textContent = t('coin.flipping');
@@ -36584,7 +36623,7 @@ async function onWinPlayAgain() {
     pvp: G.lastFinishedPvp,
     cpuSolo: !G.lastFinishedPvp,
     cpuDifficulty: G.cpuDifficulty || 'easy',
-    name: el('inp-name')?.value?.trim() || 'Player 1',
+    name: el('inp-name')?.value?.trim() || defaultPlayerName(1),
     deckChoice: el('sel-deck')?.value || 'nijigasaki',
     phaseTimer: null,
   };

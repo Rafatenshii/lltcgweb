@@ -157,6 +157,17 @@ function getCards(): string {
         $locale = 'en';
     }
 
+    // Serve a pre-trimmed per-locale cache when fresh. Decoding + re-encoding the
+    // ~4MB catalog on every request is ~30s on shared hosting, which timed out the
+    // client (empty G.allCards → greyed deck Save, CPU match couldn't start).
+    $cacheFile = GAMES_DIR . 'cards_cache_' . $locale . '.json';
+    if (is_file($cacheFile) && filemtime($cacheFile) >= filemtime(CARDS_FILE)) {
+        $cached = file_get_contents($cacheFile);
+        if ($cached !== false && $cached !== '') {
+            return $cached;
+        }
+    }
+
     $data = json_decode($raw, true);
     if (!is_array($data) || !isset($data['cards']) || !is_array($data['cards'])) {
         return $raw;
@@ -183,7 +194,19 @@ function getCards(): string {
     unset($card);
 
     $out = json_encode($data, JSON_UNESCAPED_UNICODE);
-    return $out !== false ? $out : $raw;
+    if ($out === false) {
+        return $raw;
+    }
+
+    // Best-effort atomic cache write (ignore failures on read-only mounts).
+    $tmp = $cacheFile . '.' . getmypid() . '.tmp';
+    if (@file_put_contents($tmp, $out, LOCK_EX) !== false) {
+        @rename($tmp, $cacheFile);
+    } else {
+        @unlink($tmp);
+    }
+
+    return $out;
 }
 
 function cacheCardImage(array $body): array {
@@ -4364,6 +4387,10 @@ function cleanupOldGames(): array {
     $files = glob(GAMES_DIR . '*.json');
     $cleaned = 0;
     foreach ($files as $f) {
+        // Preserve the per-locale card catalog cache (rebuilt only when cards.json changes).
+        if (strpos(basename($f), 'cards_cache_') === 0) {
+            continue;
+        }
         if (filemtime($f) < time() - GAME_TIMEOUT) {
             unlink($f);
             $cleaned++;
