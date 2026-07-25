@@ -426,7 +426,8 @@ function tcgCasualEnsureApiHelpers(): void {
 
 /**
  * Live unranked human-PvP player count without scanning every games/*.json.
- * Uses casual match rows + recently-touched room files (friend-code games).
+ * Queue-matched rooms only (friend-code games are omitted from the public counter
+ * so lobby polls never walk the full games archive on shared hosting).
  */
 function tcgCasualCountLivePvpPlayers(): int {
     tcgCasualEnsureApiHelpers();
@@ -436,7 +437,6 @@ function tcgCasualCountLivePvpPlayers(): int {
     $seenRooms = [];
     $db = tcgDb();
 
-    // Queue-matched rooms: verify each file (finished/abandoned rows get cleaned).
     $stmt = $db->query('SELECT DISTINCT room_id FROM tcg_casual_matches');
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $roomId = preg_replace('/[^A-Z0-9]/', '', strtoupper((string)($row['room_id'] ?? '')));
@@ -455,45 +455,6 @@ function tcgCasualCountLivePvpPlayers(): int {
             continue;
         }
         $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
-    }
-
-    // Friend-code / create+join rooms are not in tcg_casual_matches. Only open
-    // recently modified game files so we never re-decode the whole archive.
-    $grace = defined('PRESENCE_DISCONNECT_SEC') ? (int)PRESENCE_DISCONNECT_SEC : 120;
-    $recentSec = max(180, $grace * 2);
-    $gamesDir = rtrim(tcgPath('games'), '/\\');
-    if (is_dir($gamesDir)) {
-        $dh = @opendir($gamesDir);
-        if ($dh !== false) {
-            while (($name = readdir($dh)) !== false) {
-                if ($name === '.' || $name === '..' || !str_ends_with($name, '.json')) {
-                    continue;
-                }
-                if (str_starts_with($name, 'lock_') || str_starts_with($name, 'presence_')) {
-                    continue;
-                }
-                $roomId = preg_replace('/[^A-Z0-9]/', '', strtoupper(pathinfo($name, PATHINFO_FILENAME)));
-                if ($roomId === '' || isset($seenRooms[$roomId])) {
-                    continue;
-                }
-                $path = $gamesDir . DIRECTORY_SEPARATOR . $name;
-                $mtime = @filemtime($path);
-                if ($mtime === false || ($now - $mtime) > $recentSec) {
-                    continue;
-                }
-                $seenRooms[$roomId] = true;
-                $raw = @file_get_contents($path);
-                if ($raw === false) {
-                    continue;
-                }
-                $state = json_decode($raw, true);
-                if (!is_array($state)) {
-                    continue;
-                }
-                $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
-            }
-            closedir($dh);
-        }
     }
 
     return $inGame;
@@ -607,7 +568,7 @@ function tcgNormalizeCasualQueueKey(string $key): string {
 
 function apiCasualJoin(array $body): array {
     tcgRateLimitForAction('casual_join', $body);
-    return tcgWithCasualQueueLock(function () use ($body): array {
+    $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));
         $selfDiscordId = tcgOptionalAuthUserId($body);
@@ -631,39 +592,40 @@ function apiCasualJoin(array $body): array {
                 'queue' => $join,
                 'match' => $match,
                 'casual' => $match,
-                'queue_stats' => tcgCasualQueuePublicStats(),
             ];
         }
         $match = tcgTryCasualMatchmake($queueKey);
-        $out = [
+        $payload = [
             'success' => true,
             'queue' => $join,
             'match' => $match,
-            'queue_stats' => tcgCasualQueuePublicStats(),
         ];
         if (!$match) {
-            $out['casual'] = tcgCasualQueueStatus($queueKey);
+            $payload['casual'] = tcgCasualQueueStatus($queueKey);
         } else {
-            $out['casual'] = $match;
+            $payload['casual'] = $match;
         }
-        return $out;
+        return $payload;
     });
+    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    return $out;
 }
 
 function apiCasualLeave(array $body): array {
-    return tcgWithCasualQueueLock(function () use ($body): array {
+    $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         $discordId = tcgOptionalAuthUserId($body);
         return [
             'success' => true,
             'queue' => tcgCasualQueueLeave($queueKey, $discordId),
-            'queue_stats' => tcgCasualQueuePublicStats(),
         ];
     });
+    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    return $out;
 }
 
 function apiCasualStatus(array $body): array {
-    return tcgWithCasualQueueLock(function () use ($body): array {
+    $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         if ($queueKey === '' && isset($_GET['queue_id'])) {
             $queueKey = (string)$_GET['queue_id'];
@@ -678,7 +640,8 @@ function apiCasualStatus(array $body): array {
         return [
             'success' => true,
             'casual' => $status,
-            'queue_stats' => tcgCasualQueuePublicStats(),
         ];
     });
+    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    return $out;
 }

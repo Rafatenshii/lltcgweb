@@ -17877,12 +17877,73 @@ async function bootApp() {
   bindPhoneFullscreen();
   bindPlaymatResize();
   bindMobilePhaseDock();
-  // Bind room actions before any auth/card/audio awaits. Guests can enter the
-  // lobby immediately; previously these three buttons looked enabled but were
-  // inert until account resume (which may long-poll a stale game) completed.
+  // Bind interactive controls before any auth/card/audio awaits. Guests can
+  // enter lobby / start CPU before loadCards finishes; coin + mulligan buttons
+  // must already work or clicks look dead until boot completes.
   on('btn-create','click', doCreate);
   on('btn-join',  'click', doJoin);
   on('btn-solo',  'click', doSolo);
+  on('btn-cancel','click', () => { stopPoll(); clearActiveGameSession(); showScr('lobby'); });
+  on('disp-code', 'click', copyCode);
+  on('btn-mull',  'click', () => { if (isReplayViewing()) return; confirmMull(); });
+  on('btn-coin-first-self', 'click', () => submitCoinFirstPlayerChoice(true));
+  on('btn-coin-first-opp', 'click', () => submitCoinFirstPlayerChoice(false));
+  on('btn-phase-primary', 'click', () => {
+    if (G.isSpectator || isReplayViewing()) return;
+    if (G.isTutorial && !G.tutorialLive) return;
+    if (typeof tutBlocks === 'function') {
+      const s0 = G.gameState;
+      if (s0?.phase === 'live_set' && tutBlocks('confirm_live_set')) return;
+      if ((s0?.phase === 'main_first' || s0?.phase === 'main_second') && tutBlocks('end_main')) return;
+    }
+    const s = G.gameState;
+    const myId = G.playerId;
+    if (!s) return;
+    if (el('btn-phase-primary')?.classList.contains('waiting')) return;
+    if (hasOpenSkillPrompt(s)) return;
+    if (s.phase === 'live_set' && isLiveSetSelecting(s, myId)) confirmLiveSetFromHand();
+    else if (s.phase === 'main_first' || s.phase === 'main_second') sendAct('end_main', {});
+  });
+  on('btn-resign','click', () => {
+    if (G.isTutorial || G.isSpectator) return;
+    if (isReplayViewing()) {
+      exitReplayViewing();
+      return;
+    }
+    confirm(t('game.resignConfirm')) && sendAct('resign',{});
+  });
+  on('sel-cpu-diff', 'change', () => {
+    setCpuDifficulty(el('sel-cpu-diff')?.value || 'easy');
+  });
+  el('cpu-diff-pills')?.addEventListener('click', (ev) => {
+    const btn = ev.target?.closest?.('[data-cpu-diff]');
+    if (!btn || !el('cpu-diff-pills')?.contains(btn)) return;
+    setCpuDifficulty(btn.getAttribute('data-cpu-diff') || 'easy');
+  });
+  on('sel-deck', 'change', () => {
+    const v = el('sel-deck')?.value || '';
+    const inp = el('inp-lobby-experiment-pwd');
+    if (v.startsWith('experiment:')) {
+      if (inp) inp.value = normalizeExperimentPasswordInput(v.slice(11));
+    } else if (inp) {
+      inp.value = '';
+    }
+    updateDeckPrev();
+  });
+  el('deck-prev')?.addEventListener('click', e => {
+    if(e.target?.id === 'btn-regen-deck' && el('sel-deck').value === 'random') updateDeckPrev();
+  });
+  on('inp-phase-timer', 'change', syncLobbyPhaseTimerUI);
+  on('inp-phase-timer-sec', 'input', syncLobbyPhaseTimerUI);
+  syncLobbyPhaseTimerUI();
+  on('btn-tut-exit','click', exitTutorial);
+  on('btn-tut-back','click', () => tutorialNav(-1));
+  on('btn-tut-next','click', () => tutorialNav(1));
+  document.addEventListener('keydown', e => {
+    if (!G.isTutorial || G.tutorialAnimating) return;
+    if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); tutorialNav(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); tutorialNav(-1); }
+  });
   const cardsReady = loadCards().then(() => {
     renderLobbyDeckOptions();
     updateDeckPrev();
@@ -17911,40 +17972,6 @@ async function bootApp() {
     syncCpuDiffUi(G.cpuDifficulty || 'easy');
   }
   renderLobbyDeckOptions();
-  on('sel-cpu-diff', 'change', () => {
-    setCpuDifficulty(el('sel-cpu-diff')?.value || 'easy');
-  });
-  el('cpu-diff-pills')?.addEventListener('click', (ev) => {
-    const btn = ev.target?.closest?.('[data-cpu-diff]');
-    if (!btn || !el('cpu-diff-pills')?.contains(btn)) return;
-    setCpuDifficulty(btn.getAttribute('data-cpu-diff') || 'easy');
-  });
-  on('sel-deck', 'change', () => {
-    const v = el('sel-deck')?.value || '';
-    const inp = el('inp-lobby-experiment-pwd');
-    if (v.startsWith('experiment:')) {
-      if (inp) inp.value = normalizeExperimentPasswordInput(v.slice(11));
-    } else if (inp) {
-      inp.value = '';
-    }
-    updateDeckPrev();
-  });
-  el('deck-prev').addEventListener('click', e => {
-    if(e.target?.id === 'btn-regen-deck' && el('sel-deck').value === 'random') updateDeckPrev();
-  });
-  on('inp-phase-timer', 'change', syncLobbyPhaseTimerUI);
-  on('inp-phase-timer-sec', 'input', syncLobbyPhaseTimerUI);
-  syncLobbyPhaseTimerUI();
-  on('btn-tut-exit','click', exitTutorial);
-  on('btn-tut-back','click', () => tutorialNav(-1));
-  on('btn-tut-next','click', () => tutorialNav(1));
-  document.addEventListener('keydown', e => {
-    if (!G.isTutorial || G.tutorialAnimating) return;
-    if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); tutorialNav(1); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); tutorialNav(-1); }
-  });
-  on('btn-cancel','click', () => { stopPoll(); clearActiveGameSession(); showScr('lobby'); });
-  on('disp-code', 'click', copyCode);
   (function initTcgRadioDock() {
     const API_BASE = '/wrapped/api.php';
     const LISTENER_ID_KEY = 'llr_radio_listener_id';
@@ -18317,42 +18344,15 @@ async function bootApp() {
   on('btn-win-debug-save-log', 'click', onDebugSaveLogClick);
   on('btn-win-debug-copy-log', 'click', onDebugCopyLogClick);
   on('btn-win-debug-save-bundle', 'click', () => { void saveDebugBundle(); });
-  on('btn-resign','click', () => {
-    if (G.isTutorial || G.isSpectator) return;
-    if (isReplayViewing()) {
-      exitReplayViewing();
-      return;
-    }
-    confirm(t('game.resignConfirm')) && sendAct('resign',{});
-  });
   on('btn-again', 'click', onWinPlayAgain);
   on('btn-win-hub', 'click', onWinReturnToMenu);
   on('btn-win-leaderboard', 'click', onWinViewLeaderboard);
-  on('btn-mull',  'click', () => { if (isReplayViewing()) return; confirmMull(); });
-  on('btn-phase-primary', 'click', () => {
-    if (G.isSpectator || isReplayViewing()) return;
-    if (G.isTutorial && !G.tutorialLive) return;
-    if (typeof tutBlocks === 'function') {
-      const s0 = G.gameState;
-      if (s0?.phase === 'live_set' && tutBlocks('confirm_live_set')) return;
-      if ((s0?.phase === 'main_first' || s0?.phase === 'main_second') && tutBlocks('end_main')) return;
-    }
-    const s = G.gameState;
-    const myId = G.playerId;
-    if (!s) return;
-    if (el('btn-phase-primary')?.classList.contains('waiting')) return;
-    if (hasOpenSkillPrompt(s)) return;
-    if (s.phase === 'live_set' && isLiveSetSelecting(s, myId)) confirmLiveSetFromHand();
-    else if (s.phase === 'main_first' || s.phase === 'main_second') sendAct('end_main', {});
-  });
   on('btn-pick-ok','click', confirmMemberPick);
   on('btn-pick-cancel','click', cancelMemberPick);
   on('btn-hpick-ok','click', confirmHandPick);
   on('btn-hpick-cancel','click', cancelHandPick);
   on('btn-heart-cancel','click', () => { G.heartCtx=null; closeM('overlay-heart'); });
   on('btn-surveil-ok','click', confirmSurveil);
-  on('btn-coin-first-self', 'click', () => submitCoinFirstPlayerChoice(true));
-  on('btn-coin-first-opp', 'click', () => submitCoinFirstPlayerChoice(false));
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     const s = G.gameState;
@@ -36970,7 +36970,15 @@ async function sendAct(type,data){
     const status = e.httpStatus || 0;
     if (type === 'resign') { /* toasted above */ }
     else if (/no matching/i.test(msg) && /waiting room/i.test(msg)) toast(msg, 3200);
-    else if (status < 400) toast('Error: ' + msg, 6000);
+    else if (
+      type === 'mulligan'
+      || type === 'ack_coin_flip'
+      || type === 'choose_first_player'
+      || status < 400
+      || status >= 500
+    ) {
+      toast('Error: ' + msg, 6000);
+    }
   }
 }
 
