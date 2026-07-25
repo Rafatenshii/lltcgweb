@@ -83,6 +83,9 @@ function tcgDb(): PDO {
     }
     $pdo = new PDO('sqlite:' . TCG_DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Hostinger shared hosting: concurrent create_room/casual_join used to fail
+    // immediately with "database is locked" while other workers decoded cards.json.
+    $pdo->exec('PRAGMA busy_timeout=10000');
     $pdo->exec('PRAGMA journal_mode=WAL');
     $pdo->exec('PRAGMA foreign_keys=ON');
     tcgDbMigrate($pdo);

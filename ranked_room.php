@@ -39,7 +39,7 @@ function tcgCreateRankedRoomPair(string $p1DiscordId, string $p2DiscordId): ?arr
         return null;
     }
 
-    $cards = json_decode(file_get_contents(CARDS_FILE), true);
+    $cards = tcgLoadCardsData();
     $allCards = $cards['cards'] ?? [];
     $cardMap = tcgBuildCardMap($cards);
 

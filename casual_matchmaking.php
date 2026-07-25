@@ -77,8 +77,8 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
         define('TCG_API_LIB_ONLY', true);
     }
     require_once __DIR__ . '/api.php';
-    $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
-    if (!is_array($cards)) {
+    $cards = tcgLoadCardsData();
+    if (!is_array($cards) || !isset($cards['cards'])) {
         throw new Exception('Card database unavailable');
     }
     resolveRoomDeckLists($body, $cards);
@@ -284,8 +284,8 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
     }
     require_once __DIR__ . '/api.php';
 
-    $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
-    if (!is_array($cards)) {
+    $cards = tcgLoadCardsData();
+    if (!is_array($cards) || !isset($cards['cards'])) {
         return null;
     }
 

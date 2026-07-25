@@ -17877,6 +17877,10 @@ async function bootApp() {
   bindPhoneFullscreen();
   bindPlaymatResize();
   bindMobilePhaseDock();
+  const cardsReady = loadCards().then(() => {
+    renderLobbyDeckOptions();
+    updateDeckPrev();
+  });
   await accountReady;
   if (window.LLTCG_SFX?.init) await window.LLTCG_SFX.init();
   initFoilFxSetting();
@@ -17885,10 +17889,7 @@ async function bootApp() {
   bindGameplayCardHoverSfx();
   initLocale(onLocaleChanged);
   localizeNameInputDefault();
-  void loadCards().then(() => {
-    renderLobbyDeckOptions();
-    updateDeckPrev();
-  });
+  await cardsReady.catch(() => {});
   if (G.gameState?.players && el('screen-game')?.classList.contains('active')) {
     renderGame(G.gameState);
   }
@@ -19290,7 +19291,8 @@ function lobbyDeckPayload() {
   if (lobbyPwd && !isSignedInAccount()) {
     return deckPayloadFromChoice('experiment:' + lobbyPwd);
   }
-  return deckPayloadFromChoice(el('sel-deck').value);
+  const choice = el('sel-deck')?.value || 'nijigasaki';
+  return deckPayloadFromChoice(choice || 'nijigasaki');
 }
 
 function phaseTimerOptsFromCfg(cfg) {

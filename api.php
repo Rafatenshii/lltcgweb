@@ -26,6 +26,7 @@ require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/config/cors.php';
 require_once __DIR__ . '/config/errors.php';
 require_once __DIR__ . '/config/rate_limit.php';
+require_once __DIR__ . '/cards_data.php';
 tcgDefinePathConstants();
 
 header('Content-Type: application/json');
@@ -160,7 +161,7 @@ function getCards(): string {
     // Serve a pre-trimmed per-locale cache when fresh. Decoding + re-encoding the
     // ~4MB catalog on every request is ~30s on shared hosting, which timed out the
     // client (empty G.allCards → greyed deck Save, CPU match couldn't start).
-    $cacheFile = GAMES_DIR . 'cards_cache_' . $locale . '.json';
+    $cacheFile = rtrim(TCG_DATA_DIR, '/\\') . DIRECTORY_SEPARATOR . 'cards_cache_' . $locale . '.json';
     if (is_file($cacheFile) && filemtime($cacheFile) >= filemtime(CARDS_FILE)) {
         $cached = file_get_contents($cacheFile);
         if ($cached !== false && $cached !== '') {
@@ -319,7 +320,7 @@ function createRoom(array $body): array {
     $playerToken = generateToken();
     $playerName  = htmlspecialchars($body['name'] ?? 'Player 1', ENT_QUOTES);
 
-    $cards = json_decode(file_get_contents(CARDS_FILE), true);
+    $cards = tcgLoadCardsData();
     $resolved  = resolveRoomDeckLists($body, $cards);
 
     $mainDeck   = buildDeckForRoom($cards['cards'], $resolved['main_nos'], $body, 'main_order');
@@ -372,7 +373,7 @@ function joinRoom(array $body): array {
         throw new Exception('Room is full or game already started');
     }
 
-    $cards = json_decode(file_get_contents(CARDS_FILE), true);
+    $cards = tcgLoadCardsData();
     $resolved  = resolveRoomDeckLists($body, $cards);
 
     $mainDeck   = buildDeckForRoom($cards['cards'], $resolved['main_nos'], $body, 'main_order');
@@ -3280,7 +3281,7 @@ function startRematchGame(array $state): array {
         throw new Exception('Rematch only available for player vs player');
     }
 
-    $cards = json_decode(file_get_contents(CARDS_FILE), true);
+    $cards = tcgLoadCardsData();
     $roomId = (string)($state['room_id'] ?? '');
     $phaseTimerCfg = $state['phase_timer_cfg'] ?? null;
 
@@ -4387,10 +4388,6 @@ function cleanupOldGames(): array {
     $files = glob(GAMES_DIR . '*.json');
     $cleaned = 0;
     foreach ($files as $f) {
-        // Preserve the per-locale card catalog cache (rebuilt only when cards.json changes).
-        if (strpos(basename($f), 'cards_cache_') === 0) {
-            continue;
-        }
         if (filemtime($f) < time() - GAME_TIMEOUT) {
             unlink($f);
             $cleaned++;
