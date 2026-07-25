@@ -1024,7 +1024,8 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         if (!$top) {
             unset($state['pending_prompt']);
             $state['seq']++;
-            return $state;
+            // Resume Live Start / Performance — bare return softlocks (COMPASS after Kosuzu).
+            return finishPromptEffects($state);
         }
         if (($top['card_type'] ?? '') === 'メンバー' && intval($top['cost'] ?? 0) >= $num) {
             $ownerP['hand'][] = $top;
@@ -1042,7 +1043,8 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        // Must resume remaining Live Starts (e.g. COMPASS after Kosuzu pb1-005).
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'optional_pos_change_subunit_blade') {
@@ -1090,7 +1092,7 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'both_shuffle_wr_members_deck_bottom_threshold') {
@@ -1217,15 +1219,24 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         $slot = $data['slot'] ?? $choice;
         if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
         $mbr = $ownerP['stage'][$slot];
+        // Clear COMPASS parent first so nested Live Start prompts (Kosuzu pick_number)
+        // can open — resolveAbilityEffect no-ops while pending_prompt is set.
+        unset($state['pending_prompt']);
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Live') . '] activating [' .
+            ($mbr['name_en'] ?? $mbr['name'] ?? 'Member') . '] Live Start.');
         foreach ($mbr['abilities'] ?? [] as $ab) {
             if (($ab['trigger'] ?? '') === 'live_start') {
                 $state = resolveAbilityEffect($state, $owner, $mbr, $ab, ['phase' => 'live_start', 'pay' => true]);
                 break;
             }
         }
-        unset($state['pending_prompt']);
+        if (!empty($state['pending_prompt'])) {
+            $state['seq']++;
+            return $state;
+        }
         $state['seq']++;
-        return $state;
+        return finishLiveStartEffects($state);
     }
 
     if ($promptType === 'live_start_edel_note_dual_pick_buff') {
