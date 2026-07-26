@@ -385,6 +385,12 @@
 
     if (s.live_show?.stage && s.live_show.stage !== 'done'
         && typeof presentServerLiveShowStage === 'function') {
+      // Soft-update only while the stage runner owns the cursor — avoids re-entry.
+      if (G._liveShowRunnerActive) {
+        G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
+        G.gameState = s;
+        return;
+      }
       // Paint only the board-safe state first. Judge chrome remains gated by
       // live_show.stage while the director seeks/resumes the persisted beat.
       commitServerBoardToUi(s);
@@ -394,7 +400,19 @@
           && typeof ensurePendingPromptSurfaced === 'function') {
         ensurePendingPromptSurfaced(live, G.playerId);
       }
+      if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
+        doCPU(live);
+        armWatchdog(live);
+      }
+      // Always stop here — the runner chains stages and seals the turn so the
+      // legacy presentLiveRound path cannot start a second broken show.
       return;
+    }
+
+    // Finished live_show cursor: seal so legacy recovery cannot re-open spectacle
+    // with lives already moved to Success / Waiting Room.
+    if (s.live_show?.stage === 'done' && typeof sealLiveShowSpectacleTurn === 'function') {
+      sealLiveShowSpectacleTurn(s, prev);
     }
 
     if (spectacleGateActive && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {

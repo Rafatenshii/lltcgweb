@@ -2402,6 +2402,12 @@ function primePerfSpectacleDoneKeysFromLog(s) {
   if (pending != null && isLiveSpectaclePipelinePhase(s?.phase)) {
     turns.delete(pending);
   }
+  // Server live_show cursor is authoritative — never seal that turn from log alone
+  // (Yell math writes "performed Live!" before the client has watched the beat).
+  const liveShowTurn = s?.live_show?.turn;
+  if (s?.live_show?.stage && s.live_show.stage !== 'done' && liveShowTurn != null) {
+    turns.delete(Number(liveShowTurn));
+  }
   if (!turns.size) return;
   G._perfSpectacleDoneTurns = turns;
   if (!G._liveStorageRevealDoneTurns) G._liveStorageRevealDoneTurns = new Set();
@@ -6536,48 +6542,166 @@ async function syncTutorialSpectacle(prev, next, step, forward, myId) {
 }
 
 const LIVE_SHOW_TO_PERF_PHASE = {
-  reveal: 'intro',
-  live_start: 'live_start',
+  // reveal/live_start stay on the playmat — opening #perf-spectacle early left
+  // _perfSpectacleActive set and blocked all polls (CPU freeze after Live Start).
+  reveal: null,
+  live_start: null,
   performance: 'yell_opp',
   outcomes: 'outcomes',
   judge: 'judge',
 };
 
+function liveShowBeatKey(show) {
+  if (!show) return null;
+  return `${show.turn}:${show.stage_seq}:${show.stage}`;
+}
+
+function sealLiveShowSpectacleTurn(board, prior = null) {
+  const turn = board?.live_show?.turn ?? board?.turn ?? inferLiveShowTurn(prior, board);
+  if (turn == null) return;
+  savePerfSpectacleDoneKey(prior || board, board, turn);
+  G._liveRoundPostSpectacleReady = true;
+}
+
+async function fetchLiveShowStateNow() {
+  if (!G.roomId || !G.token || typeof parseGameApiResponse !== 'function') return null;
+  try {
+    const r = await fetch(
+      `${API}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
+      + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0`
+    );
+    let d = await parseGameApiResponse(r);
+    if (d?.error) return null;
+    if (typeof alignSpectatorStageBoard === 'function') {
+      d = alignSpectatorStageBoard(d);
+    }
+    return d;
+  } catch (e) {
+    TCG_DEBUG.warn('live', 'fetchLiveShowStateNow failed', e);
+    return null;
+  }
+}
+
+async function presentOneLiveShowBeat(prev, next, myId, stage) {
+  if (stage === 'reveal') {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    // Storage is already face-up from the server; give a short readable beat.
+    await perfSleep(700);
+    return;
+  }
+  if (stage === 'live_start') {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    G._perfSpectaclePhase = 'live_start';
+    await perfSleep(350);
+    return;
+  }
+  const target = LIVE_SHOW_TO_PERF_PHASE[stage];
+  if (!target) return;
+  const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
+  await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
+  if (stage === 'judge') {
+    sealLiveShowSpectacleTurn(next, perfPrev);
+    G._postSpectacleSplashPause = true;
+  }
+}
+
 /**
- * Present exactly the persisted server beat. Players acknowledge only after its
- * animation completes; spectators seek to the same beat without blocking it.
+ * Drive the persisted server live_show cursor. Chains player acks inline so a
+ * still-open spectacle cannot block the poll loop and freeze CPU matches.
+ * Spectators seek the current beat only (they do not ack).
  */
 async function presentServerLiveShowStage(prev, next, myId) {
-  const show = next?.live_show;
-  if (!show?.stage || show.stage === 'done') {
-    if (show?.stage === 'done' && G._perfSpectacleActive) perfCloseSpectacle();
+  if (G._liveShowRunnerActive) return false;
+  const initial = next?.live_show;
+  if (!initial?.stage) return false;
+  if (initial.stage === 'done') {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    sealLiveShowSpectacleTurn(next, prev);
     return false;
   }
-  const target = LIVE_SHOW_TO_PERF_PHASE[show.stage];
-  if (!target) return false;
-  const key = `${show.turn}:${show.stage_seq}:${show.stage}`;
-  const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
+
+  G._liveShowRunnerActive = true;
   G._liveRoundPlaybackActive = true;
   holdLivePolls();
+  let board = next;
+  let prior = prev;
   try {
-    await perfSeekPhase(perfPrev, next, myId, target, {
-      forward: true,
-      animate: G._liveShowPresentedKey !== key,
-    });
-    G._liveShowPresentedKey = key;
-    if (!G.isSpectator && !isReplayViewing() && G._liveShowAckedKey !== key
-        && !next.pending_prompt) {
+    for (let step = 0; step < 10; step++) {
+      const show = board?.live_show;
+      if (!show?.stage || show.stage === 'done') {
+        if (G._perfSpectacleActive) perfCloseSpectacle();
+        sealLiveShowSpectacleTurn(board, prior);
+        break;
+      }
+
+      // Skills (Live Start / Yell / Success) must resolve on the mat first.
+      if (board.pending_prompt) {
+        if (G._perfSpectacleActive
+            && (show.stage === 'reveal' || show.stage === 'live_start')) {
+          perfCloseSpectacle();
+        }
+        G.gameState = board;
+        break;
+      }
+
+      const key = liveShowBeatKey(show);
+      if (G._liveShowPresentedKey !== key) {
+        await presentOneLiveShowBeat(prior, board, myId, show.stage);
+        G._liveShowPresentedKey = key;
+      }
+
+      // Spectators / replay follow the cursor; players advance it.
+      if (G.isSpectator || (typeof isReplayViewing === 'function' && isReplayViewing())) {
+        G.gameState = board;
+        break;
+      }
+
+      if (G._liveShowAckedKey === key) {
+        // Already acked this beat — wait for the next polled stage.
+        G.gameState = board;
+        break;
+      }
+
       G._liveShowAckedKey = key;
-      await apiPost('action', {
-        room_id: G.roomId,
-        token: G.token,
-        type: 'live_show_ack',
-        data: { stage_seq: show.stage_seq },
-      });
-      if (typeof scheduleDeferredSyncPull === 'function') scheduleDeferredSyncPull(80);
+      try {
+        await apiPost('action', {
+          room_id: G.roomId,
+          token: G.token,
+          type: 'live_show_ack',
+          data: { stage_seq: show.stage_seq },
+        });
+      } catch (e) {
+        TCG_DEBUG.warn('live', 'live_show_ack failed', e);
+        G._liveShowAckedKey = null;
+        break;
+      }
+
+      const advanced = await fetchLiveShowStateNow();
+      if (!advanced) break;
+      if ((advanced.seq ?? 0) < (board.seq ?? 0)) break;
+      prior = board;
+      board = advanced;
+      G.gameState = board;
+      G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
+
+      // Paint between beats so Live Start prompts / mat updates are visible.
+      if (typeof renderGame === 'function') {
+        renderGame(board, {
+          skipLog: true,
+          skipPrompt: !!board.pending_prompt && board.pending_prompt.responder !== myId,
+        });
+      }
     }
   } finally {
+    G._liveShowRunnerActive = false;
     G._liveRoundPlaybackActive = false;
+    const stage = board?.live_show?.stage;
+    if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start') {
+      if (G._perfSpectacleActive) perfCloseSpectacle();
+    }
+    if (!stage || stage === 'done') {
+      sealLiveShowSpectacleTurn(board || next, prior);
+    }
     releaseLivePollsAndFlush();
   }
   return true;

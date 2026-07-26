@@ -83,13 +83,23 @@ final class SequentialLiveShowTest extends TestCase
 
         $state = $this->ackBoth($state);
         $this->assertSame('performance', $state['live_show']['stage']);
+        // Yell only — hearts / scores must not run yet.
+        $this->assertStringNotContainsString(
+            'performed Live! Blades:',
+            implode("\n", array_column($state['log'], 'msg'))
+        );
         $this->assertStringNotContainsString(
             'Live Scores:',
             implode("\n", array_column($state['log'], 'msg'))
         );
+        $this->assertNotEmpty($state['players']['p1']['live_zone']);
 
         $state = $this->ackBoth($state);
         $this->assertSame('outcomes', $state['live_show']['stage']);
+        $this->assertStringContainsString(
+            'performed Live! Blades:',
+            implode("\n", array_column($state['log'], 'msg'))
+        );
         $this->assertStringNotContainsString(
             'Live Scores:',
             implode("\n", array_column($state['log'], 'msg'))

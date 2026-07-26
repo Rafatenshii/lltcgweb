@@ -1800,11 +1800,11 @@ function liveShowStageFullyAcked(array $state): bool {
 function queueLiveShowOutcomes(array $state): array {
     if (!empty($state['live_show'])) {
         $cur = (string)($state['live_show']['stage'] ?? '');
-        // Already parked on a post-math beat — do not bump stage_seq again.
-        if (in_array($cur, ['performance', 'outcomes', 'judge', 'done'], true)) {
+        // Already on/after outcomes — do not bump stage_seq again.
+        if (in_array($cur, ['outcomes', 'judge', 'done'], true)) {
             return $state;
         }
-        return setLiveShowStage($state, 'performance');
+        return setLiveShowStage($state, 'outcomes');
     }
     $state['phase'] = 'live_judge';
     return resolveLiveJudge($state);
@@ -1840,6 +1840,10 @@ function advanceLiveShowStage(array $state): array {
     if ($stage === 'performance') {
         if (!empty($state['pending_prompt'])) {
             return $state;
+        }
+        // Yell spectacle done — resolve hearts, then park on outcomes.
+        if (!empty($state['_perf_yell_both_done']) || !empty($state['yell_reveal'])) {
+            return resolvePerformanceHeartsAfterYell($state);
         }
         return setLiveShowStage($state, 'outcomes');
     }
@@ -2198,6 +2202,18 @@ function executeYellRetry(array $state, string $pid, array $prompt): array {
 function finishYellRetryAndHearts(array $state): array {
     unset($state['_yell_retry_offers']);
     $state['_perf_yell_both_done'] = true;
+    // Sequential live_show: hold after Yell draws so the client can watch the
+    // performance beat before heart checks mutate Live storage. Once hearts have
+    // started (_perf_hearts_resolved), always resume them (Live Success prompts).
+    if (!empty($state['live_show'])
+        && ($state['live_show']['stage'] ?? '') === 'performance'
+        && empty($state['_perf_hearts_resolved'])) {
+        return $state;
+    }
+    return resolvePerformanceHeartsAfterYell($state);
+}
+
+function resolvePerformanceHeartsAfterYell(array $state): array {
     $first  = $state['first_player'];
     $second = ($first === 'p1') ? 'p2' : 'p1';
     $attempting = $state['live_attempt'] ?? ['p1', 'p2'];
@@ -4028,7 +4044,10 @@ function applyPhaseTimeouts(array &$state): bool {
     if (!empty($state['live_show'])
         && ($state['live_show']['stage'] ?? '') !== 'done'
         && empty($state['pending_prompt'])
-        && time() - intval($state['live_show']['started_at'] ?? time()) >= 20) {
+        && time() - intval($state['live_show']['started_at'] ?? time()) >= (
+            // Solo/CPU: give the human time to finish watching; PvP keeps a tighter sync.
+            count(liveShowRequiredAckPlayers($state)) >= 2 ? 25 : 90
+        )) {
         $state = advanceLiveShowStage($state);
         $state['seq'] = intval($state['seq'] ?? 0) + 1;
         return true;

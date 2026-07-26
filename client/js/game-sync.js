@@ -30,6 +30,7 @@
     const directorActive = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
     const serverLiveShowInFlight = !!G.gameState?.live_show?.stage
       && G.gameState.live_show.stage !== 'done';
+    if (G._liveShowRunnerActive) return true;
     if (!directorActive
         && !serverLiveShowInFlight
         && G._liveRoundPlaybackActive && !G.animating && !G._perfSpectacleActive && !G._liveSpectacleGateRunning) {
@@ -77,7 +78,10 @@
       G._liveRoundPostSpectacleReady = true;
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     }
-    return !!(G.animating || G._perfSpectacleActive || G._livePollHold
+    // live_show cursor: allow polls while spectacle chrome is up so stage advances
+    // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.
+    const spectacleBlocksPoll = !!G._perfSpectacleActive && !serverLiveShowInFlight;
+    return !!(G.animating || spectacleBlocksPoll || G._livePollHold
       || directorActive
       || G._replaySeekInFlight || G._replayForwardApply);
   };
