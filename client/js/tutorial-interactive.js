@@ -47,15 +47,9 @@
     switch (goal.type) {
       case 'ack_coin_flip':
         if (G()?.tutorialLive) {
-          // Advance after the flip lands and the local player has acked.
-          // Do not wait for CPU both-ready here — that belongs on choose_first
-          // (waiting for both ready left the guide stuck on "Watch the flip!").
-          const animDone = !!G()?._coinFlipAnimComplete;
-          const acked = !!(s.coin_flip?.ready?.[myId]) || !!G()?.coinFlipAckSent;
-          const dwellMs = 900;
-          const dwellOk = !G()._coinFlipAnimCompleteAt
-            || (Date.now() - G()._coinFlipAnimCompleteAt >= dwellMs);
-          return animDone && acked && dwellOk;
+          // Live tutorial keeps one bubble through flip + choose; do not advance
+          // on ack alone (goal is choose_first_player on the same step).
+          return false;
         }
         return !!(s.coin_flip?.ready?.[myId]) || s.phase !== 'coin_flip';
       case 'choose_first_player':
@@ -103,9 +97,10 @@
       case 'mulligan':
         return g.type === 'mulligan';
       case 'ack_coin_flip':
-        return g.type === 'ack_coin_flip';
+        // Same coin step covers flip ack + first-player choice.
+        return g.type === 'ack_coin_flip' || g.type === 'choose_first_player';
       case 'choose_first_player':
-        return g.type === 'choose_first_player';
+        return g.type === 'choose_first_player' || g.type === 'ack_coin_flip';
       default:
         return false;
     }
@@ -285,31 +280,12 @@
     }
   }
 
-  function scheduleCoinFlipGoalRetry() {
-    if (!isLive() || step()?.id !== 'coin') return;
-    if (G()._tutCoinGoalRetry) return;
-    const at = G()._coinFlipAnimCompleteAt;
-    if (!at) return;
-    const wait = Math.max(50, 920 - (Date.now() - at));
-    G()._tutCoinGoalRetry = setTimeout(() => {
-      G()._tutCoinGoalRetry = null;
-      checkGoalNow();
-    }, wait);
-  }
-
   async function onGoalMaybeMet(s, prev) {
     if (!isLive() || G().tutorialAdvancing || G()._tutGoalPending) return;
     const st = step();
     if (!st || st.kind === 'info') return;
     const myId = G().playerId || 'p1';
-    if (!goalMet(st.goal, s, myId, prev)) {
-      // Anim/ack landed but dwell window not finished yet — retry once dwell elapses.
-      if (st.goal?.type === 'ack_coin_flip' && G()?._coinFlipAnimComplete
-          && (s?.coin_flip?.ready?.[myId] || G()?.coinFlipAckSent)) {
-        scheduleCoinFlipGoalRetry();
-      }
-      return;
-    }
+    if (!goalMet(st.goal, s, myId, prev)) return;
     G()._tutGoalPending = true;
     try {
       if (G()._tutCoinGoalRetry) {
@@ -341,7 +317,7 @@
       G()._tutNeedsStepChrome = false;
       renderCurrentStep({ textOnly: false });
     }
-    if (step()?.id === 'choose_first' && s?.phase === 'coin_flip') {
+    if (step()?.id === 'coin' && s?.phase === 'coin_flip') {
       if (typeof global.syncCoinFlipChoiceUi === 'function') {
         global.syncCoinFlipChoiceUi(s, G().playerId || 'p1');
       }
@@ -416,7 +392,7 @@
       const bootEpoch = G()._gameSessionEpoch;
       const g = G();
       await loadTutorialLocalePacks();
-      const r = await fetch('./tutorial_guide.json?v=16', { cache: 'no-store' });
+      const r = await fetch('./tutorial_guide.json?v=17', { cache: 'no-store' });
       if (!r.ok) throw new Error('Could not load tutorial guide (HTTP ' + r.status + ')');
       const data = await r.json();
       if (!data?.steps?.length) throw new Error('Tutorial guide has no steps');

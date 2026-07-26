@@ -8353,7 +8353,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=51"></script>
-<script src="client/js/tutorial-interactive.js?v=21"></script>
+<script src="client/js/tutorial-interactive.js?v=22"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
 (function () {
@@ -29587,7 +29587,7 @@ function renderGame(s, opts = {}) {
     }
   } else if (!G.isTutorial || G.tutorialLive) {
     const tutStepId = G.tutorialLive ? tutorialLiveStepId() : '';
-    const showCoin = !G.tutorialLive || tutStepId === 'coin' || tutStepId === 'choose_first';
+    const showCoin = !G.tutorialLive || tutStepId === 'coin';
     if (showCoin) maybeShowCoinFlip(s, myId);
     else el('overlay-coin')?.classList.remove('open');
   if (s.phase === 'setup') {
@@ -33739,7 +33739,7 @@ function showCoinChoiceButtons() {
   if (!btns) return false;
   const selfBtn = el('btn-coin-first-self');
   const oppBtn = el('btn-coin-first-opp');
-  const tutChoose = G.tutorialLive && tutorialLiveStepId() === 'choose_first';
+  const tutChoose = G.tutorialLive && tutorialLiveStepId() === 'coin';
   if (oppBtn) {
     // Tutorial: keep both options visible; grey out "opponent goes first".
     oppBtn.hidden = false;
@@ -33801,22 +33801,18 @@ function syncCoinFlipChoiceUi(s, myId) {
   hideCoinChoiceButtons();
   clearCoinFlipLoserDismissTimer();
 
-  // Tutorial "watch the flip" step: show result only — choice comes on the next step.
+  // Tutorial coin step: one bubble through the flip; show go-first once the anim lands.
   if (G.tutorialLive && tutorialLiveStepId() === 'coin') {
-    el('coin-msg').textContent = t('coin.wonFlip', { name: winName });
-    el('coin-result').textContent = winner === myId ? t('coin.youWon') : t('coin.winnerChoosing');
-    openM('overlay-coin');
-    updatePhaseTimerUI(s);
-    return;
-  }
-
-  // Tutorial choose-first: always show go-first UI for the local winner (CPU ack may still be in flight).
-  if (G.tutorialLive && tutorialLiveStepId() === 'choose_first' && winner === myId) {
-    el('coin-msg').textContent = t('coin.chooseFirst');
-    el('coin-result').textContent = t('coin.youWon');
-    if (showCoinChoiceButtons()) {
-      el('btn-coin-first-self').textContent = t('coin.goFirst');
-      el('btn-coin-first-opp').textContent = t('coin.oppGoesFirst', { name: oppName });
+    if (winner === myId) {
+      el('coin-msg').textContent = t('coin.chooseFirst');
+      el('coin-result').textContent = t('coin.youWon');
+      if (showCoinChoiceButtons()) {
+        el('btn-coin-first-self').textContent = t('coin.goFirst');
+        el('btn-coin-first-opp').textContent = t('coin.oppGoesFirst', { name: oppName });
+      }
+    } else {
+      el('coin-msg').textContent = t('coin.wonFlip', { name: winName });
+      el('coin-result').textContent = t('coin.winnerChoosing');
     }
     openM('overlay-coin');
     updatePhaseTimerUI(s);
@@ -33856,8 +33852,7 @@ function tutorialLiveStepId() {
 }
 
 function tutorialLiveCoinActive() {
-  const id = tutorialLiveStepId();
-  return id === 'coin' || id === 'choose_first';
+  return tutorialLiveStepId() === 'coin';
 }
 
 function syncTutorialLivePresentation(s, myId) {
@@ -33866,9 +33861,10 @@ function syncTutorialLivePresentation(s, myId) {
     return;
   }
   const id = tutorialLiveStepId();
-  const coinActive = id === 'coin' || id === 'choose_first';
+  const coinActive = id === 'coin';
   document.body.classList.toggle('tutorial-live-coin', coinActive);
-  document.body.classList.toggle('tutorial-live-choose-first', id === 'choose_first');
+  // Choose-first chrome stays on the same coin step after the flip lands.
+  document.body.classList.toggle('tutorial-live-choose-first', coinActive && !!G._coinFlipAnimComplete);
   document.body.classList.toggle('tutorial-live-mulligan', id === 'mulligan');
   if (!coinActive) el('overlay-coin')?.classList.remove('open');
   requestAnimationFrame(() => repositionTutorialBubbleForLiveModal());
@@ -33878,7 +33874,7 @@ function ensureCoinFlipAcked(s, myId) {
   if (isReplayViewing()) return;
   const gs = s || G.gameState;
   const tutStep = tutorialLiveStepId();
-  if (G.tutorialLive && tutStep !== 'coin' && tutStep !== 'choose_first') return;
+  if (G.tutorialLive && tutStep !== 'coin') return;
   if (gs?.phase !== 'coin_flip' || !gs.coin_flip || !G._coinFlipAnimComplete) return;
   if (gs.coin_flip.ready?.[myId]) {
     G.coinFlipAckSent = true;
@@ -34019,33 +34015,25 @@ function maybeShowCoinFlip(s, myId) {
   if (G.tutorialLive && tutStep === 'coin') {
     if (!G._coinFlipAnimComplete) hideCoinChoiceButtons();
     if (G._tutCoinFlipAnimKey === tutFlipKey && G._coinFlipAnimComplete) {
+      ensureCoinFlipAcked(s, myId);
+      if (G.isCPU && !coinFlipBothReady(s)) {
+        doCPU(s);
+        armWatchdog(s);
+      }
       syncCoinFlipChoiceUi(s, myId);
+      if (!coinFlipBothReady(s) && G.isCPU) {
+        cpuSchedule(() => {
+          const live = G.gameState;
+          if (tutorialLiveStepId() !== 'coin' || live?.phase !== 'coin_flip') return;
+          syncCoinFlipChoiceUi(live, myId);
+        }, 520);
+      }
       if (typeof TutorialInteractive?.checkGoalNow === 'function') TutorialInteractive.checkGoalNow();
       return;
     }
     if (G.coinFlipSeq !== tutFlipKey) {
       G._tutCoinFlipAnimKey = tutFlipKey;
       startCoinFlipAnimation(s, myId, tutFlipKey);
-    }
-    return;
-  }
-
-  if (G.tutorialLive && tutStep === 'choose_first') {
-    if (!G._coinFlipAnimComplete) G._coinFlipAnimComplete = true;
-    const coin = el('coin-el');
-    if (coin) coin.className = 'coin landed-heads';
-    ensureCoinFlipAcked(s, myId);
-    if (G.isCPU && !coinFlipBothReady(s)) {
-      doCPU(s);
-      armWatchdog(s);
-    }
-    syncCoinFlipChoiceUi(s, myId);
-    if (!coinFlipBothReady(s) && G.isCPU) {
-      cpuSchedule(() => {
-        const live = G.gameState;
-        if (tutorialLiveStepId() !== 'choose_first' || live?.phase !== 'coin_flip') return;
-        syncCoinFlipChoiceUi(live, myId);
-      }, 520);
     }
     return;
   }
@@ -36030,7 +36018,7 @@ function tutorialSpotlightHighlights(step) {
   if (!step || TUTORIAL_PROMPT_STEPS.has(step.id)) return [];
   if (step.id === 't2_play_shiki_skill') return [];
   if (G.tutorialLive) {
-    if (step.kind === 'action' && step.id !== 'coin' && step.id !== 'choose_first' && step.id !== 'mulligan') {
+    if (step.kind === 'action' && step.id !== 'coin' && step.id !== 'mulligan') {
       return [];
     }
     if (step.kind === 'info') {
@@ -36243,17 +36231,17 @@ function renderTutorialStep(idx, opts = {}) {
   if (G.tutorialLive && window.TutorialInteractive?.syncStepUi) TutorialInteractive.syncStepUi();
   if (G.tutorialLive && G.gameState) {
     syncTutorialLivePresentation(G.gameState, G.playerId || 'p1');
-    if ((step.id === 'coin' || step.id === 'choose_first') && G.gameState.phase === 'coin_flip') {
+    if (step.id === 'coin' && G.gameState.phase === 'coin_flip') {
       maybeShowCoinFlip(G.gameState, G.playerId || 'p1');
       const cpuId = cpuOpponentId();
       if (G.isCPU && !G.gameState.coin_flip?.ready?.[cpuId]) {
         doCPU(G.gameState);
         armWatchdog(G.gameState);
       }
-      if (step.id === 'choose_first' && G._coinFlipAnimComplete) {
+      if (G._coinFlipAnimComplete) {
         syncCoinFlipChoiceUi(G.gameState, G.playerId || 'p1');
       }
-    } else if (G.tutorialLive && step.id !== 'coin' && step.id !== 'choose_first') {
+    } else if (G.tutorialLive && step.id !== 'coin') {
       el('overlay-coin')?.classList.remove('open');
     }
     if (step.id === 'mulligan' && G.gameState.phase === 'setup') {

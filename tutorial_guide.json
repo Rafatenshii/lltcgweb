@@ -309,7 +309,7 @@
     {
       "id": "coin",
       "kind": "action",
-      "dialogue": "Next, decide who plays first. A **coin flip** picks the winner, and the winner decides as they want. Watch the flip!",
+      "dialogue": "A **coin flip** decides who chooses first. When you win, tap **I'll go first**.",
       "highlights": [
         {
           "target": "overlay-coin",
@@ -318,33 +318,16 @@
         }
       ],
       "goal": {
-        "type": "ack_coin_flip"
+        "type": "choose_first_player",
+        "pick": "self"
       },
       "spotlightDim": "none",
       "bubbleAnchor": "overlay-coin"
     },
     {
-      "id": "choose_first",
-      "kind": "action",
-      "dialogue": "You won the flip, so the choice is yours — tap **I'll go first** to take the first turn.",
-      "highlights": [
-        {
-          "target": "coin-choice-btns",
-          "shape": "rounded",
-          "padding": 8
-        }
-      ],
-      "goal": {
-        "type": "choose_first_player",
-        "pick": "self"
-      },
-      "spotlightDim": "none",
-      "bubbleAnchor": "coin-choice-btns"
-    },
-    {
       "id": "mulligan",
       "kind": "action",
-      "dialogue": "Each player draws **6** cards for their opening hand. If those six aren't the cards you want, that's fine — set any of them aside, draw the same number, and shuffle the ones you set aside back in. **Shibuya Kanon** costs **9**, which is steep this early — tap her, then **Replace 1 card**.",
+      "dialogue": "You draw **6** cards. Set any of them aside, and you'll draw new ones. Let's **Replace 1 card**.",
       "highlights": [
         {
           "target": "mulligan-overlay",

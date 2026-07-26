@@ -214,41 +214,26 @@ guide = {
             ),
             "highlights": [H("my-deck-pile", padding=10)],
         },
-        # 0:54 — decide who plays first
+        # 0:54 — decide who plays first (one bubble through flip + choose)
         {
             "id": "coin",
             "kind": "action",
             "dialogue": (
-                "Next, decide who plays first. A **coin flip** picks the winner, and the "
-                "winner decides as they want. Watch the flip!"
+                "A **coin flip** decides who chooses first. When you win, tap "
+                "**I'll go first**."
             ),
             "highlights": [H("overlay-coin")],
-            "goal": {"type": "ack_coin_flip"},
-            "spotlightDim": "none",
-            "bubbleAnchor": "overlay-coin",
-        },
-        {
-            "id": "choose_first",
-            "kind": "action",
-            "dialogue": (
-                "You won the flip, so the choice is yours — tap **I'll go first** to take "
-                "the first turn."
-            ),
-            "highlights": [H("coin-choice-btns", padding=8)],
             "goal": {"type": "choose_first_player", "pick": "self"},
             "spotlightDim": "none",
-            "bubbleAnchor": "coin-choice-btns",
+            "bubbleAnchor": "overlay-coin",
         },
         # 1:04–1:35 — opening hand and the exchange
         {
             "id": "mulligan",
             "kind": "action",
             "dialogue": (
-                "Each player draws **6** cards for their opening hand. If those six "
-                "aren't the cards you want, that's fine — set any of them aside, draw the "
-                "same number, and shuffle the ones you set aside back in. **Shibuya "
-                "Kanon** costs **9**, which is steep this early — tap her, then **Replace "
-                "1 card**."
+                "You draw **6** cards. Set any of them aside, and you'll draw new ones. "
+                "Let's **Replace 1 card**."
             ),
             "highlights": [H("mulligan-overlay")],
             "goal": {"type": "mulligan", "replace": ["PL!SP-sd1-012-SD"]},

@@ -85,8 +85,7 @@ input), `watch` (board presentation plays out).
 | — (board tour for this app) | Live card storage | `intro_live` | info |
 | — (board tour for this app) | Main deck / energy deck / Waiting Room / Success storage | `zones_storage` | info |
 | 0:43 | Shuffle main deck into main deck storage | `prep_deck` | info |
-| 0:54 | Decide who plays first (video: rock-paper-scissors; here: coin flip) | `coin` | action |
-| 0:54 | Winner chooses who goes first | `choose_first` | action |
+| 0:54 | Decide who plays first + winner chooses (one bubble through flip) | `coin` | action |
 | 1:04–1:35 | Six-card opening hand and the hand exchange | `mulligan` | action |
 | 1:35 | Three energy cards face up on the energy deck storage | `prep_energy` | info |
 | 1:44–1:56 | Active Phase — stand rested energy | `phase_active` | info |
