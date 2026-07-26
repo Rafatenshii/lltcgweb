@@ -170,6 +170,30 @@
     }
     if (G.animating || G._perfSpectacleActive || G._liveSpectacleGateRunning || G._liveRoundPlaybackActive
         || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active)) {
+      // Authoritative live_show cursor advances must not sit behind open chrome —
+      // that freezes Win/Loss for players waiting on an opponent ack, and spectators
+      // who never ack but must still observe stage_seq changes.
+      const incomingShow = s?.live_show || null;
+      const currentShow = G.gameState?.live_show || null;
+      const liveShowCursorAdvanced = !!(
+        incomingShow
+        && (
+          !currentShow
+          || (incomingShow.stage || '') !== (currentShow.stage || '')
+          || (incomingShow.stage_seq ?? 0) !== (currentShow.stage_seq ?? 0)
+          || incomingShow.stage === 'done'
+        )
+      ) || (!!currentShow && currentShow.stage !== 'done' && !incomingShow);
+      if (liveShowCursorAdvanced && !G._liveShowRunnerActive) {
+        TCG_DEBUG.log('state', 'apply live_show advance during spectacle', {
+          seq: s.seq,
+          from: currentShow?.stage,
+          to: incomingShow?.stage,
+          stageSeq: incomingShow?.stage_seq,
+        });
+        applyStateUpdate(s);
+        return;
+      }
       TCG_DEBUG.log('state', 'queue (animating)', { seq: s.seq, phase: s.phase, q: (G._pendingStateQueue?.length || 0) + 1 });
       if (G.tutorialLive && typeof global.TutorialInteractive?.onIncomingState === 'function') {
         global.TutorialInteractive.onIncomingState(s, G.gameState);

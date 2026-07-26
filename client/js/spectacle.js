@@ -6311,6 +6311,12 @@ async function awaitMidSpectacleYellRetryPrompts(ctx, myId) {
   return workCtx;
 }
 
+/** Stage/live cards live under .perf-col (opacity 0 until .in). Yell/heart flies do not. */
+function perfEnsureColumnsVisible() {
+  el('perf-col-mine')?.classList.add('in');
+  el('perf-col-opp')?.classList.add('in');
+}
+
 async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, animate = true } = {}) {
   if (targetPhase === 'closed' || !targetPhase) {
     perfCloseSpectacle();
@@ -6328,8 +6334,10 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
       perfOpenSpectacle();
       return;
     }
+    // Playmat Live Start beat — do not leave a seek cursor past intro, or the
+    // next yell_opp seek skips .perf-col.in and cards stay invisible.
     perfCloseSpectacle();
-    G._perfSpectaclePhase = 'live_start';
+    G._perfSpectaclePhase = 'closed';
     return;
   }
   const ctxKey = `${next.seq}:${next.turn}:${next.phase}`;
@@ -6352,6 +6360,7 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
   if (!animate || (cur !== 'closed' && tgtIdx <= curIdx)) {
     if (needsOppYellAnim && targetPhase === 'yell_opp') {
       perfOpenSpectacle();
+      perfEnsureColumnsVisible();
       if (G.isTutorial) {
         const step = G.tutorialData?.steps?.[G.tutorialStep];
         const hl = step?.highlights || [];
@@ -6368,9 +6377,8 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     perfApplyPhaseInstant(ctx, targetPhase);
     G._perfSpectaclePhase = targetPhase;
     perfOpenSpectacle();
+    if (tgtIdx >= perfPhaseIdx('intro')) perfEnsureColumnsVisible();
     if (targetPhase === 'intro' && cur === 'closed') {
-      el('perf-col-mine')?.classList.add('in');
-      el('perf-col-opp')?.classList.add('in');
       void perfFlashSplash(t('splash.liveStartFlash'), 1300, 'live-start');
       if (G.isTutorial) {
         const step = G.tutorialData?.steps?.[G.tutorialStep];
@@ -6388,15 +6396,23 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     aborted = true;
     G._perfSpectacleAborted = true;
   };
-  if (curIdx < perfPhaseIdx('intro') && tgtIdx >= perfPhaseIdx('intro')) {
+  // After playmat live_start the cursor used to stick past intro, so yell seek
+  // skipped .perf-col.in (flies still showed — fixed-position outside columns).
+  const colsMissingIn = !el('perf-col-mine')?.classList.contains('in')
+    || !el('perf-col-opp')?.classList.contains('in');
+  const needsIntroReveal = tgtIdx >= perfPhaseIdx('intro') && (
+    curIdx < perfPhaseIdx('intro')
+    || cur === 'closed'
+    || cur === 'live_start'
+  );
+  if (needsIntroReveal) {
     el('perf-col-mine')?.classList.remove('in');
     el('perf-col-opp')?.classList.remove('in');
     const splashP = animate
       ? perfFlashSplash(t('splash.liveStartFlash'), 1300, 'live-start')
       : Promise.resolve();
     requestAnimationFrame(() => {
-      el('perf-col-mine')?.classList.add('in');
-      el('perf-col-opp')?.classList.add('in');
+      perfEnsureColumnsVisible();
     });
     if (G.isTutorial) {
       const step = G.tutorialData?.steps?.[G.tutorialStep];
@@ -6419,6 +6435,8 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     await awaitTutorialLiveSpectacleGate('hearts');
     await awaitTutorialLiveSpectacleGate('hearts2');
     if (aborted) return;
+  } else if (colsMissingIn && tgtIdx >= perfPhaseIdx('intro')) {
+    perfEnsureColumnsVisible();
   }
   if (tgtIdx >= perfPhaseIdx('intro') && tgtIdx < perfPhaseIdx('yell_mine') && tgtIdx > perfPhaseIdx(G._perfSpectaclePhase || 'closed')) {
     perfApplyPhaseInstant(ctx, targetPhase);
@@ -6612,7 +6630,8 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   }
   if (stage === 'live_start') {
     if (G._perfSpectacleActive) perfCloseSpectacle();
-    G._perfSpectaclePhase = 'live_start';
+    // Keep seek cursor at closed so performance → yell_opp still fades columns in.
+    G._perfSpectaclePhase = 'closed';
     await perfSleep(350);
     return;
   }
@@ -6672,6 +6691,7 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
 
       // Spectators / replay follow the cursor; players advance it.
+      // Keep observing via polls (pollPresentationBlocked allows live_show sync).
       if (G.isSpectator || (typeof isReplayViewing === 'function' && isReplayViewing())) {
         G.gameState = board;
         break;
@@ -6679,6 +6699,8 @@ async function presentServerLiveShowStage(prev, next, myId) {
 
       if (G._liveShowAckedKey === key) {
         // Already acked this beat — wait for the next polled stage.
+        // Ensure columns stay visible while chrome remains up for yell/judge.
+        if (G._perfSpectacleActive) perfEnsureColumnsVisible();
         G.gameState = board;
         break;
       }

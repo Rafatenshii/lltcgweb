@@ -8366,8 +8366,8 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/api-client.js?v=11"></script>
 <script src="client/js/ranked-pr-reward.js?v=2"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/game-sync.js?v=21"></script>
-<script src="client/js/state-apply.js?v=40"></script>
+<script src="client/js/game-sync.js?v=22"></script>
+<script src="client/js/state-apply.js?v=41"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=52"></script>
@@ -23306,21 +23306,28 @@ function clearPvPWatchdog() {
 
 /** Unblock polls/animations without discarding queued server snapshots. */
 function releaseStuckPresentation() {
-  if (!G.animating && !G._livePollHold && !G._perfSpectacleActive && !G._liveSpectacleGateRunning) return;
+  if (!G.animating && !G._livePollHold && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
+      && !G._liveShowRunnerActive && !G._liveRoundPlaybackActive) return;
   TCG_DEBUG.warn('pvp', 'release stuck presentation', {
     animating: G.animating,
     pollHold: G._livePollHold,
     spectacle: G._perfSpectacleActive,
     gate: G._liveSpectacleGateRunning,
+    runner: !!G._liveShowRunnerActive,
     queued: G._pendingStateQueue?.length || 0,
     logSync: G._logSyncInFlight,
   });
-  G._presentationAborted = true;
+  // Close chrome first — leaving _perfSpectacleActive true kept polls blocked.
+  if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+  else G._perfSpectacleActive = false;
+  G._liveShowRunnerActive = false;
   G.animating = false;
   G._livePollHold = false;
   G._liveRoundPlaybackActive = false;
   G._liveSpectacleGateRunning = false;
   G._animHideIids = null;
+  // Do not leave _presentationAborted set — flushPendingState refuses to apply when true.
+  G._presentationAborted = false;
   clearDeferredPromptState();
   clearOpponentSkillWaitLogKey();
   if (G.playerId && G.gameState) {
@@ -37394,7 +37401,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=36"></script>
+<script src="client/js/spectacle.js?v=37"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>

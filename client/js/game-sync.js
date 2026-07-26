@@ -152,7 +152,8 @@
     G.syncFallbackTimer = setTimeout(async () => {
       G.syncFallbackTimer = null;
       if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
-      if (G.animating || G._perfSpectacleActive || G._livePollHold) {
+      // Use pollPresentationBlocked so live_show cursor sync is allowed while chrome is up.
+      if (pollPresentationBlocked()) {
         startSyncFallbackPoll();
         return;
       }
@@ -274,18 +275,25 @@
 
   global.doPollLegacy = async function doPollLegacy() {
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
-    if (G.animating || G._perfSpectacleActive) {
-      TCG_DEBUG.logOnce('poll', `blocked:${G.animating}:${G._perfSpectacleActive}`, 'blocked (animating/spectacle)', { animating: G.animating, spectacle: G._perfSpectacleActive });
+    // Must use pollPresentationBlocked — raw _perfSpectacleActive blocked CPU/spectator
+    // from seeing live_show stage advances (Win/Loss freeze).
+    if (pollPresentationBlocked()) {
+      TCG_DEBUG.logOnce(
+        'poll',
+        `blocked:${G.animating}:${G._perfSpectacleActive}:${!!G.gameState?.live_show?.stage}`,
+        'blocked (presentation)',
+        {
+          animating: G.animating,
+          spectacle: G._perfSpectacleActive,
+          liveShow: G.gameState?.live_show?.stage || null,
+          runner: !!G._liveShowRunnerActive,
+          pollHold: !!G._livePollHold,
+        }
+      );
       if (G.polling) G.pollTimer = setTimeout(doPollLegacy, 400);
       return;
     }
     ensurePollHoldReleased(G.gameState);
-    const blockPoll = G._livePollHold;
-    if (blockPoll) {
-      TCG_DEBUG.logOnce('poll', 'livePollHold', 'blocked (livePollHold)', TCG_DEBUG.snap(G.gameState));
-      if (G.polling) G.pollTimer = setTimeout(doPollLegacy, 400);
-      return;
-    }
     const pollEpoch = G._gameSessionEpoch;
     const pollRoomId = G.roomId;
     let pollError = null;
@@ -360,6 +368,15 @@
         if (typeof global.syncPromptSubmitState === 'function') global.syncPromptSubmitState(d);
       } else if (typeof global.clearDeferredPromptState === 'function') {
         global.clearDeferredPromptState();
+      }
+      // CPU prompt resolve often bypasses applyStateUpdate — resume live_show acks.
+      if (!d.pending_prompt
+          && d.live_show?.stage
+          && d.live_show.stage !== 'done'
+          && !G._liveShowRunnerActive
+          && typeof presentServerLiveShowStage === 'function') {
+        const myId = G.playerId || d.my_id || 'p1';
+        void presentServerLiveShowStage(null, d, myId);
       }
       return d;
     } catch (e) {
