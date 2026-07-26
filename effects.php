@@ -2582,8 +2582,7 @@ function finishLiveSuccessEffects(array $state): array {
         // Last-resort heal: no continue pid — go to judge rather than softlock.
         $state = clearLiveSuccessResumeState($state);
         unset($state['_performance_continue']);
-        $state['phase'] = 'live_judge';
-        $state = resolveLiveJudge($state);
+        $state = queueLiveShowOutcomes($state);
     }
     return $state;
 }

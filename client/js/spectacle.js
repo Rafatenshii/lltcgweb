@@ -165,6 +165,21 @@ function liveSpectacleStillPending(prev, next, showTurn = null) {
   return liveRoundHadLivesPlayed(prev, next, turn) && !liveSpectacleDoneForTurn(turn);
 }
 
+const LIVE_SHOW_STAGE_ORDER = ['reveal', 'live_start', 'performance', 'outcomes', 'judge', 'done'];
+function liveShowStageAtLeast(s, stage) {
+  const current = s?.live_show?.stage;
+  if (!current) return false;
+  return LIVE_SHOW_STAGE_ORDER.indexOf(current) >= LIVE_SHOW_STAGE_ORDER.indexOf(stage);
+}
+
+function liveJudgePresentationPending(s = G.gameState) {
+  if (!s) return false;
+  if (s.live_show && !liveShowStageAtLeast(s, 'judge')) return true;
+  if (G._perfSpectacleActive || G._liveSpectacleGateRunning || G._liveRoundPlaybackActive) return true;
+  const prev = buildPerfSpectaclePrev(null, s);
+  return !!(prev && liveSpectacleStillPending(prev, s));
+}
+
 function liveSpectacleOwed(prev, next, showTurn = null) {
   if (!prev || !next || isSlideshowTutorial()) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
@@ -2048,6 +2063,7 @@ function isLivePipelineLogBanner(msg) {
   if (msg === '=== LIVE Phase ===') return true;
   if (/attempts the Live performance!/.test(msg)) return true;
   if (/ performed Live! Blades: /.test(msg)) return true;
+  if (/^Live Scores: /.test(msg)) return true;
   return false;
 }
 
@@ -2315,7 +2331,7 @@ function setJudgeHint(text, tone) {
 }
 
 function holdLiveJudgeOverlay(myScore, oppScore, hint, tone, ms) {
-  if (G._perfSpectacleActive || G._skipJudgeOverlay || G._postSpectacleSplashPause) return;
+  if (liveJudgePresentationPending() || G._skipJudgeOverlay || G._postSpectacleSplashPause) return;
   G._liveJudgeOverlayHold = true;
   G._liveJudgeScores = { my: myScore, opp: oppScore };
   el('ljo-my-scr').textContent = myScore;
@@ -6519,8 +6535,57 @@ async function syncTutorialSpectacle(prev, next, step, forward, myId) {
   }
 }
 
+const LIVE_SHOW_TO_PERF_PHASE = {
+  reveal: 'intro',
+  live_start: 'live_start',
+  performance: 'yell_opp',
+  outcomes: 'outcomes',
+  judge: 'judge',
+};
+
+/**
+ * Present exactly the persisted server beat. Players acknowledge only after its
+ * animation completes; spectators seek to the same beat without blocking it.
+ */
+async function presentServerLiveShowStage(prev, next, myId) {
+  const show = next?.live_show;
+  if (!show?.stage || show.stage === 'done') {
+    if (show?.stage === 'done' && G._perfSpectacleActive) perfCloseSpectacle();
+    return false;
+  }
+  const target = LIVE_SHOW_TO_PERF_PHASE[show.stage];
+  if (!target) return false;
+  const key = `${show.turn}:${show.stage_seq}:${show.stage}`;
+  const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
+  G._liveRoundPlaybackActive = true;
+  holdLivePolls();
+  try {
+    await perfSeekPhase(perfPrev, next, myId, target, {
+      forward: true,
+      animate: G._liveShowPresentedKey !== key,
+    });
+    G._liveShowPresentedKey = key;
+    if (!G.isSpectator && !isReplayViewing() && G._liveShowAckedKey !== key
+        && !next.pending_prompt) {
+      G._liveShowAckedKey = key;
+      await apiPost('action', {
+        room_id: G.roomId,
+        token: G.token,
+        type: 'live_show_ack',
+        data: { stage_seq: show.stage_seq },
+      });
+      if (typeof scheduleDeferredSyncPull === 'function') scheduleDeferredSyncPull(80);
+    }
+  } finally {
+    G._liveRoundPlaybackActive = false;
+    releaseLivePollsAndFlush();
+  }
+  return true;
+}
+
 function shouldSuppressLiveJudgeMatOverlay(s) {
   if (!s || !bothPlayersClearedLiveThisRound(s)) return false;
+  if (liveJudgePresentationPending(s)) return true;
   if (G._postSpectacleSplashPause) return true;
   if (G._perfSpectacleDoneKey) {
     const perfPrev = buildPerfSpectaclePrev(null, s);
@@ -6532,7 +6597,7 @@ function shouldSuppressLiveJudgeMatOverlay(s) {
 function updateLiveJudgeOverlay(s, me, opp, myId) {
   const root = el('live-judge-overlay');
   if (!root || !me || !opp) return;
-  if (G._perfSpectacleActive || G._skipJudgeOverlay) {
+  if (liveJudgePresentationPending(s) || G._skipJudgeOverlay) {
     root.classList.remove('show');
     root.hidden = true;
     return;

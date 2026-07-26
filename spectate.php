@@ -376,6 +376,7 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
 
     $viewPid = 'p1';
     $oppId = 'p2';
+    hideLiveJudgeSpoilersFromFilteredState($filtered, $state);
     if (!empty($filtered['log'])) {
         $filtered['log'] = array_map(
             static fn($entry) => filterLogEntryForViewer(
@@ -444,7 +445,8 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
             'continuous_heart_grants' => $mineContinuousGrants,
             'yell'   => $yellBladeMine,
             'perf_yell' => $yellBladeMinePerf,
-            'live_score_bonus' => getLiveScoreBonus($state, $viewPid),
+            'live_score_bonus' => !empty($filtered['live_scores_hidden'])
+                ? 0 : getLiveScoreBonus($state, $viewPid),
             'active_effects' => collectActiveContinuousEffects($state, $viewPid),
         ],
         'opp' => [
@@ -460,7 +462,8 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
             'yell'   => $yellBladeOpp,
             'perf_yell' => $yellBladeOppPerf,
             // Omit face-down Live storage — Active effects / bonus text would spoil Lives set.
-            'live_score_bonus' => getLiveScoreBonusBreakdown($state, $oppId, true)['total'],
+            'live_score_bonus' => !empty($filtered['live_scores_hidden'])
+                ? 0 : getLiveScoreBonusBreakdown($state, $oppId, true)['total'],
             'active_effects' => collectActiveContinuousEffects($state, $oppId, true),
         ],
     ];

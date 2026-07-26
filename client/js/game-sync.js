@@ -28,7 +28,10 @@
   global.pollPresentationBlocked = function pollPresentationBlocked() {
     // Soft-heal only when the director is idle — never clear flags under an active run.
     const directorActive = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
+    const serverLiveShowInFlight = !!G.gameState?.live_show?.stage
+      && G.gameState.live_show.stage !== 'done';
     if (!directorActive
+        && !serverLiveShowInFlight
         && G._liveRoundPlaybackActive && !G.animating && !G._perfSpectacleActive && !G._liveSpectacleGateRunning) {
       TCG_DEBUG.warn('poll', 'clear stale liveRoundPlaybackActive');
       G._liveRoundPlaybackActive = false;
@@ -49,6 +52,7 @@
     // used to abort Performance mid-show when animating briefly dropped.
     const judgeWaitNoLocalPrompt = ph === 'live_judge' && !prType;
     if (!directorActive
+        && !serverLiveShowInFlight
         && G._perfSpectacleActive && !G.animating && !G._liveSpectacleGateRunning
         && !G._liveRoundPlaybackActive
         && (mainStable || judgePickReady || judgeWaitNoLocalPrompt)) {
@@ -60,6 +64,7 @@
     // Spectators stuck mid Win/Loss with playback held but no animation — release
     // only after the show finished or never started (postSpectacleReady / no defer).
     if (!directorActive
+        && !serverLiveShowInFlight
         && !!G.isSpectator
         && ph === 'live_judge'
         && G._liveRoundPlaybackActive

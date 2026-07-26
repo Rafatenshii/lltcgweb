@@ -383,6 +383,20 @@
       return false;
     };
 
+    if (s.live_show?.stage && s.live_show.stage !== 'done'
+        && typeof presentServerLiveShowStage === 'function') {
+      // Paint only the board-safe state first. Judge chrome remains gated by
+      // live_show.stage while the director seeks/resumes the persisted beat.
+      commitServerBoardToUi(s);
+      await presentServerLiveShowStage(prev, s, G.playerId);
+      const live = G.gameState || s;
+      if (live.pending_prompt?.responder === G.playerId
+          && typeof ensurePendingPromptSurfaced === 'function') {
+        ensurePendingPromptSurfaced(live, G.playerId);
+      }
+      return;
+    }
+
     if (spectacleGateActive && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {
       // Soft-merge only while Live Start skill waits own the round — not for every
       // stuck _liveRoundPlaybackActive (that caused ghost Performance loops).

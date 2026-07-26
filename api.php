@@ -464,6 +464,59 @@ function filterStateForClient(array $state, string $roomId, string $token): arra
     return $filtered;
 }
 
+function liveShowStageIndex(array $state): int {
+    $stages = ['reveal', 'live_start', 'performance', 'outcomes', 'judge', 'done'];
+    $stage = (string)($state['live_show']['stage'] ?? '');
+    $idx = array_search($stage, $stages, true);
+    return $idx === false ? count($stages) : intval($idx);
+}
+
+function hideLiveJudgeSpoilersFromFilteredState(array &$filtered, array $source): void {
+    if (empty($source['live_show']) || liveShowStageIndex($source) >= 4) {
+        return;
+    }
+    $filtered['live_scores_hidden'] = true;
+    if (!empty($filtered['log'])) {
+        $filtered['log'] = array_values(array_filter(
+            $filtered['log'],
+            static function ($entry): bool {
+                $msg = is_array($entry) ? (string)($entry['msg'] ?? '') : (string)$entry;
+                if (str_starts_with($msg, 'Live Scores:')) {
+                    return false;
+                }
+                if ($msg === '=== Live Win/Loss Check Phase ===') {
+                    return false;
+                }
+                if (str_contains($msg, ' wins the Live —')) {
+                    return false;
+                }
+                if ($msg === 'Neither player succeeds — no Live winner this turn.') {
+                    return false;
+                }
+                return true;
+            }
+        ));
+    }
+    // Hide printed Live card scores on the mat until the judge beat.
+    foreach (['p1', 'p2'] as $pid) {
+        if (empty($filtered['players'][$pid]['live_zone']) || !is_array($filtered['players'][$pid]['live_zone'])) {
+            continue;
+        }
+        foreach ($filtered['players'][$pid]['live_zone'] as &$card) {
+            if (!is_array($card)) {
+                continue;
+            }
+            if (array_key_exists('score', $card)) {
+                $card['score'] = null;
+            }
+            if (array_key_exists('live_score_bonus', $card)) {
+                $card['live_score_bonus'] = 0;
+            }
+        }
+        unset($card);
+    }
+}
+
 function getStatePolling(): void {
     $roomId      = $_GET['room_id'] ?? '';
     $playerToken = $_GET['token']   ?? $_SERVER['HTTP_X_PLAYER_TOKEN'] ?? '';
@@ -989,6 +1042,9 @@ function applyAction(array $state, string $playerId, string $type, array $data):
 
         case 'confirm_live':
             return actionConfirmLive($state, $playerId, $data);
+
+        case 'live_show_ack':
+            return actionLiveShowAck($state, $playerId, $data);
 
         // ── MISC ────────────────────────────
         case 'resign':
@@ -1599,6 +1655,33 @@ function beginPerformancePhase(array $state): array {
         return skipEmptyPerformanceRound($state);
     }
     $state = addLog($state, '=== Performance Phase ===');
+    // Sequential live_show cursor: park on reveal first so clients/spectators can
+    // flip storage before Live Start skills and Yell math run.
+    if (empty($state['tutorial_guide'])) {
+        $state['live_attempt'] = [];
+        if (playerAttemptingLivePerformance($state, 'p1')) {
+            $state['live_attempt'][] = 'p1';
+        }
+        if (playerAttemptingLivePerformance($state, 'p2')) {
+            $state['live_attempt'][] = 'p2';
+        }
+        $state['live_round_success'] = [];
+        foreach (['p1', 'p2'] as $pid) {
+            if (!in_array($pid, $state['live_attempt'], true)) {
+                $state['live_round_success'][$pid] = false;
+            }
+        }
+        $state = initLiveModifiers($state);
+        $state['phase'] = 'live_start_effects';
+        $state['live_show'] = [
+            'turn' => intval($state['turn'] ?? 1),
+            'stage' => 'reveal',
+            'started_at' => time(),
+            'stage_seq' => 1,
+            'acks' => [],
+        ];
+        return $state;
+    }
     return beginLiveStartEffectPhase(
         $state,
         playerAttemptingLivePerformance($state, 'p1'),
@@ -1671,6 +1754,125 @@ function skipEmptyPerformanceRound(array $state): array {
 
 function actionConfirmLive(array $state, string $pid, array $data): array {
     // This is used for any confirmation step mid-live (future: special abilities)
+    $state['seq']++;
+    return $state;
+}
+
+function setLiveShowStage(array $state, string $stage): array {
+    if (empty($state['live_show']) || !is_array($state['live_show'])) {
+        $state['live_show'] = [
+            'turn' => intval($state['turn'] ?? 1),
+            'stage_seq' => 0,
+        ];
+    }
+    $state['live_show']['stage'] = $stage;
+    $state['live_show']['started_at'] = time();
+    $state['live_show']['stage_seq'] = intval($state['live_show']['stage_seq'] ?? 0) + 1;
+    $state['live_show']['acks'] = [];
+    return $state;
+}
+
+function liveShowRequiredAckPlayers(array $state): array {
+    $required = [];
+    foreach (['p1', 'p2'] as $pid) {
+        if (empty($state['players'][$pid]) || isCpuPlayer($state['players'][$pid])) {
+            continue;
+        }
+        $required[] = $pid;
+    }
+    return $required;
+}
+
+function liveShowStageFullyAcked(array $state): bool {
+    $acks = $state['live_show']['acks'] ?? [];
+    foreach (liveShowRequiredAckPlayers($state) as $pid) {
+        if (empty($acks[$pid])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Hold the completed heart/outcome calculation for its own presentation beat.
+ * Judge scores and winner movement are intentionally not computed here.
+ */
+function queueLiveShowOutcomes(array $state): array {
+    if (!empty($state['live_show'])) {
+        $cur = (string)($state['live_show']['stage'] ?? '');
+        // Already parked on a post-math beat — do not bump stage_seq again.
+        if (in_array($cur, ['performance', 'outcomes', 'judge', 'done'], true)) {
+            return $state;
+        }
+        return setLiveShowStage($state, 'performance');
+    }
+    $state['phase'] = 'live_judge';
+    return resolveLiveJudge($state);
+}
+
+function advanceLiveShowStage(array $state): array {
+    $stage = (string)($state['live_show']['stage'] ?? '');
+    if ($stage === 'reveal') {
+        $state = setLiveShowStage($state, 'live_start');
+        $attempting = $state['live_attempt'] ?? [];
+        return beginLiveStartEffectPhase(
+            $state,
+            in_array('p1', $attempting, true),
+            in_array('p2', $attempting, true)
+        );
+    }
+    if ($stage === 'live_start') {
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+        // Enter performance before Yell math so mid-prompt resolves keep the cursor
+        // here (acks reset) instead of re-firing live_start.
+        $state = setLiveShowStage($state, 'performance');
+        $state['phase'] = 'live_performance_first';
+        $state = addLog($state, '=== Live Show ===');
+        $first = $state['first_player'];
+        $attempting = $state['live_attempt'] ?? ['p1', 'p2'];
+        if (in_array($first, $attempting, true)) {
+            return resolvePerformancePhase($state, $first);
+        }
+        return continuePerformancePhase($state, $first);
+    }
+    if ($stage === 'performance') {
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+        return setLiveShowStage($state, 'outcomes');
+    }
+    if ($stage === 'outcomes') {
+        $state['phase'] = 'live_judge';
+        return resolveLiveJudge($state);
+    }
+    if ($stage === 'judge') {
+        $state = setLiveShowStage($state, 'done');
+        return advanceLiveJudgeWinners($state);
+    }
+    return $state;
+}
+
+function actionLiveShowAck(array $state, string $pid, array $data): array {
+    if (empty($state['live_show']) || !is_array($state['live_show'])) {
+        throw new Exception('No Live show is active');
+    }
+    $stageSeq = intval($data['stage_seq'] ?? -1);
+    if ($stageSeq !== intval($state['live_show']['stage_seq'] ?? 0)) {
+        return $state;
+    }
+    // Skills must finish before the presentation cursor can advance.
+    if (!empty($state['pending_prompt'])) {
+        return $state;
+    }
+    if (!isset($state['live_show']['acks']) || !is_array($state['live_show']['acks'])) {
+        $state['live_show']['acks'] = [];
+    }
+    $state['live_show']['acks'][$pid] = true;
+    if (liveShowStageFullyAcked($state)) {
+        $state = advanceLiveShowStage($state);
+    }
     $state['seq']++;
     return $state;
 }
@@ -2037,8 +2239,7 @@ function finishYellRetryAndHearts(array $state): array {
         }
         return $state;
     }
-    $state['phase'] = 'live_judge';
-    return resolveLiveJudge($state);
+    return queueLiveShowOutcomes($state);
 }
 
 function continuePerformanceYellPhase(array $state, string $justPlayed): array {
@@ -2421,8 +2622,7 @@ function continuePerformancePhase(array $state, string $justPlayed): array {
             $state = continuePerformancePhase($state, $second);
         }
     } else {
-        $state['phase'] = 'live_judge';
-        $state = resolveLiveJudge($state);
+        $state = queueLiveShowOutcomes($state);
     }
     return $state;
 }
@@ -2499,6 +2699,9 @@ function resolveLiveJudge(array $state): array {
         'winner_index'      => 0,
     ];
     $state['phase'] = 'live_judge';
+    if (!empty($state['live_show'])) {
+        return setLiveShowStage($state, 'judge');
+    }
     return advanceLiveJudgeWinners($state);
 }
 
@@ -2739,6 +2942,7 @@ function completeLiveRoundTurnAdvance(array $state, array $meta): array {
     $kind = $meta['kind'] ?? 'judge';
     $attempting = $meta['attempting'] ?? ['p1', 'p2'];
     $successPlacedBy = $meta['success_placed_by'] ?? [];
+    unset($state['live_show']);
 
     if ($kind === 'empty') {
         unset($state['live_attempt'], $state['live_perf_success'], $state['live_round_success']);
@@ -3821,6 +4025,14 @@ function applyCoinFlipStalemate(array &$state): bool {
 
 /** Auto end main / live when PvP phase timers expire. Returns true if state changed. */
 function applyPhaseTimeouts(array &$state): bool {
+    if (!empty($state['live_show'])
+        && ($state['live_show']['stage'] ?? '') !== 'done'
+        && empty($state['pending_prompt'])
+        && time() - intval($state['live_show']['started_at'] ?? time()) >= 20) {
+        $state = advanceLiveShowStage($state);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        return true;
+    }
     if (!phaseTimerEnabled($state)) {
         return false;
     }
@@ -4007,6 +4219,7 @@ function filterStateForPlayer(array $state, string $token): array {
         ];
     }
 
+    hideLiveJudgeSpoilersFromFilteredState($filtered, $state);
     if ($myId && !empty($filtered['log'])) {
         $filtered['log'] = array_map(
             fn($entry) => filterLogEntryForViewer(
@@ -4082,7 +4295,8 @@ function filterStateForPlayer(array $state, string $token): array {
                 'continuous_heart_grants' => $mineContinuousGrants,
                 'yell'   => $yellBladeMine,
                 'perf_yell' => $yellBladeMinePerf,
-                'live_score_bonus' => getLiveScoreBonus($state, $myId),
+                'live_score_bonus' => !empty($filtered['live_scores_hidden'])
+                    ? 0 : getLiveScoreBonus($state, $myId),
                 'active_effects' => collectActiveContinuousEffects($state, $myId),
             ],
             'opp' => [
@@ -4098,7 +4312,8 @@ function filterStateForPlayer(array $state, string $token): array {
                 'yell'   => $yellBladeOpp,
                 'perf_yell' => $yellBladeOppPerf,
                 // Omit face-down Live storage — Active effects / bonus text would spoil Lives set.
-                'live_score_bonus' => getLiveScoreBonusBreakdown($state, $oppId, true)['total'],
+                'live_score_bonus' => !empty($filtered['live_scores_hidden'])
+                    ? 0 : getLiveScoreBonusBreakdown($state, $oppId, true)['total'],
                 'active_effects' => collectActiveContinuousEffects($state, $oppId, true),
             ],
         ];
