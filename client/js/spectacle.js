@@ -539,6 +539,70 @@ function liveSpectacleDoneForTurn(turn) {
   return false;
 }
 
+/** Yell/heart Performance flies already ran once for this Live show turn. */
+function liveShowPerformancePresentedForTurn(turn) {
+  if (turn == null) return false;
+  if (G._liveShowPerfPresentedTurns?.has(turn)) return true;
+  if (liveSpectacleDoneForTurn(turn)) return true;
+  try {
+    const key = typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string'
+      ? LIVE_PERF_PRESENTED_STORAGE_KEY
+      : 'tcg_live_perf_presented';
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data?.roomId !== G.roomId) return false;
+    const turns = Array.isArray(data.turns) ? data.turns : [];
+    if (turns.includes(turn)) {
+      if (!G._liveShowPerfPresentedTurns) G._liveShowPerfPresentedTurns = new Set();
+      for (const t of turns) {
+        if (Number.isFinite(t)) G._liveShowPerfPresentedTurns.add(t);
+      }
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function markLiveShowPerformancePresented(turn) {
+  if (turn == null || !Number.isFinite(Number(turn))) return;
+  const t = Number(turn);
+  if (!G._liveShowPerfPresentedTurns) G._liveShowPerfPresentedTurns = new Set();
+  G._liveShowPerfPresentedTurns.add(t);
+  try {
+    const key = typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string'
+      ? LIVE_PERF_PRESENTED_STORAGE_KEY
+      : 'tcg_live_perf_presented';
+    sessionStorage.setItem(key, JSON.stringify({
+      roomId: G.roomId,
+      turns: [...G._liveShowPerfPresentedTurns].sort((a, b) => a - b),
+    }));
+  } catch (e) {}
+}
+
+function restoreLiveShowPerformancePresented() {
+  if (!G.roomId) return;
+  try {
+    const key = typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string'
+      ? LIVE_PERF_PRESENTED_STORAGE_KEY
+      : 'tcg_live_perf_presented';
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data?.roomId !== G.roomId || !Array.isArray(data.turns)) return;
+    G._liveShowPerfPresentedTurns = new Set(
+      data.turns.map(Number).filter((n) => Number.isFinite(n))
+    );
+  } catch (e) {}
+}
+
+/** Prefer live_show.turn (including prior) — never post-advance board.turn alone. */
+function liveShowTurnFromBoards(board, prior = null) {
+  return board?.live_show?.turn
+    ?? prior?.live_show?.turn
+    ?? inferLiveShowTurn(prior, board);
+}
+
 function liveStorageRevealDoneForTurn(turn) {
   return turn != null && !!G._liveStorageRevealDoneTurns?.has(turn);
 }
@@ -801,6 +865,8 @@ function shouldRecoverMissedLiveSpectacle(prev, next) {
     ?? scanUndoneLiveSpectacleTurn(next, prev)
     ?? inferLiveShowTurn(prev, next);
   if (showTurn == null) return false;
+  // Performance yell flies already ran once this turn — do not re-arm legacy gate.
+  if (liveShowPerformancePresentedForTurn(showTurn)) return false;
   // Strict on normal transitions; recovery on Main uses the board/log owed check.
   return liveSpectacleOwed(prev, next, showTurn)
     || liveSpectacleStillOwedOnBoard(prev, next, showTurn);
@@ -2384,6 +2450,13 @@ function clearPerfSpectacleDoneKeysOnly() {
 function clearPerfSpectacleDoneStorage() {
   clearPerfSpectacleDoneKeysOnly();
   G._liveStorageRevealDoneTurns = null;
+  G._liveShowPerfPresentedTurns = null;
+  G._liveShowPresentedKeys = null;
+  try {
+    if (typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string') {
+      sessionStorage.removeItem(LIVE_PERF_PRESENTED_STORAGE_KEY);
+    }
+  } catch (e) {}
 }
 
 function collectPerfSpectacleDoneTurnsFromLog(s) {
@@ -3486,6 +3559,10 @@ function shouldTriggerPerfSpectacle(prev, next) {
     return false;
   }
   const showTurn = primaryLiveShowTurn(prev, next);
+  if (showTurn != null && liveShowPerformancePresentedForTurn(showTurn)) {
+    TCG_DEBUG.log('live', 'spectacle skip: performance already presented', { showTurn });
+    return false;
+  }
   if (isEmptyLiveSkipTransition(prev, next) || !liveRoundHadLivesPlayed(prev, next, showTurn)) {
     TCG_DEBUG.log('live', 'spectacle skip: member-only / no Lives round');
     return false;
@@ -3658,6 +3735,15 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     TCG_DEBUG.log('live', 'spectacle skip: live_set placement open');
     return false;
   }
+  const showTurn = opts.forceShowTurn ?? inferLiveShowTurn(perfPrev, next);
+  if (liveShowPerformancePresentedForTurn(showTurn) || liveSpectacleDoneForTurn(showTurn)) {
+    TCG_DEBUG.log('live', 'spectacle skip: already presented this turn', { showTurn });
+    savePerfSpectacleDoneKey(perfPrev, next, showTurn);
+    markLiveShowPerformancePresented(showTurn);
+    G._liveRoundPostSpectacleReady = true;
+    G._postSpectacleSplashPause = true;
+    return true;
+  }
   const spectacleNext = pickSpectacleStateForPerf(next);
   // Defense-in-depth: never open the spectacle while pre-performance Live Start
   // effects are still resolving this round (owner must clear their prompt first).
@@ -3684,6 +3770,7 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     perfCloseSpectacle();
     G._skipJudgeOverlay = false;
     if (ran) {
+      markLiveShowPerformancePresented(showTurn);
       savePerfSpectacleDoneKey(perfPrev, next, opts.forceShowTurn ?? null);
       G._postSpectacleSplashPause = true;
       G._perfYellRevealCache = null;
@@ -6366,14 +6453,31 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     await perfPopulateBase(G._perfCtx);
   }
   let ctx = G._perfCtx;
-  const cur = G._perfSpectaclePhase || 'closed';
-  const curIdx = perfPhaseIdx(cur);
+  let cur = G._perfSpectaclePhase || 'closed';
+  let curIdx = perfPhaseIdx(cur);
   const tgtIdx = perfPhaseIdx(targetPhase);
   const yellOppIdx = perfPhaseIdx('yell_opp');
+  const showTurn = liveShowTurnFromBoards(next, prev);
+  const perfYellDone = liveShowPerformancePresentedForTurn(showTurn)
+    || liveSpectacleDoneForTurn(showTurn);
+  // Once-per-turn Performance: chrome close / later stage seeks must not re-fly yells.
+  if (animate && perfYellDone && tgtIdx >= yellOppIdx && (cur === 'closed' || curIdx < yellOppIdx)) {
+    TCG_DEBUG.log('live', 'perfSeek skip yell climb (already presented)', {
+      showTurn, targetPhase, cur,
+    });
+    perfOpenSpectacle();
+    perfEnsureColumnsVisible();
+    perfApplyPhaseInstant(ctx, 'yell_opp');
+    G._perfSpectaclePhase = 'yell_opp';
+    cur = 'yell_opp';
+    curIdx = yellOppIdx;
+    if (tgtIdx <= yellOppIdx) return;
+  }
   const needsOppYellAnim = forward && perfSecondPlayerHasYellCards(ctx)
     && (cur === 'outcomes_mine' || curIdx < yellOppIdx)
     && tgtIdx >= yellOppIdx
-    && cur !== 'yell_opp';
+    && cur !== 'yell_opp'
+    && !perfYellDone;
   if (!animate || (cur !== 'closed' && tgtIdx <= curIdx)) {
     if (needsOppYellAnim && targetPhase === 'yell_opp') {
       perfOpenSpectacle();
@@ -6417,7 +6521,7 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
   // skipped .perf-col.in (flies still showed — fixed-position outside columns).
   const colsMissingIn = !el('perf-col-mine')?.classList.contains('in')
     || !el('perf-col-opp')?.classList.contains('in');
-  const needsIntroReveal = tgtIdx >= perfPhaseIdx('intro') && (
+  const needsIntroReveal = !perfYellDone && tgtIdx >= perfPhaseIdx('intro') && (
     curIdx < perfPhaseIdx('intro')
     || cur === 'closed'
     || cur === 'live_start'
@@ -6461,7 +6565,7 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     if (tgtIdx < perfPhaseIdx('yell_mine')) return;
     if (aborted) return;
   }
-  if (curIdx < perfPhaseIdx('yell_mine') && tgtIdx >= perfPhaseIdx('yell_mine')) {
+  if (!perfYellDone && curIdx < perfPhaseIdx('yell_mine') && tgtIdx >= perfPhaseIdx('yell_mine')) {
     await awaitTutorialLiveSpectacleGate('pre_yell');
     if (aborted) return;
     if (G.isTutorial) {
@@ -6613,8 +6717,10 @@ function liveShowBeatKey(show) {
 }
 
 function sealLiveShowSpectacleTurn(board, prior = null) {
-  const turn = board?.live_show?.turn ?? board?.turn ?? inferLiveShowTurn(prior, board);
+  // Prefer live_show.turn (incl. prior) — board.turn is often already advanced after unset(live_show).
+  const turn = liveShowTurnFromBoards(board, prior);
   if (turn == null) return;
+  markLiveShowPerformancePresented(turn);
   savePerfSpectacleDoneKey(prior || board, board, turn);
   G._liveRoundPostSpectacleReady = true;
 }
@@ -6659,11 +6765,21 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   const target = LIVE_SHOW_TO_PERF_PHASE[stage];
   if (!target) return;
   if (liveShowPresentationCancelled()) return;
+  const showTurn = liveShowTurnFromBoards(next, prev);
   const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
+  // Performance yell/hearts: once per turn. Later outcomes/judge still animate.
+  if (stage === 'performance' && liveShowPerformancePresentedForTurn(showTurn)) {
+    TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
+    await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
+    return;
+  }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
     return;
+  }
+  if (stage === 'performance') {
+    markLiveShowPerformancePresented(showTurn);
   }
   if (stage === 'judge') {
     sealLiveShowSpectacleTurn(next, perfPrev);
@@ -6723,13 +6839,15 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
 
       const key = liveShowBeatKey(show);
-      if (G._liveShowPresentedKey !== key) {
+      if (!G._liveShowPresentedKeys) G._liveShowPresentedKeys = new Set();
+      if (G._liveShowPresentedKey !== key && !G._liveShowPresentedKeys.has(key)) {
         await presentOneLiveShowBeat(prior, board, myId, show.stage);
         if (liveShowPresentationCancelled()) {
           if (G._perfSpectacleActive) perfCloseSpectacle();
           break;
         }
         G._liveShowPresentedKey = key;
+        G._liveShowPresentedKeys.add(key);
       }
 
       // Spectators / replay follow the cursor; players advance it.

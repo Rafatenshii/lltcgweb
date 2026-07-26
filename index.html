@@ -8500,6 +8500,7 @@ const CASUAL_SEARCH_ACTIVE_KEY = 'tcg_casual_search_active';
 const ACTIVE_GAME_KEY = 'tcg_active_game';
 const ACTIVE_SPECTATOR_KEY = 'tcg_active_spectator';
 const PERF_SPECTACLE_DONE_STORAGE_KEY = 'tcg_perf_spectacle_done';
+const LIVE_PERF_PRESENTED_STORAGE_KEY = 'tcg_live_perf_presented';
 const EXPERIMENT_PASSWORDS_KEY = 'tcg_experiment_passwords';
 const LAST_EXPERIMENT_PASSWORD_KEY = 'tcg_last_experiment_password';
 const DECK_MAX_COPIES = 4;
@@ -10277,6 +10278,7 @@ function prepareClientReconnectState(s) {
   G._liveSpectacleGateRunning = false;
   G._liveShowRunnerActive = false;
   G._liveShowPresentedKey = null;
+  G._liveShowPresentedKeys = null;
   G._liveShowAckedKey = null;
   G._postSpectacleSplashPause = false;
   G._perfSpectacleActive = false;
@@ -10312,6 +10314,18 @@ function prepareClientReconnectState(s) {
     primePerfSpectacleDoneKeysFromLog(s);
   }
   restorePerfSpectacleDoneKey();
+  if (typeof restoreLiveShowPerformancePresented === 'function') {
+    restoreLiveShowPerformancePresented();
+  }
+  // If reconnecting past the performance beat, never re-fly yells for that turn.
+  if (s?.live_show?.stage && typeof markLiveShowPerformancePresented === 'function') {
+    const stage = s.live_show.stage;
+    const order = ['reveal', 'live_start', 'performance', 'outcomes', 'judge', 'done'];
+    const idx = order.indexOf(stage);
+    if (idx > order.indexOf('performance') || stage === 'done') {
+      markLiveShowPerformancePresented(s.live_show.turn);
+    }
+  }
   markSpectacleDoneFromState(s, null);
   dismissAllGameplayOverlays();
   if (!s?.pending_prompt) clearDeferredPromptState();
@@ -23313,15 +23327,37 @@ function clearPvPWatchdog() {
 function releaseStuckPresentation() {
   if (!G.animating && !G._livePollHold && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
       && !G._liveShowRunnerActive && !G._liveRoundPlaybackActive) return;
+  const liveShowInFlight = !!G.gameState?.live_show?.stage
+    && G.gameState.live_show.stage !== 'done';
   TCG_DEBUG.warn('pvp', 'release stuck presentation', {
     animating: G.animating,
     pollHold: G._livePollHold,
     spectacle: G._perfSpectacleActive,
     gate: G._liveSpectacleGateRunning,
     runner: !!G._liveShowRunnerActive,
+    liveShow: G.gameState?.live_show?.stage || null,
     queued: G._pendingStateQueue?.length || 0,
     logSync: G._logSyncInFlight,
   });
+  // Mid live_show: never close chrome — that resets the seek cursor to closed and
+  // the next outcomes/judge poll re-flies Performance yells in a loop.
+  if (liveShowInFlight) {
+    const turn = G.gameState.live_show.turn;
+    const phase = G._perfSpectaclePhase || 'closed';
+    if (typeof perfPhaseIdx === 'function' && typeof markLiveShowPerformancePresented === 'function'
+        && perfPhaseIdx(phase) >= perfPhaseIdx('yell_opp')) {
+      markLiveShowPerformancePresented(turn);
+    }
+    G._liveShowRunnerActive = false;
+    G.animating = false;
+    G._livePollHold = false;
+    G._liveRoundPlaybackActive = false;
+    G._liveSpectacleGateRunning = false;
+    G._presentationAborted = false;
+    releaseLivePolls();
+    resumePollingTick(200);
+    return;
+  }
   // Close chrome first — leaving _perfSpectacleActive true kept polls blocked.
   if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
   else G._perfSpectacleActive = false;
@@ -37411,7 +37447,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=39"></script>
+<script src="client/js/spectacle.js?v=40"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>
