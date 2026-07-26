@@ -1207,22 +1207,25 @@ function tcgFinalizeRankedPair(string $discordId, string $oppId): ?array {
     ];
 }
 
-/** Public ranked top-N for Discord /loveca leaderboard (no auth). */
+/** Public ranked leaderboard for Discord /loveca (no auth). Optional limit; omit or 0 = full board. */
 function tcgApiPublicLeaderboard(array $params): array {
-    $limit = intval($params['limit'] ?? 100);
-    if ($limit < 1) {
-        $limit = 100;
+    $limit = 0;
+    if (array_key_exists('limit', $params) && $params['limit'] !== '' && $params['limit'] !== null) {
+        $limit = intval($params['limit']);
     }
-    $limit = min(100, $limit);
+    if ($limit < 0) {
+        $limit = 0;
+    }
     $db = tcgDb();
-    $stmt = $db->query(
-        'SELECT r.discord_id, r.rating, r.wins, r.losses, r.draws, r.games, u.username
+    $sql = 'SELECT r.discord_id, r.rating, r.wins, r.losses, r.draws, r.games, u.username
          FROM tcg_rank r
          JOIN tcg_users u ON u.discord_id = r.discord_id
          WHERE r.games > 0
-         ORDER BY r.rating DESC, r.wins DESC
-         LIMIT ' . $limit
-    );
+         ORDER BY r.rating DESC, r.wins DESC';
+    if ($limit > 0) {
+        $sql .= ' LIMIT ' . $limit;
+    }
+    $stmt = $db->query($sql);
     $leaderboard = [];
     $rankNum = 0;
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -1241,7 +1244,7 @@ function tcgApiPublicLeaderboard(array $params): array {
     }
     return [
         'success' => true,
-        'limit' => $limit,
+        'limit' => $limit > 0 ? $limit : null,
         'leaderboard' => $leaderboard,
     ];
 }
