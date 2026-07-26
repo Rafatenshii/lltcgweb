@@ -372,67 +372,63 @@ guide = {
             "goal": {"type": "end_live_set"},
             "bubblePlacement": "playmat-left",
             "hold_cpu": True,
-        },
-        # 3:55–4:02 — Performance Phase opens
-        {
-            "id": "perf_intro",
-            "kind": "info",
-            "dialogue": (
-                "Next is the **Performance Phase**: the cards you set turn face up. "
-                "Anything that isn't a Live card goes to the **Waiting Room**, and if a "
-                "Live card is there, the live show starts!"
-            ),
-            "highlights": [H("my-live-0"), H("my-wait-pile", padding=8)],
-            "hold_cpu": True,
-        },
-        # 4:12–4:26 — required hearts
-        {
-            "id": "required_hearts",
-            "kind": "info",
-            "dialogue": (
-                "To see whether a live show succeeds, check the **required hearts** on the "
-                "Live card. **WE WILL!!** asks for one red heart, one purple heart and one "
-                "grey heart — three required hearts in total."
-            ),
-            "highlights": [H("my-live-0")],
-            "hold_cpu": True,
-        },
-        # 4:40–4:58 — basic hearts
-        {
-            "id": "basic_hearts",
-            "kind": "info",
-            "dialogue": (
-                "Now look at the Members on your Stage. The upright hearts in their upper "
-                "left corner are **basic hearts**. Compare them with the required hearts: "
-                "enough and the live show succeeds, short and it fails."
-            ),
-            "highlights": [H("my-stage-center"), H("sb-my-hearts")],
-            "hold_cpu": True,
-        },
-        # 5:12–5:49 — Blade and Yell
-        {
-            "id": "yell_blade",
-            "kind": "info",
-            "dialogue": (
-                "Short of hearts? You still have support. The round penlight icon on a "
-                "Member is a **Blade**, and during the Performance Phase you flip one card "
-                "from your main deck for every Blade on your Stage. That flip is a **Yell**, "
-                "and any sideways **blade heart** on the flipped card joins your total."
-            ),
-            "highlights": [H("sb-my-yell"), H("my-deck-pile", padding=8)],
-            "hold_cpu": True,
             "cpu_after": [
                 {"type": "set_live_cards", "card_no": "PL!-sd1-019-SD"},
                 {"type": "end_live_set"},
             ],
         },
-        # 5:49–6:09 — watch it resolve
+        # Performance show — pause at each gate so the bubble stays readable
+        {
+            "id": "perf_intro",
+            "kind": "info",
+            "dialogue": (
+                "The **Performance Phase** begins — Live cards flip face up, and anything "
+                "that isn't a Live goes to the **Waiting Room**. The live show is starting!"
+            ),
+            "highlights": [H("perf-spectacle")],
+            "spectacle_gate": "intro",
+            "spotlightDim": "light",
+        },
+        {
+            "id": "required_hearts",
+            "kind": "info",
+            "dialogue": (
+                "Check the **required hearts** on the Live card. **WE WILL!!** asks for one "
+                "red heart, one purple heart and one grey heart — three required hearts in total."
+            ),
+            "highlights": [H("perf-spectacle")],
+            "spectacle_gate": "hearts",
+            "spotlightDim": "light",
+        },
+        {
+            "id": "basic_hearts",
+            "kind": "info",
+            "dialogue": (
+                "Members on Stage give **basic hearts** (upright icons). Compare them with "
+                "the required hearts: enough and the live show succeeds, short and it fails."
+            ),
+            "highlights": [H("perf-spectacle")],
+            "spectacle_gate": "hearts2",
+            "spotlightDim": "light",
+        },
+        {
+            "id": "yell_blade",
+            "kind": "info",
+            "dialogue": (
+                "Short of hearts? The round penlight icon is a **Blade**. You flip one card "
+                "from your main deck for every Blade on Stage — that flip is a **Yell**, and "
+                "sideways **blade hearts** join your total."
+            ),
+            "highlights": [H("perf-spectacle")],
+            "spectacle_gate": "pre_yell",
+            "spotlightDim": "light",
+        },
         {
             "id": "perf_watch",
             "kind": "watch",
             "dialogue": (
-                "Here we go — watch the hearts come in. Your Yells resolve first, then your "
-                "opponent runs their Performance Phase the very same way."
+                "Watch the Yell flip in — then your opponent runs the same Performance. "
+                "The Live Win/Loss Check comes right after."
             ),
             "highlights": [H("perf-spectacle")],
             "goal": {"type": "live_judge_reached"},

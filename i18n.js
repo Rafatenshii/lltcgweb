@@ -8251,7 +8251,7 @@
 
   function loadTutorialJa() {
     if (_tutorialJa) return Promise.resolve(_tutorialJa);
-    return fetch('./tutorial_ja.json?v=7', { cache: 'no-store' })
+    return fetch('./tutorial_ja.json?v=8', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_ja HTTP ' + r.status);
         return r.json();
@@ -8268,7 +8268,7 @@
 
   function loadTutorialEs() {
     if (_tutorialEs) return Promise.resolve(_tutorialEs);
-    return fetch('./tutorial_es.json?v=7', { cache: 'no-store' })
+    return fetch('./tutorial_es.json?v=8', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_es HTTP ' + r.status);
         return r.json();
@@ -8285,7 +8285,7 @@
 
   function loadTutorialKo() {
     if (_tutorialKo) return Promise.resolve(_tutorialKo);
-    return fetch('./tutorial_ko.json?v=3', { cache: 'no-store' })
+    return fetch('./tutorial_ko.json?v=4', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_ko HTTP ' + r.status);
         return r.json();
@@ -8302,7 +8302,7 @@
 
   function loadTutorialZh() {
     if (_tutorialZh) return Promise.resolve(_tutorialZh);
-    return fetch('./tutorial_zh.json?v=2', { cache: 'no-store' })
+    return fetch('./tutorial_zh.json?v=3', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_zh HTTP ' + r.status);
         return r.json();
@@ -8320,7 +8320,7 @@
 
   function loadTutorialTh() {
     if (_tutorialTh) return Promise.resolve(_tutorialTh);
-    return fetch('./tutorial_th.json?v=3', { cache: 'no-store' })
+    return fetch('./tutorial_th.json?v=4', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_th HTTP ' + r.status);
         return r.json();

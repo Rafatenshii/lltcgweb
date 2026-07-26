@@ -5,6 +5,62 @@
  */
 'use strict';
 
+/** Slideshow tutorial (state snapshots) — never run the real Performance show. */
+function isSlideshowTutorial() {
+  return !!(G.isTutorial && !G.tutorialLive);
+}
+
+/**
+ * Live interactive tutorial: pause the Performance show until the current guide
+ * step's spectacle_gate matches (player taps Next), then continue.
+ */
+async function awaitTutorialLiveSpectacleGate(gate) {
+  if (!G.tutorialLive || !G.isTutorial) return;
+  const order = ['intro', 'hearts', 'hearts2', 'pre_yell'];
+  const gateIdx = order.indexOf(gate);
+  if (gateIdx < 0) return;
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const currentStep = () => G.tutorialData?.steps?.[G.tutorialStep];
+
+  // Wait until the guide has reached a spectacle-aware step (not still on set_live).
+  for (let i = 0; i < 600; i++) {
+    if (!G.tutorialLive) return;
+    const st = currentStep();
+    if (!st) return;
+    if (st.spectacle_gate || (st.kind === 'watch' && st.goal?.type === 'live_judge_reached')) break;
+    await sleep(80);
+  }
+
+  while (G.tutorialLive) {
+    const st = currentStep();
+    if (!st) return;
+    // Watch-through step: no more pause gates.
+    if (st.kind === 'watch' && st.goal?.type === 'live_judge_reached') return;
+    const stGate = st.spectacle_gate || '';
+    const stIdx = order.indexOf(stGate);
+    if (stGate === gate) {
+      G._tutSpectacleGateReady = gate;
+      if (typeof window.TutorialInteractive?.syncStepUi === 'function') {
+        window.TutorialInteractive.syncStepUi();
+      }
+      const stepAt = G.tutorialStep;
+      while (G.tutorialLive && G.tutorialStep === stepAt) {
+        await sleep(100);
+      }
+      G._tutSpectacleGateReady = null;
+      return;
+    }
+    // Guide is still on an earlier gate — wait for the player.
+    if (stIdx >= 0 && stIdx < gateIdx) {
+      await sleep(100);
+      continue;
+    }
+    // Guide already past this gate (or no gate) — continue the show.
+    return;
+  }
+}
+
 function liveStorageHasCards(s) {
   if (!s?.players) return false;
   return (s.players.p1?.live_zone?.length || 0) + (s.players.p2?.live_zone?.length || 0) > 0;
@@ -80,7 +136,7 @@ function liveSetPlacementInProgress(s) {
 
 /** True when this LIVE round had actual Live cards played (not empty/member-only skip). */
 function liveRoundHadLivesPlayed(prev, next, showTurn = null) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   if (isEmptyLiveSkipTransition(prev, next)) return false;
   if (shouldIgnoreStaleLivePerfSignals(prev, next)) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
@@ -102,7 +158,7 @@ function liveRoundHadLivesPlayed(prev, next, showTurn = null) {
 /** Client still owes full Performance spectacle playback for this transition. */
 /** Lives were played this round and client playback has not finished yet. */
 function liveSpectacleStillPending(prev, next, showTurn = null) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
   if (turn == null) return false;
   if (emptyLiveRoundAlreadyPresented(turn)) return false;
@@ -110,7 +166,7 @@ function liveSpectacleStillPending(prev, next, showTurn = null) {
 }
 
 function liveSpectacleOwed(prev, next, showTurn = null) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
   if (turn == null) return false;
   if (!liveRoundHadLivesPlayed(prev, next, turn)) return false;
@@ -129,7 +185,7 @@ function liveSpectacleOwed(prev, next, showTurn = null) {
  * (that caused stale Performance splash + ghost flips when playing a Member later).
  */
 function liveSpectacleStillOwedOnBoard(prev, next, showTurn = null) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
   if (turn == null) return false;
   if (liveSpectacleDoneForTurn(turn)) return false;
@@ -162,7 +218,7 @@ function liveSpectacleStillOwedOnBoard(prev, next, showTurn = null) {
 
 /** Block main-phase log/phase banners until spectacle completes or round had no Lives. */
 function liveSpectaclePendingForTransition(prev, next) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   if (detectPendingLiveSpectacleTurn(prev, next) != null) return true;
   const turn = inferLiveShowTurn(prev, next);
   if (turn == null) return false;
@@ -173,7 +229,7 @@ function liveSpectaclePendingForTransition(prev, next) {
 
 /** Either side set a Live card this round — spectacle is mandatory once performance is owed. */
 function liveRoundRequiresSpectacle(prev, next, showTurn = null) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
   if (!liveRoundHadLivesPlayed(prev, next, turn)) return false;
   if (liveSpectacleDoneForTurn(turn)) return false;
@@ -580,7 +636,7 @@ function logSliceHasLivePipelineSignals(slice) {
 
 /** Spectacle recovery only during live pipeline transitions — not main-phase baton pass, etc. */
 function spectacleRecoveryContext(prev, next) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return false;
   const slice = newLogEntries(prev, next);
   if (isLeavingLiveSetPhase(prev, next) && !isEmptyLiveSkipTransition(prev, next)) return true;
@@ -596,7 +652,7 @@ function spectacleRecoveryContext(prev, next) {
 }
 
 function scanUndoneLiveSpectacleTurn(s, prev = null) {
-  if (!s?.log || G.isTutorial) return null;
+  if (!s?.log || isSlideshowTutorial()) return null;
   // Stale main→main baton/play polls must not scan — unless recovery context says a show is still owed.
   if (prev && shouldIgnoreStaleLivePerfSignals(prev, s) && !spectacleRecoveryContext(prev, s)) return null;
   // Inline perf signals only — resolvedPerfSignalsForTransition calls this function and must not recurse.
@@ -642,7 +698,7 @@ function scanUndoneLiveSpectacleTurn(s, prev = null) {
 }
 
 function detectPendingLiveSpectacleTurn(prev, next) {
-  if (!next || G.isTutorial || G._perfSpectacleActive) return null;
+  if (!next || isSlideshowTutorial() || G._perfSpectacleActive) return null;
   const ph = next.phase;
   if (ph === 'coin_flip' || ph === 'setup' || ph === 'waiting') return null;
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return null;
@@ -713,7 +769,7 @@ function ensurePerfSpectacleNotStaleDone(prev, next) {
 }
 
 function shouldRecoverMissedLiveSpectacle(prev, next) {
-  if (!next || G.isTutorial) return false;
+  if (!next || isSlideshowTutorial()) return false;
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return false;
   if (!spectacleRecoveryContext(prev, next)) return false;
   const showTurn = detectPendingLiveSpectacleTurn(prev, next)
@@ -731,7 +787,7 @@ function isMainOrActivePhase(ph) {
 
 /** Main → main updates (baton, play member) must not treat prior-turn perf snapshots/log as this round. */
 function shouldIgnoreStaleLivePerfSignals(prev, next) {
-  if (!next || G.isTutorial) return false;
+  if (!next || isSlideshowTutorial()) return false;
   const slice = newLogEntries(prev, next);
   if (logSliceHasLivePipelineSignals(slice) || newLogHasLivePerformance(prev, next)) {
     return false;
@@ -852,7 +908,7 @@ function clearStaleLiveStorageFlipState(prev, next) {
 
 /** Main→main polls after a finished Live round must not replay pipeline log banners. */
 function shouldSkipStaleLiveLogAnnouncements(prev, next) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   if (!isMainOrActivePhase(prev?.phase) || !isMainOrActivePhase(next?.phase)) return false;
   return shouldIgnoreStaleLivePerfSignals(prev, next);
 }
@@ -1026,7 +1082,7 @@ function roundHasLivePerformanceSignals(prev, next) {
 // --- Spectacle gating helpers (shouldForce, perf signals, done-key) ------------
 
 function shouldForceLiveSpectacle(prev, next) {
-  if (!prev || !next || G.isTutorial || G._perfSpectacleActive) return false;
+  if (!prev || !next || isSlideshowTutorial() || G._perfSpectacleActive) return false;
   if (isLiveSetPlacementOnly(prev, next)) return false;
   if (shouldIgnoreStaleLivePerfSignals(prev, next)) return false;
   if (isEmptyLiveSkipTransition(prev, next)) return false;
@@ -1324,7 +1380,7 @@ function isEmptyLiveSkipTransition(prev, next) {
 }
 
 function shouldPresentEmptyLiveRound(prev, next) {
-  if (!prev || !next || G.isTutorial) return false;
+  if (!prev || !next || isSlideshowTutorial()) return false;
   if (liveSetPlacementInProgress(next)) return false;
   const ph = next?.phase;
   if (ph === 'coin_flip' || ph === 'setup' || ph === 'waiting') return false;
@@ -3285,7 +3341,7 @@ function enteringPerformanceShow(prev, next) {
 }
 
 function rememberPerfSpectacleBaseline(prev, next) {
-  if (G.isTutorial || !prev || !next) return;
+  if (isSlideshowTutorial() || !prev || !next) return;
   if (isLeavingLiveSetPhase(prev, next)) {
     if (isEmptyLiveSkipTransition(prev, next) || isMemberOnlyLiveStorageRound(prev, next)) {
       G._deferPerfSpectaclePrev = null;
@@ -3375,7 +3431,7 @@ function performanceSpectacleReady(prev, next) {
 
 /** Main gate: should this poll update run the full Performance show animation? */
 function shouldTriggerPerfSpectacle(prev, next) {
-  if (!prev || !next || G._perfSpectacleActive || G.isTutorial) {
+  if (!prev || !next || G._perfSpectacleActive || isSlideshowTutorial()) {
     return false;
   }
   if (spectacleDoneForTransition(prev, next)) {
@@ -6316,6 +6372,9 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
         positionTutorialBubble(step.highlights || []);
       }
     }
+    await awaitTutorialLiveSpectacleGate('intro');
+    await awaitTutorialLiveSpectacleGate('hearts');
+    await awaitTutorialLiveSpectacleGate('hearts2');
     if (aborted) return;
   }
   if (tgtIdx >= perfPhaseIdx('intro') && tgtIdx < perfPhaseIdx('yell_mine') && tgtIdx > perfPhaseIdx(G._perfSpectaclePhase || 'closed')) {
@@ -6325,6 +6384,8 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
     if (aborted) return;
   }
   if (curIdx < perfPhaseIdx('yell_mine') && tgtIdx >= perfPhaseIdx('yell_mine')) {
+    await awaitTutorialLiveSpectacleGate('pre_yell');
+    if (aborted) return;
     if (G.isTutorial) {
       const step = G.tutorialData?.steps?.[G.tutorialStep];
       const hl = step?.highlights || [];

@@ -71,6 +71,14 @@
       case 'end_live_set':
         return !!s.live_ready?.[myId] || s.phase === 'performance' || s.phase === 'live_judge';
       case 'live_judge_reached':
+        if (G()?.tutorialLive) {
+          // Wait out the Performance show — server may already be on live_judge
+          // while the client spectacle is still playing.
+          if (G()._perfSpectacleActive || G()._liveRoundPlaybackActive
+              || G()._liveSpectacleGateRunning || G()._livePollHold) {
+            return false;
+          }
+        }
         return s.phase === 'live_judge' || s.phase === 'main_first' || s.phase === 'main_second';
       default:
         return false;
@@ -392,7 +400,7 @@
       const bootEpoch = G()._gameSessionEpoch;
       const g = G();
       await loadTutorialLocalePacks();
-      const r = await fetch('./tutorial_guide.json?v=17', { cache: 'no-store' });
+      const r = await fetch('./tutorial_guide.json?v=18', { cache: 'no-store' });
       if (!r.ok) throw new Error('Could not load tutorial guide (HTTP ' + r.status + ')');
       const data = await r.json();
       if (!data?.steps?.length) throw new Error('Tutorial guide has no steps');
