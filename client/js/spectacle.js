@@ -234,9 +234,13 @@ function liveSpectacleStillOwedOnBoard(prev, next, showTurn = null) {
 /** Block main-phase log/phase banners until spectacle completes or round had no Lives. */
 function liveSpectaclePendingForTransition(prev, next) {
   if (!prev || !next || isSlideshowTutorial()) return false;
+  if (isEmptyLiveSkipTransition(prev, next) || shouldPresentEmptyLiveRound(prev, next)) return false;
   if (detectPendingLiveSpectacleTurn(prev, next) != null) return true;
   const turn = inferLiveShowTurn(prev, next);
   if (turn == null) return false;
+  if (fullLogHasEmptyLiveSkipForTurn(next, turn) && !logHasLivePerformanceForTurn(next, turn)) {
+    return false;
+  }
   return liveRoundHadLivesPlayed(prev, next, turn)
     && !liveSpectacleDoneForTurn(turn)
     && !emptyLiveRoundAlreadyPresented(turn);
@@ -717,10 +721,16 @@ function detectPendingLiveSpectacleTurn(prev, next) {
   const ph = next.phase;
   if (ph === 'coin_flip' || ph === 'setup' || ph === 'waiting') return null;
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return null;
-  if (isEmptyLiveSkipTransition(prev, next)) return null;
+  if (isEmptyLiveSkipTransition(prev, next) || shouldPresentEmptyLiveRound(prev, next)) return null;
 
   const showTurn = inferLiveShowTurn(prev, next);
   if (showTurn != null && emptyLiveRoundAlreadyPresented(showTurn)) return null;
+  // Member-only / empty LIVE rounds must never arm the Performance gate.
+  if (showTurn != null
+      && fullLogHasEmptyLiveSkipForTurn(next, showTurn)
+      && !logHasLivePerformanceForTurn(next, showTurn)) {
+    return null;
+  }
   const slice = newLogEntries(prev, next);
 
   // Match done-key turn (state.turn during live_set) — not log --- Turn N --- markers,
@@ -1360,6 +1370,17 @@ function isEmptyLiveSkipTransition(prev, next) {
   const from = prev.log?.length || 0;
   const slice = (next.log || []).slice(from);
   if (slice.some(e => e.msg === 'No Lives played this turn.')) return true;
+  // Authoritative even on log+0 / soft-merged prev: this show turn recorded an empty skip
+  // and never a real Performance — do not let reveal fluff cancel empty detection.
+  if (showTurn != null
+      && fullLogHasEmptyLiveSkipForTurn(next, showTurn)
+      && !logHasLivePerformanceForTurn(next, showTurn)
+      && !newLogHasLivePerformance(prev, next)) {
+    const leavingLive = isLeavingLiveSetPhase(prev, next) || leavingEmptyLivePipeline(prev, next);
+    if (leavingLive || isMainOrActivePhase(next.phase) || isLiveSpectaclePipelinePhase(next.phase)) {
+      return true;
+    }
+  }
   if (logTransitionHasLivePerformance(prev, next) || newLogHasLivePerformance(prev, next)) return false;
   if (logSliceHasLivePipelineSignals(slice)) return false;
   if (slice.some(e => (e.msg || '').includes('Remaining Live storage sent to Waiting Room.')

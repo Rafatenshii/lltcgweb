@@ -357,6 +357,42 @@
     const livePrev = (typeof effectiveLiveRoundPrev === 'function'
       ? effectiveLiveRoundPrev(prev, s)
       : null) ?? effectiveEmptyLiveRoundPrev(prev, s);
+
+    // Member-only / empty LIVE rounds must present the "No Lives played" splash
+    // before live_show or Performance gates can soft-lock or skip them.
+    const emptyRoundPrev = livePrev || prev;
+    const emptyRoundDue = !liveSetPlacementInProgress(s)
+      && !(s.live_show?.stage && s.live_show.stage !== 'done')
+      && (
+        shouldPresentEmptyLiveRound(emptyRoundPrev, s)
+        || shouldPresentEmptyLiveRound(prev, s)
+        || (
+          newEntries.some(e => e.msg === 'No Lives played this turn.')
+          && !emptyLiveRoundAlreadyPresented(
+            emptyLiveRoundShowTurn(prev, s) ?? emptyLiveRoundShowTurn(emptyRoundPrev, s) ?? s.turn
+          )
+        )
+      );
+    if (emptyRoundDue && typeof presentLiveRound === 'function') {
+      G.animating = true;
+      try {
+        await presentLiveRound(emptyRoundPrev, s, G.playerId, {
+          newEntries,
+          forceEmptyRound: true,
+        });
+        if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
+          doCPU(G.gameState || s);
+          armWatchdog(G.gameState || s);
+        }
+      } finally {
+        G._animHideIids = null;
+        clearHandArrivingFlags();
+        G.animating = false;
+        releaseLivePollsAndFlush();
+      }
+      return;
+    }
+
     const pendingSpectacleTurn = detectPendingLiveSpectacleTurn(livePrev, s)
       ?? detectPendingLiveSpectacleTurn(prev, s);
     const spectacleGateActive = pendingSpectacleTurn != null && !liveSpectacleDoneForTurn(pendingSpectacleTurn);
