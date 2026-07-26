@@ -6267,41 +6267,7 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 }
 @media(max-width:820px){
   #screen-deck .deck-builder-lists{grid-template-columns:1fr;gap:8px;max-height:none}
-  #screen-deck .deck-builder-section{max-height:none;flex:0 0 auto;min-height:auto;overflow:visible;height:auto}
-  /* Stacked layout: do not clamp the shell to the viewport — that blocks page scroll. */
-  #screen-deck .deck-builder-shell{
-    max-height:none;
-    height:auto;
-    flex:0 0 auto;
-    overflow:visible;
-  }
-  #screen-deck .account-panel{
-    overflow:visible;
-    flex:0 0 auto;
-    height:auto;
-  }
-  #screen-deck .deck-builder-lists{
-    flex:0 0 auto;
-    height:auto;
-    overflow:visible;
-  }
-  #screen-deck .deck-builder-pool-layout,
-  #screen-deck .deck-builder-pool-main{
-    flex:0 0 auto;
-    min-height:0;
-    height:auto;
-    overflow:visible;
-  }
-  #screen-deck .deck-card-grid--deck,
-  #screen-deck .deck-card-grid--pool{
-    flex:0 0 auto;
-    min-height:min(42vh, 280px);
-    max-height:min(52vh, 420px);
-    overflow-x:hidden;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-y;
-  }
+  #screen-deck .deck-builder-section{max-height:none;flex:1 1 0;min-height:0}
   #deck-card-hover-panel{
     flex:0 0 min(var(--deck-hover-panel-w,248px),34vw);
     width:min(var(--deck-hover-panel-w,248px),34vw);
@@ -6324,10 +6290,9 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   #screen-deck{--deck-grid-cols:2}
 }
 /*
- * Mobile deck builder: the desktop shell clamps to 100dvh + overflow:hidden so the
- * two-column panes can scroll internally. On phones that stacks into one column and
- * the clamp blocks the menu screen from scrolling — filters, the second pane, and
- * Save/Equip become unreachable. Keep desktop rules intact; only relax on mobile.
+ * Mobile only (not PC): unlock the viewport clamp so the whole deck-builder
+ * menu scrolls as one page. Card grids expand with content — no nested
+ * scroll panes (those feel broken on phones).
  */
 html.tcg-mobile-viewport #screen-deck.active .deck-builder-shell{
   max-height:none;
@@ -6361,15 +6326,15 @@ html.tcg-mobile-viewport #screen-deck.active .deck-builder-pool-main{
   height:auto;
   overflow:visible;
 }
+html.tcg-mobile-viewport #screen-deck.active .deck-card-grid,
 html.tcg-mobile-viewport #screen-deck.active .deck-card-grid--deck,
 html.tcg-mobile-viewport #screen-deck.active .deck-card-grid--pool{
   flex:0 0 auto;
-  min-height:min(42vh, 280px);
-  max-height:min(52vh, 420px);
-  overflow-x:hidden;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  touch-action:pan-y;
+  min-height:0;
+  max-height:none;
+  height:auto;
+  overflow:visible;
+  scrollbar-gutter:auto;
 }
 .deck-builder-lists{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .deck-builder-lists h4{color:rgba(255,255,255,.95);font-size:13px;margin:0 0 6px}
