@@ -6208,6 +6208,8 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   overflow-x:hidden;
   overflow-y:auto;
   scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.12);
   grid-auto-rows:var(--deck-tile-h);
 }
 #screen-deck .deck-card-grid--deck,
@@ -6218,8 +6220,26 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   overflow-x:hidden;
   overflow-y:auto;
   scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.12);
   grid-template-columns:repeat(var(--deck-grid-cols,5),var(--deck-tile-w));
   grid-auto-rows:var(--deck-tile-h);
+}
+/* Match news overlay pink scrollbar (PC dual-pane grids) */
+#screen-deck .deck-card-grid::-webkit-scrollbar{width:6px}
+#screen-deck .deck-card-grid::-webkit-scrollbar-track{
+  background:rgba(255,255,255,.12);
+  border-radius:999px;
+  margin:6px 0;
+}
+#screen-deck .deck-card-grid::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,var(--pink-l),var(--pink));
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 0 8px rgba(255,107,168,.28);
+}
+#screen-deck .deck-card-grid::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,#fff,var(--pink-l));
 }
 #screen-deck .deck-slot-row{
   margin:4px 0;
