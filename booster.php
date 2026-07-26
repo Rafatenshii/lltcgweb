@@ -144,6 +144,8 @@ function tcgStarterDecks(): array {
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/10/20192128/L_TCG_SD03_BOX_image-_01.png'],
         ['id' => 'liella', 'label' => 'Liella! Start Deck',
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2024/12/24145933/L_TCG_SD_01_BOX_image.png'],
+        ['id' => 'superstar_cheer', 'label' => 'Superstar!! cheer Start Deck',
+         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171518/LLC_SD04_BOX_image.png'],
     ];
 }
 
@@ -227,6 +229,10 @@ function tcgNormalizePoolRarity(string $rarity, string $cardNo = ''): string {
             return 'PE+';
         }
         return $suffix;
+    }
+    // Collection Clear Pocket cards (rarity "CL") roll from the PR bucket.
+    if ($r === 'CL') {
+        return 'PR';
     }
     return $r;
 }
@@ -606,10 +612,13 @@ function tcgBuildBoxPools(array $cardsData, array $box): array {
         'PR' => [], 'PR+' => [],
     ];
     foreach ($cardsData['cards'] ?? [] as $c) {
-        if (($c['booster_pack'] ?? '') !== $filter) {
-            continue;
-        }
-        if ($filter === 'PRカード' && !tcgCardEligibleForPrBoosterPool($c)) {
+        if ($filter === 'PRカード') {
+            // PR pool membership is decided by eligibility, not an exact booster_pack
+            // match, so extra sets (e.g. CLHS01 clear pocket) can roll as PR cards.
+            if (!tcgCardEligibleForPrBoosterPool($c)) {
+                continue;
+            }
+        } elseif (($c['booster_pack'] ?? '') !== $filter) {
             continue;
         }
         $cardNo = $c['card_no'] ?? '';

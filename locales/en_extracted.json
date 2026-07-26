@@ -105,7 +105,8 @@
       "cards400": "Own 400 cards",
       "cards800": "Own 800 cards",
       "cards1200": "Own 1,200 cards",
-      "cards1600": "Own 1,600 cards"
+      "cards1600": "Own 1,600 cards",
+      "cards2000": "Own 2,000 cards"
     },
     "rewardStarter": "Choose a starter deck",
     "rewardStarterOwned": "Already owned",

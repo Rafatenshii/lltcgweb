@@ -30,6 +30,12 @@ const TCG_PR_EXCLUDED_ENERGY_CARD_NOS = [
     'LL-E-004-PR',
 ];
 
+/** Non-PRカード booster_pack values whose cards still roll in the PR Card Pack pool. */
+const TCG_PR_EXTRA_BOOSTER_PACKS = [
+    // Collection Clear Pocket — Hasunosora (CLHS01, PL!HS-cl1-*, rarity CL).
+    'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ',
+];
+
 function tcgIsStarterBasicEnergyCard(string $cardNo): bool {
     $cardNo = trim($cardNo);
     if ($cardNo === '') {
@@ -58,7 +64,8 @@ function tcgCardEligibleForPrBoosterPool(array $card): bool {
     if (tcgIsPrExcludedEnergyCard($no)) {
         return false;
     }
-    return ($card['booster_pack'] ?? '') === 'PRカード';
+    $pack = $card['booster_pack'] ?? '';
+    return $pack === 'PRカード' || in_array($pack, TCG_PR_EXTRA_BOOSTER_PACKS, true);
 }
 
 /** Max playable copies per card_no (Member/Live = 4, Energy = 12). */

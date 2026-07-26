@@ -25,11 +25,12 @@ function tcgMissionDefinitions(): array {
         ['id' => 'ms_profile_banner', 'type' => 'milestone', 'reward' => 100, 'sort' => 100, 'i18n_key' => 'missions.milestone.profileBanner'],
         ['id' => 'ms_profile_flag', 'type' => 'milestone', 'reward' => 100, 'sort' => 105, 'i18n_key' => 'missions.milestone.profileFlag'],
         ['id' => 'ms_profile_stamps', 'type' => 'milestone', 'reward' => 100, 'sort' => 110, 'i18n_key' => 'missions.milestone.profileStamps'],
-        // 4 extra starters after the initial pick (5 total) — one every 400 cards.
+        // 5 extra starters after the initial pick (6 total) — one every 400 cards.
         ['id' => 'ms_cards_400', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 150, 'i18n_key' => 'missions.milestone.cards400', 'threshold' => 400],
         ['id' => 'ms_cards_800', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 151, 'i18n_key' => 'missions.milestone.cards800', 'threshold' => 800],
         ['id' => 'ms_cards_1200', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 152, 'i18n_key' => 'missions.milestone.cards1200', 'threshold' => 1200],
         ['id' => 'ms_cards_1600', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 153, 'i18n_key' => 'missions.milestone.cards1600', 'threshold' => 1600],
+        ['id' => 'ms_cards_2000', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 154, 'i18n_key' => 'missions.milestone.cards2000', 'threshold' => 2000],
         ['id' => 'ms_ranked_1', 'type' => 'milestone', 'reward' => 100, 'sort' => 200, 'i18n_key' => 'missions.milestone.ranked1', 'threshold' => 1],
         ['id' => 'ms_unranked_1', 'type' => 'milestone', 'reward' => 100, 'sort' => 210, 'i18n_key' => 'missions.milestone.unranked1', 'threshold' => 1],
         ['id' => 'ms_ranked_5', 'type' => 'milestone', 'reward' => 200, 'sort' => 220, 'i18n_key' => 'missions.milestone.ranked5', 'threshold' => 5],
