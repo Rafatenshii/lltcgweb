@@ -5581,6 +5581,10 @@ function perfCloseSpectacle() {
 }
 
 function perfOpenSpectacle() {
+  // Refuse to paint Live chrome over auth/hub/menu after a cancelled reconnect.
+  if (typeof isPresentationSuperseded === 'function' && isPresentationSuperseded()) return;
+  const activeId = document.querySelector('.screen.active')?.id;
+  if (activeId && activeId !== 'screen-game') return;
   const root = el('perf-spectacle');
   if (!root) return;
   G._perfSpectacleActive = true;
@@ -5595,6 +5599,15 @@ function perfOpenSpectacle() {
     window.addEventListener('resize', G._perfLiveRowResize);
   }
   if (tcgMobileSpectacleLayout()) clearPerfMobileInlineLayout();
+}
+
+/** True when Live presentation must stop (left game screen / auth abort / softlock recovery). */
+function liveShowPresentationCancelled() {
+  if (typeof isPresentationSuperseded === 'function' && isPresentationSuperseded()) return true;
+  if (G._perfSpectacleAborted) return true;
+  const activeId = document.querySelector('.screen.active')?.id;
+  if (activeId && activeId !== 'screen-game') return true;
+  return false;
 }
 
 function perfBuildContext(prev, next, myId) {
@@ -6622,6 +6635,10 @@ async function fetchLiveShowStateNow() {
 }
 
 async function presentOneLiveShowBeat(prev, next, myId, stage) {
+  if (liveShowPresentationCancelled()) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    return;
+  }
   if (stage === 'reveal') {
     if (G._perfSpectacleActive) perfCloseSpectacle();
     // Storage is already face-up from the server; give a short readable beat.
@@ -6637,8 +6654,13 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   }
   const target = LIVE_SHOW_TO_PERF_PHASE[stage];
   if (!target) return;
+  if (liveShowPresentationCancelled()) return;
   const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
+  if (liveShowPresentationCancelled()) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    return;
+  }
   if (stage === 'judge') {
     sealLiveShowSpectacleTurn(next, perfPrev);
     G._postSpectacleSplashPause = true;
@@ -6652,6 +6674,10 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
  */
 async function presentServerLiveShowStage(prev, next, myId) {
   if (G._liveShowRunnerActive) return false;
+  if (liveShowPresentationCancelled()) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    return false;
+  }
   const initial = next?.live_show;
   if (!initial?.stage) return false;
   if (initial.stage === 'done') {
@@ -6667,6 +6693,10 @@ async function presentServerLiveShowStage(prev, next, myId) {
   let prior = prev;
   try {
     for (let step = 0; step < 10; step++) {
+      if (liveShowPresentationCancelled()) {
+        if (G._perfSpectacleActive) perfCloseSpectacle();
+        break;
+      }
       const show = board?.live_show;
       if (!show?.stage || show.stage === 'done') {
         if (G._perfSpectacleActive) perfCloseSpectacle();
@@ -6687,6 +6717,10 @@ async function presentServerLiveShowStage(prev, next, myId) {
       const key = liveShowBeatKey(show);
       if (G._liveShowPresentedKey !== key) {
         await presentOneLiveShowBeat(prior, board, myId, show.stage);
+        if (liveShowPresentationCancelled()) {
+          if (G._perfSpectacleActive) perfCloseSpectacle();
+          break;
+        }
         G._liveShowPresentedKey = key;
       }
 
@@ -6738,12 +6772,16 @@ async function presentServerLiveShowStage(prev, next, myId) {
   } finally {
     G._liveShowRunnerActive = false;
     G._liveRoundPlaybackActive = false;
-    const stage = board?.live_show?.stage;
-    if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start') {
+    if (liveShowPresentationCancelled()) {
       if (G._perfSpectacleActive) perfCloseSpectacle();
-    }
-    if (!stage || stage === 'done') {
-      sealLiveShowSpectacleTurn(board || next, prior);
+    } else {
+      const stage = board?.live_show?.stage;
+      if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start') {
+        if (G._perfSpectacleActive) perfCloseSpectacle();
+      }
+      if (!stage || stage === 'done') {
+        sealLiveShowSpectacleTurn(board || next, prior);
+      }
     }
     releaseLivePollsAndFlush();
   }

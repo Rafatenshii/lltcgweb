@@ -10354,7 +10354,10 @@ async function reconnectToGame(saved) {
       renderGame(s, { skipPrompt: replayViewing });
       if (!replayViewing && s.live_show?.stage && s.live_show.stage !== 'done'
           && typeof presentServerLiveShowStage === 'function') {
-        await presentServerLiveShowStage(null, s, G.playerId);
+        // Never await presentation during auth boot — a long Live replay trips the
+        // 15s auth watchdog, dumps the user on the menu, then the still-running
+        // runner re-opens #perf-spectacle over Sign-in.
+        void presentServerLiveShowStage(null, s, G.playerId);
       } else if (!replayViewing && s.pending_prompt?.responder === G.playerId) {
         clearLiveSuccessHandDeferral(s);
         ensurePendingPromptSurfaced(s, G.playerId);
@@ -14707,6 +14710,8 @@ function abortGameplayPresentation(opts = {}) {
     G._perfSpectacleAborted = true;
   }
   if (!opts.skipPerfClose) perfCloseSpectacle();
+  G._liveShowRunnerActive = false;
+  G._liveShowAckedKey = null;
   G._pendingStateQueue = [];
   G._deferredLiveState = null;
   G._deferredPromptState = null;
@@ -37112,9 +37117,14 @@ function showScr(n){
     if (G.isSpectator) {
       void leaveSpectatorMode();
     } else {
-      abortGameplayPresentation({ skipAbortFlag: true });
+      // Always cancel presentation when leaving the game screen. skipAbortFlag used
+      // to leave live_show runners alive so they re-opened #perf-spectacle over auth.
+      abortGameplayPresentation({ skipAbortFlag: false });
     }
     if (typeof window.deactivateTcgRadio === 'function') window.deactivateTcgRadio();
+  }
+  if (n === 'game') {
+    G._presentationAborted = false;
   }
   if (prevActive === 'screen-deck' && n !== 'deck') clearDeckBuilderCardPreview(true);
   if (n !== 'lobby') stopCasualLobbyStatsPoll();
@@ -37401,7 +37411,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=37"></script>
+<script src="client/js/spectacle.js?v=38"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>
