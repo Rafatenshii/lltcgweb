@@ -5850,14 +5850,17 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
 
   yellRow.innerHTML = '';
   if (showAllCards) {
+    // Live cards that actually performed this side — needed for wildcard/draw gating.
+    // Was referenced as an undefined `liveCards` below, throwing on the instant
+    // paint path (reconnect / once-per-turn skip) and aborting the runner with
+    // chrome left open (stuck spectacle + partial content).
+    const liveCards = perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard);
     yellCards.forEach(card => {
       const chip = document.createElement('div');
       chip.className = 'perf-yell-card show';
       const c = enrichCard(card);
       appendPerfYellCardFace(chip, c);
-      perfMarkYellBladeHearts(chip, c, { yellWildcard: liveCardsHaveYellHeartsWildcard(
-        perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard)
-      ) });
+      perfMarkYellBladeHearts(chip, c, { yellWildcard: liveCardsHaveYellHeartsWildcard(liveCards) });
       yellRow.appendChild(chip);
     });
     layoutPerfYellStack(yellRow);
@@ -6809,6 +6812,16 @@ async function presentServerLiveShowStage(prev, next, myId) {
     sealLiveShowSpectacleTurn(next, prev);
     return false;
   }
+  // Judge already presented + acked by this client — the server is just waiting
+  // for the opponent (up to 25s). Don't re-enter the runner / re-hold polls each
+  // poll; keep chrome closed and let normal polling carry us to stage=done.
+  if (initial.stage === 'judge'
+      && !G.isSpectator
+      && G._liveShowAckedKey === liveShowBeatKey(initial)) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    sealLiveShowSpectacleTurn(next, prev);
+    return false;
+  }
 
   G._liveShowRunnerActive = true;
   G._liveRoundPlaybackActive = true;
@@ -6864,8 +6877,14 @@ async function presentServerLiveShowStage(prev, next, myId) {
 
       if (G._liveShowAckedKey === key) {
         // Already acked this beat — wait for the next polled stage.
-        // Ensure columns stay visible while chrome remains up for yell/judge.
-        if (G._perfSpectacleActive) perfEnsureColumnsVisible();
+        // Judge is the final beat: the verdict was shown + acked, so don't hold
+        // #perf-spectacle open waiting for the opponent's ack / ~25s server timeout.
+        if (show.stage === 'judge') {
+          if (G._perfSpectacleActive) perfCloseSpectacle();
+          sealLiveShowSpectacleTurn(board, prior);
+        } else if (G._perfSpectacleActive) {
+          perfEnsureColumnsVisible();
+        }
         G.gameState = board;
         break;
       }
@@ -6881,6 +6900,16 @@ async function presentServerLiveShowStage(prev, next, myId) {
       } catch (e) {
         TCG_DEBUG.warn('live', 'live_show_ack failed', e);
         G._liveShowAckedKey = null;
+        break;
+      }
+
+      // Judge just presented + acked. Give a short readable beat, then stop
+      // holding chrome open — server still waits for the opponent, but the player
+      // should not be stuck on the spectacle until both ack / the 25s timeout.
+      if (show.stage === 'judge') {
+        await perfSleep(900);
+        if (G._perfSpectacleActive) perfCloseSpectacle();
+        sealLiveShowSpectacleTurn(board, prior);
         break;
       }
 
@@ -6909,13 +6938,16 @@ async function presentServerLiveShowStage(prev, next, myId) {
       const stage = board?.live_show?.stage;
       const isObserver = !!G.isSpectator
         || (typeof isReplayViewing === 'function' && isReplayViewing());
-      // Players keep chrome through performance→judge while chaining acks.
-      // Observers must also close after judge (they never reach stage=done).
+      // Judge is the final on-screen beat. Once it has been presented (and, for
+      // players, acked), close — don't leave chrome up waiting for stage=done,
+      // which only arrives after both acks or the 25s server timeout.
+      const judgePresentedAndAcked = stage === 'judge'
+        && (isObserver || G._liveShowAckedKey === liveShowBeatKey(board?.live_show));
       if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start'
-          || (isObserver && stage === 'judge')) {
+          || judgePresentedAndAcked) {
         if (G._perfSpectacleActive) perfCloseSpectacle();
       }
-      if (!stage || stage === 'done' || (isObserver && stage === 'judge')) {
+      if (!stage || stage === 'done' || judgePresentedAndAcked) {
         sealLiveShowSpectacleTurn(board || next, prior);
       }
     }
