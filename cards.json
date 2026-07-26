@@ -81455,6 +81455,7 @@
           "trigger": "continuous",
           "type": "blade_if_either_stage_cost_min",
           "min_cost": 13,
+          "self_only": true,
           "hearts": [
             {
               "color": "yellow",

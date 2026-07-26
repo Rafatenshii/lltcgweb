@@ -2195,7 +2195,11 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
                 }
             }
             if (($ab['type'] ?? '') === 'blade_if_either_stage_cost_min' && !empty($ab['hearts'])) {
-                if (eitherStageHasMemberMinCost($state, intval($ab['min_cost'] ?? 13))) {
+                $minCost = intval($ab['min_cost'] ?? 13);
+                $ok = !empty($ab['self_only'])
+                    ? stageHasMemberMinCost($state['players'][$pid], $minCost)
+                    : eitherStageHasMemberMinCost($state, $minCost);
+                if ($ok) {
                     appendContinuousHeartsFromSpec($memberHearts, $ab['hearts']);
                 }
             }
@@ -2859,7 +2863,11 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
                 }
             }
             if (($ab['type'] ?? '') === 'blade_if_either_stage_cost_min' && empty($ab['hearts'])) {
-                if (eitherStageHasMemberMinCost($state, intval($ab['min_cost'] ?? 13))) {
+                $minCost = intval($ab['min_cost'] ?? 13);
+                $ok = !empty($ab['self_only'])
+                    ? stageHasMemberMinCost($state['players'][$pid], $minCost)
+                    : eitherStageHasMemberMinCost($state, $minCost);
+                if ($ok) {
                     $blade += intval($ab['amount'] ?? 3);
                 }
             }

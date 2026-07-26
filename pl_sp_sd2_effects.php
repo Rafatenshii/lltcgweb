@@ -14,7 +14,6 @@ function plSpSd2EffectTypes(): array {
         'on_enter_blade_self_and_pick_group',
         'live_success_energy_wait_if_yell_group_count',
         'auto_yell_blade_if_group_count',
-        'auto_yell_blade_if_group_count',
         'wait_opp_if_stage_hearts',
     ];
 }
@@ -260,18 +259,30 @@ function plSpSd2ResolvePrompt(array $state, string $owner, array $prompt, string
         return finishPromptEffects($state);
     }
     if ($type === 'on_enter_blade_self_and_pick_group') {
-        $slot = $data['slot'] ?? '';
+        $slot = $data['slot'] ?? ($choice !== '' && $choice !== 'skip' && $choice !== 'no' && $choice !== 'cancel' ? $choice : '');
         $p = &$state['players'][$owner];
-        if ($slot !== '' && !empty($p['stage'][$slot])) {
+        $candidates = $prompt['candidates'] ?? [];
+        $validSlots = [];
+        foreach ($candidates as $c) {
+            if (is_array($c) && ($c['slot'] ?? '') !== '') {
+                $validSlots[$c['slot']] = true;
+            }
+        }
+        // Invalid / missing slot = skip (never leave Live Start stuck with no prompt).
+        if ($slot !== '' && isset($validSlots[$slot]) && !empty($p['stage'][$slot])) {
             $amt = intval($prompt['amount'] ?? 1);
             $p['stage'][$slot]['live_blade_bonus'] = intval($p['stage'][$slot]['live_blade_bonus'] ?? 0) + $amt;
             $mName = $p['stage'][$slot]['name_en'] ?? $p['stage'][$slot]['name'] ?? 'Member';
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$mName] gained +$amt Blade until Live ends.");
+        } else {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped extra Blade pick.');
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        // Must resume Live Start / Performance — bare return softlocks in live_start_effects.
+        return finishPromptEffects($state);
     }
     return null;
 }
