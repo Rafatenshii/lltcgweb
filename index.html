@@ -8370,7 +8370,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=40"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=51"></script>
+<script src="client/js/prompt-renderer.js?v=52"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -26601,6 +26601,20 @@ function cpuResolveBranchPickPrompts(pr, cpu, tier, winPressure, read, s) {
     return false;
   }
 
+  // Hime pb1-014: opponent chooses own Stage Member to move into the facing area.
+  // Prefer lowest cost / least valuable so Hime's front isn't a strong piece.
+  if (pr.type === 'pos_change_opp_front_pick') {
+    const cands = [...(pr.candidates || [])].sort((a, b) =>
+      (a.cost || 0) - (b.cost || 0) || (a.blade || 0) - (b.blade || 0) || (a.hearts || 0) - (b.hearts || 0)
+    );
+    const slot = cands[0]?.slot;
+    if (slot) {
+      cpuAct('resolve_prompt', { slot });
+      return true;
+    }
+    return false;
+  }
+
   if (pr.type === 'live_start_arise_choice') {
     if (pr.step === 'pick_wait_member') {
       const wait = [...(pr.candidates || [])].sort((a, b) =>
@@ -27895,6 +27909,13 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
   }
   if (pr.type === 'wait_opponent_stage_pick' && pr.step === 'pick_opp_wait') {
     const slot = cpuPickOppStageTarget(pr.candidates, read, tier) || pr.candidates?.[0]?.slot;
+    if (slot) { cpuAct('resolve_prompt', { slot }); return true; }
+  }
+  if (pr.type === 'pos_change_opp_front_pick') {
+    const cands = [...(pr.candidates || [])].sort((a, b) =>
+      (a.cost || 0) - (b.cost || 0) || (a.blade || 0) - (b.blade || 0) || (a.hearts || 0) - (b.hearts || 0)
+    );
+    const slot = cands[0]?.slot;
     if (slot) { cpuAct('resolve_prompt', { slot }); return true; }
   }
   if (pr.type === 'live_start_center_cost_choice') {

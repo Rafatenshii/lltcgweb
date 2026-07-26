@@ -2503,6 +2503,11 @@ global.renderPrompt = function renderPrompt(s, myId){
     openWrLivePick(pr);
     return;
   }
+  if(pr?.type==='pos_change_opp_front_pick'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    openStageSlotPick(pr);
+    return;
+  }
   if((pr?.type==='optional_wr_member_deck_top_blade'||pr?.type==='live_start_center_cost_choice'||pr?.type==='wait_opponent_stage_pick')
     &&(pr.step==='pick_stage_blade'||pr.step==='pick_opp_wait')&&pr.responder===myId){
     ovl.classList.remove('open');

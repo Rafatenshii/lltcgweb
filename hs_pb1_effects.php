@@ -607,6 +607,12 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             break;
 
         case 'pos_change_opp_front_if_subunit_only':
+            // Official: if every Stage Member is Mira-Cra Park!, Position Change
+            // 1 opponent Stage Member into the area in front of this Member.
+            // That rearranges the OPPONENT's Stage only (swap with whoever is already
+            // in the facing slot). It must never exchange ownership between players.
+            // The opponent chooses which of their Members to move (excluding one
+            // already in the facing slot).
             $onlySub = true;
             $sub = $ab['subunit'] ?? '';
             foreach ($p['stage'] as $mbr) {
@@ -617,25 +623,45 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
                 }
             }
             if (!$onlySub || countStageMembers($p) === 0) break;
+            if (!empty($state['pending_prompt'])) break;
             $opp = ($pid === 'p1') ? 'p2' : 'p1';
-            $srcSlot = findMemberSlot($p, $source['instance_id'] ?? '');
-            $frontSlot = ($srcSlot === 'left') ? 'right' : (($srcSlot === 'right') ? 'left' : 'center');
-            $oppM = $state['players'][$opp]['stage'][$frontSlot] ?? null;
-            if (!$oppM) {
-                foreach ($state['players'][$opp]['stage'] as $os => $om) {
-                    if ($om) {
-                        $frontSlot = $os;
-                        $oppM = $om;
-                        break;
-                    }
-                }
+            $srcSlot = $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? '');
+            if ($srcSlot === null || $srcSlot === '') {
+                $srcSlot = 'center';
             }
-            if (!$oppM) break;
-            $mySlot = $srcSlot ?: 'center';
-            $state['players'][$opp]['stage'][$frontSlot] = $p['stage'][$mySlot] ?? $source;
-            $p['stage'][$mySlot] = $oppM;
+            $frontSlot = hsPb1FacingStageSlot((string) $srcSlot);
+            $candidates = hsPb1OppStagePosChangeCandidates($state['players'][$opp] ?? [], $frontSlot);
+            if (empty($candidates)) break;
+            if (count($candidates) === 1) {
+                $fromSlot = (string) ($candidates[0]['slot'] ?? '');
+                $state = hsPb1ApplyOppFrontPositionChange(
+                    $state,
+                    $pid,
+                    $opp,
+                    $fromSlot,
+                    $frontSlot,
+                    $name
+                );
+                break;
+            }
+            $frontLabel = ucfirst($frontSlot);
+            $state['pending_prompt'] = [
+                'type'          => 'pos_change_opp_front_pick',
+                'owner'         => $pid,
+                'responder'     => $opp,
+                'opp'           => $opp,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_name'   => $name,
+                'source_slot'   => $srcSlot,
+                'front_slot'    => $frontSlot,
+                'candidates'    => $candidates,
+                'ability'       => $ab,
+                'prompt'        => "Choose 1 Member on your Stage to Position Change into your {$frontLabel} area"
+                    . ' (across from ' . $name . ').',
+            ];
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] Position Changed with opponent Member.');
+                ' — [' . $name . '] Position Change: opponent chooses a Stage Member for the facing area.');
+            $state['seq']++;
             break;
 
         case 'pick_other_blade_member_bonus':
@@ -846,9 +872,103 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
     return $state;
 }
 
+/** Stage area across from a Member (left↔right, center↔center). */
+function hsPb1FacingStageSlot(string $slot): string {
+    return match ($slot) {
+        'left' => 'right',
+        'right' => 'left',
+        default => 'center',
+    };
+}
+
+/** Opponent Stage Members eligible to Position Change into $frontSlot (not already there). */
+function hsPb1OppStagePosChangeCandidates(array $oppP, string $frontSlot): array {
+    $candidates = [];
+    foreach (['left', 'center', 'right'] as $slot) {
+        if ($slot === $frontSlot) {
+            continue;
+        }
+        $mbr = $oppP['stage'][$slot] ?? null;
+        if (!$mbr) {
+            continue;
+        }
+        $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+    }
+    return $candidates;
+}
+
+/**
+ * Position Change one opponent Stage Member into $frontSlot (swap if occupied).
+ * Ownership never changes — only slots on the opponent's Stage move.
+ */
+function hsPb1ApplyOppFrontPositionChange(
+    array $state,
+    string $owner,
+    string $opp,
+    string $fromSlot,
+    string $frontSlot,
+    string $sourceName
+): array {
+    if ($fromSlot === '' || $frontSlot === '' || $fromSlot === $frontSlot) {
+        return $state;
+    }
+    $oppP = &$state['players'][$opp];
+    $moving = $oppP['stage'][$fromSlot] ?? null;
+    if (!$moving) {
+        return $state;
+    }
+    $dest = $oppP['stage'][$frontSlot] ?? null;
+    // Position Change: swap areas; moved Members do not become Active.
+    $oppP['stage'][$frontSlot] = $moving;
+    $oppP['stage'][$fromSlot] = $dest;
+    $movedName = $moving['name_en'] ?? $moving['name'] ?? 'Member';
+    $destName = $dest
+        ? ($dest['name_en'] ?? $dest['name'] ?? 'Member')
+        : null;
+    $msg = $state['players'][$owner]['name'] . ' — [' . $sourceName . '] Position Changed '
+        . $movedName . ' into opponent ' . ucfirst($frontSlot);
+    if ($destName !== null) {
+        $msg .= ' (swapped with ' . $destName . ')';
+    }
+    $msg .= '.';
+    return addLog($state, $msg);
+}
+
 function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $promptType = $prompt['type'] ?? '';
     $ownerP = &$state['players'][$owner];
+
+    if ($promptType === 'pos_change_opp_front_pick') {
+        $opp = $prompt['opp'] ?? (($owner === 'p1') ? 'p2' : 'p1');
+        $frontSlot = (string) ($prompt['front_slot'] ?? '');
+        $fromSlot = (string) ($data['slot'] ?? $choice);
+        if ($frontSlot === '' || $fromSlot === '' || $fromSlot === $frontSlot) {
+            throw new Exception('Choose a Member on your Stage to Position Change');
+        }
+        $allowed = [];
+        foreach ($prompt['candidates'] ?? [] as $cand) {
+            if (!empty($cand['slot'])) {
+                $allowed[(string) $cand['slot']] = true;
+            }
+        }
+        if (!isset($allowed[$fromSlot])) {
+            throw new Exception('Choose a Member that is not already in the facing area');
+        }
+        if (empty($state['players'][$opp]['stage'][$fromSlot])) {
+            throw new Exception('Choose a Member on your Stage');
+        }
+        $state = hsPb1ApplyOppFrontPositionChange(
+            $state,
+            $owner,
+            $opp,
+            $fromSlot,
+            $frontSlot,
+            (string) ($prompt['source_name'] ?? 'Member')
+        );
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        return finishAfterBranchChoicePrompt($state, $prompt);
+    }
 
     // Sayaka (PL!HS-bp1-002): pay → leave Stage → play chosen Hasunosora Member from WR (Active).
     if ($promptType === 'hs_leave_play_wr_slot') {

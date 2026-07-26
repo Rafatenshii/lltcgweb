@@ -435,6 +435,23 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             $slot = $prompt['candidates'][0]['slot'] ?? '';
             return $slot !== '' ? ['slot' => $slot] : ['choice' => 'skip'];
 
+        case 'pos_change_opp_front_pick':
+            // Prefer lowest-cost own Member when timer expires (deny facing value).
+            $bestSlot = '';
+            $bestCost = PHP_INT_MAX;
+            foreach ($prompt['candidates'] ?? [] as $cand) {
+                $slot = (string) ($cand['slot'] ?? '');
+                if ($slot === '') {
+                    continue;
+                }
+                $cost = intval($cand['cost'] ?? 0);
+                if ($cost < $bestCost) {
+                    $bestCost = $cost;
+                    $bestSlot = $slot;
+                }
+            }
+            return $bestSlot !== '' ? ['slot' => $bestSlot] : ['choice' => 'skip'];
+
         case 'opp_pick_stage_active':
             foreach ($prompt['stage_members'] ?? [] as $candidate) {
                 $id = $candidate['instance_id'] ?? '';
