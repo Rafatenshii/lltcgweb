@@ -472,7 +472,16 @@
     // Finished live_show cursor: seal so legacy recovery cannot re-open spectacle
     // with lives already moved to Success / Waiting Room.
     if (s.live_show?.stage === 'done' && typeof sealLiveShowSpectacleTurn === 'function') {
+      if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       sealLiveShowSpectacleTurn(s, prev);
+    } else if (G._perfSpectacleActive
+        && prev?.live_show?.stage
+        && prev.live_show.stage !== 'done'
+        && !s.live_show?.stage) {
+      // Server often unsets live_show after Success (esp. match-ending 3rd Success)
+      // instead of leaving stage=done — close observer chrome stuck from the last beat.
+      if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+      if (typeof sealLiveShowSpectacleTurn === 'function') sealLiveShowSpectacleTurn(s, prev);
     }
 
     if (spectacleGateActive && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {

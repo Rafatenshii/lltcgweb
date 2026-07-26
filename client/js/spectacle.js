@@ -2734,7 +2734,11 @@ async function maybePlayFinalLiveRoundPresentation(prev, next, newEntries) {
     TCG_DEBUG.log('live', 'maybePlayFinalLiveRoundPresentation: wait for in-flight presentation');
     const showTurn = inferLiveShowTurn(prev, next);
     const settled = await waitForLivePresentationIdle(15000);
-    if (liveSpectacleDoneForTurn(showTurn)) return true;
+    if (liveSpectacleDoneForTurn(showTurn)) {
+      // Spectators seal on judge without closing — clear chrome so finish UI is not blocked.
+      if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+      return true;
+    }
     if (!settled) {
       TCG_DEBUG.warn('live', 'final Live presentation still busy — recovering owed spectacle', {
         showTurn,
@@ -6664,6 +6668,10 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (stage === 'judge') {
     sealLiveShowSpectacleTurn(next, perfPrev);
     G._postSpectacleSplashPause = true;
+    // Observers never ack through to stage=done, so close after the final beat.
+    if (G.isSpectator || (typeof isReplayViewing === 'function' && isReplayViewing())) {
+      if (G._perfSpectacleActive) perfCloseSpectacle();
+    }
   }
 }
 
@@ -6728,6 +6736,11 @@ async function presentServerLiveShowStage(prev, next, myId) {
       // Keep observing via polls (pollPresentationBlocked allows live_show sync).
       if (G.isSpectator || (typeof isReplayViewing === 'function' && isReplayViewing())) {
         G.gameState = board;
+        // Terminal beat: observers leave chrome open forever without this close
+        // (they break before the player ack loop that reaches stage=done).
+        if (show.stage === 'judge' || show.stage === 'done') {
+          if (G._perfSpectacleActive) perfCloseSpectacle();
+        }
         break;
       }
 
@@ -6776,10 +6789,15 @@ async function presentServerLiveShowStage(prev, next, myId) {
       if (G._perfSpectacleActive) perfCloseSpectacle();
     } else {
       const stage = board?.live_show?.stage;
-      if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start') {
+      const isObserver = !!G.isSpectator
+        || (typeof isReplayViewing === 'function' && isReplayViewing());
+      // Players keep chrome through performance→judge while chaining acks.
+      // Observers must also close after judge (they never reach stage=done).
+      if (!stage || stage === 'done' || stage === 'reveal' || stage === 'live_start'
+          || (isObserver && stage === 'judge')) {
         if (G._perfSpectacleActive) perfCloseSpectacle();
       }
-      if (!stage || stage === 'done') {
+      if (!stage || stage === 'done' || (isObserver && stage === 'judge')) {
         sealLiveShowSpectacleTurn(board || next, prior);
       }
     }
