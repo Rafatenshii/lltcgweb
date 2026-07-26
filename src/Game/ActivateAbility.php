@@ -942,13 +942,51 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             $p['stage'][$slot] = $member;
         }
         $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
-        $state = startEffectDiscardHandPrompt($state, $pid, $mName, $need, '', [
-            'source_id'     => $member['instance_id'] ?? '',
-            'source_slot'   => $slot ?? '',
-            'ability_index' => $abilityIdx,
-            'ability'       => $ab,
-        ]);
-        return $state;
+        $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+        // Client activate UI may already lock in discards — honor them and advance
+        // straight to the Waiting Room pick (never re-prompt the same discard step).
+        if (!empty($ids)) {
+            if (count($ids) !== $need) {
+                throw new Exception("Must discard exactly $need cards from hand");
+            }
+            $moved = discardHandCardsByIds($p, $ids);
+            if (count($moved) !== $need) {
+                throw new Exception("Must discard exactly $need cards from hand");
+            }
+            foreach ($moved as $c) {
+                $state = logEffectPutWr(
+                    $state,
+                    $pid,
+                    $mName,
+                    $c,
+                    [animSpec($c['instance_id'], 'hand', 'waiting_room', $pid)]
+                );
+            }
+            $wrSlot = ($slot !== null && $slot !== '')
+                ? (string) $slot
+                : (findMemberSlot($p, $member['instance_id'] ?? '') ?: 'center');
+            startPickWrToHandPrompt(
+                $state,
+                $pid,
+                $member,
+                $wrSlot,
+                $abilityIdx,
+                $ab,
+                $cfg,
+                false,
+                max(1, intval($ab['count'] ?? 1))
+            );
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$mName] discarded $need; choose a card from Waiting Room.");
+        } else {
+            $state = startEffectDiscardHandPrompt($state, $pid, $mName, $need, '', [
+                'source_id'     => $member['instance_id'] ?? '',
+                'source_slot'   => $slot ?? '',
+                'ability_index' => $abilityIdx,
+                'ability'       => $ab,
+            ]);
+            return $state;
+        }
     } elseif (($ab['type'] ?? '') === 'activated_discard_liella_choose_energy_or_hearts') {
         if (count($p['hand'] ?? []) < 1) {
             throw new Exception('Need at least 1 card in hand');

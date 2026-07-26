@@ -53,11 +53,59 @@ function tryResolveAbilityEffectSwitchAddFromWr(
             break;
 
         case 'discard_add_from_wr':
+            $need = intval($ab['discard'] ?? 1);
+            $ids = normalizeDiscardIds($ctx['discard_ids'] ?? []);
+            // Prefer locked-in discards from activate / confirm so the same
+            // discard step is never opened twice.
+            if (!empty($ids)) {
+                if (count($ids) !== $need) {
+                    throw new Exception("Must discard exactly $need cards from hand");
+                }
+                $moved = discardHandCardsByIds($p, $ids);
+                if (count($moved) !== $need) {
+                    throw new Exception("Must discard exactly $need cards from hand");
+                }
+                foreach ($moved as $c) {
+                    $state = logEffectPutWr(
+                        $state,
+                        $pid,
+                        $name,
+                        $c,
+                        [animSpec($c['instance_id'], 'hand', 'waiting_room', $pid)]
+                    );
+                }
+                $cfg = wrPickCfgFromAbility($ab);
+                $count = max(1, intval($ab['count'] ?? 1));
+                $slot = (string) ($ctx['slot'] ?? '');
+                if ($slot === '') {
+                    $slot = findMemberSlot($p, $source['instance_id'] ?? '') ?: 'center';
+                }
+                $abilityIdx = $ctx['ability_index'] ?? 0;
+                $member = &$source;
+                if (!empty($p['stage'][$slot])
+                    && (($p['stage'][$slot]['instance_id'] ?? '') === ($source['instance_id'] ?? ''))) {
+                    $member = &$p['stage'][$slot];
+                }
+                startPickWrToHandPrompt(
+                    $state,
+                    $pid,
+                    $member,
+                    $slot,
+                    $abilityIdx,
+                    $ab,
+                    $cfg,
+                    false,
+                    $count
+                );
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] discarded $need; choose a card from Waiting Room.");
+                break;
+            }
             return startEffectDiscardHandPrompt(
                 $state,
                 $pid,
                 $name,
-                intval($ab['discard'] ?? 1),
+                $need,
                 '',
                 ['then' => [
                     'type'   => 'add_from_wr',
