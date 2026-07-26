@@ -9,6 +9,7 @@
   var _tutorialEs = null;
   var _tutorialKo = null;
   var _tutorialZh = null;
+  var _tutorialTh = null;
 
   var STRINGS = {
   "en": {
