@@ -6340,9 +6340,29 @@ function perfYellRevealSignature(state, pid) {
   return (state?.yell_reveal?.[pid] || []).map(c => c?.instance_id || '').join(',');
 }
 
+/** Drop yell chips that left yell_reveal (e.g. Kurage mill → WR) so extras do not stack on ghosts. */
+function perfPruneYellRowToReveal(yellRow, yellCards, shownSet) {
+  const keep = new Set(
+    (yellCards || []).map(c => c?.instance_id).filter(Boolean)
+  );
+  yellRow?.querySelectorAll('.perf-yell-card[data-iid]')?.forEach((chip) => {
+    const iid = chip.getAttribute('data-iid');
+    if (iid && !keep.has(iid)) {
+      chip.remove();
+      shownSet?.delete(iid);
+    }
+  });
+  if (shownSet) {
+    for (const iid of [...shownSet]) {
+      if (!keep.has(iid)) shownSet.delete(iid);
+    }
+  }
+  if (yellRow) layoutPerfYellStack(yellRow);
+}
+
 async function perfReAnimateYellSideIfChanged(ctx, nextState, pid, prevSig) {
   const newSig = perfYellRevealSignature(nextState, pid);
-  if (!newSig || newSig === prevSig) return ctx;
+  if (newSig === prevSig) return ctx;
   Object.assign(ctx, perfBuildContext(ctx.prev, nextState, ctx.myId));
   // Seed already-shown iids from the DOM so a cleared Set cannot re-fly the whole stack.
   G._perfYellShownIids = G._perfYellShownIids || { p1: new Set(), p2: new Set() };
@@ -6352,7 +6372,11 @@ async function perfReAnimateYellSideIfChanged(ctx, nextState, pid, prevSig) {
     const iid = chip.getAttribute('data-iid');
     if (iid) G._perfYellShownIids[pid].add(iid);
   });
-  // Delta-only: append newly milled yell cards — never clear and replay the whole side.
+  const yellCards = ctx.next.yell_reveal?.[pid] || [];
+  // Kurage mill removes cards from yell_reveal; without pruning, milled chips stay and
+  // extras append on top — looking like ~2–3× as many Yells as the real pool.
+  perfPruneYellRowToReveal(yellRow, yellCards, G._perfYellShownIids[pid]);
+  // Delta-only: append newly drawn yell cards — never clear and replay the whole side.
   await perfAnimateYellSide(ctx, pid, { onlyNew: true });
   return ctx;
 }

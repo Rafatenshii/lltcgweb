@@ -304,4 +304,18 @@ final class Bp6KurageYellMillTest extends TestCase
             'Cancel must return to the branch dialog instead of sending choice=no'
         );
     }
+
+    public function testClientPrunesMilledYellChipsBeforeExtraYellAnim(): void
+    {
+        $spectacle = (string) file_get_contents(dirname(__DIR__, 2) . '/client/js/spectacle.js');
+        $this->assertStringContainsString(
+            'function perfPruneYellRowToReveal',
+            $spectacle,
+            'Kurage mill must remove left-yell_reveal chips before appending extras'
+        );
+        $this->assertMatchesRegularExpression(
+            '/perfPruneYellRowToReveal\\(yellRow, yellCards, G\\._perfYellShownIids\\[pid\\]\\)/',
+            $spectacle
+        );
+    }
 }
