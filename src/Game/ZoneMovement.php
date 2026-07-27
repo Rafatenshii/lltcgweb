@@ -259,6 +259,10 @@ function activateEnergyForPlayer(array &$p, int $max): int {
         }
     }
     unset($e);
+    // Cara Tesoro / similar: track Wait Energy activated via a Nijigasaki card effect.
+    if ($n > 0 && !empty($p['_effect_source_is_niji'])) {
+        $p['_niji_turn_flags']['activated_wait_energy'] = true;
+    }
     return $n;
 }
 

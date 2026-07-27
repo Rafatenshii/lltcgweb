@@ -7328,11 +7328,27 @@ function announceLogEntry(entry, s, myId) {
 }
 function effectiveCost(card, hand){
   let base=card.cost||0;
-  if(!card.abilities?.length||!hand?.length) return base;
-  const others=hand.filter(c=>c.instance_id!==card.instance_id).length;
-  for(const ab of card.abilities){
-    if(ab.trigger==='continuous'&&ab.type==='hand_cost_reduction')
-      base=Math.max(0,base-others*(ab.per_other_card||1));
+  if(!card.abilities?.length) return base;
+  if(hand?.length){
+    const others=hand.filter(c=>c.instance_id!==card.instance_id).length;
+    for(const ab of card.abilities){
+      if(ab.trigger==='continuous'&&ab.type==='hand_cost_reduction')
+        base=Math.max(0,base-others*(ab.per_other_card||1));
+    }
+  }
+  // Emma Verde PB1 etc.: −2 while a Wait Nijigasaki Member is on Stage.
+  const me = (typeof G !== 'undefined' && G.state) ? (G.state.players?.[G.myId] || null) : null;
+  if (me?.stage) {
+    for (const ab of card.abilities) {
+      if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_if_wait_group') continue;
+      const group = ab.group || 'Nijigasaki';
+      const hasWait = Object.values(me.stage).some(m => {
+        if (!m || (m.group || '') !== group) return false;
+        if (typeof memberInWait === 'function') return memberInWait(m);
+        return !!m.in_wait || m.active === false;
+      });
+      if (hasWait) base = Math.max(0, base - (ab.amount || 2));
+    }
   }
   return base;
 }

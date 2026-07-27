@@ -429,10 +429,15 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
             break;
 
         case 'score_if_yell_activated_energy_and_members':
+            // Cara Tesoro: +1 if Wait Energy activated via Nijigasaki effect;
+            // +2 instead if Wait Energy AND Wait Member were both activated that way.
             $flags = $state['players'][$pid]['_niji_turn_flags'] ?? [];
             $amt = 0;
-            if (!empty($flags['activated_wait_energy'])) $amt = intval($ab['amount_one'] ?? 1);
-            if (!empty($flags['activated_wait_member'])) $amt = intval($ab['amount_two'] ?? 2);
+            if (!empty($flags['activated_wait_energy'])) {
+                $amt = !empty($flags['activated_wait_member'])
+                    ? intval($ab['amount_two'] ?? 2)
+                    : intval($ab['amount_one'] ?? 1);
+            }
             if ($amt > 0) {
                 bumpLiveCardScore($state, $pid, $source['instance_id'] ?? '', $amt);
                 $state = addLog($state, $state['players'][$pid]['name'] .
@@ -1072,7 +1077,8 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         }
     }
 
-    if (in_array($promptType, ['optional_discard_activate_wait_blade', 'optional_discard_activate_wait_hearts'], true)) {
+    if (in_array($promptType, ['optional_discard_activate_wait_blade', 'optional_discard_activate_wait_hearts'], true)
+        && ($prompt['step'] ?? '') !== 'pick_wait') {
         if ($choice === 'no') {
             unset($state['pending_prompt']);
             $state['seq']++;
@@ -1090,7 +1096,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         $waitSlots = [];
         foreach ($ownerP['stage'] as $slot => $mbr) {
             if (!$mbr || ($mbr['instance_id'] ?? '') === $srcId) continue;
-            if (!($mbr['active'] ?? true)) {
+            if (memberIsInWait($mbr)) {
                 $waitSlots[] = $slot;
             }
         }
@@ -1114,7 +1120,8 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
             $state['seq']++;
             return $state;
         }
-        $ownerP['stage'][$pickSlot]['active'] = true;
+        clearMemberWait($ownerP['stage'][$pickSlot]);
+        $ownerP['_niji_turn_flags']['activated_wait_member'] = true;
         $grantHearts = ($promptType === 'optional_discard_activate_wait_hearts');
         if ($grantHearts) {
             $heartSpec = $ability['hearts'] ?? [['color' => 'green', 'count' => 1]];
@@ -1145,7 +1152,8 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         if (!in_array($pickSlot, $prompt['wait_slots'] ?? [], true)) {
             throw new Exception('Invalid Wait Member');
         }
-        $ownerP['stage'][$pickSlot]['active'] = true;
+        clearMemberWait($ownerP['stage'][$pickSlot]);
+        $ownerP['_niji_turn_flags']['activated_wait_member'] = true;
         $grantHearts = (($prompt['type'] ?? '') === 'optional_discard_activate_wait_hearts');
         $ab = $prompt['ability'] ?? [];
         if ($grantHearts) {

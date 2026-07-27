@@ -72,7 +72,19 @@ function tryResolveAbilityEffectSwitchLive(
             if (intval($ctx['excess_hearts'] ?? 0) < intval($ab['min_excess'] ?? 1)) break;
             $exColor = $ab['excess_color'] ?? '';
             if ($exColor !== '') {
-                $colorExcess = intval($ctx['excess_hearts_by_color'][$exColor] ?? 0);
+                // Live Success passes leftover hearts as a flat color list (`excess_heart_colors`).
+                $colors = $ctx['excess_heart_colors'] ?? [];
+                if (!is_array($colors)) {
+                    $colors = [];
+                }
+                $colorExcess = count(array_filter(
+                    $colors,
+                    static fn($c) => (string)$c === (string)$exColor
+                ));
+                // Legacy / mistaken key support
+                if ($colorExcess < 1 && isset($ctx['excess_hearts_by_color'][$exColor])) {
+                    $colorExcess = intval($ctx['excess_hearts_by_color'][$exColor]);
+                }
                 if ($colorExcess < intval($ab['min_excess'] ?? 1)) break;
             }
             if (!stageHasGroupMember($p, $ab['group'] ?? '')) break;

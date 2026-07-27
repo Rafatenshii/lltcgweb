@@ -15,58 +15,51 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
     $p = &$state['players'][$pid];
     $name = $source['name_en'] ?? $source['name'] ?? 'Card';
 
+    // Attribute Wait Energy / Member activations to Nijigasaki effects (Cara Tesoro, etc.).
+    $prevNijiAttr = !empty($p['_effect_source_is_niji']);
+    $sourceGroup = (string)($source['group'] ?? $ab['group'] ?? '');
+    if ($sourceGroup === 'Nijigasaki') {
+        $p['_effect_source_is_niji'] = true;
+    }
+
     $state = resolveAbilityEffectSwitch($state, $pid, $source, $ab, $ctx, $type, $p, $name);
 
     if (nijiIsNijigasakiEffectType($type)) {
-        return nijiResolveNijigasakiEffect($state, $pid, $source, $ab, $ctx);
+        $state = nijiResolveNijigasakiEffect($state, $pid, $source, $ab, $ctx);
+        if (!$prevNijiAttr) {
+            unset($state['players'][$pid]['_effect_source_is_niji']);
+        }
+        return $state;
     }
 
     if (hsIsHasunosoraBp6EffectType($type)) {
-        return hsResolveHasunosoraEffect($state, $pid, $source, $ab, $ctx);
+        $state = hsResolveHasunosoraEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (hsIsHasunosoraPb1EffectType($type)) {
+        $state = hsResolveHasunosoraPb1Effect($state, $pid, $source, $ab, $ctx);
+    } elseif (hsIsHasunosoraCl1EffectType($type)) {
+        $state = hsResolveHasunosoraCl1Effect($state, $pid, $source, $ab, $ctx);
+    } elseif (nBp5IsEffectType($type)) {
+        $state = nBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (sBp5IsEffectType($type)) {
+        $state = sBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (sBp6IsEffectType($type)) {
+        $state = sBp6ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (sSd1IsEffectType($type)) {
+        $state = sSd1ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (spBp5IsEffectType($type)) {
+        $state = spBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (plMuseGapIsEffectType($type)) {
+        $state = plMuseGapResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (plSpSd2IsEffectType($type)) {
+        $state = plSpSd2ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (batch99IsEffectType($type)) {
+        $state = batch99ResolveEffect($state, $pid, $source, $ab, $ctx);
+    } elseif (spBp2IsHandlerType($type)) {
+        $state = spBp2ResolveEffect($state, $pid, $source, $ab, $ctx);
     }
 
-    if (hsIsHasunosoraPb1EffectType($type)) {
-        return hsResolveHasunosoraPb1Effect($state, $pid, $source, $ab, $ctx);
+    if (!$prevNijiAttr) {
+        unset($state['players'][$pid]['_effect_source_is_niji']);
     }
-
-    if (hsIsHasunosoraCl1EffectType($type)) {
-        return hsResolveHasunosoraCl1Effect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (nBp5IsEffectType($type)) {
-        return nBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (sBp5IsEffectType($type)) {
-        return sBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (sBp6IsEffectType($type)) {
-        return sBp6ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-    if (sSd1IsEffectType($type)) {
-        return sSd1ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (spBp5IsEffectType($type)) {
-        return spBp5ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (plMuseGapIsEffectType($type)) {
-        return plMuseGapResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (plSpSd2IsEffectType($type)) {
-        return plSpSd2ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (batch99IsEffectType($type)) {
-        return batch99ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
-    if (spBp2IsHandlerType($type)) {
-        return spBp2ResolveEffect($state, $pid, $source, $ab, $ctx);
-    }
-
     return $state;
 }

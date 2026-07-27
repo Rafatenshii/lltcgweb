@@ -2654,7 +2654,11 @@ function getEffectiveHandCost(array $state, string $pid, array $card): int {
             && ($ab['type'] ?? '') === 'hand_cost_reduction_if_wait_group') {
             $group = $ab['group'] ?? 'Nijigasaki';
             foreach ($p['stage'] as $w) {
-                if ($w && ($w['group'] ?? '') === $group && !($w['active'] ?? true)) {
+                if (!$w || ($w['group'] ?? '') !== $group) {
+                    continue;
+                }
+                // Wait Members use in_wait (active=false is also set); prefer the Wait flag.
+                if (memberIsInWait($w) || !($w['active'] ?? true)) {
                     $base = max(0, $base - intval($ab['amount'] ?? 2));
                     break;
                 }
@@ -3167,8 +3171,17 @@ function activateMembersForPlayer(array &$p, int $max): int {
     $n = 0;
     foreach ($p['stage'] as &$mbr) {
         if ($n >= $max) break;
-        if (!$mbr || memberIsActiveForGame($mbr)) continue;
-        if (memberIsInWait($mbr)) continue;
+        if (!$mbr) continue;
+        // Wait only blocks printed Blade contribution — "Activate" clears Wait.
+        if (memberIsInWait($mbr)) {
+            clearMemberWait($mbr);
+            $n++;
+            if (!empty($p['_effect_source_is_niji'])) {
+                $p['_niji_turn_flags']['activated_wait_member'] = true;
+            }
+            continue;
+        }
+        if (memberIsActiveForGame($mbr)) continue;
         $mbr['active'] = true;
         $n++;
     }
@@ -3766,6 +3779,11 @@ function activateSubunitMembers(array &$p, string $subunit, int $max): int {
     foreach ($p['stage'] as &$mbr) {
         if ($n >= $max) break;
         if (!$mbr || ($mbr['subunit'] ?? '') !== $subunit) continue;
+        if (memberIsInWait($mbr)) {
+            clearMemberWait($mbr);
+            $n++;
+            continue;
+        }
         if ($mbr['active'] ?? true) continue;
         $mbr['active'] = true;
         $n++;

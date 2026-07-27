@@ -1920,6 +1920,8 @@ function runPlayerTurnPrep(array $state, string $pid): array {
 
 function doActivePhase(array $state, string $pid): array {
     $p = &$state['players'][$pid];
+    // Per-turn Nijigasaki activation tracking (Cara Tesoro Live Start, etc.).
+    unset($p['_niji_turn_flags'], $p['_effect_source_is_niji']);
     // Active Phase: stand all Energy in storage (spent last turn becomes usable again).
     foreach ($p['energy_zone'] as &$e) {
         $e['active'] = true;
