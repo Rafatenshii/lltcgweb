@@ -169,6 +169,54 @@ function tryResolveAbilityEffectSwitchLiveStart(
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ' — [' . $name . '] Live Start: choose an effect.');
             break;
+
+        case 'live_start_unless_discard_return_energy':
+            // Wien Margarete (PL!SP-pb2-010): unless you discard 1, return 1 Energy to deck.
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $need = intval($ab['discard'] ?? 1);
+            if (count($p['hand'] ?? []) < $need) {
+                if (returnOneEnergyFromZoneToDeck($p)) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] put 1 Energy into Energy deck (could not discard from hand).");
+                } else {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] could not discard or return Energy.");
+                }
+                break;
+            }
+            if (empty($p['energy_zone'])) {
+                // No Energy to return — still offer discard (or skip doing nothing if declined).
+                $state['pending_prompt'] = [
+                    'type'          => 'live_start_unless_discard_return_energy',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $source['instance_id'] ?? '',
+                    'source_name'   => $name,
+                    'discard_count' => $need,
+                    'prompt'        => "Put $need card(s) from your hand into the Waiting Room? (No Energy to return if you skip.)",
+                    'choices'       => ['discard', 'skip'],
+                    'choice_labels' => ["Discard $need", 'Skip'],
+                    'ability'       => $ab,
+                ];
+            } else {
+                $state['pending_prompt'] = [
+                    'type'          => 'live_start_unless_discard_return_energy',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $source['instance_id'] ?? '',
+                    'source_name'   => $name,
+                    'discard_count' => $need,
+                    'prompt'        => "Put $need card(s) from your hand into the Waiting Room, or put 1 Energy into your Energy deck.",
+                    'choices'       => ['discard', 'return_energy'],
+                    'choice_labels' => ["Discard $need", 'Return 1 Energy'],
+                    'ability'       => $ab,
+                ];
+            }
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] Live Start (discard or return Energy).");
+            break;
     }
     return $state;
 }

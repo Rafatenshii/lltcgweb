@@ -359,6 +359,17 @@ function putEnergyFromDeckInWait(array &$p, ?array &$state = null, ?string $pid 
     return true;
 }
 
+/** Put 1 Energy from the Energy zone back into the Energy deck (face-down / inactive). */
+function returnOneEnergyFromZoneToDeck(array &$p): bool {
+    if (empty($p['energy_zone'])) {
+        return false;
+    }
+    $e = array_pop($p['energy_zone']);
+    $e['active'] = false;
+    $p['energy_deck'][] = $e;
+    return true;
+}
+
 function countEnergyInZone(array $p): int {
     return count($p['energy_zone'] ?? []);
 }

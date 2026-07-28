@@ -175,6 +175,27 @@ function tryResolveAbilityEffectSwitchLive(
                 ' — [' . $name . '] Live Success choice.');
             break;
 
+        case 'live_success_choose_draw_or_energy_wait':
+            // Wien Margarete (PL!SP-pb2-010): draw 2 OR Energy from deck into Wait.
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $drawN = intval($ab['draw'] ?? 2);
+            $state['pending_prompt'] = [
+                'type'          => 'live_success_choose_draw_or_energy_wait',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_name'   => $name,
+                'draw'          => $drawN,
+                'prompt'        => "Choose one — draw $drawN cards; or put 1 Energy from your Energy deck into Wait.",
+                'choices'       => ['draw', 'energy'],
+                'choice_labels' => ["Draw $drawN", 'Energy → Wait'],
+                'ability'       => $ab,
+            ];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] Live Success choice.");
+            break;
+
         case 'live_score_bonus':
             $state = applyModifierEffect($state, $pid, $ab);
             $state = addLog($state, $state['players'][$pid]['name'] .

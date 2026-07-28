@@ -349,16 +349,52 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             break;
 
         case 'mandatory_discard_group_branch':
-            if (count($p['hand'] ?? []) < intval($ab['discard'] ?? 1)) break;
-            autoDiscardFromHand($p, intval($ab['discard'] ?? 1));
-            $discarded = end($p['waiting_room']);
-            $isGroup = $discarded && ($discarded['group'] ?? '') === ($ab['group'] ?? "μ's");
-            if ($isGroup) {
-                $then = ['type' => 'look_reveal_filter', 'look' => intval($ab['look'] ?? 4), 'filter' => '', 'pick' => intval($ab['pick'] ?? 2)];
-            } else {
-                $then = ['type' => 'add_from_wr', 'filter' => $ab['else_filter'] ?? 'live', 'count' => intval($ab['else_count'] ?? 1)];
+            // Prefer interactive discard via ActivateAbility (Kotori bp5-003).
+            // Legacy path: open a discard prompt instead of auto-taking leftmost.
+            if (!empty($state['pending_prompt'])) {
+                break;
             }
-            $state = resolveAbilityEffect($state, $pid, $source, $then, $ctx);
+            $need = intval($ab['discard'] ?? 1);
+            $ids = normalizeDiscardIds($ctx['discard_ids'] ?? []);
+            if (count($ids) >= $need) {
+                discardFromHandByIds($p, array_slice($ids, 0, $need));
+                $discarded = array_slice($p['waiting_room'] ?? [], -$need);
+                $last = $discarded[count($discarded) - 1] ?? null;
+                $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");
+                if ($isGroup) {
+                    $then = [
+                        'type'   => 'look_reveal_filter',
+                        'look'   => intval($ab['look'] ?? 4),
+                        'filter' => '',
+                        'pick'   => intval($ab['pick'] ?? 2),
+                    ];
+                } else {
+                    $then = [
+                        'type'   => 'add_from_wr',
+                        'filter' => $ab['else_filter'] ?? 'live',
+                        'count'  => intval($ab['else_count'] ?? 1),
+                    ];
+                }
+                $state = resolveAbilityEffect($state, $pid, $source, $then, $ctx);
+                break;
+            }
+            if (count($p['hand'] ?? []) < $need) {
+                break;
+            }
+            $state['pending_prompt'] = [
+                'type'          => 'mandatory_discard_group_branch',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_name'   => $name,
+                'discard_count' => $need,
+                'max_pick'      => $need,
+                'min_pick'      => $need,
+                'prompt'        => "Put $need card(s) from your hand into the Waiting Room.",
+                'ability'       => $ab,
+            ];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] choose card(s) to discard.");
             break;
 
         case 'activated_wait_opp_reduce_cost_per_group':
@@ -1098,6 +1134,62 @@ function plMuseGapFinishReplaceSuccessJudge(array $state, string $owner): array 
 
 function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $type = $prompt['type'] ?? '';
+
+    if ($type === 'mandatory_discard_group_branch') {
+        $ab = $prompt['ability'] ?? [];
+        $need = intval($prompt['discard_count'] ?? $ab['discard'] ?? 1);
+        $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+        if (count($ids) !== $need) {
+            throw new Exception("Must select exactly $need card(s) to discard");
+        }
+        $p = &$state['players'][$owner];
+        discardFromHandByIds($p, $ids);
+        $discarded = array_slice($p['waiting_room'] ?? [], -$need);
+        $last = $discarded[count($discarded) - 1] ?? null;
+        $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");
+        $sourceId = $prompt['source_id'] ?? '';
+        $source = null;
+        $slot = $prompt['source_slot'] ?? '';
+        if ($slot !== '' && !empty($p['stage'][$slot])) {
+            $source = $p['stage'][$slot];
+        } elseif ($sourceId !== '') {
+            foreach ($p['stage'] as $s => $mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
+                    $source = $mbr;
+                    $slot = $s;
+                    break;
+                }
+            }
+        }
+        if (!$source) {
+            $source = ['name_en' => $prompt['source_name'] ?? 'Member', 'instance_id' => $sourceId];
+        }
+        if ($isGroup) {
+            $then = [
+                'type'   => 'look_reveal_filter',
+                'look'   => intval($ab['look'] ?? 4),
+                'filter' => '',
+                'pick'   => intval($ab['pick'] ?? 2),
+            ];
+        } else {
+            $then = [
+                'type'   => 'add_from_wr',
+                'filter' => $ab['else_filter'] ?? 'live',
+                'count'  => intval($ab['else_count'] ?? 1),
+            ];
+        }
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Member') . '] discarded ' . $need .
+            ($isGroup ? ' (μ\'s branch).' : ' (non-μ\'s branch).'));
+        $state = resolveAbilityEffect($state, $owner, $source, $then, [
+            'slot'          => $slot,
+            'phase'         => 'activated',
+            'ability_index' => $prompt['ability_index'] ?? null,
+        ]);
+        return finishPromptEffects($state);
+    }
 
     if ($type === 'pl_muse_wr_pick_sequence') {
         $index = intval($prompt['step_index'] ?? 0);

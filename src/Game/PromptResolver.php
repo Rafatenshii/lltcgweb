@@ -75,6 +75,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         'reveal_hand_named_stack_under',
         'play_stacked_member_from_under',
         'pl_muse_stack_heart_choice',
+        'mandatory_discard_group_branch',
     ], true)) {
         $plMuseEarly = plMuseGapResolvePrompt($state, $owner, $prompt, $choice, $data);
         if ($plMuseEarly !== null) {
@@ -1626,6 +1627,55 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         unset($state['pending_prompt']);
         $state['seq']++;
         return finishLiveStartEffects($state);
+    }
+
+    if ($promptType === 'live_start_unless_discard_return_energy') {
+        $srcName = $prompt['source_name'] ?? 'Member';
+        $need = intval($prompt['discard_count'] ?? 1);
+        if ($choice === 'discard') {
+            $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+            if (count($ids) !== $need) {
+                throw new Exception("Must select exactly $need card(s) to discard");
+            }
+            discardHandCardsByIds($ownerP, $ids);
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$srcName] discarded $need (Live Start).");
+        } elseif ($choice === 'return_energy') {
+            if (!returnOneEnergyFromZoneToDeck($ownerP)) {
+                throw new Exception('No Energy to return to Energy deck');
+            }
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$srcName] put 1 Energy into Energy deck (Live Start).");
+        } elseif ($choice === 'skip') {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$srcName] skipped Live Start discard (no Energy to return).");
+        } else {
+            throw new Exception('Invalid choice');
+        }
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        return finishLiveStartEffects($state);
+    }
+
+    if ($promptType === 'live_success_choose_draw_or_energy_wait') {
+        $srcName = $prompt['source_name'] ?? 'Member';
+        $prefix = $state['players'][$owner]['name'] . " — [$srcName] ";
+        if ($choice === 'draw') {
+            $n = intval($prompt['draw'] ?? $ability['draw'] ?? 2);
+            $drawn = drawCardsForPlayer($state, $owner, $n);
+            $state = addLog($state, $prefix . "drew $drawn.");
+        } elseif ($choice === 'energy') {
+            if (putEnergyFromDeckInWait($ownerP)) {
+                $state = addLog($state, $prefix . 'put 1 Energy from Energy deck into Wait.');
+            } else {
+                $state = addLog($state, $prefix . 'could not put Energy into Wait (Energy deck empty).');
+            }
+        } else {
+            throw new Exception('Invalid choice');
+        }
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        return finishLiveSuccessEffects($state);
     }
 
     if ($promptType === 'optional_pay_energy_live_success') {

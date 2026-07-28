@@ -997,6 +997,8 @@ global.isBranchChoicePrompt = function isBranchChoicePrompt(pr){
     'live_start_center_cost_choice','player_choice_wr_live_deck_bottom_draw',
     'player_choice_wr_members_deck_bottom','choice_energy_or_wr_lives_deck_top',
     'live_success_pick_energy_or_member','live_success_pay_choice_wr_add',
+    'live_success_choose_draw_or_energy_wait',
+    'live_start_unless_discard_return_energy',
     'sbp5_aqours_blade_or_position','sbp6_live_wr_deck_position','sbp6_hand_deck_position',
     'ssd1_reveal_group_deck','opp_pick_wr_live_offer','spbp5_wr_pay_add_hand',
     'spbp2_discard_liella_choice'
@@ -1400,6 +1402,8 @@ function promptDiscardCount(pr, choice){
   }
   if(pr.type==='optional_discard_blade_draw_if_live') return pr.ability?.discard||1;
   if(pr.type==='live_start_pay_or_discard'&&choice==='discard') return pr.discard_count||2;
+  if(pr.type==='live_start_unless_discard_return_energy'&&choice==='discard') return pr.discard_count||1;
+  if(pr.type==='mandatory_discard_group_branch') return pr.discard_count||pr.max_pick||1;
   if(pr.type==='optional_discard_prompt'){
     if(pr.ability?.max_discard) return pr.ability.max_discard;
     return pr.ability?.discard||1;
@@ -2407,6 +2411,21 @@ global.renderPrompt = function renderPrompt(s, myId){
       msg: pr.prompt||'Choose a card to send to the Waiting Room.',
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
+    });
+    return;
+  }
+  if(pr?.type==='mandatory_discard_group_branch'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const me=s.players?.[myId];
+    const need=pr.discard_count||pr.max_pick||1;
+    openHandPick({
+      hand: me?.hand||[],
+      count: need,
+      min: need,
+      title: pr.source_name||'Discard',
+      msg: pr.prompt||`Choose ${need} card(s) to send to the Waiting Room.`,
+      allowCancel: false,
+      onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
     });
     return;
   }

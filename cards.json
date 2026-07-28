@@ -6066,7 +6066,9 @@
           "pick": 2,
           "else_filter": "live",
           "else_count": 1,
-          "once_per_turn": true
+          "once_per_turn": true,
+          "cost": 2,
+          "energy_cost": 2
         }
       ],
       "subunit": "Printemps",
@@ -6123,7 +6125,9 @@
           "pick": 2,
           "else_filter": "live",
           "else_count": 1,
-          "once_per_turn": true
+          "once_per_turn": true,
+          "cost": 2,
+          "energy_cost": 2
         }
       ],
       "subunit": "Printemps",
@@ -6180,7 +6184,9 @@
           "pick": 2,
           "else_filter": "live",
           "else_count": 1,
-          "once_per_turn": true
+          "once_per_turn": true,
+          "cost": 2,
+          "energy_cost": 2
         }
       ],
       "subunit": "Printemps",
@@ -6237,7 +6243,9 @@
           "pick": 2,
           "else_filter": "live",
           "else_count": 1,
-          "once_per_turn": true
+          "once_per_turn": true,
+          "cost": 2,
+          "energy_cost": 2
         }
       ],
       "subunit": "Printemps",
@@ -66088,20 +66096,25 @@
         "yellow"
       ],
       "rarity": "N",
-      "text": "[On Enter] You may position-change this Member (swap with the Member in the destination area if any).",
+      "text": "[Live Start] You may pay 1 Energy: until this Live ends, you gain +2 Blade.",
       "text_jp": "支払ってもよい：ライブ終了時まで、を得る。",
       "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-019-N.png",
       "subunit": "5yncri5e!",
-      "text_es": "Puedes pagar 1 Energía: hasta que termine este Live, obtienes +2 Blade.",
+      "text_es": "[Inicio de Live] Puedes pagar 1 Energía: hasta que termine este Live, obtienes +2 Blade.",
       "abilities": [
         {
-          "trigger": "on_enter",
-          "type": "optional_swap_area_on_enter"
+          "trigger": "live_start",
+          "type": "optional_pay_energy",
+          "cost": 1,
+          "then": {
+            "type": "blade_bonus",
+            "amount": 2
+          }
         }
       ],
-      "text_ko": "[등장 시] 해도 좋다 위치 변경 이 멤버 (swap 와 함께 멤버 에 destination 영역 만약 임의의).",
-      "text_zh": "[入场时] 您可以对该成员进行位置变更（如果有的话，与目的地区域的成员进行互换）。",
-      "text_th": "[เมื่อเข้าสนาม] คุณสามารถเปลี่ยนตำแหน่งสมาชิกนี้ได้ (สลับกับสมาชิกในพื้นที่ปลายทาง หากมี)"
+      "text_ko": "[라이브 개시] 에너지 1개를 지불해도 된다: 이 라이브가 끝날 때까지 블레이드를 2 얻는다.",
+      "text_zh": "[Live开始] 你可以支付1点能量：直到本场Live结束，获得+2 Blade。",
+      "text_th": "[เริ่ม Live] คุณอาจจ่ายพลังงาน 1: จนกว่า Live นี้จะจบ คุณได้รับ +2 Blade"
     },
     {
       "card_no": "PL!SP-bp2-020-N",
@@ -76659,14 +76672,14 @@
       "blade": 5,
       "abilities": [
         {
-          "trigger": "on_enter",
-          "type": "optional_discard_prompt",
-          "discard": 1,
-          "prompt": "Put 1 card from your hand into the Waiting Room: draw 2 cards?",
-          "then": {
-            "type": "draw_cards",
-            "count": 2
-          }
+          "trigger": "live_start",
+          "type": "live_start_unless_discard_return_energy",
+          "discard": 1
+        },
+        {
+          "trigger": "live_success",
+          "type": "live_success_choose_draw_or_energy_wait",
+          "draw": 2
         }
       ],
       "text_es": "[Inicio de Live] A menos que coloques 1 carta de tu mano en la Sala de espera, coloca 1 de tu Energía en tu mazo de Energía.\n[Éxito de Live] Elige una — roba 2 cartas; o coloca 1 Energía de tu mazo de Energía en Wait.",
@@ -76708,14 +76721,14 @@
       "blade": 5,
       "abilities": [
         {
-          "trigger": "on_enter",
-          "type": "optional_discard_prompt",
-          "discard": 1,
-          "prompt": "Put 1 card from your hand into the Waiting Room: draw 2 cards?",
-          "then": {
-            "type": "draw_cards",
-            "count": 2
-          }
+          "trigger": "live_start",
+          "type": "live_start_unless_discard_return_energy",
+          "discard": 1
+        },
+        {
+          "trigger": "live_success",
+          "type": "live_success_choose_draw_or_energy_wait",
+          "draw": 2
         }
       ],
       "text_es": "[Inicio de Live] A menos que coloques 1 carta de tu mano en la Sala de espera, coloca 1 de tu Energía en tu mazo de Energía.\n[Éxito de Live] Elige una — roba 2 cartas; o coloca 1 Energía de tu mazo de Energía en Wait.",
@@ -78535,7 +78548,7 @@
         "red"
       ],
       "rarity": "N",
-      "text": "[Live Start] You may pay 1 Energy: until this Live ends, gain 1 heart of your choice.",
+      "text": "[Live Start] You may pay 1 Energy: until this Live ends, you gain +2 Blade.",
       "text_jp": "支払ってもよい：ライブ終了時まで、を得る。",
       "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBSP02/PL!SP-pb2-040-N.png",
       "subunit": "CatChu!",
@@ -78545,20 +78558,15 @@
           "type": "optional_pay_energy",
           "cost": 1,
           "then": {
-            "type": "grant_bonus_hearts",
-            "hearts": [
-              {
-                "color": "any",
-                "count": 1
-              }
-            ]
+            "type": "blade_bonus",
+            "amount": 2
           }
         }
       ],
-      "text_es": "[Inicio de Live] Puedes pagar 1 Energía: hasta que termine este Live, obtienes 1 corazón de tu elección.",
-      "text_ko": "[라이브 개시] 에너지 1개를 지불해도 된다: 그렇게 하면 이 라이브가 끝날 때까지 원하는 하트 1개를 얻는다.",
-      "text_zh": "[Live开始] 你可以支付 1 点能量：直到本场比赛结束，获得 1 颗你选择的心。",
-      "text_th": "[เริ่ม Live] คุณอาจจ่าย 1 พลังงาน: จนกว่า Live นี้จบลง รับหัวใจ 1 ดวงที่คุณเลือก"
+      "text_es": "[Inicio de Live] Puedes pagar 1 Energía: hasta que termine este Live, obtienes +2 Blade.",
+      "text_ko": "[라이브 개시] 에너지 1개를 지불해도 된다: 이 라이브가 끝날 때까지 블레이드를 2 얻는다.",
+      "text_zh": "[Live开始] 你可以支付1点能量：直到本场Live结束，获得+2 Blade。",
+      "text_th": "[เริ่ม Live] คุณอาจจ่ายพลังงาน 1: จนกว่า Live นี้จะจบ คุณได้รับ +2 Blade"
     },
     {
       "card_no": "PL!SP-pb2-041-N",

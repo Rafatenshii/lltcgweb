@@ -1009,18 +1009,83 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             ' — [' . ($member['name_en'] ?? $member['name']) . '] choose Liella! card to discard.');
         return $state;
     } elseif (plMuseGapIsEffectType($ab['type'] ?? '')) {
-        if (($ab['type'] ?? '') === 'activated_wait_opp_reduce_cost_per_group') {
-            $baseEnergy = intval($ab['energy_cost'] ?? 4);
-            $reduce = plMuseGapCountDistinctGroupsOnStage($p);
-            $cost = max(0, $baseEnergy - $reduce);
+        if (($ab['type'] ?? '') === 'mandatory_discard_group_branch') {
+            $cost = intval($ab['cost'] ?? $ab['energy_cost'] ?? 0);
             if ($cost > 0 && !payEnergyCost($p, $cost)) {
                 throw new Exception("Need $cost active Energy");
             }
-        }
-        $state = plMuseGapResolveEffect($state, $pid, $member, $ab, ['slot' => $slot ?? '']);
-        if (empty($state['pending_prompt'])) {
-            markAbilityUsed($member, $abilityIdx);
-            persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+            $need = intval($ab['discard'] ?? 1);
+            if (count($p['hand'] ?? []) < $need) {
+                throw new Exception('Not enough cards in hand');
+            }
+            $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+            if (count($ids) < $need) {
+                if (!empty($ab['once_per_turn'])) {
+                    markAbilityUsed($member, $abilityIdx);
+                    persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+                }
+                $state['pending_prompt'] = [
+                    'type'          => 'mandatory_discard_group_branch',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $member['instance_id'] ?? '',
+                    'source_slot'   => $slot ?? '',
+                    'ability_index' => $abilityIdx,
+                    'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
+                    'discard_count' => $need,
+                    'max_pick'      => $need,
+                    'min_pick'      => $need,
+                    'prompt'        => "Put $need card(s) from your hand into the Waiting Room.",
+                    'ability'       => $ab,
+                    'energy_paid'   => $cost,
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . ($member['name_en'] ?? $member['name'] ?? 'Member') .
+                    ($cost > 0 ? "] paid $cost Energy; choose card(s) to discard." : '] choose card(s) to discard.'));
+                $state['seq']++;
+                return $state;
+            }
+            discardFromHandByIds($p, array_slice($ids, 0, $need));
+            $discarded = array_slice($p['waiting_room'] ?? [], -$need);
+            $last = $discarded[count($discarded) - 1] ?? null;
+            $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");
+            if ($isGroup) {
+                $then = [
+                    'type'   => 'look_reveal_filter',
+                    'look'   => intval($ab['look'] ?? 4),
+                    'filter' => '',
+                    'pick'   => intval($ab['pick'] ?? 2),
+                ];
+            } else {
+                $then = [
+                    'type'   => 'add_from_wr',
+                    'filter' => $ab['else_filter'] ?? 'live',
+                    'count'  => intval($ab['else_count'] ?? 1),
+                ];
+            }
+            $state = resolveAbilityEffect($state, $pid, $member, $then, [
+                'slot'          => $slot ?? '',
+                'phase'         => 'activated',
+                'ability_index' => $abilityIdx,
+            ]);
+            if (!empty($ab['once_per_turn'])) {
+                markAbilityUsed($member, $abilityIdx);
+                persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+            }
+        } else {
+            if (($ab['type'] ?? '') === 'activated_wait_opp_reduce_cost_per_group') {
+                $baseEnergy = intval($ab['energy_cost'] ?? 4);
+                $reduce = plMuseGapCountDistinctGroupsOnStage($p);
+                $cost = max(0, $baseEnergy - $reduce);
+                if ($cost > 0 && !payEnergyCost($p, $cost)) {
+                    throw new Exception("Need $cost active Energy");
+                }
+            }
+            $state = plMuseGapResolveEffect($state, $pid, $member, $ab, ['slot' => $slot ?? '']);
+            if (empty($state['pending_prompt'])) {
+                markAbilityUsed($member, $abilityIdx);
+                persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+            }
         }
     } elseif (($ab['type'] ?? '') === 'reveal_hand_member_cost_live_score') {
         $state = resolveAbilityEffect($state, $pid, $member, $ab, [
