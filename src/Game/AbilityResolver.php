@@ -34,6 +34,13 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
 
     if (hsIsHasunosoraBp6EffectType($type)) {
         $state = hsResolveHasunosoraEffect($state, $pid, $source, $ab, $ctx);
+    } elseif ($type === 'reveal_hand_named_stack_under') {
+        // Shared type: Sayaka (names) → Hasunosora PB1; Kotori (group/max_cost) → μ's gap.
+        if (!empty($ab['names'])) {
+            $state = hsResolveHasunosoraPb1Effect($state, $pid, $source, $ab, $ctx);
+        } else {
+            $state = plMuseGapResolveEffect($state, $pid, $source, $ab, $ctx);
+        }
     } elseif (hsIsHasunosoraPb1EffectType($type)) {
         $state = hsResolveHasunosoraPb1Effect($state, $pid, $source, $ab, $ctx);
     } elseif (hsIsHasunosoraCl1EffectType($type)) {

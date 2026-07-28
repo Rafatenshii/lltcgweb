@@ -970,6 +970,8 @@ function resolveOptionalDiscardPromptChoice(
             } elseif (($then['type'] ?? '') === 'live_cost_from_subunit_pick') {
                 $source = findSourceCard($state, $owner, $prompt['source_id'] ?? '');
                 if ($source) {
+                    // Clear parent discard prompt so nested Stage pick can open (#76 / #67).
+                    unset($state['pending_prompt']);
                     $state = resolveAbilityEffect($state, $owner, $source, $then, [
                         'phase' => !empty($prompt['live_start']) ? 'live_start' : 'on_enter',
                     ]);
@@ -1027,6 +1029,8 @@ function resolveOptionalDiscardPromptChoice(
             } elseif (($then['type'] ?? '') === 'blade_per_discarded_pick_member') {
                 $source = findSourceCard($state, $owner, $prompt['source_id'] ?? '');
                 if ($source) {
+                    // Clear parent discard prompt so nested Stage Blade pick can open (#76).
+                    unset($state['pending_prompt']);
                     $state = resolveAbilityEffect($state, $owner, $source, $then, [
                         'discarded_count' => count($ids),
                         'phase'           => !empty($prompt['live_start']) ? 'live_start' : ($prompt['phase'] ?? ''),

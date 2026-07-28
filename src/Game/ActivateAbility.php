@@ -1008,6 +1008,20 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . ($member['name_en'] ?? $member['name']) . '] choose Liella! card to discard.');
         return $state;
+    } elseif (($ab['type'] ?? '') === 'reveal_hand_named_stack_under') {
+        // Before plMuseGap catch-all: Sayaka (names) uses hs_pb1; Kotori (group/max_cost) uses muse.
+        $state = resolveAbilityEffect($state, $pid, $member, $ab, [
+            'slot'          => $slot ?? '',
+            'phase'         => 'activated',
+            'ability_index' => $abilityIdx,
+        ]);
+        if (!empty($state['pending_prompt'])) {
+            $state['pending_prompt']['ability_index'] = $abilityIdx;
+            $state['pending_prompt']['source_slot'] = $slot ?? '';
+        } elseif (empty($state['pending_prompt'])) {
+            markAbilityUsed($member, $abilityIdx);
+            persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+        }
     } elseif (plMuseGapIsEffectType($ab['type'] ?? '')) {
         if (($ab['type'] ?? '') === 'mandatory_discard_group_branch') {
             $cost = intval($ab['cost'] ?? $ab['energy_cost'] ?? 0);

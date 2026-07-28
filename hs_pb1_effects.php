@@ -357,6 +357,7 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
                 'source_name'   => $name,
                 'ability_idx'   => $abilityIdx,
                 'once_per_turn' => !empty($ab['once_per_turn']),
+                'ability'       => $ab,
                 'candidates'    => array_map('cardPromptSummary', $candidates),
                 'prompt'        => 'Reveal 1 matching Member from your hand to stack under this Member?',
             ];
@@ -1063,18 +1064,24 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             }
         }
         if (!$stacked) throw new Exception('Choose a card from your hand');
-        $slot = $prompt['source_slot'] ?? findMemberSlot($ownerP, $prompt['source_id'] ?? '');
-        if ($slot !== null && !empty($ownerP['stage'][$slot])) {
-            if (!isset($ownerP['stage'][$slot]['stacked_members'])) {
-                $ownerP['stage'][$slot]['stacked_members'] = [];
-            }
-            $ownerP['stage'][$slot]['stacked_members'][] = $stacked;
-            if (!empty($prompt['once_per_turn'])) {
-                $abilities = $ownerP['stage'][$slot]['abilities'] ?? [];
-                $idx = $prompt['ability_idx'] ?? null;
-                if ($idx !== null && isset($abilities[$idx])) {
-                    markAbilityUsed($ownerP['stage'][$slot], $idx);
-                }
+        $slot = (string)($prompt['source_slot'] ?? '');
+        if ($slot === '' || empty($ownerP['stage'][$slot])) {
+            $slot = findMemberSlot($ownerP, (string)($prompt['source_id'] ?? ''));
+        }
+        if ($slot === '' || empty($ownerP['stage'][$slot])) {
+            // Never delete the revealed card if the Stage host is missing (#76).
+            $ownerP['hand'][] = $stacked;
+            throw new Exception('Source Member not on Stage');
+        }
+        if (!isset($ownerP['stage'][$slot]['stacked_members'])) {
+            $ownerP['stage'][$slot]['stacked_members'] = [];
+        }
+        $ownerP['stage'][$slot]['stacked_members'][] = $stacked;
+        if (!empty($prompt['once_per_turn'])) {
+            $abilities = $ownerP['stage'][$slot]['abilities'] ?? [];
+            $idx = $prompt['ability_idx'] ?? null;
+            if ($idx !== null && isset($abilities[$idx])) {
+                markAbilityUsed($ownerP['stage'][$slot], $idx);
             }
         }
         unset($state['pending_prompt']);

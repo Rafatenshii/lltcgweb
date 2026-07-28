@@ -1373,13 +1373,18 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
         ])) {
             throw new Exception('That card does not match this effect');
         }
-        $slot = $prompt['source_slot'] ?? findMemberSlot($p, $prompt['source_id'] ?? '');
-        if ($slot !== null && !empty($p['stage'][$slot])) {
-            if (!isset($p['stage'][$slot]['stacked_members'])) {
-                $p['stage'][$slot]['stacked_members'] = [];
-            }
-            $p['stage'][$slot]['stacked_members'][] = $stacked;
+        $slot = (string)($prompt['source_slot'] ?? '');
+        if ($slot === '' || empty($p['stage'][$slot])) {
+            $slot = findMemberSlot($p, (string)($prompt['source_id'] ?? ''));
         }
+        if ($slot === '' || empty($p['stage'][$slot])) {
+            $p['hand'][] = $stacked;
+            throw new Exception('Source Member not on Stage');
+        }
+        if (!isset($p['stage'][$slot]['stacked_members'])) {
+            $p['stage'][$slot]['stacked_members'] = [];
+        }
+        $p['stage'][$slot]['stacked_members'][] = $stacked;
         if (!empty($ab['grant_heart_choice'])) {
             $heartChoices = ['pink', 'yellow', 'purple', 'green', 'blue', 'red'];
             $state['pending_prompt'] = [

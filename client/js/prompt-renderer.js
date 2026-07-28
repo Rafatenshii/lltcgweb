@@ -1856,6 +1856,17 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageMemberPickById(pr);
     return;
   }
+  if(pr?.type==='live_cost_from_subunit_pick'&&pr.responder===myId){
+    // Aurora Kosuzu (HS-bp5-005): after DOLLCHESTRA discard, pick Stage subunit Member.
+    ovl.classList.remove('open');
+    const cands=pr.candidates||[];
+    if(!cands.length){
+      sendAct('resolve_prompt',{choice:'skip'});
+      return;
+    }
+    openStageSlotPick(pr);
+    return;
+  }
   if(pr?.type==='pick_member_grant_hearts'&&pr.responder===myId){
     // Stellar Stream (+ other grant-hearts picks): Stage Member select.
     ovl.classList.remove('open');

@@ -77,9 +77,14 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         'pl_muse_stack_heart_choice',
         'mandatory_discard_group_branch',
     ], true)) {
-        $plMuseEarly = plMuseGapResolvePrompt($state, $owner, $prompt, $choice, $data);
-        if ($plMuseEarly !== null) {
-            return $plMuseEarly;
+        // Sayaka-style named stack (has names) is resolved by hs_pb1, not μ's Kotori path.
+        $museStack = $promptType !== 'reveal_hand_named_stack_under'
+            || empty($prompt['ability']['names'] ?? ($ability['names'] ?? []));
+        if ($museStack) {
+            $plMuseEarly = plMuseGapResolvePrompt($state, $owner, $prompt, $choice, $data);
+            if ($plMuseEarly !== null) {
+                return $plMuseEarly;
+            }
         }
     }
 
@@ -3626,7 +3631,8 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
             if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
                 $mbr['live_cost_override'] = $newCost;
                 if ($newCost >= 10) {
-                    $heartColor = $then['heart_color'] ?? 'any';
+                    $heartColor = $prompt['heart_color']
+                        ?? ($prompt['ability']['heart_color'] ?? 'blue');
                     addBonusHeartsToModifier($state, $owner, [['color' => $heartColor, 'count' => 1]]);
                 }
                 break;

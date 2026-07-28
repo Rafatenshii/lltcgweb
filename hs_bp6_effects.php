@@ -437,7 +437,10 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
             break;
 
         case 'live_success_surplus_heart_surveil':
-            if (intval($state['_surplus_hearts'] ?? 0) < intval($ab['min_surplus'] ?? 1)) break;
+            // Surplus is stored as _live_excess_hearts[pid] / ctx excess_hearts (not _surplus_hearts).
+            $surplus = intval($ctx['excess_hearts']
+                ?? ($state['_live_excess_hearts'][$pid] ?? 0));
+            if ($surplus < intval($ab['min_surplus'] ?? 1)) break;
             $look = intval($ab['look'] ?? 2);
             $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
             if (empty($top)) break;

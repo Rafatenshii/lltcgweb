@@ -334,6 +334,8 @@ function tryResolveAbilityEffectSwitchLive(
                 'source_id'   => $source['instance_id'] ?? '',
                 'source_name' => $name,
                 'candidates'  => $candidates,
+                'ability'     => $ab,
+                'heart_color' => $ab['heart_color'] ?? 'blue',
                 'prompt'      => 'Choose 1 ' . $subunit . ' Member on your Stage.',
             ];
             break;

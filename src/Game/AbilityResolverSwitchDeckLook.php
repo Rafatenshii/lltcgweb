@@ -58,6 +58,16 @@ function tryResolveAbilityEffectSwitchDeckLook(
 
         case 'deck_surveil':
             $look = intval($ab['look'] ?? 2);
+            $pick = intval($ab['pick'] ?? 0);
+            // pick>0 = add N to hand, rest WR (e.g. LL-bp6-001). Otherwise arrange top/WR.
+            if ($pick > 0) {
+                $state = beginLookRevealPick($state, $pid, $name, $p, array_merge($ab, [
+                    'look'        => $look,
+                    'pick'        => $pick,
+                    'destination' => $ab['destination'] ?? 'hand',
+                ]));
+                break;
+            }
             $returnAll = !empty($ab['return_all']);
             $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
             if (count($top) <= 1) {
