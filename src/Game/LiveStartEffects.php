@@ -26,31 +26,19 @@ function markLiveStartMandatoryResolved(array $state, string $pid, string $insta
 
 /**
  * After a Live Start prompt resolves, finish the interrupted player's remaining
- * mandatory Live Start abilities, then any later players in live_attempt order.
+ * mandatory Live Start abilities for the current performer only.
  */
 function resumeLiveStartEffectPhase(array $state): array {
     if (($state['phase'] ?? '') !== 'live_start_effects') {
         return finishPromptEffects($state);
     }
-    $fromPid = $state['_live_start_resume_from'] ?? null;
+    $fromPid = $state['_live_start_resume_from'] ?? $state['_live_start_perf_pid'] ?? null;
     unset($state['_live_start_resume_from']);
     if ($fromPid) {
-        $attempting = $state['live_attempt'] ?? [];
-        $resume = false;
-        foreach ($attempting as $pid) {
-            if (!$resume) {
-                if ($pid === $fromPid) {
-                    $resume = true;
-                    // Fall through: re-enter fromPid so Live cards / later Members still resolve.
-                } else {
-                    continue;
-                }
-            }
-            $state = resolveLiveStartAbilities($state, $pid);
-            if (!empty($state['pending_prompt'])) {
-                $state['_live_start_resume_from'] = $pid;
-                return $state;
-            }
+        $state = resolveLiveStartAbilities($state, $fromPid);
+        if (!empty($state['pending_prompt'])) {
+            $state['_live_start_resume_from'] = $fromPid;
+            return $state;
         }
     }
     return finishLiveStartEffects($state);
@@ -197,8 +185,11 @@ function isQueuedOptionalLiveStart(array $ab): bool {
 function collectOptionalLiveStartAbilities(array $state): array {
     $queue = [];
     $attempting = $state['live_attempt'] ?? ['p1', 'p2'];
+    // When interleaving Live Starts per performer, only queue the current one.
+    $scopePid = $state['_live_start_perf_pid'] ?? null;
     foreach (['p1', 'p2'] as $pid) {
         if (!in_array($pid, $attempting, true)) continue;
+        if ($scopePid !== null && $pid !== $scopePid) continue;
         $p = $state['players'][$pid];
         $sources = [];
         foreach ($p['stage'] ?? [] as $member) {
@@ -441,24 +432,61 @@ function finishLiveStartEffects(array $state, bool $advancePerformance = true): 
         return $state;
     }
     unset($state['live_start_optional_queue']);
-    unset($state['live_start_optional_resolved']);
-    unset($state['live_start_mandatory_resolved']);
-    unset($state['live_start_entry_applied']);
+    // Keep per-ability resolved markers until the full Live round ends so the
+    // second performer's Live Start cannot re-queue already-answered optionals,
+    // and mid-performance Live Starts do not replay the first performer's skills.
     unset($state['_live_start_resume_from']);
     // Heart-dependent Live Starts (Zenhoui Kyun♡) after optional Member buffs (#73).
     $state = flushDeferredMpExtraHeartsLiveStart($state);
+    if (!empty($state['pending_prompt'])) {
+        $state['phase'] = 'live_start_effects';
+        return $state;
+    }
+
+    $perfPid = $state['_live_start_perf_pid'] ?? null;
+    if ($perfPid) {
+        $done = $state['_live_start_done'] ?? [];
+        $done[$perfPid] = true;
+        $state['_live_start_done'] = $done;
+    }
+
+    // With sequential live_show: initial Live Start stage waits for client ack before
+    // first Yell. Mid-performance (2nd performer) Live Starts continue into Yell now.
+    $inPerfLiveShow = !empty($state['live_show'])
+        && ($state['live_show']['stage'] ?? '') === 'performance';
+    $shouldAdvanceYell = empty($state['live_show']) || $inPerfLiveShow;
+
     if (($state['phase'] ?? '') === 'live_start_effects'
         && $advancePerformance
         && empty($GLOBALS['TUT_PERF_MANUAL_PHASES'])
-        && empty($state['live_show'])) {
-        $state['phase'] = 'live_performance_first';
-        $state = addLog($state, '=== Live Show ===');
-        $first = $state['first_player'];
+        && $shouldAdvanceYell) {
+        $first = $state['first_player'] ?? 'p1';
         $attempting = $state['live_attempt'] ?? ['p1', 'p2'];
-        if (in_array($first, $attempting, true)) {
-            $state = resolvePerformancePhase($state, $first);
+        // Prefer explicit performer; else first attempting player (tests that skip begin*).
+        $yellPid = $perfPid;
+        if ($yellPid === null || $yellPid === '') {
+            foreach (liveAttemptOrder($state, in_array('p1', $attempting, true), in_array('p2', $attempting, true)) as $cand) {
+                $yellPid = $cand;
+                break;
+            }
+            $yellPid = $yellPid ?? $first;
+            $state['_live_start_perf_pid'] = $yellPid;
+            $done = $state['_live_start_done'] ?? [];
+            $done[$yellPid] = true;
+            $state['_live_start_done'] = $done;
+        }
+        if ($yellPid === $first) {
+            $state['phase'] = 'live_performance_first';
+            if (empty($state['live_show'])) {
+                $state = addLog($state, '=== Live Show ===');
+            }
         } else {
-            $state = continuePerformancePhase($state, $first);
+            $state['phase'] = 'live_performance_second';
+        }
+        if (in_array($yellPid, $attempting, true)) {
+            $state = resolvePerformancePhase($state, $yellPid);
+        } else {
+            $state = continuePerformanceYellPhase($state, $yellPid);
         }
     }
     return $state;
@@ -498,10 +526,60 @@ function actionLiveStartChoice(array $state, string $pid, array $data): array {
 // Live Start effect queue (live_start_effects phase)
 // ─────────────────────────────────────────────
 
+/**
+ * Order attempting players as first_player then second (official Performance order).
+ *
+ * @return list<string>
+ */
+function liveAttemptOrder(array $state, bool $p1Attempt = true, bool $p2Attempt = true): array {
+    $first = $state['first_player'] ?? 'p1';
+    $second = ($first === 'p1') ? 'p2' : 'p1';
+    $order = [];
+    foreach ([$first, $second] as $pid) {
+        if ($pid === 'p1' && !$p1Attempt) {
+            continue;
+        }
+        if ($pid === 'p2' && !$p2Attempt) {
+            continue;
+        }
+        $order[] = $pid;
+    }
+    return $order;
+}
+
+/**
+ * Resolve Live Starts for one performer, then Yell for that same player.
+ * Used for the second performer after the first has already yelled.
+ */
+function beginLiveStartForPerformer(array $state, string $pid): array {
+    $attempting = $state['live_attempt'] ?? [];
+    if (!in_array($pid, $attempting, true)) {
+        return resolvePerformancePhase($state, $pid);
+    }
+    $state['_live_start_perf_pid'] = $pid;
+    $state['phase'] = 'live_start_effects';
+    // Keep optional/mandatory resolved markers so already-answered skills do not replay.
+    unset($state['live_start_optional_queue']);
+    if (performanceRoundHasLiveCards($state)) {
+        $state = addLog($state, '=== Live Start Effects (' .
+            ($state['players'][$pid]['name'] ?? $pid) . ') ===');
+    }
+    $state = resolveLiveStartAbilities($state, $pid);
+    if (!empty($state['pending_prompt'])) {
+        $state['_live_start_resume_from'] = $pid;
+        if (!array_key_exists('live_start_optional_queue', $state)) {
+            $state['live_start_optional_queue'] = collectOptionalLiveStartAbilities($state);
+        }
+        return $state;
+    }
+    if (empty($state['live_start_optional_queue'])) {
+        $state['live_start_optional_queue'] = collectOptionalLiveStartAbilities($state);
+    }
+    return finishLiveStartEffects($state);
+}
+
 function beginLiveStartEffectPhase(array $state, bool $p1Attempt = true, bool $p2Attempt = true): array {
-    $state['live_attempt'] = [];
-    if ($p1Attempt) $state['live_attempt'][] = 'p1';
-    if ($p2Attempt) $state['live_attempt'][] = 'p2';
+    $state['live_attempt'] = liveAttemptOrder($state, $p1Attempt, $p2Attempt);
 
     $state['live_round_success'] = [];
     foreach (['p1', 'p2'] as $pid) {
@@ -512,18 +590,30 @@ function beginLiveStartEffectPhase(array $state, bool $p1Attempt = true, bool $p
 
     $state = initLiveModifiers($state);
     $state['phase'] = 'live_start_effects';
+    $state['_live_start_done'] = [];
+    unset(
+        $state['live_start_optional_resolved'],
+        $state['live_start_mandatory_resolved'],
+        $state['live_start_entry_applied'],
+        $state['live_start_optional_queue']
+    );
     if (performanceRoundHasLiveCards($state)) {
         $state = addLog($state, '=== Live Start Effects ===');
     }
-    foreach ($state['live_attempt'] as $pid) {
-        $state = resolveLiveStartAbilities($state, $pid);
-        if (!empty($state['pending_prompt'])) {
-            $state['_live_start_resume_from'] = $pid;
-            if (!array_key_exists('live_start_optional_queue', $state)) {
-                $state['live_start_optional_queue'] = collectOptionalLiveStartAbilities($state);
-            }
-            return $state;
+
+    $perfPid = $state['live_attempt'][0] ?? null;
+    if ($perfPid === null) {
+        return finishLiveStartEffects($state);
+    }
+    // Official 8.3: only the current performer's Live Starts before their Yell.
+    $state['_live_start_perf_pid'] = $perfPid;
+    $state = resolveLiveStartAbilities($state, $perfPid);
+    if (!empty($state['pending_prompt'])) {
+        $state['_live_start_resume_from'] = $perfPid;
+        if (!array_key_exists('live_start_optional_queue', $state)) {
+            $state['live_start_optional_queue'] = collectOptionalLiveStartAbilities($state);
         }
+        return $state;
     }
     if (empty($state['live_start_optional_queue'])) {
         $state['live_start_optional_queue'] = collectOptionalLiveStartAbilities($state);

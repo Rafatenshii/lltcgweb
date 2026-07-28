@@ -1659,11 +1659,12 @@ function beginPerformancePhase(array $state): array {
     // flip storage before Live Start skills and Yell math run.
     if (empty($state['tutorial_guide'])) {
         $state['live_attempt'] = [];
-        if (playerAttemptingLivePerformance($state, 'p1')) {
-            $state['live_attempt'][] = 'p1';
-        }
-        if (playerAttemptingLivePerformance($state, 'p2')) {
-            $state['live_attempt'][] = 'p2';
+        $first = $state['first_player'] ?? 'p1';
+        $second = ($first === 'p1') ? 'p2' : 'p1';
+        foreach ([$first, $second] as $pid) {
+            if (playerAttemptingLivePerformance($state, $pid)) {
+                $state['live_attempt'][] = $pid;
+            }
         }
         $state['live_round_success'] = [];
         foreach (['p1', 'p2'] as $pid) {
@@ -1828,14 +1829,15 @@ function advanceLiveShowStage(array $state): array {
         // Enter performance before Yell math so mid-prompt resolves keep the cursor
         // here (acks reset) instead of re-firing live_start.
         $state = setLiveShowStage($state, 'performance');
-        $state['phase'] = 'live_performance_first';
         $state = addLog($state, '=== Live Show ===');
-        $first = $state['first_player'];
+        $first = $state['first_player'] ?? 'p1';
+        $yellPid = $state['_live_start_perf_pid'] ?? $first;
         $attempting = $state['live_attempt'] ?? ['p1', 'p2'];
-        if (in_array($first, $attempting, true)) {
-            return resolvePerformancePhase($state, $first);
+        $state['phase'] = ($yellPid === $first) ? 'live_performance_first' : 'live_performance_second';
+        if (in_array($yellPid, $attempting, true)) {
+            return resolvePerformancePhase($state, $yellPid);
         }
-        return continuePerformancePhase($state, $first);
+        return continuePerformanceYellPhase($state, $yellPid);
     }
     if ($stage === 'performance') {
         if (!empty($state['pending_prompt'])) {
@@ -2123,29 +2125,30 @@ function millPlayerYellCardsToWr(array $state, string $pid, array $ids): array {
 }
 
 /**
- * Perform N additional full Yell draws (merge into current yell pool).
+ * Perform N additional Yell card reveals (merge into current yell pool).
+ *
+ * 総合ルール 8.3.11: one 「エール」 = move the top deck card once.
+ * Card text like 「等しい枚数のエール」/「追加で2枚エール」means N flips, not N×Blade
+ * full procedures (which wrongly flipped 30–40 with high Blade + Kurage mill).
  * Stops early if a new auto-yell prompt is queued.
  */
 function executeExtraYellDraws(array $state, string $pid, int $count, string $sourceName = 'Member'): array {
     if ($count <= 0) {
         return $state;
     }
-    for ($i = 0; $i < $count; $i++) {
-        [$state, $drawn, $totalBlade, $drawBlade, $yellReduction] = drawYellCardsForPlayer($state, $pid);
-        $prior = array_merge(currentPlayerYellCards($state, $pid), $drawn);
-        $state = syncPlayerYellPools($state, $pid, $prior);
-        if ($drawBlade > 0) {
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                " — Extra Yell [$sourceName]: drew $drawBlade card(s) for Blade.");
-        } elseif ($yellReduction > 0 && $totalBlade > 0) {
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                " — Extra Yell reduced by $yellReduction (drew 0 of $totalBlade Blade).");
-        }
-        $state = resolveAutoYellAbilities($state, $pid, $prior);
-        if (!empty($state['pending_prompt'])) {
-            return $state;
-        }
+    $drawn = drawMainDeckCards($state, $pid, $count);
+    foreach ($drawn as &$yc) {
+        mergeYellCardCatalogFields($yc);
     }
+    unset($yc);
+    $prior = array_merge(currentPlayerYellCards($state, $pid), $drawn);
+    $state = syncPlayerYellPools($state, $pid, $prior);
+    $n = count($drawn);
+    if ($n > 0) {
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            " — Extra Yell [$sourceName]: drew $n card(s).");
+    }
+    $state = resolveAutoYellAbilities($state, $pid, $prior);
     return $state;
 }
 
@@ -2268,6 +2271,12 @@ function continuePerformanceYellPhase(array $state, string $justPlayed): array {
     if ($justPlayed === $first && ($state['phase'] ?? '') === 'live_performance_first') {
         $state['phase'] = 'live_performance_second';
         if (in_array($second, $attempting, true)) {
+            // Official 8.3: each performer does Live Start then Yell — not all Live
+            // Starts before either Yell (fixes 2nd-player Wait before 1st Yell).
+            $done = $state['_live_start_done'] ?? [];
+            if (empty($done[$second])) {
+                return beginLiveStartForPerformer($state, $second);
+            }
             return resolvePerformancePhase($state, $second);
         }
         return continuePerformanceYellPhase($state, $second);

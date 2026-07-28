@@ -146,8 +146,9 @@ final class Bp6KurageYellMillTest extends TestCase
         ]);
 
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(4, $deckBefore - count($state['players']['p1']['main_deck']),
-            'Two extra Yells at Blade 2 should draw 4 cards');
+        // Official: 「等しい枚数のエール」= N card flips, not N×Blade procedures.
+        $this->assertSame(2, $deckBefore - count($state['players']['p1']['main_deck']),
+            'Two milled cards should draw exactly 2 extra Yell cards (not 2×Blade)');
         $wrIds = array_map(
             fn($c) => $c['instance_id'] ?? '',
             $state['players']['p1']['waiting_room'] ?? []
@@ -159,7 +160,7 @@ final class Bp6KurageYellMillTest extends TestCase
             \currentPlayerYellCards($state, 'p1')
         );
         $this->assertContains('extra1', $yellIds);
-        $this->assertContains('extra4', $yellIds);
+        $this->assertContains('extra2', $yellIds);
         $this->assertNotContains('yell1', $yellIds);
     }
 
@@ -173,8 +174,9 @@ final class Bp6KurageYellMillTest extends TestCase
             'card_ids' => ['yell1', 'yell2'],
         ]);
 
+        // Initial Yell drew 2 (Blade 2); milled those 2; extra drew 2 → pool size 2.
         $pool = \currentPlayerYellCards($state, 'p1');
-        $this->assertCount(4, $pool);
+        $this->assertCount(2, $pool);
 
         unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         $state = \continuePerformanceAfterYellAbilities($state, 'p1');

@@ -1056,11 +1056,16 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
         }
         $state = millPlayerYellCardsToWr($state, $owner, $validIds);
         $milled = count($validIds);
+        // Fixed extra_yell (e.g. Natsumi +2) wins; otherwise mill count (Kurage).
+        $extra = intval($prompt['ability']['extra_yell'] ?? 0);
+        if ($extra <= 0) {
+            $extra = $milled;
+        }
         $state = addLog($state, $state['players'][$owner]['name'] .
-            " — [$sourceName] milled $milled Yell card(s) for extra Yell.");
+            " — [$sourceName] milled $milled Yell card(s) for +$extra extra Yell.");
         unset($state['pending_prompt']);
         $state['seq']++;
-        $state = executeExtraYellDraws($state, $owner, $milled, $sourceName);
+        $state = executeExtraYellDraws($state, $owner, $extra, $sourceName);
         if (!empty($state['pending_prompt'])) {
             $state['_performance_continue'] = $owner;
             return $state;

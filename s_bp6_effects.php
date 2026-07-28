@@ -1151,11 +1151,21 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
         }
         $extra = min($maxExtra, intdiv($milledCost, $costPer));
         if ($extra > 0) {
-            $state['_extra_yell_count'] = intval($state['_extra_yell_count'] ?? 0) + $extra;
+            $state = syncPlayerYellPools($state, $owner, array_values($pool));
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Member') . "] milled for +$extra extra Yell.");
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            $state = executeExtraYellDraws($state, $owner, $extra, $prompt['source_name'] ?? 'Member');
+            if (!empty($state['pending_prompt'])) {
+                $state['_performance_continue'] = $owner;
+                return $state;
+            }
+            return continuePerformanceAfterYellAbilities($state, $owner);
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return continuePerformanceAfterYellAbilities($state, $owner);
     }
 
     return null;

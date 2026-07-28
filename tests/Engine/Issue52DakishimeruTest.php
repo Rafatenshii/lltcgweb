@@ -85,6 +85,8 @@ final class Issue52DakishimeruTest extends TestCase
 
         $state = $this->baseLiveStartState();
         $state['players']['p1']['live_zone'] = [$live];
+        // Strip card_no so catalog merge cannot restore optional Live Starts on the pick target.
+        unset($stageMember['card_no']);
         $state['players']['p1']['stage']['center'] = $stageMember;
         $state['players']['p1']['waiting_room'] = $this->wrHasunosoraMembers(10, 'issue52_wr');
 
@@ -112,6 +114,7 @@ final class Issue52DakishimeruTest extends TestCase
 
         $state = $this->baseLiveStartState();
         $state['players']['p1']['live_zone'] = [$live];
+        unset($stageMember['card_no']);
         $state['players']['p1']['stage']['center'] = $stageMember;
         $state['players']['p1']['waiting_room'] = $this->wrHasunosoraMembers(10, 'issue52_wr_cancel');
 
