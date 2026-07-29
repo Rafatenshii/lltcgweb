@@ -1377,19 +1377,25 @@ function optionalLiveStartDiscardHand(pr, s, myId) {
   const me = s.players?.[myId];
   const ab = pr.ability || {};
   let pickHand = me?.hand || [];
-  const grp = ab.then?.group || ab.group || '';
   if (ab.type === 'optional_discard_named') {
     const names = ab.names || [];
     pickHand = pickHand.filter(c => cardMatchesNamedHand(c, names, ab.include_self, pr.source_id));
-  } else if (grp) {
+    return pickHand;
+  }
+  // Discard-cost group only — never ab.group / then.group (those target WR/add effects,
+  // e.g. Umi PL!-bp3-004 optional_discard_add_from_wr group μ's + filter live).
+  const grp = ab.discard_group || '';
+  if (grp) {
     pickHand = pickHand.filter(c => c.card_type === 'メンバー' && (c.group || '') === grp);
   }
-  // Mia Taylor (PL!N-bp4-011) etc.: discard cost is a Live card only.
-  const filter = ab.filter || '';
-  if (filter === 'live') {
-    pickHand = pickHand.filter(c => c.card_type === 'ライブ' || c.card_type_en === 'Live');
-  } else if (filter === 'member') {
-    pickHand = pickHand.filter(c => c.card_type === 'メンバー' || c.card_type_en === 'Member');
+  // Same for filter: optional_discard_add_from_wr's filter is the WR card type, not the discard.
+  if (ab.type !== 'optional_discard_add_from_wr') {
+    const filter = ab.filter || '';
+    if (filter === 'live') {
+      pickHand = pickHand.filter(c => c.card_type === 'ライブ' || c.card_type_en === 'Live');
+    } else if (filter === 'member') {
+      pickHand = pickHand.filter(c => c.card_type === 'メンバー' || c.card_type_en === 'Member');
+    }
   }
   return pickHand;
 }

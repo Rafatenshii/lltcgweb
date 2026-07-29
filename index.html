@@ -8454,7 +8454,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=55"></script>
+<script src="client/js/prompt-renderer.js?v=56"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -25072,17 +25072,21 @@ function cpuBuildOptionalYesPayload(pr, cpu, tier, winPressure, discardFn) {
   const needFixed = ab.exact_total || pr.discard_count || (ab.max_discard ? 0 : (ab.discard || 0));
   const maxDiscard = ab.max_discard || pr.max_discard || 0;
   const data = { choice: 'yes' };
-  const discardGroup = ab.discard_group || ab.then?.group || '';
+  // Only explicit discard_group — never then.group / ab.group (WR/add targets).
+  const discardGroup = ab.discard_group || '';
   let pickPool = hand;
   if (ab.type === 'optional_discard_named') {
     pickPool = hand.filter(c => cardMatchesNamedHand(c, ab.names || [], ab.include_self, pr.source_id));
   } else if (discardGroup) {
     pickPool = hand.filter(c => c.card_type === 'メンバー' && (c.group || '') === discardGroup);
   }
-  if (ab.filter === 'live') {
-    pickPool = pickPool.filter(c => isCpuLiveCard(c));
-  } else if (ab.filter === 'member') {
-    pickPool = pickPool.filter(c => isCpuMemberCard(c));
+  // Umi (optional_discard_add_from_wr): filter/group describe WR Live to add, not discard cost.
+  if (ab.type !== 'optional_discard_add_from_wr') {
+    if (ab.filter === 'live') {
+      pickPool = pickPool.filter(c => isCpuLiveCard(c));
+    } else if (ab.filter === 'member') {
+      pickPool = pickPool.filter(c => isCpuMemberCard(c));
+    }
   }
   if (maxDiscard > 0) {
     const n = Math.min(maxDiscard, pickPool.length);
