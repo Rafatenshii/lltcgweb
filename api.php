@@ -1027,6 +1027,9 @@ function applyAction(array $state, string $playerId, string $type, array $data):
         case 'anti_softlock_skip':
             return actionAntiSoftlockSkipPrompt($state, $playerId);
 
+        case 'force_own_timeout':
+            return actionForceOwnTimeout($state, $playerId);
+
         case 'live_start_choice':
             return actionLiveStartChoice($state, $playerId, $data);
 
@@ -3986,6 +3989,77 @@ function dismissPendingPromptBeforePhaseTimeout(array $state, string $pid): arra
         $state = forceDismissPendingPromptForPlayer($state, $pid, 'Time expired; dismissed');
     }
     return $state;
+}
+
+/**
+ * Player-requested shortcut (Shift+T): apply the same resolution as phase-timer
+ * expiry for this seat, without counting a ranked inactivity strike.
+ * Resolves at most one layer (skill prompt OR phase advance), matching one
+ * timer-expiry pass — so skipping a bugged skill does not also end Main.
+ */
+function actionForceOwnTimeout(array $state, string $pid): array {
+    if (($state['status'] ?? '') !== 'playing') {
+        throw new Exception('Game is not in progress');
+    }
+    if (!in_array($pid, ['p1', 'p2'], true)) {
+        throw new Exception('Invalid player');
+    }
+    $name = $state['players'][$pid]['name'] ?? $pid;
+    $prompt = $state['pending_prompt'] ?? null;
+
+    if ($prompt && ($prompt['responder'] ?? '') === $pid) {
+        $seqBefore = intval($state['seq'] ?? 0);
+        $state = addLog(
+            $state,
+            "$name — forced timeout (skipped waiting on skill timer).",
+            'info'
+        );
+        $state = autoResolvePendingPromptForTimeout($state, $pid);
+        if (!empty($state['pending_prompt'])
+            && ($state['pending_prompt']['responder'] ?? '') === $pid) {
+            $state = forceDismissPendingPromptForPlayer($state, $pid, 'Forced timeout; dismissed');
+        }
+        if (intval($state['seq'] ?? 0) <= $seqBefore) {
+            $state['seq'] = $seqBefore + 1;
+        }
+        return $state;
+    }
+
+    $ph = $state['phase'] ?? '';
+    if (($ph === 'main_first' || $ph === 'main_second')
+        && ($state['active_player'] ?? '') === $pid) {
+        $state = addLog($state, "$name — forced Main Phase timeout.", 'info');
+        return actionEndMain($state, $pid);
+    }
+    if ($ph === 'live_set' && currentLiveSetPlayer($state) === $pid) {
+        $state = addLog($state, "$name — forced LIVE Phase timeout.", 'info');
+        return actionEndLiveSet($state, $pid);
+    }
+    if ($ph === 'setup' && empty($state['players'][$pid]['ready_mulligan'])) {
+        $state = addLog($state, "$name — forced Mulligan timeout (keeping hand).", 'info');
+        return actionMulligan($state, $pid, ['card_ids' => []]);
+    }
+    if ($ph === 'coin_flip') {
+        $flip = $state['coin_flip'] ?? null;
+        if ($flip && coinFlipBothReady($state) && ($flip['winner'] ?? '') === $pid) {
+            $state['first_player'] = $pid;
+            $state['active_player'] = $pid;
+            $state['phase'] = 'setup';
+            unset($state['coin_flip']);
+            $state = addLog(
+                $state,
+                "🪙 Coin flip: $name won — first player chosen (forced timeout)."
+            );
+            $state = addLog(
+                $state,
+                'Preparation — Mulligan: you may replace any number of opening hand cards once.'
+            );
+            $state['seq'] = intval($state['seq'] ?? 0) + 1;
+            return $state;
+        }
+    }
+
+    throw new Exception('Nothing to force-timeout right now');
 }
 
 /** Unstick coin flip when a client never acks or the winner never chooses. */

@@ -8421,7 +8421,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<button type="button" id="btn-anti-softlock" hidden title="Skip this skill without applying it (files a debug bug report)">Anti-softlock</button>
+<button type="button" id="btn-anti-softlock" hidden title="Skip this skill without applying it (files a debug bug report). Shift+T forces your own timer to expire instead.">Anti-softlock</button>
 
 <div id="overlay-win">
   <div class="wtitle" id="wtitle" style="color:var(--pink)" data-i18n="win.youWin">You Win!</div>
@@ -17994,6 +17994,7 @@ async function bootApp() {
   on('btn-spectate-leave', 'click', () => { void leaveSpectatorMode(); });
   on('btn-spectate-pov', 'click', () => { toggleSpectatorPerspective(); });
   on('btn-anti-softlock', 'click', () => { void antiSoftlockSkipPrompt(); });
+  document.addEventListener('keydown', onForceOwnTimeoutHotkey);
   on('sel-ranked-deck', 'change', onRankedDeckChange);
   window.addEventListener('pagehide', (ev) => {
     if (ev.persisted) return;
@@ -22274,6 +22275,62 @@ async function antiSoftlockSkipPrompt() {
   }
   dismissAllGameplayOverlays();
   toast('Closed stuck overlay.', 2800);
+}
+
+function isEditableKeyboardTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  const tag = (target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+  if (target.isContentEditable) return true;
+  return !!target.closest('[contenteditable="true"]');
+}
+
+function canForceOwnTimeout(s, myId) {
+  if (!s || !myId || G.isSpectator || G.isTutorial || !G.roomId) return false;
+  if (typeof isReplayViewing === 'function' && isReplayViewing()) return false;
+  if (!el('screen-game')?.classList.contains('active')) return false;
+  if (s.status !== 'playing') return false;
+  const pr = s.pending_prompt;
+  if (pr && pr.responder === myId) return true;
+  const ph = s.phase || '';
+  if ((ph === 'main_first' || ph === 'main_second') && s.active_player === myId) return true;
+  if (ph === 'live_set') {
+    // Mirror server currentLiveSetPlayer when possible; fall back to active_player.
+    const livePid = s.live_set_player || s.active_player;
+    if (livePid === myId) return true;
+  }
+  if (ph === 'setup' && !s.players?.[myId]?.ready_mulligan) return true;
+  if (ph === 'coin_flip' && s.coin_flip?.winner === myId) return true;
+  return false;
+}
+
+function onForceOwnTimeoutHotkey(e) {
+  if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.key !== 'T' && e.key !== 't') return;
+  if (e.repeat) return;
+  if (isEditableKeyboardTarget(e.target)) return;
+  if (!canForceOwnTimeout(G.gameState, G.playerId)) return;
+  e.preventDefault();
+  void forceOwnTimeout();
+}
+
+async function forceOwnTimeout() {
+  if (G.isSpectator || G._forceOwnTimeoutBusy) return;
+  const s = G.gameState;
+  const myId = G.playerId;
+  if (!canForceOwnTimeout(s, myId)) return;
+  G._forceOwnTimeoutBusy = true;
+  G._promptSubmitKey = null;
+  suppressPromptOverlaysWhileSubmitting?.();
+  try {
+    await sendAct('force_own_timeout', {});
+    toast('Forced your timer to expire.', 2400);
+  } catch (err) {
+    toast(err?.message || 'Could not force timeout', 4500);
+    if (G.gameState && myId) renderPrompt(G.gameState, myId);
+  } finally {
+    G._forceOwnTimeoutBusy = false;
+  }
 }
 
 async function executeCardMoveAnimation(m, opts) {
@@ -37157,7 +37214,7 @@ async function sendAct(type,data){
     if (submitKey) G._resolvePromptSentKey = submitKey;
     markPromptSubmitting(G.gameState);
   }
-  if (type === 'anti_softlock_skip') {
+  if (type === 'anti_softlock_skip' || type === 'force_own_timeout') {
     G._promptSubmitKey = null;
     G._resolvePromptSentKey = null;
   }
@@ -37174,7 +37231,7 @@ async function sendAct(type,data){
     }
     if (type === 'resolve_prompt') clearDeferredPromptState();
     if (G.polling) {
-      if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
+      if (type === 'resolve_prompt' || type === 'anti_softlock_skip' || type === 'force_own_timeout') {
         await pullPromptResolutionState();
       } else {
         await pullLatestState(false, { silent: type === 'send_stamp' });
