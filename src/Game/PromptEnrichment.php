@@ -432,8 +432,31 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             return ['choice' => $keys[0] ?? 'skip'];
 
         case 'wait_opponent_stage_pick':
-            $slot = $prompt['candidates'][0]['slot'] ?? '';
+            $pickCount = intval($prompt['pick_count'] ?? 1);
+            $cands = $prompt['candidates'] ?? [];
+            if ($pickCount > 1 || !empty($prompt['up_to'])) {
+                $slots = [];
+                foreach (array_slice($cands, 0, $pickCount) as $cand) {
+                    if (!empty($cand['slot'])) {
+                        $slots[] = $cand['slot'];
+                    }
+                }
+                return ['slots' => $slots];
+            }
+            $slot = $cands[0]['slot'] ?? '';
             return $slot !== '' ? ['slot' => $slot] : ['choice' => 'skip'];
+
+        case 'live_start_edel_play_wr':
+            $id = $prompt['candidates'][0]['instance_id'] ?? null;
+            return $id ? ['card_id' => $id] : ['choice' => 'skip'];
+
+        case 'live_start_edel_choice':
+            $keys = $prompt['choices'] ?? [];
+            // Prefer reduce on timeout rather than softlocking on WR play UI.
+            if (in_array('reduce', $keys, true)) {
+                return ['choice' => 'reduce'];
+            }
+            return ['choice' => $keys[0] ?? 'skip'];
 
         case 'pos_change_opp_front_pick':
             // Prefer lowest-cost own Member when timer expires (deny facing value).
@@ -671,21 +694,21 @@ function resolveOptionalDiscardPromptChoice(
                     ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded " . count($ids) .
                     " and drew $drawn.");
             } elseif (($then['type'] ?? '') === 'wait_opponent_stage_max_cost') {
-                $opp = ($owner === 'p1') ? 'p2' : 'p1';
-                $maxCost = intval($then['max_cost'] ?? 4);
-                $pickCount = isset($then['pick_count']) ? intval($then['pick_count']) : null;
-                $waited = waitOpponentStageByCost(
-                    $state,
-                    $opp,
-                    $maxCost,
-                    $pickCount,
-                    $owner
-                );
+                // Player (or opp) must choose targets when pick_count is set (e.g. Izumi "up to 2").
                 $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded $need; " .
-                    ($waited > 0
-                        ? "$waited opponent Stage Member" . ($waited === 1 ? '' : 's') . ' put into Wait.'
-                        : 'no opponent Stage Members matched; none put into Wait.'));
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded $need.");
+                $state = beginWaitOpponentStagePick(
+                    $state,
+                    $owner,
+                    $prompt['source_name'] ?? 'Member',
+                    $then,
+                    $prompt['source_id'] ?? '',
+                    !empty($prompt['live_start'])
+                        || ($state['phase'] ?? '') === 'live_start_effects'
+                );
+                if (!empty($state['pending_prompt'])) {
+                    return $state;
+                }
             } elseif (($then['type'] ?? '') === 'look_reveal_filter'
                 || ($then['type'] ?? '') === 'look_reveal_group'
                 || ($then['type'] ?? '') === 'look_reveal_named') {

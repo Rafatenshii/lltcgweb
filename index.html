@@ -8454,7 +8454,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=54"></script>
+<script src="client/js/prompt-renderer.js?v=55"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -33638,7 +33638,7 @@ function wrPickCfgFromPrompt(pr) {
   const hasCfgFilter = !!(pr?.wr_pick_cfg && Object.prototype.hasOwnProperty.call(pr.wr_pick_cfg, 'filter'));
   const memberPromptTypes = new Set([
     'sbp6_leave_play_wr_slot', 'hs_leave_play_wr_slot', 'pick_wr_to_hand', 'ssd1_play_wr_empty',
-    'both_wr_member_to_empty_stage',
+    'both_wr_member_to_empty_stage', 'live_start_edel_play_wr',
   ]);
   const memberAbilityTypes = new Set(['activated_leave_play_wr_same_slot']);
   let filter;
@@ -33662,14 +33662,14 @@ function wrPickCfgFromPrompt(pr) {
   return {
     group: pr?.ability?.group || pr?.wr_pick_cfg?.group || '',
     filter,
-    max_cost: pr?.wr_pick_cfg?.max_cost ?? pr?.ability?.max_cost,
-    min_cost: pr?.wr_pick_cfg?.min_cost ?? pr?.ability?.min_cost,
+    max_cost: pr?.wr_pick_cfg?.max_cost ?? pr?.max_cost ?? pr?.ability?.max_cost,
+    min_cost: pr?.wr_pick_cfg?.min_cost ?? pr?.min_cost ?? pr?.ability?.min_cost,
     max_live_score: pr?.wr_pick_cfg?.max_live_score ?? pr?.ability?.max_live_score,
     min_live_score: pr?.wr_pick_cfg?.min_live_score ?? pr?.ability?.min_live_score,
     min_required_hearts: pr?.wr_pick_cfg?.min_required_hearts ?? pr?.ability?.min_required_hearts,
     min_required_heart_color: pr?.wr_pick_cfg?.min_required_heart_color ?? pr?.ability?.min_required_heart_color,
     blade_heart_color: pr?.wr_pick_cfg?.blade_heart_color ?? pr?.ability?.blade_heart_color,
-    subunit: pr?.wr_pick_cfg?.subunit ?? pr?.ability?.subunit ?? '',
+    subunit: pr?.wr_pick_cfg?.subunit ?? pr?.subunit ?? pr?.ability?.subunit ?? '',
   };
 }
 

@@ -3691,6 +3691,12 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 'subunit'     => $subunit,
                 'max_cost'    => $maxCost,
                 'candidates'  => $candidates,
+                'pick_count'  => 1,
+                'wr_pick_cfg' => [
+                    'subunit'  => $subunit,
+                    'filter'   => 'member',
+                    'max_cost' => $maxCost,
+                ],
                 'prompt'      => 'Choose 1 Edel Note Member from Waiting Room to play into an empty area.',
             ];
             $state['seq']++;
@@ -3741,29 +3747,76 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         if (($prompt['step'] ?? '') !== 'pick_opp_wait') {
             throw new Exception('Invalid wait opponent pick step');
         }
-        $slot = $data['slot'] ?? '';
         $opp = $prompt['opp'] ?? (($owner === 'p1') ? 'p2' : 'p1');
         $oppChooses = !empty($prompt['opp_chooses']) || !empty($ability['opp_chooses']);
-        if ($slot === '' || empty($state['players'][$opp]['stage'][$slot])) {
+        $maxCost = intval($prompt['max_cost'] ?? $ability['max_cost'] ?? 4);
+        $pickCount = intval($prompt['pick_count'] ?? $ability['pick_count'] ?? 1);
+        $upTo = !empty($prompt['up_to']) || $pickCount > 1;
+
+        // Multi / up-to: slots[] or member_ids[]; empty allowed when up_to.
+        $slots = $data['slots'] ?? null;
+        if (!is_array($slots)) {
+            $memberIds = $data['member_ids'] ?? [];
+            if (is_array($memberIds) && $memberIds !== []) {
+                $slots = [];
+                foreach ($memberIds as $mid) {
+                    foreach ($prompt['candidates'] ?? [] as $cand) {
+                        if (($cand['instance_id'] ?? '') === $mid && !empty($cand['slot'])) {
+                            $slots[] = $cand['slot'];
+                            break;
+                        }
+                    }
+                }
+            } elseif (($data['slot'] ?? '') !== '') {
+                $slots = [$data['slot']];
+            } elseif ($choice === 'skip' || $choice === 'no' || $choice === 'cancel') {
+                $slots = [];
+            } else {
+                $slots = [];
+            }
+        }
+        $slots = array_values(array_unique(array_filter(array_map('strval', $slots))));
+        if (!$upTo && count($slots) !== 1) {
             throw new Exception($oppChooses
                 ? 'Choose a Member on your Stage'
                 : 'Choose an opponent Stage Member');
         }
-        $maxCost = intval($prompt['max_cost'] ?? $ability['max_cost'] ?? 4);
-        $picked = $state['players'][$opp]['stage'][$slot];
-        if (intval($picked['cost'] ?? 0) > $maxCost) {
-            throw new Exception('Member cost too high');
+        if (count($slots) > $pickCount) {
+            throw new Exception("Select at most $pickCount Member(s)");
         }
-        if (!empty($ability['active_only']) && memberIsInWait($picked)) {
-            throw new Exception($oppChooses
-                ? 'Must choose an active Member on your Stage'
-                : 'Must choose an active opponent Stage Member');
+        $waited = 0;
+        $names = [];
+        foreach ($slots as $slot) {
+            if ($slot === '' || empty($state['players'][$opp]['stage'][$slot])) {
+                throw new Exception($oppChooses
+                    ? 'Choose a Member on your Stage'
+                    : 'Choose an opponent Stage Member');
+            }
+            $picked = $state['players'][$opp]['stage'][$slot];
+            if (intval($picked['cost'] ?? 0) > $maxCost) {
+                throw new Exception('Member cost too high');
+            }
+            if (!empty($ability['active_only']) && memberIsInWait($picked)) {
+                throw new Exception($oppChooses
+                    ? 'Must choose an active Member on your Stage'
+                    : 'Must choose an active opponent Stage Member');
+            }
+            if (memberIsInWait($picked)) {
+                continue;
+            }
+            waitOpponentMemberAtSlot($state, $opp, $slot, $owner);
+            $mbr = $state['players'][$opp]['stage'][$slot];
+            $names[] = $mbr['name_en'] ?? $mbr['name'] ?? 'Member';
+            $waited++;
         }
-        waitOpponentMemberAtSlot($state, $opp, $slot, $owner);
-        $mbr = $state['players'][$opp]['stage'][$slot];
-        $state = addLog($state, $state['players'][$owner]['name'] .
-            ' — put ' . ($mbr['name_en'] ?? $mbr['name'] ?? 'Member') . ' into Wait (' .
-            ($prompt['source_name'] ?? 'effect') . ').');
+        if ($waited > 0) {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — put ' . implode(', ', $names) . ' into Wait (' .
+                ($prompt['source_name'] ?? 'effect') . ').');
+        } else {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'effect') . '] chose no Members to put into Wait.');
+        }
         unset($state['pending_prompt']);
         $state['seq']++;
         return finishAfterBranchChoicePrompt($state, $prompt);

@@ -293,6 +293,44 @@ global.openStageSlotPick = function openStageSlotPick(pr){
     sendAct('resolve_prompt',{choice:'cancel'});
     return;
   }
+  const maxPick = Number(pr.pick_count || 1);
+  const upTo = !!pr.up_to || maxPick > 1;
+  if(upTo && maxPick > 1){
+    G.pickMarked.clear();
+    const slotById = new Map(cards.map(c=>[c.instance_id, c.slot]));
+    G.pickCtx={
+      count: maxPick,
+      min: 0,
+      onConfirm: (ids)=>{
+        const slots = ids.map(id=>slotById.get(id)).filter(Boolean);
+        sendAct('resolve_prompt',{slots});
+      },
+      onCancel: ()=> sendAct('resolve_prompt',{slots:[]}),
+    };
+    el('pick-ttl').textContent=pr.source_name||'Choose Member';
+    el('pick-msg').textContent=pr.prompt||`Choose up to ${maxPick} Member(s).`;
+    const g=el('pick-grid'); g.innerHTML='';
+    const btnOk=el('btn-pick-ok');
+    const btnCancel=el('btn-pick-cancel');
+    if(btnOk) btnOk.style.display='';
+    if(btnCancel) btnCancel.style.display='';
+    cards.forEach(card=>{
+      g.appendChild(mkPickCardEl(card,'pickcard',()=>{
+        if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
+        else {
+          if(G.pickMarked.size>=maxPick){ toast(`Select at most ${maxPick}`); return; }
+          G.pickMarked.add(card.instance_id);
+          sfxCardPick();
+        }
+        [...g.children].forEach(c=>c.classList.toggle('sel',G.pickMarked.has(c.dataset.id)));
+        el('pick-count').textContent=formatSelectedCount(G.pickMarked.size, maxPick);
+      }));
+    });
+    el('pick-count').textContent=formatSelectedCount(0, maxPick);
+    syncPickOverlayButtons();
+    openM('overlay-pick');
+    return;
+  }
   el('pick-ttl').textContent=pr.source_name||'Choose Member';
   el('pick-msg').textContent=pr.prompt||'Choose a Member on your Stage.';
   const g=el('pick-grid'); g.innerHTML='';
@@ -999,6 +1037,7 @@ global.isBranchChoicePrompt = function isBranchChoicePrompt(pr){
     'live_success_pick_energy_or_member','live_success_pay_choice_wr_add',
     'live_success_choose_draw_or_energy_wait',
     'live_start_unless_discard_return_energy',
+    'live_start_edel_choice',
     'sbp5_aqours_blade_or_position','sbp6_live_wr_deck_position','sbp6_hand_deck_position',
     'ssd1_reveal_group_deck','opp_pick_wr_live_offer','spbp5_wr_pay_add_hand',
     'spbp2_discard_liella_choice'
@@ -2542,6 +2581,11 @@ global.renderPrompt = function renderPrompt(s, myId){
     &&(pr.step==='pick_stage_blade'||pr.step==='pick_opp_wait')&&pr.responder===myId){
     ovl.classList.remove('open');
     openStageSlotPick(pr);
+    return;
+  }
+  if(pr?.type==='live_start_edel_play_wr'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    openWrLivePick(pr, { state:s, myId });
     return;
   }
   if(pr?.type==='player_choice_wr_live_deck_bottom_draw'&&pr.step==='pick_wr_live'&&pr.responder===myId){

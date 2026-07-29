@@ -5013,24 +5013,47 @@ function beginWaitOpponentStagePick(
     if (empty($members)) {
         return logOpponentMembersWaitedOutcome($state, $owner, $srcName, 0, $maxCost);
     }
-    if ($pickCount === null || $pickCount > 1) {
-        $waited = waitOpponentStageByCost($state, $opp, $maxCost, $pickCount, $owner);
+    // No pick_count = wait all matching (legacy / "put all … into Wait").
+    if ($pickCount === null) {
+        $waited = waitOpponentStageByCost($state, $opp, $maxCost, null, $owner);
         return logOpponentMembersWaitedOutcome($state, $owner, $srcName, $waited, $maxCost);
     }
-    if (count($members) === 1) {
+    $pickCount = max(1, $pickCount);
+    // Exactly one legal target and pick 1 → auto-resolve.
+    if ($pickCount === 1 && count($members) === 1) {
         waitOpponentMemberAtSlot($state, $opp, $members[0]['slot'], $owner);
         return logOpponentMembersWaitedOutcome($state, $owner, $srcName, 1, $maxCost);
     }
     if ($oppChooses) {
-        $prompt = $activeOnly
-            ? 'Choose 1 active Member on your Stage to put into Wait.'
-            : 'Choose 1 Member on your Stage to put into Wait.';
-        if ($maxCost < 99) {
+        if ($pickCount > 1) {
             $prompt = $activeOnly
-                ? "Choose 1 active Member on your Stage with cost ≤$maxCost to put into Wait."
-                : "Choose 1 Member on your Stage with cost ≤$maxCost to put into Wait.";
+                ? "Choose up to $pickCount active Member(s) on your Stage to put into Wait."
+                : "Choose up to $pickCount Member(s) on your Stage to put into Wait.";
+            if ($maxCost < 99) {
+                $prompt = $activeOnly
+                    ? "Choose up to $pickCount active Member(s) on your Stage with cost ≤$maxCost to put into Wait."
+                    : "Choose up to $pickCount Member(s) on your Stage with cost ≤$maxCost to put into Wait.";
+            }
+        } else {
+            $prompt = $activeOnly
+                ? 'Choose 1 active Member on your Stage to put into Wait.'
+                : 'Choose 1 Member on your Stage to put into Wait.';
+            if ($maxCost < 99) {
+                $prompt = $activeOnly
+                    ? "Choose 1 active Member on your Stage with cost ≤$maxCost to put into Wait."
+                    : "Choose 1 Member on your Stage with cost ≤$maxCost to put into Wait.";
+            }
         }
         $responder = $opp;
+    } elseif ($pickCount > 1) {
+        $prompt = $activeOnly
+            ? "Choose up to $pickCount active opponent Stage Member(s)"
+            : "Choose up to $pickCount opponent Stage Member(s)";
+        if ($maxCost < 99) {
+            $prompt .= " (cost ≤$maxCost)";
+        }
+        $prompt .= ' to put into Wait.';
+        $responder = $owner;
     } else {
         $prompt = $activeOnly
             ? "Choose 1 active opponent Stage Member"
@@ -5054,6 +5077,8 @@ function beginWaitOpponentStagePick(
         'prompt'        => $prompt,
         'candidates'    => $members,
         'max_cost'      => $maxCost,
+        'pick_count'    => $pickCount,
+        'up_to'         => $pickCount > 1,
         'ability'       => $effect,
     ];
     $state['seq']++;
