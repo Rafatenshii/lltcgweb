@@ -1279,8 +1279,11 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         $anims[] = animSpec($existing['instance_id'], 'stage', 'waiting_room', $pid, [
             'slot' => $targetSlot,
         ]);
+        // Keep a member snapshot: empty-deck WR refresh can shuffle the leaving
+        // card into main_deck before on_leave resolves (Kaho SD energy activate).
         $batonOnLeavePending[] = [
             'wr_idx' => count($p['waiting_room']) - 1,
+            'member' => $existing,
             'ctx' => ['baton_incoming' => $card],
         ];
         $card['baton_from_subunit'] = $existing['subunit'] ?? '';
@@ -1318,6 +1321,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             ]);
             $batonOnLeavePending[] = [
                 'wr_idx' => count($p['waiting_room']) - 1,
+                'member' => $existing2,
                 'ctx' => ['baton_incoming' => $card],
             ];
             $batonCount++;
@@ -1345,13 +1349,21 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             countActiveEnergyInZone($p) . ')');
     }
     foreach ($batonOnLeavePending as $pending) {
-        $wrIdx = $pending['wr_idx'];
-        if ($wrIdx < 0 || !isset($p['waiting_room'][$wrIdx])) {
+        $wrIdx = intval($pending['wr_idx'] ?? -1);
+        $leaving = null;
+        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
+            $leaving = $p['waiting_room'][$wrIdx];
+        } elseif (!empty($pending['member']) && is_array($pending['member'])) {
+            // Deck refresh may have already shuffled the leaving Member out of WR.
+            $leaving = $pending['member'];
+        }
+        if (!$leaving) {
             continue;
         }
-        $leaving = $p['waiting_room'][$wrIdx];
-        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $pending['ctx']);
-        $p['waiting_room'][$wrIdx] = $leaving;
+        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $pending['ctx'] ?? []);
+        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
+            $p['waiting_room'][$wrIdx] = $leaving;
+        }
         if (!empty($state['pending_prompt'])) {
             break;
         }
