@@ -11,7 +11,7 @@
  *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, reset_account,
  *   ranked_join, ranked_leave, ranked_status, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, public_profile,
- *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, sticker_buy
+ *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
  */
 require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/config/cors.php';
@@ -90,6 +90,7 @@ try {
         case 'sticker_shop_catalog': echo json_encode(tcgApiStickerShopCatalog($body)); break;
         case 'sticker_shop_cards': echo json_encode(tcgApiStickerShopCards($body)); break;
         case 'convert_to_seal':    echo json_encode(tcgApiConvertToSeal($body)); break;
+        case 'convert_to_seals_batch': echo json_encode(tcgApiConvertToSealsBatch($body)); break;
         case 'sticker_buy':        echo json_encode(tcgApiStickerBuy($body)); break;
         default:
             http_response_code(404);
@@ -284,6 +285,18 @@ function tcgApiConvertToSeal(array $body): array {
     $cardsData = tcgLoadCardsData();
     $cardMap = tcgBuildCardMap($cardsData);
     return tcgConvertCardsToSeals($uid, $cardNo, $qty, $cardMap, $cardsData);
+}
+
+function tcgApiConvertToSealsBatch(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $items = $body['items'] ?? null;
+    if (!is_array($items)) {
+        throw new Exception('items required', 400);
+    }
+    $cardsData = tcgLoadCardsData();
+    $cardMap = tcgBuildCardMap($cardsData);
+    return tcgConvertCardsToSealsBatch($uid, $items, $cardMap, $cardsData);
 }
 
 function tcgApiStickerBuy(array $body): array {

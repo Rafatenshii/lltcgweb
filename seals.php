@@ -452,6 +452,86 @@ function tcgConvertCardsToSeals(string $discordId, string $cardNo, int $qty, arr
 }
 
 /**
+ * Batch convert many cards → seals. Validates every line first, then converts in order.
+ *
+ * @param list<array{card_no?:string,qty?:int}> $items
+ * @return array{success:bool,seals:array,converted:list<array>,seals_gained_by_tier:array<string,int>,total_converted:int}
+ */
+function tcgConvertCardsToSealsBatch(string $discordId, array $items, array $cardMap, ?array $cardsData = null): array {
+    $data = $cardsData ?? ['cards' => array_values($cardMap), 'starter_decks' => []];
+    $normalized = [];
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $cardNo = trim((string)($item['card_no'] ?? ''));
+        $qty = max(0, intval($item['qty'] ?? 0));
+        if ($cardNo === '' || $qty < 1) {
+            continue;
+        }
+        if (!isset($normalized[$cardNo])) {
+            $normalized[$cardNo] = 0;
+        }
+        $normalized[$cardNo] += $qty;
+    }
+    if ($normalized === []) {
+        throw new Exception('Select at least one spare card to convert', 400);
+    }
+
+    // Pre-validate against current collection so a mid-batch failure cannot leave a partial convert.
+    $ownedMap = tcgGetCollectionMap($discordId);
+    foreach ($normalized as $cardNo => $qty) {
+        $card = $cardMap[$cardNo] ?? null;
+        if (!$card) {
+            throw new Exception('Unknown card: ' . $cardNo, 404);
+        }
+        if (!tcgCardConvertibleToSeal($card, $discordId, $data)) {
+            throw new Exception('This card cannot be converted to seals: ' . $cardNo, 400);
+        }
+        if (tcgSealTierForCard($card) === null) {
+            throw new Exception('This card cannot be converted to seals: ' . $cardNo, 400);
+        }
+        $owned = intval($ownedMap[$cardNo] ?? 0);
+        $reserved = tcgMinReservedCopies($discordId, $cardNo);
+        $spare = max(0, $owned - $reserved);
+        if ($qty > $spare) {
+            throw new Exception(
+                $reserved > 0
+                    ? "Only {$spare} spare copy(ies) of {$cardNo} can be converted ({$reserved} reserved by saved decks)"
+                    : "Not enough spare copies of {$cardNo} to convert",
+                400
+            );
+        }
+    }
+
+    $converted = [];
+    $gainedByTier = [];
+    foreach ($normalized as $cardNo => $qty) {
+        $out = tcgConvertCardsToSeals($discordId, $cardNo, $qty, $cardMap, $data);
+        $tier = (string)($out['tier'] ?? '');
+        if ($tier !== '') {
+            $gainedByTier[$tier] = ($gainedByTier[$tier] ?? 0) + intval($out['seals_gained'] ?? 0);
+        }
+        $converted[] = [
+            'card_no' => $cardNo,
+            'qty' => $qty,
+            'tier' => $tier,
+            'seals_gained' => intval($out['seals_gained'] ?? 0),
+            'qty_left' => intval($out['qty_left'] ?? 0),
+        ];
+    }
+
+    return [
+        'success' => true,
+        'converted' => $converted,
+        'seals_gained_by_tier' => $gainedByTier,
+        'total_converted' => array_sum(array_column($converted, 'qty')),
+        'seals' => tcgSealBalances($discordId),
+        'seal_buy_costs' => TCG_SEAL_BUY_COST,
+    ];
+}
+
+/**
  * @return array{success:bool,seals:array,card_no:string,owned_qty:int,tier:string,cost:int}
  */
 function tcgStickerBuyCard(string $discordId, string $cardNo, array $cardMap, array $cardsData, ?string $productId = null): array {

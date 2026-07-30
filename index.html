@@ -4199,6 +4199,28 @@ body.missions-overlay-open .llc-sky-dim::after{
 .deck-convert-seal-row .btn-grad img{width:22px;height:22px;object-fit:contain;display:block;flex:0 0 auto}
 .deck-convert-seal-balance{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;font-size:12px;color:rgba(255,255,255,.85)}
 .deck-convert-seal-balance .sticker-card-cost{display:inline-flex;align-items:center;gap:4px}
+.deck-seal-batch-toggle.is-active{
+  border-color:rgba(255,196,120,.65)!important;background:rgba(255,160,64,.22)!important;color:#ffe7c2}
+.deck-card-tile.seal-batch-sel{
+  outline:2px solid rgba(255,196,120,.95);outline-offset:1px;
+  box-shadow:0 0 0 3px rgba(255,160,64,.28),0 6px 18px rgba(0,0,0,.35)}
+.deck-card-tile.seal-batch-sel .deck-seal-batch-qty{
+  position:absolute;bottom:3px;left:3px;z-index:2;
+  background:rgba(180,90,10,.92);color:#fff;font-size:10px;font-weight:800;
+  padding:1px 5px;border-radius:6px;line-height:1.3}
+.deck-card-tile.seal-batch-dim{opacity:.42;filter:grayscale(.25)}
+.deck-seal-batch-bar{
+  position:sticky;bottom:0;z-index:8;margin-top:10px;padding:10px 12px;
+  border-radius:12px;border:1px solid rgba(255,196,120,.35);
+  background:linear-gradient(180deg,rgba(40,28,16,.96),rgba(22,16,10,.98));
+  box-shadow:0 -8px 24px rgba(0,0,0,.35);display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.deck-seal-batch-bar[hidden]{display:none!important}
+.deck-seal-batch-summary{flex:1 1 220px;min-width:0}
+.deck-seal-batch-summary-title{margin:0 0 4px;font-size:13px;font-weight:700;color:#ffe7c2}
+.deck-seal-batch-totals{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.deck-seal-batch-totals .sticker-card-cost{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:#fff}
+.deck-seal-batch-empty{font-size:12px;color:rgba(255,255,255,.65)}
+.deck-seal-batch-actions{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
 .sticker-info-fab{flex:0 0 auto}
 .sticker-info-fab .news-fab-icon{width:38px;height:38px;font-size:20px}
 .sticker-info-fab:hover .news-fab-icon{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.34)}
@@ -5881,10 +5903,15 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   transform:translateY(-50%);
   z-index:1;
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
+  gap:8px;
   flex:0 0 auto;
   margin:0;
-  max-width:min(62%,280px);
+  max-width:min(78%,360px);
+}
+#screen-deck .deck-seal-batch-toggle{
+  width:auto;padding:6px 10px;font-size:12px;white-space:nowrap;flex:0 0 auto
 }
 #screen-deck .deck-collection-sort .llc-select-wrap{
   display:block;
@@ -7389,6 +7416,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
                 <div class="deck-section-head__title-row">
                   <h4 id="deck-pool-head-title" data-i18n="deck.collection">Collection</h4>
                   <div class="deck-collection-sort" id="deck-collection-sort-wrap">
+                    <button type="button" class="btn-out deck-seal-batch-toggle" id="btn-deck-seal-batch" hidden data-i18n="sticker.batchConvert">Batch convert</button>
                     <div class="llc-select-wrap deck-collection-sort__select">
                       <select id="sel-deck-pool-sort" aria-label="Collection sort and order"></select>
                     </div>
@@ -7397,6 +7425,16 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
                 <p class="deck-section-stats" id="deck-collection-stats">Total cards owned · 0</p>
               </div>
               <div class="deck-card-grid deck-card-grid--pool" id="deck-pool"></div>
+              <div class="deck-seal-batch-bar" id="deck-seal-batch-bar" hidden>
+                <div class="deck-seal-batch-summary">
+                  <p class="deck-seal-batch-summary-title" id="deck-seal-batch-title" data-i18n="sticker.batchSelected">Selected for conversion</p>
+                  <div class="deck-seal-batch-totals" id="deck-seal-batch-totals"></div>
+                </div>
+                <div class="deck-seal-batch-actions">
+                  <button type="button" class="btn-ghost" id="btn-deck-seal-batch-cancel" data-i18n="common.cancel">Cancel</button>
+                  <button type="button" class="btn-grad" id="btn-deck-seal-batch-confirm" data-i18n="sticker.batchConfirm">Convert selected</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -8451,7 +8489,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=71"></script>
+<script src="i18n.js?v=72"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=17"></script>
@@ -8624,6 +8662,9 @@ const A = {
   sealBuyCosts: { N: 20, R: 15, P: 10, SEC: 5, PR: 20 },
   stickerProductId: null,
   stickerProducts: [],
+  deckSealBatchMode: false,
+  deckSealBatch: {},
+  deckSealBatchBusy: false,
   boxes: [],
   collection: [],
   collectionMap: {},
@@ -8847,6 +8888,169 @@ function maxReservedCopiesClient(cardNo) {
 function spareConvertibleCopies(cardNo) {
   const owned = Number(A.collectionMap?.[cardNo] || 0);
   return Math.max(0, owned - maxReservedCopiesClient(cardNo));
+}
+
+function deckSealBatchItems() {
+  const items = [];
+  Object.entries(A.deckSealBatch || {}).forEach(([cardNo, qty]) => {
+    const n = Math.max(0, Number(qty) || 0);
+    if (n > 0) items.push({ card_no: cardNo, qty: n });
+  });
+  return items;
+}
+
+function deckSealBatchTotals() {
+  const totals = { N: 0, R: 0, P: 0, SEC: 0, PR: 0 };
+  let cards = 0;
+  deckSealBatchItems().forEach(({ card_no: cardNo, qty }) => {
+    const card = enrichCard(G.allCards[cardNo] || A.collection.find(r => r.card_no === cardNo)?.card);
+    const tier = clientSealTierForCard(card);
+    if (!tier || !totals.hasOwnProperty(tier)) return;
+    totals[tier] += qty;
+    cards += qty;
+  });
+  return { totals, cards };
+}
+
+function clearDeckSealBatchSelection() {
+  A.deckSealBatch = {};
+}
+
+function exitDeckSealBatchMode({ render = true } = {}) {
+  A.deckSealBatchMode = false;
+  clearDeckSealBatchSelection();
+  const btn = el('btn-deck-seal-batch');
+  if (btn) {
+    btn.classList.remove('is-active');
+    btn.textContent = t('sticker.batchConvert') || 'Batch convert';
+  }
+  const bar = el('deck-seal-batch-bar');
+  if (bar) bar.hidden = true;
+  if (render && typeof renderDeckBuilder === 'function') {
+    renderDeckBuilder({ preservePoolScroll: true });
+  } else {
+    updateDeckSealBatchBar();
+  }
+}
+
+function enterDeckSealBatchMode() {
+  if (A.deckBuilderMode !== 'account' || !isSignedInAccount()) return;
+  A.deckSealBatchMode = true;
+  clearDeckSealBatchSelection();
+  const btn = el('btn-deck-seal-batch');
+  if (btn) {
+    btn.classList.add('is-active');
+    btn.textContent = t('sticker.batchConvertActive') || 'Selecting…';
+  }
+  const bar = el('deck-seal-batch-bar');
+  if (bar) bar.hidden = false;
+  updateDeckSealBatchBar();
+  if (typeof renderDeckBuilder === 'function') renderDeckBuilder({ preservePoolScroll: true });
+}
+
+function toggleDeckSealBatchMode() {
+  if (A.deckSealBatchMode) exitDeckSealBatchMode();
+  else enterDeckSealBatchMode();
+}
+
+function updateDeckSealBatchBar() {
+  const bar = el('deck-seal-batch-bar');
+  const totalsEl = el('deck-seal-batch-totals');
+  const confirmBtn = el('btn-deck-seal-batch-confirm');
+  const titleEl = el('deck-seal-batch-title');
+  if (!bar || !totalsEl) return;
+  if (!A.deckSealBatchMode) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  const { totals, cards } = deckSealBatchTotals();
+  if (titleEl) {
+    titleEl.textContent = cards
+      ? (t('sticker.batchSelectedCount', { n: cards }) || (`Selected · ${cards} card(s)`))
+      : (t('sticker.batchSelected') || 'Selected for conversion');
+  }
+  totalsEl.replaceChildren();
+  if (!cards) {
+    const empty = document.createElement('span');
+    empty.className = 'deck-seal-batch-empty';
+    empty.textContent = t('sticker.batchEmpty') || 'Tap spare cards in your collection to select them.';
+    totalsEl.appendChild(empty);
+  } else {
+    ['N', 'R', 'P', 'SEC', 'PR'].forEach(tier => {
+      const n = totals[tier] || 0;
+      if (!n) return;
+      const chip = document.createElement('span');
+      chip.innerHTML = sealCostHtml(tier, n, 18);
+      totalsEl.appendChild(chip);
+    });
+  }
+  if (confirmBtn) confirmBtn.disabled = !cards || !!A.deckSealBatchBusy;
+}
+
+function toggleDeckSealBatchCard(cardNo) {
+  if (!A.deckSealBatchMode || A.deckSealBatchBusy) return;
+  const card = enrichCard(G.allCards[cardNo] || A.collection.find(r => r.card_no === cardNo)?.card);
+  if (!card || !clientCardConvertibleToSeal(card)) {
+    toast(t('sticker.batchNotConvertible') || 'This card cannot be converted to seals', 2600);
+    return;
+  }
+  const spare = spareConvertibleCopies(cardNo);
+  if (spare < 1) {
+    toast(t('sticker.batchNoSpare') || 'No spare copies available to convert', 2600);
+    return;
+  }
+  if (A.deckSealBatch[cardNo]) {
+    delete A.deckSealBatch[cardNo];
+  } else {
+    A.deckSealBatch[cardNo] = spare;
+  }
+  updateDeckSealBatchBar();
+  if (typeof renderDeckBuilder === 'function') renderDeckBuilder({ preservePoolScroll: true });
+}
+
+async function confirmDeckSealBatchConvert() {
+  if (!A.deckSealBatchMode || A.deckSealBatchBusy) return;
+  const items = deckSealBatchItems().map(({ card_no: cardNo, qty }) => {
+    const spare = spareConvertibleCopies(cardNo);
+    return { card_no: cardNo, qty: Math.min(qty, spare) };
+  }).filter(it => it.qty > 0);
+  if (!items.length) {
+    toast(t('sticker.batchEmpty') || 'Select at least one spare card', 2400);
+    return;
+  }
+  const { totals, cards } = deckSealBatchTotals();
+  const parts = ['N', 'R', 'P', 'SEC', 'PR']
+    .filter(tier => totals[tier] > 0)
+    .map(tier => `${tier}×${totals[tier]}`);
+  const ok = confirm(
+    t('sticker.batchConfirmMsg', { cards, seals: parts.join(', ') })
+    || (`Convert ${cards} spare card(s) into seals (${parts.join(', ')})?\n\nThis cannot be undone.`)
+  );
+  if (!ok) return;
+  A.deckSealBatchBusy = true;
+  updateDeckSealBatchBar();
+  try {
+    const res = await accountPost('convert_to_seals_batch', { items });
+    syncSealsFromPayload(res);
+    await refreshCollection();
+    const gained = res.seals_gained_by_tier || {};
+    const gainedParts = ['N', 'R', 'P', 'SEC', 'PR']
+      .filter(tier => Number(gained[tier] || 0) > 0)
+      .map(tier => `${tier}+${gained[tier]}`);
+    toast(
+      t('sticker.batchOk', { n: res.total_converted || cards, seals: gainedParts.join(' · ') || '—' })
+      || (`Converted ${res.total_converted || cards} → ${gainedParts.join(' · ') || 'seals'}`),
+      3200
+    );
+    exitDeckSealBatchMode({ render: false });
+    if (typeof renderDeckBuilder === 'function') renderDeckBuilder({ preservePoolScroll: true });
+  } catch (err) {
+    toast(err.message || t('toast.stickerConvertFailed') || 'Convert failed', 3600);
+  } finally {
+    A.deckSealBatchBusy = false;
+    updateDeckSealBatchBar();
+  }
 }
 
 function syncStarGemsFromOpen(open) {
@@ -11821,13 +12025,16 @@ function appendDeckTileFace(tile, card, { lazy } = {}) {
   appendCardFace(tile, card, { sideways: false, lazy: lazyImg });
 }
 
-function appendDeckCardTile(parent, card, qty, onTap, { inDeck = false } = {}) {
+function appendDeckCardTile(parent, card, qty, onTap, { inDeck = false, sealBatchQty = 0, sealBatchDim = false } = {}) {
   const c = enrichCard(card);
   if (!c) return;
+  const selected = sealBatchQty > 0;
   const tile = document.createElement('div');
   tile.className = 'deck-card-tile'
     + (inDeck ? ' in-deck' : '')
-    + (isLiveCard(c) ? ' deck-live-tile' : '');
+    + (isLiveCard(c) ? ' deck-live-tile' : '')
+    + (selected ? ' seal-batch-sel' : '')
+    + (sealBatchDim ? ' seal-batch-dim' : '');
   tile.title = (cardLocaleName(c) || c.card_no) + (qty > 1 ? ' ×' + qty : '');
   appendDeckTileFace(tile, c, { lazy: !inDeck });
   if (c.rarity) {
@@ -11842,6 +12049,12 @@ function appendDeckCardTile(parent, card, qty, onTap, { inDeck = false } = {}) {
     lp.className = 'deck-loveca-pt';
     lp.textContent = t('deck.lovecaPointBadge', { n: lovecaPt });
     tile.appendChild(lp);
+  }
+  if (selected) {
+    const bq = document.createElement('span');
+    bq.className = 'deck-seal-batch-qty';
+    bq.textContent = '→' + sealBatchQty;
+    tile.appendChild(bq);
   }
   if (qty > 1) {
     const q = document.createElement('span');
@@ -11989,6 +12202,17 @@ function syncDeckBuilderChrome() {
   syncDeckFilterUi();
   syncDeckPoolSortUi();
   if (poolHead) poolHead.textContent = experiment ? t('deck.cardPool') : t('deck.collection');
+  const batchBtn = el('btn-deck-seal-batch');
+  if (batchBtn) {
+    const showBatch = !experiment && isSignedInAccount();
+    batchBtn.hidden = !showBatch;
+    if (!showBatch && A.deckSealBatchMode) exitDeckSealBatchMode({ render: false });
+    batchBtn.classList.toggle('is-active', !!A.deckSealBatchMode);
+    batchBtn.textContent = A.deckSealBatchMode
+      ? (t('sticker.batchConvertActive') || 'Selecting…')
+      : (t('sticker.batchConvert') || 'Batch convert');
+  }
+  updateDeckSealBatchBar();
   const equipBtn = el('btn-deck-equip');
   if (equipBtn) {
     equipBtn.hidden = experiment;
@@ -13352,7 +13576,17 @@ function renderDeckBuilder(opts = {}) {
     });
     sortDeckPoolEntries(poolEntries, sortMode).forEach(entry => {
       poolCount++;
-      appendDeckCardTile(pool, entry.c0, entry.available, () => addCardToDeck(entry.row.card_no, entry.type));
+      const cardNo = entry.row.card_no;
+      const batchQty = A.deckSealBatchMode ? Number(A.deckSealBatch?.[cardNo] || 0) : 0;
+      const convertible = A.deckSealBatchMode && clientCardConvertibleToSeal(entry.c0)
+        && spareConvertibleCopies(cardNo) > 0;
+      const onTap = A.deckSealBatchMode
+        ? () => toggleDeckSealBatchCard(cardNo)
+        : () => addCardToDeck(cardNo, entry.type);
+      appendDeckCardTile(pool, entry.c0, entry.available, onTap, {
+        sealBatchQty: batchQty,
+        sealBatchDim: !!(A.deckSealBatchMode && !convertible && !batchQty),
+      });
     });
     if (searchQ || filtered) {
       el('deck-collection-stats').textContent = poolCount
@@ -13436,6 +13670,7 @@ async function openDeckBuilder() {
     return;
   }
   A.deckBuilderMode = 'account';
+  exitDeckSealBatchMode({ render: false });
   A.experimentSearch = '';
   A.deckPoolFilters = defaultDeckPoolFilters();
   const searchInp = el('inp-deck-card-search');
@@ -17948,9 +18183,13 @@ async function bootApp() {
   on('btn-pack-again', 'click', openSamePackAgain);
   on('btn-pack-hub', 'click', () => enterHub(A.profile));
   on('btn-deck-back', 'click', () => {
+    if (A.deckSealBatchMode) exitDeckSealBatchMode({ render: false });
     if (A.deckBuilderMode === 'experiment') showGuestAuth(null, 'auth.guestPrompt');
     else enterHub(A.profile);
   });
+  on('btn-deck-seal-batch', 'click', toggleDeckSealBatchMode);
+  on('btn-deck-seal-batch-cancel', 'click', () => exitDeckSealBatchMode());
+  on('btn-deck-seal-batch-confirm', 'click', () => { void confirmDeckSealBatchConvert(); });
   on('btn-ranked-back', 'click', () => enterHub(A.profile));
   on('btn-ranked-leaderboard', 'click', openLeaderboardScreen);
   on('btn-leaderboard-back', 'click', () => enterHub(A.profile));

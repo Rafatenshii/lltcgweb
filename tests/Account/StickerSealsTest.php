@@ -181,6 +181,33 @@ final class StickerSealsTest extends TestCase
         $this->assertSame(1, $out['owned_qty']);
     }
 
+    public function testBatchConvertMultipleCards(): void
+    {
+        $a = $this->findGachaCard('N');
+        $b = $this->findGachaCard('R') ?: $this->findGachaCard('N');
+        $this->assertNotNull($a);
+        $this->assertNotNull($b);
+        $map = tcgBuildCardMap($this->cardsData());
+        tcgAddCardsToCollection($this->discordId, [$a['card_no'], $a['card_no'], $b['card_no'], $b['card_no']]);
+        $before = tcgSealBalances($this->discordId);
+        $out = tcgConvertCardsToSealsBatch($this->discordId, [
+            ['card_no' => $a['card_no'], 'qty' => 1],
+            ['card_no' => $b['card_no'], 'qty' => 1],
+        ], $map, $this->cardsData());
+        $this->assertSame(2, $out['total_converted']);
+        $this->assertCount(2, $out['converted']);
+        $tierA = tcgSealTierForCard($a);
+        $tierB = tcgSealTierForCard($b);
+        $this->assertSame(($before[strtolower($tierA)] ?? 0) + 1, $out['seals'][strtolower($tierA)]);
+        if ($tierA === $tierB) {
+            $this->assertSame(($before[strtolower($tierA)] ?? 0) + 2, $out['seals'][strtolower($tierA)]);
+        } else {
+            $this->assertSame(($before[strtolower($tierB)] ?? 0) + 1, $out['seals'][strtolower($tierB)]);
+        }
+        $this->assertSame(1, tcgGetCollectionMap($this->discordId)[$a['card_no']] ?? 0);
+        $this->assertSame(1, tcgGetCollectionMap($this->discordId)[$b['card_no']] ?? 0);
+    }
+
     public function testGachaCodeFallbackWhenPackMismatched(): void
     {
         $card = [
