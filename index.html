@@ -8454,7 +8454,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=58"></script>
+<script src="client/js/prompt-renderer.js?v=59"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -28307,6 +28307,21 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     }
     if (m && tier !== 'easy') cpuAct('resolve_prompt', { choice: 'yes', card_id: m.instance_id });
     else cpuAct('resolve_prompt', { choice: m ? 'yes' : 'no', ...(m ? { card_id: m.instance_id } : {}) });
+    return true;
+  }
+  if (pr.type === 'optional_discard_blade_per_card') {
+    const max = pr.max_discard || pr.ability?.max_discard || 2;
+    if (tier === 'easy' || hand.length < 1) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    const n = Math.min(max, hand.length, cpuTierHardPlus(tier) ? 2 : 1);
+    const ids = cpuPickDiscardIds(hand, n, tier, winPressure, read);
+    if (ids.length >= 1) {
+      cpuAct('resolve_prompt', { choice: 'yes', discard_ids: ids.slice(0, max) });
+    } else {
+      cpuAct('resolve_prompt', { choice: 'no' });
+    }
     return true;
   }
   if (pr.type === 'optional_discard_blade_draw_if_live') {

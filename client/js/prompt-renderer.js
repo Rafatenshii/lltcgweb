@@ -1460,6 +1460,10 @@ function promptDiscardCount(pr, choice){
     return pr.discard_count||ab.discard||0;
   }
   if(pr.type==='optional_discard_blade_draw_if_live') return pr.ability?.discard||1;
+  // Kanan PL!S-bp3-003 Live Start: up to N hand cards → +blade per card.
+  if(pr.type==='optional_discard_blade_per_card') {
+    return pr.max_discard || pr.ability?.max_discard || 2;
+  }
   if(pr.type==='live_start_pay_or_discard'&&choice==='discard') return pr.discard_count||2;
   if(pr.type==='live_start_unless_discard_return_energy'&&choice==='discard') return pr.discard_count||1;
   if(pr.type==='mandatory_discard_group_branch') return pr.discard_count||pr.max_pick||1;

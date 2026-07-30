@@ -2741,15 +2741,21 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         if ($choice === 'yes') {
             $ids = $data['discard_ids'] ?? [];
             $n = count($ids);
-            if ($n < 1) throw new Exception('Choose at least 1 card to discard');
-            discardFromHandByIds($ownerP, $ids);
-            $bladePer = intval($prompt['ability']['blade_per'] ?? 1);
-            $state = applyModifierEffect($state, $owner, [
-                'type'   => 'blade_bonus',
-                'amount' => $n * $bladePer,
-            ]);
-            $state = addLog($state, $state['players'][$owner]['name'] .
-                " — [{$prompt['source_name']}] discarded $n; gained +" . ($n * $bladePer) . ' Blade until Live ends.');
+            $maxDiscard = intval($prompt['max_discard'] ?? $prompt['ability']['max_discard'] ?? 2);
+            if ($n > $maxDiscard) {
+                throw new Exception("Must select at most $maxDiscard card(s) to discard");
+            }
+            // "Up to N" — Yes with 0 cards is a no-op (same as Skip).
+            if ($n >= 1) {
+                discardFromHandByIds($ownerP, $ids);
+                $bladePer = intval($prompt['ability']['blade_per'] ?? 1);
+                $state = applyModifierEffect($state, $owner, [
+                    'type'   => 'blade_bonus',
+                    'amount' => $n * $bladePer,
+                ]);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — [{$prompt['source_name']}] discarded $n; gained +" . ($n * $bladePer) . ' Blade until Live ends.');
+            }
         }
         unset($state['pending_prompt']);
         $state['seq']++;
