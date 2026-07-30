@@ -1,0 +1,29 @@
+# Overflow standby — capped resources for Plan B only (not primary traffic).
+services:
+  tcg-api:
+    build: .
+    container_name: lltcgweb-api
+    ports:
+      - "127.0.0.1:5003:80"
+    volumes:
+      - ./:/var/www/html
+      - ./data:/var/www/html/data
+      - ./games:/var/www/html/games
+      - ./experiment_decks:/var/www/html/experiment_decks
+      - ./cardimg:/var/www/html/cardimg
+    environment:
+      TCG_PRODUCTION: "1"
+      TCG_DEBUG: "0"
+      TCG_CORS_ORIGINS: "https://loveliveradio.ca,https://www.loveliveradio.ca"
+      # Sync notify for rooms created on overflow (same secrets as Hostinger tcg_sync.local.php)
+      TCG_SYNC_ENABLED: "1"
+    # Keep overflow from starving Chiichan / radio on 1 vCPU / 4GB
+    mem_limit: 512m
+    cpus: "0.50"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api.php?action=ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s

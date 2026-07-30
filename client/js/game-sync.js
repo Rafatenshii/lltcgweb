@@ -160,7 +160,12 @@
     clearTimeout(G.watchdogTimer);
     clearPvPWatchdog();
     stopSyncStream();
+    if (typeof global.tcgClearApiOriginLock === 'function') global.tcgClearApiOriginLock();
   };
+
+  function gameApiBase() {
+    return (typeof global.tcgGameApiUrl === 'function' ? global.tcgGameApiUrl() : (global.API || './api.php'));
+  }
 
   async function tcgPresencePing() {
     if (!G.polling || !G.roomId || !G.token || (G.isTutorial && !G.tutorialLive)) return;
@@ -362,7 +367,7 @@
     try {
       TCG_DEBUG.log('poll', 'fetch', { seq: G.lastSeq, room: pollRoomId, mode: 'poll0' });
       global._tcgSyncStats.getState++;
-      const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+      const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       G._pollRateLimitBackoff = 0;
@@ -396,7 +401,7 @@
     TCG_DEBUG.log('poll', 'pullSkillResolutionState', { seq: G.lastSeq, room: pollRoomId });
     try {
       global._tcgSyncStats.getState++;
-      const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+      const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return G.gameState || null;
       if ((d.seq ?? 0) <= (G.lastSeq ?? 0)) return G.gameState || null;
@@ -471,7 +476,7 @@
     const run = (async () => {
       try {
         global._tcgSyncStats.getState++;
-        const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+        const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
         const d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
         if (force && d.status === 'finished') {

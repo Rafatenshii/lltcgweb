@@ -18,28 +18,31 @@ After deploy, confirm in Network: EventSource URL is `stream.loveliveradio.ca`. 
 
 Client helper: `tcgSyncStatsSnapshot()` in DevTools. Verify script: `bash scripts/verify_sync_stream.sh`.
 
-### Phase 2 — Game API on VPS
+### Phase 2 — Overflow Plan B (Hostinger primary, VPS standby)
 
-1. On VPS, clone/sync **lltcgweb** and run:
-   ```bash
-   bash scripts/vps_tcg_api_cutover.sh
-   # Optional seed: SYNC_DATA=1 bash scripts/vps_tcg_api_cutover.sh
-   ```
-2. Ensure `llr_auth.php` and `tcg_sync.local.php` exist on the VPS tree (same secrets as Hostinger).
-3. Open firewall TCP **5003** from Hostinger (or bind via reverse proxy).
-4. Health: `curl -fsS http://VPS:5003/api.php?action=ping`
-5. On Hostinger, deploy `.htaccess` and an empty marker file `tcg/USE_VPS_API` (see `USE_VPS_API.example`).
-6. Smoke-test login, CPU match, and one PvP room. Rollback = delete `USE_VPS_API` on Hostinger.
+Hostinger remains the default game/account API. The VPS runs a **capped** Docker API (`compose.overflow.yaml`, 0.5 CPU / 512 MB) behind:
 
-Docker layout:
+`https://stream.loveliveradio.ca/tcg/api/`
 
-| Service | Role |
-|---------|------|
-| `tcg-api` ([compose.prod.yaml](../compose.prod.yaml)) | PHP app on `:5003` |
-| `wrapped-api` | Existing SSE hub on `:5001` |
-| Hostinger Apache | TLS + static + `[P]` proxy |
+**Client behavior** ([`client/js/api-client.js`](../client/js/api-client.js)):
 
-Volumes (named): `data`, `games`, `experiment_decks`, `cardimg`.
+- Counts Hostinger timeouts / 5xx / 429.
+- After a short streak, opens an overflow window (~2 minutes).
+- **May** retry hub reads (`me`, decks, …) and **new** casual rooms/joins on VPS.
+- **Never** migrates an in-progress Hostinger match (room is locked to its origin).
+- **Ranked matchmaking stays on Hostinger** (shared queue must not split).
+- DevTools: `tcgOverflowStats()`.
+
+**Operator setup:**
+
+```bash
+# From lltcgweb checkout (Git Bash)
+bash scripts/vps_overflow_up.sh
+bash scripts/sync_overflow_db.sh   # seed/refresh accounts DB on VPS
+# Optional cron on operator machine every 10–15 min: sync_overflow_db.sh
+```
+
+Do **not** upload `USE_VPS_API` for this mode — that marker is full cutover only.
 
 ### Hostinger-only deploy (no VPS API yet)
 

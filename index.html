@@ -8447,10 +8447,10 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=17"></script>
-<script src="client/js/api-client.js?v=13"></script>
+<script src="client/js/api-client.js?v=14"></script>
 <script src="client/js/ranked-pr-reward.js?v=2"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/game-sync.js?v=24"></script>
+<script src="client/js/game-sync.js?v=25"></script>
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -10276,6 +10276,7 @@ function saveActiveGameSession() {
       replayHandoff: !!G.replayHandoff,
       replayStep: G.replayStep || 0,
       replayTotal: G.replayTotal || 0,
+      apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
     }));
   } catch (e) {}
 }
@@ -10308,6 +10309,7 @@ function saveSpectatorSession() {
       p2Name: G._spectateP2Name || null,
       returnScreen: G._spectateReturnScreen || 'lobby',
       viewAs: spectatorBoardPid('p1'),
+      apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
     }));
   } catch (e) {}
 }
@@ -10328,9 +10330,13 @@ function readSpectatorSession() {
   }
 }
 
-async function fetchGameStateForReconnect(roomId, token) {
+async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+  }
+  const base = (typeof tcgGameApiUrl === 'function' ? tcgGameApiUrl() : API);
   const r = await fetchWithTimeout(
-    `${API}?action=get_state&room_id=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&seq=0&poll=0`,
+    `${base}?action=get_state&room_id=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&seq=0&poll=0`,
     {},
     RECONNECT_FETCH_TIMEOUT_MS,
   );
@@ -10418,13 +10424,16 @@ function prepareClientReconnectState(s) {
 async function reconnectToGame(saved) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const s = await fetchGameStateForReconnect(saved.roomId, saved.token);
+    const s = await fetchGameStateForReconnect(saved.roomId, saved.token, saved.apiOrigin);
     if (s.error || s.status === 'finished' || !s.my_id) {
       if (getAuthToken()) {
         try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
       }
       clearActiveGameSession();
       return false;
+    }
+    if (typeof tcgLockApiOrigin === 'function') {
+      tcgLockApiOrigin(saved.apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
     }
     G.roomId = saved.roomId;
     G.token = saved.token;
@@ -10474,10 +10483,13 @@ async function reconnectToGame(saved) {
 async function reconnectToSpectator(saved) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const s = await fetchGameStateForReconnect(saved.roomId, saved.token);
+    const s = await fetchGameStateForReconnect(saved.roomId, saved.token, saved.apiOrigin);
     if (s.error || s.status === 'finished') {
       clearSpectatorSession();
       return false;
+    }
+    if (typeof tcgLockApiOrigin === 'function') {
+      tcgLockApiOrigin(saved.apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
     }
     G.isSpectator = true;
     G._spectateReturnScreen = saved.returnScreen || 'lobby';

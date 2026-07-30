@@ -1,5 +1,9 @@
 /**
- * TCG HTTP API client — game + account endpoints, sync metadata capture.
+ * TCG HTTP API client — game + account endpoints, Hostinger→VPS overflow, sync meta.
+ *
+ * Hostinger is primary. When it looks overloaded (timeouts/5xx/429), hub + new-game
+ * traffic may temporarily use the VPS overflow origin. In-progress matches stay on
+ * whichever origin created the room (never migrate mid-match).
  */
 (function (global) {
   'use strict';
@@ -7,22 +11,182 @@
   /** Prefer VPS nginx TLS SSE (stream.loveliveradio.ca) — no Hostinger PHP. */
   global.TCG_SYNC_STREAM_URL = global.TCG_SYNC_STREAM_URL
     || 'https://stream.loveliveradio.ca/tcg/sync/stream';
-  /** Optional Phase 2 API origin (nginx → :5003). Empty = same-origin Hostinger PHP. */
-  global.TCG_API_ORIGIN = global.TCG_API_ORIGIN || '';
+  /** VPS overflow API (nginx → Docker :5003). Used only when Hostinger is unhealthy. */
+  global.TCG_OVERFLOW_ORIGIN = global.TCG_OVERFLOW_ORIGIN
+    || 'https://stream.loveliveradio.ca/tcg/api';
+  global.TCG_OVERFLOW_ENABLED = global.TCG_OVERFLOW_ENABLED !== false;
+  global.TCG_OVERFLOW_FAIL_THRESHOLD = global.TCG_OVERFLOW_FAIL_THRESHOLD || 3;
+  global.TCG_OVERFLOW_HOLD_MS = global.TCG_OVERFLOW_HOLD_MS || 120000;
+  global.TCG_OVERFLOW_PROBE_MS = global.TCG_OVERFLOW_PROBE_MS || 45000;
+
+  global.WRAPPED_API = '/wrapped/api.php';
+  global.TCG_SYNC_STREAM_FALLBACK_URL = global.TCG_SYNC_STREAM_FALLBACK_URL || './sync-stream';
+  global.AUTH_FETCH_TIMEOUT_MS = global.AUTH_FETCH_TIMEOUT_MS || 12000;
+  global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 8000;
+  global.AUTH_ME_RETRY_COUNT = global.AUTH_ME_RETRY_COUNT || 3;
+
+  const HOSTINGER_URLS = { API: './api.php', ACCOUNT_API: './account.php', origin: 'hostinger' };
+  function overflowUrls() {
+    const o = String(global.TCG_OVERFLOW_ORIGIN || '').replace(/\/$/, '');
+    return { API: o + '/api.php', ACCOUNT_API: o + '/account.php', origin: 'overflow' };
+  }
+
+  // Forced primary (legacy). Empty = auto Hostinger with overflow.
   if (global.TCG_API_ORIGIN) {
     const origin = String(global.TCG_API_ORIGIN).replace(/\/$/, '');
     global.API = origin + '/api.php';
     global.ACCOUNT_API = origin + '/account.php';
   } else {
-    global.API = './api.php';
-    global.ACCOUNT_API = './account.php';
+    global.API = HOSTINGER_URLS.API;
+    global.ACCOUNT_API = HOSTINGER_URLS.ACCOUNT_API;
   }
-  global.WRAPPED_API = '/wrapped/api.php';
-  /** Legacy Hostinger Apache sync-stream path (often 503 without mod_proxy). */
-  global.TCG_SYNC_STREAM_FALLBACK_URL = global.TCG_SYNC_STREAM_FALLBACK_URL || './sync-stream';
-  global.AUTH_FETCH_TIMEOUT_MS = global.AUTH_FETCH_TIMEOUT_MS || 12000;
-  global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 8000;
-  global.AUTH_ME_RETRY_COUNT = global.AUTH_ME_RETRY_COUNT || 3;
+
+  global._tcgOverflow = global._tcgOverflow || {
+    hostingerFails: 0,
+    overflowUntil: 0,
+    overflowDownUntil: 0,
+    lastProbeAt: 0,
+    activations: 0,
+    hubFailovers: 0,
+    matchmakeFailovers: 0,
+  };
+
+  /** Ranked matchmaking stays on Hostinger — shared queue must not split. */
+  const OVERFLOW_BLOCKED_ACCOUNT = {
+    ranked_join: 1, ranked_leave: 1, ranked_status: 1,
+  };
+  const OVERFLOW_BLOCKED_GAME = {
+    action: 1, // in-match always follows locked room origin
+  };
+  const MATCHMAKE_GAME = {
+    create_room: 1, join_room: 1, casual_join: 1, casual_leave: 1,
+    casual_status: 1, spectate_join: 1,
+  };
+  const INGAME_GAME = {
+    action: 1, ping: 1, sync_ticket: 1, dry_run_actions: 1,
+  };
+
+  function sleepMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  global.tcgOverflowStats = function tcgOverflowStats() {
+    return { ...(global._tcgOverflow || {}) };
+  };
+
+  global.tcgNoteHostingerSuccess = function tcgNoteHostingerSuccess() {
+    const s = global._tcgOverflow;
+    s.hostingerFails = 0;
+  };
+
+  global.tcgNoteHostingerFailure = function tcgNoteHostingerFailure(err) {
+    if (!global.isTransientAccountError(err) && !(err && (err.httpStatus >= 500 || err.httpStatus === 429 || err.httpStatus === 408))) {
+      return;
+    }
+    const s = global._tcgOverflow;
+    s.hostingerFails = (s.hostingerFails || 0) + 1;
+    if (s.hostingerFails >= (global.TCG_OVERFLOW_FAIL_THRESHOLD || 3)) {
+      const hold = global.TCG_OVERFLOW_HOLD_MS || 120000;
+      if (s.overflowUntil < Date.now()) s.activations += 1;
+      s.overflowUntil = Date.now() + hold;
+      if (global.TCG_DEBUG && typeof global.TCG_DEBUG.warn === 'function') {
+        global.TCG_DEBUG.warn('overflow', 'Hostinger unhealthy — overflow window open', {
+          fails: s.hostingerFails,
+          until: s.overflowUntil,
+        });
+      }
+    }
+  };
+
+  global.tcgOverflowActive = function tcgOverflowActive() {
+    if (!global.TCG_OVERFLOW_ENABLED || global.TCG_API_ORIGIN) return false;
+    const s = global._tcgOverflow;
+    if ((s.overflowDownUntil || 0) > Date.now()) return false;
+    return (s.overflowUntil || 0) > Date.now();
+  };
+
+  /** Lock the match to one origin for its lifetime (no mid-match migrate). */
+  global.tcgLockApiOrigin = function tcgLockApiOrigin(origin) {
+    global.G = global.G || {};
+    global.G.apiOrigin = origin === 'overflow' ? 'overflow' : 'hostinger';
+    const urls = global.G.apiOrigin === 'overflow' ? overflowUrls() : HOSTINGER_URLS;
+    global.API = urls.API;
+    global.ACCOUNT_API = urls.ACCOUNT_API;
+  };
+
+  global.tcgClearApiOriginLock = function tcgClearApiOriginLock() {
+    if (global.G) global.G.apiOrigin = null;
+    if (!global.TCG_API_ORIGIN) {
+      global.API = HOSTINGER_URLS.API;
+      global.ACCOUNT_API = HOSTINGER_URLS.ACCOUNT_API;
+    }
+  };
+
+  /**
+   * @param {'hub'|'matchmake'|'ingame'} context
+   * @param {string} [action]
+   */
+  global.tcgResolveApiUrls = function tcgResolveApiUrls(context, action) {
+    if (global.TCG_API_ORIGIN) {
+      const origin = String(global.TCG_API_ORIGIN).replace(/\/$/, '');
+      return { API: origin + '/api.php', ACCOUNT_API: origin + '/account.php', origin: 'forced' };
+    }
+    const locked = global.G && global.G.apiOrigin;
+    if (locked === 'overflow') return overflowUrls();
+    if (locked === 'hostinger') return HOSTINGER_URLS;
+
+    if (context === 'ingame' || (action && INGAME_GAME[action])) {
+      return HOSTINGER_URLS;
+    }
+    if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
+    if (action && OVERFLOW_BLOCKED_GAME[action]) return HOSTINGER_URLS;
+
+    if (global.tcgOverflowActive()) {
+      if (context === 'matchmake' || (action && MATCHMAKE_GAME[action])) {
+        global._tcgOverflow.matchmakeFailovers += 1;
+      } else {
+        global._tcgOverflow.hubFailovers += 1;
+      }
+      return overflowUrls();
+    }
+    return HOSTINGER_URLS;
+  };
+
+  global.tcgGameApiUrl = function tcgGameApiUrl() {
+    return global.tcgResolveApiUrls('ingame').API;
+  };
+
+  async function probeOverflowAlive() {
+    const s = global._tcgOverflow;
+    if ((s.lastProbeAt || 0) + 10000 > Date.now()) {
+      return (s.overflowDownUntil || 0) <= Date.now();
+    }
+    s.lastProbeAt = Date.now();
+    try {
+      const urls = overflowUrls();
+      const r = await global.fetchWithTimeout(urls.API + '?action=ping', {}, 3500);
+      if (!r.ok) throw new Error('overflow ping ' + r.status);
+      s.overflowDownUntil = 0;
+      return true;
+    } catch (e) {
+      s.overflowDownUntil = Date.now() + (global.TCG_OVERFLOW_PROBE_MS || 45000);
+      return false;
+    }
+  }
+
+  /** After hold window, probe Hostinger; clear overflow if healthy again. */
+  global.tcgMaybeRecoverHostinger = async function tcgMaybeRecoverHostinger() {
+    const s = global._tcgOverflow;
+    if ((s.overflowUntil || 0) > Date.now()) return;
+    if (s.hostingerFails <= 0) return;
+    try {
+      const r = await global.fetchWithTimeout(HOSTINGER_URLS.API + '?action=ping', {}, 4000);
+      if (r.ok) {
+        s.hostingerFails = 0;
+        s.overflowUntil = 0;
+      }
+    } catch (e) { /* keep prior state */ }
+  };
 
   global.fetchWithTimeout = async function fetchWithTimeout(url, options = {}, ms = global.AUTH_FETCH_TIMEOUT_MS) {
     const ctrl = new AbortController();
@@ -61,10 +225,6 @@
     return /timed out|timeout|network|failed to fetch|server (error|busy)|account error \(5|could not reach/.test(msg);
   };
 
-  function sleepMs(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   global.handleMissionCompletions = function handleMissionCompletions(res) {
     if (!res || typeof res !== 'object') return;
     if (Array.isArray(res.mission_completions) && res.mission_completions.length) {
@@ -85,7 +245,6 @@
     global.G = global.G || {};
     global.G.lastRankedPrReward = res.ranked_pr_reward;
     const reward = res.ranked_pr_reward;
-    // Server only attaches ranked_pr_reward for the winning seat.
     if (reward && reward.daily && typeof global.syncRankedPrFromReward === 'function') {
       global.syncRankedPrFromReward(reward);
       if (typeof global.updateRankedPrUI === 'function') global.updateRankedPrUI();
@@ -107,17 +266,19 @@
     try {
       d = await r.json();
     } catch (e) {
-      throw new Error(r.ok ? 'Invalid account response' : ('Account error (' + r.status + ')'));
+      const err = new Error(r.ok ? 'Invalid account response' : ('Account error (' + r.status + ')'));
+      err.httpStatus = r.status || (r.ok ? 500 : r.status);
+      throw err;
     }
     return d;
   };
 
-  global.accountGet = async function accountGet(action, extra = {}) {
+  async function accountGetOnce(urls, action, extra) {
     const token = global.getAuthToken();
     const q = new URLSearchParams({ action, token, ...extra });
     let r;
     try {
-      r = await global.fetchWithTimeout(global.ACCOUNT_API + '?' + q);
+      r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?' + q);
     } catch (e) {
       if (e && typeof e === 'object' && !e.httpStatus) e.httpStatus = 0;
       throw e;
@@ -135,9 +296,27 @@
     }
     global.handleMissionCompletions(d);
     return d;
+  }
+
+  global.accountGet = async function accountGet(action, extra = {}) {
+    void global.tcgMaybeRecoverHostinger();
+    const primary = global.tcgResolveApiUrls('hub', action);
+    try {
+      const d = await accountGetOnce(primary, action, extra);
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
+      return d;
+    } catch (e) {
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
+      if (global.isAuthRejectedError(e)) throw e;
+      if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
+      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
+      if (!global.isTransientAccountError(e)) throw e;
+      if (!(await probeOverflowAlive())) throw e;
+      global._tcgOverflow.hubFailovers += 1;
+      return accountGetOnce(overflowUrls(), action, extra);
+    }
   };
 
-  /** Boot-time me lookup with retries; only auth rejection should clear the token. */
   global.accountGetMeWithRetry = async function accountGetMeWithRetry(retries) {
     const max = Math.max(1, Number(retries != null ? retries : global.AUTH_ME_RETRY_COUNT) || 3);
     let lastErr = null;
@@ -154,9 +333,9 @@
     throw lastErr || new Error('Account load failed');
   };
 
-  global.accountPost = async function accountPost(action, body = {}) {
+  async function accountPostOnce(urls, action, body) {
     const token = global.getAuthToken();
-    const r = await global.fetchWithTimeout(global.ACCOUNT_API + '?action=' + encodeURIComponent(action), {
+    const r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?action=' + encodeURIComponent(action), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
       body: JSON.stringify({ ...body, token }),
@@ -169,6 +348,25 @@
     }
     global.handleMissionCompletions(d);
     return d;
+  }
+
+  global.accountPost = async function accountPost(action, body = {}) {
+    void global.tcgMaybeRecoverHostinger();
+    const primary = global.tcgResolveApiUrls('hub', action);
+    try {
+      const d = await accountPostOnce(primary, action, body);
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
+      return d;
+    } catch (e) {
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
+      if (global.isAuthRejectedError(e)) throw e;
+      if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
+      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
+      if (!global.isTransientAccountError(e)) throw e;
+      if (!(await probeOverflowAlive())) throw e;
+      global._tcgOverflow.hubFailovers += 1;
+      return accountPostOnce(overflowUrls(), action, body);
+    }
   };
 
   global.createApiError = function createApiError(message, status) {
@@ -177,7 +375,6 @@
     return err;
   };
 
-  /** Parse game API JSON; throws createApiError with httpStatus on failure. */
   global.parseGameApiResponse = async function parseGameApiResponse(r) {
     const status = r.status || 0;
     let d;
@@ -240,21 +437,19 @@
     global.showApiErrorPopup(msg, { status });
   };
 
-  global.apiPost = async function apiPost(action, body = {}, opts = {}) {
+  async function apiPostOnce(urls, action, body, opts) {
     const payload = { ...body };
     const authToken = typeof global.getAuthToken === 'function' ? global.getAuthToken() : '';
     const headers = { 'Content-Type': 'application/json' };
-    // action uses body.token as the seat token; other game API calls may use token for auth.
     if (authToken) {
       headers['X-Auth-Token'] = authToken;
       if (action === 'action') {
-        // Keep seat token in body.token; pass Discord auth separately for missions.
         payload.auth_token = authToken;
       } else if (!payload.token) {
         payload.token = authToken;
       }
     }
-    const r = await fetch(`${global.API}?action=${action}`, {
+    const r = await fetch(`${urls.API}?action=${action}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
@@ -266,6 +461,35 @@
     } catch (e) {
       global.reportApiError(e, { source: 'apiPost:' + action, silent: !!opts.silent });
       throw e;
+    }
+  }
+
+  global.apiPost = async function apiPost(action, body = {}, opts = {}) {
+    void global.tcgMaybeRecoverHostinger();
+    const ctx = MATCHMAKE_GAME[action] ? 'matchmake' : (INGAME_GAME[action] ? 'ingame' : 'hub');
+    const primary = global.tcgResolveApiUrls(ctx, action);
+    try {
+      const d = await apiPostOnce(primary, action, body, opts);
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
+      // Lock room origin when a new match is created/joined.
+      if (MATCHMAKE_GAME[action] && d && (d.room_id || d.ok || d.token || d.player_token)) {
+        global.tcgLockApiOrigin(primary.origin === 'overflow' ? 'overflow' : 'hostinger');
+      }
+      return d;
+    } catch (e) {
+      if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
+      // Never migrate an in-progress Hostinger match to VPS.
+      if (ctx === 'ingame' || (global.G && global.G.apiOrigin === 'hostinger')) throw e;
+      if (OVERFLOW_BLOCKED_GAME[action] || OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
+      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
+      if (!global.isTransientAccountError(e) && !(e && (e.httpStatus >= 500 || e.httpStatus === 429 || e.httpStatus === 408))) {
+        throw e;
+      }
+      if (!(await probeOverflowAlive())) throw e;
+      global._tcgOverflow.matchmakeFailovers += 1;
+      const d = await apiPostOnce(overflowUrls(), action, body, opts);
+      if (MATCHMAKE_GAME[action]) global.tcgLockApiOrigin('overflow');
+      return d;
     }
   };
 
