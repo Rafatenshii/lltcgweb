@@ -66,36 +66,40 @@ final class Issue73RurinoZenhouiTest extends TestCase
     private function resolveRurinoPinkBuff(array $state): array
     {
         $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
-        $state = \resolveLiveStartAbilities($state, 'p1');
-        $state = \finishLiveStartEffects($state, false);
-        $this->assertSame('optional_live_start', $state['pending_prompt']['type'] ?? null);
-
-        $handId = $state['players']['p1']['hand'][0]['instance_id'] ?? '';
-        $state = \actionResolvePrompt($state, 'p1', [
-            'choice' => 'yes',
-            'discard_ids' => [$handId],
-        ]);
-        if (($state['pending_prompt']['type'] ?? '') === 'buff_member_matching_discarded_group') {
-            $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
-        }
-        // Finish remaining optionals / deferred Zenhoui without entering Performance.
-        $guard = 0;
-        while (!empty($state['pending_prompt']) && $guard++ < 8) {
-            $ptype = $state['pending_prompt']['type'] ?? '';
-            if ($ptype === 'optional_live_start') {
-                $state = \actionResolvePrompt($state, 'p1', ['choice' => 'no']);
-                continue;
-            }
-            if ($ptype === 'buff_member_matching_discarded_group') {
-                $state = \actionResolvePrompt($state, 'p1', ['slot' => 'left']);
-                continue;
-            }
-            break;
-        }
-        if (empty($state['pending_prompt'])) {
+        try {
+            $state = \resolveLiveStartAbilities($state, 'p1');
             $state = \finishLiveStartEffects($state, false);
+            $this->assertSame('optional_live_start', $state['pending_prompt']['type'] ?? null);
+
+            $handId = $state['players']['p1']['hand'][0]['instance_id'] ?? '';
+            $state = \actionResolvePrompt($state, 'p1', [
+                'choice' => 'yes',
+                'discard_ids' => [$handId],
+            ]);
+            if (($state['pending_prompt']['type'] ?? '') === 'buff_member_matching_discarded_group') {
+                $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
+            }
+            // Finish remaining optionals / deferred Zenhoui without entering Performance.
+            $guard = 0;
+            while (!empty($state['pending_prompt']) && $guard++ < 8) {
+                $ptype = $state['pending_prompt']['type'] ?? '';
+                if ($ptype === 'optional_live_start') {
+                    $state = \actionResolvePrompt($state, 'p1', ['choice' => 'no']);
+                    continue;
+                }
+                if ($ptype === 'buff_member_matching_discarded_group') {
+                    $state = \actionResolvePrompt($state, 'p1', ['slot' => 'left']);
+                    continue;
+                }
+                break;
+            }
+            if (empty($state['pending_prompt'])) {
+                $state = \finishLiveStartEffects($state, false);
+            }
+            return $state;
+        } finally {
+            unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }
-        return $state;
     }
 
     public function testRurinoLiveStartGrantsPinkHeartOnStageMember(): void
@@ -166,67 +170,71 @@ final class Issue73RurinoZenhouiTest extends TestCase
         $deckBefore = count($state['players']['p1']['main_deck']);
 
         $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
-        $state = \resolveLiveStartAbilities($state, 'p1');
-        // Deferred only — Zenhoui must not draw yet.
-        $this->assertNotEmpty($state['_deferred_mp_extra_hearts'] ?? null);
-        $this->assertSame($deckBefore, count($state['players']['p1']['main_deck']));
+        try {
+            $state = \resolveLiveStartAbilities($state, 'p1');
+            // Stage optionals (Rurino) resolve before Live-zone Zenhoui (#78 L→R).
+            $this->assertSame('optional_live_start', $state['pending_prompt']['type'] ?? null);
+            $this->assertEmpty($state['_deferred_mp_extra_hearts'] ?? null);
+            $this->assertSame($deckBefore, count($state['players']['p1']['main_deck']));
 
-        $state = \finishLiveStartEffects($state, false);
-        $handId = $state['players']['p1']['hand'][0]['instance_id'] ?? '';
-        $state = \actionResolvePrompt($state, 'p1', [
-            'choice' => 'yes',
-            'discard_ids' => [$handId],
-        ]);
-        if (($state['pending_prompt']['type'] ?? '') === 'buff_member_matching_discarded_group') {
-            $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
-        }
-        // Skip the second Rurino optional if any.
-        while (($state['pending_prompt']['type'] ?? '') === 'optional_live_start') {
-            $state = \actionResolvePrompt($state, 'p1', ['choice' => 'no']);
-        }
-        if (empty($state['pending_prompt'])) {
-            $state = \finishLiveStartEffects($state, false);
-        }
-
-        // One Mira-Cra with extra hearts → draw 1; need two for reduce.
-        $this->assertSame($deckBefore - 1, count($state['players']['p1']['main_deck']));
-
-        // Grant a second extra-heart Mira-Cra and re-apply reduce branch.
-        \addBonusHeartsToMember($state['players']['p1']['stage']['left'], [['color' => 'pink', 'count' => 1]]);
-        $state['_deferred_mp_extra_hearts'] = [[
-            'pid' => 'p1',
-            'source_id' => 'zen',
-            'name' => 'Zenhoui Kyun♡',
-            'ability' => $zen['abilities'][0],
-        ]];
-        $deckMid = count($state['players']['p1']['main_deck']);
-        $state = \flushDeferredMpExtraHeartsLiveStart($state);
-        $this->assertSame($deckMid - 1, count($state['players']['p1']['main_deck']));
-
-        $zenAfter = null;
-        foreach ($state['players']['p1']['live_zone'] as $lc) {
-            if (($lc['instance_id'] ?? '') === 'zen') {
-                $zenAfter = $lc;
-                break;
+            $handId = $state['players']['p1']['hand'][0]['instance_id'] ?? '';
+            $state = \actionResolvePrompt($state, 'p1', [
+                'choice' => 'yes',
+                'discard_ids' => [$handId],
+            ]);
+            if (($state['pending_prompt']['type'] ?? '') === 'buff_member_matching_discarded_group') {
+                $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
             }
-        }
-        $this->assertNotNull($zenAfter);
-        $this->assertSame(
-            2,
-            intval($zenAfter['hearts_reduction'] ?? 0),
-            'Zenhoui must use hearts_reduction (not heart_reduction typo)'
-        );
-        $req = \applyLiveHeartReductions(
-            $zenAfter['required_hearts'] ?? $zenAfter['hearts'] ?? [],
-            $zenAfter
-        );
-        $any = 0;
-        foreach ($req as $row) {
-            if (\normalizeRequiredHeartColor((string)($row['color'] ?? '')) === 'any') {
-                $any += intval($row['count'] ?? 0);
+            // Skip the second Rurino optional if any; Zenhoui defers then flush draws.
+            while (($state['pending_prompt']['type'] ?? '') === 'optional_live_start') {
+                $state = \actionResolvePrompt($state, 'p1', ['choice' => 'no']);
             }
+            if (empty($state['pending_prompt'])) {
+                $state = \finishLiveStartEffects($state, false);
+            }
+
+            // One Mira-Cra with extra hearts → draw 1; need two for reduce.
+            $this->assertSame($deckBefore - 1, count($state['players']['p1']['main_deck']));
+
+            // Grant a second extra-heart Mira-Cra and re-apply reduce branch.
+            \addBonusHeartsToMember($state['players']['p1']['stage']['left'], [['color' => 'pink', 'count' => 1]]);
+            $state['_deferred_mp_extra_hearts'] = [[
+                'pid' => 'p1',
+                'source_id' => 'zen',
+                'name' => 'Zenhoui Kyun♡',
+                'ability' => $zen['abilities'][0],
+            ]];
+            $deckMid = count($state['players']['p1']['main_deck']);
+            $state = \flushDeferredMpExtraHeartsLiveStart($state);
+            $this->assertSame($deckMid - 1, count($state['players']['p1']['main_deck']));
+
+            $zenAfter = null;
+            foreach ($state['players']['p1']['live_zone'] as $lc) {
+                if (($lc['instance_id'] ?? '') === 'zen') {
+                    $zenAfter = $lc;
+                    break;
+                }
+            }
+            $this->assertNotNull($zenAfter);
+            $this->assertSame(
+                2,
+                intval($zenAfter['hearts_reduction'] ?? 0),
+                'Zenhoui must use hearts_reduction (not heart_reduction typo)'
+            );
+            $req = \applyLiveHeartReductions(
+                $zenAfter['required_hearts'] ?? $zenAfter['hearts'] ?? [],
+                $zenAfter
+            );
+            $any = 0;
+            foreach ($req as $row) {
+                if (\normalizeRequiredHeartColor((string)($row['color'] ?? '')) === 'any') {
+                    $any += intval($row['count'] ?? 0);
+                }
+            }
+            $this->assertSame(6, $any, 'Original 8 any − 2 = 6');
+        } finally {
+            unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }
-        $this->assertSame(6, $any, 'Original 8 any − 2 = 6');
     }
 
     public function testStageHeartsSnapshotSurvivesClearLiveModifiers(): void

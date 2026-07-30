@@ -577,36 +577,55 @@ function hsResolveAutoOnOtherMemberEnter(array $state, string $pid, array $enter
     if (!cardMatchesSubunit($entered, 'Edel Note')) {
         return $state;
     }
+    $enteredId = (string)($entered['instance_id'] ?? '');
     $p = &$state['players'][$pid];
-    foreach ($p['stage'] as $slot => &$member) {
-        if (!$member || ($member['instance_id'] ?? '') === ($entered['instance_id'] ?? '')) continue;
+    // Left → center → right so multiple Cerases resolve in a stable stage order (#78).
+    foreach (['left', 'center', 'right'] as $slot) {
+        $member = $p['stage'][$slot] ?? null;
+        if (!$member || ($member['instance_id'] ?? '') === $enteredId) {
+            continue;
+        }
         foreach ($member['abilities'] ?? [] as $idx => $ab) {
-            if (($ab['type'] ?? '') !== 'auto_on_subunit_enter_opp_wait_active') continue;
-            if (($ab['trigger'] ?? '') !== 'auto') continue;
-            if (!empty($ab['once_per_turn']) && isAbilityUsed($member, $idx)) continue;
-            if (($ab['subunit'] ?? 'Edel Note') !== '' && !cardMatchesSubunit($entered, $ab['subunit'] ?? 'Edel Note')) {
+            if (($ab['type'] ?? '') !== 'auto_on_subunit_enter_opp_wait_active') {
                 continue;
             }
-            $opp = ($pid === 'p1') ? 'p2' : 'p1';
-            $waited = waitOpponentStageByMaxBlade(
+            if (($ab['trigger'] ?? '') !== 'auto') {
+                continue;
+            }
+            if (!empty($ab['once_per_turn']) && isAbilityUsed($member, $idx)) {
+                continue;
+            }
+            if (($ab['subunit'] ?? 'Edel Note') !== ''
+                && !cardMatchesSubunit($entered, $ab['subunit'] ?? 'Edel Note')) {
+                continue;
+            }
+            $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+            // Card text: "your opponent puts 1 of their active Stage Members into Wait"
+            $state = beginWaitOpponentStagePick(
                 $state,
-                $opp,
-                999,
-                1,
                 $pid,
-                true
+                $mName,
+                [
+                    'max_cost' => 99,
+                    'pick_count' => 1,
+                    'active_only' => true,
+                    'opp_chooses' => true,
+                ],
+                (string)($member['instance_id'] ?? '')
             );
             markAbilityUsed($member, $idx);
             $p['stage'][$slot] = $member;
-            $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
-            if ($waited > 0) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$mName] opponent put $waited active Member into Wait (Edel Note entered).");
+            if (!empty($state['pending_prompt'])) {
+                // Resume remaining Cerases after the opponent answers (#78 two Cerases).
+                $state['_resume_hs_auto_on_other_enter'] = [
+                    'pid' => $pid,
+                    'entered_id' => $enteredId,
+                ];
+                return $state;
             }
-            return $state;
+            // Auto-resolved (0–1 legal targets) — keep scanning for more Cerases.
         }
     }
-    unset($member);
     return $state;
 }
 

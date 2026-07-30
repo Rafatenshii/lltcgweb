@@ -55,6 +55,28 @@ function finishPromptEffects(array $state): array {
             return $state;
         }
     }
+    // Resume remaining Ceras (bp6-007) Auto waits after opponent picks (#78).
+    if (empty($state['pending_prompt']) && !empty($state['_resume_hs_auto_on_other_enter'])) {
+        $r = $state['_resume_hs_auto_on_other_enter'];
+        unset($state['_resume_hs_auto_on_other_enter']);
+        $pid = (string)($r['pid'] ?? '');
+        $enteredId = (string)($r['entered_id'] ?? '');
+        $entered = null;
+        if ($pid !== '' && $enteredId !== '') {
+            foreach (($state['players'][$pid]['stage'] ?? []) as $mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === $enteredId) {
+                    $entered = $mbr;
+                    break;
+                }
+            }
+        }
+        if ($entered !== null) {
+            $state = hsResolveAutoOnOtherMemberEnter($state, $pid, $entered);
+            if (!empty($state['pending_prompt'])) {
+                return $state;
+            }
+        }
+    }
     $phase = $state['phase'] ?? '';
     if ($phase === 'live_success_effects') {
         return finishLiveSuccessEffects($state);

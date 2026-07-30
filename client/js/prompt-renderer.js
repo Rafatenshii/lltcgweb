@@ -597,6 +597,11 @@ global.openWrMembersDeckTopPick = function openWrMembersDeckTopPick(pr){
   el('pick-ttl').textContent=pr.source_name||'Choose Members';
   el('pick-msg').textContent=pr.prompt||`Choose ${need} Member card(s) from your Waiting Room (order = deck top).`;
   const g=el('pick-grid'); g.innerHTML='';
+  // Prior single-tap pickers hide Confirm; multi-select needs it visible again (#78).
+  const btnOk=el('btn-pick-ok');
+  const btnCancel=el('btn-pick-cancel');
+  if(btnOk) btnOk.style.display='';
+  if(btnCancel) btnCancel.style.display='none';
   cards.forEach(card=>{
     g.appendChild(mkPickCardEl(card,'pickcard',()=>{
       if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
