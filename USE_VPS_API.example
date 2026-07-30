@@ -1,0 +1,4 @@
+# Empty marker — when present on Hostinger under public_html/tcg/,
+# .htaccess proxies api.php / account.php / etc. to VPS :5003.
+# Do not commit a production-enabled copy unless cutover is intentional.
+# Operators: `touch USE_VPS_API` then deploy that file with .htaccess.

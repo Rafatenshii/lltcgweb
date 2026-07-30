@@ -2,31 +2,31 @@
 
 An English web version of a certain idol tabletop game.
 
-- English translated.
+- English and Japanese UI (`i18n.js`, `tutorial_ja.json`)
 - Interactive UI and animations
 - 2000+ cards
-- Unique skills fully implemented.
-- Deck builder w/ autobuild
+- Unique skills fully implemented
+- Deck builder with autobuild
 - Expand your starter deck with more cards from daily booster packs
-- Play in Ranked and Unranked online PvP Lobbies
-- Play against a CPU with 3 difficulty settings.
-- How-to-play Tutorial
+- Ranked and unranked online PvP
+- CPU opponent with three difficulty settings
+- Interactive how-to-play tutorial
 
 Playable at [https://loveliveradio.ca/tcg](https://loveliveradio.ca/tcg)
 
 ## Debugging tools
 
-Launching the website with the `?debug` parameter ([loveliveradio.ca/tcg/?debug](https://loveliveradio.ca/tcg/?debug)) has some additional tools that may help with identifying issues and bug reporting.
+Launch with `?debug` ([loveliveradio.ca/tcg/?debug](https://loveliveradio.ca/tcg/?debug)) for extra QA tooling:
 
-- **Card Effect Test** mode is available when logged out. It lets you choose a specific card by ID and jump into a game scenario with you or the CPU having that card in hand in order to test its skill. It tries to start you with the conditions for a skill met (ex: have 1 or more Aqours members on the stage). Though it doesn't always work, so some gameplay may be required to activate the relevant skill.
-- **Save replay** — during a match, use **Save replay** in the sidebar to download a `.json` file of the recorded action sequence. While signed out as a guest, open **Debug Replay** from the hub to load that file, step through actions (play/pause, prev/next), then take control as the saver vs CPU at the end.
-- In games, there are options in the bottom right to **save a copy of the entire match log** so far as a txt file, or alternatively **copy the last 200 lines** to your clipboard.
+- **Card Effect Test** — pick a card by ID and jump into a CPU scenario with that card seeded (conditions are best-effort).
+- **Replay** — save a match replay from the sidebar or win screen; open **Replay Viewer** from the hub (signed-in library) or import a `.json` file on the replay screen. Step through actions, then take control as the saver vs CPU at the end if desired.
+- **Debug log** — save the full match log as `.txt` or copy the last 200 lines from the in-game debug row.
 
 ---
 
 # Repository guide
 
-This section documents **what is in git** — the PHP/JS game and card data. Runtime state, art, and local dev tooling are excluded (see [Not in git](#not-in-git-by-design)).
+What lives in **git** (source + card data). Runtime state, art, and secrets stay on the server — see [Not in git](#not-in-git-by-design) and [docs/RUNTIME.md](docs/RUNTIME.md).
 
 ---
 
@@ -34,13 +34,50 @@ This section documents **what is in git** — the PHP/JS game and card data. Run
 
 | Goal | Start here |
 |------|------------|
-| UI, animations, prompts, CPU | `index.html` |
-| Rules engine, card effects, prompts (server) | `effects.php` + set-specific `*_effects.php` |
+| Hub, board, animations, CPU helpers (large inline areas) | `index.html` |
+| HTTP client, poll/SSE sync, state apply, prompts, CPU entry | `client/js/*.js` (see below) |
+| Copy / locales | `i18n.js`, `log_i18n.js`, `tutorial_ja.json` |
+| Rules engine, card effects, prompts (server) | `effects.php`, `src/Game/*`, set-specific `*_effects.php` |
+| Path, CORS, rate limits, public errors | `config/*.php` |
 | Card definitions & abilities | `cards.json` |
-| Tutorial | `tutorial.json` |
+| Interactive tutorial script | `tutorial_guide.json`, `client/js/tutorial-interactive.js` |
+| Legacy slideshow tutorial build | `tutorial.json`, `tutorial_script.json`, `gen_tutorial_guide.py` |
 | Deck legality | `deck_validate.php` |
-| Account / collection / boosters / ranked | `account.php`, `db.php`, `booster.php`, `matchmaking.php` |
-| Multiplayer rooms & turns | `api.php` |
+| Account / collection / boosters / ranked / replays | `account.php`, `db.php`, `booster.php`, `matchmaking.php` |
+| Multiplayer rooms, actions, spectate | `api.php`, `spectate.php`, `casual_matchmaking.php` |
+| Automated regression | `tests/`, `scripts/`, `composer.json` |
+
+---
+
+## Frontend modules (`client/js/`)
+
+Loaded from `index.html` after `i18n.js`. Prefer new UI logic here instead of growing the inline bundle.
+
+| File | Role |
+|------|------|
+| `api-client.js` | `apiPost`, account fetch helpers, API error popup, sync metadata |
+| `game-sync.js` | Poll loop, SSE sync stream, `pullLatestState`, `startPoll` / `stopPoll` |
+| `state-apply.js` | `onState`, pending state queue, presentation gates |
+| `prompt-renderer.js` | Prompt UI, submit guards, `renderPrompt` |
+| `cpu-ai.js` | CPU prompt/action entry (handlers may still live inline) |
+| `replay-debug.js` | Replay export/save helpers |
+| `tutorial-interactive.js` | Live interactive tutorial (`tutorial_guide.json`) |
+
+---
+
+## Config & extracted PHP
+
+| Path | Role |
+|------|------|
+| `config/paths.php` | `tcgPath()`, runtime dir constants (`TCG_DATA_DIR`, `TCG_GAMES_DIR`, …) |
+| `config/cors.php` | Browser origin allowlist (`TCG_CORS_ORIGINS`) |
+| `config/rate_limit.php` | Per-action file-based rate limits |
+| `config/errors.php` | Production-safe API error messages (`TCG_DEBUG`, `TCG_PRODUCTION`) |
+| `src/Game/*` | Extracted rules helpers (prompts, abilities, live modifiers, zone moves, …) |
+| `src/Db/Migrator.php` | Versioned SQLite migrations under `migrations/` |
+| `migrations/*.sql` | Schema migration files |
+
+Root `*.php` entry points (`api.php`, `account.php`, …) remain the stable URLs on Hostinger.
 
 ---
 
@@ -48,51 +85,58 @@ This section documents **what is in git** — the PHP/JS game and card data. Run
 
 | Directory | Role |
 |-----------|------|
-| `data/` | SQLite account DB (`tcg.db`); `.htaccess` blocks HTTP access. Schema in `db.php`. |
-| `games/` | Live match JSON per room; written by `api.php`. |
-| `experiment_decks/` | Guest deck-experiment saves (`experiment_decks.php`). |
-| `assets/`, `bg/`, `icons/`, `cardimg/` | Art and card-face cache — **not in git**; must exist on the host (see below). |
+| `data/` | SQLite (`tcg.db`), rate-limit state; **HTTP blocked** via `data/.htaccess` |
+| `games/` | Live match JSON per room; **HTTP blocked** via `games/.htaccess` |
+| `experiment_decks/` | Guest deck-experiment saves; **HTTP blocked** via `experiment_decks/.htaccess` |
+| `cardimg/` | Cached card faces (server-resolved URLs only) |
+| `exports/` | Operator exports (optional) |
+| `assets/`, `bg/`, `icons/` | UI art and audio — not in git |
+
+Override paths with env vars — see [`.env.example`](.env.example) and [docs/RUNTIME.md](docs/RUNTIME.md).
 
 ---
 
-## Core application (PHP + client)
+## Core application (PHP + client shell)
 
 | File | Role |
 |------|------|
-| **`index.html`** | Entire game client: hub, lobby, board, hand, prompts, CPU AI, tutorial mode, collection/deck UI, performance spectacle, radio embed. |
-| **`api.php`** | Game server: create/join room, long-poll state, submit actions, card catalog, experiment decks, debug card test, presence, image cache API. Includes `effects.php`. |
-| **`effects.php`** | Main rules engine: phases, combat, Live pipeline, ability resolution, prompt queue, energy payment, WR/deck operations. Includes all `*_effects.php` modules. |
-| **`cards.json`** | Master card catalog (~2100+ cards): stats, text, `abilities[]`, starter deck lists, image URLs. **Source of truth** for card data. |
-| **`subunits.php`** | JP ↔ EN subunit name map for display and matching. |
+| **`index.html`** | Client shell: screens, board DOM, CSS, large game loop; loads `client/js/*` |
+| **`api.php`** | Game server: rooms, long-poll / state, actions, catalog, experiment decks, replay API, presence |
+| **`effects.php`** | Main rules engine; includes `*_effects.php` and `src/Game/*` |
+| **`cards.json`** | Master card catalog: stats, text, `abilities[]`, starters, image URLs |
+| **`i18n.js`** | UI strings (en/ja), locale helpers, tutorial dialogue lookup |
+| **`spectate.php`** | Spectator join/list helpers used by `api.php` |
+| **`tcg_sync.php`** | PvP SSE notify ticket (Hostinger → VPS wrapped API) |
+| **`subunits.php`** | JP ↔ EN subunit name map |
 
 ### Account, collection, ranked
 
 | File | Role |
 |------|------|
-| `account.php` | REST API: profile, starter pick, collection, daily boosters, deck presets, ranked queue, banner, account reset. |
-| `db.php` | SQLite schema + helpers (`tcg_users`, `tcg_collection`, `tcg_deck_presets`, `tcg_rank`, …). |
-| `booster.php` | Booster box catalog, pull rates, pity, `open_booster` simulation. |
-| `deck_validate.php` | Legal deck rules (48 member / 12 live / 12 energy, copy limits, ownership). |
-| `deckgen.php` | Random legal deck builder (CPU / preview / auto-build). |
-| `matchmaking.php` | Ranked queue join/leave, Elo pairing, active match tracking. |
-| `ranked_room.php` | Creates ranked `api.php` rooms from equipped presets; applies rating on finish. |
-| `experiment_decks.php` | Guest-only deck experiment save/load by short password. |
-| `llr_auth_load.php` | Loads production `llr_auth.php` or contributor `llr_auth_offline.php`. |
-| `llr_auth_offline.php` | Offline fallback when production auth file is absent. |
+| `account.php` | Profile, starter, collection, boosters, presets, ranked queue, replay library, reset |
+| `db.php` | SQLite schema + helpers |
+| `booster.php` | Booster catalog, pull rates, `open_booster` |
+| `deck_validate.php` | Legal deck rules (48 / 12 / 12, copy limits, ownership) |
+| `deckgen.php` | Random / auto-build decks |
+| `matchmaking.php` | Ranked queue and Elo pairing |
+| `ranked_room.php` | Ranked room creation and rating on finish |
+| `casual_matchmaking.php` | Casual queue |
+| `experiment_decks.php` | Guest deck experiment save/load |
+| `replay.php` | Replay export, start, step API |
+| `llr_auth_load.php` | Loads production `llr_auth.php` or `llr_auth_offline.php` |
 
 ### Card images
 
 | File | Role |
 |------|------|
-| `cardimg.php` | Serves cached faces from `cardimg/`. |
-| `cardimg_cache.php` | Save/lookup helpers; used by `api.php` `cache_card_image`. |
+| `cardimg.php` | Serves cached faces from `cardimg/` |
+| `cardimg_cache.php` | Cache helpers; `cache_card_image` resolves URLs from `cards.json` only |
 
 ### Debug / test harness
 
 | File | Role |
 |------|------|
-| `debug_card_test.php` | `?debug` mode: start CPU match with one card seeded on stage/hand/live for effect QA. |
-| `replay.php` | `?debug` replay API: export, start, and step through saved action sequences. |
+| `debug_card_test.php` | `?debug` single-card CPU scenarios |
 
 ---
 
@@ -114,7 +158,7 @@ Split by product line / import batch. Each is `require_once` from `effects.php`.
 | `sp_bp5_effects.php` | Superstar BP5 |
 | `pl_muse_gap_effects.php` | μ's gap / misc PL |
 | `pl_sp_sd2_effects.php` | Superstar SD2 |
-| `batch99_effects.php` | Late import batch (LL energy, PL!N promos, etc.) |
+| `batch99_effects.php` | Late import batch |
 
 ---
 
@@ -122,10 +166,12 @@ Split by product line / import batch. Each is `require_once` from `effects.php`.
 
 | File | Role |
 |------|------|
-| `pack_listings.json` | Listing URLs for pack wrapper art (`booster.php`). |
-| `playmat_zones.json` | Normalized zone hitboxes for board layout (`index.html`). |
-| `tutorial.json` | Built tutorial steps with dialogue, highlights, and embedded game states. |
-| `tutorial_script.json` | Source script used when rebuilding `tutorial.json` locally. |
+| `pack_listings.json` | Pack wrapper art URLs (`booster.php`) |
+| `playmat_zones.json` | Board zone hitboxes (`index.html`) |
+| `tutorial_guide.json` | Interactive tutorial steps (live mode) |
+| `tutorial_ja.json` | Japanese tutorial bubble text keyed by step id |
+| `tutorial.json` | Legacy built tutorial (slideshow / embedded states) |
+| `tutorial_script.json` | Source for rebuilding `tutorial.json` locally |
 
 ---
 
@@ -133,12 +179,10 @@ Split by product line / import batch. Each is `require_once` from `effects.php`.
 
 | Category | Examples |
 |----------|----------|
-| **Game art & audio** | `assets/`, `bg/`, `icons/`, `cardimg/`, root `*.png` / `*.jpg` / `*.m4a` — supply on the server locally; not redistributed in this repo. |
+| **Game art & audio** | `assets/`, `bg/`, `icons/`, `cardimg/`, root `*.png` / `*.jpg` / `*.m4a` |
 | **Runtime state** | `data/tcg.db`, `games/*.json`, `experiment_decks/*.json`, `exports/` |
 | **Secrets & deploy config** | `llr_auth.php`, `tcg_sync.local.php`, `.env`, `.env.deploy` |
-| **Local dev tooling** | `/*.py`, `/scripts/`, `audit_*`, `build_tutorial.php`, `build_tutorial.py`, `audit_tutorial_browser.js` |
-| **Scratch / operator notes** | `import_card_progress.txt`, `CARD_AUDIT_PROGRESS.txt`, `_live_titles_export.txt`, calibration `*_scan.png`, etc. |
-| **Private docs** | `ACCOUNT_README.md` |
+| **Local dev tooling** | `scripts/`, `tests/`, `*.py`, operator scratch files |
 
 See `.gitignore` for the full list.
 
@@ -152,49 +196,84 @@ docker compose up
 # http://localhost:8080/index.html
 
 # PHP built-in server (fallback)
-cd lltcgweb
 php -S localhost:8080
 ```
 
-Verification before deploy:
+**Verification before deploy:**
 
 ```bash
 composer install
 composer test
 php scripts/validate_json.php
 php scripts/validate_cards.php
+bash scripts/lint_php.sh
+node scripts/validate_index_js.mjs   # optional: index.html + client/js sanity
 ```
 
-See [docs/RUNTIME.md](docs/RUNTIME.md) and [docs/SECURITY.md](docs/SECURITY.md).
+See [docs/RUNTIME.md](docs/RUNTIME.md), [docs/SECURITY.md](docs/SECURITY.md), and [docs/DEPLOY.md](docs/DEPLOY.md).
 
-Guest lobby, CPU, tutorial (`?tutorial`), and `?debug` work without accounts. Collection, boosters, and ranked need a writable `data/` directory and art under `assets/`, `bg/`, `icons/`, and `cardimg/`.
+Guest lobby, CPU, tutorial, and `?debug` work without accounts. Collection, boosters, ranked, and replay library need a writable `data/` directory and art under `assets/`, `bg/`, `icons/`, and `cardimg/`.
 
 **Typical effect change:**
 
 1. Edit ability in `cards.json`.
-2. Implement or adjust handler in `effects.php` or the set’s `*_effects.php`.
-3. Mirror prompt UX in `index.html` if the server adds a new `pending_prompt.type`.
-4. Test via guest CPU match or `?debug` + Card Effect Test.
+2. Implement or adjust handler in `effects.php`, `src/Game/*`, or the set’s `*_effects.php`.
+3. Mirror prompt UX in `client/js/prompt-renderer.js` / `index.html` if the server adds a new `pending_prompt.type`.
+4. Add or extend a PHPUnit test under `tests/`.
+5. Test via guest CPU match, `?debug` Card Effect Test, or a golden replay fixture.
 
 ---
 
-## Deploy note (loveliveradio.ca)
+## Deploy (loveliveradio.ca)
 
-Production deploy is handled from the **Chiichan** repo (`scripts/deploy-loveliveradio-ca.sh`). List **remote** paths with the `tcg/` prefix (e.g. `LLR_SITE_FILES="tcg/index.html tcg/api.php tcg/tcg_sync.php"`); files are read from this **lltcgweb** checkout (`LLR_TCG_ROOT`, default `../lltcgweb` next to Chiichan). Set **`LLR_LLTCGWEB_COMMIT_SUMMARY`** to a brief description of the change — the deploy script commits committable files here and **pushes to GitHub** after a successful Hostinger upload (`LLR_SKIP_LLTCGWEB_PUSH=1` to skip). **Docs-only** changes (e.g. `README.md`, `LICENSE`) are not deployed to the site but should still be pushed via `LLR_LLTCGWEB_REPO_FILES='README.md'` and the same push script. Ensure `data/`, `games/`, `cardimg/`, and `experiment_decks/` are writable on the host; art dirs must already be populated on the server.
+Production static/PHP deploy runs from the **Chiichan** repo: `scripts/deploy-loveliveradio-ca.sh`.
 
-### Multiplayer sync (SSE via wrapped → VPS)
+| Setting | Meaning |
+|---------|---------|
+| `LLR_TCG_ROOT` | Path to this repo (default: `../lltcgweb` next to Chiichan) |
+| `LLR_SITE_FILES` | Space-separated **remote** paths under `tcg/` (e.g. `tcg/index.html tcg/client/js/game-sync.js`) |
+| `LLR_LLTCGWEB_COMMIT_SUMMARY` | One-line subject for the post-upload GitHub commit here |
+| `LLR_SKIP_LLTCGWEB_PUSH=1` | Hostinger-only upload; skip git push |
+| `LLR_SKIP_TCG_CORE=1` | Skip auto core bundle (not recommended) |
 
-PvP state sync uses **Server-Sent Events** through `https://loveliveradio.ca/wrapped/api.php?action=tcg_sync_stream` (same Hostinger→VPS path as radio chat). Game rules and room JSON stay on Hostinger `tcg/api.php`.
+**Auto core bundle:** whenever `LLR_SITE_FILES` includes any `tcg/…` path, Chiichan also uploads everything in `Chiichan/scripts/tcg_deploy_core_manifest.txt` — auth loaders, `account.php`, `config/*`, runtime `.htaccess` files, `i18n.js`, SFX manifest, etc. That keeps partial deploys from leaving `api.php` without `config/errors.php` or `llr_auth_load.php`.
+
+**Example (frontend + sync):**
+
+```bash
+export LLR_LLTCGWEB_COMMIT_SUMMARY='Fix poll backoff'
+export LLR_SITE_FILES='tcg/index.html tcg/client/js/game-sync.js tcg/client/js/api-client.js'
+./scripts/deploy-loveliveradio-ca.sh
+```
+
+**Do not upload:** `tcg/games/*.json`, `tcg/data/*.db`, or other live runtime state.
+
+**On the host:** ensure `data/`, `games/`, `experiment_decks/`, and `cardimg/` are writable; populate art dirs separately. Ship `games/.htaccess` and `experiment_decks/.htaccess` via the core bundle (or explicit `LLR_SITE_FILES`).
+
+**Docs-only changes** (this README, `docs/*`) are not served from Hostinger but should still be pushed to GitHub:
+
+```bash
+# From Chiichan repo root
+LLR_LLTCGWEB_REPO_FILES='README.md docs/DEPLOY.md' \
+LLR_LLTCGWEB_COMMIT_SUMMARY='Update deploy docs' \
+python scripts/lltcgweb_git_push.py
+```
+
+Future **production Docker** layout and VPS API cutover are in [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### Multiplayer sync (SSE via VPS)
+
+PvP uses **Server-Sent Events**. Browsers connect to **`/tcg/sync-stream`** (Hostinger Apache proxies to VPS `:5001` — **no PHP worker**). Fallback: `wrapped/api.php?action=tcg_sync_stream`. Game rules and room JSON stay on Hostinger `tcg/api.php` until Phase 2 API cutover.
 
 **On Hostinger (`tcg/`):** copy [`tcg_sync.local.php.example`](tcg_sync.local.php.example) to gitignored `tcg_sync.local.php`:
 
-- `TCG_SYNC_PUBLISH_URL` — same host as `PYTHON_API_URL` in Chiichan `wrapped/api.php`, path `/api/tcg/sync/notify` (e.g. `http://YOUR_VPS:5001/api/tcg/sync/notify`).
-- `TCG_SYNC_INTERNAL_TOKEN` — same value as `LLR_SITE_INTERNAL_TOKEN` in `wrapped/api.php`.
-- `TCG_SYNC_SHARED_SECRET` — random hex; must match VPS env below.
+- `TCG_SYNC_PUBLISH_URL` — VPS notify URL (e.g. `http://YOUR_VPS:5001/api/tcg/sync/notify`)
+- `TCG_SYNC_INTERNAL_TOKEN` — same as `LLR_SITE_INTERNAL_TOKEN` in Chiichan `wrapped/api.php`
+- `TCG_SYNC_SHARED_SECRET` — shared hex secret; must match VPS
 
-**On VPS:** deploy Chiichan `wrapped/tcg_sync.py` + `wrapped/wrapped_api.py`; set `TCG_SYNC_SHARED_SECRET` in the `wrapped-api` systemd unit (or environment) to the same secret as Hostinger. Restart **`wrapped-api`** after deploy.
+**On VPS:** Chiichan `wrapped/tcg_sync.py` + `wrapped/wrapped_api.py`; set `TCG_SYNC_SHARED_SECRET` on the `wrapped-api` unit. Restart **`wrapped-api`** after deploy (operator confirmation required).
 
-If `tcg_sync.local.php` is missing or disabled, clients fall back to legacy long-poll automatically.
+If sync is unset, clients fall back to short `poll=0` loops automatically (no 25s long-poll).
 
 ---
 

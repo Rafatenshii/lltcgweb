@@ -5,8 +5,24 @@
   'use strict';
 
   global.TCG_PRESENCE_PING_MS = 30000;
-  global.TCG_SYNC_FALLBACK_POLL_MS = 3000;
+  /** Base interval for poll=0 fallback when SSE is down (grows with backoff). */
+  global.TCG_SYNC_FALLBACK_POLL_MS = 5000;
+  global.TCG_SYNC_FALLBACK_POLL_MAX_MS = 20000;
   global.TCG_SYNC_MAX_FAILS = 6;
+  /** Prefer Apache-proxied VPS stream; Hostinger PHP proxy is fallback only. */
+  global.TCG_SYNC_USE_PHP_PROXY = false;
+
+  global._tcgSyncStats = global._tcgSyncStats || {
+    streamDirect: 0,
+    streamProxy: 0,
+    streamFails: 0,
+    getState: 0,
+    disconnectHints: 0,
+  };
+
+  global.tcgSyncStatsSnapshot = function tcgSyncStatsSnapshot() {
+    return { ...(global._tcgSyncStats || {}) };
+  };
 
   global.stopSyncStream = function stopSyncStream() {
     if (G.syncEventSource) {
@@ -126,6 +142,13 @@
     return G.isCPU ? 280 : 600;
   }
 
+  function syncFallbackDelayMs() {
+    const fails = G._syncFailCount || 0;
+    const base = global.TCG_SYNC_FALLBACK_POLL_MS || 5000;
+    const max = global.TCG_SYNC_FALLBACK_POLL_MAX_MS || 20000;
+    return Math.min(max, base * Math.max(1, Math.pow(1.5, Math.min(fails, 6))));
+  }
+
   /** Drop poll responses from a prior room/session (e.g. tutorial boot after CPU match). */
   function pollResponseStillCurrent(epoch, roomId) {
     return !!(G.polling && epoch === G._gameSessionEpoch && roomId && roomId === G.roomId);
@@ -159,7 +182,8 @@
       }
       await pullLatestState();
       if (G.polling && G.syncEnabled === false) startSyncFallbackPoll();
-    }, TCG_SYNC_FALLBACK_POLL_MS);
+      else if (G.polling && (G._syncFailCount || 0) >= TCG_SYNC_MAX_FAILS) startSyncFallbackPoll();
+    }, syncFallbackDelayMs());
   };
 
   global.scheduleSyncReconnect = function scheduleSyncReconnect(ms) {
@@ -190,12 +214,24 @@
     void pullLatestState();
   }
 
+  function syncStreamUrl(usePhpProxy) {
+    const qs = `room_id=${encodeURIComponent(G.roomId)}`
+      + `&ticket=${encodeURIComponent(G.syncTicket)}&last_seq=${encodeURIComponent(String(G.lastSeq ?? 0))}`;
+    if (usePhpProxy) {
+      return `${global.WRAPPED_API}?action=tcg_sync_stream&${qs}`;
+    }
+    const base = (global.TCG_SYNC_STREAM_URL || './sync-stream').replace(/\?.*$/, '');
+    return `${base}?${qs}`;
+  }
+
   global.openSyncStream = function openSyncStream() {
     stopSyncStream();
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.syncTicket) return;
-    const url = `${WRAPPED_API}?action=tcg_sync_stream&room_id=${encodeURIComponent(G.roomId)}`
-      + `&ticket=${encodeURIComponent(G.syncTicket)}&last_seq=${encodeURIComponent(String(G.lastSeq ?? 0))}`;
-    TCG_DEBUG.log('sync', 'connect', { room: G.roomId, seq: G.lastSeq });
+    const usePhp = !!global.TCG_SYNC_USE_PHP_PROXY;
+    const url = syncStreamUrl(usePhp);
+    TCG_DEBUG.log('sync', 'connect', { room: G.roomId, seq: G.lastSeq, via: usePhp ? 'php-proxy' : 'apache-vps' });
+    if (usePhp) global._tcgSyncStats.streamProxy++;
+    else global._tcgSyncStats.streamDirect++;
     const es = new EventSource(url);
     G.syncEventSource = es;
     es.addEventListener('ready', () => {
@@ -215,8 +251,17 @@
       es.close();
       G.syncEventSource = null;
       G._syncFailCount = (G._syncFailCount || 0) + 1;
+      global._tcgSyncStats.streamFails++;
+      // Direct Apache path failed — try Hostinger PHP proxy once before pure poll fallback.
+      if (!usePhp && (G._syncFailCount || 0) === 2) {
+        TCG_DEBUG.warn('sync', 'direct stream failed; trying PHP proxy');
+        global.TCG_SYNC_USE_PHP_PROXY = true;
+        if (G.polling) scheduleSyncReconnect(400);
+        return;
+      }
       if (G._syncFailCount >= TCG_SYNC_MAX_FAILS) {
         TCG_DEBUG.warn('sync', 'using poll=0 fallback');
+        G.syncEnabled = false;
         startSyncFallbackPoll();
       }
       if (G.polling) scheduleSyncReconnect(Math.min(8000, 400 * Math.pow(2, G._syncFailCount)));
@@ -227,6 +272,7 @@
   };
 
   global.beginGameSync = async function beginGameSync() {
+    global.TCG_SYNC_USE_PHP_PROXY = false;
     if (!G.syncTicket) {
       try {
         const r = await apiPost('sync_ticket', { room_id: G.roomId, token: G.token }, { silent: true });
@@ -235,7 +281,7 @@
         TCG_DEBUG.warn('sync', 'sync_ticket failed', e);
       }
     }
-    // CPU solo: no opponent to push — legacy poll paces updates and waits for animations.
+    // CPU solo: no opponent to push — short poll=0 (never hold Hostinger long-poll workers).
     if (G.isCPU && !G.isSpectator) {
       G.syncEnabled = false;
       G.syncTicket = null;
@@ -273,6 +319,10 @@
     void beginGameSync();
   };
 
+  /**
+   * Short poll=0 loop — never use Hostinger long-poll (holds PHP up to 25s).
+   * Used for CPU solo and when SSE sync is unavailable.
+   */
   global.doPollLegacy = async function doPollLegacy() {
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     // Must use pollPresentationBlocked — raw _perfSpectacleActive blocked CPU/spectator
@@ -298,8 +348,9 @@
     const pollRoomId = G.roomId;
     let pollError = null;
     try {
-      TCG_DEBUG.log('poll', 'fetch', { seq: G.lastSeq, room: pollRoomId });
-      const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${G.token}&seq=${G.lastSeq}`);
+      TCG_DEBUG.log('poll', 'fetch', { seq: G.lastSeq, room: pollRoomId, mode: 'poll0' });
+      global._tcgSyncStats.getState++;
+      const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       G._pollRateLimitBackoff = 0;
@@ -332,6 +383,7 @@
     const pollRoomId = G.roomId;
     TCG_DEBUG.log('poll', 'pullSkillResolutionState', { seq: G.lastSeq, room: pollRoomId });
     try {
+      global._tcgSyncStats.getState++;
       const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return G.gameState || null;
@@ -406,6 +458,7 @@
     TCG_DEBUG.log('poll', 'pullLatestState', { seq: G.lastSeq, force: !!force, room: pollRoomId });
     const run = (async () => {
       try {
+        global._tcgSyncStats.getState++;
         const r = await fetch(`${API}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
         const d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
@@ -417,6 +470,7 @@
           if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
           return;
         }
+        if (d.end_reason === 'disconnect') global._tcgSyncStats.disconnectHints++;
         onState(d);
       } catch (e) {
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;

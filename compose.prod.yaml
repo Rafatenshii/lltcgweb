@@ -1,0 +1,39 @@
+# Production TCG API on VPS — Hostinger serves static; this container runs PHP.
+# Bind 127.0.0.1:5003 by default; Hostinger Apache ProxyPass reaches the public IP:5003
+# (open firewall for Hostinger egress only when possible).
+#
+# Usage (on VPS, from lltcgweb checkout):
+#   docker compose -f compose.prod.yaml up -d --build
+#   # then mark Hostinger cutover: upload empty file tcg/USE_VPS_API
+
+services:
+  tcg-api:
+    build: .
+    container_name: lltcgweb-api
+    ports:
+      - "5003:80"
+    volumes:
+      - ./:/var/www/html
+      - tcg_prod_data:/var/www/html/data
+      - tcg_prod_games:/var/www/html/games
+      - tcg_prod_experiment_decks:/var/www/html/experiment_decks
+      - tcg_prod_cardimg:/var/www/html/cardimg
+    environment:
+      TCG_PRODUCTION: "1"
+      TCG_DEBUG: "0"
+      # Sync notify still goes Hostinger→VPS; enable after tcg_sync.local.php is present in image/volume.
+      TCG_CORS_ORIGINS: "https://loveliveradio.ca,https://www.loveliveradio.ca"
+      # Prefer env secrets in production; fall back to mounted tcg_sync.local.php / llr_auth.php
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api.php?action=ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  tcg_prod_data:
+  tcg_prod_games:
+  tcg_prod_experiment_decks:
+  tcg_prod_cardimg:

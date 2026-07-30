@@ -1,0 +1,22 @@
+# Love Live TCG — Hostinger Apache front
+# Static assets stay on Hostinger. Long-lived SSE and (optionally) game API
+# are proxied to the VPS so PHP-FPM workers are not held / overloaded.
+#
+# Requires: mod_rewrite + mod_proxy + mod_proxy_http (Hostinger business plans).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /tcg/
+
+  # Phase 1C: SSE notify stream → VPS wrapped_api (no Hostinger PHP)
+  RewriteRule ^sync-stream$ http://45.76.173.164:5001/api/tcg/sync/stream [P,QSA,L]
+
+  # Phase 2: dynamic PHP API on VPS (port 5003). Enabled when USE_VPS_API exists.
+  RewriteCond %{DOCUMENT_ROOT}/tcg/USE_VPS_API -f
+  RewriteRule ^(api|account|spectate|bannerimg|cardimg|cardimg_cache|replay)\.php$ http://45.76.173.164:5003/$1.php [P,QSA,L]
+</IfModule>
+
+# Deny direct HTTP access to runtime dirs (defense in depth; also have per-dir .htaccess)
+<IfModule mod_authz_core.c>
+  RedirectMatch 403 (?i)^/tcg/(data|games|experiment_decks)/
+</IfModule>

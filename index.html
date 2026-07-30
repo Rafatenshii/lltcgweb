@@ -8443,14 +8443,14 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=69"></script>
+<script src="i18n.js?v=70"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=17"></script>
-<script src="client/js/api-client.js?v=11"></script>
+<script src="client/js/api-client.js?v=12"></script>
 <script src="client/js/ranked-pr-reward.js?v=2"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/game-sync.js?v=22"></script>
+<script src="client/js/game-sync.js?v=23"></script>
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -10592,10 +10592,28 @@ async function initAccountFlow() {
     }
     persistAuthToken(token);
     A.token = token;
-    const me = await accountGet('me');
-    if (!me.success) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      showGuestAuth(null, 'auth.sessionExpired');
+    let me;
+    try {
+      me = typeof accountGetMeWithRetry === 'function'
+        ? await accountGetMeWithRetry()
+        : await accountGet('me');
+    } catch (authErr) {
+      if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(authErr)) {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        showGuestAuth(null, 'auth.sessionExpired');
+        return;
+      }
+      // Keep token on timeout/5xx — Hostinger overload must not force Discord re-login.
+      showGuestAuth(null, 'auth.serverBusy');
+      return;
+    }
+    if (!me || !me.success) {
+      if (typeof isAuthRejectedError === 'function') {
+        showGuestAuth(null, 'auth.serverBusy');
+      } else {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        showGuestAuth(null, 'auth.sessionExpired');
+      }
       return;
     }
     A.user = me.user;
@@ -10618,7 +10636,14 @@ async function initAccountFlow() {
       else void resumeRankedSearchIfQueued();
     }, 0);
   } catch (e) {
-    showGuestAuth(e.message || t('auth.loadError'));
+    if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(e)) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      showGuestAuth(null, 'auth.sessionExpired');
+    } else if (typeof isTransientAccountError === 'function' && isTransientAccountError(e) && getAuthToken()) {
+      showGuestAuth(null, 'auth.serverBusy');
+    } else {
+      showGuestAuth(e.message || t('auth.loadError'));
+    }
   } finally {
     finishAuthBoot();
   }

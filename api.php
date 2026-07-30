@@ -70,7 +70,7 @@ require_once __DIR__ . '/tcg_sync.php';
 define('LOCK_TIMEOUT', 5);      // seconds
 define('GAME_TIMEOUT', 3600);   // 1 hour inactivity = cleanup
 define('POLL_TIMEOUT', 25);     // long-poll seconds
-define('PRESENCE_DISCONNECT_SEC', 120); // PvP: forfeit if opponent idle this long
+define('PRESENCE_DISCONNECT_SEC', 210); // PvP: forfeit if opponent idle this long (wider under Hostinger load)
 define('PRESENCE_NO_SHOW_SEC', 300);    // Ranked: forfeit if opponent never connected
 define('PHASE_TIMER_SEC', 60);  // default when room host enables phase timer
 define('PHASE_TIMER_MIN', 10);
@@ -4680,7 +4680,10 @@ function applyDisconnectForfeits(array &$state, string $roomId): bool {
     $gameAge = is_file($path) ? ($now - filemtime($path)) : 0;
     $isRanked = ($state['mode'] ?? '') === 'ranked';
     $noShowSec = $isRanked ? PRESENCE_NO_SHOW_SEC : PRESENCE_NO_SHOW_SEC * 2;
+    $grace = PRESENCE_DISCONNECT_SEC;
 
+    // Shared outage: if every human seat is stale, do not mass-forfeit (Hostinger CPU blip).
+    $humanSeats = [];
     foreach (['p1', 'p2'] as $pid) {
         $player = $state['players'][$pid] ?? null;
         if (!$player || isCpuPlayer($player)) {
@@ -4691,14 +4694,38 @@ function applyDisconnectForfeits(array &$state, string $roomId): bool {
             continue;
         }
         $last = intval($presence[$token] ?? 0);
+        $stale = ($last > 0 && ($now - $last) >= $grace)
+            || ($last === 0 && $gameAge >= $noShowSec);
+        $humanSeats[$pid] = [
+            'token' => $token,
+            'last' => $last,
+            'stale' => $stale,
+            'name' => $player['name'] ?? $pid,
+        ];
+    }
+    if (count($humanSeats) >= 2) {
+        $allStale = true;
+        foreach ($humanSeats as $seat) {
+            if (!$seat['stale']) {
+                $allStale = false;
+                break;
+            }
+        }
+        if ($allStale) {
+            return false;
+        }
+    }
+
+    foreach ($humanSeats as $pid => $seat) {
+        $token = $seat['token'];
+        $last = $seat['last'];
         $gone = false;
-        if ($last > 0 && ($now - $last) >= PRESENCE_DISCONNECT_SEC) {
+        if ($last > 0 && ($now - $last) >= $grace) {
             $gone = true;
         } elseif ($last === 0 && $gameAge >= $noShowSec) {
             $other = ($pid === 'p1') ? 'p2' : 'p1';
-            $otherPlayer = $state['players'][$other] ?? null;
-            $otherToken = $otherPlayer['token'] ?? '';
-            $otherLast = intval($presence[$otherToken] ?? 0);
+            $otherSeat = $humanSeats[$other] ?? null;
+            $otherLast = $otherSeat ? intval($otherSeat['last']) : 0;
             if ($otherLast > 0 && ($now - $otherLast) < 60) {
                 $gone = true;
             }
@@ -4708,7 +4735,7 @@ function applyDisconnectForfeits(array &$state, string $roomId): bool {
         }
 
         $winner = ($pid === 'p1') ? 'p2' : 'p1';
-        $loserName = $player['name'] ?? $pid;
+        $loserName = $seat['name'];
         $winnerName = $state['players'][$winner]['name'] ?? $winner;
         $state['status'] = 'finished';
         $state['winner'] = $winner;
@@ -4718,7 +4745,6 @@ function applyDisconnectForfeits(array &$state, string $roomId): bool {
         $state['seq']++;
         return true;
     }
-
     return false;
 }
 

@@ -33,6 +33,7 @@
       "guestPrompt": "Sign in with Discord to save your collection and play ranked.",
       "guestPlayHint": "Play unranked without an account, or sign in for ranked.",
       "sessionExpired": "Session expired — sign in again, or play unranked without an account.",
+      "serverBusy": "Server is busy — your sign-in was kept. Wait a moment and refresh, or play unranked.",
       "loadError": "Could not load account — you can still play unranked.",
       "guestTimeout": "Sign-in check timed out — play unranked, or retry Discord sign-in."
     },
@@ -1142,6 +1143,7 @@
       "guestPrompt": "Discordでサインインしてコレクションを保存し、ランク戦をプレイしましょう。",
       "guestPlayHint": "アカウントなしで非ランクプレイするか、サインインしてランク戦をプレイできます。",
       "sessionExpired": "セッションの有効期限が切れました——再度サインインするか、アカウントなしで非ランクプレイしてください。",
+      "serverBusy": "サーバーが混み合っています——サインイン情報は保持されています。しばらくして更新するか、非ランクでプレイしてください。",
       "loadError": "アカウントを読み込めませんでした——非ランクプレイは引き続き可能です。",
       "guestTimeout": "サインイン確認がタイムアウトしました——非ランクでプレイするか、Discordサインインを再試行してください。"
     },
@@ -2247,6 +2249,7 @@
       "guestPrompt": "Inicia sesión con Discord para guardar tu colección y jugar clasificatoria.",
       "guestPlayHint": "Juega no clasificada sin cuenta, o inicia sesión para clasificatoria.",
       "sessionExpired": "La sesión expiró: inicia sesión otra vez, o juega no clasificada sin cuenta.",
+      "serverBusy": "El servidor está ocupado: tu sesión se conservó. Espera y actualiza, o juega no clasificada.",
       "loadError": "No se pudo cargar la cuenta: aún puedes jugar no clasificada.",
       "guestTimeout": "La verificación de inicio de sesión tardó demasiado: juega no clasificada, o vuelve a intentar iniciar sesión con Discord."
     },
@@ -3372,6 +3375,7 @@
       "guestPrompt": "컬렉션을 저장하고 랭크전을 플레이하려면 Discord로 로그인하세요.",
       "guestPlayHint": "계정 없이 일반전을 즐기거나, 랭크전을 위해 로그인하세요.",
       "sessionExpired": "세션이 만료되었습니다 — 다시 로그인하거나 계정 없이 일반전을 플레이하세요.",
+      "serverBusy": "서버가 혼잡합니다 — 로그인 정보는 유지됩니다. 잠시 후 새로고침하거나 일반전을 플레이하세요.",
       "loadError": "계정을 불러올 수 없습니다 — 일반전은 계속 플레이할 수 있습니다.",
       "guestTimeout": "로그인 확인 시간이 초과되었습니다 — 일반전을 플레이하거나 Discord 로그인을 다시 시도하세요."
     },
@@ -4521,6 +4525,7 @@
       "guestPrompt": "使用 Discord 登录以保存收藏并参加排名对战。",
       "guestPlayHint": "无需账号即可游玩非排名对战，或登录后参加排名对战。",
       "sessionExpired": "会话已过期 — 请重新登录，或继续游玩非排名对战。",
+      "serverBusy": "服务器繁忙 — 登录状态已保留。请稍后再刷新，或先游玩非排名对战。",
       "loadError": "无法加载账号 — 你仍可游玩非排名对战。",
       "guestTimeout": "登录检查超时 — 可先游玩非排名对战，或重试 Discord 登录。"
     },
@@ -5671,6 +5676,7 @@
       "guestPrompt": "เข้าสู่ระบบด้วย Discord เพื่อบันทึกคอลเลกชันและเล่นแรงก์",
       "guestPlayHint": "เล่นอันแรงก์โดยไม่มีบัญชี หรือเข้าสู่ระบบเพื่อเล่นแรงก์",
       "sessionExpired": "เซสชันหมดอายุ — เข้าสู่ระบบอีกครั้ง หรือเล่นอันแรงก์โดยไม่มีบัญชี",
+      "serverBusy": "เซิร์ฟเวอร์ไม่ว่าง — ยังเก็บการเข้าสู่ระบบไว้ รอแล้วรีเฟรช หรือเล่นอันแรงก์ก่อน",
       "loadError": "โหลดบัญชีไม่ได้ — ยังเล่นอันแรงก์ได้",
       "guestTimeout": "ตรวจสอบการเข้าสู่ระบบหมดเวลา — เล่นอันแรงก์ หรือลองเข้าสู่ระบบ Discord อีกครั้ง"
     },

@@ -7,8 +7,11 @@
   global.API = './api.php';
   global.ACCOUNT_API = './account.php';
   global.WRAPPED_API = '/wrapped/api.php';
+  /** Apache-proxied VPS SSE (no Hostinger PHP). Falls back to WRAPPED_API proxy. */
+  global.TCG_SYNC_STREAM_URL = global.TCG_SYNC_STREAM_URL || './sync-stream';
   global.AUTH_FETCH_TIMEOUT_MS = global.AUTH_FETCH_TIMEOUT_MS || 12000;
   global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 8000;
+  global.AUTH_ME_RETRY_COUNT = global.AUTH_ME_RETRY_COUNT || 3;
 
   global.fetchWithTimeout = async function fetchWithTimeout(url, options = {}, ms = global.AUTH_FETCH_TIMEOUT_MS) {
     const ctrl = new AbortController();
@@ -16,12 +19,40 @@
     try {
       return await fetch(url, { ...options, signal: ctrl.signal });
     } catch (e) {
-      if (e && e.name === 'AbortError') throw new Error('Request timed out');
+      if (e && e.name === 'AbortError') {
+        const err = new Error('Request timed out');
+        err.httpStatus = 408;
+        err.transient = true;
+        throw err;
+      }
+      if (e && typeof e === 'object') e.transient = true;
       throw e;
     } finally {
       clearTimeout(timer);
     }
   };
+
+  global.isAuthRejectedError = function isAuthRejectedError(err) {
+    if (!err) return false;
+    const status = Number(err.httpStatus) || 0;
+    if (status === 401 || status === 403) return true;
+    const msg = String(err.message || '').toLowerCase();
+    return /authentication required|invalid or expired|invalid token|unauthorized|session expired/.test(msg);
+  };
+
+  global.isTransientAccountError = function isTransientAccountError(err) {
+    if (!err) return true;
+    if (global.isAuthRejectedError(err)) return false;
+    if (err.transient) return true;
+    const status = Number(err.httpStatus) || 0;
+    if (status === 0 || status === 408 || status === 429 || status >= 500) return true;
+    const msg = String(err.message || '').toLowerCase();
+    return /timed out|timeout|network|failed to fetch|server (error|busy)|account error \(5|could not reach/.test(msg);
+  };
+
+  function sleepMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
   global.handleMissionCompletions = function handleMissionCompletions(res) {
     if (!res || typeof res !== 'object') return;
@@ -73,11 +104,43 @@
   global.accountGet = async function accountGet(action, extra = {}) {
     const token = global.getAuthToken();
     const q = new URLSearchParams({ action, token, ...extra });
-    const r = await global.fetchWithTimeout(global.ACCOUNT_API + '?' + q);
+    let r;
+    try {
+      r = await global.fetchWithTimeout(global.ACCOUNT_API + '?' + q);
+    } catch (e) {
+      if (e && typeof e === 'object' && !e.httpStatus) e.httpStatus = 0;
+      throw e;
+    }
     const d = await global.parseAccountJson(r);
-    if (!d.success && d.error) throw new Error(d.error);
+    if (!d.success && d.error) {
+      const err = new Error(d.error);
+      err.httpStatus = r.status || 400;
+      throw err;
+    }
+    if (!r.ok) {
+      const err = new Error('Account error (' + r.status + ')');
+      err.httpStatus = r.status || 500;
+      throw err;
+    }
     global.handleMissionCompletions(d);
     return d;
+  };
+
+  /** Boot-time me lookup with retries; only auth rejection should clear the token. */
+  global.accountGetMeWithRetry = async function accountGetMeWithRetry(retries) {
+    const max = Math.max(1, Number(retries != null ? retries : global.AUTH_ME_RETRY_COUNT) || 3);
+    let lastErr = null;
+    for (let attempt = 0; attempt < max; attempt++) {
+      try {
+        return await global.accountGet('me');
+      } catch (e) {
+        lastErr = e;
+        if (global.isAuthRejectedError(e)) throw e;
+        if (!global.isTransientAccountError(e) || attempt >= max - 1) throw e;
+        await sleepMs(400 * (2 ** attempt));
+      }
+    }
+    throw lastErr || new Error('Account load failed');
   };
 
   global.accountPost = async function accountPost(action, body = {}) {
@@ -88,7 +151,11 @@
       body: JSON.stringify({ ...body, token }),
     });
     const d = await global.parseAccountJson(r);
-    if (!d.success && d.error) throw new Error(d.error);
+    if (!d.success && d.error) {
+      const err = new Error(d.error);
+      err.httpStatus = r.status || 400;
+      throw err;
+    }
     global.handleMissionCompletions(d);
     return d;
   };
