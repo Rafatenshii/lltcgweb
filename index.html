@@ -26196,6 +26196,72 @@ function sortHeartRequirements(required) {
   return [...colored, ...wild];
 }
 
+/** Mirror server applyLiveHeartReductions for Live card requirement display. */
+function applyClientLiveHeartReductions(required, liveCard) {
+  let req = (required || []).map(h => ({
+    color: h.color || 'any',
+    count: Number(h.count || 1),
+  }));
+  let generic = Number(liveCard?.hearts_reduction || 0);
+  while (generic > 0 && req.length) {
+    const i = req.length - 1;
+    const c = req[i].count;
+    if (c <= generic) {
+      generic -= c;
+      req.pop();
+    } else {
+      req[i].count = c - generic;
+      generic = 0;
+    }
+  }
+  const colorReductions = { ...(liveCard?.hearts_color_reduction || {}) };
+  const grayOnly = Number(liveCard?.hearts_reduction_gray || 0);
+  if (grayOnly > 0) {
+    colorReductions.any = Number(colorReductions.any || 0) + grayOnly;
+  }
+  for (const [color, nRaw] of Object.entries(colorReductions)) {
+    let n = Number(nRaw || 0);
+    if (n <= 0) continue;
+    const want = normalizeHeartColor(color);
+    for (const h of req) {
+      if (n <= 0) break;
+      if (normalizeHeartColor(h.color) !== want) continue;
+      const take = Math.min(h.count, n);
+      h.count -= take;
+      n -= take;
+    }
+  }
+  return req.filter(h => h.count > 0);
+}
+
+/** Effective Live requirements for UI (card reductions + μ's Dreamin-style Success aura). */
+function effectiveLiveRequiredHearts(liveCard, state, pid) {
+  let req = (liveCard?.required_hearts || liveCard?.hearts || []).map(h => ({
+    color: h.color || 'any',
+    count: Number(h.count || 1),
+  }));
+  const p = state?.players?.[pid];
+  if (p && (liveCard?.card_type === 'ライブ' || liveCard?.card_type_en === 'Live')
+      && (liveCard?.group || '') === "μ's"
+      && Number(liveCard?.score || 0) >= 5) {
+    let reduceAmt = 0;
+    for (const sl of p.success_lives || []) {
+      for (const ab of sl.abilities || []) {
+        if ((ab.trigger || '') !== 'continuous') continue;
+        if ((ab.type || '') !== 'reduce_hearts_mus_live_min_score_success') continue;
+        if (Number(liveCard.score || 0) < Number(ab.min_score ?? 5)) continue;
+        reduceAmt = Math.max(reduceAmt, Number(ab.reduce ?? 2));
+      }
+    }
+    if (reduceAmt > 0) {
+      req = applyClientLiveHeartReductions(req, {
+        hearts_color_reduction: { any: reduceAmt },
+      });
+    }
+  }
+  return applyClientLiveHeartReductions(req, liveCard || {});
+}
+
 // Reuses the same checkHearts algorithm the server uses, so the CPU's "is this
 // plausible" check matches what the engine will actually decide.
 function cpuCheckHearts(available, required) {
@@ -31659,7 +31725,10 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     if(showFace && card.required_hearts?.length){
       const hr = document.createElement('div');
       hr.className = 'stage-hearts live-req';
-      appendHeartIcons(hr, card.required_hearts, false, true);
+      const reqHearts = (typeof effectiveLiveRequiredHearts === 'function')
+        ? effectiveLiveRequiredHearts(card, G.gameState, pid)
+        : card.required_hearts;
+      appendHeartIcons(hr, reqHearts, false, true);
       d.appendChild(hr);
     }
     outer.appendChild(d);
@@ -37629,7 +37698,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=42"></script>
+<script src="client/js/spectacle.js?v=43"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>

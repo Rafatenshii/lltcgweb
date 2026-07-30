@@ -1612,6 +1612,11 @@ function applyLiveHeartReductions(array $required, array $liveCard): array {
     if ($generic > 0) {
         $req = reduceHeartRequirements($req, $generic);
     }
+    // Legacy Niji path stored gray reductions separately from hearts_color_reduction.
+    $grayOnly = intval($liveCard['hearts_reduction_gray'] ?? 0);
+    if ($grayOnly > 0) {
+        $req = reduceHeartRequirementsByColor($req, 'any', $grayOnly);
+    }
     foreach ($liveCard['hearts_color_reduction'] ?? [] as $color => $n) {
         $req = reduceHeartRequirementsByColor($req, $color, intval($n));
     }

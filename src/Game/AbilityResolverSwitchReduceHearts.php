@@ -46,15 +46,15 @@ function tryResolveAbilityEffectSwitchReduceHearts(
                 $color = $ab['reduce_heart_color'] ?? '';
                 foreach ($p['live_zone'] as &$lc) {
                     if ($lc && ($lc['instance_id'] ?? '') === ($source['instance_id'] ?? '')) {
+                        // Apply −N to required_hearts on the Live card so UI and heart
+                        // checks stay aligned (hearts_color_reduction alone left the
+                        // printed 8 gray visible while the check used 7 / fewer).
+                        $req = $lc['required_hearts'] ?? $lc['hearts'] ?? [];
                         if ($color !== '') {
                             $reduceColor = ($color === 'gray') ? 'any' : $color;
-                            if (!isset($lc['hearts_color_reduction']) || !is_array($lc['hearts_color_reduction'])) {
-                                $lc['hearts_color_reduction'] = [];
-                            }
-                            $lc['hearts_color_reduction'][$reduceColor] =
-                                intval($lc['hearts_color_reduction'][$reduceColor] ?? 0) + $reduce;
+                            $lc['required_hearts'] = reduceHeartRequirementsByColor($req, $reduceColor, $reduce);
                         } else {
-                            $lc['hearts_reduction'] = intval($lc['hearts_reduction'] ?? 0) + $reduce;
+                            $lc['required_hearts'] = reduceHeartRequirements($req, $reduce);
                         }
                         break;
                     }

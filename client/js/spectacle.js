@@ -4292,12 +4292,18 @@ function liveCardsHaveYellHeartsWildcard(liveCards) {
  * Next color for a wildcard / ALL Yell heart: missing colored requirements first across
  * all Lives in zone order (earlier Lives reserve exact matches), then any.
  */
-function resolveAllBladeHeartColorForPool(pool, liveCards) {
+function resolveAllBladeHeartColorForPool(pool, liveCards, state = null, pid = null) {
   const specifics = (pool || [])
     .map(h => normalizeHeartColor(h))
     .filter(h => h !== 'any');
   for (const lc of liveCards || []) {
-    const missing = consumeExactColoredHeartRequirements(specifics, lc.required_hearts || []);
+    let req = lc.required_hearts || [];
+    if (typeof effectiveLiveRequiredHearts === 'function' && state && pid) {
+      req = effectiveLiveRequiredHearts(lc, state, pid);
+    } else if (typeof applyClientLiveHeartReductions === 'function') {
+      req = applyClientLiveHeartReductions(req, lc);
+    }
+    const missing = consumeExactColoredHeartRequirements(specifics, req);
     if (missing) return missing;
   }
   return 'any';
@@ -4312,11 +4318,11 @@ function resolveYellBladeHeartColor(color, ctx, pid, opts = {}) {
     || perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard);
 
   if (opts.yellWildcard && raw !== 'draw') {
-    return resolveAllBladeHeartColorForPool(pool, liveCards);
+    return resolveAllBladeHeartColorForPool(pool, liveCards, ctx?.next, pid);
   }
   if (raw !== 'all') return raw === 'gray' ? 'any' : raw;
 
-  return resolveAllBladeHeartColorForPool(pool, liveCards);
+  return resolveAllBladeHeartColorForPool(pool, liveCards, ctx?.next, pid);
 }
 
 function perfMarkYellBladeHearts(chip, card, opts = {}) {
