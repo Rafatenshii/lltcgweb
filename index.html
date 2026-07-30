@@ -23389,7 +23389,14 @@ function armWatchdog(s) {
     if(G.watchdogStuckCount >= 3) {
       TCG_DEBUG.warnOnce('cpu', `watchdog-retry:${sig}`, 'watchdog forcing retry', sig, TCG_DEBUG.snap(G.gameState));
       G.watchdogStuckCount = 0;
-      clearStaleCpuPromptFromClient();
+      // Do not wipe a live CPU-owned pending_prompt — that desyncs and softlocks.
+      const livePr = G.gameState?.pending_prompt;
+      if (!livePr || livePr.responder !== cpuId) {
+        clearStaleCpuPromptFromClient();
+      } else {
+        clearCpuPromptTracking();
+        releaseStuckPresentation();
+      }
       ensurePollHoldReleased(G.gameState);
       doCPU(G.gameState || s);
     }
@@ -23398,8 +23405,12 @@ function armWatchdog(s) {
 }
 
 /** Drop client-only CPU prompt residue after the server already cleared pending_prompt. */
-function clearStaleCpuPromptFromClient() {
-  if (G.gameState?.pending_prompt?.responder === 'p2') {
+function clearStaleCpuPromptFromClient(opts = {}) {
+  const cpuId = cpuOpponentId();
+  const pr = G.gameState?.pending_prompt;
+  // Never wipe a live server-backed CPU prompt unless the caller knows the server cleared it.
+  if (!opts.force && pr?.responder === cpuId) return;
+  if (pr) {
     G.gameState = { ...G.gameState, pending_prompt: null };
   }
   clearDeferredPromptState();
@@ -23412,12 +23423,13 @@ function clearStaleCpuPromptFromClient() {
 }
 
 function clearStaleCpuPromptBusyIfResolved(s) {
+  const cpuId = cpuOpponentId();
   const pr = s?.pending_prompt;
-  if (pr?.responder === 'p2') return;
+  if (pr?.responder === cpuId) return;
   if (G._cpuResolveBusy || G._cpuPromptScheduled || G._cpuPromptTimer) {
     clearCpuPromptTracking();
   }
-  if (!pr && G._deferredPromptState?.pending_prompt?.responder === 'p2') {
+  if (!pr && G._deferredPromptState?.pending_prompt?.responder === cpuId) {
     clearDeferredPromptState();
     closeM('overlay-surveil');
     if (G.playerId) updateOpponentSkillWaitBanner(s, G.playerId);
@@ -23468,7 +23480,7 @@ function purgeStalePendingStatesAfterCpuResolve(resolvedSeq) {
     G._pendingStateQueue = q.filter(st => (st.seq ?? 0) > resolvedSeq);
   }
   const def = G._deferredPromptState;
-  if (def && (def.seq ?? 0) <= resolvedSeq && def.pending_prompt?.responder === 'p2') {
+  if (def && (def.seq ?? 0) <= resolvedSeq && def.pending_prompt?.responder === cpuOpponentId()) {
     clearDeferredPromptState();
     closeM('overlay-surveil');
   }
@@ -23679,8 +23691,9 @@ async function cpuHandleResolvePromptError() {
     await pullLatestState();
   }
   const live = G.gameState;
-  const cpu = live?.players?.p2;
-  if (live?.pending_prompt?.responder !== 'p2' || !cpu) return;
+  const cpuId = cpuOpponentId();
+  const cpu = live?.players?.[cpuId];
+  if (live?.pending_prompt?.responder !== cpuId || !cpu) return;
   const retries = cpuBumpPromptRetry(live);
   if (retries >= 3) {
     cpuResetPromptRetry();
@@ -23713,7 +23726,8 @@ async function cpuAutoSkipHungPrompt() {
   const key = cpuPromptKey(s);
   if (!key || key !== G._cpuPromptHangKey) return;
   const pr = s.pending_prompt;
-  if (!pr || pr.responder !== 'p2') return;
+  const cpuId = cpuOpponentId();
+  if (!pr || pr.responder !== cpuId) return;
   const hangMs = Date.now() - (G._cpuPromptHangSince || Date.now());
   TCG_DEBUG.warn('cpu', 'prompt hang auto-skip', { key, type: pr.type, hangMs });
   recordTcgBugReport(enrichAntiSoftlockBugReport({
@@ -23726,13 +23740,13 @@ async function cpuAutoSkipHungPrompt() {
     seq: s.seq ?? null,
     hang_ms: hangMs,
     note: 'cpu_prompt_hang_auto_skip',
-  }, s, 'p2', pr));
+  }, s, cpuId, pr));
   clearCpuPromptHangWatch();
   G._cpuResolveBusy = null;
   G._cpuPromptScheduled = null;
   const tier = cpuDiff();
-  const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
-  const cpu = s.players?.p2;
+  const read = tier === 'easy' ? null : cpuReadOpponent(s, cpuId);
+  const cpu = s.players?.[cpuId];
   if (cpu && cpuGenericPromptFallback(pr, cpu, tier, cpuWinPressure(cpu), read, s)) {
     return;
   }
@@ -23741,7 +23755,7 @@ async function cpuAutoSkipHungPrompt() {
     toast('CPU skipped a stuck skill — see game log.', 3600);
   } catch (e) {
     TCG_DEBUG.warn('cpu', 'auto-skip failed', e);
-    if (G.gameState?.pending_prompt?.responder === 'p2') {
+    if (G.gameState?.pending_prompt?.responder === cpuId) {
       armCpuPromptHangWatch(G.gameState);
     }
   }
@@ -23757,11 +23771,16 @@ function scheduleCpuResolvePrompt(s, cpu) {
   if (G._cpuPromptScheduled === key && G._cpuPromptTimer) return;
   G._cpuPromptScheduled = key;
   clearTimeout(G._cpuPromptTimer);
-  const delay = G.animating ? cpuDelay(120) : cpuDelay(850);
+  // Draw-then-hand-pick: wait for presentation so the drawn card is in hand.
+  const pr = s?.pending_prompt;
+  const waitForHand = typeof isDrawThenHandPickPrompt === 'function' && isDrawThenHandPickPrompt(pr)
+    && !!(G.animating || G._livePollHold || G._perfSpectacleActive || G._liveSpectacleGateRunning);
+  const delay = waitForHand ? cpuDelay(420) : (G.animating ? cpuDelay(120) : cpuDelay(850));
   G._cpuPromptTimer = setTimeout(() => {
     G._cpuPromptTimer = null;
     const live = G.gameState;
-    const c = live?.players?.p2 || cpu;
+    const cpuId = cpuOpponentId();
+    const c = live?.players?.[cpuId] || cpu;
     if (!live || !c || cpuPromptKey(live) !== key) {
       if (G._cpuPromptScheduled === key) G._cpuPromptScheduled = null;
       return;
@@ -24582,9 +24601,10 @@ function cpuRandomLegalChoice(choices) {
  * Returns true when an action was submitted.
  */
 function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
-  if (!pr || pr.responder !== 'p2') return false;
+  const cpuId = cpuOpponentId();
+  if (!pr || pr.responder !== cpuId) return false;
   const hand = cpuLiveHand(cpu);
-  const discardNeed = pr.discard_count || pr.count
+  const discardNeed = pr.discard_count || pr.count || pr.bottom_count
     || (pr.step === 'discard' || pr.step === 'discard_hand' || pr.step === 'pick_discard'
       ? (pr.ability?.discard || pr.ability?.max_discard || 1) : 0);
   if (discardNeed > 0) {
@@ -24718,11 +24738,12 @@ function cpuSchedulePromptRetryIfStuck(s, cpu) {
   const key = cpuPromptKey(s);
   if (!key) return;
   const retries = cpuBumpPromptRetry(s);
+  const cpuId = cpuOpponentId();
   if (retries >= 2) {
     const pr = s?.pending_prompt;
-    if (pr?.responder === 'p2') {
+    if (pr?.responder === cpuId) {
       const tier = cpuDiff();
-      const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
+      const read = tier === 'easy' ? null : cpuReadOpponent(s, cpuId);
       if (cpuGenericPromptFallback(pr, cpu, tier, cpuWinPressure(cpu), read, s)) {
         cpuResetPromptRetry();
         return;
@@ -24742,7 +24763,7 @@ function cpuSchedulePromptRetryIfStuck(s, cpu) {
     if (liveKey !== key) return;
     G._cpuPromptScheduled = null;
     G._cpuResolveBusy = null;
-    scheduleCpuResolvePrompt(live, live.players?.p2 || cpu);
+    scheduleCpuResolvePrompt(live, live.players?.[cpuOpponentId()] || cpu);
   }, cpuDelay(450));
 }
 
@@ -24777,30 +24798,37 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'spbp2_center_move_choose', 'spbp2_center_move_position',
 ]);
 
+/** Prefer a non-empty CPU hand — empty [] must not block fallback to cpu.hand. */
 function cpuLiveHand(cpu) {
-  return G.gameState?.players?.p2?.hand || cpu?.hand || [];
+  const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
+  const liveHand = G.gameState?.players?.[cpuId]?.hand;
+  const cpuHand = cpu?.hand;
+  if (Array.isArray(liveHand) && liveHand.length) return liveHand;
+  if (Array.isArray(cpuHand) && cpuHand.length) return cpuHand;
+  return liveHand || cpuHand || [];
 }
 
 /** Hand pick prompts: deck bottom, discard, deck top — must not fall through to generic yes/no. */
 function cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read) {
   const hand = cpuLiveHand(cpu);
   const pick = (need) => cpuPickDeckBottomIds(hand, need, tier, winPressure, read);
+  const presentationBusy = !!(G.animating || G._livePollHold || G._perfSpectacleActive
+    || G._liveSpectacleGateRunning || G._liveRoundPlaybackActive);
 
   if (pr.type === 'sbp5_draw_deck_bottom') {
     const need = pr.bottom_count || 1;
-    const ids = pick(need).filter(Boolean);
+    let ids = pick(need).filter(Boolean);
+    if (ids.length < need) ids = cpuHandDiscardFallback(hand, need);
     if (ids.length >= need) {
       cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
       return true;
     }
-    if (hand.length >= need) {
-      const fallback = hand.slice(0, need).map(c => c.instance_id).filter(Boolean);
-      if (fallback.length >= need) {
-        cpuAct('resolve_prompt', { discard_ids: fallback.slice(0, need) });
-        return true;
-      }
+    // Mid-draw animation: hand may briefly be empty after the Member left play.
+    if (presentationBusy || !hand.length || hand.length < need) {
+      cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
+      return true;
     }
-    cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
+    cpuAct('anti_softlock_skip', {});
     return true;
   }
   if (pr.type === 'sbp6_discard_after_draw' || pr.type === 'mandatory_discard_after_draw') {
@@ -24809,6 +24837,10 @@ function cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read) {
     if (ids.length < need) ids = cpuHandDiscardFallback(hand, need);
     if (ids.length >= need) {
       cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
+      return true;
+    }
+    if (presentationBusy) {
+      cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
       return true;
     }
     if (!hand.length || hand.length < need) {
@@ -24828,6 +24860,10 @@ function cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read) {
         ? { card_ids: ids.slice(0, need) }
         : { discard_ids: ids.slice(0, need) };
       cpuAct('resolve_prompt', payload);
+      return true;
+    }
+    if (presentationBusy) {
+      cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
       return true;
     }
     if (!handNow.length || handNow.length < need) {
@@ -28504,12 +28540,13 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
 
 function cpuClearLocalCpuPromptIfResolved(nextState) {
   const s = nextState || G.gameState;
-  if (!s || s.pending_prompt?.responder === 'p2') return;
-  if (G.gameState?.pending_prompt?.responder === 'p2') {
+  const cpuId = cpuOpponentId();
+  if (!s || s.pending_prompt?.responder === cpuId) return;
+  if (G.gameState?.pending_prompt?.responder === cpuId) {
     G.gameState = { ...G.gameState, pending_prompt: null };
     if (G.gameState.surveil_stash) delete G.gameState.surveil_stash;
   }
-  if (G._deferredPromptState?.pending_prompt?.responder === 'p2') {
+  if (G._deferredPromptState?.pending_prompt?.responder === cpuId) {
     clearDeferredPromptState();
     closeM('overlay-surveil');
   }
@@ -28533,15 +28570,16 @@ function scheduleCpuContinueAfterAct(type, tries = 0) {
   if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
     cpuClearLocalCpuPromptIfResolved(G.gameState);
     const s = G.gameState;
+    const cpuId = cpuOpponentId();
     // Chained prompts (e.g. Kinako optional_pay → pick_looked_deck_hand): keep
-    // resolving. Do not wipe a live server-backed p2 prompt as "stale".
-    if (type === 'resolve_prompt' && s?.pending_prompt?.responder === 'p2') {
+    // resolving. Do not wipe a live server-backed CPU prompt as "stale".
+    if (type === 'resolve_prompt' && s?.pending_prompt?.responder === cpuId) {
       ensurePollHoldReleased(s);
       doCPU(s);
       armWatchdog(s);
       return;
     }
-    if (s && s.pending_prompt?.responder !== 'p2') {
+    if (s && s.pending_prompt?.responder !== cpuId) {
       ensurePollHoldReleased(s);
       doCPU(s);
       armWatchdog(s);
@@ -28609,7 +28647,12 @@ async function cpuAct(type,data) {
   }
   if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
     const key = cpuPromptKey(G.gameState);
-    if (key && G._cpuResolveBusy === key) return;
+    // Softlock escape must always be allowed even if a prior resolve_prompt is busy.
+    if (type === 'anti_softlock_skip') {
+      G._cpuResolveBusy = null;
+    } else if (key && G._cpuResolveBusy === key) {
+      return;
+    }
     if (key) G._cpuResolveBusy = key;
   }
   if (inflightKey) G._cpuActInflight = inflightKey;
@@ -28630,7 +28673,7 @@ async function cpuAct(type,data) {
         G._cpuResolveBusy = null;
         G._cpuPromptScheduled = null;
           cpuResetPromptRetry();
-          clearStaleCpuPromptFromClient();
+          clearStaleCpuPromptFromClient({ force: true });
           if (G.polling) {
             ensurePollHoldReleased(G.gameState);
             await pullLatestState();
@@ -28656,7 +28699,8 @@ async function cpuAct(type,data) {
         if (/heart color/i.test(d.error || '')) {
         G._cpuResolveBusy = null;
         const live = G.gameState;
-        const cpu = live?.players?.p2;
+        const cpuId = cpuOpponentId();
+        const cpu = live?.players?.[cpuId];
         const pr = live?.pending_prompt;
         if (!pr && cpu && data?.card_id != null && data?.ability_index != null) {
           const card = Object.values(cpu.stage || {}).find(m => m?.instance_id === data.card_id);
@@ -37717,7 +37761,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=3"></script>
-<script src="client/js/cpu-ai.js?v=6"></script>
+<script src="client/js/cpu-ai.js?v=7"></script>
 <script>void bootApp();</script>
 </body>
 </html>
