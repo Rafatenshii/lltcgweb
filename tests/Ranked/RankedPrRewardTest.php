@@ -34,14 +34,17 @@ final class RankedPrRewardTest extends TestCase
 
         $reward = tcgGrantRankedWinPrReward($this->discordId);
         $this->assertArrayNotHasKey('skipped', $reward);
+        $this->assertSame(TCG_RANKED_PR_PACK_SIZE, $reward['pack_size'] ?? 0);
+        $this->assertCount(TCG_RANKED_PR_PACK_SIZE, $reward['cards'] ?? []);
         $this->assertNotEmpty($reward['card_no']);
 
         $after = tcgGetCollectionMap($this->discordId);
-        if (!empty($reward['converted'])) {
+        $newCards = count(array_filter($reward['cards'] ?? [], static fn($c) => empty($c['converted'])));
+        $converted = count(array_filter($reward['cards'] ?? [], static fn($c) => !empty($c['converted'])));
+        if ($converted === TCG_RANKED_PR_PACK_SIZE) {
             $this->assertSame($beforeTotal, array_sum($after));
         } else {
-            $this->assertGreaterThan($beforeTotal, array_sum($after));
-            $this->assertSame(1, $after[$reward['card_no']] ?? 0);
+            $this->assertGreaterThanOrEqual($beforeTotal + $newCards, array_sum($after));
         }
     }
 

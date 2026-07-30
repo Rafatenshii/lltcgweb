@@ -51,14 +51,18 @@ final class StickerSealsTest extends TestCase
         return null;
     }
 
-    public function testPrCardsCannotConvert(): void
+    public function testPrCardsCanConvertToPrSeals(): void
     {
         $pr = $this->findPrCard();
         $this->assertNotNull($pr);
-        $this->assertFalse(tcgCardConvertibleToSeal($pr));
-        tcgAddCardsToCollection($this->discordId, [$pr['card_no']]);
-        $this->expectException(\Exception::class);
-        tcgConvertCardsToSeals($this->discordId, $pr['card_no'], 1, tcgBuildCardMap($this->cardsData()));
+        $this->assertTrue(tcgCardConvertibleToSeal($pr));
+        $this->assertSame('PR', tcgSealTierForCard($pr));
+        tcgAddCardsToCollection($this->discordId, [$pr['card_no'], $pr['card_no']]);
+        $before = tcgSealBalances($this->discordId);
+        $out = tcgConvertCardsToSeals($this->discordId, $pr['card_no'], 1, tcgBuildCardMap($this->cardsData()));
+        $this->assertSame(1, $out['seals_gained']);
+        $this->assertSame('PR', $out['tier']);
+        $this->assertSame(($before['pr'] ?? 0) + 1, $out['seals']['pr']);
     }
 
     public function testConvertCreditsOneSeal(): void
@@ -149,6 +153,32 @@ final class StickerSealsTest extends TestCase
         $this->assertSame(15, tcgSealBuyCostForTier('R'));
         $this->assertSame(10, tcgSealBuyCostForTier('P'));
         $this->assertSame(5, tcgSealBuyCostForTier('SEC'));
+        $this->assertSame(20, tcgSealBuyCostForTier('PR'));
+    }
+
+    public function testPrShopProductAndBuy(): void
+    {
+        $cardsData = $this->cardsData();
+        $this->assertTrue(tcgStickerShopProductAllowedForUser($this->discordId, 'pr:pr_cards'));
+        $nos = tcgStickerShopProductCardNos('pr:pr_cards', $cardsData);
+        $this->assertNotEmpty($nos);
+        $cardNo = $nos[0];
+        $cardMap = tcgBuildCardMap($cardsData);
+        $this->assertTrue(tcgCardInStickerShopProduct($this->discordId, $cardNo, 'pr:pr_cards', $cardsData));
+        $this->assertSame('PR', tcgSealTierForCard($cardMap[$cardNo]));
+        tcgAddSeals($this->discordId, 'PR', 20);
+        $before = tcgSealBalances($this->discordId);
+        $out = tcgStickerBuyCard(
+            $this->discordId,
+            $cardNo,
+            $cardMap,
+            $cardsData,
+            'pr:pr_cards'
+        );
+        $this->assertSame('PR', $out['tier']);
+        $this->assertSame(20, $out['cost']);
+        $this->assertSame(($before['pr'] ?? 0) - 20, $out['seals']['pr']);
+        $this->assertSame(1, $out['owned_qty']);
     }
 
     public function testGachaCodeFallbackWhenPackMismatched(): void

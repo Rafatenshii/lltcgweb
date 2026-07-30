@@ -1,6 +1,6 @@
 <?php
 /**
- * Ranked PvP win PR card rewards (5/day JST, PR/PR+ weighted roll).
+ * Ranked PvP win PR pack rewards (5 packs/day JST, 3 cards each = 15/day).
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booster.php';
@@ -8,6 +8,7 @@ require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/missions.php';
 
 const TCG_RANKED_PR_DAILY_LIMIT = 5;
+const TCG_RANKED_PR_PACK_SIZE = 3;
 
 function tcgRankedPrDailyAllowance(string $discordId): array {
     $db = tcgDb();
@@ -23,8 +24,10 @@ function tcgRankedPrDailyAllowance(string $discordId): array {
     return [
         'date_jst' => $today,
         'limit' => TCG_RANKED_PR_DAILY_LIMIT,
+        'pack_size' => TCG_RANKED_PR_PACK_SIZE,
         'awarded_today' => $awarded,
         'remaining' => max(0, TCG_RANKED_PR_DAILY_LIMIT - $awarded),
+        'cards_remaining' => max(0, TCG_RANKED_PR_DAILY_LIMIT - $awarded) * TCG_RANKED_PR_PACK_SIZE,
     ];
 }
 
@@ -79,8 +82,14 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
         ];
     }
     $cardsData = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];
-    $cardNo = tcgRollSinglePrCard($cardsData);
-    if (!$cardNo) {
+    $cardNos = [];
+    for ($i = 0; $i < TCG_RANKED_PR_PACK_SIZE; $i++) {
+        $cardNo = tcgRollSinglePrCard($cardsData);
+        if ($cardNo) {
+            $cardNos[] = $cardNo;
+        }
+    }
+    if ($cardNos === []) {
         return [
             'skipped' => true,
             'reason' => 'empty_pool',
@@ -90,17 +99,35 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
 
     tcgRecordRankedPrReward($discordId);
     $cardMap = tcgBuildCardMap($cardsData);
-    $gemResult = tcgApplyBoosterPullWithGems($discordId, [$cardNo], $cardMap);
-    $pull = $gemResult['pulls'][0] ?? ['card_no' => $cardNo, 'converted' => false, 'star_gems' => 0];
-    $base = $cardMap[$cardNo] ?? ['card_no' => $cardNo];
-
-    return [
-        'card_no' => $cardNo,
-        'card' => array_merge($base, [
+    $gemResult = tcgApplyBoosterPullWithGems($discordId, $cardNos, $cardMap);
+    $cards = [];
+    foreach ($gemResult['pulls'] ?? [] as $pull) {
+        $no = (string)($pull['card_no'] ?? '');
+        if ($no === '') {
+            continue;
+        }
+        $base = $cardMap[$no] ?? ['card_no' => $no];
+        $cards[] = array_merge($base, [
             'converted' => !empty($pull['converted']),
             'star_gems' => intval($pull['star_gems'] ?? 0),
-        ]),
-        'converted' => !empty($pull['converted']),
+        ]);
+    }
+    if ($cards === []) {
+        // Extremely unlikely; keep daily consumption consistent with a granted pack.
+        foreach ($cardNos as $no) {
+            $base = $cardMap[$no] ?? ['card_no' => $no];
+            $cards[] = array_merge($base, ['converted' => false, 'star_gems' => 0]);
+        }
+    }
+    $first = $cards[0];
+
+    return [
+        'pack_size' => count($cards),
+        'cards' => $cards,
+        // Legacy single-card fields (first pull) for older clients / tooling.
+        'card_no' => $first['card_no'] ?? null,
+        'card' => $first,
+        'converted' => !empty($first['converted']),
         'star_gems_earned' => intval($gemResult['star_gems_earned'] ?? 0),
         'star_gems' => intval($gemResult['star_gems'] ?? 0),
         'daily' => tcgRankedPrDailyAllowance($discordId),

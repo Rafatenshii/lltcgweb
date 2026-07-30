@@ -1,5 +1,5 @@
 /**
- * Ranked PR card reward popup — animated reveal after returning to hub.
+ * Ranked PR pack reward popup — animated multi-card reveal after returning to hub.
  */
 (function (global) {
   'use strict';
@@ -22,10 +22,27 @@
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  function rankedPrRewardCards(reward) {
+    if (!reward || typeof reward !== 'object' || reward.skipped) return [];
+    if (Array.isArray(reward.cards) && reward.cards.length) {
+      return reward.cards.map((c) => Object.assign({}, c || {}, {
+        card_no: c.card_no || reward.card_no,
+        converted: !!(c.converted || reward.converted),
+        star_gems: c.star_gems || 0,
+      }));
+    }
+    if (reward.card_no || reward.card?.card_no) {
+      return [Object.assign({}, reward.card || {}, {
+        card_no: reward.card_no || reward.card?.card_no,
+        converted: !!(reward.converted || reward.card?.converted),
+        star_gems: reward.card?.star_gems || reward.star_gems_earned || 0,
+      })];
+    }
+    return [];
+  }
+
   function rankedPrRewardHasCard(reward) {
-    if (!reward || typeof reward !== 'object') return false;
-    if (reward.skipped) return false;
-    return !!(reward.card_no || reward.card?.card_no);
+    return rankedPrRewardCards(reward).length > 0;
   }
 
   function queueRankedPrReward(reward) {
@@ -85,35 +102,35 @@
     }
   }
 
-  function rankedPrCardName(reward) {
-    const card = reward.card || {};
+  function rankedPrCardName(card) {
     if (typeof global.cardLocaleName === 'function') {
-      return global.cardLocaleName(card) || card.card_name_en || card.card_name || card.card_no || '?';
+      return global.cardLocaleName(card) || card.card_name_en || card.card_name || card.name_en || card.name || card.card_no || '?';
     }
-    return card.card_name_en || card.card_name || card.card_no || '?';
+    return card.card_name_en || card.card_name || card.name_en || card.name || card.card_no || '?';
   }
 
-  function rankedPrRarityLabel(reward) {
-    const card = reward.card || {};
-    const converted = !!(card.converted || reward.converted);
-    if (converted) return 'Converted';
+  function rankedPrRarityLabel(card) {
+    if (card.converted) return 'Converted';
     return String(card.rarity || '').trim();
   }
 
-  function rankedPrRarityClass(reward) {
+  function rankedPrRarityClass(card) {
     if (typeof global.packResultRarityClass === 'function') {
-      const card = reward.card || {};
       return global.packResultRarityClass(card.rarity) || '';
     }
     return '';
   }
 
-  function rankedPrSubText(reward) {
-    const card = reward.card || {};
-    if (!(card.converted || reward.converted)) return '';
-    const name = rankedPrCardName(reward);
-    const gems = card.star_gems || reward.star_gems || reward.star_gems_earned || 0;
-    return t('win.rankedPrDupe', { name, gems });
+  function rankedPrSubText(reward, cards) {
+    const gems = Number(reward.star_gems_earned || 0)
+      || cards.reduce((sum, c) => sum + (Number(c.star_gems) || 0), 0);
+    const converted = cards.filter((c) => c.converted).length;
+    if (!converted && !gems) return '';
+    if (gems > 0) {
+      return t('win.rankedPrPackDupes', { count: converted || cards.length, gems })
+        || (`${converted} duplicate(s) → ${gems} Star Gems`);
+    }
+    return '';
   }
 
   function flashRarePull(tier) {
@@ -137,13 +154,14 @@
     const okBtn = el('btn-ranked-pr-reward-ok');
     if (!overlay || !wrap) return;
 
-    const cardData = Object.assign({}, reward.card || {}, {
-      card_no: reward.card_no || reward.card?.card_no,
-      converted: !!(reward.converted || reward.card?.converted),
-      star_gems: reward.card?.star_gems || reward.star_gems_earned || 0,
-    });
+    const cards = rankedPrRewardCards(reward);
+    if (!cards.length) return;
 
-    if (titleEl) titleEl.textContent = t('win.rankedPrPopupTitle');
+    if (titleEl) {
+      titleEl.textContent = t('win.rankedPrPackPopupTitle', { count: cards.length })
+        || t('win.rankedPrPopupTitle')
+        || 'Ranked PR pack!';
+    }
     if (detailsEl) detailsEl.hidden = true;
     if (nameEl) nameEl.textContent = '';
     if (rarityEl) {
@@ -156,6 +174,7 @@
     }
     if (okBtn) okBtn.hidden = true;
     wrap.replaceChildren();
+    wrap.classList.remove('is-pack-row');
 
     let finished = false;
     const finish = () => {
@@ -164,47 +183,74 @@
       overlay.classList.remove('active');
       overlay.setAttribute('aria-hidden', 'true');
       wrap.replaceChildren();
+      wrap.classList.remove('is-pack-row');
       el('ranked-pr-reward-flash')?.classList.remove('active', 'flash-premium');
     };
 
     try {
       if (typeof global.preloadPackPullFaces === 'function') {
-        await global.preloadPackPullFaces([cardData]);
+        await global.preloadPackPullFaces(cards);
       }
     } catch (_) { /* continue */ }
 
     if (typeof global.buildPackOpenCardEl !== 'function') return;
 
-    const cardEl = global.buildPackOpenCardEl(cardData, 0, 1);
-    cardEl.classList.add('pack-top', 'pack-faces-ready');
-    wrap.appendChild(cardEl);
-
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
 
-    const tier = parseInt(cardEl.dataset.revealTier || '0', 10);
     const motion = typeof global.packMotionOk === 'function' ? global.packMotionOk() : true;
-    const revealMs = motion && global.PACK_REVEAL_MS
-      ? (global.PACK_REVEAL_MS[tier] || 0)
-      : 0;
+    const revealed = [];
 
-    await sleep(motion ? 280 : 0);
+    for (let i = 0; i < cards.length; i++) {
+      const cardData = cards[i];
+      wrap.replaceChildren();
+      wrap.classList.remove('is-pack-row');
+      const cardEl = global.buildPackOpenCardEl(cardData, 0, 1);
+      cardEl.classList.add('pack-top', 'pack-faces-ready');
+      wrap.appendChild(cardEl);
 
-    if (motion) {
-      cardEl.classList.add('revealing');
-      if (tier >= 1) flashRarePull(tier);
-      if (typeof global.sfxPlay === 'function') global.sfxPlay('pack_reveal');
-      await sleep(revealMs || 1);
-      cardEl.classList.remove('revealing');
+      const tier = parseInt(cardEl.dataset.revealTier || '0', 10);
+      const revealMs = motion && global.PACK_REVEAL_MS
+        ? (global.PACK_REVEAL_MS[tier] || 0)
+        : 0;
+
+      await sleep(motion ? (i === 0 ? 280 : 180) : 0);
+
+      if (motion) {
+        cardEl.classList.add('revealing');
+        if (tier >= 1) flashRarePull(tier);
+        if (typeof global.sfxPlay === 'function') global.sfxPlay('pack_reveal');
+        await sleep(revealMs || 1);
+        cardEl.classList.remove('revealing');
+      }
+
+      if (detailsEl && nameEl && rarityEl) {
+        nameEl.textContent = rankedPrCardName(cardData);
+        rarityEl.textContent = rankedPrRarityLabel(cardData);
+        rarityEl.className = 'ranked-pr-reward-rarity pack-results-rarity ' + rankedPrRarityClass(cardData);
+        detailsEl.hidden = false;
+      }
+      revealed.push(cardData);
+      await sleep(motion ? 420 : 80);
     }
+
+    // Final pack layout: show all pulls together.
+    wrap.replaceChildren();
+    wrap.classList.add('is-pack-row');
+    revealed.forEach((cardData, idx) => {
+      const cardEl = global.buildPackOpenCardEl(cardData, idx, revealed.length);
+      cardEl.classList.add('pack-top', 'pack-faces-ready', 'ranked-pr-pack-mini');
+      wrap.appendChild(cardEl);
+    });
 
     if (detailsEl && nameEl && rarityEl) {
-      nameEl.textContent = rankedPrCardName(reward);
-      rarityEl.textContent = rankedPrRarityLabel(reward);
-      rarityEl.className = 'ranked-pr-reward-rarity pack-results-rarity ' + rankedPrRarityClass(reward);
+      nameEl.textContent = revealed.map(rankedPrCardName).join(' · ');
+      rarityEl.textContent = t('win.rankedPrPackSummary', { count: revealed.length })
+        || (`${revealed.length} cards`);
+      rarityEl.className = 'ranked-pr-reward-rarity';
       detailsEl.hidden = false;
     }
-    const sub = rankedPrSubText(reward);
+    const sub = rankedPrSubText(reward, revealed);
     if (subEl && sub) {
       subEl.textContent = sub;
       subEl.hidden = false;
@@ -234,4 +280,6 @@
   global.schedulePendingRankedPrReward = schedulePendingRankedPrReward;
   global.maybeShowPendingRankedPrReward = maybeShowPendingRankedPrReward;
   global.playRankedPrReveal = playRankedPrReveal;
+  global.rankedPrRewardHasCard = rankedPrRewardHasCard;
+  global.rankedPrRewardCards = rankedPrRewardCards;
 })(typeof window !== 'undefined' ? window : globalThis);

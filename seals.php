@@ -1,19 +1,20 @@
 <?php
 /**
- * Sticker shop seals: N / R / P / SEC currencies, convert + buy helpers.
+ * Sticker shop seals: N / R / P / SEC / PR currencies, convert + buy helpers.
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booster.php';
 require_once __DIR__ . '/deck_validate.php';
 
-const TCG_SEAL_TIERS = ['N', 'R', 'P', 'SEC'];
+const TCG_SEAL_TIERS = ['N', 'R', 'P', 'SEC', 'PR'];
 
-/** Buy cost in seals of the same tier. */
+/** Buy cost in seals of the same tier. PR uses the N rate (20). */
 const TCG_SEAL_BUY_COST = [
     'N' => 20,
     'R' => 15,
     'P' => 10,
     'SEC' => 5,
+    'PR' => 20,
 ];
 
 const TCG_SEAL_ICON = [
@@ -21,6 +22,7 @@ const TCG_SEAL_ICON = [
     'R' => 'assets/seals/R.png',
     'P' => 'assets/seals/P.png',
     'SEC' => 'assets/seals/SEC.png',
+    'PR' => 'assets/seals/PR.png',
 ];
 
 function tcgSealColumnForTier(string $tier): string {
@@ -30,14 +32,15 @@ function tcgSealColumnForTier(string $tier): string {
         'R' => 'seal_r',
         'P' => 'seal_p',
         'SEC' => 'seal_sec',
+        'PR' => 'seal_pr',
         default => throw new InvalidArgumentException('Invalid seal tier'),
     };
 }
 
-/** @return array{n:int,r:int,p:int,sec:int} */
+/** @return array{n:int,r:int,p:int,sec:int,pr:int} */
 function tcgSealBalances(string $discordId): array {
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT seal_n, seal_r, seal_p, seal_sec FROM tcg_users WHERE discord_id = ?');
+    $stmt = $db->prepare('SELECT seal_n, seal_r, seal_p, seal_sec, seal_pr FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     return [
@@ -45,6 +48,7 @@ function tcgSealBalances(string $discordId): array {
         'r' => max(0, intval($row['seal_r'] ?? 0)),
         'p' => max(0, intval($row['seal_p'] ?? 0)),
         'sec' => max(0, intval($row['seal_sec'] ?? 0)),
+        'pr' => max(0, intval($row['seal_pr'] ?? 0)),
     ];
 }
 
@@ -117,7 +121,7 @@ function tcgIsGachaBoosterCard(array $card): bool {
     return $no !== '' && (bool)preg_match('/-(?:bp|pb)\d+/i', $no);
 }
 
-function tcgIsPrSealBlockedCard(array $card): bool {
+function tcgIsPrCard(array $card): bool {
     $pack = (string)($card['booster_pack'] ?? '');
     if ($pack === 'PRカード') {
         return true;
@@ -126,9 +130,14 @@ function tcgIsPrSealBlockedCard(array $card): bool {
     return $r === 'PR' || $r === 'PR+';
 }
 
+/** @deprecated Use tcgIsPrCard — PR cards now convert to / buy with PR seals. */
+function tcgIsPrSealBlockedCard(array $card): bool {
+    return false;
+}
+
 /**
  * Map printed rarity → seal tier, or null if unmapped.
- * @return 'N'|'R'|'P'|'SEC'|null
+ * @return 'N'|'R'|'P'|'SEC'|'PR'|null
  */
 function tcgSealTierForCard(array $card): ?string {
     $r = tcgNormalizePoolRarity((string)($card['rarity'] ?? ''), (string)($card['card_no'] ?? ''));
@@ -138,7 +147,8 @@ function tcgSealTierForCard(array $card): ?string {
     static $map = [
         'N' => 'N', 'SD' => 'N', 'SD2' => 'N', 'CL' => 'N', 'L' => 'N', 'PE' => 'N',
         'R' => 'R', 'R+' => 'R', 'RM' => 'R', 'RE' => 'R', 'L+' => 'R',
-        'P' => 'P', 'P+' => 'P', 'PP' => 'P', 'AR' => 'P', 'PE+' => 'P', 'SRE' => 'P', 'PR+' => 'P',
+        'P' => 'P', 'P+' => 'P', 'PP' => 'P', 'AR' => 'P', 'PE+' => 'P', 'SRE' => 'P',
+        'PR' => 'PR', 'PR+' => 'PR',
         'SEC' => 'SEC', 'SEC+' => 'SEC', 'SECE' => 'SEC', 'SECL' => 'SEC', 'SECS' => 'SEC',
         'LLE' => 'SEC', 'SRL' => 'SEC', 'DUO' => 'SEC',
     ];
@@ -174,17 +184,14 @@ function tcgOwnedStarterCardNoSet(string $discordId, array $cardsData): array {
 }
 
 /**
- * Convertible if non-PR, mapped rarity, and either gacha or from an owned starter
+ * Convertible if mapped rarity, and either PR / gacha / owned-starter
  * (so players can convert cards they can buy back in the sticker shop).
  */
 function tcgCardConvertibleToSeal(array $card, ?string $discordId = null, ?array $cardsData = null): bool {
-    if (tcgIsPrSealBlockedCard($card)) {
-        return false;
-    }
     if (tcgSealTierForCard($card) === null) {
         return false;
     }
-    if (tcgIsGachaBoosterCard($card)) {
+    if (tcgIsPrCard($card) || tcgIsGachaBoosterCard($card)) {
         return true;
     }
     if ($discordId === null || $cardsData === null) {
@@ -195,9 +202,6 @@ function tcgCardConvertibleToSeal(array $card, ?string $discordId = null, ?array
 }
 
 function tcgCardPurchasableWithSeal(array $card): bool {
-    if (tcgIsPrSealBlockedCard($card)) {
-        return false;
-    }
     return tcgSealTierForCard($card) !== null;
 }
 
@@ -273,6 +277,15 @@ function tcgStickerShopCatalog(string $discordId): array {
             'image' => $box['image'] ?? '',
         ];
     }
+    $out[] = [
+        'id' => 'pr:pr_cards',
+        'product_type' => 'pr',
+        'box_id' => 'pr_cards',
+        'kind' => 'pr',
+        'name_en' => 'PR Cards',
+        'name_jp' => 'PRカード',
+        'image' => TCG_SEAL_ICON['PR'],
+    ];
     $owned = array_fill_keys(tcgOwnedStarterKeys($discordId), true);
     foreach (tcgStarterDecks() as $deck) {
         $key = $deck['id'];
@@ -318,6 +331,16 @@ function tcgStickerShopProductCardNos(string $productId, array $cardsData): arra
         }
         return array_keys($nos);
     }
+    if ($productId === 'pr:pr_cards') {
+        $pools = tcgBuildBoxPools($cardsData, tcgPrCardPoolBox());
+        $nos = [];
+        foreach ($pools as $list) {
+            foreach ($list as $no) {
+                $nos[$no] = true;
+            }
+        }
+        return array_keys($nos);
+    }
     if (str_starts_with($productId, 'starter:')) {
         $key = substr($productId, 8);
         $lists = tcgGetStarterDeckLists($key, $cardsData);
@@ -342,6 +365,9 @@ function tcgStickerShopProductAllowedForUser(string $discordId, string $productI
             }
         }
         return false;
+    }
+    if ($productId === 'pr:pr_cards') {
+        return true;
     }
     if (str_starts_with($productId, 'starter:')) {
         $key = substr($productId, 8);

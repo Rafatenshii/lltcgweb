@@ -277,6 +277,47 @@ final class SunshineSdDeckTest extends TestCase
         $this->assertSame(1, $state['pending_prompt']['bottom_count'] ?? 0);
     }
 
+    public function testRubySd018OnEnterDrawAndDeckBottomResolves(): void
+    {
+        $ruby = $this->cardByNo('PL!S-sd1-018-SD', 'ruby_enter');
+        $state = $this->baseState();
+        $state['players']['p1']['stage']['center'] = $ruby;
+        $state['players']['p1']['main_deck'] = [['instance_id' => 'draw1', 'card_type' => 'エネルギー']];
+        $state['players']['p1']['hand'] = [['instance_id' => 'h1', 'card_type' => 'エネルギー']];
+
+        $state = \resolveOnEnterAbilities($state, 'p1', $ruby, 'center');
+        $this->assertSame('sbp5_draw_deck_bottom', $state['pending_prompt']['type'] ?? null);
+        $this->assertSame(1, $state['pending_prompt']['bottom_count'] ?? 0);
+        $handIds = array_column($state['players']['p1']['hand'], 'instance_id');
+        $this->assertContains('draw1', $handIds);
+        $this->assertContains('h1', $handIds);
+
+        $state = \actionResolvePrompt($state, 'p1', ['discard_ids' => ['h1']]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertContains('h1', array_column($state['players']['p1']['main_deck'], 'instance_id'));
+        $this->assertContains('draw1', array_column($state['players']['p1']['hand'], 'instance_id'));
+        $this->assertNotContains('h1', array_column($state['players']['p1']['hand'], 'instance_id'));
+    }
+
+    public function testRubySd018AntiSoftlockAutoResolvesDeckBottom(): void
+    {
+        $ruby = $this->cardByNo('PL!S-sd1-018-SD', 'ruby_softlock');
+        $state = $this->baseState();
+        $state['players']['p1']['name'] = 'CPU 🤖';
+        $state['players']['p1']['deck_choice'] = 'cpu';
+        $state['players']['p1']['stage']['center'] = $ruby;
+        $state['players']['p1']['main_deck'] = [['instance_id' => 'draw1', 'card_type' => 'エネルギー']];
+        $state['players']['p1']['hand'] = [['instance_id' => 'h1', 'card_type' => 'エネルギー']];
+
+        $state = \resolveOnEnterAbilities($state, 'p1', $ruby, 'center');
+        $this->assertSame('sbp5_draw_deck_bottom', $state['pending_prompt']['type'] ?? null);
+
+        $state = \actionAntiSoftlockSkipPrompt($state, 'p1');
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertCount(1, $state['players']['p1']['hand']);
+        $this->assertCount(1, $state['players']['p1']['main_deck']);
+    }
+
     public function testMiraiSd019LiveSuccessPickYellLive(): void
     {
         $mirai = $this->cardByNo('PL!S-sd1-019-SD', 'mirai_ls');
