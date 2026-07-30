@@ -214,24 +214,28 @@
     void pullLatestState();
   }
 
-  function syncStreamUrl(usePhpProxy) {
+  function syncStreamUrl(mode) {
     const qs = `room_id=${encodeURIComponent(G.roomId)}`
       + `&ticket=${encodeURIComponent(G.syncTicket)}&last_seq=${encodeURIComponent(String(G.lastSeq ?? 0))}`;
-    if (usePhpProxy) {
+    if (mode === 'php') {
       return `${global.WRAPPED_API}?action=tcg_sync_stream&${qs}`;
     }
-    const base = (global.TCG_SYNC_STREAM_URL || './sync-stream').replace(/\?.*$/, '');
+    if (mode === 'apache') {
+      const base = (global.TCG_SYNC_STREAM_FALLBACK_URL || './sync-stream').replace(/\?.*$/, '');
+      return `${base}?${qs}`;
+    }
+    const base = (global.TCG_SYNC_STREAM_URL || 'https://stream.loveliveradio.ca/tcg/sync/stream').replace(/\?.*$/, '');
     return `${base}?${qs}`;
   }
 
   global.openSyncStream = function openSyncStream() {
     stopSyncStream();
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.syncTicket) return;
-    const usePhp = !!global.TCG_SYNC_USE_PHP_PROXY;
-    const url = syncStreamUrl(usePhp);
-    TCG_DEBUG.log('sync', 'connect', { room: G.roomId, seq: G.lastSeq, via: usePhp ? 'php-proxy' : 'apache-vps' });
-    if (usePhp) global._tcgSyncStats.streamProxy++;
-    else global._tcgSyncStats.streamDirect++;
+    const mode = global.TCG_SYNC_STREAM_MODE || 'vps';
+    const url = syncStreamUrl(mode);
+    TCG_DEBUG.log('sync', 'connect', { room: G.roomId, seq: G.lastSeq, via: mode });
+    if (mode === 'vps') global._tcgSyncStats.streamDirect++;
+    else global._tcgSyncStats.streamProxy++;
     const es = new EventSource(url);
     G.syncEventSource = es;
     es.addEventListener('ready', () => {
@@ -252,9 +256,16 @@
       G.syncEventSource = null;
       G._syncFailCount = (G._syncFailCount || 0) + 1;
       global._tcgSyncStats.streamFails++;
-      // Direct Apache path failed — try Hostinger PHP proxy once before pure poll fallback.
-      if (!usePhp && (G._syncFailCount || 0) === 2) {
-        TCG_DEBUG.warn('sync', 'direct stream failed; trying PHP proxy');
+      // Escalate: VPS nginx → Hostinger Apache sync-stream → PHP proxy → poll=0
+      if (mode === 'vps' && (G._syncFailCount || 0) === 2) {
+        TCG_DEBUG.warn('sync', 'VPS stream failed; trying Apache sync-stream');
+        global.TCG_SYNC_STREAM_MODE = 'apache';
+        if (G.polling) scheduleSyncReconnect(400);
+        return;
+      }
+      if (mode !== 'php' && (G._syncFailCount || 0) === 4) {
+        TCG_DEBUG.warn('sync', 'trying PHP proxy');
+        global.TCG_SYNC_STREAM_MODE = 'php';
         global.TCG_SYNC_USE_PHP_PROXY = true;
         if (G.polling) scheduleSyncReconnect(400);
         return;
@@ -273,6 +284,7 @@
 
   global.beginGameSync = async function beginGameSync() {
     global.TCG_SYNC_USE_PHP_PROXY = false;
+    global.TCG_SYNC_STREAM_MODE = 'vps';
     if (!G.syncTicket) {
       try {
         const r = await apiPost('sync_ticket', { room_id: G.roomId, token: G.token }, { silent: true });

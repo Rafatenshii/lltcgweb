@@ -8447,10 +8447,10 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=17"></script>
-<script src="client/js/api-client.js?v=12"></script>
+<script src="client/js/api-client.js?v=13"></script>
 <script src="client/js/ranked-pr-reward.js?v=2"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/game-sync.js?v=23"></script>
+<script src="client/js/game-sync.js?v=24"></script>
 <script src="client/js/state-apply.js?v=42"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -20568,7 +20568,7 @@ function shouldDeferHandDrawsForPrompt(state, myId) {
   if (pr.type === 'sbp6_discard_after_draw') return false;
   if (pr.type === 'mandatory_discard_look_reveal') return true;
   if (pr.type === 'discard_subunit_hand_draw') return true;
-  if (pr.type === 'optional_discard_subunit_draw_buff_cost') return true;
+  // Do not defer draws for the yes/no step of Summer Sayaka — that hid the whole hand (#79).
   if (pr.step === 'discard' || pr.step === 'discard_hand' || pr.step === 'pick_discard') return true;
   return false;
 }

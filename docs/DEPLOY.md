@@ -10,11 +10,13 @@
 
 ### Phase 1 — SSE off Hostinger PHP (default)
 
-Deploy [`/.htaccess`](../.htaccess) so browsers open `EventSource('./sync-stream')` which Apache proxies to `http://VPS:5001/api/tcg/sync/stream` (no PHP worker).
+Browsers open EventSource on **`https://stream.loveliveradio.ca/tcg/sync/stream`** (VPS nginx → `wrapped_api` `:5001`). No Hostinger PHP worker is held.
 
-Clients fall back to `/wrapped/api.php?action=tcg_sync_stream` only if the direct path fails.
+Fallbacks in order: Hostinger `./sync-stream` (if Apache `[P]` works) → `/wrapped/api.php?action=tcg_sync_stream` → short `poll=0`.
 
-After deploy, confirm in browser console / Network: EventSource URL is `/tcg/sync-stream` (not `wrapped/api.php`). Hostinger CPU should drop during multiplayer evenings.
+After deploy, confirm in Network: EventSource URL is `stream.loveliveradio.ca`. Hostinger CPU should drop during multiplayer evenings.
+
+Client helper: `tcgSyncStatsSnapshot()` in DevTools. Verify script: `bash scripts/verify_sync_stream.sh`.
 
 ### Phase 2 — Game API on VPS
 

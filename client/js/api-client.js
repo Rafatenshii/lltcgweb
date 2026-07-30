@@ -4,11 +4,22 @@
 (function (global) {
   'use strict';
 
-  global.API = './api.php';
-  global.ACCOUNT_API = './account.php';
+  /** Prefer VPS nginx TLS SSE (stream.loveliveradio.ca) — no Hostinger PHP. */
+  global.TCG_SYNC_STREAM_URL = global.TCG_SYNC_STREAM_URL
+    || 'https://stream.loveliveradio.ca/tcg/sync/stream';
+  /** Optional Phase 2 API origin (nginx → :5003). Empty = same-origin Hostinger PHP. */
+  global.TCG_API_ORIGIN = global.TCG_API_ORIGIN || '';
+  if (global.TCG_API_ORIGIN) {
+    const origin = String(global.TCG_API_ORIGIN).replace(/\/$/, '');
+    global.API = origin + '/api.php';
+    global.ACCOUNT_API = origin + '/account.php';
+  } else {
+    global.API = './api.php';
+    global.ACCOUNT_API = './account.php';
+  }
   global.WRAPPED_API = '/wrapped/api.php';
-  /** Apache-proxied VPS SSE (no Hostinger PHP). Falls back to WRAPPED_API proxy. */
-  global.TCG_SYNC_STREAM_URL = global.TCG_SYNC_STREAM_URL || './sync-stream';
+  /** Legacy Hostinger Apache sync-stream path (often 503 without mod_proxy). */
+  global.TCG_SYNC_STREAM_FALLBACK_URL = global.TCG_SYNC_STREAM_FALLBACK_URL || './sync-stream';
   global.AUTH_FETCH_TIMEOUT_MS = global.AUTH_FETCH_TIMEOUT_MS || 12000;
   global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 8000;
   global.AUTH_ME_RETRY_COUNT = global.AUTH_ME_RETRY_COUNT || 3;
