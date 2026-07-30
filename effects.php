@@ -2623,6 +2623,9 @@ function cardMatchesNames(array $card, array $names): bool {
 /** Hand Members legal for optional_pay/play_hand_member (names or group + max_cost). */
 function handMembersMatchingPlayAbility(array $p, array $ab): array {
     $names = $ab['names'] ?? [];
+    // any_group: any Member (Maki PR-015 / Kinako SP-PR-020). Default group stays Nijigasaki
+    // for older abilities that omit an explicit group key.
+    $anyGroup = !empty($ab['any_group']);
     $group = $ab['group'] ?? 'Nijigasaki';
     $maxCost = intval($ab['max_cost'] ?? 4);
     $out = [];
@@ -2637,7 +2640,7 @@ function handMembersMatchingPlayAbility(array $p, array $ab): array {
             if (!cardMatchesNames($c, $names)) {
                 continue;
             }
-        } elseif (($c['group'] ?? '') !== $group) {
+        } elseif (!$anyGroup && ($c['group'] ?? '') !== $group) {
             continue;
         }
         $out[] = $c;

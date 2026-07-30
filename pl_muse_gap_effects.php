@@ -756,10 +756,12 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             $fromCost = intval($source['baton_from_cost'] ?? -1);
             $selfCost = intval($source['cost'] ?? 0);
             if ($fromCost >= 0 && $fromCost < $selfCost) {
+                // Card text: any Member with cost ≤N (not Nijigasaki-only).
                 $state = resolveAbilityEffect($state, $pid, $source, [
                     'type'      => 'optional_play_hand_member',
                     'max_cost'  => intval($ab['max_cost'] ?? 4),
                     'max_count' => 1,
+                    'any_group' => true,
                 ], $ctx);
             }
             break;
@@ -1727,7 +1729,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
         if (($prompt['step'] ?? '') === 'pick_member') {
             $pickId = $data['card_id'] ?? $choice;
             $slot = findMemberSlot($p, $pickId);
-            if ($slot === null || empty($p['stage'][$slot])) {
+            if ($slot === '' || empty($p['stage'][$slot])) {
                 throw new Exception('Choose a μ\'s Member on your Stage');
             }
             $leaving = $p['stage'][$slot];
@@ -1736,28 +1738,44 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             }
             $p['stage'][$slot] = null;
             $state = resolveOnLeaveStageAbilities($state, $owner, $leaving);
+            $p = &$state['players'][$owner];
             $p['waiting_room'][] = $leaving;
             if ($sourceId !== '') {
                 bumpLiveCardScore($state, $owner, $sourceId, $scoreAmt);
             }
-            $liveSource = findCardInState($state, $sourceId, $owner) ?? ['instance_id' => $sourceId, 'name_en' => $prompt['source_name'] ?? 'Live'];
+            $liveSource = null;
+            foreach ($state['players'][$owner]['live_zone'] ?? [] as $lc) {
+                if ($lc && ($lc['instance_id'] ?? '') === $sourceId) {
+                    $liveSource = $lc;
+                    break;
+                }
+            }
+            if ($liveSource === null) {
+                $liveSource = [
+                    'instance_id' => $sourceId,
+                    'name_en' => $prompt['source_name'] ?? 'Live',
+                    'card_type' => 'ライブ',
+                    'card_type_en' => 'Live',
+                ];
+            }
             $cfg = wrPickCfgFromAbility(array_merge($ability, ['filter' => 'live', 'group' => $group]));
             $count = intval($ability['count'] ?? 1);
+            // Do not unset pending_prompt before this — WR pick opens inside.
             $added = addFromWaitingRoomWithChoice(
                 $state,
                 $owner,
                 $liveSource,
                 $ability,
-                ['phase' => $state['phase'] ?? ''],
+                ['phase' => $state['phase'] ?? '', 'skip_stage_writeback' => true],
                 $cfg,
                 $count
             );
-            unset($state['pending_prompt']);
             $state['seq']++;
             if ($added === null) {
                 return addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . ($prompt['source_name'] ?? 'Live') . "] score +$scoreAmt; choose a Live from Waiting Room.");
             }
+            unset($state['pending_prompt']);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Live') . "] score +$scoreAmt; added $added Live from Waiting Room.");
             return finishPromptEffects($state);

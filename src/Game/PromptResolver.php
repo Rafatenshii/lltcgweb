@@ -449,11 +449,12 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                         throw new Exception('Must choose a Member card');
                     }
                     $names = $ability['names'] ?? [];
+                    $anyGroup = !empty($ability['any_group']);
                     if (!empty($names)) {
                         if (!cardMatchesNames($c, $names)) {
                             throw new Exception('Must choose a matching Member');
                         }
-                    } elseif (($c['group'] ?? '') !== $group) {
+                    } elseif (!$anyGroup && ($c['group'] ?? '') !== $group) {
                         throw new Exception("Must choose a $group Member");
                     }
                     if (intval($c['cost'] ?? 0) > intval($ability['max_cost'] ?? 4)) {
@@ -499,6 +500,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 return finishPromptEffects($state);
             }
             $group = $ability['group'] ?? 'Nijigasaki';
+            $anyGroup = !empty($ability['any_group']);
             $played = null;
             foreach ($ownerP['hand'] as $c) {
                 if (($c['instance_id'] ?? '') !== $cardId) {
@@ -512,7 +514,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                     if (!cardMatchesNames($c, $names)) {
                         throw new Exception('Must choose a matching Member');
                     }
-                } elseif (($c['group'] ?? '') !== $group) {
+                } elseif (!$anyGroup && ($c['group'] ?? '') !== $group) {
                     throw new Exception("Must choose a $group Member");
                 }
                 if (intval($c['cost'] ?? 0) > intval($ability['max_cost'] ?? 4)) {

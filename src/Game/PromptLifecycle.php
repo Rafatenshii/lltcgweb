@@ -187,13 +187,24 @@ function addFromWaitingRoomWithChoice(
     if (empty($candidates)) {
         return 0;
     }
-    $slot = $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? '');
-    if ($slot === null) {
-        $slot = 'center';
-    }
-    $member = !empty($p['stage'][$slot]) ? $p['stage'][$slot] : $source;
+    $slot = (string)($ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? ''));
+    // Live / off-stage sources: findMemberSlot returns '' — do not invent a Stage write.
+    $onStage = $slot !== '' && !empty($p['stage'][$slot]);
+    $member = $onStage ? $p['stage'][$slot] : $source;
     $abilityIdx = intval($ctx['ability_index'] ?? $ctx['ability_idx'] ?? 0);
-    startPickWrToHandPrompt($state, $pid, $member, $slot, $abilityIdx, $ab, $cfg, $leaveStage, $count);
+    $skipWrite = !empty($ctx['skip_stage_writeback']) || !$onStage;
+    startPickWrToHandPrompt(
+        $state,
+        $pid,
+        $member,
+        $onStage ? $slot : '',
+        $abilityIdx,
+        $ab,
+        $cfg,
+        $leaveStage,
+        $count,
+        $skipWrite
+    );
     return null;
 }
 
@@ -206,7 +217,8 @@ function startPickWrToHandPrompt(
     array $ab,
     array $cfg,
     bool $leaveStage = false,
-    int $count = 1
+    int $count = 1,
+    bool $skipStageWriteback = false
 ): void {
     $p = &$state['players'][$pid];
     $candidates = wrCandidatesMatching($p, $cfg);
@@ -218,7 +230,10 @@ function startPickWrToHandPrompt(
     if (!empty($ab['once_per_turn'])) {
         markAbilityUsed($member, $abilityIdx);
     }
-    $p['stage'][$slot] = $member;
+    // Only write back when the source is a Stage Member (never park a Live on stage['']).
+    if (!$skipStageWriteback && $slot !== '' && array_key_exists($slot, $p['stage'] ?? [])) {
+        $p['stage'][$slot] = $member;
+    }
     $promptType = $leaveStage ? 'pick_wr_leave_stage_add' : 'pick_wr_to_hand';
     $upTo = $count > 1;
     $state['pending_prompt'] = [

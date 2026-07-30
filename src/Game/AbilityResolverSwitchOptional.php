@@ -701,11 +701,12 @@ function tryResolveAbilityEffectSwitchOptional(
             }
             $cost = intval($ab['cost'] ?? 0);
             $group = $ab['group'] ?? 'Nijigasaki';
+            $anyGroup = !empty($ab['any_group']);
             $maxCost = intval($ab['max_cost'] ?? 4);
             $names = $ab['names'] ?? [];
             $targetLabel = !empty($names)
                 ? implode('/', $names)
-                : ($group . ' Member');
+                : ($anyGroup ? 'Member' : ($group . ' Member'));
             $promptPay = $cost > 0
                 ? 'Pay ' . $cost . ' Energy: '
                 : '';
