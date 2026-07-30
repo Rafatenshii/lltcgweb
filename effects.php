@@ -5093,7 +5093,7 @@ function beginWaitOpponentStagePick(
 function abilityTriggerLabel(string $trigger): string {
     return match ($trigger) {
         'on_enter'               => 'On Enter',
-        'on_enter_or_live_start' => 'Live Start',
+        'on_enter_or_live_start' => 'On Enter / Live Start',
         'live_start'             => 'Live Start',
         'live_success'           => 'Live Success',
         'on_leave_stage'         => 'Leave Stage',
@@ -5120,9 +5120,6 @@ function resolveOnEnterAbilities(array $state, string $pid, array $member, strin
     if (!empty($abilities)) {
         $state = logAbilityChain($state, $pid, $member, 'on_enter');
         foreach ($abilities as $ab) {
-            if (($ab['trigger'] ?? '') === 'on_enter_or_live_start') {
-                $state = markMemberDualEnterLiveStartFired($state, $pid, $member['instance_id'] ?? '');
-            }
             $state = resolveAbilityEffect($state, $pid, $member, $ab, [
                 'slot'  => $slot,
                 'phase' => 'on_enter',

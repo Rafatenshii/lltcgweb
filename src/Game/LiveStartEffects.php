@@ -44,21 +44,16 @@ function resumeLiveStartEffectPhase(array $state): array {
     return finishLiveStartEffects($state);
 }
 
+/**
+ * [On Enter]/[Live Start] skills fire at each timing independently.
+ * Do not suppress Live Start after On Enter earlier in the turn.
+ */
 function markMemberDualEnterLiveStartFired(array $state, string $pid, string $instanceId): array {
-    if ($instanceId === '') {
-        return $state;
-    }
-    $slot = findMemberSlot($state['players'][$pid] ?? [], $instanceId);
-    if ($slot === '' || empty($state['players'][$pid]['stage'][$slot])) {
-        return $state;
-    }
-    $state['players'][$pid]['stage'][$slot]['on_enter_or_live_start_fired'] = true;
     return $state;
 }
 
 function shouldSkipDualEnterLiveStartAtLiveStart(array $member, array $ab): bool {
-    return ($ab['trigger'] ?? '') === 'on_enter_or_live_start'
-        && !empty($member['on_enter_or_live_start_fired']);
+    return false;
 }
 
 // ─────────────────────────────────────────────
