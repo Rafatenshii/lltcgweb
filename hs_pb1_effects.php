@@ -13,6 +13,7 @@ function hsPb1EffectTypes(): array {
         'auto_hand_discard_blade',
         'optional_discard_mill_add_wr_subunit_live',
         'pick_number_reveal_deck_top',
+        'live_start_cost_hearts_per_stacked',
         'optional_pos_change_subunit_blade',
         'blade_if_stage_exact_opp_min',
         'wait_both_stages_max_original_hearts',
@@ -414,18 +415,49 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             $state = addLog($state, $state['players'][$pid]['name'] . " — [$name] optional mill + WR Live.");
             break;
 
+        case 'live_start_cost_hearts_per_stacked':
+            // PL!HS-pb1-002: Live Start (not Always) — lock cost/hearts from stacks this Live (#79).
+            $stacked = min(
+                count($source['stacked_members'] ?? []),
+                intval($ab['max_stacked'] ?? 3)
+            );
+            if ($stacked <= 0) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] Live Start: no Members stacked underneath.");
+                break;
+            }
+            $costPlus = $stacked * intval($ab['cost_plus_per'] ?? 4);
+            $slot = $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? '');
+            if ($slot !== null && $slot !== '' && !empty($p['stage'][$slot])) {
+                $p['stage'][$slot]['live_cost_bonus'] =
+                    intval($p['stage'][$slot]['live_cost_bonus'] ?? 0) + $costPlus;
+            }
+            $heartColor = $ab['heart_color'] ?? 'blue';
+            $heartN = $stacked * intval($ab['heart_per'] ?? 1);
+            if ($heartN > 0) {
+                addBonusHeartsToModifier($state, $pid, [['color' => $heartColor, 'count' => $heartN]]);
+            }
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] Live Start: +$costPlus cost and +$heartN $heartColor ♡ from $stacked stacked Member(s).");
+            break;
+
         case 'pick_number_reveal_deck_top':
             if (!empty($state['pending_prompt'])) break;
             $state['pending_prompt'] = [
                 'type'          => 'pick_number_reveal_deck_top',
+                'step'          => 'pick_number',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
-                'numbers'       => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                // Comprehensive rules: any integer ≥ 0 (wiki). UI offers 0–30 + custom.
+                'numbers'       => range(0, 30),
+                'min_number'    => 0,
+                'max_number'    => 99,
+                'allow_custom'  => true,
                 'ability'       => $ab,
-                'prompt'        => 'Choose a number, then reveal your deck top. Member with cost ≥ that number goes to hand; otherwise gain +' .
-                    intval($ab['blade_amount'] ?? 1) . ' Blade.',
+                'prompt'        => 'Choose a number (0 or higher), then reveal your deck top. Member cost ≥ that number → hand; cost ≤ that number → +' .
+                    intval($ab['blade_amount'] ?? 2) . ' Blade until Live ends (both if equal).',
             ];
             $state = addLog($state, $state['players'][$pid]['name'] . " — [$name] pick number + reveal deck top.");
             break;
@@ -815,7 +847,8 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             $candidates = [];
             foreach ($p['stage'] as $slot => $mbr) {
                 if (!$mbr || !cardMatchesSubunit($mbr, $sub)) continue;
-                if (intval($mbr['cost'] ?? 0) < intval($ab['min_cost'] ?? 10)) continue;
+                $effCost = getEffectiveStageMemberCost($state, $pid, $mbr);
+                if ($effCost < intval($ab['min_cost'] ?? 10)) continue;
                 $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
             }
             if (empty($candidates)) break;
@@ -1145,28 +1178,71 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
     }
 
     if ($promptType === 'pick_number_reveal_deck_top') {
-        $num = intval($choice);
-        if ($num < 1) throw new Exception('Choose a number');
+        $step = $prompt['step'] ?? 'pick_number';
+        if ($step === 'pick_number') {
+            $num = intval($data['number'] ?? $choice);
+            if ($num < 0 || (isset($prompt['max_number']) && $num > intval($prompt['max_number']))) {
+                throw new Exception('Choose a valid number');
+            }
+            if (empty($ownerP['main_deck'])) {
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishPromptEffects($state);
+            }
+            // Reveal without committing disposition yet — player sees the card (#79).
+            $top = $ownerP['main_deck'][0];
+            $state['pending_prompt'] = [
+                'type'           => 'pick_number_reveal_deck_top',
+                'step'           => 'resolve_reveal',
+                'owner'          => $owner,
+                'responder'      => $owner,
+                'source_id'      => $prompt['source_id'] ?? '',
+                'source_name'    => $prompt['source_name'] ?? 'Member',
+                'chosen_number'  => $num,
+                'ability'        => $prompt['ability'] ?? [],
+                'revealed'       => cardPromptSummary($top),
+                'prompt'         => 'Revealed deck top (chosen number: ' . $num . '). Confirm to apply the effect.',
+            ];
+            $state['seq']++;
+            return $state;
+        }
+
+        // step === resolve_reveal
+        $num = intval($prompt['chosen_number'] ?? $data['number'] ?? $choice);
         $top = array_shift($ownerP['main_deck']);
         if (!$top) {
             unset($state['pending_prompt']);
             $state['seq']++;
-            // Resume Live Start / Performance — bare return softlocks (COMPASS after Kosuzu).
             return finishPromptEffects($state);
         }
-        if (($top['card_type'] ?? '') === 'メンバー' && intval($top['cost'] ?? 0) >= $num) {
-            $ownerP['hand'][] = $top;
+        $isMember = ($top['card_type'] ?? '') === 'メンバー';
+        $cost = intval($top['cost'] ?? 0);
+        $bladeAmt = intval($prompt['ability']['blade_amount'] ?? 2);
+        $label = $top['name_en'] ?? $top['name'] ?? 'card';
+
+        if (!$isMember) {
+            // Non-Member: nothing happens — return to deck top.
+            array_unshift($ownerP['main_deck'], $top);
             $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — revealed ' . ($top['name_en'] ?? $top['name']) . ' (cost ≥ $num) to hand.');
-        } elseif (($top['card_type'] ?? '') === 'メンバー') {
-            $ownerP['waiting_room'][] = $top;
-            $bladeAmt = intval($prompt['ability']['blade_amount'] ?? 1);
-            $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => $bladeAmt]);
-            $state = addLog($state, $state['players'][$owner]['name'] .
-                " — cost below chosen number; +$bladeAmt Blade.");
+                " — revealed $label (not a Member); nothing happens.");
         } else {
-            $ownerP['waiting_room'][] = $top;
-            $state = addLog($state, $state['players'][$owner]['name'] . ' — non-Member revealed; no effect.');
+            $toHand = $cost >= $num;
+            $gainBlade = $cost <= $num;
+            if ($toHand) {
+                $ownerP['hand'][] = $top;
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — revealed $label (cost $cost ≥ $num) to hand.");
+            } else {
+                // Member below threshold: return to deck top after reveal.
+                array_unshift($ownerP['main_deck'], $top);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — revealed $label (cost $cost < $num); returned to deck top.");
+            }
+            if ($gainBlade) {
+                $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => $bladeAmt]);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — cost ≤ $num; +$bladeAmt Blade until Live ends.");
+            }
         }
         unset($state['pending_prompt']);
         $state['seq']++;

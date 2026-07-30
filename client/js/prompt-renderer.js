@@ -1393,6 +1393,14 @@ function optionalLiveStartDiscardHand(pr, s, myId) {
   if (grp) {
     pickHand = pickHand.filter(c => c.card_type === 'メンバー' && (c.group || '') === grp);
   }
+  const sub = ab.discard_subunit || ab.requires_subunit_in_hand || pr.subunit || '';
+  if (sub) {
+    pickHand = pickHand.filter(c =>
+      (typeof cardMatchesSubunit === 'function')
+        ? cardMatchesSubunit(c, sub)
+        : String(c.subunit || '').toLowerCase().includes(String(sub).toLowerCase())
+    );
+  }
   // Same for filter: optional_discard_add_from_wr's filter is the WR card type, not the discard.
   if (ab.type !== 'optional_discard_add_from_wr') {
     const filter = ab.filter || '';
@@ -1430,9 +1438,10 @@ global.openOptionalLiveStartDiscardPick = function openOptionalLiveStartDiscardP
       ? 'Choose a card to send to the Waiting Room.'
       : `Choose ${discardNeed} cards to send to the Waiting Room.`),
     onConfirm: (ids) => sendResolvePrompt('yes', { discard_ids: ids }),
+    // Cancel = skip the optional "may" (do not re-open the same pick — #79 Proof Kosuzu).
     onCancel: () => {
       G._promptSubmitKey = null;
-      if (G.gameState) renderPrompt(G.gameState, myId);
+      sendResolvePrompt('no');
     },
   });
   return true;
@@ -1458,6 +1467,7 @@ function promptDiscardCount(pr, choice){
     if(pr.ability?.max_discard) return pr.ability.max_discard;
     return pr.ability?.discard||1;
   }
+  if(pr.type==='optional_discard_subunit_draw_buff_cost') return 1;
   if(pr.type==='discard_member_add_lower_wr_member') return 1;
   if(pr.type==='optional_discard_mill_wr_add_member') return 1;
   if(pr.type==='optional_discard_grant_heart_other_member') return 1;
@@ -1738,7 +1748,8 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
     const minPick=(pr.max_discard||pr.ability?.max_discard)?0:discardNeed;
     let pickHand=me.hand||[];
     if(pr.type==='optional_live_start'
-      ||(pr.type==='optional_discard_prompt'&&(pr.live_start||s.phase==='live_start_effects'))){
+      ||(pr.type==='optional_discard_prompt'&&(pr.live_start||s.phase==='live_start_effects'))
+      ||pr.type==='optional_discard_subunit_draw_buff_cost'){
       pickHand=optionalLiveStartDiscardHand(pr,s,myId);
     }
     if(pr.type==='opp_may_discard_or_modifier'){
@@ -2802,16 +2813,66 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='pick_number_reveal_deck_top'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Pick a number';
-    el('prompt-msg').textContent=pr.prompt||'Choose a number, then reveal your deck top.';
-    const box=el('prompt-btns'); box.innerHTML='';
-    (pr.numbers||[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]).forEach(num=>{
+    if((pr.step||'pick_number')==='resolve_reveal'){
+      el('prompt-ttl').textContent=pr.source_name||'Deck top revealed';
+      const rev=pr.revealed||{};
+      const n=pr.chosen_number;
+      el('prompt-msg').textContent=pr.prompt||`Revealed: ${rev.name_en||rev.name||'card'} (cost ${rev.cost??'?'}). Chosen number: ${n}.`;
+      const box=el('prompt-btns'); box.innerHTML='';
+      if(rev.image||rev.instance_id){
+        try{
+          const wrap=document.createElement('div');
+          wrap.style.cssText='display:flex;justify-content:center;margin:8px 0 12px';
+          const img=document.createElement('img');
+          img.src=rev.image||'';
+          img.alt=rev.name_en||rev.name||'';
+          img.style.cssText='max-width:160px;border-radius:8px';
+          if(rev.image) wrap.appendChild(img);
+          box.appendChild(wrap);
+        }catch(_){}
+      }
       const b=document.createElement('button');
       b.className='btn-grad';
+      b.textContent='Confirm';
+      b.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:'confirm'}); };
+      box.appendChild(b);
+      ovl.classList.add('open');
+      return;
+    }
+    el('prompt-ttl').textContent=pr.source_name||'Pick a number';
+    el('prompt-msg').textContent=pr.prompt||'Choose a number (0 or higher), then reveal your deck top.';
+    const box=el('prompt-btns'); box.innerHTML='';
+    box.style.cssText='display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:420px';
+    (pr.numbers||[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]).forEach(num=>{
+      const b=document.createElement('button');
+      b.className='btn-grad';
+      b.style.cssText='min-width:42px;padding:8px 10px';
       b.textContent=String(num);
-      b.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:String(num)}); };
+      b.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:String(num), number:num}); };
       box.appendChild(b);
     });
+    if(pr.allow_custom!==false){
+      const row=document.createElement('div');
+      row.style.cssText='width:100%;display:flex;gap:8px;justify-content:center;margin-top:8px;align-items:center';
+      const inp=document.createElement('input');
+      inp.type='number';
+      inp.min=String(pr.min_number??0);
+      inp.max=String(pr.max_number??99);
+      inp.placeholder='Custom (e.g. 25)';
+      inp.style.cssText='width:140px;padding:8px';
+      const go=document.createElement('button');
+      go.className='btn-grad';
+      go.textContent='Use number';
+      go.onclick=()=>{
+        const n=Number(inp.value);
+        if(!Number.isFinite(n)||n<0||n>99){ toast('Enter a number from 0 to 99'); return; }
+        closeM('overlay-prompt');
+        sendAct('resolve_prompt',{choice:String(Math.floor(n)), number:Math.floor(n)});
+      };
+      row.appendChild(inp);
+      row.appendChild(go);
+      box.appendChild(row);
+    }
     ovl.classList.add('open');
     return;
   }
@@ -2975,11 +3036,8 @@ global.renderPrompt = function renderPrompt(s, myId){
     return;
   }
   hideTextAnswerPrompt();
-  if(pr?.type==='optional_discard_prompt'
-    &&(pr.live_start||s.phase==='live_start_effects')&&pr.responder===myId){
-    ovl.classList.remove('open');
-    if(openOptionalLiveStartDiscardPick(pr,s,myId)) return;
-  }
+  // Live Start optional_discard_prompt: show Yes / No — Skip first (#79 Proof Kosuzu).
+  // Hand pick opens only after Yes (handlePromptChoice → discardNeed path).
   if(isSelfActivationPrompt(pr)){
     const box=el('prompt-btns');
     renderSelfActivationPrompt(pr,s,myId,box,false);

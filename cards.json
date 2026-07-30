@@ -25766,7 +25766,7 @@
                 "blue"
             ],
             "rarity": "P+",
-            "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Always] Until this Live ends, for each Member card under this Member (max 3), this Member's cost gets +4 and you gain 1 Blue Heart.",
+            "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Live Start] Until this Live ends, for each Member card under this Member (max 3), this Member's cost gets +4 and you gain 1 Blue Heart.",
             "text_jp": "手札の「村野さやか」のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。\n\nライブ終了時まで、このメンバーの下にあるメンバーカード1枚につき、このカードのコストを＋４してを得る。この能力では下にあるメンバーカードは3枚までしか数えない。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-002-P2.png",
             "subunit": "DOLLCHESTRA",
@@ -25781,8 +25781,8 @@
                     "once_per_turn": true
                 },
                 {
-                    "trigger": "continuous",
-                    "type": "cost_blade_per_stacked_max",
+                    "trigger": "live_start",
+                    "type": "live_start_cost_hearts_per_stacked",
                     "cost_plus_per": 4,
                     "heart_color": "blue",
                     "heart_per": 1,
@@ -25809,7 +25809,7 @@
                 "blue"
             ],
             "rarity": "R",
-            "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Always] Until this Live ends, for each Member card under this Member (max 3), this Member's cost gets +4 and you gain 1 Blue Heart.",
+            "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Live Start] Until this Live ends, for each Member card under this Member (max 3), this Member's cost gets +4 and you gain 1 Blue Heart.",
             "text_jp": "手札の「村野さやか」のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。\n\nライブ終了時まで、このメンバーの下にあるメンバーカード1枚につき、このカードのコストを＋４してを得る。この能力では下にあるメンバーカードは3枚までしか数えない。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-002-R.png",
             "subunit": "DOLLCHESTRA",
@@ -25824,8 +25824,8 @@
                     "once_per_turn": true
                 },
                 {
-                    "trigger": "continuous",
-                    "type": "cost_blade_per_stacked_max",
+                    "trigger": "live_start",
+                    "type": "live_start_cost_hearts_per_stacked",
                     "cost_plus_per": 4,
                     "heart_color": "blue",
                     "heart_per": 1,

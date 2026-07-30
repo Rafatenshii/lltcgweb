@@ -86,6 +86,9 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
             $this->assertSame('live_start_effects', $state['phase'] ?? null);
 
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '15']);
+            $this->assertSame('pick_number_reveal_deck_top', $state['pending_prompt']['type'] ?? null);
+            $this->assertSame('resolve_reveal', $state['pending_prompt']['step'] ?? null);
+            $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
             $this->assertSame(
                 'live_start_activate_stage_live_start_ability',
                 $state['pending_prompt']['type'] ?? null,
@@ -108,6 +111,8 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
 
             $state = \resolveLiveStartAbilities($state, 'p1');
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '15']);
+            $this->assertSame('resolve_reveal', $state['pending_prompt']['step'] ?? null);
+            $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
             $this->assertSame('live_start_activate_stage_live_start_ability', $state['pending_prompt']['type'] ?? null);
 
             $state = \actionResolvePrompt($state, 'p1', ['slot' => 'right']);
@@ -118,6 +123,8 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
             );
 
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '6']);
+            $this->assertSame('resolve_reveal', $state['pending_prompt']['step'] ?? null);
+            $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
             $this->assertNull($state['pending_prompt'] ?? null);
             $this->assertArrayNotHasKey('live_start_optional_queue', $state);
             $this->assertArrayNotHasKey('_live_start_resume_from', $state);
@@ -135,6 +142,7 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
             $state = $this->baseState();
             $state = \resolveLiveStartAbilities($state, 'p1');
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '15']);
+            $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => 'skip']);
             $this->assertNull($state['pending_prompt'] ?? null);
             $this->assertArrayNotHasKey('live_start_optional_queue', $state);

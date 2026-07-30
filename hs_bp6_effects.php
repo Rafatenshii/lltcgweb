@@ -180,12 +180,13 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
 
         case 'live_start_cost_plus_stage_cost_blade_hearts':
             if (!empty($state['pending_prompt'])) break;
-            $state['pending_prompt'] = [
+            $state['pending_prompt'] = enrichSelfActivationPrompt($state, [
                 'type'          => 'optional_discard_prompt',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
+                'live_start'    => true,
                 'prompt'        => 'Put 1 card from hand into the Waiting Room: this Member\'s cost +6 until Live ends?',
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => ['Yes', 'No — Skip'],
@@ -197,7 +198,7 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
                         'heart_color' => $ab['heart_color'] ?? 'pink',
                     ],
                 ]),
-            ];
+            ]);
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] optional Live Start (choose).");
             break;
@@ -284,18 +285,25 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
 
         case 'optional_discard_subunit_draw_buff_cost':
             if (!empty($state['pending_prompt'])) break;
-            $state['pending_prompt'] = [
+            $sub = $ab['subunit'] ?? 'DOLLCHESTRA';
+            $state['pending_prompt'] = enrichSelfActivationPrompt($state, [
                 'type'          => 'optional_discard_subunit_draw_buff_cost',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
-                'subunit'       => $ab['subunit'] ?? 'DOLLCHESTRA',
+                'subunit'       => $sub,
                 'cost_bonus'    => intval($ab['cost_bonus'] ?? 5),
-                'prompt'        => 'Discard 1 ' . ($ab['subunit'] ?? 'DOLLCHESTRA') . ' from hand: draw 1 and +cost to 1 Member?',
+                'live_start'    => true,
+                'ability'       => array_merge($ab, [
+                    'discard' => 1,
+                    'discard_subunit' => $sub,
+                ]),
+                'prompt'        => 'Put 1 ' . $sub . ' card from your hand into the Waiting Room: draw 1 and give +' .
+                    intval($ab['cost_bonus'] ?? 5) . ' cost to 1 ' . $sub . ' Member until Live ends?',
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => ['Yes', 'No — Skip'],
-            ];
+            ]);
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] optional Live Start (choose).");
             break;

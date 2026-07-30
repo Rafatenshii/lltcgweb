@@ -79,11 +79,26 @@ final class Issue76DollcheBugsTest extends TestCase
         $this->assertCount(1, $stacked);
         $this->assertSame('other_sayaka_name', $stacked[0]['instance_id'] ?? null);
         $this->assertSame(
-            6,
+            2,
             \getEffectiveStageMemberCost($state, 'p1', $state['players']['p1']['stage']['center']),
-            'Base 2 + 4 per stacked = 6'
+            'Stacking alone does not raise cost until Live Start (#79)'
         );
         $this->assertEmpty($state['players']['p1']['hand']);
+
+        $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
+        try {
+            $state['phase'] = 'live_start_effects';
+            $state['live_attempt'] = ['p1'];
+            $state = \resolveLiveStartAbilities($state, 'p1');
+            $this->assertNull($state['pending_prompt'] ?? null);
+            $this->assertSame(
+                6,
+                \getEffectiveStageMemberCost($state, 'p1', $state['players']['p1']['stage']['center']),
+                'Live Start: base 2 + 4 per stacked = 6'
+            );
+        } finally {
+            unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
+        }
     }
 
     public function testBlueMomentSurplusUsesExcessHeartsKey(): void
