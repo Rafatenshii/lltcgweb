@@ -607,6 +607,15 @@ function hsResolveAutoOnOtherMemberEnter(array $state, string $pid, array $enter
                 && !cardMatchesSubunit($entered, $ab['subunit'] ?? 'Edel Note')) {
                 continue;
             }
+            // Do not clobber an On Enter (or other) prompt already opened for the
+            // entering Member — resume Ceras after that chain finishes (#80).
+            if (!empty($state['pending_prompt'])) {
+                $state['_resume_hs_auto_on_other_enter'] = [
+                    'pid' => $pid,
+                    'entered_id' => $enteredId,
+                ];
+                return $state;
+            }
             $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
             // Card text: "your opponent puts 1 of their active Stage Members into Wait"
             $state = beginWaitOpponentStagePick(

@@ -42,7 +42,8 @@ final class Issue78EdelnoteFixesTest extends TestCase
     public function testCerasAutoOpensOppChoosesWaitPick(): void
     {
         $ceras = $this->cardByNo('PL!HS-bp6-007-P', 'ceras');
-        $edel = $this->cardByNo('PL!HS-bp5-008-R', 'edel_enter'); // Edel Note
+        // No On Enter prompt — Ceras Auto should open Wait immediately (#80 defers when On Enter pending).
+        $edel = $this->cardByNo('PL!HS-sd1-015-SD', 'edel_enter');
         $oppA = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_a');
         $oppB = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_b');
 
@@ -96,7 +97,8 @@ final class Issue78EdelnoteFixesTest extends TestCase
     {
         $cerasL = $this->cardByNo('PL!HS-bp6-007-P', 'ceras_l');
         $cerasR = $this->cardByNo('PL!HS-bp6-007-R', 'ceras_r');
-        $edel = $this->cardByNo('PL!HS-bp5-008-R', 'edel_enter');
+        // No On Enter prompt so dual-Ceras Wait chain is tested directly (#80).
+        $edel = $this->cardByNo('PL!HS-sd1-015-SD', 'edel_enter');
         $oppA = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_a');
         $oppB = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_b');
         $oppC = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_c');

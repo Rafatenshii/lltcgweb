@@ -25789,10 +25789,10 @@
                     "max_stacked": 3
                 }
             ],
-            "text_es": "[Activada] [Una vez por turno] Revela 1 carta de Miembro \"Sayaka Murano\" de tu mano: coloca la carta revelada bajo este Miembro.\n[Siempre] Hasta que termine este Live, por cada carta de Miembro bajo este Miembro (máx. 3), el costo de este Miembro +4 y obtienes 1 Corazón azul.",
-            "text_ko": "[기동] [턴당 1회] 패에서 \"무라노 사야카\" 멤버 카드 1장을 공개한다: 공개한 카드를 이 멤버 밑에 놓는다.\n[상시] 이 라이브가 끝날 때까지, 이 멤버 밑에 있는 멤버 카드 1장마다(최대 3장) 이 멤버의 코스트 +4와 파란색 하트 1개를 얻는다.",
-            "text_zh": "[起动] [每回合1次] 亮出1张\"村野沙耶香\"手牌成员卡：将亮出的卡放在该成员下方。\n[永续] 直至本场比赛结束，该成员下每有一张成员卡（最多3张），该成员的费用+4，您获得1颗蓝心。",
-            "text_th": "[เปิดใช้] [เทิร์นละ 1 ครั้ง] แสดงบัตรสมาชิก \"ซายากะ มูราโน่\" 1 ใบจากมือของคุณ: วางการ์ดที่ถูกเปิดเผยไว้ใต้สมาชิกคนนี้\n[ต่อเนื่อง] จนกว่าการถ่ายทอดสดจะสิ้นสุดลง สำหรับบัตรสมาชิกแต่ละใบภายใต้สมาชิกนี้ (สูงสุด 3) ค่าใช้จ่ายของสมาชิกรายนี้จะได้รับ +4 และคุณจะได้รับ 1 หัวใจสีฟ้า"
+            "text_es": "[Activada] [Una vez por turno] Revela 1 carta de Miembro \"Sayaka Murano\" de tu mano: coloca la carta revelada bajo este Miembro.\n[Inicio de Live] Hasta que termine este Live, por cada carta de Miembro bajo este Miembro (máx. 3), el costo de este Miembro +4 y obtienes 1 Corazón azul.",
+            "text_ko": "[기동] [턴당 1회] 패에서 \"무라노 사야카\" 멤버 카드 1장을 공개한다: 공개한 카드를 이 멤버 밑에 놓는다.\n[라이브 개시] 이 라이브가 끝날 때까지, 이 멤버 밑에 있는 멤버 카드 1장마다(최대 3장) 이 멤버의 코스트 +4와 파란색 하트 1개를 얻는다.",
+            "text_zh": "[起动] [每回合1次] 亮出1张\"村野沙耶香\"手牌成员卡：将亮出的卡放在该成员下方。\n[Live开始] 直至本场比赛结束，该成员下每有一张成员卡（最多3张），该成员的费用+4，您获得1颗蓝心。",
+            "text_th": "[เปิดใช้] [เทิร์นละ 1 ครั้ง] แสดงบัตรสมาชิก \"ซายากะ มูราโน่\" 1 ใบจากมือของคุณ: วางการ์ดที่ถูกเปิดเผยไว้ใต้สมาชิกคนนี้\n[เริ่ม Live] จนกว่าการถ่ายทอดสดจะสิ้นสุดลง สำหรับบัตรสมาชิกแต่ละใบภายใต้สมาชิกนี้ (สูงสุด 3) ค่าใช้จ่ายของสมาชิกรายนี้จะได้รับ +4 และคุณจะได้รับ 1 หัวใจสีฟ้า"
         },
         {
             "card_no": "PL!HS-pb1-002-R",
@@ -25832,10 +25832,10 @@
                     "max_stacked": 3
                 }
             ],
-            "text_es": "[Activada] [Una vez por turno] Revela 1 carta de Miembro \"Sayaka Murano\" de tu mano: coloca la carta revelada bajo este Miembro.\n[Siempre] Hasta que termine este Live, por cada carta de Miembro bajo este Miembro (máx. 3), el costo de este Miembro +4 y obtienes 1 Corazón azul.",
-            "text_ko": "[기동] [턴당 1회] 패에서 \"무라노 사야카\" 멤버 카드 1장을 공개한다: 공개한 카드를 이 멤버 밑에 놓는다.\n[상시] 이 라이브가 끝날 때까지, 이 멤버 밑에 있는 멤버 카드 1장마다(최대 3장) 이 멤버의 코스트 +4와 파란색 하트 1개를 얻는다.",
-            "text_zh": "[起动] [每回合1次] 亮出1张\"村野沙耶香\"手牌成员卡：将亮出的卡放在该成员下方。\n[永续] 直至本场比赛结束，该成员下每有一张成员卡（最多3张），该成员的费用+4，您获得1颗蓝心。",
-            "text_th": "[เปิดใช้] [เทิร์นละ 1 ครั้ง] แสดงบัตรสมาชิก \"ซายากะ มูราโน่\" 1 ใบจากมือของคุณ: วางการ์ดที่ถูกเปิดเผยไว้ใต้สมาชิกคนนี้\n[ต่อเนื่อง] จนกว่าการถ่ายทอดสดจะสิ้นสุดลง สำหรับบัตรสมาชิกแต่ละใบภายใต้สมาชิกนี้ (สูงสุด 3) ค่าใช้จ่ายของสมาชิกรายนี้จะได้รับ +4 และคุณจะได้รับ 1 หัวใจสีฟ้า"
+            "text_es": "[Activada] [Una vez por turno] Revela 1 carta de Miembro \"Sayaka Murano\" de tu mano: coloca la carta revelada bajo este Miembro.\n[Inicio de Live] Hasta que termine este Live, por cada carta de Miembro bajo este Miembro (máx. 3), el costo de este Miembro +4 y obtienes 1 Corazón azul.",
+            "text_ko": "[기동] [턴당 1회] 패에서 \"무라노 사야카\" 멤버 카드 1장을 공개한다: 공개한 카드를 이 멤버 밑에 놓는다.\n[라이브 개시] 이 라이브가 끝날 때까지, 이 멤버 밑에 있는 멤버 카드 1장마다(최대 3장) 이 멤버의 코스트 +4와 파란색 하트 1개를 얻는다.",
+            "text_zh": "[起动] [每回合1次] 亮出1张\"村野沙耶香\"手牌成员卡：将亮出的卡放在该成员下方。\n[Live开始] 直至本场比赛结束，该成员下每有一张成员卡（最多3张），该成员的费用+4，您获得1颗蓝心。",
+            "text_th": "[เปิดใช้] [เทิร์นละ 1 ครั้ง] แสดงบัตรสมาชิก \"ซายากะ มูราโน่\" 1 ใบจากมือของคุณ: วางการ์ดที่ถูกเปิดเผยไว้ใต้สมาชิกคนนี้\n[เริ่ม Live] จนกว่าการถ่ายทอดสดจะสิ้นสุดลง สำหรับบัตรสมาชิกแต่ละใบภายใต้สมาชิกนี้ (สูงสุด 3) ค่าใช้จ่ายของสมาชิกรายนี้จะได้รับ +4 และคุณจะได้รับ 1 หัวใจสีฟ้า"
         },
         {
             "card_no": "PL!HS-pb1-003-P＋",
