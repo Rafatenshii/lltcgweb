@@ -448,6 +448,7 @@
       "flagLoading": "Loading flags…",
       "selectCardFirst": "Select a card first",
       "yourRank": "Your rank: #{rank}",
+      "yourRankNotPlayed": "Your rank: not played",
       "jumpToYou": "Jump to my entry"
     },
     "stamps": {
@@ -1581,6 +1582,7 @@
       "flagLoading": "国旗を読み込み中…",
       "selectCardFirst": "先にカードを選択してください",
       "yourRank": "あなたの順位: #{rank}",
+      "yourRankNotPlayed": "あなたの順位: 未プレイ",
       "jumpToYou": "自分の行へ移動"
     },
     "stamps": {
@@ -2624,7 +2626,8 @@
       "flagLoading": "Cargando banderas…",
       "selectCardFirst": "Selecciona primero una carta",
       "jumpToYou": "Ir a mi fila",
-      "yourRank": "Tu puesto: #{rank}"
+      "yourRank": "Tu puesto: #{rank}",
+      "yourRankNotPlayed": "Tu puesto: sin jugar"
     },
     "options": {
       "title": "Opciones",
@@ -3773,7 +3776,8 @@
       "flagLoading": "국기 불러오는 중…",
       "selectCardFirst": "먼저 카드를 선택하세요",
       "jumpToYou": "내 순위로 이동",
-      "yourRank": "내 순위: #{rank}"
+      "yourRank": "내 순위: #{rank}",
+      "yourRankNotPlayed": "내 순위: 미플레이"
     },
     "options": {
       "title": "옵션",
@@ -4936,7 +4940,8 @@
       "flagLoading": "正在加载旗帜…",
       "selectCardFirst": "请先选择一张卡",
       "jumpToYou": "跳到我的名次",
-      "yourRank": "你的排名：#{rank}"
+      "yourRank": "你的排名：#{rank}",
+      "yourRankNotPlayed": "你的排名：未游玩"
     },
     "options": {
       "title": "选项",
@@ -6083,6 +6088,7 @@
       "selectCardFirst": "เลือกการ์ดก่อน",
       "jumpToYou": "ไปที่รายการของฉัน",
       "yourRank": "อันดับของคุณ: #{rank}",
+      "yourRankNotPlayed": "อันดับของคุณ: ยังไม่เคยเล่น",
       "profileFlag": "ธงโปรไฟล์",
       "flagLead": "เลือกธงเพื่อแสดงข้างชื่อของคุณบนกระดานผู้นำ",
       "flagSearchPlaceholder": "ค้นหาธง…",

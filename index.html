@@ -8564,7 +8564,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=77"></script>
+<script src="i18n.js?v=78"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
@@ -15705,13 +15705,13 @@ function renderLeaderboardYourRank(data) {
   const rows = data?.leaderboard || [];
   const youRow = rows.find(row => row.is_you);
   const rank = youRow?.rank ?? data?.you?.rank ?? null;
-  const games = youRow?.games ?? data?.you?.games ?? 0;
+  const games = Number(youRow?.games ?? data?.you?.games ?? 0) || 0;
+  wrap.hidden = false;
   if (!games || rank == null) {
-    wrap.hidden = true;
+    text.textContent = t('leaderboard.yourRankNotPlayed');
     if (jumpBtn) jumpBtn.hidden = true;
     return;
   }
-  wrap.hidden = false;
   text.textContent = t('leaderboard.yourRank', { rank });
   if (jumpBtn) {
     jumpBtn.hidden = false;
