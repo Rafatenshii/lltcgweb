@@ -8741,6 +8741,8 @@ const A = {
   seals: { n: 0, r: 0, p: 0, sec: 0, pr: 0 },
   ownedStarters: [],
   gameMode: 'standard',
+  rankedDeckByMode: { standard: null, starters: null },
+  lobbyDeckByMode: { standard: null, starters: null },
   sealBuyCosts: { N: 20, R: 15, P: 10, SEC: 5, PR: 20 },
   stickerProductId: null,
   stickerProducts: [],
@@ -16522,6 +16524,8 @@ async function resumeRankedSearchIfQueued() {
 
 const TCG_GAME_MODE_KEY = 'tcg_game_mode';
 const TCG_GAME_MODES = ['standard', 'starters'];
+const TCG_RANKED_DECK_BY_MODE_KEY = 'tcg_ranked_deck_by_mode';
+const TCG_LOBBY_DECK_BY_MODE_KEY = 'tcg_lobby_deck_by_mode';
 
 function normalizeGameMode(raw) {
   const m = String(raw || '').toLowerCase().trim();
@@ -16554,6 +16558,80 @@ function isStartersGameMode(mode) {
 
 function gameModeDescription(mode) {
   return isStartersGameMode(mode) ? t('gameMode.startersDesc') : t('gameMode.standardDesc');
+}
+
+function emptyDeckByModeMap() {
+  return { standard: null, starters: null };
+}
+
+function loadDeckByModePrefs(storageKey) {
+  const out = emptyDeckByModeMap();
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return out;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return out;
+    TCG_GAME_MODES.forEach(mode => {
+      const v = parsed[mode];
+      if (typeof v === 'string' && v) out[mode] = v;
+    });
+  } catch (e) {}
+  return out;
+}
+
+function ensureDeckByModeMaps() {
+  if (!A.rankedDeckByMode || typeof A.rankedDeckByMode !== 'object') {
+    A.rankedDeckByMode = loadDeckByModePrefs(TCG_RANKED_DECK_BY_MODE_KEY);
+  }
+  if (!A.lobbyDeckByMode || typeof A.lobbyDeckByMode !== 'object') {
+    A.lobbyDeckByMode = loadDeckByModePrefs(TCG_LOBBY_DECK_BY_MODE_KEY);
+  }
+}
+
+function persistDeckByModeMap(storageKey, map) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({
+      standard: map?.standard || null,
+      starters: map?.starters || null,
+    }));
+  } catch (e) {}
+}
+
+function rememberRankedDeckForMode(mode, deckKey) {
+  ensureDeckByModeMaps();
+  const m = normalizeGameMode(mode);
+  const key = String(deckKey || '').trim();
+  if (!key) return;
+  A.rankedDeckByMode[m] = key;
+  persistDeckByModeMap(TCG_RANKED_DECK_BY_MODE_KEY, A.rankedDeckByMode);
+}
+
+function rememberLobbyDeckForMode(mode, deckKey) {
+  ensureDeckByModeMaps();
+  const m = normalizeGameMode(mode);
+  const key = String(deckKey || '').trim();
+  if (!key) return;
+  A.lobbyDeckByMode[m] = key;
+  persistDeckByModeMap(TCG_LOBBY_DECK_BY_MODE_KEY, A.lobbyDeckByMode);
+}
+
+function rememberedRankedDeckForMode(mode) {
+  ensureDeckByModeMaps();
+  return A.rankedDeckByMode[normalizeGameMode(mode)] || null;
+}
+
+function rememberedLobbyDeckForMode(mode) {
+  ensureDeckByModeMaps();
+  return A.lobbyDeckByMode[normalizeGameMode(mode)] || null;
+}
+
+/** Snapshot current select values under a mode before switching away. */
+function rememberCurrentDecksForMode(mode) {
+  const m = normalizeGameMode(mode);
+  const ranked = el('sel-ranked-deck')?.value;
+  if (ranked) rememberRankedDeckForMode(m, ranked);
+  const lobby = el('sel-deck')?.value;
+  if (lobby) rememberLobbyDeckForMode(m, lobby);
 }
 
 function syncGameModeSelects(mode) {
@@ -16597,6 +16675,7 @@ async function onGameModeSelectChange(sourceSelId) {
     syncGameModeSelects(next);
     return;
   }
+  rememberCurrentDecksForMode(prev);
   persistGameMode(next);
   syncGameModeSelects(next);
   if (A.rankedSearching) {
@@ -16605,8 +16684,8 @@ async function onGameModeSelectChange(sourceSelId) {
   if (A.casualSearching) {
     try { await cancelCasualSearch(); } catch (e) {}
   }
-  renderRankedDeckOptions();
-  renderLobbyDeckOptions();
+  renderRankedDeckOptions({ preferRemembered: true });
+  renderLobbyDeckOptions({ preferRemembered: true });
   if (el('screen-ranked')?.classList.contains('active')) {
     await refreshRankedScreenModeStats();
   }
@@ -16701,12 +16780,14 @@ function updateRankedDeckPrev() {
   prev.textContent = 'Choose a ranked deck.';
 }
 
-function renderRankedDeckOptions() {
+function renderRankedDeckOptions(opts = {}) {
+  const preferRemembered = !!opts.preferRemembered;
   const sel = el('sel-ranked-deck');
   if (!sel) return;
   const prev = sel.value;
   sel.replaceChildren();
-  const startersOnly = isStartersGameMode();
+  const mode = currentGameMode();
+  const startersOnly = isStartersGameMode(mode);
   const owned = ownedStarterKeysForUi();
 
   if (!startersOnly) {
@@ -16737,10 +16818,24 @@ function renderRankedDeckOptions() {
   }
 
   const values = [...sel.options].map(o => o.value);
+  const remembered = rememberedRankedDeckForMode(mode);
   const target = rankedDeckSelectValue();
-  if (values.includes(prev)) sel.value = prev;
-  else if (values.includes(target)) sel.value = target;
-  else sel.value = values[0] || '';
+  let chosen = '';
+  if (preferRemembered) {
+    if (remembered && values.includes(remembered)) chosen = remembered;
+    else if (values.includes(target)) chosen = target;
+    else chosen = values[0] || '';
+  } else if (values.includes(prev)) {
+    chosen = prev;
+  } else if (remembered && values.includes(remembered)) {
+    chosen = remembered;
+  } else if (values.includes(target)) {
+    chosen = target;
+  } else {
+    chosen = values[0] || '';
+  }
+  sel.value = chosen;
+  if (chosen) rememberRankedDeckForMode(mode, chosen);
   updateRankedDeckPrev();
 }
 
@@ -16768,6 +16863,7 @@ async function applyRankedDeckChoice(key, { silent = false } = {}) {
       equipped_loadout: res.equipped_loadout ?? null,
       equipped_starter_key: res.equipped_starter_key ?? (key.startsWith('starter:') ? key.slice(8) : null),
     });
+    rememberRankedDeckForMode(currentGameMode(), key);
     const dl = await accountGet('deck_list');
     A.decks = dl.decks || [];
     renderRankedDeckOptions();
@@ -16785,6 +16881,7 @@ async function onRankedDeckChange() {
   const sel = el('sel-ranked-deck');
   if (!sel || sel.disabled) return;
   const key = sel.value;
+  if (key) rememberRankedDeckForMode(currentGameMode(), key);
   const prevKey = rankedDeckSelectValue();
   if (key === prevKey) {
     updateRankedDeckPrev();
@@ -16835,7 +16932,7 @@ async function openRankedScreen() {
   syncRankedPrFromProfile(me);
   updateRankedPrUI();
   initRankedMatchSoundCheckbox();
-  renderRankedDeckOptions();
+  renderRankedDeckOptions({ preferRemembered: true });
   await pollRankedStatus();
   if (A.rankedSearching && !A.rankedPollScheduled) startRankedPoll();
   showScr('ranked');
@@ -18716,6 +18813,7 @@ async function bootApp() {
   on('sel-lobby-game-mode', 'change', () => { void onGameModeSelectChange('sel-lobby-game-mode'); });
   on('sel-leaderboard-game-mode', 'change', () => { void onGameModeSelectChange('sel-leaderboard-game-mode'); });
   persistGameMode(loadStoredGameMode());
+  ensureDeckByModeMaps();
   syncGameModeSelects();
   window.addEventListener('pagehide', (ev) => {
     if (ev.persisted) return;
@@ -18781,6 +18879,7 @@ async function bootApp() {
   });
   on('sel-deck', 'change', () => {
     const v = el('sel-deck')?.value || '';
+    if (v) rememberLobbyDeckForMode(currentGameMode(), v);
     const inp = el('inp-lobby-experiment-pwd');
     if (v.startsWith('experiment:')) {
       if (inp) inp.value = normalizeExperimentPasswordInput(v.slice(11));
@@ -20069,13 +20168,15 @@ function experimentDeckChoiceForPreview() {
   return el('sel-deck')?.value || 'nijigasaki';
 }
 
-function renderLobbyDeckOptions() {
+function renderLobbyDeckOptions(opts = {}) {
+  const preferRemembered = !!opts.preferRemembered;
   const sel = el('sel-deck');
   if (!sel) return;
   const prev = sel.value;
   sel.replaceChildren();
   const guest = !isSignedInAccount();
-  const startersOnly = isStartersGameMode();
+  const mode = currentGameMode();
+  const startersOnly = isStartersGameMode(mode);
 
   const basicGroup = document.createElement('optgroup');
   basicGroup.label = startersOnly ? t('gameMode.starters') : t('deck.basicDecks');
@@ -20131,7 +20232,20 @@ function renderLobbyDeckOptions() {
   }
 
   const values = [...sel.options].map(o => o.value);
-  sel.value = values.includes(prev) ? prev : (values[0] || 'nijigasaki');
+  const remembered = rememberedLobbyDeckForMode(mode);
+  let chosen = '';
+  if (preferRemembered) {
+    if (remembered && values.includes(remembered)) chosen = remembered;
+    else chosen = values[0] || 'nijigasaki';
+  } else if (values.includes(prev)) {
+    chosen = prev;
+  } else if (remembered && values.includes(remembered)) {
+    chosen = remembered;
+  } else {
+    chosen = values[0] || 'nijigasaki';
+  }
+  sel.value = chosen;
+  if (chosen) rememberLobbyDeckForMode(mode, chosen);
   syncLobbyExperimentField();
   updateDeckPrev();
   const expBtn = el('btn-lobby-deck-experiment');
