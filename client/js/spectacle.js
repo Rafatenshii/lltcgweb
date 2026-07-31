@@ -5656,7 +5656,8 @@ function perfCloseSpectacle() {
     root.classList.remove('show');
     root.hidden = true;
   }
-  el('perf-splash')?.classList.remove('show', 'live-start');
+  el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
+  if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
   el('perf-judge-panel')?.classList.remove('show');
   el('perf-judge-panel')?.setAttribute('hidden', '');
   perfClearJudgeUi();
@@ -6184,11 +6185,44 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
   heartsEl.classList.remove('pulse');
 }
 
+function perfClearHeartCheckHold() {
+  G._perfHeartCheckHold = false;
+  const splash = el('perf-splash');
+  const txt = el('perf-splash-txt');
+  splash?.classList.remove('show', 'live-start', 'heart-check');
+  if (txt && G._perfHeartCheckLabel && txt.textContent === G._perfHeartCheckLabel) {
+    setSplashTitle(txt, '');
+  }
+  G._perfHeartCheckLabel = null;
+  document.querySelectorAll('.perf-card.live.perf-heart-check-pulse').forEach((c) => {
+    c.classList.remove('perf-heart-check-pulse');
+  });
+}
+
+/** Fill the post-yell ack/network gap so hearts → success/fail doesn't feel like dead air. */
+function perfShowHeartCheckHold(labelKey = 'splash.heartCheck') {
+  if (!G._perfSpectacleActive || G._perfSpectacleAborted) return;
+  G._perfHeartCheckHold = true;
+  const label = (typeof t === 'function' ? t(labelKey) : null) || 'Checking hearts…';
+  G._perfHeartCheckLabel = label;
+  const splash = el('perf-splash');
+  const txt = el('perf-splash-txt');
+  if (splash && txt) {
+    setSplashTitle(txt, label);
+    splash.classList.remove('live-start');
+    splash.classList.add('show', 'heart-check');
+  }
+  document.querySelectorAll('.perf-card.live').forEach((c) => {
+    c.classList.add('perf-heart-check-pulse');
+  });
+}
+
 async function perfAnimateOutcomesForPid(ctx, pid) {
   const isMine = pid === ctx.myId;
   const out = el(isMine ? 'perf-mine-outcomes' : 'perf-opp-outcomes');
   const attempts = isMine ? ctx.mineAttempts : ctx.oppAttempts;
   if (!out) return;
+  perfClearHeartCheckHold();
   if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.setStep('outcomes');
   for (const att of attempts) {
     const b = document.createElement('div');
@@ -6196,13 +6230,13 @@ async function perfAnimateOutcomesForPid(ctx, pid) {
     b.className = 'perf-outcome ' + cls;
     b.textContent = perfOutcomeLabel(att);
     out.appendChild(b);
-    await perfSleep(80);
+    await perfSleep(100);
     b.classList.add('show');
     // Quiet tick only — full whistle is reserved for judge (avoids early win spoil).
     if (att.success || att.fail) {
       sfxPlayCard('turn_tick', { volume: 0.28 });
     }
-    await perfSleep(350);
+    await perfSleep(520);
   }
 }
 
@@ -6213,7 +6247,7 @@ async function perfAnimateOutcomes(ctx, firstOnly) {
   el('perf-opp-outcomes').innerHTML = '';
   await perfAnimateOutcomesForPid(ctx, firstPid);
   if (!firstOnly) await perfAnimateOutcomesForPid(ctx, secondPid);
-  await perfSleep(250);
+  await perfSleep(420);
 }
 
 async function perfAnimateJudge(ctx) {
@@ -6222,8 +6256,9 @@ async function perfAnimateJudge(ctx) {
   const { my: myScore, opp: oppScore, cardMy, cardOpp, bonusMy, bonusOpp } = perfJudgeTotals(ctx);
   const verdict = perfJudgeVerdict(ctx);
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  perfClearHeartCheckHold();
 
-  el('perf-splash')?.classList.remove('show', 'live-start');
+  el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
   perfClearJudgeUi();
   el('perf-judge-panel')?.removeAttribute('hidden');
   el('perf-judge-panel')?.classList.add('show');
@@ -6252,13 +6287,13 @@ async function perfAnimateJudge(ctx) {
       verdictEl.textContent = '';
       verdictEl.className = 'perf-verdict';
     }
-    await perfSleep(reduced ? 600 : 1500);
+    await perfSleep(reduced ? 700 : 2400);
     return;
   }
 
   const mineBadges = [];
   const oppBadges = [];
-  const badgeStagger = reduced ? 0 : 90;
+  const badgeStagger = reduced ? 0 : 140;
   const mineSuccesses = ctx.mineAttempts.filter(a => a.success);
   const oppSuccesses = ctx.oppAttempts.filter(a => a.success);
   mineSuccesses.forEach((att, i) => {
@@ -6288,7 +6323,7 @@ async function perfAnimateJudge(ctx) {
     }, reduced ? 0 : i * badgeStagger);
   });
 
-  const staggerMs = reduced ? 0 : Math.max(mineBadges.length, oppBadges.length) * badgeStagger + 180;
+  const staggerMs = reduced ? 0 : Math.max(mineBadges.length, oppBadges.length) * badgeStagger + 280;
   await perfSleep(staggerMs);
 
   titleEl?.removeAttribute('hidden');
@@ -6307,39 +6342,42 @@ async function perfAnimateJudge(ctx) {
     duelEl?.classList.add('show');
   });
   sfxPerf('skill_tick', 0.38);
-  await perfSleep(reduced ? 60 : 220);
+  await perfSleep(reduced ? 80 : 480);
 
   if (mineBadges.length || oppBadges.length) sfxPlayCard('card_fly', { volume: 0.32 });
   await Promise.all([
-    perfFlyScoreBadges(mineBadges, myNum),
-    perfFlyScoreBadges(oppBadges, oppNum),
+    perfFlyScoreBadges(mineBadges, myNum, reduced ? 1 : 520),
+    perfFlyScoreBadges(oppBadges, oppNum, reduced ? 1 : 520),
   ]);
   const cardPhaseMy = cardMy;
   const cardPhaseOpp = cardOpp;
   await Promise.all([
-    perfAnimateCount(myNum, 0, cardPhaseMy, reduced ? 1 : 420),
-    perfAnimateCount(oppNum, 0, cardPhaseOpp, reduced ? 1 : 420),
+    perfAnimateCount(myNum, 0, cardPhaseMy, reduced ? 1 : 780),
+    perfAnimateCount(oppNum, 0, cardPhaseOpp, reduced ? 1 : 780),
   ]);
+  // Let the final totals sit before any bonus tick / verdict.
+  await perfSleep(reduced ? 80 : 420);
   if (bonusMy > 0 || bonusOpp > 0) {
-    await perfSleep(reduced ? 40 : 180);
+    await perfSleep(reduced ? 40 : 220);
     if (bonusMy > 0 && myNum) {
       myNum.classList.add('tick');
-      await perfAnimateCount(myNum, cardPhaseMy, myScore, reduced ? 1 : 280);
+      await perfAnimateCount(myNum, cardPhaseMy, myScore, reduced ? 1 : 460);
       myNum.classList.remove('tick');
     }
     if (bonusOpp > 0 && oppNum) {
       oppNum.classList.add('tick');
-      await perfAnimateCount(oppNum, cardPhaseOpp, oppScore, reduced ? 1 : 280);
+      await perfAnimateCount(oppNum, cardPhaseOpp, oppScore, reduced ? 1 : 460);
       oppNum.classList.remove('tick');
     }
+    await perfSleep(reduced ? 60 : 360);
   }
-  await perfSleep(reduced ? 60 : 220);
+  await perfSleep(reduced ? 80 : 520);
   if (verdictEl) {
     verdictEl.textContent = verdict.text;
     verdictEl.className = 'perf-verdict show ' + verdict.cls;
     sfxPerf(verdict.cls === 'win' ? 'live_success' : (verdict.cls === 'lose' ? 'live_fail' : 'turn_tick'), 0.4);
   }
-  await perfSleep(reduced ? 400 : 950);
+  await perfSleep(reduced ? 500 : 1800);
 }
 
 function perfYellRevealSignature(state, pid) {
@@ -6804,6 +6842,7 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (stage === 'performance' && liveShowPerformancePresentedForTurn(showTurn)) {
     TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
     await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
+    perfShowHeartCheckHold();
     return;
   }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
@@ -6813,8 +6852,16 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   }
   if (stage === 'performance') {
     markLiveShowPerformancePresented(showTurn);
+    // Heart resolution happens on the server only after this beat is acked — keep
+    // the spectacle alive with a readable "Checking hearts…" hold so the gap
+    // before success/fail (and PvP opponent-ack wait) isn't dead air.
+    perfShowHeartCheckHold();
+  }
+  if (stage === 'outcomes') {
+    perfClearHeartCheckHold();
   }
   if (stage === 'judge') {
+    perfClearHeartCheckHold();
     sealLiveShowSpectacleTurn(next, perfPrev);
     G._postSpectacleSplashPause = true;
     // Observers never ack through to stage=done, so close after the final beat.
@@ -6910,8 +6957,15 @@ async function presentServerLiveShowStage(prev, next, myId) {
         // Judge is the final beat: the verdict was shown + acked, so don't hold
         // #perf-spectacle open waiting for the opponent's ack / ~25s server timeout.
         if (show.stage === 'judge') {
+          perfClearHeartCheckHold();
           if (G._perfSpectacleActive) perfCloseSpectacle();
           sealLiveShowSpectacleTurn(board, prior);
+        } else if (show.stage === 'performance') {
+          // Still waiting on opponent (or heart resolution) — keep the bridge up.
+          if (G._perfSpectacleActive) {
+            perfEnsureColumnsVisible();
+            perfShowHeartCheckHold();
+          }
         } else if (G._perfSpectacleActive) {
           perfEnsureColumnsVisible();
         }
@@ -6920,6 +6974,7 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
 
       G._liveShowAckedKey = key;
+      if (show.stage === 'performance') perfShowHeartCheckHold();
       try {
         await apiPost('action', {
           room_id: G.roomId,
@@ -6937,13 +6992,32 @@ async function presentServerLiveShowStage(prev, next, myId) {
       // holding chrome open — server still waits for the opponent, but the player
       // should not be stuck on the spectacle until both ack / the 25s timeout.
       if (show.stage === 'judge') {
-        await perfSleep(900);
+        await perfSleep(1400);
         if (G._perfSpectacleActive) perfCloseSpectacle();
         sealLiveShowSpectacleTurn(board, prior);
         break;
       }
 
-      const advanced = await fetchLiveShowStateNow();
+      // After performance, poll briefly while the heart-check bridge is up so a
+      // fast CPU/Hostinger advance doesn't leave a blank gap before outcomes.
+      let advanced = await fetchLiveShowStateNow();
+      if (show.stage === 'performance') {
+        const waitStart = performance.now();
+        const minBridgeMs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 280 : 650;
+        while (
+          !G._perfSpectacleAborted
+          && advanced
+          && (advanced.live_show?.stage === 'performance')
+          && (performance.now() - waitStart < 4000)
+        ) {
+          await perfSleep(120);
+          const again = await fetchLiveShowStateNow();
+          if (again && (again.seq ?? 0) >= (advanced.seq ?? 0)) advanced = again;
+          if (['outcomes', 'judge', 'done'].includes(advanced?.live_show?.stage)) break;
+        }
+        const elapsed = performance.now() - waitStart;
+        if (elapsed < minBridgeMs) await perfSleep(minBridgeMs - elapsed);
+      }
       if (!advanced) break;
       if ((advanced.seq ?? 0) < (board.seq ?? 0)) break;
       prior = board;
