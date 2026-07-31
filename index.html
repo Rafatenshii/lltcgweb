@@ -8496,7 +8496,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=74"></script>
+<script src="i18n.js?v=75"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
@@ -8504,7 +8504,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/game-sync.js?v=25"></script>
-<script src="client/js/state-apply.js?v=42"></script>
+<script src="client/js/state-apply.js?v=43"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=59"></script>
@@ -8514,7 +8514,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 (function () {
   'use strict';
   var I18N = window.LLTCG_I18N;
-  var AUTH_GUARD_MS = 12000;
+  var AUTH_GUARD_MS = 45000;
   var DISCORD_CLIENT_ID = '1439716818058088612';
   var WRAPPED_OAUTH_REDIRECT = 'https://loveliveradio.ca/wrapped';
   var DISCORD_OAUTH_STATE_TCG = 'tcg';
@@ -8527,6 +8527,9 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
     var authEl = document.getElementById('auth-status');
     var loginBtn = document.getElementById('btn-discord-login');
     var guestMenu = document.getElementById('auth-guest-menu');
+    // Main script is signing in / reconnecting — do not clobber with a false timeout.
+    if (authEl && authEl.getAttribute('data-auth-boot') === 'booting') return;
+    if (window.G && window.G.roomId) return;
     if (authEl) {
       authEl.setAttribute('data-i18n', i18nKey || 'auth.guestTimeout');
       authEl.textContent = I18N && I18N.t ? I18N.t(i18nKey || 'auth.guestTimeout') : 'Sign-in check timed out — play unranked, or retry Discord sign-in.';
@@ -8546,26 +8549,29 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
     var guestMenu = document.getElementById('auth-guest-menu');
     return !guestMenu || guestMenu.hidden;
   }
-  function timeoutGuestMessage() {
-    return I18N && I18N.t ? I18N.t('auth.guestTimeout') : 'Sign-in check timed out — play unranked, or retry Discord sign-in.';
-  }
   var bootStartedAt = Date.now();
   var guardTimer = setTimeout(function () {
     var authEl = document.getElementById('auth-status');
     var boot = authBootState(authEl);
+    // Only rescue a stuck page when the main bundle never started auth (`pending`).
+    // `booting` means initAccountFlow is working — let its own watchdog finish.
     if (!authEl || boot !== 'pending' || !guestMenuStillHidden()) return;
+    if (window.G && window.G.roomId) return;
     showInlineGuestAuth('auth.guestTimeout');
   }, AUTH_GUARD_MS);
   var guardPoll = setInterval(function () {
     var authEl = document.getElementById('auth-status');
     if (!authEl) return;
     var boot = authBootState(authEl);
-    if (boot === 'done' || !guestMenuStillHidden()) {
-      if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
+    if (boot === 'done' || boot === 'booting' || !guestMenuStillHidden()) {
+      if (boot === 'done' || !guestMenuStillHidden()) {
+        if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
+      }
       return;
     }
     var elapsed = Date.now() - bootStartedAt;
-    if ((boot === 'pending' || boot === 'booting') && elapsed >= AUTH_GUARD_MS) {
+    if (boot === 'pending' && elapsed >= AUTH_GUARD_MS) {
+      if (window.G && window.G.roomId) return;
       showInlineGuestAuth('auth.guestTimeout');
     }
   }, 2000);
@@ -8626,7 +8632,7 @@ const AUTH_TOKEN_KEY = 'llr_wrapped_token';
 const LOVECA_CHALLENGE_KEY = 'tcg_loveca_challenge';
 const LOVECA_SPECTATE_KEY = 'tcg_loveca_spectate';
 const AUTH_FETCH_TIMEOUT_MS = 12000;
-const AUTH_BOOT_WATCHDOG_MS = 15000;
+const AUTH_BOOT_WATCHDOG_MS = 45000;
 const RECONNECT_FETCH_TIMEOUT_MS = 12000;
 /** Full cards.json (~4MB with locale text_*) — do not reuse the short reconnect budget. */
 const CARDS_FETCH_TIMEOUT_MS = 45000;
@@ -10843,29 +10849,47 @@ async function resumeSpectatorSessionIfAny() {
   return reconnectToSpectator(saved);
 }
 
+let _resumeActiveGamePromise = null;
+
 async function resumeActiveGameIfAny() {
-  if (G.isTutorial || G.roomId) return false;
-  const saved = readActiveGameSession();
-  if (saved && await reconnectToGame(saved)) return true;
-  if (await resumeSpectatorSessionIfAny()) return true;
-  if (!getAuthToken()) return false;
-  try {
-    const res = await accountGet('active_game');
-    const active = res.active;
-    if (!active?.room_id || !active?.player_token) return false;
-    // Ranked matches always live on Hostinger (overflow is blocked for ranked queue).
-    return reconnectToGame({
-      roomId: active.room_id,
-      token: active.player_token,
-      playerId: active.player_id,
-      isCPU: false,
-      cpuToken: null,
-      screen: 'game',
-      apiOrigin: 'hostinger',
-    }, { hostingerOnly: true });
-  } catch (e) {
-    return false;
-  }
+  if (G.isTutorial) return false;
+  if (G.roomId) return true;
+  if (_resumeActiveGamePromise) return _resumeActiveGamePromise;
+  _resumeActiveGamePromise = (async () => {
+    try {
+      const saved = readActiveGameSession();
+      if (saved) {
+        const authEl = el('auth-status');
+        if (authEl && authEl.getAttribute('data-auth-boot') === 'booting') {
+          authEl.removeAttribute('data-i18n');
+          authEl.textContent = t('auth.reconnecting') || 'Reconnecting to match…';
+        }
+        if (await reconnectToGame(saved)) return true;
+      }
+      if (await resumeSpectatorSessionIfAny()) return true;
+      if (!getAuthToken()) return false;
+      try {
+        const res = await accountGet('active_game');
+        const active = res.active;
+        if (!active?.room_id || !active?.player_token) return false;
+        // Ranked matches always live on Hostinger (overflow is blocked for ranked queue).
+        return reconnectToGame({
+          roomId: active.room_id,
+          token: active.player_token,
+          playerId: active.player_id,
+          isCPU: false,
+          cpuToken: null,
+          screen: 'game',
+          apiOrigin: 'hostinger',
+        }, { hostingerOnly: true });
+      } catch (e) {
+        return false;
+      }
+    } finally {
+      _resumeActiveGamePromise = null;
+    }
+  })();
+  return _resumeActiveGamePromise;
 }
 
 async function initAccountFlow() {
@@ -10875,9 +10899,11 @@ async function initAccountFlow() {
   const guestMenu = el('auth-guest-menu');
   if (authEl) {
     authEl.setAttribute('data-auth-boot', 'booting');
-    if (getAuthToken()) {
-      authEl.setAttribute('data-i18n', 'auth.signingIn');
-      authEl.textContent = t('auth.signingIn');
+    if (getAuthToken() || readActiveGameSession()) {
+      authEl.setAttribute('data-i18n', readActiveGameSession() ? 'auth.reconnecting' : 'auth.signingIn');
+      authEl.textContent = readActiveGameSession()
+        ? (t('auth.reconnecting') || 'Reconnecting to match…')
+        : t('auth.signingIn');
     }
   }
   let authDone = false;
@@ -10885,17 +10911,33 @@ async function initAccountFlow() {
     authDone = true;
     clearTimeout(authWatchdog);
     if (authEl) authEl.setAttribute('data-auth-boot', 'done');
+    if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
   };
   const authWatchdog = setTimeout(() => {
     if (authDone) return;
-    // Do not clear tcg_active_game — a slow /me must not erase casual reconnect data.
+    // Match already restored — finish quietly.
     if (G.roomId) {
       finishAuthBoot();
       return;
     }
-    showGuestAuth(null, 'auth.guestTimeout');
-    finishAuthBoot();
+    // Last chance resume before dumping to the guest timeout screen.
+    void (async () => {
+      try {
+        if (await resumeActiveGameIfAny()) {
+          finishAuthBoot();
+          return;
+        }
+      } catch (e) { /* fall through */ }
+      if (authDone || G.roomId) {
+        finishAuthBoot();
+        return;
+      }
+      showGuestAuth(null, 'auth.guestTimeout');
+      finishAuthBoot();
+    })();
   }, AUTH_BOOT_WATCHDOG_MS);
+  // Reconnect in parallel with /me — never block rejoin on a slow Discord profile fetch.
+  const resumePromise = resumeActiveGameIfAny();
   try {
     const params = new URLSearchParams(location.search);
     const oauthCode = params.get('code');
@@ -10911,14 +10953,14 @@ async function initAccountFlow() {
     }
     let token = getAuthToken();
     if (!token) {
-      if (await resumeActiveGameIfAny()) return;
+      if (await resumePromise) return;
       showGuestAuth(null, 'auth.guestPrompt');
       setTimeout(() => {
         if (peekLovecaSpectate()) void consumeLovecaSpectateInvite();
       }, 0);
       return;
     }
-    if (authEl) {
+    if (authEl && !G.roomId) {
       authEl.setAttribute('data-i18n', 'auth.signingIn');
       authEl.textContent = t('auth.signingIn');
     }
@@ -10930,19 +10972,29 @@ async function initAccountFlow() {
         ? await accountGetMeWithRetry()
         : await accountGet('me');
     } catch (authErr) {
+      if (await resumePromise) return;
       if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(authErr)) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         showGuestAuth(null, 'auth.sessionExpired');
         return;
       }
       // Keep token on timeout/5xx — Hostinger overload must not force Discord re-login.
-      // Still try to put the player back in their match before showing busy UI.
-      if (await resumeActiveGameIfAny()) return;
       showGuestAuth(null, 'auth.serverBusy');
       return;
     }
+    if (await resumePromise) {
+      // Profile still useful for hub later; stash if we got it.
+      if (me && me.success) {
+        A.user = me.user;
+        A.profile = me;
+        if (window.TCG_STAMPS?.applyFavorites && me.stamp_favorites) {
+          window.TCG_STAMPS.applyFavorites(me.stamp_favorites);
+        }
+        syncStarGemsFromProfile(me);
+      }
+      return;
+    }
     if (!me || !me.success) {
-      if (await resumeActiveGameIfAny()) return;
       if (typeof isAuthRejectedError === 'function') {
         showGuestAuth(null, 'auth.serverBusy');
       } else {
@@ -10963,7 +11015,8 @@ async function initAccountFlow() {
       showScr('starter');
       return;
     }
-    if (await resumeActiveGameIfAny()) return;
+    // Resume may have completed between awaits.
+    if (G.roomId || await resumeActiveGameIfAny()) return;
     enterHub(me);
     setTimeout(() => {
       if (peekLovecaSpectate()) void consumeLovecaSpectateInvite();
@@ -10971,11 +11024,11 @@ async function initAccountFlow() {
       else void resumeRankedSearchIfQueued();
     }, 0);
   } catch (e) {
+    if (await resumePromise.catch(() => false)) return;
     if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(e)) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       showGuestAuth(null, 'auth.sessionExpired');
     } else if (typeof isTransientAccountError === 'function' && isTransientAccountError(e) && getAuthToken()) {
-      if (await resumeActiveGameIfAny()) return;
       showGuestAuth(null, 'auth.serverBusy');
     } else {
       showGuestAuth(e.message || t('auth.loadError'));
@@ -10986,6 +11039,13 @@ async function initAccountFlow() {
 }
 
 function showGuestAuth(message, i18nKey) {
+  // Never yank a restored match back to the sign-in screen.
+  if (G.roomId && !G.isTutorial) {
+    const authElBusy = el('auth-status');
+    if (authElBusy) authElBusy.setAttribute('data-auth-boot', 'done');
+    if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
+    return;
+  }
   const authEl = el('auth-status');
   const loginBtn = el('btn-discord-login');
   const guestMenu = el('auth-guest-menu');
@@ -18221,6 +18281,19 @@ window.G = G;
 // ── BOOT (invoked after client/js/spectacle.js loads — see bootApp() call below) ──
 async function bootApp() {
   const accountReady = initAccountFlow();
+  // Persist match credentials if the tab is killed / refreshed mid-game.
+  window.addEventListener('pagehide', () => {
+    try {
+      if (typeof saveActiveGameSession === 'function') saveActiveGameSession();
+      if (typeof saveSpectatorSession === 'function') saveSpectatorSession();
+    } catch (e) { /* ignore */ }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') return;
+    try {
+      if (typeof saveActiveGameSession === 'function') saveActiveGameSession();
+    } catch (e) { /* ignore */ }
+  });
   initDeckBuilderPreviewPanel();
   on('baton-touch-toggle', 'click', toggleBatonTouchMode);
   syncBatonTouchToggleUi();
@@ -37816,6 +37889,10 @@ async function sendAct(type,data){
 function el(id){ return document.getElementById(id); }
 function on(id,ev,fn){ el(id)?.addEventListener(ev,fn); }
 function showScr(n){
+  // Auth boot / timeout must never tear down an active or restored match.
+  if (n === 'auth' && G.roomId && !G.isTutorial) {
+    return;
+  }
   const prevActive=document.querySelector('.screen.active')?.id;
   if (n !== 'auth' && n !== 'hub' && typeof window.closeNewsOverlay === 'function') window.closeNewsOverlay();
   if ((n === 'debug-card-test' || n === 'bug-reports') && !debugCardTestEnabled()) {

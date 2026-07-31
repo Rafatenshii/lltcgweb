@@ -100,6 +100,15 @@
 
   global.onState = function onState(s) {
     if (G.isTutorial && !G.tutorialLive) return;
+    // Keep reconnect credentials fresh while the match is live.
+    if (!G.isSpectator && G.roomId && G.token && s && s.status !== 'finished'
+        && typeof global.saveActiveGameSession === 'function') {
+      const now = Date.now();
+      if (!G._lastActiveGameSaveAt || now - G._lastActiveGameSaveAt > 5000) {
+        G._lastActiveGameSaveAt = now;
+        try { global.saveActiveGameSession(); } catch (e) { /* ignore */ }
+      }
+    }
     if (isReplayViewingState(s)) {
       if (typeof G._replaySeekAppliedStep === 'number' && s.replay) {
         const pollStep = s.replay.step ?? 0;

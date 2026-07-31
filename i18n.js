@@ -29,6 +29,7 @@
     "auth": {
       "checking": "Checking Discord sign-in…",
       "signingIn": "Signing in…",
+      "reconnecting": "Reconnecting to match…",
       "signInDiscord": "Sign in with Discord",
       "guestPrompt": "Sign in with Discord to save your collection and play ranked.",
       "guestPlayHint": "Play unranked without an account, or sign in for ranked.",
@@ -1154,6 +1155,7 @@
     "auth": {
       "checking": "Discordサインインを確認中…",
       "signingIn": "サインイン中…",
+      "reconnecting": "マッチに再接続中…",
       "signInDiscord": "Discordでサインイン",
       "guestPrompt": "Discordでサインインしてコレクションを保存し、ランク戦をプレイしましょう。",
       "guestPlayHint": "アカウントなしで非ランクプレイするか、サインインしてランク戦をプレイできます。",
@@ -2275,6 +2277,7 @@
     "auth": {
       "checking": "Verificando inicio de sesión con Discord…",
       "signingIn": "Iniciando sesión…",
+      "reconnecting": "Reconectando a la partida…",
       "signInDiscord": "Iniciar sesión con Discord",
       "guestPrompt": "Inicia sesión con Discord para guardar tu colección y jugar clasificatoria.",
       "guestPlayHint": "Juega no clasificada sin cuenta, o inicia sesión para clasificatoria.",
@@ -3406,6 +3409,7 @@
     "auth": {
       "checking": "Discord 로그인 확인 중…",
       "signingIn": "로그인 중…",
+      "reconnecting": "경기에 다시 연결 중…",
       "signInDiscord": "Discord로 로그인",
       "guestPrompt": "컬렉션을 저장하고 랭크전을 플레이하려면 Discord로 로그인하세요.",
       "guestPlayHint": "계정 없이 일반전을 즐기거나, 랭크전을 위해 로그인하세요.",
@@ -4561,6 +4565,7 @@
     "auth": {
       "checking": "正在检查 Discord 登录…",
       "signingIn": "正在登录…",
+      "reconnecting": "正在重新连接对局…",
       "signInDiscord": "使用 Discord 登录",
       "guestPrompt": "使用 Discord 登录以保存收藏并参加排名对战。",
       "guestPlayHint": "无需账号即可游玩非排名对战，或登录后参加排名对战。",
@@ -5717,6 +5722,7 @@
     "auth": {
       "checking": "กำลังตรวจสอบการเข้าสู่ระบบ Discord…",
       "signingIn": "กำลังเข้าสู่ระบบ…",
+      "reconnecting": "กำลังเชื่อมต่อแมตช์อีกครั้ง…",
       "signInDiscord": "เข้าสู่ระบบด้วย Discord",
       "guestPrompt": "เข้าสู่ระบบด้วย Discord เพื่อบันทึกคอลเลกชันและเล่นแรงก์",
       "guestPlayHint": "เล่นอันแรงก์โดยไม่มีบัญชี หรือเข้าสู่ระบบเพื่อเล่นแรงก์",
