@@ -5860,16 +5860,33 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 }
 #screen-deck .deck-section-head__title-row{
   position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
   width:100%;
   min-width:0;
   min-height:34px;
 }
+#screen-deck .deck-section-head__side{
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  align-items:center;
+}
+#screen-deck .deck-section-head__side--left{
+  justify-content:flex-start;
+}
+#screen-deck .deck-section-head__side--right{
+  justify-content:flex-end;
+}
 #screen-deck .deck-section-head--pool h4{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
+  position:static;
+  left:auto;
+  top:auto;
+  transform:none;
   margin:0;
+  flex:0 0 auto;
   text-align:center;
   pointer-events:none;
   white-space:nowrap;
@@ -5904,31 +5921,32 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   white-space:normal;
 }
 #screen-deck .deck-collection-sort{
-  position:absolute;
-  right:0;
-  top:50%;
-  transform:translateY(-50%);
+  position:static;
+  right:auto;
+  top:auto;
+  transform:none;
   z-index:1;
   display:flex;
   flex-wrap:wrap;
   align-items:center;
+  justify-content:flex-end;
   gap:8px;
-  flex:0 0 auto;
+  flex:0 1 auto;
   margin:0;
-  max-width:min(48%,280px);
+  max-width:100%;
 }
 #screen-deck .deck-seal-batch-toggle{
-  position:absolute;
-  left:0;
-  top:50%;
-  transform:translateY(-50%);
+  position:static;
+  left:auto;
+  top:auto;
+  transform:none;
   z-index:1;
   width:auto;
   padding:6px 10px;
   font-size:12px;
   white-space:nowrap;
-  flex:0 0 auto;
-  max-width:min(42%,200px);
+  flex:0 1 auto;
+  max-width:100%;
 }
 #screen-deck .deck-collection-sort .llc-select-wrap{
   display:block;
@@ -7431,11 +7449,15 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <div class="deck-builder-pool-main">
               <div class="deck-section-head deck-section-head--pool">
                 <div class="deck-section-head__title-row">
-                  <button type="button" class="btn-out deck-seal-batch-toggle" id="btn-deck-seal-batch" hidden data-i18n="sticker.batchConvert">Batch convert</button>
+                  <div class="deck-section-head__side deck-section-head__side--left">
+                    <button type="button" class="btn-out deck-seal-batch-toggle" id="btn-deck-seal-batch" hidden data-i18n="sticker.batchConvert">Batch convert</button>
+                  </div>
                   <h4 id="deck-pool-head-title" data-i18n="deck.collection">Collection</h4>
-                  <div class="deck-collection-sort" id="deck-collection-sort-wrap">
-                    <div class="llc-select-wrap deck-collection-sort__select">
-                      <select id="sel-deck-pool-sort" aria-label="Collection sort and order"></select>
+                  <div class="deck-section-head__side deck-section-head__side--right">
+                    <div class="deck-collection-sort" id="deck-collection-sort-wrap">
+                      <div class="llc-select-wrap deck-collection-sort__select">
+                        <select id="sel-deck-pool-sort" aria-label="Collection sort and order"></select>
+                      </div>
                     </div>
                   </div>
                 </div>
