@@ -3822,6 +3822,13 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
   box-shadow:0 0 0 2px rgba(255,220,120,.85),0 0 18px rgba(255,200,80,.45);
   transition:box-shadow .2s ease;
 }
+.perf-card.live.perf-heart-check-pulse{
+  animation:perfLiveHeartCheckPulse 1.05s ease-in-out infinite;
+}
+@keyframes perfLiveHeartCheckPulse{
+  0%,100%{filter:brightness(1);transform:scale(1)}
+  50%{filter:brightness(1.18);transform:scale(1.03)}
+}
 .perf-yell-card.show{
   opacity:1;
   transform:translate(var(--yell-stack-x),var(--yell-stack-y)) scale(var(--yell-stack-scale)) rotateY(0deg);
