@@ -100,8 +100,9 @@
 
   global.onState = function onState(s) {
     if (G.isTutorial && !G.tutorialLive) return;
-    // Keep reconnect credentials fresh while the match is live.
-    if (!G.isSpectator && G.roomId && G.token && s && s.status !== 'finished'
+    // Keep reconnect credentials fresh while the match is live, and through the
+    // finished win/loss overlay so refresh can restore that screen.
+    if (!G.isSpectator && G.roomId && G.token && s
         && typeof global.saveActiveGameSession === 'function') {
       const now = Date.now();
       if (!G._lastActiveGameSaveAt || now - G._lastActiveGameSaveAt > 5000) {

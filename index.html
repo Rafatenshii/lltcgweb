@@ -8586,7 +8586,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/game-sync.js?v=25"></script>
-<script src="client/js/state-apply.js?v=43"></script>
+<script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=59"></script>
@@ -10589,6 +10589,11 @@ function saveActiveGameSession() {
   if (G.isTutorial || G.isSpectator || !G.roomId || !G.token) return;
   let screen = 'game';
   if (el('screen-waiting')?.classList.contains('active')) screen = 'waiting';
+  // Keep credentials through the win/loss overlay so refresh restores that screen
+  // instead of dumping the player on the menu.
+  if (el('overlay-win')?.classList.contains('open') || G.gameState?.status === 'finished') {
+    screen = 'finished';
+  }
   const payload = {
     roomId: G.roomId,
     token: G.token,
@@ -10746,16 +10751,50 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
   throw lastErr || new Error('Reconnect failed');
 }
 
-/** Only resign/clear ranked when the match is truly gone or finished — never on timeouts. */
+/** Clear resume credentials only when the room is gone — never for finished matches.
+ *  Finished games must restore the win/loss overlay so refresh cannot skip the end screen.
+ */
 async function abandonReconnectSessionIfTerminal(s, { bothOriginsMissing = false } = {}) {
-  const finished = s && s.status === 'finished';
   const missing = bothOriginsMissing && isReconnectRoomMissing(s);
-  if (!finished && !missing) return false;
+  if (!missing) return false;
   if (getAuthToken()) {
     try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
   }
   clearActiveGameSession();
   return true;
+}
+
+/**
+ * Refresh / reconnect into an already-finished match: show the win/loss overlay
+ * (hub / rematch / find-another buttons) without replaying Live spectacles.
+ */
+async function restoreFinishedMatchUi(s) {
+  prepareClientReconnectState(s);
+  G.gameState = s;
+  showScr('game');
+  if (typeof renderGame === 'function') {
+    renderGame(s, { skipLog: true });
+  }
+  if (typeof catchUpGameLog === 'function') {
+    catchUpGameLog(s, null);
+  }
+  const rematchSettings = typeof captureRematchSettings === 'function'
+    ? captureRematchSettings(s)
+    : null;
+  const rematchEligible = typeof isFriendPvpRematchEligible === 'function'
+    && isFriendPvpRematchEligible(rematchSettings);
+  if (rematchEligible) {
+    G.rematchWaiting = true;
+    if (typeof resumePollingTick === 'function') resumePollingTick(400);
+    else if (typeof startPoll === 'function') startPoll();
+  } else if (typeof stopPoll === 'function') {
+    stopPoll();
+  }
+  showWin(s);
+  if (G.rematchWaiting && typeof syncWinRematchUi === 'function') {
+    syncWinRematchUi(s);
+  }
+  saveActiveGameSession();
 }
 
 /** Drop stale client-only flags after refresh/reconnect; server snapshot is authoritative.
@@ -10863,6 +10902,11 @@ async function reconnectToGame(saved, opts = {}) {
       G.replayStep = saved.replayStep ?? 0;
       G.replayTotal = saved.replayTotal ?? 0;
       G.replayHandoff = false;
+    }
+    if (s.status === 'finished') {
+      await restoreFinishedMatchUi(s);
+      toast(t('toast.reconnected'), 2600);
+      return true;
     }
     prepareClientReconnectState(s);
     G.gameState = s;
@@ -36114,7 +36158,8 @@ function syncWinRankedPrReward(s, win) {
 function showWin(s){
   dismissAllGameplayOverlays();
   if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
-  clearActiveGameSession();
+  // Keep tcg_active_game so a refresh returns to this overlay (hub/rematch buttons),
+  // not the menu. Cleared only when the player leaves via hub / play-again / leave.
   const isSpec = !!G.isSpectator;
   const myId = isSpec ? null : (s.my_id || G.playerId);
   if (myId) G.playerId = myId;
@@ -36212,6 +36257,9 @@ function showWin(s){
   if (remHint) { remHint.hidden = true; remHint.textContent = ''; }
   syncWinDebugTools(s);
   el('overlay-win').classList.add('open');
+  if (!isSpec && typeof saveActiveGameSession === 'function') {
+    try { saveActiveGameSession(); } catch (e) { /* ignore */ }
+  }
   sfxPlay(isSpec || win ? 'win' : 'lose');
   if (!isSpec && typeof autosaveFinishedReplay === 'function') {
     void autosaveFinishedReplay();
