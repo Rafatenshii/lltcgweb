@@ -87,10 +87,24 @@ final class Issue51NatsumiBp2009Test extends TestCase
 
         $state = \resolveLiveStartAbilities($state, 'p1');
 
-        $this->assertSame(2, \getStageBladeBonus($state, 'p1'));
+        $this->assertSame(
+            2,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Hand-based Live Start blade is attributed to Natsumi'
+        );
+        $this->assertSame(
+            0,
+            \getStageBladeBonus($state, 'p1'),
+            'Must not use player-wide blade_bonus (Wait would not exclude it)'
+        );
 
         $state['players']['p1']['hand'] = [];
-        $this->assertSame(2, \getStageBladeBonus($state, 'p1'), 'Blade bonus should not drop when hand empties');
+        $this->assertSame(
+            2,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Blade bonus should not drop when hand empties'
+        );
+        $this->assertSame(2 + intval($natsumi['blade'] ?? 0), \computeYellBladeTotal($state, 'p1'));
     }
 
     public function testLiveSuccessDrawAndDiscardOpensPrompt(): void
