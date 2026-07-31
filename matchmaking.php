@@ -310,11 +310,8 @@ function tcgRankedGameFilePath(string $roomId): string {
 
 /** Public queue stats for the ranked menu (waiting in lobby vs in active ranked games). */
 function tcgQueuePublicStats(?string $gameMode = null): array {
-    $gameMode = $gameMode !== null && $gameMode !== ''
-        ? tcgNormalizeGameMode($gameMode)
-        : null;
-    $cacheKey = $gameMode ?? 'all';
-    $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $cacheKey) . '.json';
+    $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
+    $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $gameMode) . '.json';
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 5) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
@@ -323,22 +320,14 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
     }
 
     $db = tcgDb();
-    if ($gameMode) {
-        $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
-        $stmt->execute([$gameMode]);
-        $waiting = (int)$stmt->fetchColumn();
-    } else {
-        $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_match_queue')->fetchColumn();
-    }
+    $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
+    $stmt->execute([$gameMode]);
+    $waiting = (int)$stmt->fetchColumn();
 
     $inGame = 0;
     $seen = [];
-    if ($gameMode) {
-        $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?');
-        $stmt->execute([$gameMode]);
-    } else {
-        $stmt = $db->query('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending"');
-    }
+    $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?');
+    $stmt->execute([$gameMode]);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $roomId = $row['room_id'] ?? '';
         $path = tcgRankedGameFilePath($roomId);

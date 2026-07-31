@@ -16689,6 +16689,9 @@ async function onGameModeSelectChange(sourceSelId) {
   if (el('screen-ranked')?.classList.contains('active')) {
     await refreshRankedScreenModeStats();
   }
+  if (el('screen-lobby')?.classList.contains('active')) {
+    void refreshCasualQueueStatsQuiet();
+  }
   if (el('screen-leaderboard')?.classList.contains('active')) {
     await refreshLeaderboardForMode();
   }
@@ -17038,7 +17041,7 @@ function stopCasualLobbyStatsPoll() {
 
 async function refreshCasualQueueStatsQuiet() {
   try {
-    const res = await apiPost('casual_status', { queue_id: getCasualQueueId() }, { silent: true });
+    const res = await apiPost('casual_status', casualStatusPayload(), { silent: true });
     if (res.queue_stats) updateCasualQueueStats(res.queue_stats);
   } catch (e) {}
 }
@@ -17187,9 +17190,20 @@ async function enterCasualMatch(st) {
   startPoll();
 }
 
+function casualStatusPayload(extra = {}) {
+  const body = {
+    queue_id: getCasualQueueId(),
+    game_mode: currentGameMode(),
+    ...extra,
+  };
+  const token = getAuthToken();
+  if (token) body.token = token;
+  return body;
+}
+
 async function pollCasualStatus() {
   try {
-    const res = await apiPost('casual_status', { queue_id: getCasualQueueId() }, { silent: true });
+    const res = await apiPost('casual_status', casualStatusPayload(), { silent: true });
     const outcome = applyCasualStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.casual;
@@ -17209,7 +17223,7 @@ async function pollCasualStatus() {
 async function resumeCasualSearchIfQueued() {
   if (!isCasualSearchActiveLocally()) return;
   try {
-    const res = await apiPost('casual_status', { queue_id: getCasualQueueId() }, { silent: true });
+    const res = await apiPost('casual_status', casualStatusPayload(), { silent: true });
     const outcome = applyCasualStatusResponse(res);
     if (outcome === 'idle') markCasualSearchActive(false);
     else if (outcome === 'searching') startCasualPoll();
@@ -17238,16 +17252,13 @@ async function startCasualSearch() {
 
 async function cancelCasualSearch() {
   try {
-    await apiPost('casual_leave', {
-      queue_id: getCasualQueueId(),
-      ...(getAuthToken() ? { token: getAuthToken() } : {}),
-    });
+    await apiPost('casual_leave', casualStatusPayload());
   } catch (e) {}
   markCasualSearchActive(false);
   stopCasualPoll();
   setCasualSearchingUI(false);
   try {
-    const res = await apiPost('casual_status', { queue_id: getCasualQueueId() }, { silent: true });
+    const res = await apiPost('casual_status', casualStatusPayload(), { silent: true });
     applyCasualStatusResponse(res);
   } catch (e) {}
 }

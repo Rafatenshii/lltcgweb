@@ -428,6 +428,11 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
         'discord_id' => (string)($p2Row['discord_id'] ?? '') ?: null,
     ], null);
 
+    $gameMode = tcgNormalizeGameMode(
+        $p1Row['game_mode'] ?? ($body1['game_mode'] ?? TCG_GAME_MODE_STANDARD)
+    );
+    $state['game_mode'] = $gameMode;
+
     saveGame($roomId, $state);
 
     tcgCasualRecordMatch(
@@ -466,10 +471,16 @@ function tcgCasualEnsureApiHelpers(): void {
  * Live unranked human-PvP player count without scanning every games/*.json.
  * Queue-matched rooms only (friend-code games are omitted from the public counter
  * so lobby polls never walk the full games archive on shared hosting).
+ *
+ * @param string|null $gameMode When set, only count rooms for that PvP mode.
  */
-function tcgCasualCountLivePvpPlayers(): int {
+function tcgCasualCountLivePvpPlayers(?string $gameMode = null): int {
     tcgCasualEnsureApiHelpers();
+    require_once __DIR__ . '/game_mode.php';
 
+    $wantMode = ($gameMode !== null && $gameMode !== '')
+        ? tcgNormalizeGameMode($gameMode)
+        : null;
     $now = time();
     $inGame = 0;
     $seenRooms = [];
@@ -492,14 +503,25 @@ function tcgCasualCountLivePvpPlayers(): int {
             $db->prepare('DELETE FROM tcg_casual_matches WHERE room_id = ?')->execute([$roomId]);
             continue;
         }
+        if ($wantMode !== null) {
+            $roomMode = tcgNormalizeGameMode($state['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+            if ($roomMode !== $wantMode) {
+                continue;
+            }
+        }
         $inGame += tcgCasualLivePlayersInRoom($state, $roomId, $now);
     }
 
     return $inGame;
 }
 
-function tcgCasualQueuePublicStats(): array {
-    $cacheFile = tcgPath('data') . 'casual_queue_stats_cache.json';
+function tcgCasualQueuePublicStats(?string $gameMode = null): array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = ($gameMode !== null && $gameMode !== '')
+        ? tcgNormalizeGameMode($gameMode)
+        : TCG_GAME_MODE_STANDARD;
+    $cacheFile = tcgPath('data') . 'casual_queue_stats_cache_'
+        . preg_replace('/[^a-z0-9_]/', '', $gameMode) . '.json';
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 15) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
@@ -508,9 +530,11 @@ function tcgCasualQueuePublicStats(): array {
     }
 
     $db = tcgDb();
-    $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_casual_queue')->fetchColumn();
-    $inGame = tcgCasualCountLivePvpPlayers();
-    $stats = ['waiting' => $waiting, 'in_game' => $inGame];
+    $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_casual_queue WHERE game_mode = ?');
+    $stmt->execute([$gameMode]);
+    $waiting = (int)$stmt->fetchColumn();
+    $inGame = tcgCasualCountLivePvpPlayers($gameMode);
+    $stats = ['waiting' => $waiting, 'in_game' => $inGame, 'game_mode' => $gameMode];
     @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
     return $stats;
 }
@@ -604,8 +628,15 @@ function tcgNormalizeCasualQueueKey(string $key): string {
     return $key;
 }
 
+function tcgCasualGameModeFromBody(array $body): string {
+    require_once __DIR__ . '/game_mode.php';
+    return tcgNormalizeGameMode($body['game_mode'] ?? ($_GET['game_mode'] ?? TCG_GAME_MODE_STANDARD));
+}
+
 function apiCasualJoin(array $body): array {
     tcgRateLimitForAction('casual_join', $body);
+    $gameMode = tcgCasualGameModeFromBody($body);
+    $body['game_mode'] = $gameMode;
     $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));
@@ -645,11 +676,13 @@ function apiCasualJoin(array $body): array {
         }
         return $payload;
     });
-    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    $out['queue_stats'] = tcgCasualQueuePublicStats($gameMode);
+    $out['game_mode'] = $gameMode;
     return $out;
 }
 
 function apiCasualLeave(array $body): array {
+    $gameMode = tcgCasualGameModeFromBody($body);
     $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         $discordId = tcgOptionalAuthUserId($body);
@@ -658,11 +691,13 @@ function apiCasualLeave(array $body): array {
             'queue' => tcgCasualQueueLeave($queueKey, $discordId),
         ];
     });
-    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    $out['queue_stats'] = tcgCasualQueuePublicStats($gameMode);
+    $out['game_mode'] = $gameMode;
     return $out;
 }
 
 function apiCasualStatus(array $body): array {
+    $gameMode = tcgCasualGameModeFromBody($body);
     $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         if ($queueKey === '' && isset($_GET['queue_id'])) {
@@ -680,6 +715,7 @@ function apiCasualStatus(array $body): array {
             'casual' => $status,
         ];
     });
-    $out['queue_stats'] = tcgCasualQueuePublicStats();
+    $out['queue_stats'] = tcgCasualQueuePublicStats($gameMode);
+    $out['game_mode'] = $gameMode;
     return $out;
 }
