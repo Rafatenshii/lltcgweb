@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-07-pr-packs-and-seals",
+      "date": "2026-07-30",
+      "banner": "assets/seals/PR.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Bigger ranked PR packs & PR seals in the Sticker Shop!",
+        "ja": "ランクPRパック強化＆シールショップにPRシール追加！",
+        "es": "¡Packs PR clasificatorios más grandes y sellos PR en la Tienda!",
+        "ko": "랭크 PR 팩 강화 & 스티커 상점에 PR 실 추가!",
+        "zh": "排名赛 PR 包升级，贴纸商店新增 PR 印章！",
+        "th": "แพ็ก PR แรงก์ใหญ่ขึ้น และซีล PR ในร้านสติกเกอร์!"
+      },
+      "body": {
+        "en": "Ranked wins now reward a **3-card PR pack**, and you can trade for specific PR cards in the **Sticker Shop**.\n\n**Ranked PR packs**\n- Win a **Ranked** match to earn a **PR pack of 3 cards** (instead of 1).\n- Still up to **5 packs per day** (resets at midnight **JST**) — that’s up to **15 PR cards** a day.\n- The match-end screen won’t spoil what’s inside. Head back to the **main menu** to open your pack.\n- Extra copies past the usual limit still convert to **Star Gems**, same as booster opens.\n\n**PR seals in the Sticker Shop**\n- Convert spare **PR** / **PR+** cards into **PR seals** (1 card → 1 seal).\n- In **Sticker Shop**, open the **PR Cards** product and exchange **20 PR seals** for **1** PR card you choose (same cost as **N** seals).\n- In **Deck Builder**, use **Batch convert** to select many spare cards at once and see your seal totals before confirming.\n\nHappy climbing — and happy collecting!",
+        "ja": "ランク勝利の報酬が **PRパック3枚** になり、**シールショップ**で欲しいPRカードと交換できるようになりました。\n\n**ランクPRパック**\n- **ランク**に勝つと、これまで1枚だった報酬が **3枚入りPRパック** になります。\n- 1日あたり最大 **5パック**（毎日0時・**JST** リセット）＝最大 **15枚** まで。\n- 対戦終了画面では中身は見せません。**メインメニュー**に戻ってからパックを開封してください。\n- 所持上限を超えた分は、パック開封と同じく **スタージェム** に変換されます。\n\n**シールショップのPRシール**\n- 余った **PR** / **PR+** カードを **PRシール** に変換できます（1枚 → シール1枚）。\n- **シールショップ**の **PRカード** から、**PRシール20枚**で好きなPRカード **1枚** と交換できます（**N**シールと同じコスト）。\n- **デッキビルダー**の **一括変換** で、余剰カードをまとめて選び、確定前にシール合計を確認できます。\n\nランクもコレクションも楽しんでください！",
+        "es": "Las victorias clasificatorias ahora dan un **paquete PR de 3 cartas**, y puedes canjear cartas PR concretas en la **Tienda de stickers**.\n\n**Paquetes PR clasificatorios**\n- Gana una partida **Clasificatoria** para recibir un **paquete PR de 3 cartas** (antes era 1).\n- Sigue habiendo hasta **5 paquetes al día** (reinicio a medianoche **JST**): hasta **15 cartas PR** diarias.\n- La pantalla de fin de partida no revela el contenido. Vuelve al **menú principal** para abrir el paquete.\n- Las copias por encima del límite siguen convirtiéndose en **Star Gems**, igual que al abrir boosters.\n\n**Sellos PR en la Tienda**\n- Convierte cartas **PR** / **PR+** sobrantes en **sellos PR** (1 carta → 1 sello).\n- En la **Tienda de stickers**, abre el producto **Cartas PR** y cambia **20 sellos PR** por **1** carta PR a tu elección (mismo coste que los sellos **N**).\n- En el **Constructor de mazos**, usa **Conversión por lotes** para seleccionar varias cartas sobrantes y ver el total de sellos antes de confirmar.\n\n¡Sigue subiendo en la clasificación y disfruta coleccionando!",
+        "ko": "랭크 승리 보상이 이제 **PR 팩 3장**이며, **스티커 상점**에서 원하는 PR 카드와 교환할 수 있습니다.\n\n**랭크 PR 팩**\n- **랭크** 매치에서 승리하면 기존 1장 대신 **PR 팩 3장**을 받습니다.\n- 하루 최대 **5팩** (매일 자정 **JST** 초기화) — 하루 최대 **PR 15장**입니다.\n- 매치 종료 화면에서는 내용이 공개되지 않습니다. **메인 메뉴**로 돌아가 팩을 여세요.\n- 보유 상한을 넘는 여분은 부스터 개봉과 같이 **스타젬**으로 전환됩니다.\n\n**스티커 상점의 PR 실**\n- 남는 **PR** / **PR+** 카드를 **PR 실**로 변환할 수 있습니다 (카드 1장 → 실 1개).\n- **스티커 상점**의 **PR 카드**에서 **PR 실 20개**로 원하는 PR 카드 **1장**과 교환할 수 있습니다 (**N** 실과 동일한 비용).\n- **덱 빌더**의 **일괄 변환**으로 여유 카드를 여러 장 고르고, 확정 전에 실 합계를 확인할 수 있습니다.\n\n랭크도 컬렉션도 즐겁게 키워 보세요!",
+        "zh": "排名赛胜利奖励现为 **3 张 PR 卡包**，并可在**贴纸商店**兑换指定 PR 卡。\n\n**排名赛 PR 卡包**\n- 赢得一场**排名赛**即可获得 **3 张 PR 卡包**（原先为 1 张）。\n- 仍为每天最多 **5 包**（每天 **JST** 午夜重置）——最多 **15 张 PR 卡**/天。\n- 对战结束画面不会剧透内容。请返回**主菜单**再开包。\n- 超过持有上限的多余副本仍会转为**星星宝石**，规则与开补充包相同。\n\n**贴纸商店的 PR 印章**\n- 可将多余的 **PR** / **PR+** 卡转换为 **PR 印章**（1 张卡 → 1 枚印章）。\n- 在**贴纸商店**打开 **PR 卡**商品，用 **20 枚 PR 印章**兑换 **1** 张自选 PR 卡（费用与 **N** 印章相同）。\n- 在**牌组构筑**中使用**批量转换**，可一次选择多张多余卡，并在确认前查看印章合计。\n\n祝攀升顺利，收集愉快！",
+        "th": "ชนะแรงก์แล้วได้**แพ็ก PR 3 ใบ** และแลกการ์ด PR ที่ต้องการได้ใน**ร้านสติกเกอร์**\n\n**แพ็ก PR แรงก์**\n- ชนะแมตช์**แรงก์**เพื่อรับ**แพ็ก PR 3 ใบ** (เดิมได้ 1 ใบ)\n- ยังรับได้สูงสุด**5 แพ็กต่อวัน** (รีเซ็ตเที่ยงคืน**JST**) — สูงสุด**การ์ด PR 15 ใบ**/วัน\n- หน้าจอจบแมตช์จะไม่เปิดเผยของในแพ็ก กลับไปที่**เมนูหลัก**แล้วค่อยเปิดแพ็ก\n- สำเนาที่เกินลิมิตยังแปลงเป็น**Star Gems**เหมือนเปิดบูสเตอร์\n\n**ซีล PR ในร้านสติกเกอร์**\n- แปลงการ์ด **PR** / **PR+** ที่เหลือเป็น**ซีล PR** ได้ (การ์ด 1 ใบ → ซีล 1 อัน)\n- ใน**ร้านสติกเกอร์** เปิดสินค้า**การ์ด PR** แล้วแลก**ซีล PR 20 อัน**เป็น**การ์ด PR 1 ใบ**ที่เลือกได้ (ราคาเดียวกับซีล **N**)\n- ใน**ตัวสร้างเด็ค** ใช้**แปลงเป็นชุด**เพื่อเลือกการ์ดเหลือหลายใบพร้อมกัน และดูยอดซีลก่อนยืนยัน\n\nไต่แรงก์สนุก ๆ และสะสมให้เพลินนะ!"
+      }
+    },
+    {
       "id": "2026-07-spsd02-clhs01",
       "date": "2026-07-26",
       "banner": "news/spsd02-clhs01-products.jpg",
