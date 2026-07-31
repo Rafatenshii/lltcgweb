@@ -3019,7 +3019,7 @@
       "rankedPrPackWon": "Victoria clasificatoria: pack PR ×{count} — ábrelo en el menú principal",
       "rankedPrPackPopupTitle": "¡Pack PR clasificatorio ×{count}!",
       "rankedPrPackSummary": "{count} cartas",
-      "rankedPrPackDupes": "{count} duplicado(s) → {gems} Star Gems"
+      "rankedPrPackDupes": "{count} duplicado(s) → {gems} Star Gems",
       "rematchAccept": "Aceptar revancha",
       "rematchOffer": "Revancha",
       "rematchOppWants": "¡{name} quiere una revancha!",
@@ -4159,7 +4159,7 @@
       "rankedPrPackWon": "랭크 승리: PR 팩 ×{count} — 메인 메뉴에서 개봉",
       "rankedPrPackPopupTitle": "랭크 PR 팩 ×{count}!",
       "rankedPrPackSummary": "{count}장",
-      "rankedPrPackDupes": "중복 {count}장 → Star Gem {gems}"
+      "rankedPrPackDupes": "중복 {count}장 → Star Gem {gems}",
       "rematchAccept": "재대결 수락",
       "rematchOffer": "재대결",
       "rematchOppWants": "{name} 님이 재대결을 원합니다!",
@@ -5314,7 +5314,7 @@
       "rankedPrPackWon": "排名获胜：PR 包 ×{count} — 请在主菜单开包",
       "rankedPrPackPopupTitle": "排名 PR 包 ×{count}！",
       "rankedPrPackSummary": "{count} 张卡",
-      "rankedPrPackDupes": "{count} 张重复 → {gems} 星星宝石"
+      "rankedPrPackDupes": "{count} 张重复 → {gems} 星星宝石",
       "rematchAccept": "接受重赛",
       "rematchOffer": "复赛",
       "rematchOppWants": "{name}想要重赛！",
@@ -6459,7 +6459,7 @@
       "rankedPrPackWon": "ชนะแรงก์: แพ็ก PR ×{count} — เปิดที่เมนูหลัก",
       "rankedPrPackPopupTitle": "แพ็ก PR แรงก์ ×{count}!",
       "rankedPrPackSummary": "{count} ใบ",
-      "rankedPrPackDupes": "ซ้ำ {count} ใบ → {gems} Star Gems"
+      "rankedPrPackDupes": "ซ้ำ {count} ใบ → {gems} Star Gems",
       "rematchAccept": "รับรีแมตช์",
       "rematchOffer": "รีแมตช์",
       "rematchOppWants": "{name} ต้องการรีแมตช์!",
