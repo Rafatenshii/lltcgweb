@@ -22,7 +22,7 @@
   global.WRAPPED_API = '/wrapped/api.php';
   global.TCG_SYNC_STREAM_FALLBACK_URL = global.TCG_SYNC_STREAM_FALLBACK_URL || './sync-stream';
   global.AUTH_FETCH_TIMEOUT_MS = global.AUTH_FETCH_TIMEOUT_MS || 12000;
-  global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 8000;
+  global.RECONNECT_FETCH_TIMEOUT_MS = global.RECONNECT_FETCH_TIMEOUT_MS || 12000;
   global.AUTH_ME_RETRY_COUNT = global.AUTH_ME_RETRY_COUNT || 3;
 
   const HOSTINGER_URLS = { API: './api.php', ACCOUNT_API: './account.php', origin: 'hostinger' };

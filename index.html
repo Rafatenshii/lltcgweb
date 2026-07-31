@@ -8500,7 +8500,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
-<script src="client/js/api-client.js?v=14"></script>
+<script src="client/js/api-client.js?v=15"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/game-sync.js?v=25"></script>
@@ -8627,7 +8627,7 @@ const LOVECA_CHALLENGE_KEY = 'tcg_loveca_challenge';
 const LOVECA_SPECTATE_KEY = 'tcg_loveca_spectate';
 const AUTH_FETCH_TIMEOUT_MS = 12000;
 const AUTH_BOOT_WATCHDOG_MS = 15000;
-const RECONNECT_FETCH_TIMEOUT_MS = 8000;
+const RECONNECT_FETCH_TIMEOUT_MS = 12000;
 /** Full cards.json (~4MB with locale text_*) — do not reuse the short reconnect budget. */
 const CARDS_FETCH_TIMEOUT_MS = 45000;
 const RANKED_MATCH_SOUND_KEY = 'tcg_ranked_match_sound';
@@ -10480,44 +10480,63 @@ function discordAuthUrl() {
 }
 // fetchWithTimeout, parseAccountJson, accountGet, accountPost, apiPost, captureSyncMeta: client/js/api-client.js (do not redeclare)
 
+/** Keep a localStorage mirror so a new tab / session wipe can still resume casual matches. */
+const ACTIVE_GAME_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
 function saveActiveGameSession() {
   if (G.isTutorial || G.isSpectator || !G.roomId || !G.token) return;
   let screen = 'game';
   if (el('screen-waiting')?.classList.contains('active')) screen = 'waiting';
-  try {
-    sessionStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify({
-      roomId: G.roomId,
-      token: G.token,
-      playerId: G.playerId,
-      isCPU: !!G.isCPU,
-      cpuToken: G.cpuToken || null,
-      cpuDifficulty: normalizeCpuDifficultyClient(G.cpuDifficulty),
-      screen,
-      replayMode: !!G.replayMode,
-      replayHandoff: !!G.replayHandoff,
-      replayStep: G.replayStep || 0,
-      replayTotal: G.replayTotal || 0,
-      apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
-    }));
-  } catch (e) {}
+  const payload = {
+    roomId: G.roomId,
+    token: G.token,
+    playerId: G.playerId,
+    isCPU: !!G.isCPU,
+    cpuToken: G.cpuToken || null,
+    cpuDifficulty: normalizeCpuDifficultyClient(G.cpuDifficulty),
+    screen,
+    replayMode: !!G.replayMode,
+    replayHandoff: !!G.replayHandoff,
+    replayStep: G.replayStep || 0,
+    replayTotal: G.replayTotal || 0,
+    apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
+    savedAt: Date.now(),
+  };
+  const raw = JSON.stringify(payload);
+  try { sessionStorage.setItem(ACTIVE_GAME_KEY, raw); } catch (e) {}
+  try { localStorage.setItem(ACTIVE_GAME_KEY, raw); } catch (e) {}
 }
 
 function clearActiveGameSession() {
   try { sessionStorage.removeItem(ACTIVE_GAME_KEY); } catch (e) {}
+  try { localStorage.removeItem(ACTIVE_GAME_KEY); } catch (e) {}
   clearPerfSpectacleDoneStorage();
   _tcgDebugRoom = null;
 }
 
+function parseActiveGameSessionRaw(raw) {
+  if (!raw) return null;
+  const saved = JSON.parse(raw);
+  if (!saved?.roomId || !saved?.token) return null;
+  const savedAt = Number(saved.savedAt) || 0;
+  if (savedAt > 0 && (Date.now() - savedAt) > ACTIVE_GAME_MAX_AGE_MS) return null;
+  return saved;
+}
+
 function readActiveGameSession() {
   try {
-    const raw = sessionStorage.getItem(ACTIVE_GAME_KEY);
-    if (!raw) return null;
-    const saved = JSON.parse(raw);
-    if (!saved?.roomId || !saved?.token) return null;
-    return saved;
-  } catch (e) {
-    return null;
-  }
+    const fromSession = parseActiveGameSessionRaw(sessionStorage.getItem(ACTIVE_GAME_KEY));
+    if (fromSession) return fromSession;
+  } catch (e) { /* fall through */ }
+  try {
+    const fromLocal = parseActiveGameSessionRaw(localStorage.getItem(ACTIVE_GAME_KEY));
+    if (fromLocal) {
+      // Promote into sessionStorage for this tab.
+      try { sessionStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify(fromLocal)); } catch (e) {}
+      return fromLocal;
+    }
+  } catch (e) { /* ignore */ }
+  return null;
 }
 
 function saveSpectatorSession() {
@@ -10551,6 +10570,16 @@ function readSpectatorSession() {
   }
 }
 
+function reconnectOriginOrder(preferred) {
+  const first = preferred === 'overflow' ? 'overflow' : 'hostinger';
+  const second = first === 'overflow' ? 'hostinger' : 'overflow';
+  return [first, second];
+}
+
+function isReconnectRoomMissing(s) {
+  return !!(s && typeof s.error === 'string' && /room not found/i.test(s.error));
+}
+
 async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
   if (typeof tcgLockApiOrigin === 'function') {
     tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
@@ -10562,6 +10591,53 @@ async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
     RECONNECT_FETCH_TIMEOUT_MS,
   );
   return r.json();
+}
+
+/**
+ * Try preferred origin first, then the other. Rooms never migrate mid-match, but
+ * session may omit apiOrigin (server active_game) or point at the wrong side after overflow.
+ */
+async function fetchGameStateForReconnectWithFallback(saved) {
+  const order = reconnectOriginOrder(saved.apiOrigin);
+  let lastState = null;
+  let lastOrigin = order[0];
+  let lastErr = null;
+  let roomMissingCount = 0;
+  for (const origin of order) {
+    try {
+      const s = await fetchGameStateForReconnect(saved.roomId, saved.token, origin);
+      lastState = s;
+      lastOrigin = origin;
+      if (isReconnectRoomMissing(s)) {
+        roomMissingCount += 1;
+        continue;
+      }
+      // Any non-missing response is authoritative for this room+token on this origin.
+      return { state: s, apiOrigin: origin, roomMissingBoth: false };
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (lastState) {
+    return {
+      state: lastState,
+      apiOrigin: lastOrigin,
+      roomMissingBoth: roomMissingCount >= order.length,
+    };
+  }
+  throw lastErr || new Error('Reconnect failed');
+}
+
+/** Only resign/clear ranked when the match is truly gone or finished — never on timeouts. */
+async function abandonReconnectSessionIfTerminal(s, { bothOriginsMissing = false } = {}) {
+  const finished = s && s.status === 'finished';
+  const missing = bothOriginsMissing && isReconnectRoomMissing(s);
+  if (!finished && !missing) return false;
+  if (getAuthToken()) {
+    try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
+  }
+  clearActiveGameSession();
+  return true;
 }
 
 /** Drop stale client-only flags after refresh/reconnect; server snapshot is authoritative.
@@ -10645,17 +10721,18 @@ function prepareClientReconnectState(s) {
 async function reconnectToGame(saved) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const s = await fetchGameStateForReconnect(saved.roomId, saved.token, saved.apiOrigin);
-    if (s.error || s.status === 'finished' || !s.my_id) {
-      if (getAuthToken()) {
-        try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
-      }
-      clearActiveGameSession();
+    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved);
+    if (await abandonReconnectSessionIfTerminal(s, { bothOriginsMissing: !!roomMissingBoth })) {
+      return false;
+    }
+    // Transient API errors / wrong token: keep session so ranked active_game or retry can work.
+    if (s.error || !s.my_id) {
       return false;
     }
     if (typeof tcgLockApiOrigin === 'function') {
-      tcgLockApiOrigin(saved.apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+      tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
     }
+    saved.apiOrigin = apiOrigin;
     G.roomId = saved.roomId;
     G.token = saved.token;
     G.playerId = s.my_id || saved.playerId || 'p1';
@@ -10696,7 +10773,7 @@ async function reconnectToGame(saved) {
     toast(t('toast.reconnected'), 2600);
     return true;
   } catch (e) {
-    clearActiveGameSession();
+    // Timeouts / network blips — keep tcg_active_game for the next reload.
     return false;
   }
 }
@@ -10704,13 +10781,14 @@ async function reconnectToGame(saved) {
 async function reconnectToSpectator(saved) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const s = await fetchGameStateForReconnect(saved.roomId, saved.token, saved.apiOrigin);
-    if (s.error || s.status === 'finished') {
+    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved);
+    if (s.status === 'finished' || roomMissingBoth) {
       clearSpectatorSession();
       return false;
     }
+    if (s.error) return false;
     if (typeof tcgLockApiOrigin === 'function') {
-      tcgLockApiOrigin(saved.apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+      tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
     }
     G.isSpectator = true;
     G._spectateReturnScreen = saved.returnScreen || 'lobby';
@@ -10738,7 +10816,6 @@ async function reconnectToSpectator(saved) {
     toast(t('spectate.reconnected'), 2600);
     return true;
   } catch (e) {
-    clearSpectatorSession();
     return false;
   }
 }
@@ -10760,6 +10837,7 @@ async function resumeActiveGameIfAny() {
     const res = await accountGet('active_game');
     const active = res.active;
     if (!active?.room_id || !active?.player_token) return false;
+    // Ranked matches always live on Hostinger (overflow is blocked for ranked queue).
     return reconnectToGame({
       roomId: active.room_id,
       token: active.player_token,
@@ -10767,6 +10845,7 @@ async function resumeActiveGameIfAny() {
       isCPU: false,
       cpuToken: null,
       screen: 'game',
+      apiOrigin: 'hostinger',
     });
   } catch (e) {
     return false;
@@ -10793,7 +10872,11 @@ async function initAccountFlow() {
   };
   const authWatchdog = setTimeout(() => {
     if (authDone) return;
-    clearActiveGameSession();
+    // Do not clear tcg_active_game — a slow /me must not erase casual reconnect data.
+    if (G.roomId) {
+      finishAuthBoot();
+      return;
+    }
     showGuestAuth(null, 'auth.guestTimeout');
     finishAuthBoot();
   }, AUTH_BOOT_WATCHDOG_MS);
@@ -10837,10 +10920,13 @@ async function initAccountFlow() {
         return;
       }
       // Keep token on timeout/5xx — Hostinger overload must not force Discord re-login.
+      // Still try to put the player back in their match before showing busy UI.
+      if (await resumeActiveGameIfAny()) return;
       showGuestAuth(null, 'auth.serverBusy');
       return;
     }
     if (!me || !me.success) {
+      if (await resumeActiveGameIfAny()) return;
       if (typeof isAuthRejectedError === 'function') {
         showGuestAuth(null, 'auth.serverBusy');
       } else {
@@ -10873,6 +10959,7 @@ async function initAccountFlow() {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       showGuestAuth(null, 'auth.sessionExpired');
     } else if (typeof isTransientAccountError === 'function' && isTransientAccountError(e) && getAuthToken()) {
+      if (await resumeActiveGameIfAny()) return;
       showGuestAuth(null, 'auth.serverBusy');
     } else {
       showGuestAuth(e.message || t('auth.loadError'));
@@ -16410,9 +16497,16 @@ async function pollRankedStatus() {
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
-      const check = await fetchGameStateForReconnect(st.room_id, st.player_token);
-      if (check.error || check.status === 'finished' || !check.my_id) {
-        await accountPost('leave_active_game', {}).catch(() => {});
+      const check = await fetchGameStateForReconnectWithFallback({
+        roomId: st.room_id,
+        token: st.player_token,
+        apiOrigin: 'hostinger',
+      });
+      const s = check.state;
+      if (s.status === 'finished' || check.roomMissingBoth || !s.my_id) {
+        if (s.status === 'finished' || check.roomMissingBoth) {
+          await accountPost('leave_active_game', {}).catch(() => {});
+        }
         setRankedSearchingUI(false);
         return;
       }
