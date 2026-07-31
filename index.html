@@ -8528,7 +8528,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=75"></script>
+<script src="i18n.js?v=76"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
@@ -9019,7 +9019,7 @@ function updateDeckSealBatchBar() {
   if (!cards) {
     const empty = document.createElement('span');
     empty.className = 'deck-seal-batch-empty';
-    empty.textContent = t('sticker.batchEmpty') || 'Tap spare cards in your collection to select them.';
+    empty.textContent = t('sticker.batchEmpty') || 'Tap a spare card to add 1 copy; tap again to add more.';
     totalsEl.appendChild(empty);
   } else {
     ['N', 'R', 'P', 'SEC', 'PR'].forEach(tier => {
@@ -9045,10 +9045,12 @@ function toggleDeckSealBatchCard(cardNo) {
     toast(t('sticker.batchNoSpare') || 'No spare copies available to convert', 2600);
     return;
   }
-  if (A.deckSealBatch[cardNo]) {
+  const cur = Math.max(0, Number(A.deckSealBatch[cardNo]) || 0);
+  // Each tap adds one spare copy; tapping again at the max clears the selection.
+  if (cur >= spare) {
     delete A.deckSealBatch[cardNo];
   } else {
-    A.deckSealBatch[cardNo] = spare;
+    A.deckSealBatch[cardNo] = cur + 1;
   }
   updateDeckSealBatchBar();
   if (typeof renderDeckBuilder === 'function') renderDeckBuilder({ preservePoolScroll: true });
