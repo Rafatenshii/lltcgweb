@@ -63,11 +63,18 @@ function tryResolveAbilityEffectSwitchWaitingRoomSuccess(
                     break;
                 }
             } else {
+                // Umi Sonoda (PL!-pb1-004): count μ's Success Lives with Score +1 blade heart
+                // (yell_score_icon / special_heart icon_score), not merely score > 0.
                 $group = $ab['group'] ?? 'μ\'s';
-                $scored = count(array_filter(
-                    $p['success_lives'] ?? [],
-                    fn($c) => ($c['group'] ?? '') === $group && intval($c['score'] ?? 0) > 0
-                ));
+                $scored = 0;
+                foreach ($p['success_lives'] ?? [] as $c) {
+                    if (($c['group'] ?? '') !== $group) {
+                        continue;
+                    }
+                    if (cardYellScoreIconCount($c) > 0) {
+                        $scored++;
+                    }
+                }
                 if ($scored >= 2) {
                     $amount = intval($ab['amount_two'] ?? 2);
                 } elseif ($scored >= 1) {

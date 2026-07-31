@@ -10695,7 +10695,7 @@
                 "pink"
             ],
             "rarity": "P+",
-            "text": "[On Enter] [Center] If you have 1 μ's card with Score +1 or higher in your Success Live area, until this Live ends, you gain \"[Always] +1 total Live Score.\" If you have 2 or more, you gain \"[Always] +2 total Live Score\" instead.\n(This ability activates only when this Member enters the Center area.)",
+            "text": "[On Enter] [Center] If you have 1 μ's card with a Score +1 Blade Heart in your Success Live area, until this Live ends, you gain \"[Always] +1 total Live Score.\" If you have 2 or more, you gain \"[Always] +2 total Live Score\" instead.\n(This ability activates only when this Member enters the Center area.)",
             "text_jp": "自分の成功ライブカード置き場にを持つ『μ's』のカードが1枚ある場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。2枚以上ある場合、代わりに「ライブの合計スコアを＋２する。」を得る。（この能力はセンターエリアに登場した場合のみ発動する。）",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBLL/PL!-pb1-004-P2.png",
             "abilities": [
@@ -10704,6 +10704,7 @@
                     "type": "success_scored_live_score_bonus",
                     "group": "μ's",
                     "center_only": true,
+                    "require_score_blade_heart": true,
                     "amount_one": 1,
                     "amount_two": 2
                 }
@@ -10742,7 +10743,7 @@
                 "pink"
             ],
             "rarity": "R",
-            "text": "[On Enter] [Center] If you have 1 μ's card with Score +1 or higher in your Success Live area, until this Live ends, you gain \"[Always] +1 total Live Score.\" If you have 2 or more, you gain \"[Always] +2 total Live Score\" instead.\n(This ability activates only when this Member enters the Center area.)",
+            "text": "[On Enter] [Center] If you have 1 μ's card with a Score +1 Blade Heart in your Success Live area, until this Live ends, you gain \"[Always] +1 total Live Score.\" If you have 2 or more, you gain \"[Always] +2 total Live Score\" instead.\n(This ability activates only when this Member enters the Center area.)",
             "text_jp": "自分の成功ライブカード置き場にを持つ『μ's』のカードが1枚ある場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。2枚以上ある場合、代わりに「ライブの合計スコアを＋２する。」を得る。（この能力はセンターエリアに登場した場合のみ発動する。）",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBLL/PL!-pb1-004-R.png",
             "abilities": [
@@ -10751,6 +10752,7 @@
                     "type": "success_scored_live_score_bonus",
                     "group": "μ's",
                     "center_only": true,
+                    "require_score_blade_heart": true,
                     "amount_one": 1,
                     "amount_two": 2
                 }
