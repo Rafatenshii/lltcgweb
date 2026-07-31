@@ -10570,35 +10570,51 @@ function readSpectatorSession() {
   }
 }
 
-function reconnectOriginOrder(preferred) {
-  const first = preferred === 'overflow' ? 'overflow' : 'hostinger';
-  const second = first === 'overflow' ? 'hostinger' : 'overflow';
-  return [first, second];
+function reconnectOriginOrder(preferred, { hostingerOnly = false } = {}) {
+  if (hostingerOnly) return ['hostinger'];
+  // Only probe overflow when the saved session says the room lived there.
+  // Speculative Hostinger→overflow fallback was locking hub traffic onto a
+  // CORS-broken stream.loveliveradio.ca/tcg/api/ and breaking deck_list/me.
+  if (preferred === 'overflow') return ['overflow', 'hostinger'];
+  return ['hostinger'];
 }
 
 function isReconnectRoomMissing(s) {
   return !!(s && typeof s.error === 'string' && /room not found/i.test(s.error));
 }
 
-async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
-  if (typeof tcgLockApiOrigin === 'function') {
-    tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+function reconnectApiBaseForOrigin(apiOrigin) {
+  if (apiOrigin === 'overflow') {
+    const o = String(typeof TCG_OVERFLOW_ORIGIN !== 'undefined' ? TCG_OVERFLOW_ORIGIN : 'https://stream.loveliveradio.ca/tcg/api').replace(/\/$/, '');
+    return o + '/api.php';
   }
-  const base = (typeof tcgGameApiUrl === 'function' ? tcgGameApiUrl() : API);
+  return './api.php';
+}
+
+/** Probe an origin without locking G.apiOrigin (failed probes must not redirect hub traffic). */
+async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
+  const base = reconnectApiBaseForOrigin(apiOrigin);
   const r = await fetchWithTimeout(
     `${base}?action=get_state&room_id=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&seq=0&poll=0`,
     {},
     RECONNECT_FETCH_TIMEOUT_MS,
   );
+  if (!r.ok) {
+    const err = new Error('Reconnect HTTP ' + r.status);
+    err.httpStatus = r.status;
+    err.transient = r.status >= 500 || r.status === 429 || r.status === 408;
+    throw err;
+  }
   return r.json();
 }
 
 /**
  * Try preferred origin first, then the other. Rooms never migrate mid-match, but
  * session may omit apiOrigin (server active_game) or point at the wrong side after overflow.
+ * Does not lock API origin — caller locks only after a successful join.
  */
-async function fetchGameStateForReconnectWithFallback(saved) {
-  const order = reconnectOriginOrder(saved.apiOrigin);
+async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
+  const order = reconnectOriginOrder(saved.apiOrigin, opts);
   let lastState = null;
   let lastOrigin = order[0];
   let lastErr = null;
@@ -10718,10 +10734,10 @@ function prepareClientReconnectState(s) {
   if (!s?.pending_prompt) clearDeferredPromptState();
 }
 
-async function reconnectToGame(saved) {
+async function reconnectToGame(saved, opts = {}) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved);
+    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved, opts);
     if (await abandonReconnectSessionIfTerminal(s, { bothOriginsMissing: !!roomMissingBoth })) {
       return false;
     }
@@ -10846,7 +10862,7 @@ async function resumeActiveGameIfAny() {
       cpuToken: null,
       screen: 'game',
       apiOrigin: 'hostinger',
-    });
+    }, { hostingerOnly: true });
   } catch (e) {
     return false;
   }
@@ -16501,7 +16517,7 @@ async function pollRankedStatus() {
         roomId: st.room_id,
         token: st.player_token,
         apiOrigin: 'hostinger',
-      });
+      }, { hostingerOnly: true });
       const s = check.state;
       if (s.status === 'finished' || check.roomMissingBoth || !s.my_id) {
         if (s.status === 'finished' || check.roomMissingBoth) {
