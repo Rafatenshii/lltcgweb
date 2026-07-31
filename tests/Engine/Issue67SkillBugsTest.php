@@ -142,10 +142,59 @@ final class Issue67SkillBugsTest extends TestCase
         $state = \actionResolvePrompt($state, 'p1', ['discard_ids' => ['mate']]);
         $this->assertEmpty($state['pending_prompt'] ?? null);
 
-        $bladeBonus = intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0);
-        $this->assertGreaterThanOrEqual(1, $bladeBonus, 'Auto should grant +1 Blade');
-        $flat = \getBonusHeartsFlat($state, 'p1');
-        $this->assertContains('pink', $flat, 'Auto should grant pink ♡ (not blade-only)');
+        // Member-scoped (not player-wide) so a later Wait nullifies Yell blades (#82 class).
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+        $this->assertSame(
+            1,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Auto should grant +1 Blade on Rurino'
+        );
+        $flat = \memberPerformanceHeartsFlat($state['players']['p1']['stage']['center']);
+        $this->assertContains('pink', $flat, 'Auto should grant pink ♡ on Rurino');
+        $this->assertSame(
+            1 + intval($rurino['blade'] ?? 0),
+            \computeYellBladeTotal($state, 'p1')
+        );
+    }
+
+    public function testPb1AutoBladeExcludedFromYellWhileWaited(): void
+    {
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'pb1_rurino_wait');
+        $mate = $this->cardByNo('PL!HS-bp5-003-R＋', 'mate_wait');
+        $mate['subunit'] = 'みらくらぱーく!';
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 1,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => $this->basePlayers(),
+        ];
+        $state['players']['p1']['stage']['center'] = $rurino;
+        $state['players']['p1']['hand'] = [$mate];
+        $state['players']['p1']['main_deck'] = [
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck_w1'),
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck_w2'),
+        ];
+
+        $state = \resolveOnEnterAbilities($state, 'p1', $rurino, 'center');
+        $state = \actionResolvePrompt($state, 'p1', ['discard_ids' => ['mate_wait']]);
+        $this->assertSame(
+            1,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0)
+        );
+
+        \waitMember($state['players']['p1']['stage']['center'], $state);
+
+        $this->assertSame(
+            0,
+            \computeYellBladeTotal($state, 'p1'),
+            'Waited Rurino printed + Auto blades must not count toward Yell'
+        );
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
     }
 
     public function testDoDoDoDefersEnergyUntilOppRoundResolved(): void

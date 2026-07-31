@@ -1511,19 +1511,24 @@ function hsPb1NotifyHandDiscard(array &$state, string $pid): void {
                 if ($used >= intval($ab['max_uses_per_turn'])) continue;
                 $member['_auto_uses_' . $idx] = $used + 1;
             }
-            $state = applyModifierEffect($state, $pid, [
-                'type'   => 'blade_bonus',
-                'amount' => intval($ab['amount'] ?? 1),
-            ]);
+            // Attribute to this Member (not player-wide blade_bonus / bonus_hearts).
+            // Player-wide modifiers survive Wait and still count toward Yell — same
+            // class of bug as GitHub #82 (Natsumi Live Start).
+            $bladeAmt = intval($ab['amount'] ?? 1);
+            $member['live_blade_bonus'] = intval($member['live_blade_bonus'] ?? 0) + $bladeAmt;
+            if (!isset($member['bonus_hearts'])) {
+                $member['bonus_hearts'] = [];
+            }
             foreach ($ab['hearts'] ?? [] as $hg) {
-                $state = applyModifierEffect($state, $pid, [
-                    'type'   => 'grant_bonus_hearts',
-                    'hearts' => [$hg],
-                ]);
+                $color = is_array($hg) ? ($hg['color'] ?? 'any') : (string)$hg;
+                $count = is_array($hg) ? intval($hg['count'] ?? 1) : 1;
+                for ($i = 0; $i < $count; $i++) {
+                    $member['bonus_hearts'][] = $color;
+                }
             }
             $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
             $state = addLog($state, $state['players'][$pid]['name'] .
-                " — [$mName] gained +" . intval($ab['amount'] ?? 1) . ' Blade (hand to WR).');
+                " — [$mName] gained +$bladeAmt Blade (hand to WR).");
         }
     }
     unset($member);

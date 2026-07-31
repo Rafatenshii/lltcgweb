@@ -2545,11 +2545,14 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
   content:'';position:absolute;inset:0;z-index:-1;
   background:rgba(0,0,0,.55);border-radius:3px;
 }
+/* Wait art rotates to landscape; size the dim to that AABB (not a rotated portrait inset). */
 .mslot.member-in-wait > .wdim::before{
-  transform:rotate(90deg);transform-origin:center center;
+  inset:auto;left:50%;top:50%;
+  width:calc(100% * 88 / 63);height:calc(100% * 63 / 88);
+  transform:translate(-50%, -50%);transform-origin:center center;
 }
 .mslot.member-wait-flip-anim > .wdim::before{
-  transition:transform .36s cubic-bezier(.4,.2,.2,1);
+  transition:width .36s cubic-bezier(.4,.2,.2,1),height .36s cubic-bezier(.4,.2,.2,1),transform .36s cubic-bezier(.4,.2,.2,1);
 }
 .mslot.member-in-wait > img,
 .mslot.member-in-wait > .noimg,
@@ -3704,12 +3707,21 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }
-/* Wait members on the spectacle stage: same flip + dim treatment as board .mslot */
+/* Wait: landscape chrome matching rotated art (avoids portrait ghost/outline). */
+.perf-card.member.member-in-wait{
+  width:calc(var(--perf-member-w, clamp(100px,16vw,136px)) * 88 / 63);
+  aspect-ratio:88/63;
+}
+.perf-stage-row.perf-stage-multi .perf-card.member.member-in-wait{
+  width:calc(var(--perf-stage-member-w, var(--perf-member-w, clamp(100px,16vw,136px))) * 88 / 63);
+  height:var(--perf-stage-member-h, auto);
+  aspect-ratio:88/63;
+}
 .perf-card.member.member-in-wait > .wdim{
   font-size:clamp(9px,1.4vw,13px);letter-spacing:.06em;z-index:5;
 }
 .perf-card.member.member-in-wait > .wdim::before{
-  transform:rotate(90deg);transform-origin:center center;
+  transform:none;
 }
 .perf-card.member.member-in-wait > img,
 .perf-card.member.member-in-wait > .noimg,
@@ -3719,7 +3731,9 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member.member-in-wait .live-flip-front > img,
 .perf-card.member.member-in-wait .live-flip-front > .noimg,
 .perf-card.member.member-in-wait .live-flip-front .card-face-fill{
-  transform:rotate(90deg);
+  position:absolute;left:50%;top:50%;
+  width:calc(100% * 63 / 88);height:calc(100% * 88 / 63);
+  transform:translate(-50%, -50%) rotate(90deg);
   transform-origin:center center;
   filter:grayscale(.45) brightness(.78);
 }

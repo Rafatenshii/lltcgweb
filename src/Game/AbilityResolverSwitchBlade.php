@@ -54,11 +54,11 @@ function tryResolveAbilityEffectSwitchBlade(
             break;
         case 'blade_bonus':
             $bladeAmt = intval($ab['amount'] ?? 1);
-            // Waited sources must not feed player-wide blade_bonus (bypasses Yell Wait).
-            // Attribute to the source Member so memberContributesBladeToYell excludes it.
+            // Always attribute Stage-source blade to the Member (not player-wide).
+            // Player-wide blade_bonus survives a later Wait and still counts toward Yell
+            // (Rurino PB1 Auto / GitHub #82 class of bug).
             $srcSlot = findMemberSlot($p, $source['instance_id'] ?? '');
-            $srcOnStage = ($srcSlot !== '' && !empty($p['stage'][$srcSlot])) ? $p['stage'][$srcSlot] : null;
-            if ($srcOnStage && memberIsInWait($srcOnStage)) {
+            if ($srcSlot !== '' && !empty($p['stage'][$srcSlot])) {
                 $p['stage'][$srcSlot]['live_blade_bonus'] =
                     intval($p['stage'][$srcSlot]['live_blade_bonus'] ?? 0) + $bladeAmt;
             } else {
