@@ -204,6 +204,12 @@ function tcgDbMigrate(PDO $db): void {
             ->execute([$today]);
     });
 
+    // seal_pr was added after bootstrap_v2; comment-only 007_seals.sql never ALTERed prod.
+    // Without this, me() → tcgSealBalances SELECT seal_pr → 500 → client "server is busy".
+    tcgDbRunMigrationOnce($db, 'seal_pr_column_20260730', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_users', 'seal_pr', 'INTEGER NOT NULL DEFAULT 0');
+    });
+
     $done = true;
 }
 

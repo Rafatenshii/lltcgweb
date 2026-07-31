@@ -1,8 +1,6 @@
 -- Sticker shop seal currencies (N / R / P / SEC / PR).
-
--- Applied via tcgDbEnsureColumn in db.php on boot:
---   tcg_users.seal_n INTEGER NOT NULL DEFAULT 0
---   tcg_users.seal_r INTEGER NOT NULL DEFAULT 0
---   tcg_users.seal_p INTEGER NOT NULL DEFAULT 0
---   tcg_users.seal_sec INTEGER NOT NULL DEFAULT 0
---   tcg_users.seal_pr INTEGER NOT NULL DEFAULT 0
+--
+-- N/R/P/SEC were ensured during bootstrap / earlier deploys.
+-- PR is applied by tcgDbRunMigrationOnce('seal_pr_column_20260730') in db.php
+-- (bootstrap_v2 skips ensure-columns; this file is intentionally documentation-only
+-- so Migrator does not run a bare ALTER that can fail if the column already exists).
