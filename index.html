@@ -5915,10 +5915,20 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   gap:8px;
   flex:0 0 auto;
   margin:0;
-  max-width:min(78%,360px);
+  max-width:min(48%,280px);
 }
 #screen-deck .deck-seal-batch-toggle{
-  width:auto;padding:6px 10px;font-size:12px;white-space:nowrap;flex:0 0 auto
+  position:absolute;
+  left:0;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:1;
+  width:auto;
+  padding:6px 10px;
+  font-size:12px;
+  white-space:nowrap;
+  flex:0 0 auto;
+  max-width:min(42%,200px);
 }
 #screen-deck .deck-collection-sort .llc-select-wrap{
   display:block;
@@ -7421,9 +7431,9 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <div class="deck-builder-pool-main">
               <div class="deck-section-head deck-section-head--pool">
                 <div class="deck-section-head__title-row">
+                  <button type="button" class="btn-out deck-seal-batch-toggle" id="btn-deck-seal-batch" hidden data-i18n="sticker.batchConvert">Batch convert</button>
                   <h4 id="deck-pool-head-title" data-i18n="deck.collection">Collection</h4>
                   <div class="deck-collection-sort" id="deck-collection-sort-wrap">
-                    <button type="button" class="btn-out deck-seal-batch-toggle" id="btn-deck-seal-batch" hidden data-i18n="sticker.batchConvert">Batch convert</button>
                     <div class="llc-select-wrap deck-collection-sort__select">
                       <select id="sel-deck-pool-sort" aria-label="Collection sort and order"></select>
                     </div>
