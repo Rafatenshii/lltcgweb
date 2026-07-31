@@ -4,6 +4,7 @@
  * No ELO / ranked record — resign freely without account penalties.
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/game_mode.php';
 
 const TCG_CASUAL_QUEUE_MAX_WAIT = 300;
 const TCG_CASUAL_LOCK_TIMEOUT_MS = 5000;
@@ -109,6 +110,7 @@ if (!function_exists('tcgOptionalAuthUserId')) {
 }
 
 function tcgCasualQueueJoin(string $queueKey, array $body): array {
+    require_once __DIR__ . '/game_mode.php';
     $queueKey = tcgNormalizeCasualQueueKey($queueKey);
     if ($queueKey === '') {
         throw new Exception('queue_id required');
@@ -118,6 +120,8 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
         $name = 'Player';
     }
     $body['name'] = $name;
+    $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $body['game_mode'] = $gameMode;
 
     if (!defined('TCG_API_LIB_ONLY')) {
         define('TCG_API_LIB_ONLY', true);
@@ -127,16 +131,20 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
     if (!is_array($cards) || !isset($cards['cards'])) {
         throw new Exception('Card database unavailable');
     }
-    resolveRoomDeckLists($body, $cards);
 
     $discordId = tcgOptionalAuthUserId($body);
+    if ($gameMode === TCG_GAME_MODE_STARTERS) {
+        tcgValidateCasualStartersModeDeck($body, $discordId, $cards);
+    }
+    resolveRoomDeckLists($body, $cards);
+
     $now = time();
     $joinBody = json_encode($body, JSON_UNESCAPED_UNICODE);
     if ($joinBody === false) {
         throw new Exception('Invalid queue payload');
     }
 
-    return tcgDbRetry(function () use ($queueKey, $discordId, $name, $joinBody, $now) {
+    return tcgDbRetry(function () use ($queueKey, $discordId, $name, $joinBody, $now, $gameMode) {
         $db = tcgDb();
         tcgCasualPurgeExpiredQueue($now);
 
@@ -145,12 +153,33 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
         }
         $db->prepare('DELETE FROM tcg_casual_queue WHERE queue_key = ?')->execute([$queueKey]);
 
-        $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at)
-            VALUES (?, ?, ?, ?, ?)')
-            ->execute([$queueKey, $discordId, $name, $joinBody, $now]);
+        $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at, game_mode)
+            VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([$queueKey, $discordId, $name, $joinBody, $now, $gameMode]);
 
-        return ['queued' => true, 'joined_at' => $now];
+        return ['queued' => true, 'joined_at' => $now, 'game_mode' => $gameMode];
     });
+}
+
+/** Ensure casual starters-mode join uses an owned starter (signed-in) or catalog starter (guest). */
+function tcgValidateCasualStartersModeDeck(array $body, ?string $discordId, array $cards): void {
+    require_once __DIR__ . '/booster.php';
+    $deck = trim((string)($body['deck'] ?? ''));
+    if ($deck === '' || str_starts_with($deck, 'preset') || str_starts_with($deck, 'experiment')) {
+        throw new Exception('Starter decks only mode requires a starter deck');
+    }
+    if ($deck === 'random' || $deck === 'cpu') {
+        throw new Exception('Starter decks only mode requires a starter deck');
+    }
+    $starterKeys = tcgStarterDeckKeys();
+    if (!in_array($deck, $starterKeys, true)) {
+        throw new Exception('Starter decks only mode requires a starter deck');
+    }
+    if ($discordId) {
+        if (!in_array($deck, tcgOwnedStarterKeys($discordId), true)) {
+            throw new Exception('You do not own that starter deck');
+        }
+    }
 }
 
 function tcgCasualQueueLeave(string $queueKey, ?string $discordId = null): array {
@@ -255,22 +284,30 @@ function tcgCasualRecordMatch(string $roomId, string $p1QueueKey, string $p1Toke
         ->execute([$p2QueueKey, $roomId, $p2Token, 'p2', $now]);
 }
 
-function tcgFindCasualOpponent(string $queueKey): ?array {
+function tcgFindCasualOpponent(string $queueKey, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE queue_key != ? ORDER BY joined_at ASC LIMIT 1');
-    $stmt->execute([$queueKey]);
+    $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE queue_key != ? AND game_mode = ? ORDER BY joined_at ASC LIMIT 1');
+    $stmt->execute([$queueKey, $gameMode]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return is_array($row) ? $row : null;
 }
 
-function tcgFindCasualOpponentByDiscordId(string $challengeDiscordId, string $selfQueueKey): ?array {
+function tcgFindCasualOpponentByDiscordId(
+    string $challengeDiscordId,
+    string $selfQueueKey,
+    string $gameMode = TCG_GAME_MODE_STANDARD
+): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $challengeDiscordId = trim($challengeDiscordId);
     if ($challengeDiscordId === '') {
         return null;
     }
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE discord_id = ? AND queue_key != ? ORDER BY joined_at ASC LIMIT 1');
-    $stmt->execute([$challengeDiscordId, $selfQueueKey]);
+    $stmt = $db->prepare('SELECT * FROM tcg_casual_queue WHERE discord_id = ? AND queue_key != ? AND game_mode = ? ORDER BY joined_at ASC LIMIT 1');
+    $stmt->execute([$challengeDiscordId, $selfQueueKey, $gameMode]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return is_array($row) ? $row : null;
 }
@@ -290,14 +327,15 @@ function tcgTryCasualMatchmake(string $queueKey, ?string $challengeDiscordId = n
             return null;
         }
 
+        $selfMode = tcgNormalizeGameMode($self['game_mode'] ?? TCG_GAME_MODE_STANDARD);
         $opp = null;
         if ($challengeDiscordId !== null && $challengeDiscordId !== '') {
-            $opp = tcgFindCasualOpponentByDiscordId($challengeDiscordId, $queueKey);
+            $opp = tcgFindCasualOpponentByDiscordId($challengeDiscordId, $queueKey, $selfMode);
             if (!$opp) {
                 return null;
             }
         } else {
-            $opp = tcgFindCasualOpponent($queueKey);
+            $opp = tcgFindCasualOpponent($queueKey, $selfMode);
             if (!$opp) {
                 return null;
             }

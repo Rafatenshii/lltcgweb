@@ -4413,10 +4413,16 @@ body.missions-overlay-open{overflow:hidden}
   font-weight:800;color:#bae4ff;font-style:normal;background:#243a58}
 .llc-menu-screen .deck-prev{
   border:1px solid rgba(255,255,255,.28);background:rgba(52,163,243,.28);color:rgba(255,255,255,.82)}
-#screen-ranked .ranked-deck-field{margin:14px 0 10px;text-align:left}
-#screen-ranked .ranked-deck-field label{
+#screen-ranked .ranked-deck-field,
+#screen-lobby .ranked-deck-field,
+#screen-leaderboard .leaderboard-mode-field{margin:14px 0 10px;text-align:left}
+#screen-ranked .ranked-deck-field label,
+#screen-lobby .field > label[for="sel-lobby-game-mode"],
+#screen-leaderboard .leaderboard-mode-field label{
   display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
   color:rgba(255,255,255,.72);margin-bottom:6px}
+.game-mode-desc{
+  margin:8px 0 0;font-size:12px;line-height:1.45;color:rgba(255,255,255,.72);text-align:left}
 #screen-ranked .ranked-sound-opt{
   display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:13px;color:rgba(255,255,255,.88);cursor:pointer}
 #screen-ranked .ranked-sound-opt input{width:16px;height:16px;accent-color:#bae4ff;cursor:pointer}
@@ -7526,6 +7532,16 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
       <p id="ranked-pr-remaining" class="hub-stat"></p>
       <p class="hub-stat" data-i18n="ranked.timerNote">Main &amp; LIVE phases use a 120s timer.</p>
       <div class="field ranked-deck-field">
+        <label for="sel-ranked-game-mode" data-i18n="gameMode.label">Game mode</label>
+        <div class="llc-select-wrap">
+          <select id="sel-ranked-game-mode">
+            <option value="standard" data-i18n="gameMode.standard">Standard</option>
+            <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+          </select>
+        </div>
+        <p class="game-mode-desc" id="ranked-game-mode-desc"></p>
+      </div>
+      <div class="field ranked-deck-field">
         <label for="sel-ranked-deck" data-i18n="ranked.deckLabel">Ranked deck</label>
         <div class="llc-select-wrap">
           <select id="sel-ranked-deck"></select>
@@ -7562,6 +7578,16 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
         <h2 data-i18n="leaderboard.title">Ranked Leaderboard</h2>
       </div>
       <p class="account-lead" data-i18n="leaderboard.lead">Highest ELO from ranked PvP. Set a card banner for your profile row.</p>
+      <div class="field ranked-deck-field leaderboard-mode-field">
+        <label for="sel-leaderboard-game-mode" data-i18n="gameMode.label">Game mode</label>
+        <div class="llc-select-wrap">
+          <select id="sel-leaderboard-game-mode">
+            <option value="standard" data-i18n="gameMode.standard">Standard</option>
+            <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+          </select>
+        </div>
+        <p class="game-mode-desc" id="leaderboard-game-mode-desc"></p>
+      </div>
       <div class="leaderboard-actions">
         <button class="btn-out" id="btn-leaderboard-banner" type="button" data-i18n="leaderboard.editBanner">Edit profile</button>
       </div>
@@ -7595,6 +7621,16 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
           <div class="field">
             <label data-i18n="lobby.yourName">Your Name</label>
             <input type="text" id="inp-name" placeholder="Idol name…" maxlength="20" value="Player 1" data-i18n-placeholder="lobby.namePlaceholder">
+          </div>
+          <div class="field">
+            <label for="sel-lobby-game-mode" data-i18n="gameMode.label">Game mode</label>
+            <div class="llc-select-wrap">
+              <select id="sel-lobby-game-mode">
+                <option value="standard" data-i18n="gameMode.standard">Standard</option>
+                <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+              </select>
+            </div>
+            <p class="game-mode-desc" id="lobby-game-mode-desc"></p>
           </div>
           <div class="field">
             <label data-i18n="lobby.deck">Deck</label>
@@ -8528,7 +8564,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=76"></script>
+<script src="i18n.js?v=77"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
@@ -8704,6 +8740,7 @@ const A = {
   starGems: 0,
   seals: { n: 0, r: 0, p: 0, sec: 0, pr: 0 },
   ownedStarters: [],
+  gameMode: 'standard',
   sealBuyCosts: { N: 20, R: 15, P: 10, SEC: 5, PR: 20 },
   stickerProductId: null,
   stickerProducts: [],
@@ -9599,16 +9636,20 @@ function updateHubDynamicStats(me) {
 }
 
 function updateRankedScreenDynamic(me) {
-  const r = me?.rank || {};
-  const record = t('ranked.record', {
-    wins: r.wins ?? 0,
-    losses: r.losses ?? 0,
-    winPct: r.win_rate ?? 0,
-  });
-  el('ranked-info').textContent = t('ranked.infoLine', {
-    elo: r.elo ?? r.rating ?? 1000,
-    record,
-  });
+  if (el('screen-ranked')?.classList.contains('active')) {
+    void refreshRankedScreenModeStats();
+  } else {
+    const r = me?.rank || {};
+    const record = t('ranked.record', {
+      wins: r.wins ?? 0,
+      losses: r.losses ?? 0,
+      winPct: r.win_rate ?? 0,
+    });
+    el('ranked-info').textContent = t('ranked.infoLine', {
+      elo: r.elo ?? r.rating ?? 1000,
+      record,
+    });
+  }
   syncRankedPrFromProfile(me);
   updateRankedPrUI();
   syncRankedScreenSearchControls(!!A.rankedSearching);
@@ -9634,11 +9675,13 @@ function refreshDynamicI18n() {
     el('booster-daily-info').textContent = t('booster.packsLeft', { n: info.remaining ?? 0 });
     syncBoosterOpenButton(info.remaining ?? 0, !!A.boxPick);
   }
+  syncGameModeSelects();
   if (el('screen-leaderboard')?.classList.contains('active') && A.lastLeaderboardData) {
     renderLeaderboardRows(A.lastLeaderboardData);
   }
   if (el('screen-lobby')?.classList.contains('active')) void refreshCasualQueueStatsQuiet();
   renderLobbyDeckOptions();
+  renderRankedDeckOptions();
   updateDeckPrev();
   if (typeof window.refreshNewsOverlay === 'function') void window.refreshNewsOverlay();
   if (G.gameState) {
@@ -10494,7 +10537,10 @@ async function consumeLovecaChallengeInvite() {
       return;
     }
     if (A.casualSearching) await cancelCasualSearch();
-    const res = await accountPost('ranked_join', { challenge_discord_id: invite.challenge });
+    const res = await accountPost('ranked_join', {
+      challenge_discord_id: invite.challenge,
+      game_mode: currentGameMode(),
+    });
     if (res.match?.status === 'matched') {
       if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
       await enterRankedMatch(res.match);
@@ -11138,11 +11184,12 @@ async function refreshUnrankedLobbyInBackground() {
 
 function syncLobbyExperimentField() {
   const guest = !isSignedInAccount();
+  const startersOnly = isStartersGameMode();
   const field = el('lobby-experiment-pwd-field');
   const expBtn = el('btn-lobby-deck-experiment');
-  if (field) field.hidden = !guest;
-  if (expBtn) expBtn.hidden = !guest;
-  if (!guest) return;
+  if (field) field.hidden = !guest || startersOnly;
+  if (expBtn) expBtn.hidden = !guest || startersOnly;
+  if (!guest || startersOnly) return;
   const inp = el('inp-lobby-experiment-pwd');
   if (!inp) return;
   if (!inp.value) {
@@ -15758,9 +15805,12 @@ function renderLeaderboardRows(data) {
 
 async function openLeaderboardScreen() {
   el('leaderboard-err').textContent = '';
+  persistGameMode(currentGameMode());
+  syncGameModeSelects();
   try {
-    const res = await accountGet('rank_stats');
+    const res = await accountGet('rank_stats', { game_mode: currentGameMode() });
     A.leaderboard = res;
+    A.lastLeaderboardData = res;
     renderLeaderboardRows(res);
     showScr('leaderboard');
   } catch (e) {
@@ -16084,8 +16134,9 @@ async function saveBannerCrop() {
     A.profile = A.profile || {};
     A.profile.banner = res.banner || null;
     if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats');
+      const stats = await accountGet('rank_stats', { game_mode: currentGameMode() });
       A.leaderboard = stats;
+      A.lastLeaderboardData = stats;
       renderLeaderboardRows(stats);
     }
   } catch (e) {
@@ -16240,8 +16291,9 @@ async function saveProfileFlag() {
     syncProfileFlagStatus();
     renderProfileFlagGrid();
     if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats');
+      const stats = await accountGet('rank_stats', { game_mode: currentGameMode() });
       A.leaderboard = stats;
+      A.lastLeaderboardData = stats;
       renderLeaderboardRows(stats);
     }
   } catch (e) {
@@ -16468,28 +16520,165 @@ async function resumeRankedSearchIfQueued() {
   } catch (e) {}
 }
 
+const TCG_GAME_MODE_KEY = 'tcg_game_mode';
+const TCG_GAME_MODES = ['standard', 'starters'];
+
+function normalizeGameMode(raw) {
+  const m = String(raw || '').toLowerCase().trim();
+  if (m === 'starters' || m === 'starter' || m === 'starter_decks' || m === 'starter-decks') return 'starters';
+  return 'standard';
+}
+
+function loadStoredGameMode() {
+  try {
+    return normalizeGameMode(localStorage.getItem(TCG_GAME_MODE_KEY) || 'standard');
+  } catch (e) {
+    return 'standard';
+  }
+}
+
+function persistGameMode(mode) {
+  const m = normalizeGameMode(mode);
+  A.gameMode = m;
+  try { localStorage.setItem(TCG_GAME_MODE_KEY, m); } catch (e) {}
+  return m;
+}
+
+function currentGameMode() {
+  return normalizeGameMode(A.gameMode || loadStoredGameMode());
+}
+
+function isStartersGameMode(mode) {
+  return normalizeGameMode(mode ?? currentGameMode()) === 'starters';
+}
+
+function gameModeDescription(mode) {
+  return isStartersGameMode(mode) ? t('gameMode.startersDesc') : t('gameMode.standardDesc');
+}
+
+function syncGameModeSelects(mode) {
+  const m = normalizeGameMode(mode ?? currentGameMode());
+  ['sel-ranked-game-mode', 'sel-lobby-game-mode', 'sel-leaderboard-game-mode'].forEach(id => {
+    const sel = el(id);
+    if (sel && sel.value !== m) sel.value = m;
+  });
+  const rankedDesc = el('ranked-game-mode-desc');
+  if (rankedDesc) rankedDesc.textContent = gameModeDescription(m);
+  const lobbyDesc = el('lobby-game-mode-desc');
+  if (lobbyDesc) lobbyDesc.textContent = gameModeDescription(m);
+  const lbDesc = el('leaderboard-game-mode-desc');
+  if (lbDesc) lbDesc.textContent = gameModeDescription(m);
+}
+
+function ownedStarterKeysForUi() {
+  let owned = (A.ownedStarters || []).slice();
+  if (!owned.length) {
+    const primary = A.profile?.user?.starter_deck;
+    if (primary) owned = [primary];
+  }
+  return owned.filter(k => k && G.starterDecks?.[k]);
+}
+
+function starterOptionLabel(key) {
+  const deck = G.starterDecks?.[key];
+  return deckLocaleName(deck, key)
+    || A.profile?.user?.starter_deck_label
+    || deck?.name_en
+    || deck?.name
+    || key;
+}
+
+async function onGameModeSelectChange(sourceSelId) {
+  const sel = el(sourceSelId);
+  if (!sel) return;
+  const next = normalizeGameMode(sel.value);
+  const prev = currentGameMode();
+  if (next === prev) {
+    syncGameModeSelects(next);
+    return;
+  }
+  persistGameMode(next);
+  syncGameModeSelects(next);
+  if (A.rankedSearching) {
+    try { await cancelRankedSearch(); } catch (e) {}
+  }
+  if (A.casualSearching) {
+    try { await cancelCasualSearch(); } catch (e) {}
+  }
+  renderRankedDeckOptions();
+  renderLobbyDeckOptions();
+  if (el('screen-ranked')?.classList.contains('active')) {
+    await refreshRankedScreenModeStats();
+  }
+  if (el('screen-leaderboard')?.classList.contains('active')) {
+    await refreshLeaderboardForMode();
+  }
+}
+
+async function refreshRankedScreenModeStats() {
+  const mode = currentGameMode();
+  try {
+    const stats = await accountGet('rank_stats', { game_mode: mode });
+    const you = stats?.you || {};
+    el('ranked-info').textContent = t('ranked.infoLine', {
+      elo: you.elo ?? you.rating ?? 1000,
+      record: t('ranked.record', {
+        wins: you.wins ?? 0,
+        losses: you.losses ?? 0,
+        winPct: you.win_rate ?? 0,
+      }),
+    });
+  } catch (e) {
+    /* keep last info line */
+  }
+  try {
+    const res = await accountGet('ranked_status', { game_mode: mode });
+    applyRankedStatusResponse(res);
+  } catch (e) {}
+}
+
+async function refreshLeaderboardForMode() {
+  el('leaderboard-err').textContent = '';
+  try {
+    const res = await accountGet('rank_stats', { game_mode: currentGameMode() });
+    A.leaderboard = res;
+    A.lastLeaderboardData = res;
+    renderLeaderboardRows(res);
+  } catch (e) {
+    el('leaderboard-err').textContent = e.message;
+  }
+}
+
 function rankedDeckSelectValue() {
   const me = A.profile || {};
-  if (me.equipped_loadout === 'starter') return 'starter';
+  if (me.equipped_loadout === 'starter') {
+    const key = me.equipped_starter_key || me.user?.starter_deck;
+    return key ? ('starter:' + key) : 'starter';
+  }
   if (me.equipped_deck_slot) return 'preset:' + me.equipped_deck_slot;
   const equipped = (A.decks || []).find(d => d.equipped);
   if (equipped) return 'preset:' + equipped.slot;
-  return 'starter';
+  const owned = ownedStarterKeysForUi();
+  return owned.length ? ('starter:' + owned[0]) : 'starter';
 }
 
 function setRankedDeckControlsEnabled(enabled) {
   const sel = el('sel-ranked-deck');
   if (sel) sel.disabled = !enabled;
+  const modeSel = el('sel-ranked-game-mode');
+  if (modeSel) modeSel.disabled = !enabled;
 }
 
 function updateRankedDeckPrev() {
   const key = el('sel-ranked-deck')?.value || '';
   const prev = el('ranked-deck-prev');
   if (!prev) return;
-  if (key === 'starter') {
-    const starterKey = A.profile?.user?.starter_deck;
+  if (key === 'starter' || key.startsWith('starter:')) {
+    const starterKey = key.startsWith('starter:')
+      ? key.slice(8)
+      : (A.profile?.user?.starter_deck || '');
     const deck = starterKey ? G.starterDecks[starterKey] : null;
-    const label = A.profile?.user?.starter_deck_label || deckLocaleName(deck, starterKey) || t('deck.useStarter');
+    const label = starterOptionLabel(starterKey) || t('deck.useStarter');
     if (!deck) {
       prev.textContent = label || 'Starter deck';
       return;
@@ -16517,37 +16706,41 @@ function renderRankedDeckOptions() {
   if (!sel) return;
   const prev = sel.value;
   sel.replaceChildren();
+  const startersOnly = isStartersGameMode();
+  const owned = ownedStarterKeysForUi();
 
-  const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
-  if (saved.length) {
-    const presetGroup = document.createElement('optgroup');
-    presetGroup.label = 'Saved presets';
-    saved.forEach(d => {
-      const o = document.createElement('option');
-      o.value = 'preset:' + d.slot;
-      o.textContent = d.name || ('Deck #' + d.slot);
-      presetGroup.appendChild(o);
-    });
-    sel.appendChild(presetGroup);
+  if (!startersOnly) {
+    const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+    if (saved.length) {
+      const presetGroup = document.createElement('optgroup');
+      presetGroup.label = 'Saved presets';
+      saved.forEach(d => {
+        const o = document.createElement('option');
+        o.value = 'preset:' + d.slot;
+        o.textContent = d.name || ('Deck #' + d.slot);
+        presetGroup.appendChild(o);
+      });
+      sel.appendChild(presetGroup);
+    }
   }
 
-  const starterKey = A.profile?.user?.starter_deck;
-  if (starterKey) {
+  if (owned.length) {
     const starterGroup = document.createElement('optgroup');
-    starterGroup.label = 'Account starter';
-    const o = document.createElement('option');
-    o.value = 'starter';
-    o.textContent = A.profile?.user?.starter_deck_label
-      || G.starterDecks[starterKey]?.name_en
-      || G.starterDecks[starterKey]?.name
-      || 'Starter deck';
-    starterGroup.appendChild(o);
+    starterGroup.label = startersOnly ? t('gameMode.starters') : 'Account starters';
+    owned.forEach(key => {
+      const o = document.createElement('option');
+      o.value = 'starter:' + key;
+      o.textContent = starterOptionLabel(key);
+      starterGroup.appendChild(o);
+    });
     sel.appendChild(starterGroup);
   }
 
   const values = [...sel.options].map(o => o.value);
   const target = rankedDeckSelectValue();
-  sel.value = values.includes(target) ? target : (values[0] || '');
+  if (values.includes(prev)) sel.value = prev;
+  else if (values.includes(target)) sel.value = target;
+  else sel.value = values[0] || '';
   updateRankedDeckPrev();
 }
 
@@ -16558,9 +16751,11 @@ async function applyRankedDeckChoice(key, { silent = false } = {}) {
   if (sel) sel.disabled = true;
   try {
     let res;
-    if (key === 'starter') {
-      res = await accountPost('deck_equip_starter', {});
+    if (key === 'starter' || key.startsWith('starter:')) {
+      const starter = key.startsWith('starter:') ? key.slice(8) : '';
+      res = await accountPost('deck_equip_starter', starter ? { starter } : {});
     } else if (key.startsWith('preset:')) {
+      if (isStartersGameMode()) throw new Error(t('gameMode.startersDesc'));
       const slot = parseInt(key.slice(7), 10);
       if (!Number.isFinite(slot) || slot < 1 || slot > 10) throw new Error('Invalid deck preset');
       res = await accountPost('deck_equip', { slot });
@@ -16571,6 +16766,7 @@ async function applyRankedDeckChoice(key, { silent = false } = {}) {
       equipped_deck_slot: res.equipped_deck_slot ?? null,
       equipped_deck_name: res.equipped_deck_name ?? null,
       equipped_loadout: res.equipped_loadout ?? null,
+      equipped_starter_key: res.equipped_starter_key ?? (key.startsWith('starter:') ? key.slice(8) : null),
     });
     const dl = await accountGet('deck_list');
     A.decks = dl.decks || [];
@@ -16603,7 +16799,7 @@ async function onRankedDeckChange() {
 
 async function pollRankedStatus() {
   try {
-    const res = await accountGet('ranked_status');
+    const res = await accountGet('ranked_status', { game_mode: currentGameMode() });
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
@@ -16629,18 +16825,13 @@ async function pollRankedStatus() {
 
 async function openRankedScreen() {
   el('ranked-err').textContent = '';
+  persistGameMode(currentGameMode());
+  syncGameModeSelects();
   const me = await accountGet('me');
   A.profile = me;
   const dl = await accountGet('deck_list');
   A.decks = dl.decks || [];
-  el('ranked-info').textContent = t('ranked.infoLine', {
-    elo: me.rank?.elo ?? me.rank?.rating ?? 1000,
-    record: t('ranked.record', {
-      wins: me.rank?.wins ?? 0,
-      losses: me.rank?.losses ?? 0,
-      winPct: me.rank?.win_rate ?? 0,
-    }),
-  });
+  await refreshRankedScreenModeStats();
   syncRankedPrFromProfile(me);
   updateRankedPrUI();
   initRankedMatchSoundCheckbox();
@@ -16666,14 +16857,26 @@ async function startRankedSearch() {
       );
       if (!ok) return;
     }
-    const res = await accountPost('ranked_join');
+    const deckKey = el('sel-ranked-deck')?.value || '';
+    if (isStartersGameMode() && !(deckKey === 'starter' || deckKey.startsWith('starter:'))) {
+      throw new Error(t('gameMode.startersDesc'));
+    }
+    if (deckKey && deckKey !== rankedDeckSelectValue()) {
+      await applyRankedDeckChoice(deckKey, { silent: true });
+    }
+    const joinBody = { game_mode: currentGameMode() };
+    if (deckKey.startsWith('starter:')) joinBody.starter = deckKey.slice(8);
+    else if (deckKey === 'starter' && A.profile?.user?.starter_deck) {
+      joinBody.starter = A.profile.user.starter_deck;
+    }
+    const res = await accountPost('ranked_join', joinBody);
     if (res.match?.status === 'matched') {
       if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
       await enterRankedMatch(res.match);
       return;
     }
     applyRankedStatusResponse({
-      ranked: { status: 'searching', wait_seconds: 0 },
+      ranked: { status: 'searching', wait_seconds: 0, game_mode: currentGameMode() },
       queue_stats: res.queue_stats,
     });
     markRankedSearchActive(true);
@@ -16682,7 +16885,7 @@ async function startRankedSearch() {
 }
 
 async function cancelRankedSearch() {
-  await accountPost('ranked_leave');
+  await accountPost('ranked_leave', { game_mode: currentGameMode() });
   markRankedSearchActive(false);
   stopRankedPoll();
   setRankedSearchingUI(false);
@@ -16708,6 +16911,7 @@ function casualJoinPayload() {
   const body = {
     queue_id: getCasualQueueId(),
     name: el('inp-name').value.trim() || 'Player',
+    game_mode: currentGameMode(),
     ...lobbyDeckPayload(),
     ...lobbyPhaseTimerOpts(),
   };
@@ -16764,6 +16968,8 @@ function syncCasualLobbySearchControls(searching) {
   if (el('btn-solo')) el('btn-solo').disabled = searching;
   const deckSel = el('sel-deck');
   if (deckSel) deckSel.disabled = searching;
+  const modeSel = el('sel-lobby-game-mode');
+  if (modeSel) modeSel.disabled = searching;
 }
 
 function setCasualSearchingUI(active, waitSeconds) {
@@ -18506,6 +18712,11 @@ async function bootApp() {
   on('btn-anti-softlock', 'click', () => { void antiSoftlockSkipPrompt(); });
   document.addEventListener('keydown', onForceOwnTimeoutHotkey);
   on('sel-ranked-deck', 'change', onRankedDeckChange);
+  on('sel-ranked-game-mode', 'change', () => { void onGameModeSelectChange('sel-ranked-game-mode'); });
+  on('sel-lobby-game-mode', 'change', () => { void onGameModeSelectChange('sel-lobby-game-mode'); });
+  on('sel-leaderboard-game-mode', 'change', () => { void onGameModeSelectChange('sel-leaderboard-game-mode'); });
+  persistGameMode(loadStoredGameMode());
+  syncGameModeSelects();
   window.addEventListener('pagehide', (ev) => {
     if (ev.persisted) return;
     sendRankedLeaveBeacon();
@@ -19864,57 +20075,67 @@ function renderLobbyDeckOptions() {
   const prev = sel.value;
   sel.replaceChildren();
   const guest = !isSignedInAccount();
+  const startersOnly = isStartersGameMode();
 
   const basicGroup = document.createElement('optgroup');
-  basicGroup.label = t('deck.basicDecks');
-  LOBBY_STARTER_DECKS.forEach(id => {
+  basicGroup.label = startersOnly ? t('gameMode.starters') : t('deck.basicDecks');
+  const starterIds = startersOnly && !guest
+    ? ownedStarterKeysForUi()
+    : LOBBY_STARTER_DECKS.slice();
+  if (startersOnly && !guest && !starterIds.length) {
+    const primary = A.profile?.user?.starter_deck;
+    if (primary) starterIds.push(primary);
+  }
+  starterIds.forEach(id => {
     const o = document.createElement('option');
     o.value = id;
     const deck = G.starterDecks[id];
     o.textContent = deckLocaleName(deck, id) || id;
     basicGroup.appendChild(o);
   });
-  sel.appendChild(basicGroup);
+  if (basicGroup.children.length) sel.appendChild(basicGroup);
 
-  const randomOpt = document.createElement('option');
-  randomOpt.value = 'random';
-  randomOpt.textContent = t('deck.randomDeck');
-  sel.appendChild(randomOpt);
+  if (!startersOnly) {
+    const randomOpt = document.createElement('option');
+    randomOpt.value = 'random';
+    randomOpt.textContent = t('deck.randomDeck');
+    sel.appendChild(randomOpt);
 
-  if (guest) {
-    const remembered = loadExperimentPasswords();
-    if (remembered.length) {
-      const expGroup = document.createElement('optgroup');
-      expGroup.label = 'Deck Experiment';
-      remembered.forEach(entry => {
+    if (guest) {
+      const remembered = loadExperimentPasswords();
+      if (remembered.length) {
+        const expGroup = document.createElement('optgroup');
+        expGroup.label = 'Deck Experiment';
+        remembered.forEach(entry => {
+          const o = document.createElement('option');
+          o.value = 'experiment:' + entry.password;
+          o.textContent = (entry.name || 'Deck Experiment') + ' (' + entry.password + ')';
+          expGroup.appendChild(o);
+        });
+        sel.appendChild(expGroup);
+      }
+    }
+
+    const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+    if (saved.length) {
+      const presetGroup = document.createElement('optgroup');
+      presetGroup.label = 'Saved presets';
+      saved.forEach(d => {
         const o = document.createElement('option');
-        o.value = 'experiment:' + entry.password;
-        o.textContent = (entry.name || 'Deck Experiment') + ' (' + entry.password + ')';
-        expGroup.appendChild(o);
+        o.value = 'preset:' + d.slot;
+        o.textContent = (d.name || ('Deck #' + d.slot)) + (d.equipped ? ' ★' : '');
+        presetGroup.appendChild(o);
       });
-      sel.appendChild(expGroup);
+      sel.appendChild(presetGroup);
     }
   }
 
-  const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
-  if (saved.length) {
-    const presetGroup = document.createElement('optgroup');
-    presetGroup.label = 'Saved presets';
-    saved.forEach(d => {
-      const o = document.createElement('option');
-      o.value = 'preset:' + d.slot;
-      o.textContent = (d.name || ('Deck #' + d.slot)) + (d.equipped ? ' ★' : '');
-      presetGroup.appendChild(o);
-    });
-    sel.appendChild(presetGroup);
-  }
-
   const values = [...sel.options].map(o => o.value);
-  sel.value = values.includes(prev) ? prev : 'nijigasaki';
+  sel.value = values.includes(prev) ? prev : (values[0] || 'nijigasaki');
   syncLobbyExperimentField();
   updateDeckPrev();
   const expBtn = el('btn-lobby-deck-experiment');
-  if (expBtn) expBtn.hidden = !guest;
+  if (expBtn) expBtn.hidden = !guest || startersOnly;
 }
 
 function deckPayloadFromChoice(deckSel) {

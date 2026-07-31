@@ -1200,43 +1200,61 @@ function tcgReadCardsDataFile(): array {
 
 function tcgUserUsesRankedStarterEquip(string $discordId): bool {
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT ranked_equipped_starter, starter_deck FROM tcg_users WHERE discord_id = ?');
+    $stmt = $db->prepare('SELECT ranked_equipped_starter, starter_deck, ranked_starter_key FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $row
-        && intval($row['ranked_equipped_starter'] ?? 0) === 1
-        && !empty($row['starter_deck']);
+    if (!$row || intval($row['ranked_equipped_starter'] ?? 0) !== 1) {
+        return false;
+    }
+    $key = trim((string)($row['ranked_starter_key'] ?? ''));
+    if ($key === '') {
+        $key = trim((string)($row['starter_deck'] ?? ''));
+    }
+    return $key !== '';
 }
 
 function tcgClearRankedStarterEquip(string $discordId): void {
-    tcgDb()->prepare('UPDATE tcg_users SET ranked_equipped_starter = 0, updated_at = ? WHERE discord_id = ?')
+    tcgDb()->prepare('UPDATE tcg_users SET ranked_equipped_starter = 0, ranked_starter_key = NULL, updated_at = ? WHERE discord_id = ?')
         ->execute([time(), $discordId]);
 }
 
-function tcgSetRankedStarterEquip(string $discordId): void {
+function tcgSetRankedStarterEquip(string $discordId, ?string $starterKey = null): void {
     $db = tcgDb();
     $stmt = $db->prepare('SELECT starter_deck FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (empty($row['starter_deck'])) {
+    $primary = trim((string)($row['starter_deck'] ?? ''));
+    $key = $starterKey !== null && $starterKey !== '' ? trim($starterKey) : $primary;
+    if ($key === '') {
         throw new Exception('No starter deck on this account');
     }
+    require_once __DIR__ . '/game_mode.php';
+    if (!in_array($key, tcgStarterDeckKeys(), true)) {
+        throw new Exception('Unknown starter deck');
+    }
+    if (!in_array($key, tcgOwnedStarterKeys($discordId), true)) {
+        throw new Exception('You do not own that starter deck');
+    }
     $db->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ?')->execute([$discordId]);
-    $db->prepare('UPDATE tcg_users SET ranked_equipped_starter = 1, updated_at = ? WHERE discord_id = ?')
-        ->execute([time(), $discordId]);
+    $db->prepare('UPDATE tcg_users SET ranked_equipped_starter = 1, ranked_starter_key = ?, updated_at = ? WHERE discord_id = ?')
+        ->execute([$key, time(), $discordId]);
 }
 
-/** Ranked loadout: equipped preset, or account starter when ranked_equipped_starter is set. */
+/** Ranked loadout: equipped preset, or owned starter when ranked_equipped_starter is set. */
 function tcgGetEquippedDeckRow(string $discordId): ?array {
     if (tcgUserUsesRankedStarterEquip($discordId)) {
         $db = tcgDb();
-        $stmt = $db->prepare('SELECT starter_deck FROM tcg_users WHERE discord_id = ?');
+        $stmt = $db->prepare('SELECT starter_deck, ranked_starter_key FROM tcg_users WHERE discord_id = ?');
         $stmt->execute([$discordId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (empty($user['starter_deck'])) {
+        $key = trim((string)($user['ranked_starter_key'] ?? ''));
+        if ($key === '') {
+            $key = trim((string)($user['starter_deck'] ?? ''));
+        }
+        if ($key === '') {
             return null;
         }
-        $lists = tcgGetStarterDeckLists($user['starter_deck'], tcgReadCardsDataFile());
+        $lists = tcgGetStarterDeckLists($key, tcgReadCardsDataFile());
         return [
             'slot' => null,
             'name' => $lists['name'],
@@ -1244,6 +1262,7 @@ function tcgGetEquippedDeckRow(string $discordId): ?array {
             'energy_deck' => json_encode(array_values($lists['energy_deck'])),
             'equipped' => 1,
             'source' => 'starter',
+            'starter_key' => $key,
         ];
     }
     $db = tcgDb();

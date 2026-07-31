@@ -32,7 +32,13 @@ function tcgGetUserDisplayName(string $discordId): string {
     return $row['username'] ?? 'Player';
 }
 
-function tcgCreateRankedRoomPair(string $p1DiscordId, string $p2DiscordId): ?array {
+function tcgCreateRankedRoomPair(
+    string $p1DiscordId,
+    string $p2DiscordId,
+    string $gameMode = TCG_GAME_MODE_STANDARD
+): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $deck1 = tcgGetEquippedDeckLists($p1DiscordId);
     $deck2 = tcgGetEquippedDeckLists($p2DiscordId);
     if (!$deck1 || !$deck2) {
@@ -44,9 +50,21 @@ function tcgCreateRankedRoomPair(string $p1DiscordId, string $p2DiscordId): ?arr
     $cardMap = tcgBuildCardMap($cards);
 
     foreach ([$p1DiscordId => $deck1, $p2DiscordId => $deck2] as $uid => $deck) {
+        if ($gameMode === TCG_GAME_MODE_STARTERS) {
+            $row = tcgGetEquippedDeckRow($uid);
+            if (!$row || ($row['source'] ?? '') !== 'starter') {
+                tcgQueueLeave($uid, $gameMode);
+                return null;
+            }
+            $starterKey = trim((string)($row['starter_key'] ?? ''));
+            if ($starterKey === '' || !in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
+                tcgQueueLeave($uid, $gameMode);
+                return null;
+            }
+        }
         $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, tcgGetCollectionMap($uid));
         if (!$v['valid']) {
-            tcgQueueLeave($uid);
+            tcgQueueLeave($uid, $gameMode);
             return null;
         }
     }
@@ -76,6 +94,7 @@ function tcgCreateRankedRoomPair(string $p1DiscordId, string $p2DiscordId): ?arr
         'p1_discord_id' => $p1DiscordId,
         'p2_discord_id' => $p2DiscordId,
         'applied' => false,
+        'game_mode' => $gameMode,
     ];
 
     $main2 = buildDeck($allCards, $deck2['main_nos']);
@@ -98,11 +117,12 @@ function tcgCreateRankedRoomPair(string $p1DiscordId, string $p2DiscordId): ?arr
     $state['phase_timer_cfg'] = ['enabled' => true, 'duration' => PHASE_TIMER_MAX];
 
     saveGame($roomId, $state);
-    $matchId = tcgCreateRankedMatchRecord($roomId, $p1DiscordId, $p2DiscordId, $p1Token, $p2Token);
+    $matchId = tcgCreateRankedMatchRecord($roomId, $p1DiscordId, $p2DiscordId, $p1Token, $p2Token, $gameMode);
 
     return [
         'match_id' => $matchId,
         'room_id' => $roomId,
+        'game_mode' => $gameMode,
         'p1' => ['discord_id' => $p1DiscordId, 'token' => $p1Token, 'player_id' => 'p1'],
         'p2' => ['discord_id' => $p2DiscordId, 'token' => $p2Token, 'player_id' => 'p2'],
     ];
@@ -122,12 +142,14 @@ function tcgOnGameFinished(array &$state): void {
     if (!$p1Id || !$p2Id) {
         return;
     }
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($ranked['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     if ($winnerPid === 'p1') {
-        tcgApplyRankResult($p1Id, $p2Id, false);
+        tcgApplyRankResult($p1Id, $p2Id, false, $gameMode);
     } elseif ($winnerPid === 'p2') {
-        tcgApplyRankResult($p2Id, $p1Id, false);
+        tcgApplyRankResult($p2Id, $p1Id, false, $gameMode);
     } else {
-        tcgApplyRankResult($p1Id, $p2Id, true);
+        tcgApplyRankResult($p1Id, $p2Id, true, $gameMode);
     }
     // Mark applied immediately after ELO so PR reward failures cannot leave rating unapplied.
     $state['ranked']['applied'] = true;

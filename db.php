@@ -210,6 +210,11 @@ function tcgDbMigrate(PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_users', 'seal_pr', 'INTEGER NOT NULL DEFAULT 0');
     });
 
+    // Per-mode ranked ELO + same-mode queues (Standard / Starters).
+    tcgDbRunMigrationOnce($db, 'game_mode_rank_20260731', function (PDO $db): void {
+        tcgDbMigrateGameModeRank($db);
+    });
+
     $done = true;
 }
 
@@ -281,20 +286,24 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     )');
 
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_rank (
-        discord_id TEXT PRIMARY KEY,
+        discord_id TEXT NOT NULL,
+        game_mode TEXT NOT NULL DEFAULT \'standard\',
         rating INTEGER NOT NULL DEFAULT 1000,
         wins INTEGER NOT NULL DEFAULT 0,
         losses INTEGER NOT NULL DEFAULT 0,
         draws INTEGER NOT NULL DEFAULT 0,
         games INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER NOT NULL,
+        PRIMARY KEY (discord_id, game_mode),
         FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
     )');
 
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_match_queue (
-        discord_id TEXT PRIMARY KEY,
+        discord_id TEXT NOT NULL,
+        game_mode TEXT NOT NULL DEFAULT \'standard\',
         rating INTEGER NOT NULL DEFAULT 1000,
         joined_at INTEGER NOT NULL,
+        PRIMARY KEY (discord_id, game_mode),
         FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
     )');
 
@@ -306,7 +315,8 @@ function tcgDbMigrateBootstrap(PDO $db): void {
         p1_token TEXT NOT NULL,
         p2_token TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT "pending",
-        created_at INTEGER NOT NULL
+        created_at INTEGER NOT NULL,
+        game_mode TEXT NOT NULL DEFAULT \'standard\'
     )');
 
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_casual_queue (
@@ -314,7 +324,8 @@ function tcgDbMigrateBootstrap(PDO $db): void {
         discord_id TEXT,
         player_name TEXT NOT NULL,
         join_body TEXT NOT NULL,
-        joined_at INTEGER NOT NULL
+        joined_at INTEGER NOT NULL,
+        game_mode TEXT NOT NULL DEFAULT \'standard\'
     )');
 
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_casual_matches (
@@ -395,6 +406,7 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_users', 'equipped_flag', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'stamp_favorites', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'ranked_equipped_starter', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'ranked_starter_key', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'star_gems', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'dupe_gem_migration_done', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'unranked_games', 'INTEGER NOT NULL DEFAULT 0');
@@ -418,6 +430,61 @@ function tcgDbMigrateBootstrap(PDO $db): void {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )');
+}
+
+function tcgDbTableHasColumn(PDO $db, string $table, string $column): bool {
+    $safeTable = preg_replace('/[^a-z0-9_]/', '', strtolower($table));
+    if ($safeTable === '') {
+        return false;
+    }
+    $cols = $db->query('PRAGMA table_info(' . $safeTable . ')')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($cols as $col) {
+        if (($col['name'] ?? '') === $column) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Migrate legacy single-mode rank/queue tables to per-game_mode schema. */
+function tcgDbMigrateGameModeRank(PDO $db): void {
+    tcgDbEnsureColumn($db, 'tcg_users', 'ranked_starter_key', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'game_mode', "TEXT NOT NULL DEFAULT 'standard'");
+    tcgDbEnsureColumn($db, 'tcg_casual_queue', 'game_mode', "TEXT NOT NULL DEFAULT 'standard'");
+
+    if (!tcgDbTableHasColumn($db, 'tcg_rank', 'game_mode')) {
+        $db->exec('CREATE TABLE tcg_rank_gm (
+            discord_id TEXT NOT NULL,
+            game_mode TEXT NOT NULL DEFAULT \'standard\',
+            rating INTEGER NOT NULL DEFAULT 1000,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            draws INTEGER NOT NULL DEFAULT 0,
+            games INTEGER NOT NULL DEFAULT 0,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (discord_id, game_mode),
+            FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+        )');
+        $db->exec('INSERT OR IGNORE INTO tcg_rank_gm (discord_id, game_mode, rating, wins, losses, draws, games, updated_at)
+            SELECT discord_id, \'standard\', rating, wins, losses, draws, games, updated_at FROM tcg_rank');
+        $db->exec('DROP TABLE tcg_rank');
+        $db->exec('ALTER TABLE tcg_rank_gm RENAME TO tcg_rank');
+    }
+
+    if (!tcgDbTableHasColumn($db, 'tcg_match_queue', 'game_mode')) {
+        $db->exec('CREATE TABLE tcg_match_queue_gm (
+            discord_id TEXT NOT NULL,
+            game_mode TEXT NOT NULL DEFAULT \'standard\',
+            rating INTEGER NOT NULL DEFAULT 1000,
+            joined_at INTEGER NOT NULL,
+            PRIMARY KEY (discord_id, game_mode),
+            FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+        )');
+        $db->exec('INSERT OR IGNORE INTO tcg_match_queue_gm (discord_id, game_mode, rating, joined_at)
+            SELECT discord_id, \'standard\', rating, joined_at FROM tcg_match_queue');
+        $db->exec('DROP TABLE tcg_match_queue');
+        $db->exec('ALTER TABLE tcg_match_queue_gm RENAME TO tcg_match_queue');
+    }
 }
 
 function tcgDbRunMigrationOnce(PDO $db, string $key, callable $fn): void {
@@ -482,8 +549,8 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
             $now,
         ]);
     $db->prepare('INSERT OR IGNORE INTO tcg_daily_state (discord_id) VALUES (?)')->execute([$discordId]);
-    $db->prepare('INSERT OR IGNORE INTO tcg_rank (discord_id, updated_at) VALUES (?, ?)')
-        ->execute([$discordId, $now]);
+    $db->prepare('INSERT OR IGNORE INTO tcg_rank (discord_id, game_mode, updated_at) VALUES (?, ?, ?)')
+        ->execute([$discordId, 'standard', $now]);
     $stmt->execute([$discordId]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -625,6 +692,8 @@ function tcgResetAccountProgress(string $discordId): void {
             ->execute([$now, $discordId]);
         $db->prepare('UPDATE tcg_rank SET rating = 1000, wins = 0, losses = 0, draws = 0, games = 0, updated_at = ?
             WHERE discord_id = ?')->execute([$now, $discordId]);
+        $db->prepare('UPDATE tcg_users SET ranked_equipped_starter = 0, ranked_starter_key = NULL WHERE discord_id = ?')
+            ->execute([$discordId]);
         $db->prepare('UPDATE tcg_daily_state SET last_open_date = NULL, packs_opened_today = 0, first_day_bonus_used = 0,
             ranked_pr_date = NULL, ranked_pr_today = 0
             WHERE discord_id = ?')->execute([$discordId]);

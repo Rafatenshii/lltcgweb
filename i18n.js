@@ -399,6 +399,13 @@
       "infoRarities": "Rarities",
       "infoCost": "Exchange cost"
     },
+    "gameMode": {
+      "label": "Game mode",
+      "standard": "Standard",
+      "starters": "Starter decks only",
+      "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
+      "startersDesc": "This mode can only be played using starter decks."
+    },
     "ranked": {
       "title": "Ranked PvP",
       "findMatch": "Find Match",
@@ -1525,6 +1532,13 @@
       "infoRarities": "レアリティ",
       "infoCost": "交換コスト"
     },
+    "gameMode": {
+      "label": "ゲームモード",
+      "standard": "スタンダード",
+      "starters": "スターターデッキのみ",
+      "standardDesc": "通常のTCGモードです。所持カードで組んだデッキで他のプレイヤーと対戦します。",
+      "startersDesc": "このモードはスターターデッキのみでプレイできます。"
+    },
     "ranked": {
       "title": "ランクPvP",
       "findMatch": "マッチを探す",
@@ -2560,6 +2574,13 @@
       "noPacksOrGems": "No quedan sobres diarios ni Star Gems suficientes.",
       "openBox": "Abrir caja ({n} sobres)",
       "selectBoxFirst": "Elige un booster primero"
+    },
+    "gameMode": {
+      "label": "Modo de juego",
+      "standard": "Estándar",
+      "starters": "Solo mazos iniciales",
+      "standardDesc": "El modo TCG estándar. Usa mazos construidos con cartas que posees contra otros jugadores.",
+      "startersDesc": "Este modo solo se puede jugar con mazos iniciales."
     },
     "ranked": {
       "title": "PvP clasificatorio",
@@ -3702,6 +3723,13 @@
       "noPacksOrGems": "일일 팩이 없고 Star Gem도 부족합니다.",
       "openBox": "박스 열기 (팩 {n}개)",
       "selectBoxFirst": "먼저 부스터 세트를 선택하세요"
+    },
+    "gameMode": {
+      "label": "게임 모드",
+      "standard": "스탠다드",
+      "starters": "스타터 덱 전용",
+      "standardDesc": "표준 TCG 모드입니다. 보유 카드로 만든 덱으로 다른 플레이어와 대전합니다.",
+      "startersDesc": "이 모드는 스타터 덱으로만 플레이할 수 있습니다."
     },
     "ranked": {
       "title": "랭크 PvP",
@@ -4859,6 +4887,13 @@
       "openBox": "打开盒装（{n} 包）",
       "selectBoxFirst": "请先选择补充包系列"
     },
+    "gameMode": {
+      "label": "对战模式",
+      "standard": "标准",
+      "starters": "仅限初始牌组",
+      "standardDesc": "标准TCG模式。使用你用持有卡牌构筑的牌组与其他玩家对战。",
+      "startersDesc": "此模式只能使用初始牌组进行对战。"
+    },
     "ranked": {
       "title": "排名对战",
       "findMatch": "寻找对战",
@@ -6005,6 +6040,13 @@
       "noPacksOrGems": "ไม่มีแพ็กรายวันเหลือและ Star Gems ไม่พอ",
       "openBox": "เปิดกล่อง ({n} แพ็ก)",
       "selectBoxFirst": "เลือกชุดบูสเตอร์ก่อน"
+    },
+    "gameMode": {
+      "label": "โหมดเกม",
+      "standard": "มาตรฐาน",
+      "starters": "เฉพาะเด็คเริ่มต้น",
+      "standardDesc": "โหมด TCG มาตรฐาน ใช้เด็คที่สร้างจากการ์ดที่คุณมีเพื่อแข่งกับผู้เล่นอื่น",
+      "startersDesc": "โหมดนี้เล่นได้เฉพาะเด็คเริ่มต้นเท่านั้น"
     },
     "ranked": {
       "title": "แรงก์ PvP",

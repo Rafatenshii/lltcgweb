@@ -2,26 +2,30 @@
 /**
  * Ranked PvP matchmaking queue (SQLite-backed).
  *
- * Pairs players by ELO band (TCG_RATING_BAND), creates ranked game rooms via
- * ranked_room.php, and tracks queue/active-game rows for reconnect.
+ * Pairs players by ELO band (TCG_RATING_BAND) within the same game_mode, creates
+ * ranked game rooms via ranked_room.php, and tracks queue/active-game rows for reconnect.
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/game_mode.php';
 
 const TCG_QUEUE_MAX_WAIT = 300;
 const TCG_RATING_BAND = 150;
 
-function tcgRankRow(string $discordId): array {
+function tcgRankRow(string $discordId, string $gameMode = TCG_GAME_MODE_STANDARD): array {
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT * FROM tcg_rank WHERE discord_id = ?');
-    $stmt->execute([$discordId]);
+    $stmt = $db->prepare('SELECT * FROM tcg_rank WHERE discord_id = ? AND game_mode = ?');
+    $stmt->execute([$discordId, $gameMode]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         return $row;
     }
     $now = time();
-    $db->prepare('INSERT INTO tcg_rank (discord_id, updated_at) VALUES (?, ?)')->execute([$discordId, $now]);
+    $db->prepare('INSERT INTO tcg_rank (discord_id, game_mode, updated_at) VALUES (?, ?, ?)')
+        ->execute([$discordId, $gameMode, $now]);
     return [
         'discord_id' => $discordId,
+        'game_mode' => $gameMode,
         'rating' => 1000,
         'wins' => 0,
         'losses' => 0,
@@ -31,24 +35,39 @@ function tcgRankRow(string $discordId): array {
     ];
 }
 
-function tcgQueueJoin(string $discordId): array {
-    $rank = tcgRankRow($discordId);
+function tcgQueueJoin(string $discordId, string $gameMode = TCG_GAME_MODE_STANDARD): array {
+    $gameMode = tcgNormalizeGameMode($gameMode);
+    $rank = tcgRankRow($discordId, $gameMode);
     $db = tcgDb();
     $now = time();
-    $db->prepare('INSERT INTO tcg_match_queue (discord_id, rating, joined_at) VALUES (?, ?, ?)
-        ON CONFLICT(discord_id) DO UPDATE SET rating = excluded.rating, joined_at = excluded.joined_at')
-        ->execute([$discordId, intval($rank['rating']), $now]);
-    return ['queued' => true, 'rating' => intval($rank['rating']), 'joined_at' => $now];
+    // One active ranked search at a time across modes.
+    $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ?')->execute([$discordId]);
+    $db->prepare('INSERT INTO tcg_match_queue (discord_id, game_mode, rating, joined_at) VALUES (?, ?, ?, ?)
+        ON CONFLICT(discord_id, game_mode) DO UPDATE SET rating = excluded.rating, joined_at = excluded.joined_at')
+        ->execute([$discordId, $gameMode, intval($rank['rating']), $now]);
+    return [
+        'queued' => true,
+        'rating' => intval($rank['rating']),
+        'joined_at' => $now,
+        'game_mode' => $gameMode,
+    ];
 }
 
-function tcgQueueLeave(string $discordId): array {
-    tcgDb()->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ?')->execute([$discordId]);
+function tcgQueueLeave(string $discordId, ?string $gameMode = null): array {
+    $db = tcgDb();
+    if ($gameMode === null || $gameMode === '') {
+        $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ?')->execute([$discordId]);
+    } else {
+        $gameMode = tcgNormalizeGameMode($gameMode);
+        $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ? AND game_mode = ?')
+            ->execute([$discordId, $gameMode]);
+    }
     return ['queued' => false];
 }
 
 function tcgQueueStatus(string $discordId): array {
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT joined_at, rating FROM tcg_match_queue WHERE discord_id = ?');
+    $stmt = $db->prepare('SELECT joined_at, rating, game_mode FROM tcg_match_queue WHERE discord_id = ? LIMIT 1');
     $stmt->execute([$discordId]);
     $q = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -65,6 +84,7 @@ function tcgQueueStatus(string $discordId): array {
             'player_id' => $isP1 ? 'p1' : 'p2',
             'opponent_id' => $isP1 ? $match['p2_id'] : $match['p1_id'],
             'match_id' => $match['match_id'],
+            'game_mode' => tcgNormalizeGameMode($match['game_mode'] ?? TCG_GAME_MODE_STANDARD),
         ];
     }
 
@@ -74,19 +94,21 @@ function tcgQueueStatus(string $discordId): array {
             'status' => 'searching',
             'rating' => intval($q['rating']),
             'wait_seconds' => $wait,
+            'game_mode' => tcgNormalizeGameMode($q['game_mode'] ?? TCG_GAME_MODE_STANDARD),
         ];
     }
 
     return ['status' => 'idle'];
 }
 
-function tcgFindQueueOpponent(string $discordId, int $rating): ?array {
+function tcgFindQueueOpponent(string $discordId, int $rating, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT discord_id, rating, joined_at FROM tcg_match_queue
-        WHERE discord_id != ?
+    $stmt = $db->prepare('SELECT discord_id, rating, joined_at, game_mode FROM tcg_match_queue
+        WHERE discord_id != ? AND game_mode = ?
         ORDER BY ABS(rating - ?) ASC, joined_at ASC
         LIMIT 10');
-    $stmt->execute([$discordId, $rating]);
+    $stmt->execute([$discordId, $gameMode, $rating]);
     $candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (empty($candidates)) {
         return null;
@@ -99,39 +121,57 @@ function tcgFindQueueOpponent(string $discordId, int $rating): ?array {
     return $candidates[0];
 }
 
-function tcgCreateRankedMatchRecord(string $roomId, string $p1Id, string $p2Id, string $p1Token, string $p2Token): string {
+function tcgCreateRankedMatchRecord(
+    string $roomId,
+    string $p1Id,
+    string $p2Id,
+    string $p1Token,
+    string $p2Token,
+    string $gameMode = TCG_GAME_MODE_STANDARD
+): string {
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
     $matchId = strtoupper(substr(md5(uniqid((string)mt_rand(), true)), 0, 12));
     $now = time();
     $db->prepare('INSERT INTO tcg_ranked_matches
-        (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, "pending", ?)')
-        ->execute([$matchId, $roomId, $p1Id, $p2Id, $p1Token, $p2Token, $now]);
+        (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode)
+        VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?)')
+        ->execute([$matchId, $roomId, $p1Id, $p2Id, $p1Token, $p2Token, $now, $gameMode]);
     $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id IN (?, ?)')->execute([$p1Id, $p2Id]);
     return $matchId;
 }
 
-function tcgApplyRankResult(string $winnerId, string $loserId, bool $isDraw = false): void {
+function tcgApplyRankResult(
+    string $winnerId,
+    string $loserId,
+    bool $isDraw = false,
+    string $gameMode = TCG_GAME_MODE_STANDARD
+): void {
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
     $now = time();
     if ($isDraw) {
         foreach ([$winnerId, $loserId] as $uid) {
-            $db->prepare('UPDATE tcg_rank SET draws = draws + 1, games = games + 1, updated_at = ? WHERE discord_id = ?')
-                ->execute([$now, $uid]);
+            tcgRankRow($uid, $gameMode);
+            $db->prepare('UPDATE tcg_rank SET draws = draws + 1, games = games + 1, updated_at = ?
+                WHERE discord_id = ? AND game_mode = ?')
+                ->execute([$now, $uid, $gameMode]);
         }
         return;
     }
-    $w = tcgRankRow($winnerId);
-    $l = tcgRankRow($loserId);
+    $w = tcgRankRow($winnerId, $gameMode);
+    $l = tcgRankRow($loserId, $gameMode);
     $wRating = intval($w['rating']);
     $lRating = intval($l['rating']);
     $k = 32;
     $expectedW = 1 / (1 + pow(10, ($lRating - $wRating) / 400));
     $delta = (int)round($k * (1 - $expectedW));
-    $db->prepare('UPDATE tcg_rank SET rating = rating + ?, wins = wins + 1, games = games + 1, updated_at = ? WHERE discord_id = ?')
-        ->execute([$delta, $now, $winnerId]);
-    $db->prepare('UPDATE tcg_rank SET rating = MAX(100, rating - ?), losses = losses + 1, games = games + 1, updated_at = ? WHERE discord_id = ?')
-        ->execute([$delta, $now, $loserId]);
+    $db->prepare('UPDATE tcg_rank SET rating = rating + ?, wins = wins + 1, games = games + 1, updated_at = ?
+        WHERE discord_id = ? AND game_mode = ?')
+        ->execute([$delta, $now, $winnerId, $gameMode]);
+    $db->prepare('UPDATE tcg_rank SET rating = MAX(100, rating - ?), losses = losses + 1, games = games + 1, updated_at = ?
+        WHERE discord_id = ? AND game_mode = ?')
+        ->execute([$delta, $now, $loserId, $gameMode]);
 }
 
 function tcgCompleteRankedMatch(string $roomId): void {
@@ -269,8 +309,12 @@ function tcgRankedGameFilePath(string $roomId): string {
 }
 
 /** Public queue stats for the ranked menu (waiting in lobby vs in active ranked games). */
-function tcgQueuePublicStats(): array {
-    $cacheFile = tcgPath('data') . 'queue_stats_cache.json';
+function tcgQueuePublicStats(?string $gameMode = null): array {
+    $gameMode = $gameMode !== null && $gameMode !== ''
+        ? tcgNormalizeGameMode($gameMode)
+        : null;
+    $cacheKey = $gameMode ?? 'all';
+    $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $cacheKey) . '.json';
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 5) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
@@ -279,11 +323,22 @@ function tcgQueuePublicStats(): array {
     }
 
     $db = tcgDb();
-    $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_match_queue')->fetchColumn();
+    if ($gameMode) {
+        $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
+        $stmt->execute([$gameMode]);
+        $waiting = (int)$stmt->fetchColumn();
+    } else {
+        $waiting = (int)$db->query('SELECT COUNT(*) FROM tcg_match_queue')->fetchColumn();
+    }
 
     $inGame = 0;
     $seen = [];
-    $stmt = $db->query('SELECT room_id, p1_id, p2_id FROM tcg_ranked_matches WHERE status = "pending"');
+    if ($gameMode) {
+        $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?');
+        $stmt->execute([$gameMode]);
+    } else {
+        $stmt = $db->query('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending"');
+    }
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $roomId = $row['room_id'] ?? '';
         $path = tcgRankedGameFilePath($roomId);
@@ -313,7 +368,7 @@ function tcgQueuePublicStats(): array {
         }
     }
 
-    $stats = ['waiting' => $waiting, 'in_game' => $inGame];
+    $stats = ['waiting' => $waiting, 'in_game' => $inGame, 'game_mode' => $gameMode];
     @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
     return $stats;
 }
@@ -321,7 +376,7 @@ function tcgQueuePublicStats(): array {
 /** Active ranked game for a logged-in player (reconnect after refresh / new tab). */
 function tcgGetActiveRankedGame(string $discordId): ?array {
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, p1_token, p2_token, created_at FROM tcg_ranked_matches
+    $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, p1_token, p2_token, created_at, game_mode FROM tcg_ranked_matches
         WHERE status = "pending" AND (p1_id = ? OR p2_id = ?) ORDER BY created_at DESC LIMIT 1');
     $stmt->execute([$discordId, $discordId]);
     $row = tcgSanitizeRankedMatchRow($stmt->fetch(PDO::FETCH_ASSOC));
@@ -335,5 +390,6 @@ function tcgGetActiveRankedGame(string $discordId): ?array {
         'player_token' => $isP1 ? ($row['p1_token'] ?? '') : ($row['p2_token'] ?? ''),
         'player_id' => $isP1 ? 'p1' : 'p2',
         'mode' => 'ranked',
+        'game_mode' => tcgNormalizeGameMode($row['game_mode'] ?? TCG_GAME_MODE_STANDARD),
     ];
 }

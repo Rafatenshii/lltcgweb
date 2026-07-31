@@ -149,6 +149,7 @@ function tcgApiMe(array $body): array {
         'equipped_deck_slot' => ($equippedLoadout === 'preset') ? intval($equipped['slot']) : null,
         'equipped_deck_name' => $equipped ? tcgNormalizeDeckPresetName($equipped['name'] ?? '') : null,
         'equipped_loadout' => $equippedLoadout,
+        'equipped_starter_key' => ($equippedLoadout === 'starter') ? ($equipped['starter_key'] ?? null) : null,
         'starter_options' => tcgStarterDecks(),
         'missions' => tcgMissionSummaryForUser($uid),
     ];
@@ -372,6 +373,7 @@ function tcgFormatEquippedLoadout(array $body): array {
             'equipped_deck_slot' => null,
             'equipped_deck_name' => null,
             'equipped_loadout' => null,
+            'equipped_starter_key' => null,
         ];
     }
     $loadout = (($equipped['source'] ?? '') === 'starter') ? 'starter' : 'preset';
@@ -379,6 +381,7 @@ function tcgFormatEquippedLoadout(array $body): array {
         'equipped_deck_slot' => ($loadout === 'preset') ? intval($equipped['slot']) : null,
         'equipped_deck_name' => tcgNormalizeDeckPresetName($equipped['name'] ?? ''),
         'equipped_loadout' => $loadout,
+        'equipped_starter_key' => ($loadout === 'starter') ? ($equipped['starter_key'] ?? null) : null,
     ];
 }
 
@@ -494,11 +497,18 @@ function tcgApiDeckEquip(array $body): array {
 function tcgApiDeckEquipStarter(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
-    if (empty($user['starter_deck'])) {
+    $starterKey = trim((string)($body['starter'] ?? ''));
+    if ($starterKey === '') {
+        $starterKey = trim((string)($user['starter_deck'] ?? ''));
+    }
+    if ($starterKey === '') {
         throw new Exception('No starter deck on this account');
     }
+    if (!in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
+        throw new Exception('You do not own that starter deck');
+    }
     $cards = tcgLoadCardsData();
-    $lists = tcgGetStarterDeckLists($user['starter_deck'], $cards);
+    $lists = tcgGetStarterDeckLists($starterKey, $cards);
     $validation = tcgValidateDeckLists(
         $lists['main_deck'],
         $lists['energy_deck'],
@@ -508,7 +518,7 @@ function tcgApiDeckEquipStarter(array $body): array {
     if (!$validation['valid']) {
         throw new Exception('Starter deck is invalid: ' . implode('; ', $validation['errors']));
     }
-    tcgSetRankedStarterEquip($uid);
+    tcgSetRankedStarterEquip($uid, $starterKey);
     return array_merge(['success' => true], tcgFormatEquippedLoadout($body));
 }
 
@@ -588,14 +598,40 @@ function tcgApiResetAccount(array $body): array {
 
 function tcgApiRankedJoin(array $body): array {
     tcgRateLimitForAction('ranked_join', $body);
+    require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     if (empty($user['starter_deck'])) {
         throw new Exception('Choose a starter deck first');
     }
+    $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $starterKey = trim((string)($body['starter'] ?? ''));
+    if ($gameMode === TCG_GAME_MODE_STARTERS) {
+        if ($starterKey === '') {
+            $equippedProbe = tcgGetEquippedDeck($uid);
+            $starterKey = trim((string)($equippedProbe['starter_key'] ?? ''));
+        }
+        if ($starterKey === '') {
+            $starterKey = trim((string)($user['starter_deck'] ?? ''));
+        }
+        if ($starterKey === '' || !in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
+            throw new Exception('Starter decks only mode requires an owned starter deck');
+        }
+        tcgSetRankedStarterEquip($uid, $starterKey);
+    } elseif ($starterKey !== '') {
+        // Optional: equip a specific owned starter before standard queue.
+        if (!in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
+            throw new Exception('You do not own that starter deck');
+        }
+        tcgSetRankedStarterEquip($uid, $starterKey);
+    }
+
     $equipped = tcgGetEquippedDeck($uid);
     if (!$equipped) {
         throw new Exception('Equip a deck preset for ranked play');
+    }
+    if ($gameMode === TCG_GAME_MODE_STARTERS && (($equipped['source'] ?? '') !== 'starter')) {
+        throw new Exception('Starter decks only mode requires a starter deck');
     }
     $main = json_decode($equipped['main_deck'], true) ?: [];
     $energy = json_decode($equipped['energy_deck'], true) ?: [];
@@ -611,25 +647,45 @@ function tcgApiRankedJoin(array $body): array {
     if ($challengeId !== '' && $challengeId === $uid) {
         throw new Exception('You cannot challenge yourself', 400);
     }
-    $join = tcgQueueJoin($uid);
+    $join = tcgQueueJoin($uid, $gameMode);
     if ($challengeId !== '') {
-        $match = tcgTryMatchmakeWithChallenge($uid, $challengeId);
+        $match = tcgTryMatchmakeWithChallenge($uid, $challengeId, $gameMode);
         if (!$match) {
-            tcgQueueLeave($uid);
+            tcgQueueLeave($uid, $gameMode);
             throw new Exception('That player is no longer waiting for a ranked match', 409);
         }
-        return ['success' => true, 'queue' => $join, 'match' => $match, 'queue_stats' => tcgQueuePublicStats()];
+        return [
+            'success' => true,
+            'queue' => $join,
+            'match' => $match,
+            'queue_stats' => tcgQueuePublicStats($gameMode),
+            'game_mode' => $gameMode,
+        ];
     }
-    $match = tcgTryMatchmake($uid);
+    $match = tcgTryMatchmake($uid, $gameMode);
     if ($match) {
-        return ['success' => true, 'queue' => $join, 'match' => $match, 'queue_stats' => tcgQueuePublicStats()];
+        return [
+            'success' => true,
+            'queue' => $join,
+            'match' => $match,
+            'queue_stats' => tcgQueuePublicStats($gameMode),
+            'game_mode' => $gameMode,
+        ];
     }
-    return ['success' => true, 'queue' => $join, 'match' => null, 'queue_stats' => tcgQueuePublicStats()];
+    return [
+        'success' => true,
+        'queue' => $join,
+        'match' => null,
+        'queue_stats' => tcgQueuePublicStats($gameMode),
+        'game_mode' => $gameMode,
+    ];
 }
 
 function tcgApiRankedLeave(array $body): array {
+    require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
-    return ['success' => true, 'queue' => tcgQueueLeave($uid)];
+    $gameMode = isset($body['game_mode']) ? tcgNormalizeGameMode($body['game_mode']) : null;
+    return ['success' => true, 'queue' => tcgQueueLeave($uid, $gameMode)];
 }
 
 function tcgApiActiveGame(array $body): array {
@@ -882,12 +938,15 @@ function tcgApiReplayStartSaved(array $body): array {
 }
 
 function tcgApiRankedStatus(array $body): array {
+    require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
     $status = tcgQueueStatus($uid);
+    $gameMode = tcgNormalizeGameMode($status['game_mode'] ?? ($body['game_mode'] ?? TCG_GAME_MODE_STANDARD));
     if (($status['status'] ?? '') === 'searching') {
-        $match = tcgTryMatchmake($uid);
+        $match = tcgTryMatchmake($uid, $gameMode);
         if ($match) {
             $status = tcgQueueStatus($uid);
+            $gameMode = tcgNormalizeGameMode($status['game_mode'] ?? $gameMode);
         }
     }
     $includeStats = true;
@@ -898,7 +957,7 @@ function tcgApiRankedStatus(array $body): array {
     }
     $out = ['success' => true, 'ranked' => $status];
     if ($includeStats) {
-        $out['queue_stats'] = tcgQueuePublicStats();
+        $out['queue_stats'] = tcgQueuePublicStats($gameMode);
     }
     return $out;
 }
@@ -1103,18 +1162,21 @@ function tcgApiRankFlagSet(array $body): array {
 }
 
 function tcgApiRankStats(array $body): array {
+    require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
     $profile = tcgAuthUserProfile($uid);
     $user = tcgEnsureUser($uid, $profile);
-    $rank = tcgRankRow($uid);
+    $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? $_GET['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $rank = tcgRankRow($uid, $gameMode);
     $cards = tcgLoadCardsData();
     $db = tcgDb();
-    $stmt = $db->query('SELECT r.discord_id, r.rating, r.wins, r.losses, r.draws, r.games,
+    $stmt = $db->prepare('SELECT r.discord_id, r.rating, r.wins, r.losses, r.draws, r.games, r.game_mode,
             u.username, u.avatar_url, u.banner_card_no, u.banner_crop, u.equipped_flag, u.stamp_favorites
         FROM tcg_rank r
         JOIN tcg_users u ON u.discord_id = r.discord_id
-        WHERE r.games > 0
+        WHERE r.games > 0 AND r.game_mode = ?
         ORDER BY r.rating DESC, r.wins DESC');
+    $stmt->execute([$gameMode]);
     $leaderboard = [];
     $rankNum = 0;
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -1146,6 +1208,7 @@ function tcgApiRankStats(array $body): array {
     }
     return [
         'success' => true,
+        'game_mode' => $gameMode,
         'you' => array_merge(
             tcgFormatRankSummary($rank),
             [
@@ -1163,15 +1226,17 @@ function tcgApiRankStats(array $body): array {
 /**
  * Attempt to pair the user with another queued player and create a ranked game room.
  */
-function tcgTryMatchmake(string $discordId): ?array {
+function tcgTryMatchmake(string $discordId, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT rating FROM tcg_match_queue WHERE discord_id = ?');
-    $stmt->execute([$discordId]);
+    $stmt = $db->prepare('SELECT rating, game_mode FROM tcg_match_queue WHERE discord_id = ? AND game_mode = ?');
+    $stmt->execute([$discordId, $gameMode]);
     $self = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$self) {
         return null;
     }
-    $opp = tcgFindQueueOpponent($discordId, intval($self['rating']));
+    $opp = tcgFindQueueOpponent($discordId, intval($self['rating']), $gameMode);
     if (!$opp) {
         return null;
     }
@@ -1180,31 +1245,39 @@ function tcgTryMatchmake(string $discordId): ?array {
         return null;
     }
 
-    return tcgFinalizeRankedPair($discordId, $oppId);
+    return tcgFinalizeRankedPair($discordId, $oppId, $gameMode);
 }
 
 /** Pair specifically with a challenged player who is still in the ranked queue. */
-function tcgTryMatchmakeWithChallenge(string $discordId, string $challengeDiscordId): ?array {
+function tcgTryMatchmakeWithChallenge(
+    string $discordId,
+    string $challengeDiscordId,
+    string $gameMode = TCG_GAME_MODE_STANDARD
+): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     if ($challengeDiscordId === '' || $challengeDiscordId === $discordId) {
         return null;
     }
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT discord_id FROM tcg_match_queue WHERE discord_id = ?');
-    $stmt->execute([$challengeDiscordId]);
+    $stmt = $db->prepare('SELECT discord_id FROM tcg_match_queue WHERE discord_id = ? AND game_mode = ?');
+    $stmt->execute([$challengeDiscordId, $gameMode]);
     if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
         return null;
     }
-    $stmt = $db->prepare('SELECT discord_id FROM tcg_match_queue WHERE discord_id = ?');
-    $stmt->execute([$discordId]);
+    $stmt = $db->prepare('SELECT discord_id FROM tcg_match_queue WHERE discord_id = ? AND game_mode = ?');
+    $stmt->execute([$discordId, $gameMode]);
     if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
         return null;
     }
-    return tcgFinalizeRankedPair($discordId, $challengeDiscordId);
+    return tcgFinalizeRankedPair($discordId, $challengeDiscordId, $gameMode);
 }
 
-function tcgFinalizeRankedPair(string $discordId, string $oppId): ?array {
+function tcgFinalizeRankedPair(string $discordId, string $oppId, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode);
     require_once __DIR__ . '/ranked_room.php';
-    $pair = tcgCreateRankedRoomPair($discordId, $oppId);
+    $pair = tcgCreateRankedRoomPair($discordId, $oppId, $gameMode);
     if (!$pair) {
         return null;
     }
@@ -1217,11 +1290,14 @@ function tcgFinalizeRankedPair(string $discordId, string $oppId): ?array {
         'player_id' => $side['player_id'],
         'opponent_id' => $isP1 ? $pair['p2']['discord_id'] : $pair['p1']['discord_id'],
         'match_id' => $pair['match_id'],
+        'game_mode' => $gameMode,
     ];
 }
 
 /** Public ranked leaderboard for Discord /loveca (no auth). Optional limit; omit or 0 = full board. */
 function tcgApiPublicLeaderboard(array $params): array {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($params['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $limit = 0;
     if (array_key_exists('limit', $params) && $params['limit'] !== '' && $params['limit'] !== null) {
         $limit = intval($params['limit']);
@@ -1233,12 +1309,13 @@ function tcgApiPublicLeaderboard(array $params): array {
     $sql = 'SELECT r.discord_id, r.rating, r.wins, r.losses, r.draws, r.games, u.username
          FROM tcg_rank r
          JOIN tcg_users u ON u.discord_id = r.discord_id
-         WHERE r.games > 0
+         WHERE r.games > 0 AND r.game_mode = ?
          ORDER BY r.rating DESC, r.wins DESC';
     if ($limit > 0) {
         $sql .= ' LIMIT ' . $limit;
     }
-    $stmt = $db->query($sql);
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$gameMode]);
     $leaderboard = [];
     $rankNum = 0;
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -1257,6 +1334,7 @@ function tcgApiPublicLeaderboard(array $params): array {
     }
     return [
         'success' => true,
+        'game_mode' => $gameMode,
         'limit' => $limit > 0 ? $limit : null,
         'leaderboard' => $leaderboard,
     ];
