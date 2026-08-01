@@ -468,20 +468,13 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         ],
     ];
 
-    if (!empty($state['yell_reveal']) && (
-        isInPerformancePhase($state)
-        || in_array(($state['pending_prompt']['type'] ?? ''), [
-            'auto_yell_mill_extra_yell',
-            'auto_yell_no_live_retry',
-            'pick_yell_member',
-            'live_success_pick_yell_live',
-            'live_success_pick_yell_deck_top',
-            'sbp5_pick_yell_members',
-        ], true)
-    )) {
+    if (!empty($state['yell_reveal'])) {
         $filtered['yell_reveal'] = $state['yell_reveal'];
     } elseif ($exposePerfCarryover && !empty($state['_yell_reveal_snapshot'])) {
         $filtered['yell_reveal'] = $state['_yell_reveal_snapshot'];
+    }
+    if (!empty($state['live_show']) && !empty($state['_perf_yell_both_done'])) {
+        $filtered['_perf_yell_both_done'] = true;
     }
     if (!empty($state['live_perf_success'])) {
         $filtered['live_perf_success'] = $state['live_perf_success'];
@@ -490,7 +483,11 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         $filtered['live_round_success'] = $state['live_round_success'];
     }
     // Same as player filter — spectacle gating uses live_attempt when present.
-    if (!empty($state['live_attempt']) && isInPerformancePhase($state)) {
+    if (!empty($state['live_attempt']) && (
+        isInPerformancePhase($state)
+        || ($state['phase'] ?? '') === 'live_start_effects'
+        || !empty($state['live_show'])
+    )) {
         $filtered['live_attempt'] = array_values($state['live_attempt']);
     }
     if ($exposePerfCarryover && !empty($state['_live_perf_snapshot'])) {

@@ -1858,11 +1858,14 @@ function advanceLiveShowStage(array $state): array {
         if (!empty($state['pending_prompt'])) {
             return $state;
         }
-        // Yell spectacle done — resolve hearts, then park on outcomes.
-        if (!empty($state['_perf_yell_both_done']) || !empty($state['yell_reveal'])) {
-            return resolvePerformanceHeartsAfterYell($state);
+        // Official 8.3 interleaves Live Start → Yell per performer. First Yell alone
+        // populates yell_reveal — do not treat that as "both done" or the 2nd Live Start
+        // / Yell is skipped when clients ack the performance beat early.
+        if (empty($state['_perf_yell_both_done'])) {
+            return $state;
         }
-        return setLiveShowStage($state, 'outcomes');
+        // Yell spectacle done — resolve hearts, then park on outcomes.
+        return resolvePerformanceHeartsAfterYell($state);
     }
     if ($stage === 'outcomes') {
         $state['phase'] = 'live_judge';
@@ -4454,22 +4457,18 @@ function filterStateForPlayer(array $state, string $token): array {
         ], true) || ($state['status'] ?? '') === 'finished';
     }
 
-    if (!empty($state['yell_reveal']) && (
-        isInPerformancePhase($state)
-        || in_array(($state['pending_prompt']['type'] ?? ''), [
-            'auto_yell_mill_extra_yell',
-            'auto_yell_no_live_retry',
-            'pick_yell_member',
-            'live_success_pick_yell_live',
-            'live_success_pick_yell_deck_top',
-            'sbp5_pick_yell_members',
-        ], true)
-    )) {
+    // Expose live Yell draws whenever present — including mid-round Live Start for
+    // the 2nd performer (phase live_start_effects) after the 1st Yell. Gating on
+    // isInPerformancePhase hid cards and left the spectacle animating empty rails.
+    if (!empty($state['yell_reveal'])) {
         $filtered['yell_reveal'] = $state['yell_reveal'];
     } elseif ($exposePerfCarryover && !empty($state['_yell_reveal_snapshot'])) {
         // Keep last round's Yell draws visible until the next Performance (PvP may
         // resolve judge + startTurn before either client polls for spectacle).
         $filtered['yell_reveal'] = $state['_yell_reveal_snapshot'];
+    }
+    if (!empty($state['live_show']) && !empty($state['_perf_yell_both_done'])) {
+        $filtered['_perf_yell_both_done'] = true;
     }
 
     if (!empty($state['live_perf_success'])) {
@@ -4480,7 +4479,11 @@ function filterStateForPlayer(array $state, string $token): array {
         $filtered['live_round_success'] = $state['live_round_success'];
     }
 
-    if (!empty($state['live_attempt']) && isInPerformancePhase($state)) {
+    if (!empty($state['live_attempt']) && (
+        isInPerformancePhase($state)
+        || ($state['phase'] ?? '') === 'live_start_effects'
+        || !empty($state['live_show'])
+    )) {
         $filtered['live_attempt'] = array_values($state['live_attempt']);
     }
 

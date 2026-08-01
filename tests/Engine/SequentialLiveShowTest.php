@@ -149,4 +149,70 @@ final class SequentialLiveShowTest extends TestCase
         $this->assertArrayNotHasKey('live_scores_hidden', $filtered);
         $this->assertSame(['Live Scores: P1 = 3 | P2 = 2'], array_column($filtered['log'], 'msg'));
     }
+
+    public function testPerformanceAckWaitsUntilBothYellsDone(): void
+    {
+        // Simulate 1st Yell complete + 2nd Live Start in progress (yell_reveal partial).
+        $state = $this->state();
+        $state['phase'] = 'live_start_effects';
+        $state['live_attempt'] = ['p1', 'p2'];
+        $state['live_show'] = [
+            'turn' => 2,
+            'stage' => 'performance',
+            'started_at' => time(),
+            'stage_seq' => 3,
+            'acks' => [],
+        ];
+        $state['yell_reveal'] = [
+            'p1' => [[
+                'instance_id' => 'yell1',
+                'card_no' => 'y1',
+                'card_type' => 'メンバー',
+                'card_type_en' => 'Member',
+                'name_en' => 'Yell Chip',
+            ]],
+            'p2' => [],
+        ];
+        unset($state['_perf_yell_both_done']);
+
+        $after = $this->ackBoth($state);
+        $this->assertSame('performance', $after['live_show']['stage'] ?? null);
+        $this->assertStringNotContainsString(
+            'performed Live! Blades:',
+            implode("\n", array_column($after['log'] ?? [], 'msg'))
+        );
+
+        $state['_perf_yell_both_done'] = true;
+        $state['live_show']['acks'] = [];
+        $afterBoth = $this->ackBoth($state);
+        $this->assertSame('outcomes', $afterBoth['live_show']['stage'] ?? null);
+    }
+
+    public function testYellRevealExposedDuringSecondLiveStart(): void
+    {
+        $state = $this->state();
+        $state['phase'] = 'live_start_effects';
+        $state['players']['p1']['token'] = 'p1-token';
+        $state['yell_reveal'] = [
+            'p1' => [[
+                'instance_id' => 'yell1',
+                'card_no' => 'y1',
+                'card_type' => 'メンバー',
+                'card_type_en' => 'Member',
+                'name_en' => 'Yell Chip',
+            ]],
+            'p2' => [],
+        ];
+        $state['live_show'] = [
+            'turn' => 2,
+            'stage' => 'performance',
+            'started_at' => time(),
+            'stage_seq' => 3,
+            'acks' => [],
+        ];
+
+        $filtered = \filterStateForPlayer($state, 'p1-token');
+        $this->assertNotEmpty($filtered['yell_reveal']['p1'] ?? []);
+        $this->assertSame('yell1', $filtered['yell_reveal']['p1'][0]['instance_id'] ?? null);
+    }
 }

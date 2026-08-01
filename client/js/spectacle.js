@@ -6825,6 +6825,26 @@ async function fetchLiveShowStateNow() {
   }
 }
 
+/** True once both performers finished Yell draws (safe to animate performance beat). */
+function liveShowPerformanceYellReady(board) {
+  if (!board) return false;
+  if (board._perf_yell_both_done) return true;
+  const stage = board.live_show?.stage;
+  if (stage === 'outcomes' || stage === 'judge' || stage === 'done') return true;
+  // 2nd performer Live Start runs after 1st Yell while live_show stays on performance.
+  if (board.phase === 'live_start_effects') return false;
+  if (board.pending_prompt) return false;
+  const attempting = Array.isArray(board.live_attempt) ? board.live_attempt : [];
+  const yr = (typeof perfYellRevealFor === 'function' ? perfYellRevealFor(board) : null)
+    || board.yell_reveal
+    || board._yell_reveal_snapshot
+    || {};
+  if (attempting.length === 0) {
+    return ((yr.p1?.length || 0) + (yr.p2?.length || 0)) > 0;
+  }
+  return attempting.every((pid) => (yr[pid]?.length || 0) > 0);
+}
+
 async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
@@ -6934,6 +6954,17 @@ async function presentServerLiveShowStage(prev, next, myId) {
             && (show.stage === 'reveal' || show.stage === 'live_start')) {
           perfCloseSpectacle();
         }
+        G.gameState = board;
+        break;
+      }
+
+      // Performance cursor parks after the 1st Yell while the 2nd performer still
+      // runs Live Start → Yell. Wait until both Yell draws exist before animating.
+      if (show.stage === 'performance' && !liveShowPerformanceYellReady(board)) {
+        TCG_DEBUG.log('live', 'live_show performance waiting for both Yells', {
+          phase: board.phase,
+          bothDone: !!board._perf_yell_both_done,
+        });
         G.gameState = board;
         break;
       }

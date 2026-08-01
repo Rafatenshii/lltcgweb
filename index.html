@@ -1950,6 +1950,14 @@ html.tcg-mobile-viewport #perf-spectacle .perf-deck-pile{width:var(--perf-member
 html.tcg-mobile-viewport #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member{
   width:6.2cqw;height:auto;
 }
+html.tcg-mobile-viewport #perf-spectacle .perf-card.member.member-in-wait{
+  width:calc(var(--perf-member-w) * 88 / 63);height:var(--perf-member-w);
+  aspect-ratio:88/63;
+}
+html.tcg-mobile-viewport #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member.member-in-wait{
+  width:calc(6.2cqw * 88 / 63);height:6.2cqw;
+  aspect-ratio:88/63;
+}
 html.tcg-mobile-viewport #perf-spectacle .perf-col.mine .perf-yell-row,
 html.tcg-mobile-viewport #perf-spectacle .perf-col.opp .perf-yell-row{
   width:var(--perf-member-w);
@@ -3707,14 +3715,17 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }
-/* Wait: landscape chrome matching rotated art (avoids portrait ghost/outline). */
+/* Wait: landscape chrome matching rotated art (avoids portrait ghost/outline).
+   Portrait is W×H (H=W·88/63); landscape swaps to H×W — never reuse portrait H as height
+   or the frame collapses to a square. */
 .perf-card.member.member-in-wait{
   width:calc(var(--perf-member-w, clamp(100px,16vw,136px)) * 88 / 63);
+  height:var(--perf-member-w, clamp(100px,16vw,136px));
   aspect-ratio:88/63;
 }
 .perf-stage-row.perf-stage-multi .perf-card.member.member-in-wait{
   width:calc(var(--perf-stage-member-w, var(--perf-member-w, clamp(100px,16vw,136px))) * 88 / 63);
-  height:var(--perf-stage-member-h, auto);
+  height:var(--perf-stage-member-w, var(--perf-member-w, clamp(100px,16vw,136px)));
   aspect-ratio:88/63;
 }
 .perf-card.member.member-in-wait > .wdim{
