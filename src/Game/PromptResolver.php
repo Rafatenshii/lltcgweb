@@ -790,8 +790,9 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         }
         if ($choice === 'yes') {
             $sourceId = $prompt['source_id'] ?? '';
-            $maxCost = intval($ability['max_cost'] ?? 4);
-            $pickCount = intval($ability['pick_count'] ?? 1);
+            $srcName = $prompt['source_name'] ?? 'Member';
+            $pickCount = isset($ability['pick_count']) ? intval($ability['pick_count']) : null;
+            $liveStart = !empty($prompt['live_start']);
             foreach ($ownerP['stage'] as &$mbr) {
                 if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
                     waitMember($mbr, $state);
@@ -801,36 +802,52 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
             unset($mbr);
             $opp = ($owner === 'p1') ? 'p2' : 'p1';
             $subunitOnly = $ability['require_stage_subunit_only'] ?? '';
-            if ($subunitOnly !== '' && stageAllMembersInSubunit($ownerP, $subunitOnly)) {
-                if (!empty($ability['max_original_blades'])) {
-                    $waited = waitOpponentStageByOriginalBlades(
-                        $state,
-                        $opp,
-                        intval($ability['max_original_blades']),
-                        $pickCount ?: null,
-                        $owner
-                    );
-                } elseif (!empty($ability['max_original_hearts'])) {
-                    $waited = waitOpponentStageByOriginalHearts(
-                        $state,
-                        $opp,
-                        intval($ability['max_original_hearts']),
-                        $pickCount ?: null,
-                        $owner
-                    );
-                } else {
-                    $waited = waitOpponentStageByCost($state, $opp, $maxCost, $pickCount ?: null, $owner);
-                }
+            if ($subunitOnly !== '' && !stageAllMembersInSubunit($ownerP, $subunitOnly)) {
                 $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] Waited self; $waited opponent Member(s) put into Wait.");
-            } elseif ($subunitOnly !== '') {
-                $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Member') . '] Waited self (stage not all ' . $subunitOnly . ').');
-            } else {
-                $waited = waitOpponentStageByCost($state, $opp, $maxCost, $pickCount ?: null, $owner);
-                $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] Waited self; $waited opponent Member(s) put into Wait.");
+                    ' — [' . $srcName . '] Waited self (stage not all ' . $subunitOnly . ').');
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return $state;
             }
+            // Targeted Wait (pick_count set): let the controller choose opponent Members.
+            // Special original-blade/heart filters still auto-resolve via those helpers.
+            if ($pickCount !== null && $pickCount > 0
+                && empty($ability['max_original_blades'])
+                && empty($ability['max_original_hearts'])) {
+                unset($state['pending_prompt']);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . $srcName . '] Waited self; choose opponent Member(s) to put into Wait.');
+                return beginWaitOpponentStagePick(
+                    $state,
+                    $owner,
+                    $srcName,
+                    $ability,
+                    $sourceId,
+                    $liveStart
+                );
+            }
+            if (!empty($ability['max_original_blades'])) {
+                $waited = waitOpponentStageByOriginalBlades(
+                    $state,
+                    $opp,
+                    intval($ability['max_original_blades']),
+                    $pickCount,
+                    $owner
+                );
+            } elseif (!empty($ability['max_original_hearts'])) {
+                $waited = waitOpponentStageByOriginalHearts(
+                    $state,
+                    $opp,
+                    intval($ability['max_original_hearts']),
+                    $pickCount,
+                    $owner
+                );
+            } else {
+                $maxCost = intval($ability['max_cost'] ?? 4);
+                $waited = waitOpponentStageByCost($state, $opp, $maxCost, $pickCount, $owner);
+            }
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . $srcName . "] Waited self; $waited opponent Member(s) put into Wait.");
         } else {
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional Wait effect.');

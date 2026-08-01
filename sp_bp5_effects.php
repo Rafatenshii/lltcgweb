@@ -292,7 +292,7 @@ function spBp5ResolveEffect(array $state, string $pid, array $source, array $ab,
             foreach ($p['stage'] as $slot => &$mbr) {
                 if (!$mbr) continue;
                 if ($group !== '' && ($mbr['group'] ?? '') !== $group) continue;
-                $mbr['active'] = true;
+                activateMemberFully($mbr);
                 $p['stage'][$slot] = $mbr;
             }
             unset($mbr);
@@ -760,7 +760,7 @@ function spBp5ResolvePrompt(array $state, string $owner, array $prompt, string $
             discardFromHandByIds($ownerP, $ids);
             $slot = $prompt['source_slot'] ?? 'left';
             if ($bladeless >= 1 && !empty($ownerP['stage'][$slot])) {
-                $ownerP['stage'][$slot]['active'] = true;
+                activateMemberFully($ownerP['stage'][$slot]);
             }
             if ($bladeless >= 2) {
                 $amt = intval($prompt['blade_amount'] ?? 2);

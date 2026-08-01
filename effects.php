@@ -3025,8 +3025,18 @@ function memberContributesBladeToYell(array $member): bool {
 }
 
 function clearMemberWait(array &$member): void {
-    unset($member['in_wait'], $member['waited_turn'], $member['_was_active_before_wait']);
+    unset(
+        $member['in_wait'],
+        $member['waited_turn'],
+        $member['waited_active_player'],
+        $member['_was_active_before_wait']
+    );
     $member['active'] = true;
+}
+
+/** Effect "Activate this Member" — clears Wait (not just active=true). */
+function activateMemberFully(array &$member): void {
+    clearMemberWait($member);
 }
 
 function waitMember(array &$member, array $state): void {
@@ -3036,6 +3046,7 @@ function waitMember(array &$member, array $state): void {
     $member['_was_active_before_wait'] = $member['active'] ?? true;
     $member['in_wait'] = true;
     $member['waited_turn'] = intval($state['turn'] ?? 1);
+    $member['waited_active_player'] = (string)($state['active_player'] ?? '');
     $member['active'] = false;
 }
 
