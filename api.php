@@ -1964,7 +1964,17 @@ function doActivePhase(array $state, string $pid): array {
             }
             if (memberIsInWait($m)) {
                 $waitedTurn = intval($m['waited_turn'] ?? 0);
-                if ($waitedTurn > 0 && $waitedTurn < intval($state['turn'] ?? 1)) {
+                $waitedBy = (string)($m['waited_active_player'] ?? '');
+                $turn = intval($state['turn'] ?? 1);
+                // Clear on owner's Active Phase unless self-Waited during their own turn
+                // (e.g. On Enter Wait during Main) — that lasts until next turn Active.
+                // Legacy rows without waited_active_player keep the old turn-only rule.
+                if ($waitedBy === '') {
+                    $clearWait = $waitedTurn > 0 && $waitedTurn < $turn;
+                } else {
+                    $clearWait = ($waitedTurn > 0 && $waitedTurn < $turn) || ($waitedBy !== $pid);
+                }
+                if ($clearWait) {
                     clearMemberWait($m);
                     unset($m['abilities_used']);
                     clearMemberPerTurnAutoUses($m);

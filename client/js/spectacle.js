@@ -2861,9 +2861,14 @@ function isPostLiveSkillPrompt(state) {
 function shouldDeferLiveSuccessDiscardUi(s, myId) {
   if (!isLiveSuccessDiscardPrompt(s)) return false;
   if (s.pending_prompt?.responder !== myId) return false;
+  // Open discard picker must stay interactive. Re-defer (deferred draw mask / anim
+  // flags) used to closeM(hand-pick) mid-tap and rebuild the fan, freezing discard
+  // — especially after Wait/spectacle churn (#83 item 5).
+  if (el('overlay-hand-pick')?.classList.contains('open') && G.handPickCtx) return false;
   if (G._perfSpectacleActive) return true;
-  if (G._deferredHandDrawIids?.size) return true;
+  // After Performance, do not keep the picker closed for lingering draw-mask IIDs.
   if (G._liveRoundPostSpectacleReady) return false;
+  if (G._deferredHandDrawIids?.size) return true;
   if (G.animating) return true;
   return false;
 }
@@ -2938,6 +2943,11 @@ function collectLiveSuccessDeferredDrawIids(prev, next) {
 
 function syncLiveSuccessPresentationDefer(prev, next) {
   if (!isLiveSuccessDiscardPrompt(next)) return;
+  // Do not re-hide draws once the discard fan is interactive.
+  if (el('overlay-hand-pick')?.classList.contains('open') && G.handPickCtx) {
+    if (next.pending_prompt) G._deferredPromptState = next;
+    return;
+  }
   const iids = collectLiveSuccessDeferredDrawIids(prev, next);
   if (iids.size) G._deferredHandDrawIids = iids;
   if (next.pending_prompt) G._deferredPromptState = next;

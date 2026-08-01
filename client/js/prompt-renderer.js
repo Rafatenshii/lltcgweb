@@ -1799,12 +1799,14 @@ global.renderPromptDiscardHandBranch = function renderPromptDiscardHandBranch(s,
   if (typeof isPromptSubmitting === 'function' && isPromptSubmitting(s)) return;
   if (G._deferredHandDrawIids?.size && isLiveSuccessDiscardPrompt(s)) {
     clearLiveSuccessHandDeferral(s);
-    renderGame(s, { skipLog: true });
+    // skipPrompt: avoid recursive renderPrompt → openHandPick while rebuilding hand.
+    renderGame(s, { skipLog: true, skipPrompt: true });
   }
   ovl.classList.remove('open');
   const me = s.players?.[myId];
   const need = pr.count || 1;
   const forceConfirm = s.phase === 'live_success_effects' || need > 1;
+  const promptKey = typeof promptIdentityKey === 'function' ? promptIdentityKey(s) : null;
   openHandPick({
     hand: me?.hand || [],
     count: need,
@@ -1815,6 +1817,7 @@ global.renderPromptDiscardHandBranch = function renderPromptDiscardHandBranch(s,
       : t('prompt.discardMany', { count: need })),
     allowCancel: false,
     forceConfirm,
+    promptKey,
     confirmLabel: forceConfirm && need > 1 ? t('prompt.selectThenConfirm') : undefined,
     onConfirm: (ids) => {
       const payload = (pr.pick_mode === 'deck_top')
