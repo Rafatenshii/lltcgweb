@@ -10797,6 +10797,38 @@ async function restoreFinishedMatchUi(s) {
   saveActiveGameSession();
 }
 
+/** True when a match is actually on-screen (not an orphaned G.roomId after a failed resume). */
+function hasRestoredMatchUi() {
+  if (!G.roomId || !G.token) return false;
+  if (!G.gameState) return false;
+  const active = document.querySelector('.screen.active')?.id;
+  if (active === 'screen-game' || active === 'screen-waiting') return true;
+  // Finished rematch/hub buttons live on overlay-win over the game board.
+  if (el('overlay-win')?.classList.contains('open')) return true;
+  return false;
+}
+
+/** Undo partial reconnect so auth boot can leave "Reconnecting…" and reach hub/guest UI. */
+function rollbackFailedReconnect() {
+  try { if (typeof stopPoll === 'function') stopPoll(); } catch (e) { /* ignore */ }
+  G.roomId = null;
+  G.token = null;
+  G.playerId = null;
+  G.gameState = null;
+  G.isCPU = false;
+  G.cpuToken = null;
+  G.cpuPlayerId = null;
+  G.rematchWaiting = false;
+  G.rematchRequested = false;
+  G.replayMode = false;
+  try {
+    if (typeof abortGameplayPresentation === 'function') {
+      abortGameplayPresentation({ skipAbortFlag: true });
+    }
+  } catch (e) { /* ignore */ }
+  try { el('overlay-win')?.classList.remove('open'); } catch (e) { /* ignore */ }
+}
+
 /** Drop stale client-only flags after refresh/reconnect; server snapshot is authoritative.
  *  Limitations: card-flight animations and live performance spectacles already completed
  *  are not replayed (board/log reflect server state). A refresh mid-spectacle may skip
@@ -10877,6 +10909,7 @@ function prepareClientReconnectState(s) {
 
 async function reconnectToGame(saved, opts = {}) {
   if (!saved?.roomId || !saved?.token) return false;
+  let appliedCredentials = false;
   try {
     const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved, opts);
     if (await abandonReconnectSessionIfTerminal(s, { bothOriginsMissing: !!roomMissingBoth })) {
@@ -10903,8 +10936,13 @@ async function reconnectToGame(saved, opts = {}) {
       G.replayTotal = saved.replayTotal ?? 0;
       G.replayHandoff = false;
     }
+    appliedCredentials = true;
     if (s.status === 'finished') {
       await restoreFinishedMatchUi(s);
+      if (!hasRestoredMatchUi()) {
+        rollbackFailedReconnect();
+        return false;
+      }
       toast(t('toast.reconnected'), 2600);
       return true;
     }
@@ -10932,9 +10970,17 @@ async function reconnectToGame(saved, opts = {}) {
       updateOpponentSkillWaitBanner(s, G.playerId);
     }
     startPoll();
+    if (!hasRestoredMatchUi()) {
+      rollbackFailedReconnect();
+      return false;
+    }
     toast(t('toast.reconnected'), 2600);
     return true;
   } catch (e) {
+    // Partial G.roomId without a visible board stuck auth on "Reconnecting…".
+    if (appliedCredentials || (G.roomId && !hasRestoredMatchUi())) {
+      rollbackFailedReconnect();
+    }
     // Timeouts / network blips — keep tcg_active_game for the next reload.
     return false;
   }
@@ -10993,7 +11039,13 @@ let _resumeActiveGamePromise = null;
 
 async function resumeActiveGameIfAny() {
   if (G.isTutorial) return false;
-  if (G.roomId) return true;
+  // Only treat an in-memory room as restored when the match UI is actually visible.
+  // Orphaned G.roomId after a failed reconnect used to skip hub and leave
+  // "Reconnecting to match…" stuck on the title screen.
+  if (hasRestoredMatchUi()) return true;
+  if (G.roomId && !hasRestoredMatchUi()) {
+    rollbackFailedReconnect();
+  }
   if (_resumeActiveGamePromise) return _resumeActiveGamePromise;
   _resumeActiveGamePromise = (async () => {
     try {
@@ -11056,9 +11108,12 @@ async function initAccountFlow() {
   const authWatchdog = setTimeout(() => {
     if (authDone) return;
     // Match already restored — finish quietly.
-    if (G.roomId) {
+    if (hasRestoredMatchUi()) {
       finishAuthBoot();
       return;
+    }
+    if (G.roomId && !hasRestoredMatchUi()) {
+      rollbackFailedReconnect();
     }
     // Last chance resume before dumping to the guest timeout screen.
     void (async () => {
@@ -11068,7 +11123,7 @@ async function initAccountFlow() {
           return;
         }
       } catch (e) { /* fall through */ }
-      if (authDone || G.roomId) {
+      if (authDone || hasRestoredMatchUi()) {
         finishAuthBoot();
         return;
       }
@@ -11156,7 +11211,7 @@ async function initAccountFlow() {
       return;
     }
     // Resume may have completed between awaits.
-    if (G.roomId || await resumeActiveGameIfAny()) return;
+    if (hasRestoredMatchUi() || await resumeActiveGameIfAny()) return;
     enterHub(me);
     setTimeout(() => {
       if (peekLovecaSpectate()) void consumeLovecaSpectateInvite();
@@ -11180,11 +11235,14 @@ async function initAccountFlow() {
 
 function showGuestAuth(message, i18nKey) {
   // Never yank a restored match back to the sign-in screen.
-  if (G.roomId && !G.isTutorial) {
+  if (hasRestoredMatchUi()) {
     const authElBusy = el('auth-status');
     if (authElBusy) authElBusy.setAttribute('data-auth-boot', 'done');
     if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
     return;
+  }
+  if (G.roomId && !hasRestoredMatchUi()) {
+    rollbackFailedReconnect();
   }
   const authEl = el('auth-status');
   const loginBtn = el('btn-discord-login');
@@ -38341,7 +38399,7 @@ function el(id){ return document.getElementById(id); }
 function on(id,ev,fn){ el(id)?.addEventListener(ev,fn); }
 function showScr(n){
   // Auth boot / timeout must never tear down an active or restored match.
-  if (n === 'auth' && G.roomId && !G.isTutorial) {
+  if (n === 'auth' && hasRestoredMatchUi()) {
     return;
   }
   const prevActive=document.querySelector('.screen.active')?.id;
