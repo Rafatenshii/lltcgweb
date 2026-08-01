@@ -25725,7 +25725,7 @@ function cpuSchedulePromptRetryIfStuck(s, cpu) {
 /** Prompt types that need card_ids / discard_ids — never send generic { choice: 'yes' }. */
 const CPU_NO_GENERIC_YESNO = new Set([
   'sbp5_draw_deck_bottom', 'sbp6_discard_after_draw', 'mandatory_discard_after_draw',
-  'mandatory_discard_look_reveal', 'effect_discard_hand',
+  'mandatory_discard_look_reveal', 'effect_discard_hand', 'mandatory_discard_group_branch',
   'surveil_arrange', 'surveil_pick_one', 'surveil_pick_one_hand_rest_wr',
   'surveil_pick_one_deck_top', 'surveil_pick_one_hand_rest_top',
   'live_success_pick_yell_deck_top', 'pick_named_member_blade', 'pick_named_members_grant_blade',
@@ -25751,6 +25751,8 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'optional_discard_prompt', 'pick_looked_deck_hand',
   'spbp2_stack_wr_member', 'spbp2_wait_self_opp_heart_gap',
   'spbp2_center_move_choose', 'spbp2_center_move_position',
+  'both_shuffle_wr_members_deck_bottom_threshold',
+  'live_start_unless_discard_return_energy', 'live_success_choose_draw_or_energy_wait',
 ]);
 
 /** Prefer a non-empty CPU hand — empty [] must not block fallback to cpu.hand. */
@@ -25826,6 +25828,23 @@ function cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read) {
       return true;
     }
     cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
+    return true;
+  }
+  // Kotori μ's branch discard (PL!-bp5-003) — mandatory hand pick, no yes/no choices.
+  if (pr.type === 'mandatory_discard_group_branch') {
+    const need = pr.discard_count || pr.max_pick || pr.ability?.discard || 1;
+    const handNow = cpuLiveHand(cpu);
+    let ids = pick(need).filter(Boolean);
+    if (ids.length < need) ids = cpuHandDiscardFallback(handNow, need);
+    if (ids.length >= need) {
+      cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
+      return true;
+    }
+    if (presentationBusy || handNow.length < need) {
+      cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
+      return true;
+    }
+    cpuAct('anti_softlock_skip', {});
     return true;
   }
   return false;
@@ -26372,10 +26391,11 @@ function cpuResolveScoredChoicePrompt(pr, cpu, tier, ctx) {
   }
   const payload = { choice: pick };
   const branchFx = pr.ability?.choices?.[pick]?.effect || cpuInferEffectFromChoiceKey(pr, pick);
-  if (branchFx?.type === 'draw_and_discard' || pick === 'draw_discard') {
-    const need = branchFx?.discard || 1;
+  if (branchFx?.type === 'draw_and_discard' || pick === 'draw_discard' || pick === 'discard') {
+    const need = branchFx?.discard || pr.discard_count || pr.ability?.discard || 1;
     const ids = discard(need);
     if (ids.length >= need) payload.discard_ids = ids.slice(0, need);
+    else if (pick === 'discard') return false;
     else if (tier === 'easy') return false;
   }
   if (pick === 'yes') {
@@ -26496,6 +26516,47 @@ function cpuResolveHangRiskPrompts(pr, cpu, tier, read, s) {
   if (pr.type === 'hs_leave_play_wr_slot') {
     const pick = cpuPickBestCandidate(pr.candidates, cpu, hand, tier, read);
     if (pick?.instance_id) { cpuAct('resolve_prompt', { card_id: pick.instance_id }); return true; }
+    cpuSchedulePromptRetryIfStuck(s, cpu);
+    return true;
+  }
+  // Ginko PB1: after both WRs shuffled to deck bottom, pick a Live from WR.
+  if (pr.type === 'both_shuffle_wr_members_deck_bottom_threshold') {
+    const pick = cpuPickBestCandidate(pr.candidates, cpu, hand, tier, read);
+    if (pick?.instance_id) { cpuAct('resolve_prompt', { card_id: pick.instance_id }); return true; }
+    cpuSchedulePromptRetryIfStuck(s, cpu);
+    return true;
+  }
+  // Wien Margarete Live Start: discard 1 or return Energy (must attach discard_ids).
+  if (pr.type === 'live_start_unless_discard_return_energy') {
+    const need = pr.discard_count || 1;
+    const canReturn = (pr.choices || []).includes('return_energy');
+    const canSkip = (pr.choices || []).includes('skip');
+    if (canReturn && (tier === 'easy' || hand.length <= need)) {
+      cpuAct('resolve_prompt', { choice: 'return_energy' });
+      return true;
+    }
+    const ids = cpuPickDiscardIds(hand, need, tier, cpuWinPressure(cpu), read);
+    if ((pr.choices || []).includes('discard') && ids.length >= need) {
+      cpuAct('resolve_prompt', { choice: 'discard', discard_ids: ids.slice(0, need) });
+      return true;
+    }
+    if (canReturn) {
+      cpuAct('resolve_prompt', { choice: 'return_energy' });
+      return true;
+    }
+    if (canSkip) {
+      cpuAct('resolve_prompt', { choice: 'skip' });
+      return true;
+    }
+    cpuSchedulePromptRetryIfStuck(s, cpu);
+    return true;
+  }
+  // Wien Margarete Live Success: draw or put Energy into Wait.
+  if (pr.type === 'live_success_choose_draw_or_energy_wait') {
+    const pick = (tier === 'easy' && (pr.choices || []).includes('energy'))
+      ? 'energy'
+      : ((pr.choices || []).includes('draw') ? 'draw' : (pr.choices || [])[0]);
+    if (pick) { cpuAct('resolve_prompt', { choice: pick }); return true; }
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return true;
   }
