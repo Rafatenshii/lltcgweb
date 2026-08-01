@@ -3674,7 +3674,7 @@ function putWrGroupMemberToEmptyStage(array &$p, string $group, int $maxCost, in
             }
             $member = $c;
             array_splice($p['waiting_room'], $i, 1);
-            $member['active'] = true;
+            clearMemberWait($member);
             $member['entered_turn'] = $turn;
             $p['stage'][$slot] = $member;
             return ['member' => $member, 'slot' => $slot];
@@ -4475,8 +4475,8 @@ function takeWrMemberToStageSlot(array &$p, array $cfg, string $slot, string $pr
     $member = $pickCard;
     array_splice($p['waiting_room'], $pickIdx, 1);
     mergeCardCatalogFields($member);
-    // Appearing via skill is not Wait — Active so printed Blades count for Yell.
-    $member['active'] = true;
+    // Appearing via skill is not Wait — clear in_wait (active=true alone is not enough).
+    clearMemberWait($member);
     $member['entered_turn'] = intval($member['entered_turn'] ?? 0);
     $p['stage'][$slot] = $member;
     return $member;

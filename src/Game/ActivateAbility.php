@@ -677,6 +677,9 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         }
         $p['waiting_room'][] = $leavingMember;
         $state = resolveOnLeaveStageAbilities($state, $pid, $leavingMember);
+        // Rebind: $state reassignment detaches prior &$p.
+        $p = &$state['players'][$pid];
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $p['stage'][$slot] = $played;
         notifyMemberEnteredStage($state, $pid, $played);

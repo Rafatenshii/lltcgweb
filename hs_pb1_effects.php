@@ -1050,8 +1050,10 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         $ownerP['stage'][$slot] = null;
         $ownerP['waiting_room'][] = $leaving;
         $state = resolveOnLeaveStageAbilities($state, $owner, $leaving);
+        // Rebind: $state reassignment detaches prior &$ownerP.
+        $ownerP = &$state['players'][$owner];
         mergeCardCatalogFields($played);
-        $played['active'] = true;
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $ownerP['stage'][$slot] = $played;
         unset($state['pending_prompt']);

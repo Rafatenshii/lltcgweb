@@ -162,4 +162,131 @@ final class SayakaBp1002WrPlayBladeTest extends TestCase
         $this->assertTrue(\memberContributesBladeToYell($played));
         $this->assertGreaterThan(0, \computeYellBladeTotal($state, 'p1'));
     }
+
+    public function testBatonWaitMemberReenterFromWrIsActive(): void
+    {
+        // Reproduce ranked replay 3EB046: Wait Member batoned off → Sayaka plays it from WR.
+        // Single eligible WR target uses ActivateAbility auto path (takeWrMemberToStageSlot).
+        $sayaka = $this->cardByNo('PL!HS-bp1-002-P', 'sayaka');
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'rurino_wait');
+        $rurino['in_wait'] = true;
+        $rurino['active'] = false;
+        $rurino['waited_turn'] = 6;
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 7,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'P1',
+                    'hand' => [],
+                    'waiting_room' => [$rurino],
+                    'stage' => [
+                        'left' => null,
+                        'center' => null,
+                        'right' => $sayaka,
+                    ],
+                    'energy_zone' => $this->energy(4),
+                    'main_deck' => [],
+                    'success_lives' => [],
+                    'live_zone' => [],
+                ],
+                'p2' => [
+                    'id' => 'p2',
+                    'name' => 'P2',
+                    'hand' => [],
+                    'waiting_room' => [],
+                    'stage' => ['left' => null, 'center' => null, 'right' => null],
+                    'energy_zone' => [],
+                    'main_deck' => [],
+                    'success_lives' => [],
+                    'live_zone' => [],
+                ],
+            ],
+        ];
+
+        $state = \actionActivateAbility($state, 'p1', [
+            'card_id' => 'sayaka',
+            'ability_index' => 0,
+        ]);
+        $this->assertNull($state['pending_prompt'] ?? null, 'single WR target auto-resolves');
+
+        $played = $state['players']['p1']['stage']['right'] ?? null;
+        $this->assertNotNull($played);
+        $this->assertSame('rurino_wait', $played['instance_id'] ?? null);
+        $this->assertTrue($played['active'] ?? false);
+        $this->assertFalse(\memberIsInWait($played), 'WR re-enter via Sayaka must clear in_wait from prior Wait');
+        $this->assertArrayNotHasKey('in_wait', $played);
+    }
+
+    public function testBatonWaitMemberReenterViaWrPickIsActive(): void
+    {
+        // Same Wait-flag bug via multi-WR pick prompt path (hs_leave_play_wr_slot).
+        $sayaka = $this->cardByNo('PL!HS-bp1-002-P', 'sayaka');
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'rurino_wait');
+        $rurino['in_wait'] = true;
+        $rurino['active'] = false;
+        $rurino['waited_turn'] = 6;
+        $decoy = $this->cardByNo('PL!HS-bp1-005-R', 'wr_decoy');
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 7,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'P1',
+                    'hand' => [],
+                    'waiting_room' => [$rurino, $decoy],
+                    'stage' => [
+                        'left' => null,
+                        'center' => null,
+                        'right' => $sayaka,
+                    ],
+                    'energy_zone' => $this->energy(4),
+                    'main_deck' => [],
+                    'success_lives' => [],
+                    'live_zone' => [],
+                ],
+                'p2' => [
+                    'id' => 'p2',
+                    'name' => 'P2',
+                    'hand' => [],
+                    'waiting_room' => [],
+                    'stage' => ['left' => null, 'center' => null, 'right' => null],
+                    'energy_zone' => [],
+                    'main_deck' => [],
+                    'success_lives' => [],
+                    'live_zone' => [],
+                ],
+            ],
+        ];
+
+        $state = \actionActivateAbility($state, 'p1', [
+            'card_id' => 'sayaka',
+            'ability_index' => 0,
+        ]);
+        $this->assertSame('hs_leave_play_wr_slot', $state['pending_prompt']['type'] ?? null);
+        $state = \actionResolvePrompt($state, 'p1', [
+            'card_id' => 'rurino_wait',
+        ]);
+
+        $played = $state['players']['p1']['stage']['right'] ?? null;
+        $this->assertNotNull($played);
+        $this->assertSame('rurino_wait', $played['instance_id'] ?? null);
+        $this->assertTrue($played['active'] ?? false);
+        $this->assertFalse(\memberIsInWait($played), 'WR pick re-enter must clear in_wait from prior Wait');
+        $this->assertArrayNotHasKey('in_wait', $played);
+    }
 }

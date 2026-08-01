@@ -1004,7 +1004,7 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
             if (($c['instance_id'] ?? '') !== $cardId) continue;
             $played = $c;
             array_splice($ownerP['waiting_room'], $i, 1);
-            $played['active'] = true;
+            clearMemberWait($played);
             $played['entered_turn'] = intval($state['turn'] ?? 1);
             $ownerP['stage'][$slot] = $played;
             unset($state['pending_prompt']);
@@ -1097,7 +1097,9 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
         $ownerP['stage'][$slot] = null;
         $ownerP['waiting_room'][] = $leaving;
         $state = resolveOnLeaveStageAbilities($state, $owner, $leaving);
-        $played['active'] = true;
+        // Rebind: $state reassignment detaches prior &$ownerP.
+        $ownerP = &$state['players'][$owner];
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $ownerP['stage'][$slot] = $played;
         unset($state['pending_prompt']);
