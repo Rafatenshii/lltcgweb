@@ -118,6 +118,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       <p id="auth-status" data-auth-boot="pending" data-i18n="auth.checking">Checking Discord sign-in…</p>
       <div class="auth-actions">
         <button class="btn-grad" id="btn-discord-login" type="button" hidden data-i18n="auth.signInDiscord">Sign in with Discord</button>
+        <button class="btn-out" id="btn-auth-skip-reconnect" type="button" hidden data-i18n="auth.skipReconnect">Leave match &amp; continue</button>
       </div>
       <div class="llc-menu-list auth-guest-menu" id="auth-guest-menu" hidden>
         <button class="llc-menu-item llc-menu-hover" id="btn-auth-unranked" type="button">
@@ -2153,7 +2154,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=96"></script>
+<script src="i18n.js?v=97"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -4768,12 +4769,23 @@ async function resumeSpectatorSessionIfAny() {
 }
 
 let _resumeActiveGamePromise = null;
+/** Bumped to cancel an in-flight reconnect queue (abandon / skip / leave). */
+let _reconnectQueueEpoch = 0;
+
+function cancelReconnectQueue() {
+  _reconnectQueueEpoch += 1;
+}
 
 function hasStoredActiveGameSession() {
   try {
     if (sessionStorage.getItem(ACTIVE_GAME_KEY) || localStorage.getItem(ACTIVE_GAME_KEY)) return true;
   } catch (e) { /* ignore */ }
   return !!readActiveGameSession();
+}
+
+function setAuthSkipReconnectVisible(show) {
+  const btn = el('btn-auth-skip-reconnect');
+  if (btn) btn.hidden = !show;
 }
 
 function updateReconnectBanner(attempt) {
@@ -4793,6 +4805,7 @@ function updateReconnectBanner(attempt) {
   if (authEl.getAttribute('data-auth-boot') !== 'done') {
     authEl.setAttribute('data-auth-boot', 'booting');
   }
+  setAuthSkipReconnectVisible(true);
 }
 
 function reconnectBackoffMs(attempt) {
@@ -4800,25 +4813,57 @@ function reconnectBackoffMs(attempt) {
   return steps[Math.min(Math.max(attempt, 1) - 1, steps.length - 1)];
 }
 
+async function dropRankedActiveGameBestEffort() {
+  if (!getAuthToken()) return;
+  try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
+}
+
 /**
- * Never-give-up refresh resume while a local/ranked match session exists.
- * Uses read-only get_state?resume=1 and retries transient Hostinger failures.
+ * Resume local/ranked match sessions with a hard attempt cap.
+ * Match-primary: never spin forever on Hostinger-only drain rooms / VPS blips.
  */
 async function runReconnectQueue() {
+  const epoch = _reconnectQueueEpoch;
   let attempt = 0;
   let rankedEmptyConfirmed = false;
+  let rankedFailStreak = 0;
+  const matchPrimary = typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY;
+  // Title-screen reconnect must not block hub forever.
+  const maxAttempts = matchPrimary ? 4 : 10;
+
   while (true) {
-    if (hasRestoredMatchUi()) return true;
+    if (epoch !== _reconnectQueueEpoch) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
+    if (hasRestoredMatchUi()) {
+      setAuthSkipReconnectVisible(false);
+      return true;
+    }
     if (G.roomId && !hasRestoredMatchUi()) rollbackFailedReconnect();
 
     const saved = readActiveGameSession();
     const spectator = readSpectatorSession();
     const canRanked = !!getAuthToken();
 
-    if (!saved && !spectator && rankedEmptyConfirmed) return false;
-    if (!saved && !spectator && !canRanked) return false;
+    if (!saved && !spectator && rankedEmptyConfirmed) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
+    if (!saved && !spectator && !canRanked) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
 
     attempt += 1;
+    if (attempt > maxAttempts) {
+      clearActiveGameSession();
+      clearSpectatorSession();
+      await dropRankedActiveGameBestEffort();
+      G._reconnectLastFail = 'gone';
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
     updateReconnectBanner(attempt);
 
     const attemptCtrl = new AbortController();
@@ -4828,27 +4873,57 @@ async function runReconnectQueue() {
     const opts = { resume: true, signal: attemptCtrl.signal };
 
     try {
+      if (epoch !== _reconnectQueueEpoch) {
+        setAuthSkipReconnectVisible(false);
+        return false;
+      }
       if (saved) {
-        if (await reconnectToGame(saved, opts)) return true;
+        if (await reconnectToGame(saved, opts)) {
+          setAuthSkipReconnectVisible(false);
+          return true;
+        }
         if (!readActiveGameSession() && G._reconnectLastFail === 'gone') {
           // Room confirmed gone — fall through to ranked / stop.
         } else if (G._reconnectLastFail === 'auth' && !canRanked) {
           clearActiveGameSession();
+          setAuthSkipReconnectVisible(false);
           return false;
+        } else if (matchPrimary && (G._reconnectLastFail === 'soft' || G._reconnectLastFail === 'auth'
+            || (G._reconnectLastFail === 'transient' && attempt >= 2))) {
+          // Dead / unreachable match-primary rooms must not pin the title screen.
+          clearActiveGameSession();
+          await dropRankedActiveGameBestEffort();
+          if (!readSpectatorSession() && (!canRanked || attempt >= 2)) {
+            rankedEmptyConfirmed = true;
+            if (!canRanked) {
+              setAuthSkipReconnectVisible(false);
+              return false;
+            }
+          }
         }
       }
 
+      if (epoch !== _reconnectQueueEpoch) {
+        setAuthSkipReconnectVisible(false);
+        return false;
+      }
       if (!hasRestoredMatchUi() && spectator) {
-        if (await reconnectToSpectator(spectator, opts)) return true;
+        if (await reconnectToSpectator(spectator, opts)) {
+          setAuthSkipReconnectVisible(false);
+          return true;
+        }
       }
 
       if (!hasRestoredMatchUi() && canRanked) {
         try {
           const res = await accountGet('active_game');
+          if (epoch !== _reconnectQueueEpoch) {
+            setAuthSkipReconnectVisible(false);
+            return false;
+          }
           const active = res?.active;
           if (active?.room_id && active?.player_token) {
             rankedEmptyConfirmed = false;
-            const matchPrimary = typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY;
             if (await reconnectToGame({
               roomId: active.room_id,
               token: active.player_token,
@@ -4863,30 +4938,50 @@ async function runReconnectQueue() {
               resume: true,
               signal: attemptCtrl.signal,
             })) {
+              setAuthSkipReconnectVisible(false);
               return true;
             }
-            // Dead Hostinger drain room still listed as active_game — drop it.
-            if (G._reconnectLastFail === 'gone') {
-              try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+            rankedFailStreak += 1;
+            const dropRanked = G._reconnectLastFail === 'gone'
+              || G._reconnectLastFail === 'soft'
+              || G._reconnectLastFail === 'auth'
+              || (matchPrimary && rankedFailStreak >= 2)
+              || (!matchPrimary && rankedFailStreak >= 5)
+              || attempt >= maxAttempts;
+            // Dead Hostinger drain room / unreachable VPS copy still listed as active_game.
+            if (dropRanked) {
+              await dropRankedActiveGameBestEffort();
               clearActiveGameSession();
               rankedEmptyConfirmed = true;
-              if (!readSpectatorSession()) return false;
+              if (!readSpectatorSession()) {
+                setAuthSkipReconnectVisible(false);
+                return false;
+              }
             }
           } else {
             rankedEmptyConfirmed = true;
-            if (!readActiveGameSession() && !readSpectatorSession()) return false;
+            rankedFailStreak = 0;
+            if (!readActiveGameSession() && !readSpectatorSession()) {
+              setAuthSkipReconnectVisible(false);
+              return false;
+            }
             // Local token rejected and no ranked row — stop. Soft/transient keep retrying.
             if (saved && G._reconnectLastFail === 'auth') {
               clearActiveGameSession();
+              setAuthSkipReconnectVisible(false);
               return false;
             }
           }
         } catch (e) {
           rankedEmptyConfirmed = false;
           if (!readActiveGameSession() && !readSpectatorSession()) {
-            if (typeof isTransientAccountError === 'function' && isTransientAccountError(e)) {
-              // Keep retrying ranked lookup under overload.
+            if (typeof isTransientAccountError === 'function' && isTransientAccountError(e)
+                && attempt < maxAttempts) {
+              // Keep retrying ranked lookup under overload (until cap).
             } else {
+              // Give up — including match-primary when account API itself is wedged.
+              await dropRankedActiveGameBestEffort();
+              setAuthSkipReconnectVisible(false);
               return false;
             }
           }
@@ -4896,11 +4991,24 @@ async function runReconnectQueue() {
       clearTimeout(attemptTimer);
     }
 
-    if (hasRestoredMatchUi()) return true;
+    if (epoch !== _reconnectQueueEpoch) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
+    if (hasRestoredMatchUi()) {
+      setAuthSkipReconnectVisible(false);
+      return true;
+    }
 
     const stillSession = !!(readActiveGameSession() || readSpectatorSession());
-    if (!stillSession && rankedEmptyConfirmed) return false;
-    if (!stillSession && !canRanked) return false;
+    if (!stillSession && rankedEmptyConfirmed) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
+    if (!stillSession && !canRanked) {
+      setAuthSkipReconnectVisible(false);
+      return false;
+    }
 
     await sleep(reconnectBackoffMs(attempt));
   }
@@ -13806,6 +13914,9 @@ async function bootApp() {
   on('btn-hub-options', 'click', openOptionsScreen);
   on('btn-options-back', 'click', () => enterHub(A.profile));
   on('btn-leave-active-game', 'click', leaveActiveGame);
+  on('btn-auth-skip-reconnect', 'click', () => {
+    void abandonDeadMatchSession({ silent: false });
+  });
   on('btn-reset-account', 'click', resetAccount);
   on('btn-hub-unranked', 'click', openUnrankedLobby);
   on('btn-hub-replay', 'click', openDebugReplayScreen);
@@ -26709,6 +26820,8 @@ function isRoomGoneError(errOrMsg) {
  */
 async function abandonDeadMatchSession(opts = {}) {
   const silent = !!opts.silent;
+  cancelReconnectQueue();
+  setAuthSkipReconnectVisible(false);
   try { if (typeof closeApiErrorPopup === 'function') closeApiErrorPopup(); } catch (e) { /* ignore */ }
   try { stopPoll(); } catch (e) { /* ignore */ }
   clearActiveGameSession();
@@ -26722,17 +26835,28 @@ async function abandonDeadMatchSession(opts = {}) {
   G.lastSeq = 0;
   G.isCPU = false;
   G.rematchWaiting = false;
-  if (getAuthToken()) {
-    try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
-  }
+  await dropRankedActiveGameBestEffort();
   G = freshGameGlobals();
+  const authEl = el('auth-status');
+  if (authEl) authEl.setAttribute('data-auth-boot', 'done');
+  if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
   if (A.profile) enterHub(A.profile);
-  else showScr('lobby');
+  else if (getAuthToken()) {
+    // Signed in but profile not ready — stay on title with a clear status, not reconnect spam.
+    if (authEl) {
+      authEl.removeAttribute('data-i18n');
+      authEl.textContent = t('auth.signingIn') || 'Signing in…';
+    }
+    showScr('auth');
+  } else {
+    showGuestAuth(null, 'auth.guestPrompt');
+  }
   if (!silent) {
     toast(t('toast.leftDeadMatch') || 'That match no longer exists — returned to the menu.', 3200);
   }
 }
 window.abandonDeadMatchSession = abandonDeadMatchSession;
+window.cancelReconnectQueue = cancelReconnectQueue;
 
 function resetLobby(){
   endGameSession();

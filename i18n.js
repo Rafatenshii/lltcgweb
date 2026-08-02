@@ -7430,6 +7430,8 @@
     loc.options.stuck.title = loc.options.stuckTitle;
     loc.options.stuck.lead = loc.options.stuckLead;
     loc.options.leaveActive = loc.options.leaveActive || 'Leave active match';
+    loc.auth = loc.auth || {};
+    loc.auth.skipReconnect = loc.auth.skipReconnect || 'Leave match & continue';
     loc.options.reset = loc.options.reset || {};
     loc.options.reset.title = loc.options.resetTitle;
     loc.options.reset.lead = loc.options.resetLead;
@@ -7467,6 +7469,9 @@
   if (STRINGS.th) mergeLocaleAliases(STRINGS.th);
   if (STRINGS.ja && STRINGS.ja.options) {
     STRINGS.ja.options.leaveActive = STRINGS.ja.options.leaveActive || '進行中の対戦を退出';
+  }
+  if (STRINGS.ja && STRINGS.ja.auth) {
+    STRINGS.ja.auth.skipReconnect = STRINGS.ja.auth.skipReconnect || '対戦を退出して続ける';
   }
 
   function getLocale() {
