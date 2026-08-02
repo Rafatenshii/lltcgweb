@@ -15146,14 +15146,13 @@ function deckPayloadFromChoice(deckSel) {
     if (!password) throw new Error('Invalid experiment deck password');
     const cached = A.experimentDeckCache?.[password];
     if (cached?.main_deck?.length) {
-      return {
-        ...experimentInlineDeckPayload(
-          cached.main_deck,
-          cached.energy_deck,
-          cached.name || 'Deck Experiment',
-        ),
-        experiment_password: password,
-      };
+      // Do not send experiment_password with inline lists: older match servers
+      // resolve password files first and miss Hostinger-only experiment decks.
+      return experimentInlineDeckPayload(
+        cached.main_deck,
+        cached.energy_deck,
+        cached.name || 'Deck Experiment',
+      );
     }
     // Fallback when cache is cold (Hostinger-only match path).
     return {
