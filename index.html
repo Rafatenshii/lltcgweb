@@ -5539,6 +5539,7 @@ const CARD_LIST_PACK_ORDER = [
   'PRカード',
 ];
 
+/** JP catalog booster_pack → English product name (card list + deck-log obtain hints). */
 const CARD_LIST_PACK_NAME_EN = {
   'スタートデッキ ラブライブ！': "Start Deck — μ's",
   'スタートデッキ ラブライブ！サンシャイン!!': 'Start Deck — Sunshine!!',
@@ -5547,6 +5548,18 @@ const CARD_LIST_PACK_NAME_EN = {
   'スタートデッキ ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Start Deck — Hasunosora',
   'スタートデッキ ラブライブ！スーパースター!! cheer': 'Start Deck — Superstar!! cheer',
   'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Collection Clear Pocket — Hasunosora',
+  'ブースターパック vol.1': 'Booster Pack vol.1',
+  'ブースターパック NEXT STEP': 'Booster Pack NEXT STEP',
+  'ブースターパック　夏、はじまる。': 'Booster Pack: Summer, Beginning',
+  'ブースターパック SAPPHIRE MOON': 'Booster Pack SAPPHIRE MOON',
+  'ブースターパック Royal Holiday': 'Booster Pack Royal Holiday',
+  'ブースターパック Anniversary 2026': 'Booster Pack Anniversary 2026',
+  'プレミアムブースター ラブライブ！': "Premium Booster μ's",
+  'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会': 'Premium Booster Nijigasaki',
+  'プレミアムブースター ラブライブ！サンシャイン!!': 'Premium Booster Sunshine!!',
+  'プレミアムブースター ラブライブ！スーパースター!!': 'Premium Booster Superstar!!',
+  'プレミアムブースター ラブライブ！スーパースター!! DUO': 'Premium Booster Superstar!! DUO',
+  'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ': 'Premium Booster Hasunosora',
   'PRカード': 'PR Cards',
 };
 
@@ -5572,19 +5585,24 @@ function uniqueOwnedCatalogCount() {
   return n;
 }
 
+/**
+ * Localized product name for a catalog booster_pack string.
+ * ja → Japanese labels; other UI locales use English product names (same as card names).
+ */
 function cardListPackDisplayName(pack) {
   const p = pack || '';
   if (!p) return t('cardList.other') || 'Other';
-  const box = (A.boxes || []).find(b => b.filter === p);
   const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
-  if (box) {
-    if (loc === 'ja') return box.name_jp || box.name_en || p;
-    return box.name_en || box.name_jp || p;
+  const useJp = loc === 'ja';
+  const box = (A.boxes || []).find(b => b.filter === p);
+  if (useJp) {
+    return (box && (box.name_jp || box.name_en)) || p;
   }
-  if (loc === 'ja') return p;
+  if (box?.name_en) return box.name_en;
   if (CARD_LIST_PACK_NAME_EN[p]) return CARD_LIST_PACK_NAME_EN[p];
   if (p === 'PRカード') return t('cardList.prCards') || 'PR Cards';
-  return p;
+  // Last resort: keep JP catalog key rather than inventing a translation.
+  return box?.name_jp || p;
 }
 
 function cardListPackSortKey(pack) {
