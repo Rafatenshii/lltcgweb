@@ -28567,21 +28567,31 @@ function applyClientLiveHeartReductions(required, liveCard) {
 }
 
 /** Effective Live requirements for UI (card reductions + μ's Dreamin-style Success aura). */
+function liveCardPrintedScoreClient(liveCard) {
+  if (liveCard?._printed_score != null) return Number(liveCard._printed_score);
+  const no = liveCard?.card_no;
+  if (no && G.allCards?.[no] && G.allCards[no].score != null) {
+    return Number(G.allCards[no].score);
+  }
+  return Number(liveCard?.score || 0);
+}
+
 function effectiveLiveRequiredHearts(liveCard, state, pid) {
   let req = (liveCard?.required_hearts || liveCard?.hearts || []).map(h => ({
     color: h.color || 'any',
     count: Number(h.count || 1),
   }));
   const p = state?.players?.[pid];
+  const printedScore = liveCardPrintedScoreClient(liveCard);
   if (p && (liveCard?.card_type === 'ライブ' || liveCard?.card_type_en === 'Live')
       && (liveCard?.group || '') === "μ's"
-      && Number(liveCard?.score || 0) >= 5) {
+      && printedScore >= 5) {
     let reduceAmt = 0;
     for (const sl of p.success_lives || []) {
       for (const ab of sl.abilities || []) {
         if ((ab.trigger || '') !== 'continuous') continue;
         if ((ab.type || '') !== 'reduce_hearts_mus_live_min_score_success') continue;
-        if (Number(liveCard.score || 0) < Number(ab.min_score ?? 5)) continue;
+        if (printedScore < Number(ab.min_score ?? 5)) continue;
         reduceAmt = Math.max(reduceAmt, Number(ab.reduce ?? 2));
       }
     }

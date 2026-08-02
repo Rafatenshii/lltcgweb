@@ -165,4 +165,57 @@ final class DreaminHeartbeatGrayHeartReductionTest extends TestCase
         [$ok] = \checkHearts($owned, $required);
         $this->assertTrue($ok, '6P+3Pi+4Y must clear HEARTBEAT at 2/2/2/5');
     }
+
+    /** Issue #84: Dreamin uses printed score (元々のスコア), not buffed score. */
+    public function testDreaminIgnoresBuffedScoreBelowPrintedFive(): void
+    {
+        $low = [
+            'instance_id' => 'low1',
+            'card_no' => 'PL!-LOW-SCORE',
+            'name_en' => 'Low Score Live',
+            'card_type' => 'ライブ',
+            'group' => "μ's",
+            'score' => 6, // buffed in zone
+            '_printed_score' => 3,
+            'required_hearts' => [
+                ['color' => 'pink', 'count' => 1],
+                ['color' => 'gray', 'count' => 4],
+            ],
+            'hearts' => [
+                ['color' => 'pink', 'count' => 1],
+                ['color' => 'gray', 'count' => 4],
+            ],
+        ];
+        $state = [
+            'players' => [
+                'p1' => [
+                    'success_lives' => [$this->dreaminCard()],
+                    'live_zone' => [$low],
+                    'stage' => ['left' => null, 'center' => null, 'right' => null],
+                ],
+            ],
+        ];
+        $final = \liveHeartRequirementsForCheck($state, 'p1', $low);
+        $counts = $this->counts($final);
+        $this->assertSame(4, $counts['any'] ?? 0, 'printed score 3 must not get Dreamin −2');
+    }
+
+    public function testDreaminAppliesWhenPrintedScoreAtLeastFiveEvenIfDisplayLower(): void
+    {
+        $hb = $this->heartbeatCard();
+        $hb['score'] = 3;
+        $hb['_printed_score'] = 6;
+        $state = [
+            'players' => [
+                'p1' => [
+                    'success_lives' => [$this->dreaminCard()],
+                    'live_zone' => [$hb],
+                    'stage' => ['left' => null, 'center' => null, 'right' => null],
+                ],
+            ],
+        ];
+        $final = \liveHeartRequirementsForCheck($state, 'p1', $hb);
+        $counts = $this->counts($final);
+        $this->assertSame(6, $counts['any'] ?? 0, '8 gray −2 Dreamin when printed ≥5');
+    }
 }

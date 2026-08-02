@@ -394,6 +394,21 @@ function liveCardScoreForJudge(array $card): int {
     return intval($card['score'] ?? 0) + intval($card['live_score_bonus'] ?? 0);
 }
 
+/** Printed Live score (元々のスコア) — ignores Live Start / judge bumps on `score`. */
+function liveCardPrintedScore(array $card): int {
+    if (isset($card['_printed_score'])) {
+        return intval($card['_printed_score']);
+    }
+    $no = $card['card_no'] ?? '';
+    if ($no !== '') {
+        $base = tcgCardsCatalogMap()[$no] ?? null;
+        if ($base !== null && array_key_exists('score', $base)) {
+            return intval($base['score'] ?? 0);
+        }
+    }
+    return intval($card['score'] ?? 0);
+}
+
 function sumLiveZoneCardScores(array $zone): int {
     $sum = 0;
     foreach ($zone as $c) {
@@ -1527,6 +1542,9 @@ function bumpLiveCardScore(array &$state, string $pid, string $instanceId, int $
         if ($lc && ($lc['instance_id'] ?? '') === $instanceId) {
             // Hydrate printed score before bumping — unset score must not become 0+N.
             mergeCardCatalogFields($lc);
+            if (!isset($lc['_printed_score'])) {
+                $lc['_printed_score'] = liveCardPrintedScore($lc);
+            }
             $lc['score'] = intval($lc['score'] ?? 0) + $amount;
             unset($lc);
             return true;

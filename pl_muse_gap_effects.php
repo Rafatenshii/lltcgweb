@@ -173,7 +173,9 @@ function plMuseGapApplySuccessLivePassiveReductions(array $state, string $pid, a
     $required = $liveCard['required_hearts'] ?? $liveCard['hearts'] ?? [];
     if (($liveCard['card_type'] ?? '') !== 'ライブ') return $required;
     if (($liveCard['group'] ?? '') !== "μ's") return $required;
-    if (intval($liveCard['score'] ?? 0) < 5) return $required;
+    // Dreamin' Go! Go!!: 元々のスコア (printed), not buffed Live-zone score.
+    $printedScore = liveCardPrintedScore($liveCard);
+    if ($printedScore < 5) return $required;
 
     $p = $state['players'][$pid] ?? [];
     $reduceAmt = 0;
@@ -183,7 +185,7 @@ function plMuseGapApplySuccessLivePassiveReductions(array $state, string $pid, a
         foreach ($sl['abilities'] ?? [] as $ab) {
             if (($ab['trigger'] ?? '') !== 'continuous') continue;
             if (($ab['type'] ?? '') !== 'reduce_hearts_mus_live_min_score_success') continue;
-            if (intval($liveCard['score'] ?? 0) < intval($ab['min_score'] ?? 5)) continue;
+            if ($printedScore < intval($ab['min_score'] ?? 5)) continue;
             // Does not stack: multiple Dreamin' Go! Go!! copies use max, not sum.
             $reduceAmt = max($reduceAmt, intval($ab['reduce'] ?? 2));
             $heartColor = (string)($ab['heart_color'] ?? 'gray');
@@ -1460,7 +1462,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             throw new Exception('That stacked Member does not match this effect');
         }
         $p['stage'][$srcSlot]['stacked_members'] = $rest;
-        $played['active'] = true;
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $p['stage'][$targetSlot] = $played;
         unset($state['pending_prompt']);
