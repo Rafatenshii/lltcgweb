@@ -137,6 +137,14 @@
       return { API: origin + '/api.php', ACCOUNT_API: origin + '/account.php', origin: 'forced' };
     }
     const locked = global.G && global.G.apiOrigin;
+
+    // Match-primary: create/join/casual always hit VPS. A leftover hostinger lock
+    // (e.g. ranked reconnect) must not route create_room to Hostinger — writes are
+    // disabled there and CPU / How to Play both fail with 503.
+    if (global.TCG_MATCH_API_PRIMARY && action && MATCHMAKE_GAME[action]) {
+      return overflowUrls();
+    }
+
     if (locked === 'overflow') return overflowUrls();
     if (locked === 'hostinger') return HOSTINGER_URLS;
 
@@ -557,6 +565,22 @@
       }
       if (lastErr) {
         if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(lastErr);
+        const matchWritesDisabled = !!(lastErr && (
+          lastErr.code === 'match_writes_disabled'
+          || /match writes disabled/i.test(String(lastErr.message || ''))
+        ));
+        // Stale hostinger lock + disabled match writes: clear lock and create on VPS.
+        if (matchWritesDisabled && MATCHMAKE_GAME[action] && global.TCG_OVERFLOW_ENABLED) {
+          if (typeof global.tcgClearApiOriginLock === 'function') global.tcgClearApiOriginLock();
+          if (!(await probeOverflowAlive())) {
+            global.reportApiError(lastErr, { source: 'apiPost:' + action, silent: !!opts.silent });
+            throw lastErr;
+          }
+          global._tcgOverflow.matchmakeFailovers += 1;
+          const d = await apiPostOnce(overflowUrls(), action, body, opts);
+          global.tcgLockApiOrigin('overflow');
+          return d;
+        }
         global.reportApiError(lastErr, { source: 'apiPost:' + action, silent: !!opts.silent });
         if (ctx === 'ingame' || (global.G && global.G.apiOrigin === 'hostinger')) throw lastErr;
         if (OVERFLOW_BLOCKED_GAME[action] || OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;

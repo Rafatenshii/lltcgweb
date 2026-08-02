@@ -2158,11 +2158,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=20"></script>
+<script src="client/js/api-client.js?v=21"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=26"></script>
+<script src="client/js/game-sync.js?v=27"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -11503,6 +11503,8 @@ async function enterRankedMatch(st) {
   G.token = st.player_token;
   G.playerId = st.player_id;
   G.isCPU = false;
+  // Ranked rooms live on Hostinger — lock before poll/actions (match-primary otherwise uses VPS).
+  if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
   showScr('game');
   startPoll();
 }
@@ -15665,6 +15667,8 @@ async function startSoloRematch(rematch) {
   const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
+  if (typeof stopPoll === 'function') stopPoll();
+  if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
   const r1 = await apiPost('create_room', {
     name,
     game_mode: currentGameMode(),
@@ -15753,6 +15757,8 @@ async function doCreate() {
   const timerOpts = lobbyPhaseTimerOpts();
   setErr('');
   try {
+    if (typeof stopPoll === 'function') stopPoll();
+    if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
     await ensureLobbyExperimentDeckReady();
     const r = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
     G.roomId=r.room_id; G.token=r.player_token; G.playerId=r.player_id; G.isCPU=false;
@@ -15795,6 +15801,9 @@ async function doSolo() {
   const diff = setCpuDifficulty(G.cpuDifficulty || el('sel-cpu-diff')?.value || 'easy');
   setErr('');
   try {
+    // Drop stale poll + hostinger lock from ranked/reconnect so create hits VPS.
+    if (typeof stopPoll === 'function') stopPoll();
+    if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
     await ensureLobbyExperimentDeckReady();
     const r1 = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
     G.roomId=r1.room_id; G.token=r1.player_token; G.playerId='p1'; G.isCPU=true;

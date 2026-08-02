@@ -348,6 +348,10 @@
   global.beginGameSync = async function beginGameSync() {
     global.TCG_SYNC_USE_PHP_PROXY = false;
     global.TCG_SYNC_STREAM_MODE = 'vps';
+    if (!G.roomId || !G.token) {
+      TCG_DEBUG.warn('sync', 'beginGameSync skipped — missing room/token');
+      return;
+    }
     if (!G.syncTicket) {
       try {
         const r = await apiPost('sync_ticket', { room_id: G.roomId, token: G.token }, { silent: true });
