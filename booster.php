@@ -958,7 +958,7 @@ function tcgRecordDailyOpen(string $discordId): void {
     $today = tcgTodayJst();
     $allow = tcgDailyOpenAllowance($discordId);
     if ($allow['remaining'] <= 0) {
-        throw new Exception('No booster packs remaining today');
+        throw new Exception('No booster packs remaining today', 400);
     }
     $opened = $allow['opened_today'] + 1;
     $markFirstDone = ($allow['first_day_bonus'] && $opened >= $allow['limit']) ? 1 : 0;
@@ -983,7 +983,7 @@ function tcgRecordDailyOpen(string $discordId): void {
 function tcgRollBoosterPack(string $discordId, string $boxId, array $cardsData): array {
     $box = tcgBoosterBoxById($boxId);
     if (!$box) {
-        throw new Exception('Unknown booster box');
+        throw new Exception('Unknown booster box', 400);
     }
     $pools = tcgBuildBoxPools($cardsData, $box);
     $progress = tcgGetBoxProgress($discordId, $boxId);
@@ -1061,7 +1061,7 @@ function tcgFormatBoosterOpenCards(array $cardNos, array $pullMeta, array $cardM
 function tcgOpenBoosterPack(string $discordId, string $boxId, array $cardsData, string $payment = 'daily'): array {
     $box = tcgBoosterBoxById($boxId);
     if (!$box) {
-        throw new Exception('Unknown booster box');
+        throw new Exception('Unknown booster box', 400);
     }
     $cardMap = tcgBuildCardMap($cardsData);
     $payment = trim(strtolower($payment));
@@ -1081,11 +1081,13 @@ function tcgOpenBoosterPack(string $discordId, string $boxId, array $cardsData, 
         tcgDeductStarGems($discordId, TCG_STAR_GEMS_PACK_COST);
         $gemsSpent = TCG_STAR_GEMS_PACK_COST;
     } else {
-        throw new Exception('Invalid booster payment mode');
+        throw new Exception('Invalid booster payment mode', 400);
     }
 
     $roll = tcgRollBoosterPack($discordId, $boxId, $cardsData);
-    $gemResult = tcgApplyBoosterPullWithGems($discordId, $roll['card_nos'], $cardMap);
+    $gemResult = tcgDbRetry(function () use ($discordId, $roll, $cardMap) {
+        return tcgApplyBoosterPullWithGems($discordId, $roll['card_nos'], $cardMap);
+    });
 
     return [
         'box' => $roll['box'],
@@ -1108,7 +1110,7 @@ function tcgOpenBoosterPack(string $discordId, string $boxId, array $cardsData, 
 function tcgOpenBoosterBoxWithGems(string $discordId, string $boxId, array $cardsData): array {
     $box = tcgBoosterBoxById($boxId);
     if (!$box) {
-        throw new Exception('Unknown booster box');
+        throw new Exception('Unknown booster box', 400);
     }
     if (($box['kind'] ?? '') === 'pr') {
         throw new Exception('PR Card Pack cannot be opened as a full booster box');
@@ -1281,35 +1283,38 @@ function tcgWriteDeckPreset(string $discordId, int $slot, string $name, array $m
         define('TCG_MAX_DECK_PRESETS', 10);
     }
     if ($slot < 1 || $slot > TCG_MAX_DECK_PRESETS) {
-        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS);
+        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS, 400);
     }
-    $db = tcgDb();
-    $now = time();
-    if ($equip === null) {
-        $stmt = $db->prepare('SELECT equipped FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
-        $stmt->execute([$discordId, $slot]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $equip = $row ? (intval($row['equipped']) === 1) : ($slot === 1);
-    }
-    if ($equip) {
-        $db->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ?')->execute([$discordId]);
-        tcgClearRankedStarterEquip($discordId);
-    }
-    $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, equipped, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(discord_id, slot) DO UPDATE SET
-            name = excluded.name,
-            main_deck = excluded.main_deck,
-            energy_deck = excluded.energy_deck,
-            equipped = excluded.equipped,
-            updated_at = excluded.updated_at')
-        ->execute([
-            $discordId, $slot, $name,
-            json_encode(array_values($main)),
-            json_encode(array_values($energy)),
-            $equip ? 1 : 0,
-            $now,
-        ]);
+    tcgDbRetry(function () use ($discordId, $slot, $name, $main, $energy, $equip) {
+        $db = tcgDb();
+        $now = time();
+        $equipFlag = $equip;
+        if ($equipFlag === null) {
+            $stmt = $db->prepare('SELECT equipped FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+            $stmt->execute([$discordId, $slot]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $equipFlag = $row ? (intval($row['equipped']) === 1) : ($slot === 1);
+        }
+        if ($equipFlag) {
+            $db->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ?')->execute([$discordId]);
+            tcgClearRankedStarterEquip($discordId);
+        }
+        $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, equipped, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(discord_id, slot) DO UPDATE SET
+                name = excluded.name,
+                main_deck = excluded.main_deck,
+                energy_deck = excluded.energy_deck,
+                equipped = excluded.equipped,
+                updated_at = excluded.updated_at')
+            ->execute([
+                $discordId, $slot, $name,
+                json_encode(array_values($main)),
+                json_encode(array_values($energy)),
+                $equipFlag ? 1 : 0,
+                $now,
+            ]);
+    });
 }
 
 function tcgSaveStarterPreset(string $discordId, string $starterKey, array $cardsData, int $slot = 1, bool $equip = true): void {

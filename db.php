@@ -758,23 +758,27 @@ function tcgDeductStarGems(string $discordId, int $amount): int {
     if ($amount <= 0) {
         return tcgGetStarGems($discordId);
     }
-    $db = tcgDb();
-    $db->beginTransaction();
-    try {
-        $stmt = $db->prepare('SELECT star_gems FROM tcg_users WHERE discord_id = ?');
-        $stmt->execute([$discordId]);
-        $have = max(0, intval($stmt->fetchColumn() ?: 0));
-        if ($have < $amount) {
-            throw new Exception('Not enough Star Gems');
+    return tcgDbRetry(function () use ($discordId, $amount) {
+        $db = tcgDb();
+        $db->beginTransaction();
+        try {
+            $stmt = $db->prepare('SELECT star_gems FROM tcg_users WHERE discord_id = ?');
+            $stmt->execute([$discordId]);
+            $have = max(0, intval($stmt->fetchColumn() ?: 0));
+            if ($have < $amount) {
+                throw new Exception('Not enough Star Gems', 400);
+            }
+            $db->prepare('UPDATE tcg_users SET star_gems = star_gems - ?, updated_at = ? WHERE discord_id = ?')
+                ->execute([$amount, time(), $discordId]);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
         }
-        $db->prepare('UPDATE tcg_users SET star_gems = star_gems - ?, updated_at = ? WHERE discord_id = ?')
-            ->execute([$amount, time(), $discordId]);
-        $db->commit();
-    } catch (Throwable $e) {
-        $db->rollBack();
-        throw $e;
-    }
-    return tcgGetStarGems($discordId);
+        return tcgGetStarGems($discordId);
+    });
 }
 
 /** Remove up to $amount Star Gems without going below 0 (no exception if balance is low). */

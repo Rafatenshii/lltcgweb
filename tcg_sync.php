@@ -127,8 +127,8 @@ function tcgSyncNotify(string $roomId, int $seq, ?string $phase = null): void {
             'X-LLR-Site-Internal-Token: ' . tcgSyncInternalToken(),
         ],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 2,
-        CURLOPT_CONNECTTIMEOUT => 2,
+        CURLOPT_TIMEOUT_MS        => 500,
+        CURLOPT_CONNECTTIMEOUT_MS => 500,
     ]);
     curl_exec($ch);
     curl_close($ch);

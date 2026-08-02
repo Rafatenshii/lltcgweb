@@ -25,9 +25,67 @@ function tcgIsProduction(): bool {
     return true;
 }
 
+/** True when the exception is a room flock / SQLite busy that clients may retry. */
+function tcgIsRetryableBusyFault(Throwable $e): bool {
+    $msg = $e->getMessage();
+    if (preg_match('/^(Cannot acquire lock|Lock timeout)/', $msg)) {
+        return true;
+    }
+    if (function_exists('tcgDbIsLockedException') && tcgDbIsLockedException($e)) {
+        return true;
+    }
+    return str_contains($msg, 'database is locked')
+        || str_contains($msg, 'SQLITE_BUSY')
+        || str_contains($msg, 'SQLSTATE[HY000]: General error: 5');
+}
+
+/**
+ * Map exceptions to HTTP status codes.
+ *
+ * Explicit Exception codes in 400–599 are kept. Lock/busy → 503.
+ * Programming/PDO faults → 500. Other Exception → 400 (client/validation).
+ */
+function tcgHttpStatusForThrowable(Throwable $e): int {
+    $code = intval($e->getCode());
+    if ($code >= 400 && $code <= 599) {
+        return $code;
+    }
+    if (tcgIsRetryableBusyFault($e)) {
+        return 503;
+    }
+    if ($e instanceof PDOException || $e instanceof Error) {
+        return 500;
+    }
+    if ($e instanceof Exception) {
+        return 400;
+    }
+    return 500;
+}
+
+function tcgLogServerFault(string $source, Throwable $e, int $code): void {
+    if ($code < 500 && $code !== 503) {
+        return;
+    }
+    if (!function_exists('error_log')) {
+        return;
+    }
+    error_log(sprintf(
+        'tcg [%s] HTTP %d %s: %s in %s:%d',
+        $source,
+        $code,
+        $e::class,
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine()
+    ));
+}
+
 function tcgPublicErrorMessage(Throwable $e, int $httpCode): string {
     if (tcgIsDebugErrors()) {
         return $e->getMessage();
+    }
+    if ($httpCode === 503 && tcgIsRetryableBusyFault($e)) {
+        return 'Server busy';
     }
     if ($httpCode >= 500) {
         return 'Server error';
@@ -40,4 +98,20 @@ function tcgPublicErrorMessage(Throwable $e, int $httpCode): string {
         return $msg;
     }
     return $msg !== '' ? $msg : 'Request failed';
+}
+
+/**
+ * JSON payload for API error responses (game api.php style).
+ *
+ * @return array{error:string,retryable?:bool,code?:string}
+ */
+function tcgPublicErrorPayload(Throwable $e, int $httpCode): array {
+    $payload = ['error' => tcgPublicErrorMessage($e, $httpCode)];
+    if ($httpCode === 503 && tcgIsRetryableBusyFault($e)) {
+        $payload['retryable'] = true;
+        $payload['code'] = preg_match('/^(Cannot acquire lock|Lock timeout)/', $e->getMessage())
+            ? 'lock_timeout'
+            : 'database_busy';
+    }
+    return $payload;
 }

@@ -344,6 +344,13 @@
     if (!d.success && d.error) {
       const err = new Error(d.error);
       err.httpStatus = r.status || 400;
+      if (d.retryable) err.retryable = true;
+      if (d.code) err.code = d.code;
+      throw err;
+    }
+    if (!r.ok) {
+      const err = new Error('Account error (' + r.status + ')');
+      err.httpStatus = r.status || 500;
       throw err;
     }
     global.handleMissionCompletions(d);
@@ -353,26 +360,47 @@
   global.accountPost = async function accountPost(action, body = {}) {
     void global.tcgMaybeRecoverHostinger();
     const primary = global.tcgResolveApiUrls('hub', action);
-    try {
-      const d = await accountPostOnce(primary, action, body);
-      if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
-      return d;
-    } catch (e) {
-      if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
-      if (global.isAuthRejectedError(e)) throw e;
-      if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
-      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
-      if (!global.isTransientAccountError(e)) throw e;
-      if (!(await probeOverflowAlive())) throw e;
-      global._tcgOverflow.hubFailovers += 1;
-      return accountPostOnce(overflowUrls(), action, body);
+    const maxAttempts = 4;
+    let lastErr = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const d = await accountPostOnce(primary, action, body);
+        if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
+        return d;
+      } catch (e) {
+        lastErr = e;
+        if (global.isAuthRejectedError(e)) throw e;
+        if (!global.isRetryableApiError(e) || attempt >= maxAttempts - 1) {
+          break;
+        }
+        await sleepMs(150 * (2 ** attempt));
+      }
     }
+    if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(lastErr);
+    if (global.isAuthRejectedError(lastErr)) throw lastErr;
+    if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;
+    if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw lastErr;
+    if (!global.isTransientAccountError(lastErr) && !global.isRetryableApiError(lastErr)) throw lastErr;
+    if (!(await probeOverflowAlive())) throw lastErr;
+    global._tcgOverflow.hubFailovers += 1;
+    return accountPostOnce(overflowUrls(), action, body);
   };
 
-  global.createApiError = function createApiError(message, status) {
+  global.createApiError = function createApiError(message, status, extra = {}) {
     const err = new Error(message || 'Request failed');
     err.httpStatus = Number(status) || 0;
+    if (extra.retryable) err.retryable = true;
+    if (extra.code) err.code = extra.code;
     return err;
+  };
+
+  global.isRetryableApiError = function isRetryableApiError(err) {
+    if (!err) return false;
+    if (err.retryable) return true;
+    const status = Number(err.httpStatus) || 0;
+    if (status === 503) return true;
+    const msg = String(err.message || '');
+    return /Server busy|Lock timeout|Cannot acquire lock|database is locked|SQLITE_BUSY/i.test(msg);
   };
 
   global.parseGameApiResponse = async function parseGameApiResponse(r) {
@@ -385,7 +413,10 @@
       throw global.createApiError(msg, status >= 400 ? status : 500);
     }
     if (d && d.error) {
-      throw global.createApiError(d.error, status >= 400 ? status : 400);
+      throw global.createApiError(d.error, status >= 400 ? status : 400, {
+        retryable: !!d.retryable,
+        code: d.code || '',
+      });
     }
     if (!r.ok) {
       throw global.createApiError(`Request failed (${status})`, status || 500);
@@ -459,7 +490,9 @@
       global.handleMissionCompletions(d);
       return d;
     } catch (e) {
-      global.reportApiError(e, { source: 'apiPost:' + action, silent: !!opts.silent });
+      if (!opts.silent && !opts.deferErrorReport) {
+        global.reportApiError(e, { source: 'apiPost:' + action, silent: !!opts.silent });
+      }
       throw e;
     }
   }
@@ -468,28 +501,48 @@
     void global.tcgMaybeRecoverHostinger();
     const ctx = MATCHMAKE_GAME[action] ? 'matchmake' : (INGAME_GAME[action] ? 'ingame' : 'hub');
     const primary = global.tcgResolveApiUrls(ctx, action);
+    // In-match actions (and busy account writes) auto-retry lock/503 before surfacing.
+    const maxAttempts = (action === 'action' || opts.retryBusy) ? 4 : 1;
+    let lastErr = null;
     try {
-      const d = await apiPostOnce(primary, action, body, opts);
-      if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
-      // Lock room origin when a new match is created/joined.
-      if (MATCHMAKE_GAME[action] && d && (d.room_id || d.ok || d.token || d.player_token)) {
-        global.tcgLockApiOrigin(primary.origin === 'overflow' ? 'overflow' : 'hostinger');
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const d = await apiPostOnce(primary, action, body, {
+            ...opts,
+            deferErrorReport: maxAttempts > 1,
+          });
+          if (primary.origin === 'hostinger') global.tcgNoteHostingerSuccess();
+          if (MATCHMAKE_GAME[action] && d && (d.room_id || d.ok || d.token || d.player_token)) {
+            global.tcgLockApiOrigin(primary.origin === 'overflow' ? 'overflow' : 'hostinger');
+          }
+          return d;
+        } catch (e) {
+          lastErr = e;
+          if (!global.isRetryableApiError(e) || attempt >= maxAttempts - 1) {
+            break;
+          }
+          await sleepMs(150 * (2 ** attempt));
+        }
       }
-      return d;
+      if (lastErr) {
+        if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(lastErr);
+        global.reportApiError(lastErr, { source: 'apiPost:' + action, silent: !!opts.silent });
+        if (ctx === 'ingame' || (global.G && global.G.apiOrigin === 'hostinger')) throw lastErr;
+        if (OVERFLOW_BLOCKED_GAME[action] || OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;
+        if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw lastErr;
+        if (!global.isTransientAccountError(lastErr)
+            && !(lastErr && (lastErr.httpStatus >= 500 || lastErr.httpStatus === 429 || lastErr.httpStatus === 408 || lastErr.httpStatus === 503))) {
+          throw lastErr;
+        }
+        if (!(await probeOverflowAlive())) throw lastErr;
+        global._tcgOverflow.matchmakeFailovers += 1;
+        const d = await apiPostOnce(overflowUrls(), action, body, opts);
+        if (MATCHMAKE_GAME[action]) global.tcgLockApiOrigin('overflow');
+        return d;
+      }
+      throw lastErr || new Error('Request failed');
     } catch (e) {
-      if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
-      // Never migrate an in-progress Hostinger match to VPS.
-      if (ctx === 'ingame' || (global.G && global.G.apiOrigin === 'hostinger')) throw e;
-      if (OVERFLOW_BLOCKED_GAME[action] || OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
-      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
-      if (!global.isTransientAccountError(e) && !(e && (e.httpStatus >= 500 || e.httpStatus === 429 || e.httpStatus === 408))) {
-        throw e;
-      }
-      if (!(await probeOverflowAlive())) throw e;
-      global._tcgOverflow.matchmakeFailovers += 1;
-      const d = await apiPostOnce(overflowUrls(), action, body, opts);
-      if (MATCHMAKE_GAME[action]) global.tcgLockApiOrigin('overflow');
-      return d;
+      throw e;
     }
   };
 

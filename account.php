@@ -97,12 +97,12 @@ try {
             echo json_encode(['success' => false, 'error' => 'Unknown action']);
     }
 } catch (Throwable $e) {
-    $code = intval($e->getCode());
-    if ($code < 400 || $code > 599) {
-        $code = 500;
-    }
+    $code = tcgHttpStatusForThrowable($e);
+    tcgLogServerFault('account.php:' . $action, $e, $code);
+    $payload = tcgPublicErrorPayload($e, $code);
+    $payload['success'] = false;
     http_response_code($code);
-    echo json_encode(['success' => false, 'error' => tcgPublicErrorMessage($e, $code)]);
+    echo json_encode($payload);
 }
 }
 
@@ -348,7 +348,7 @@ function tcgApiOpenBooster(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     if (empty($user['starter_deck'])) {
-        throw new Exception('Choose a starter deck first');
+        throw new Exception('Choose a starter deck first', 400);
     }
     $boxId = trim((string)($body['box_id'] ?? ''));
     $payment = trim(strtolower((string)($body['payment'] ?? 'daily')));
@@ -526,11 +526,11 @@ function tcgApiDeckResetStarter(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     if (empty($user['starter_deck'])) {
-        throw new Exception('No starter deck on this account');
+        throw new Exception('No starter deck on this account', 400);
     }
     $slot = intval($body['slot'] ?? 1);
     if ($slot < 1 || $slot > TCG_MAX_DECK_PRESETS) {
-        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS);
+        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS, 400);
     }
     $cards = tcgLoadCardsData();
     $lists = tcgGetStarterDeckLists($user['starter_deck'], $cards);
@@ -538,7 +538,7 @@ function tcgApiDeckResetStarter(array $body): array {
     $owned = tcgGetCollectionMap($uid);
     $validation = tcgValidateDeckLists($lists['main_deck'], $lists['energy_deck'], $cardMap, $owned);
     if (!$validation['valid']) {
-        throw new Exception(implode('; ', $validation['errors']));
+        throw new Exception(implode('; ', $validation['errors']), 400);
     }
     tcgWriteDeckPreset($uid, $slot, $lists['name'], $lists['main_deck'], $lists['energy_deck'], null);
     return [
@@ -602,7 +602,7 @@ function tcgApiRankedJoin(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     if (empty($user['starter_deck'])) {
-        throw new Exception('Choose a starter deck first');
+        throw new Exception('Choose a starter deck first', 400);
     }
     $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $starterKey = trim((string)($body['starter'] ?? ''));
@@ -615,30 +615,30 @@ function tcgApiRankedJoin(array $body): array {
             $starterKey = trim((string)($user['starter_deck'] ?? ''));
         }
         if ($starterKey === '' || !in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
-            throw new Exception('Starter decks only mode requires an owned starter deck');
+            throw new Exception('Starter decks only mode requires an owned starter deck', 400);
         }
         tcgSetRankedStarterEquip($uid, $starterKey);
     } elseif ($starterKey !== '') {
         // Optional: equip a specific owned starter before standard queue.
         if (!in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
-            throw new Exception('You do not own that starter deck');
+            throw new Exception('You do not own that starter deck', 400);
         }
         tcgSetRankedStarterEquip($uid, $starterKey);
     }
 
     $equipped = tcgGetEquippedDeck($uid);
     if (!$equipped) {
-        throw new Exception('Equip a deck preset for ranked play');
+        throw new Exception('Equip a deck preset for ranked play', 400);
     }
     if ($gameMode === TCG_GAME_MODE_STARTERS && (($equipped['source'] ?? '') !== 'starter')) {
-        throw new Exception('Starter decks only mode requires a starter deck');
+        throw new Exception('Starter decks only mode requires a starter deck', 400);
     }
     $main = json_decode($equipped['main_deck'], true) ?: [];
     $energy = json_decode($equipped['energy_deck'], true) ?: [];
     $cards = tcgLoadCardsData();
     $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), tcgGetCollectionMap($uid));
     if (!$validation['valid']) {
-        throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']));
+        throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
     }
     if (tcgGetActiveRankedGame($uid)) {
         tcgAbandonActiveRankedGame($uid);

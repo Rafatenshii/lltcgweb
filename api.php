@@ -124,15 +124,11 @@ try {
             http_response_code(404);
             echo json_encode(['error' => 'Unknown action']);
     }
-} catch (Exception $e) {
-    $msg = $e->getMessage();
-    $serverFault = preg_match('/^(Cannot acquire lock|Lock timeout)/', $msg);
-    $code = $serverFault ? 500 : 400;
-    http_response_code($code);
-    echo json_encode(['error' => tcgPublicErrorMessage($e, $code)]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => tcgPublicErrorMessage($e, 500)]);
+    $code = tcgHttpStatusForThrowable($e);
+    tcgLogServerFault('api.php:' . $action, $e, $code);
+    http_response_code($code);
+    echo json_encode(tcgPublicErrorPayload($e, $code));
 }
 
 // ─────────────────────────────────────────────
@@ -636,6 +632,9 @@ function handleAction(array $body): array {
         throw new Exception('Spectators cannot perform actions');
     }
 
+    // Live presentation / prompt resolves can hold the lock longer; give the waiter more time.
+    $lockSec = in_array($type, ['live_show_ack', 'resolve_prompt'], true) ? 12.0 : null;
+
     return withLock($roomId, function() use ($roomId, $token, $type, $data, $body) {
         $state = loadGame($roomId);
         if (!$state) throw new Exception('Room not found');
@@ -747,7 +746,7 @@ function handleAction(array $body): array {
             }
         }
         return $out;
-    });
+    }, $lockSec);
 }
 
 /**
@@ -4630,9 +4629,20 @@ function loadGame(string $roomId): ?array {
 
 function saveGame(string $roomId, array $state): void {
     file_put_contents(gameFile($roomId), json_encode($state), LOCK_EX);
-    if (isPvpMatch($state)) {
-        tcgSyncNotify($roomId, intval($state['seq'] ?? 0), isset($state['phase']) ? (string)$state['phase'] : null);
+    if (!isPvpMatch($state)) {
+        return;
     }
+    $seq = intval($state['seq'] ?? 0);
+    $phase = isset($state['phase']) ? (string)$state['phase'] : null;
+    // Defer sync curl until the room flock is released so Live acks don't block peers.
+    if (!empty($GLOBALS['__tcg_sync_defer'])) {
+        if (!isset($GLOBALS['__tcg_sync_pending']) || !is_array($GLOBALS['__tcg_sync_pending'])) {
+            $GLOBALS['__tcg_sync_pending'] = [];
+        }
+        $GLOBALS['__tcg_sync_pending'][$roomId] = ['seq' => $seq, 'phase' => $phase];
+        return;
+    }
+    tcgSyncNotify($roomId, $seq, $phase);
 }
 
 function withLock(string $roomId, callable $fn, ?float $timeoutSec = null): mixed {
@@ -4647,11 +4657,29 @@ function withLock(string $roomId, callable $fn, ?float $timeoutSec = null): mixe
         }
         usleep(50000);
     }
+    $GLOBALS['__tcg_sync_defer'] = intval($GLOBALS['__tcg_sync_defer'] ?? 0) + 1;
     try {
         return $fn();
     } finally {
         flock($lock, LOCK_UN);
         fclose($lock);
+        $GLOBALS['__tcg_sync_defer'] = max(0, intval($GLOBALS['__tcg_sync_defer'] ?? 1) - 1);
+        if (intval($GLOBALS['__tcg_sync_defer'] ?? 0) === 0) {
+            $pending = $GLOBALS['__tcg_sync_pending'] ?? [];
+            $GLOBALS['__tcg_sync_pending'] = [];
+            if (is_array($pending)) {
+                foreach ($pending as $rid => $info) {
+                    if (!is_array($info)) {
+                        continue;
+                    }
+                    tcgSyncNotify(
+                        (string)$rid,
+                        intval($info['seq'] ?? 0),
+                        isset($info['phase']) ? (string)$info['phase'] : null
+                    );
+                }
+            }
+        }
     }
 }
 

@@ -31,7 +31,7 @@ function tcgRateLimitCheck(string $bucket, string $key, int $maxHits, int $windo
         static fn($ts) => is_int($ts) ? $ts >= $cutoff : (is_numeric($ts) && (int)$ts >= $cutoff)
     ));
     if (count($state['hits']) >= $maxHits) {
-        throw new Exception('Rate limit exceeded. Try again shortly.');
+        throw new Exception('Rate limit exceeded. Try again shortly.', 429);
     }
     $state['hits'][] = $now;
     $state['updated'] = $now;

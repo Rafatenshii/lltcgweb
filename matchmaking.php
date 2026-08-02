@@ -37,20 +37,22 @@ function tcgRankRow(string $discordId, string $gameMode = TCG_GAME_MODE_STANDARD
 
 function tcgQueueJoin(string $discordId, string $gameMode = TCG_GAME_MODE_STANDARD): array {
     $gameMode = tcgNormalizeGameMode($gameMode);
-    $rank = tcgRankRow($discordId, $gameMode);
-    $db = tcgDb();
-    $now = time();
-    // One active ranked search at a time across modes.
-    $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ?')->execute([$discordId]);
-    $db->prepare('INSERT INTO tcg_match_queue (discord_id, game_mode, rating, joined_at) VALUES (?, ?, ?, ?)
-        ON CONFLICT(discord_id, game_mode) DO UPDATE SET rating = excluded.rating, joined_at = excluded.joined_at')
-        ->execute([$discordId, $gameMode, intval($rank['rating']), $now]);
-    return [
-        'queued' => true,
-        'rating' => intval($rank['rating']),
-        'joined_at' => $now,
-        'game_mode' => $gameMode,
-    ];
+    return tcgDbRetry(function () use ($discordId, $gameMode) {
+        $rank = tcgRankRow($discordId, $gameMode);
+        $db = tcgDb();
+        $now = time();
+        // One active ranked search at a time across modes.
+        $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id = ?')->execute([$discordId]);
+        $db->prepare('INSERT INTO tcg_match_queue (discord_id, game_mode, rating, joined_at) VALUES (?, ?, ?, ?)
+            ON CONFLICT(discord_id, game_mode) DO UPDATE SET rating = excluded.rating, joined_at = excluded.joined_at')
+            ->execute([$discordId, $gameMode, intval($rank['rating']), $now]);
+        return [
+            'queued' => true,
+            'rating' => intval($rank['rating']),
+            'joined_at' => $now,
+            'game_mode' => $gameMode,
+        ];
+    });
 }
 
 function tcgQueueLeave(string $discordId, ?string $gameMode = null): array {
