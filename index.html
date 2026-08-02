@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=2">
+<link rel="stylesheet" href="client/css/shell-all.css?v=3">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -916,35 +916,37 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <label data-i18n="deck.presetSlot">Preset slot (max 10)</label>
           <div class="deck-slot-row" id="deck-slots"></div>
         </div>
-        <div class="field deck-builder-meta__account-decklog" id="deck-account-decklog-wrap" hidden>
-          <label for="inp-account-decklog" data-i18n="deck.decklogCode">deck log code</label>
-          <div class="experiment-pwd-row">
-            <input type="text" id="inp-account-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
-            <button class="btn-out" id="btn-account-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+        <div class="deck-builder-meta__import-search" id="deck-builder-import-search">
+          <div class="field deck-builder-meta__account-decklog" id="deck-account-decklog-wrap" hidden>
+            <label for="inp-account-decklog" data-i18n="deck.decklogCode">deck log code</label>
+            <div class="experiment-pwd-row">
+              <input type="text" id="inp-account-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
+              <button class="btn-out" id="btn-account-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+            </div>
+            <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a deck log code or view URL — loads into this preset if you own the cards.</p>
           </div>
-          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a deck log code or view URL — loads into this preset if you own the cards.</p>
-        </div>
-        <div class="field deck-builder-meta__experiment" id="deck-experiment-pwd-wrap" hidden>
-          <label for="inp-experiment-load-pwd" data-i18n="deck.deckPassword">Deck password</label>
-          <div class="experiment-pwd-row">
-            <input type="text" id="inp-experiment-load-pwd" placeholder="Enter password to load" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.deckPasswordPlaceholder">
-            <button class="btn-out" id="btn-experiment-load-pwd" type="button" data-i18n="deck.load">Load</button>
+          <div class="field deck-builder-meta__experiment" id="deck-experiment-pwd-wrap" hidden>
+            <label for="inp-experiment-load-pwd" data-i18n="deck.deckPassword">Deck password</label>
+            <div class="experiment-pwd-row">
+              <input type="text" id="inp-experiment-load-pwd" placeholder="Enter password to load" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.deckPasswordPlaceholder">
+              <button class="btn-out" id="btn-experiment-load-pwd" type="button" data-i18n="deck.load">Load</button>
+            </div>
+            <label for="inp-experiment-decklog" data-i18n="deck.decklogCode" style="margin-top:10px">deck log code</label>
+            <div class="experiment-pwd-row">
+              <input type="text" id="inp-experiment-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
+              <button class="btn-out" id="btn-experiment-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+            </div>
+            <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogHint">Paste a deck log code or view URL — imports into this builder and saves an experiment password.</p>
+            <div class="experiment-pwd-active" id="experiment-pwd-active" hidden>
+              <span data-i18n="deck.savedPassword">Saved password:</span>
+              <code id="experiment-pwd-display"></code>
+              <button class="btn-ghost" id="btn-experiment-copy-pwd" type="button" data-i18n="deck.copy">Copy</button>
+            </div>
           </div>
-          <label for="inp-experiment-decklog" data-i18n="deck.decklogCode" style="margin-top:10px">deck log code</label>
-          <div class="experiment-pwd-row">
-            <input type="text" id="inp-experiment-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
-            <button class="btn-out" id="btn-experiment-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+          <div class="field deck-builder-meta__search" id="deck-pool-search-wrap">
+            <label for="inp-deck-card-search" data-i18n="deck.search">Search cards</label>
+            <input type="search" id="inp-deck-card-search" placeholder="Name, ID, or rules text…" maxlength="80" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.searchPlaceholder">
           </div>
-          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogHint">Paste a deck log code or view URL — imports into this builder and saves an experiment password.</p>
-          <div class="experiment-pwd-active" id="experiment-pwd-active" hidden>
-            <span data-i18n="deck.savedPassword">Saved password:</span>
-            <code id="experiment-pwd-display"></code>
-            <button class="btn-ghost" id="btn-experiment-copy-pwd" type="button" data-i18n="deck.copy">Copy</button>
-          </div>
-        </div>
-        <div class="field deck-builder-meta__search" id="deck-pool-search-wrap">
-          <label for="inp-deck-card-search" data-i18n="deck.search">Search cards</label>
-          <input type="search" id="inp-deck-card-search" placeholder="Name, ID, or rules text…" maxlength="80" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.searchPlaceholder">
         </div>
       </div>
       <div class="deck-pool-tools">

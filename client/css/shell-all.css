@@ -6010,8 +6010,17 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   width:min(240px,100%);
   max-width:100%;
 }
+#screen-deck .deck-builder-meta__import-search{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:10px 18px;
+  flex:1 1 min(520px,100%);
+  min-width:min(280px,100%);
+}
 #screen-deck .deck-builder-meta__search{
-  flex:1 1 220px;min-width:200px;
+  flex:1 1 220px;
+  min-width:min(200px,100%);
 }
 #screen-deck .deck-builder-meta__search input{
   font-family:ui-monospace,Consolas,monospace;font-size:12px;letter-spacing:.02em;
@@ -6026,7 +6035,9 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 .experiment-pwd-row .btn-out{
   flex:0 0 auto;width:auto;min-width:0;padding:10px 12px;font-size:12px;white-space:nowrap;
 }
-#screen-deck .deck-builder-meta.deck-experiment-meta{align-items:flex-end}
+#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__import-search{
+  flex:1 1 100%;
+}
 #screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__experiment{
   flex:1 1 min(520px,100%);min-width:min(280px,100%);
 }
@@ -6037,7 +6048,10 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 .experiment-pwd-active code{font-size:12px;letter-spacing:.1em;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.35);color:#bae4ff}
 .experiment-pwd-active .btn-ghost{padding:4px 8px;font-size:11px}
 #inp-lobby-experiment-pwd{font-family:ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}
-#screen-deck .deck-builder-meta__slots,
+#screen-deck .deck-builder-meta__slots{
+  flex:1 1 280px;
+  min-width:min(280px,100%);
+}
 #screen-deck .deck-builder-meta__experiment,
 #screen-deck .deck-builder-meta__account-decklog{
   flex:1 1 280px;
