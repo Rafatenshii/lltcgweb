@@ -44,7 +44,7 @@
       "unrankedPlay": "Unranked Play",
       "unrankedSub": "Rooms, friends, or practice vs CPU",
       "deckExperiment": "Deck Experiment",
-      "deckExperimentSub": "Build with every card — guests only, unranked",
+      "deckExperimentSub": "Build with every card — Free only, unranked",
       "howToPlay": "How to Play",
       "howToPlaySub": "Hands-on beginner lesson with Kanon",
       "officialVideo": "Official 8-min video ↗"
@@ -1210,7 +1210,7 @@
       "unrankedPlay": "カジュアル対戦",
       "unrankedSub": "ルーム作成、フレンド対戦、CPU練習",
       "deckExperiment": "デッキ実験",
-      "deckExperimentSub": "全カードで構築——ゲスト限定、非ランク",
+      "deckExperimentSub": "全カードで構築——Free専用・非ランク",
       "howToPlay": "遊び方",
       "howToPlaySub": "かのんと一緒に体験する初心者レッスン",
       "officialVideo": "公式8分動画 ↗"
@@ -2358,7 +2358,7 @@
       "unrankedPlay": "Juego no clasificado",
       "unrankedSub": "Salas, amistades o práctica contra CPU",
       "deckExperiment": "Experimento de mazo",
-      "deckExperimentSub": "Construye con todas las cartas: solo invitados, no clasificada",
+      "deckExperimentSub": "Construye con todas las cartas: solo Free, no clasificada",
       "howToPlay": "Cómo jugar",
       "howToPlaySub": "Lección práctica para principiantes con Kanon",
       "officialVideo": "Vídeo oficial de 8 min ↗"
@@ -3516,7 +3516,7 @@
       "unrankedPlay": "일반전",
       "unrankedSub": "방 만들기, 친구와 대전, CPU 연습",
       "deckExperiment": "덱 실험",
-      "deckExperimentSub": "모든 카드로 덱 구성 — 게스트 전용, 일반전",
+      "deckExperimentSub": "모든 카드로 덱 구성 — Free 전용, 일반전",
       "howToPlay": "플레이 방법",
       "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
       "officialVideo": "공식 8분 영상 ↗"
@@ -4698,7 +4698,7 @@
       "unrankedPlay": "非排名对战",
       "unrankedSub": "开房、与好友对战，或练习对战 CPU",
       "deckExperiment": "牌组实验",
-      "deckExperimentSub": "用全部卡牌构筑——仅限访客，不计入排名",
+      "deckExperimentSub": "用全部卡牌构筑——仅限 Free，不计入排名",
       "howToPlay": "怎么玩",
       "howToPlaySub": "与香音一起的新手实战教学",
       "officialVideo": "官方8分钟视频 ↗"
@@ -5881,7 +5881,7 @@
       "unrankedPlay": "เล่นอันแรงก์",
       "unrankedSub": "ห้อง เพื่อน หรือฝึกกับ CPU",
       "deckExperiment": "ทดลองเด็ค",
-      "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะแขก อันแรงก์",
+      "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะ Free อันแรงก์",
       "howToPlay": "วิธีเล่น",
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗"

@@ -7028,7 +7028,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
         <button class="llc-menu-item llc-menu-hover" id="btn-auth-deck-experiment" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="auth.deckExperiment.title">Deck Experiment</span>
-            <span class="llc-menu-item-sub" data-i18n="auth.deckExperiment.sub">Build with every card — guests only, unranked</span>
+            <span class="llc-menu-item-sub" data-i18n="auth.deckExperiment.sub">Build with every card — Free only, unranked</span>
           </span>
         </button>
         <button class="llc-menu-item llc-menu-hover tcg-debug-only" id="btn-auth-debug-card-test" type="button" hidden>
@@ -8952,7 +8952,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=84"></script>
+<script src="i18n.js?v=85"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=19"></script>
@@ -9151,6 +9151,7 @@ const A = {
   deckMain: [],
   deckEnergy: [],
   deckBuilderMode: 'account',
+  deckBuilderReturn: null,
   experimentSearch: '',
   experimentPassword: '',
   experimentDeckCache: {},
@@ -13339,7 +13340,14 @@ function syncDeckBuilderChrome() {
   const hintCompact = el('deck-builder-hint-compact');
   const poolHead = document.querySelector('#screen-deck .deck-builder-section--pool h4');
   if (title) title.textContent = experiment ? t('deck.experimentTitle') : t('deck.title');
-  if (backBtn) backBtn.textContent = experiment ? t('deck.backMenu') : t('deck.backHub');
+  if (backBtn) {
+    if (!experiment) backBtn.textContent = t('deck.backHub');
+    else if (A.deckBuilderReturn === 'auth' || (!A.deckBuilderReturn && !isSignedInAccount())) {
+      backBtn.textContent = t('deck.backMenu');
+    } else {
+      backBtn.textContent = t('deck.backHub');
+    }
+  }
   if (searchWrap) searchWrap.hidden = false;
   if (pwdWrap) pwdWrap.hidden = !experiment;
   if (slotsWrap) {
@@ -14896,6 +14904,7 @@ async function openDeckBuilder() {
     return;
   }
   A.deckBuilderMode = 'account';
+  A.deckBuilderReturn = 'hub';
   exitDeckSealBatchMode({ render: false });
   A.experimentSearch = '';
   A.deckPoolFilters = defaultDeckPoolFilters();
@@ -14927,13 +14936,15 @@ async function openDeckBuilder() {
   showScr('deck');
 }
 
-async function openDeckExperiment() {
+async function openDeckExperiment(opts) {
   if (!Object.keys(G.allCards).length) await loadCards();
   if (!Object.keys(G.allCards).length) {
     toast(t('toast.cardsLoadFailed'), 4000);
     return;
   }
   A.deckBuilderMode = 'experiment';
+  A.deckBuilderReturn = opts?.returnTo
+    || (isSignedInAccount() ? 'hub' : 'auth');
   exitDeckSealBatchMode({ render: false });
   A.experimentSearch = '';
   A.deckPoolFilters = defaultDeckPoolFilters();
@@ -19749,7 +19760,7 @@ async function bootApp() {
   on('btn-hub-card-list', 'click', () => { void openCardListScreen(); });
   on('btn-card-list-back', 'click', () => enterHub(A.profile));
   on('btn-hub-deck', 'click', openDeckBuilder);
-  on('btn-hub-deck-experiment', 'click', openDeckExperiment);
+  on('btn-hub-deck-experiment', 'click', () => openDeckExperiment({ returnTo: 'hub' }));
   on('btn-hub-ranked', 'click', openRankedScreen);
   on('btn-hub-leaderboard', 'click', openLeaderboardScreen);
   on('btn-hub-options', 'click', openOptionsScreen);
@@ -19777,7 +19788,7 @@ async function bootApp() {
     renderBugReportsList();
   });
   on('btn-auth-unranked', 'click', openUnrankedLobby);
-  on('btn-auth-deck-experiment', 'click', openDeckExperiment);
+  on('btn-auth-deck-experiment', 'click', () => openDeckExperiment({ returnTo: 'auth' }));
   on('btn-auth-debug-card-test', 'click', openDebugCardTestScreen);
   on('btn-auth-debug-replay', 'click', openDebugReplayScreen);
   on('btn-auth-tutorial', 'click', startTutorial);
@@ -19808,7 +19819,7 @@ async function bootApp() {
     syncDebugStageSeedDesc(cardNo ? G.allCards[cardNo] : null);
   });
   on('btn-lobby-hub', 'click', leaveLobbyToMenu);
-  on('btn-lobby-deck-experiment', 'click', openDeckExperiment);
+  on('btn-lobby-deck-experiment', 'click', () => openDeckExperiment({ returnTo: 'lobby' }));
   on('btn-booster-back', 'click', () => enterHub(A.profile));
   on('btn-sticker-back', 'click', () => enterHub(A.profile));
   on('btn-sticker-info', 'click', openStickerInfoModal);
@@ -19823,8 +19834,18 @@ async function bootApp() {
   on('btn-pack-hub', 'click', () => enterHub(A.profile));
   on('btn-deck-back', 'click', () => {
     if (A.deckSealBatchMode) exitDeckSealBatchMode({ render: false });
-    if (A.deckBuilderMode === 'experiment') showGuestAuth(null, 'auth.guestPrompt');
-    else enterHub(A.profile);
+    const ret = A.deckBuilderReturn;
+    A.deckBuilderReturn = null;
+    if (A.deckBuilderMode === 'experiment') {
+      if (ret === 'lobby') openUnrankedLobby();
+      else if (ret === 'hub' || (ret !== 'auth' && isSignedInAccount() && A.profile)) {
+        enterHub(A.profile);
+      } else {
+        showGuestAuth(null, 'auth.guestPrompt');
+      }
+    } else {
+      enterHub(A.profile);
+    }
   });
   on('btn-deck-seal-batch', 'click', toggleDeckSealBatchMode);
   on('btn-deck-seal-batch-cancel', 'click', () => exitDeckSealBatchMode());
