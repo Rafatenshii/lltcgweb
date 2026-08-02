@@ -6916,6 +6916,57 @@ html:not(.tcg-mobile-viewport) #screen-game .side-panel{
 html.tcg-mobile-viewport #screen-game .phase-action-bar{
   zoom:var(--ui-text-scale)
 }
+/*
+ * Text scale + CSS zoom grows used layout size. Side panels are height:100vh and
+ * centered in .game-wide-wrap, so 115–130% clips both top and bottom. Inverse
+ * height/width keep the zoomed panel inside the viewport; flex-shrink + scroll
+ * keep content reachable without overlapping the playmat.
+ */
+html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .game-wide-wrap{
+  align-items:stretch
+}
+html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .side-panel{
+  --ui-scale-panel-h:calc(100vh / var(--ui-text-scale));
+  --ui-scale-panel-w:calc(var(--side-panel-w) / var(--ui-text-scale));
+  height:var(--ui-scale-panel-h);
+  max-height:var(--ui-scale-panel-h);
+  width:var(--ui-scale-panel-w);
+  min-width:var(--ui-scale-panel-w);
+  max-width:var(--ui-scale-panel-w);
+  flex:0 0 var(--ui-scale-panel-w);
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  gap:calc(10px / var(--ui-text-scale));
+  padding:calc(14px / var(--ui-text-scale)) calc(12px / var(--ui-text-scale));
+  box-sizing:border-box
+}
+html.tcg-desktop-scaled:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .game-viewport-frame .side-panel{
+  --ui-scale-panel-h:calc(100% / var(--ui-text-scale));
+  height:var(--ui-scale-panel-h);
+  max-height:var(--ui-scale-panel-h)
+}
+html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .side-panel.side-left > .stage-board-panel{
+  flex:1 1 auto;
+  flex-shrink:1;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto
+}
+html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .side-panel.side-left > .card-hover-panel{
+  flex:0 1 auto;
+  flex-shrink:1;
+  min-height:0;
+  max-height:min(42%, 280px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  margin-top:auto
+}
+html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .side-panel.side-right .side-log{
+  flex:1 1 auto;
+  min-height:0
+}
 .account-panel .field label{color:rgba(255,255,255,.78)}
 /* ── Card tilt (all rarities) + foil textures (premium rarities) ── */
 html:not(.foil-fx-off) #screen-game .hand-fan{perspective:1200px}
@@ -7711,7 +7762,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span data-i18n="options.textScale">Text &amp; UI scale</span>
             <span class="options-text-scale-exp" data-i18n="options.textScaleExp">Experimental</span>
           </div>
-          <p class="account-lead" data-i18n="options.textScaleLead">Enlarge or shrink menu text and buttons. Larger sizes use more scrolling so nothing overlaps. Match board stays fitted on mobile.</p>
+          <p class="account-lead" data-i18n="options.textScaleLead">Enlarge or shrink menu text and buttons. Larger sizes use more scrolling so nothing overlaps. Match side panels stay on-screen; the board stays fitted on mobile.</p>
           <div class="options-text-scale-steps" id="options-text-scale-steps" role="radiogroup" data-i18n-aria-label="options.textScale">
             <button type="button" class="options-scale-btn" data-scale="85" role="radio" aria-checked="false">85%</button>
             <button type="button" class="options-scale-btn is-active" data-scale="100" role="radio" aria-checked="true">100%</button>
@@ -9053,7 +9104,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=86"></script>
+<script src="i18n.js?v=87"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
