@@ -66,19 +66,19 @@ function tcgAssertUnrankedDeckForGameMode(array $body): void {
     $usesExp = tcgBodyUsesExperimentDeck($body);
     if (tcgIsFreeGameMode($mode)) {
         if (!$usesExp) {
-            throw new Exception('Free Mode requires a Deck Experiment deck (saved or password)', 400);
+            throw new Exception('Free requires a Deck Experiment deck (saved or password)', 400);
         }
         return;
     }
     if ($usesExp) {
-        throw new Exception('Deck Experiment decks can only be used in Free Mode', 400);
+        throw new Exception('Deck Experiment decks can only be used in Free', 400);
     }
 }
 
 function assertExperimentAllowedForRoom(array $body): void {
     $mode = tcgNormalizeGameMode($body['game_mode'] ?? '');
     if (!tcgIsFreeGameMode($mode)) {
-        throw new Exception('Deck Experiment decks can only be used in Free Mode', 400);
+        throw new Exception('Deck Experiment decks can only be used in Free', 400);
     }
 }
 

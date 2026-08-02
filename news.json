@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-deck-experiment-free",
+      "date": "2026-08-02",
+      "banner": "tcglogo.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Deck Experiment for signed-in players & Free unranked play!",
+        "ja": "サインインでもデッキ実験＆アンランクに「フリー」追加！",
+        "es": "¡Experimento de mazos con sesión iniciada y modo Libre!",
+        "ko": "로그인해도 덱 실험 가능 & 언랭크에 프리 모드 추가!",
+        "zh": "登录玩家可用牌组实验，非排名新增「自由」模式！",
+        "th": "Deck Experiment สำหรับผู้เล่นที่ลงชื่อเข้าใช้ และโหมด Free ในอันแรงก์!"
+      },
+      "body": {
+        "en": "**Deck Experiment** is no longer guest-only — signed-in players can build with the **full card pool** (no ownership required) and save decks to their account.\n\n**What’s new**\n- On the hub, open **Deck Experiment** next to Deck Builder.\n- **Save experiment decks** to your account (up to 10 slots), and optionally generate a **password** to share with friends.\n- Guests can still save and load decks with a password, same as before.\n\n**New Unranked mode: Free**\n- In **Unranked Play**, pick **Free** as your game mode.\n- Free is where Deck Experiment decks belong — use an **account-saved** experiment deck or enter a **password**.\n- Play Free in **friend rooms**, **casual matchmaking**, or **vs CPU**.\n- Free has **no leaderboards** and doesn’t affect Ranked.\n\nStandard and Starter decks modes stay collection-bound. Happy brewing!",
+        "ja": "**デッキ実験**がゲスト限定ではなくなりました。サインイン中でも**全カードプール**（所持不要）で組めて、アカウントに保存できます。\n\n**新しくなったこと**\n- ハブで、デッキビルダーの隣の **デッキ実験** を開きます。\n- 実験デッキをアカウントに**保存**（最大10枠）。必要なら**パスワード**を発行して友達と共有もできます。\n- ゲストはこれまでどおり、パスワードで保存・読込できます。\n\n**アンランク新モード：フリー**\n- **アンランクプレイ**でゲームモードに **フリー** を選びます。\n- デッキ実験のデッキはフリー専用です。**アカウント保存**の実験デッキか、**パスワード**を使います。\n- **フレンドルーム**・**カジュアルマッチ**・**CPU戦**すべてでフリーを選べます。\n- フリーに**リーダーボードはなく**、ランクにも影響しません。\n\nスタンダード／スターターのみはこれまでどおり所持カード向けです。好きな構築を楽しんでください！",
+        "es": "**Experimento de mazos** ya no es solo para invitados: con sesión iniciada puedes construir con el **conjunto completo de cartas** (sin necesidad de poseerlas) y guardar mazos en tu cuenta.\n\n**Novedades**\n- En el hub, abre **Experimento de mazos** junto al Constructor de mazos.\n- **Guarda mazos de experimento** en tu cuenta (hasta 10 ranuras) y, si quieres, genera una **contraseña** para compartir.\n- Los invitados siguen pudiendo guardar y cargar con contraseña.\n\n**Nuevo modo Unranked: Libre**\n- En **Juego no clasificado**, elige **Libre** como modo.\n- Libre es el hogar de los mazos de experimento: usa uno **guardado en la cuenta** o introduce una **contraseña**.\n- Juega Libre en **salas con amigos**, **emparejamiento casual** o **vs CPU**.\n- Libre **no tiene tablas de clasificación** y no afecta a Clasificatoria.\n\nEstándar y Solo iniciales siguen ligados a tu colección. ¡A experimentar!",
+        "ko": "**덱 실험**이 게스트 전용이 아닙니다. 로그인한 플레이어도 **전체 카드 풀**(소유 불필요)로 만들고 계정에 저장할 수 있습니다.\n\n**새로운 점**\n- 허브에서 덱 빌더 옆의 **덱 실험**을 엽니다.\n- 실험 덱을 계정에 **저장**(최대 10칸)하고, 원하면 **비밀번호**를 만들어 친구와 공유할 수 있습니다.\n- 게스트는 이전과 같이 비밀번호로 저장·불러오기를 할 수 있습니다.\n\n**언랭크 새 모드: 프리**\n- **언랭크 플레이**에서 게임 모드로 **프리**를 고릅니다.\n- 덱 실험 덱은 프리에서만 사용합니다. **계정에 저장한** 실험 덱 또는 **비밀번호**를 쓰세요.\n- **친구 방**, **캐주얼 매칭**, **CPU전** 모두에서 프리를 고를 수 있습니다.\n- 프리에는 **리더보드가 없으며** 랭크에는 영향이 없습니다.\n\n스탠다드·스타터 전용은 계속 보유 카드 기준입니다. 자유롭게 연구해 보세요!",
+        "zh": "**牌组实验**不再仅限游客——登录玩家也可使用**完整卡池**（无需持有）构筑，并保存到账号。\n\n**新内容**\n- 在主页，打开牌组构筑旁的**牌组实验**。\n- 将实验牌组**保存到账号**（最多 10 个槽位），也可生成**密码**与好友分享。\n- 游客仍可像以前一样用密码保存与加载。\n\n**非排名新模式：自由**\n- 在**非排名对战**中选择游戏模式 **自由**。\n- 实验牌组仅用于自由模式——使用**账号保存**的实验牌组，或输入**密码**。\n- 可在**好友房间**、**休闲匹配**或**对战 CPU** 中选择自由。\n- 自由模式**没有排行榜**，也不影响排名赛。\n\n标准与仅初始牌组仍按持有卡牌规则。祝构筑愉快！",
+        "th": "**Deck Experiment** ไม่ได้มีแค่สำหรับแขกแล้ว — ผู้เล่นที่ลงชื่อเข้าใช้สร้างเด็คจาก**พูลการ์ดเต็ม**(ไม่ต้องมีในครอบครอง) และบันทึกลงบัญชีได้\n\n**มีอะไรใหม่**\n- ที่ฮับ เปิด **Deck Experiment** ข้างตัวสร้างเด็ค\n- **บันทึกเด็คทดลอง**ลงบัญชี (สูงสุด 10 ช่อง) และสร้าง**รหัสผ่าน**เพื่อแชร์กับเพื่อนได้ถ้าต้องการ\n- แขกยังบันทึกและโหลดด้วยรหัสผ่านได้เหมือนเดิม\n\n**โหมดอันแรงก์ใหม่: Free**\n- ใน**เล่นอันแรงก์** เลือกโหมดเกมเป็น **Free**\n- เด็คจาก Deck Experiment ใช้ได้ใน Free เท่านั้น — ใช้เด็คทดลองที่**บันทึกในบัญชี** หรือใส่**รหัสผ่าน**\n- เล่น Free ได้ใน**ห้องเพื่อน** **จับคู่แคชชวล** หรือ**ปะทะ CPU**\n- Free **ไม่มีลีดเดอร์บอร์ด** และไม่กระทบแรงก์\n\nโหมดมาตรฐานและเด็คเริ่มต้นยังผูกกับคอลเลกชัน สนุกกับการทดลองเด็คนะ!"
+      }
+    },
+    {
       "id": "2026-07-pr-packs-and-seals",
       "date": "2026-07-30",
       "banner": "assets/seals/PR.png",

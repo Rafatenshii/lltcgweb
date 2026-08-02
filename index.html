@@ -7335,7 +7335,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
           <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-deck-experiment" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.experiment.title">Deck Experiment</span>
-              <span class="llc-menu-item-sub" data-i18n="hub.experiment.sub">Any card — Free Mode only</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.experiment.sub">Any card — Free only</span>
             </span>
           </button>
         </div>
@@ -7803,7 +7803,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
               <select id="sel-lobby-game-mode">
                 <option value="standard" data-i18n="gameMode.standard">Standard</option>
                 <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
-                <option value="free" data-i18n="gameMode.free">Free Mode</option>
+                <option value="free" data-i18n="gameMode.free">Free</option>
               </select>
             </div>
             <p class="game-mode-desc" id="lobby-game-mode-desc"></p>
@@ -8740,10 +8740,10 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=80"></script>
+<script src="i18n.js?v=81"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
-<script src="client/js/news.js?v=18"></script>
+<script src="client/js/news.js?v=19"></script>
 <script src="client/js/api-client.js?v=17"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
@@ -20882,7 +20882,7 @@ function deckPayloadFromChoice(deckSel) {
   const payload = { deck: deckSel };
   if (deckSel.startsWith('experiment_preset:')) {
     if (!isFreeGameMode()) {
-      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free Mode');
+      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free');
     }
     const slot = parseInt(deckSel.slice(18), 10);
     if (!Number.isFinite(slot) || slot < 1 || slot > 10) {
@@ -20899,7 +20899,7 @@ function deckPayloadFromChoice(deckSel) {
   }
   if (deckSel.startsWith('experiment:')) {
     if (!isFreeGameMode()) {
-      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free Mode');
+      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free');
     }
     const password = normalizeExperimentPasswordInput(deckSel.slice(11));
     if (!password) throw new Error('Invalid experiment deck password');
@@ -20909,7 +20909,7 @@ function deckPayloadFromChoice(deckSel) {
     };
   }
   if (isFreeGameMode()) {
-    throw new Error(t('lobby.freeModeNeedsExperiment') || 'Free Mode requires a Deck Experiment deck');
+    throw new Error(t('lobby.freeModeNeedsExperiment') || 'Free requires a Deck Experiment deck');
   }
   if (deckSel.startsWith('preset:')) {
     const slot = parseInt(deckSel.slice(7), 10);

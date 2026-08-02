@@ -188,7 +188,7 @@ function tcgValidateCasualStartersModeDeck(array $body, ?string $discordId, arra
 function tcgValidateCasualFreeModeDeck(array $body): void {
     require_once __DIR__ . '/experiment_decks.php';
     if (!tcgBodyUsesExperimentDeck($body)) {
-        throw new Exception('Free Mode requires a Deck Experiment deck (saved or password)');
+        throw new Exception('Free requires a Deck Experiment deck (saved or password)');
     }
 }
 

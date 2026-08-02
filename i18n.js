@@ -70,7 +70,7 @@
       "deckBuilderSub": "Edit presets and ranked loadout",
       "experiment": {
         "title": "Deck Experiment",
-        "sub": "Any card — Free Mode only"
+        "sub": "Any card — Free only"
       },
       "rankedPvp": "Ranked PvP",
       "rankedPvpSub": "Climb ELO in matchmade games",
@@ -186,7 +186,7 @@
       "experimentDeckBtn": "Deck Experiment",
       "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved deck below.",
       "experimentDeckEmpty": "Enter a password or save an experiment deck",
-      "freeModeNeedsExperiment": "Free Mode requires a Deck Experiment deck (saved or password)",
+      "freeModeNeedsExperiment": "Free requires a Deck Experiment deck (saved or password)",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} waiting · {inGame} in casual games",
       "casualSearching": "Searching for opponent… ({seconds}s)"
@@ -229,7 +229,7 @@
       "updateSavedDeck": "Update saved deck",
       "generatePassword": "Generate password",
       "experimentHint": "Full card pool · build a legal deck to generate a password · point total must be 9 or below · hold or right-click cards for details",
-      "experimentHintSignedIn": "Full card pool · save to your account for Free Mode · optional password to share · point total must be 9 or below",
+      "experimentHintSignedIn": "Full card pool · save to your account for Free · optional password to share · point total must be 9 or below",
       "experimentSlot": "Experiment slot (max 10)",
       "saveExperiment": "Save experiment deck",
       "experimentSaved": "Experiment deck saved to your account.",
@@ -415,10 +415,10 @@
       "label": "Game mode",
       "standard": "Standard",
       "starters": "Starter decks only",
-      "free": "Free Mode",
+      "free": "Free",
       "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
       "startersDesc": "This mode can only be played using starter decks.",
-      "freeDesc": "Use decks from deck experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards."
+      "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards."
     },
     "ranked": {
       "title": "Ranked PvP",
@@ -1553,7 +1553,7 @@
       "label": "ゲームモード",
       "standard": "スタンダード",
       "starters": "スターターデッキのみ",
-      "free": "フリーモード",
+      "free": "フリー",
       "standardDesc": "通常のTCGモードです。所持カードで組んだデッキで他のプレイヤーと対戦します。",
       "startersDesc": "このモードはスターターデッキのみでプレイできます。",
       "freeDesc": "デッキ実験のデッキを使えます。ゲーム内のどのカードでもOK（所持不要）。このモードにリーダーボードはありません。"
@@ -2601,7 +2601,7 @@
       "label": "Modo de juego",
       "standard": "Estándar",
       "starters": "Solo mazos iniciales",
-      "free": "Modo libre",
+      "free": "Libre",
       "standardDesc": "El modo TCG estándar. Usa mazos construidos con cartas que posees contra otros jugadores.",
       "startersDesc": "Este modo solo se puede jugar con mazos iniciales.",
       "freeDesc": "Usa mazos del experimento de mazos, ¡con cualquier carta del juego! (No hace falta poseerlas). Este modo no tiene tablas de clasificación."
@@ -3755,7 +3755,7 @@
       "label": "게임 모드",
       "standard": "스탠다드",
       "starters": "스타터 덱 전용",
-      "free": "프리 모드",
+      "free": "프리",
       "standardDesc": "표준 TCG 모드입니다. 보유 카드로 만든 덱으로 다른 플레이어와 대전합니다.",
       "startersDesc": "이 모드는 스타터 덱으로만 플레이할 수 있습니다.",
       "freeDesc": "덱 실험의 덱을 사용합니다. 게임의 어떤 카드든 가능합니다(소유 불필요). 이 모드에는 리더보드가 없습니다."
@@ -4923,7 +4923,7 @@
       "label": "对战模式",
       "standard": "标准",
       "starters": "仅限初始牌组",
-      "free": "自由模式",
+      "free": "自由",
       "standardDesc": "标准TCG模式。使用你用持有卡牌构筑的牌组与其他玩家对战。",
       "startersDesc": "此模式只能使用初始牌组进行对战。",
       "freeDesc": "使用牌组实验中的牌组，可使用游戏中的任意卡牌（无需持有）。此模式没有排行榜。"
@@ -6082,7 +6082,7 @@
       "label": "โหมดเกม",
       "standard": "มาตรฐาน",
       "starters": "เฉพาะเด็คเริ่มต้น",
-      "free": "โหมดฟรี",
+      "free": "ฟรี",
       "standardDesc": "โหมด TCG มาตรฐาน ใช้เด็คที่สร้างจากการ์ดที่คุณมีเพื่อแข่งกับผู้เล่นอื่น",
       "startersDesc": "โหมดนี้เล่นได้เฉพาะเด็คเริ่มต้นเท่านั้น",
       "freeDesc": "ใช้เด็คจาก Deck Experiment ใช้การ์ดใดก็ได้ในเกม (ไม่ต้องมีในครอบครอง) โหมดนี้ไม่มีลีดเดอร์บอร์ด"
@@ -6949,7 +6949,7 @@
     loc.hub.deck.sub = loc.hub.deckBuilderSub;
     loc.hub.experiment = loc.hub.experiment || {};
     loc.hub.experiment.title = loc.hub.experiment.title || (loc.menu && loc.menu.deckExperiment) || 'Deck Experiment';
-    loc.hub.experiment.sub = loc.hub.experiment.sub || (loc.menu && loc.menu.deckExperimentSub) || 'Any card — Free Mode only';
+    loc.hub.experiment.sub = loc.hub.experiment.sub || (loc.menu && loc.menu.deckExperimentSub) || 'Any card — Free only';
     loc.hub.ranked = loc.hub.ranked || {};
     loc.hub.ranked.title = loc.hub.rankedPvp;
     loc.hub.ranked.sub = loc.hub.rankedPvpSub;
