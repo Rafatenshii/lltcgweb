@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=5">
+<link rel="stylesheet" href="client/css/shell-all.css?v=6">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -6298,8 +6298,22 @@ function showDeckCardPreview(card) {
 const DECK_LONG_PRESS_MS = 480;
 const DECK_DRAG_THRESHOLD = 22;
 
+function decklogImportPickerOpen() {
+  return !!(el('modal-decklog-missing')?.classList.contains('open')
+    || el('modal-decklog-sub-pick')?.classList.contains('open'));
+}
+
 function bindDeckCardPress(node, card, onTap) {
   node.addEventListener('pointerenter', () => {
+    if (decklogImportPickerOpen()) {
+      clearTimeout(_deckPreviewHideTimer);
+      _deckPreviewHideTimer = null;
+      showPickerCardHover(card, null, G.playerId);
+      document.querySelectorAll('#deck-pool .deck-card-tile.hover-sel')
+        .forEach(t => t.classList.remove('hover-sel'));
+      node.classList.add('hover-sel');
+      return;
+    }
     if (!el('screen-deck')?.classList.contains('active')) return;
     clearTimeout(_deckPreviewHideTimer);
     _deckPreviewHideTimer = null;
@@ -6310,6 +6324,10 @@ function bindDeckCardPress(node, card, onTap) {
   });
   node.addEventListener('pointerleave', () => {
     node.classList.remove('hover-sel');
+    if (decklogImportPickerOpen()) {
+      clearPickerCardHover();
+      return;
+    }
     scheduleClearDeckBuilderCardPreview();
   });
   node.addEventListener('pointerdown', e => {
@@ -6321,6 +6339,7 @@ function bindDeckCardPress(node, card, onTap) {
     ptr.longPressTimer = setTimeout(() => {
       if (ptr.moved) return;
       ptr.longFired = true;
+      clearPickerCardHover();
       showDeckCardPreview(card);
     }, DECK_LONG_PRESS_MS);
     const clearHold = () => node.classList.remove('deck-hold-pending');
@@ -6336,7 +6355,9 @@ function bindDeckCardPress(node, card, onTap) {
       try { node.releasePointerCapture(ev.pointerId); } catch (_) {}
       if (!ptr.moved && !ptr.longFired) {
         if (onTap) onTap();
-        if (el('screen-deck')?.classList.contains('active')) {
+        if (decklogImportPickerOpen()) {
+          showPickerCardHover(card, null, G.playerId);
+        } else if (el('screen-deck')?.classList.contains('active')) {
           showDeckBuilderCardPreview(card, { pin: true });
         }
       }
@@ -6347,6 +6368,7 @@ function bindDeckCardPress(node, card, onTap) {
   });
   node.addEventListener('contextmenu', e => {
     e.preventDefault();
+    clearPickerCardHover();
     showDeckCardPreview(card);
   });
 }
@@ -9939,6 +9961,48 @@ function assignDecklogSubstitute(fromCardNo, toCardNo) {
   closeDecklogSubPick({ reopenMissing: true });
 }
 
+/** Hover → left picker panel; long-press / right-click → full card info (keeps missing modal centered). */
+function bindDecklogMissingCardPress(node, card) {
+  const c = enrichCard(typeof card === 'string' ? G.allCards[card] : card);
+  if (!node || !c || node.dataset.decklogHoverBound) return;
+  node.dataset.decklogHoverBound = '1';
+  node.classList.add('decklog-missing-thumb--interactive');
+  bindPickerCardHover(node, c, null, G.playerId);
+  node.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    try { node.setPointerCapture(e.pointerId); } catch (_) {}
+    node.classList.add('deck-hold-pending');
+    const ptr = { sx: e.clientX, sy: e.clientY, moved: false, longFired: false, longPressTimer: null };
+    ptr.longPressTimer = setTimeout(() => {
+      if (ptr.moved) return;
+      ptr.longFired = true;
+      clearPickerCardHover();
+      showDeckCardPreview(c);
+    }, DECK_LONG_PRESS_MS);
+    const clearHold = () => node.classList.remove('deck-hold-pending');
+    const onMove = ev => {
+      if (Math.hypot(ev.clientX - ptr.sx, ev.clientY - ptr.sy) > DECK_DRAG_THRESHOLD) ptr.moved = true;
+    };
+    const onUp = ev => {
+      if (ptr.longPressTimer) clearTimeout(ptr.longPressTimer);
+      clearHold();
+      node.removeEventListener('pointermove', onMove);
+      node.removeEventListener('pointerup', onUp);
+      node.removeEventListener('pointercancel', onUp);
+      try { node.releasePointerCapture(ev.pointerId); } catch (_) {}
+    };
+    node.addEventListener('pointermove', onMove);
+    node.addEventListener('pointerup', onUp);
+    node.addEventListener('pointercancel', onUp);
+  });
+  node.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    clearPickerCardHover();
+    showDeckCardPreview(c);
+  });
+}
+
 function renderDecklogMissingModal(payload) {
   if (!_decklogMissingPending || _decklogMissingPending !== payload) {
     _decklogMissingPending = {
@@ -9971,6 +10035,7 @@ function renderDecklogMissingModal(payload) {
     if (card && typeof applyCardImageToImg === 'function') {
       applyCardImageToImg(img, card);
     }
+    if (card) bindDecklogMissingCardPress(img, card);
     const body = document.createElement('div');
     body.className = 'decklog-missing-body';
     const title = document.createElement('div');
@@ -22791,6 +22856,7 @@ function showPickMenuCard(card) {
 
 const PICKER_OVERLAY_IDS = new Set([
   'overlay-mull', 'overlay-pick', 'overlay-hand-pick', 'overlay-surveil', 'overlay-zone',
+  'modal-decklog-missing', 'modal-decklog-sub-pick',
 ]);
 
 function pickerCardHoverEnabled() {
@@ -22804,6 +22870,9 @@ function activePickerDialogAnchor() {
     if (!overlay?.classList.contains('open')) continue;
     if (id === 'overlay-hand-pick') {
       return overlay.querySelector('.hand-pick-shell') || overlay;
+    }
+    if (id === 'modal-decklog-missing' || id === 'modal-decklog-sub-pick') {
+      return overlay.querySelector('.decklog-import-shell') || overlay;
     }
     return overlay.querySelector('.mbox') || overlay;
   }

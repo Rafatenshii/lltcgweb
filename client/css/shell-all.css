@@ -818,8 +818,14 @@ body:has(#overlay-zone.open) #picker-card-hover-panel,
 body:has(#overlay-pick.open) #picker-card-hover-panel,
 body:has(#overlay-mull.open) #picker-card-hover-panel,
 body:has(#overlay-hand-pick.open) #picker-card-hover-panel,
-body:has(#overlay-surveil.open) #picker-card-hover-panel{
+body:has(#overlay-surveil.open) #picker-card-hover-panel,
+body:has(#modal-decklog-missing.open) #picker-card-hover-panel,
+body:has(#modal-decklog-sub-pick.open) #picker-card-hover-panel{
   z-index:9300;
+}
+body:has(#modal-decklog-missing.open) #modal-card,
+body:has(#modal-decklog-sub-pick.open) #modal-card{
+  z-index:9400;
 }
 #picker-card-hover-panel .hc-img{max-width:118px}
 #picker-card-hover-panel .hc-img.landscape{max-width:138px}
@@ -6152,6 +6158,16 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   background:rgba(0,0,0,.35);
   box-shadow:0 4px 14px rgba(0,0,0,.35);
   grid-row:1 / span 2;
+}
+.decklog-missing-thumb--interactive{
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  transition:box-shadow .15s ease, outline-color .15s ease;
+}
+.decklog-missing-thumb--interactive:hover{
+  box-shadow:0 0 0 2px rgba(255,107,168,.55),0 6px 18px rgba(0,0,0,.4);
 }
 .decklog-missing-body{min-width:0;grid-column:2}
 .decklog-missing-name{

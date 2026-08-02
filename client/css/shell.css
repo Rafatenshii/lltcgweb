@@ -3028,6 +3028,16 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   box-shadow:0 4px 14px rgba(0,0,0,.35);
   grid-row:1 / span 2;
 }
+.decklog-missing-thumb--interactive{
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  transition:box-shadow .15s ease, outline-color .15s ease;
+}
+.decklog-missing-thumb--interactive:hover{
+  box-shadow:0 0 0 2px rgba(255,107,168,.55),0 6px 18px rgba(0,0,0,.4);
+}
 .decklog-missing-body{min-width:0;grid-column:2}
 .decklog-missing-name{
   font-family:'Zen Kaku Gothic New','Nunito',sans-serif;
