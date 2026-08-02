@@ -20996,6 +20996,7 @@ function captureRematchSettings(s) {
     cpuDifficulty: cpuDiff,
     name: me?.name || el('inp-name')?.value?.trim() || defaultPlayerName(1),
     deckChoice: me?.deck_choice || el('sel-deck')?.value || 'nijigasaki',
+    gameMode: s.game_mode || currentGameMode(),
     phaseTimer: s.phase_timer_cfg ? { ...s.phase_timer_cfg } : null,
   };
 }
@@ -21035,6 +21036,11 @@ window.syncWinRematchUi = syncWinRematchUi;
 
 function applyRematchToLobbyUI(rematch) {
   if (!rematch) return;
+  if (rematch.gameMode) {
+    persistGameMode(rematch.gameMode);
+    syncGameModeSelects(rematch.gameMode);
+    renderLobbyDeckOptions({ preferRemembered: false });
+  }
   if (el('inp-name') && rematch.name) el('inp-name').value = rematch.name;
   const sel = el('sel-deck');
   if (sel && rematch.deckChoice) {
@@ -21079,11 +21085,17 @@ function cpuOpponentName() {
 }
 
 async function startSoloRematch(rematch) {
+  if (rematch.gameMode) persistGameMode(rematch.gameMode);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const deckSel = rematch.deckChoice || 'nijigasaki';
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
-  const r1 = await apiPost('create_room', { name, ...deckPayloadFromChoice(deckSel), ...timerOpts });
+  const r1 = await apiPost('create_room', {
+    name,
+    game_mode: currentGameMode(),
+    ...deckPayloadFromChoice(deckSel),
+    ...timerOpts,
+  });
   G.roomId = r1.room_id; G.token = r1.player_token; G.playerId = 'p1'; G.isCPU = true;
   captureSyncMeta(r1);
   const r2 = await apiPost('join_room', {
@@ -21096,10 +21108,12 @@ async function startSoloRematch(rematch) {
 }
 
 async function startUnrankedRematch(rematch) {
+  if (rematch.gameMode) persistGameMode(rematch.gameMode);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   const r = await apiPost('create_room', {
     name,
+    game_mode: currentGameMode(),
     ...deckPayloadFromChoice(rematch.deckChoice || 'nijigasaki'),
     ...timerOpts,
   });
