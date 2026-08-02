@@ -381,25 +381,35 @@ function resolveExperimentDeckLists(array $body, array $cardsData): array {
         $password = normalizeExperimentPassword($m[1]);
     }
 
+    // Prefer inline lists so match-primary (VPS) works when presets/files live on Hostinger.
+    $main = $body['main_deck'] ?? null;
+    $energy = $body['energy_deck'] ?? null;
+    if (is_array($main) && is_array($energy)) {
+        $validated = validateExperimentDeckPayload($main, $energy, $cardsData);
+        $label = normalizeExperimentDeckName((string)($body['deck_label'] ?? ''));
+        $slot = intval($body['experiment_slot'] ?? $body['deck_slot'] ?? 0);
+        $deckChoice = 'experiment';
+        if ($slot >= 1 && $slot <= TCG_MAX_EXPERIMENT_PRESETS) {
+            $deckChoice = 'experiment_preset:' . $slot;
+            if ($label === '' || $label === 'Deck Experiment') {
+                $label = 'Experiment ' . $slot;
+            }
+        } elseif ($password !== '') {
+            $deckChoice = 'experiment:' . $password;
+        }
+        return [
+            'deck_choice' => $deckChoice,
+            'deck_label'  => $label !== '' ? $label : 'Deck Experiment',
+            'main_nos'    => $validated['main'],
+            'energy_nos'  => $validated['energy'],
+        ];
+    }
+
     if ($password !== '') {
         return resolveExperimentDeckFromPassword($password, $cardsData);
     }
 
-    $main = $body['main_deck'] ?? null;
-    $energy = $body['energy_deck'] ?? null;
-    if (!is_array($main) || !is_array($energy)) {
-        throw new Exception('Experiment deck requires experiment_password or main_deck and energy_deck');
-    }
-    $validated = validateExperimentDeckPayload($main, $energy, $cardsData);
-
-    $label = normalizeExperimentDeckName((string)($body['deck_label'] ?? ''));
-
-    return [
-        'deck_choice' => 'experiment',
-        'deck_label'  => $label,
-        'main_nos'    => $validated['main'],
-        'energy_nos'  => $validated['energy'],
-    ];
+    throw new Exception('Experiment deck requires experiment_password or main_deck and energy_deck');
 }
 
 function createRoom(array $body): array {

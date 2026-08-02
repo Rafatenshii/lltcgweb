@@ -4191,6 +4191,7 @@ async function consumeLovecaChallengeInvite() {
   try {
     if (invite.mode === 'casual') {
       if (A.rankedSearching) await cancelRankedSearch();
+      await ensureLobbyExperimentDeckReady();
       const body = { ...casualJoinPayload(), challenge_discord_id: invite.challenge };
       const res = await apiPost('casual_join', body);
       if (res.match?.status === 'matched') {
@@ -8029,6 +8030,9 @@ function renderDeckBuilder(opts = {}) {
       b.onclick = () => selectDeckSlot(i);
       slots.appendChild(b);
     }
+  } else if (slots && experiment && isSignedInAccount()) {
+    // Keep experiment preset buttons; do not wipe after syncDeckBuilderChrome painted them.
+    renderExperimentSlots();
   } else if (slots) {
     slots.replaceChildren();
   }
@@ -11995,6 +11999,7 @@ async function startCasualSearch() {
   setErr('');
   try {
     if (isSignedInAccount() && A.rankedSearching) await cancelRankedSearch();
+    await ensureLobbyExperimentDeckReady();
     const res = await apiPost('casual_join', casualJoinPayload());
     if (res.match?.status === 'matched') {
       if (res.queue_stats) updateCasualQueueStats(res.queue_stats);
@@ -15092,6 +15097,21 @@ function renderLobbyDeckOptions(opts = {}) {
   if (expBtn) expBtn.hidden = !freeMode;
 }
 
+/** Inline Free-mode experiment lists so VPS match-primary can validate without Hostinger SQLite/files. */
+function experimentInlineDeckPayload(main, energy, label) {
+  const mainDeck = Array.isArray(main) ? main.map(String) : [];
+  const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
+  if (mainDeck.length < 60 || energyDeck.length < 12) {
+    throw new Error(t('lobby.experimentDeckIncomplete') || 'That experiment deck is incomplete or not loaded yet');
+  }
+  return {
+    deck: 'experiment',
+    deck_label: label || 'Deck Experiment',
+    main_deck: mainDeck,
+    energy_deck: energyDeck,
+  };
+}
+
 function deckPayloadFromChoice(deckSel) {
   const payload = { deck: deckSel };
   if (deckSel.startsWith('experiment_preset:')) {
@@ -15104,10 +15124,17 @@ function deckPayloadFromChoice(deckSel) {
     }
     const token = getAuthToken();
     if (!token) throw new Error('Sign in to use saved experiment decks');
+    const saved = (A.experimentDecks || []).find(d => d.slot === slot);
+    if (!saved?.main_deck?.length) {
+      throw new Error(t('lobby.experimentDeckNotLoaded') || ('Experiment deck #' + slot + ' not loaded — reopen Free lobby'));
+    }
     return {
-      deck: 'experiment_preset',
+      ...experimentInlineDeckPayload(
+        saved.main_deck,
+        saved.energy_deck,
+        saved.name || ('Experiment ' + slot),
+      ),
       experiment_slot: slot,
-      deck_slot: slot,
       token,
     };
   }
@@ -15117,6 +15144,18 @@ function deckPayloadFromChoice(deckSel) {
     }
     const password = normalizeExperimentPasswordInput(deckSel.slice(11));
     if (!password) throw new Error('Invalid experiment deck password');
+    const cached = A.experimentDeckCache?.[password];
+    if (cached?.main_deck?.length) {
+      return {
+        ...experimentInlineDeckPayload(
+          cached.main_deck,
+          cached.energy_deck,
+          cached.name || 'Deck Experiment',
+        ),
+        experiment_password: password,
+      };
+    }
+    // Fallback when cache is cold (Hostinger-only match path).
     return {
       deck: 'experiment:' + password,
       experiment_password: password,
@@ -15137,6 +15176,26 @@ function deckPayloadFromChoice(deckSel) {
     payload.token = token;
   }
   return payload;
+}
+
+async function ensureLobbyExperimentDeckReady() {
+  const mode = currentGameMode();
+  if (!isFreeGameMode(mode)) return;
+  const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
+  const choice = lobbyPwd
+    ? ('experiment:' + lobbyPwd)
+    : (el('sel-deck')?.value || '');
+  if (!choice) return;
+  if (choice.startsWith('experiment_preset:')) {
+    await ensureExperimentDeckList();
+    return;
+  }
+  if (!choice.startsWith('experiment:')) return;
+  const password = normalizeExperimentPasswordInput(choice.slice(11));
+  if (!password || A.experimentDeckCache?.[password]?.main_deck?.length) return;
+  const d = await apiExperimentCall('experiment_deck_load', { password });
+  A.experimentDeckCache[password] = d;
+  rememberExperimentPassword(password, d.name || 'Deck Experiment');
 }
 
 function lobbyDeckPayload() {
@@ -15209,7 +15268,9 @@ function captureRematchSettings(s) {
     cpuSolo: !!(s.cpu_solo || G.isCPU),
     cpuDifficulty: cpuDiff,
     name: me?.name || el('inp-name')?.value?.trim() || defaultPlayerName(1),
-    deckChoice: me?.deck_choice || el('sel-deck')?.value || 'nijigasaki',
+    // Prefer lobby selection so Free rematch keeps experiment_preset:/experiment: keys
+    // (server may store a generic "experiment" choice after inline resolve).
+    deckChoice: el('sel-deck')?.value || me?.deck_choice || 'nijigasaki',
     gameMode: s.game_mode || currentGameMode(),
     phaseTimer: s.phase_timer_cfg ? { ...s.phase_timer_cfg } : null,
   };
@@ -15300,8 +15361,10 @@ function cpuOpponentName() {
 
 async function startSoloRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
+  applyRematchToLobbyUI(rematch);
+  await ensureLobbyExperimentDeckReady();
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
-  const deckSel = rematch.deckChoice || 'nijigasaki';
+  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
   const r1 = await apiPost('create_room', {
@@ -15323,12 +15386,14 @@ async function startSoloRematch(rematch) {
 
 async function startUnrankedRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
+  applyRematchToLobbyUI(rematch);
+  await ensureLobbyExperimentDeckReady();
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   const r = await apiPost('create_room', {
     name,
     game_mode: currentGameMode(),
-    ...deckPayloadFromChoice(rematch.deckChoice || 'nijigasaki'),
+    ...deckPayloadFromChoice(rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki'),
     ...timerOpts,
   });
   G.roomId = r.room_id; G.token = r.player_token; G.playerId = r.player_id; G.isCPU = false;
@@ -15390,6 +15455,7 @@ async function doCreate() {
   const timerOpts = lobbyPhaseTimerOpts();
   setErr('');
   try {
+    await ensureLobbyExperimentDeckReady();
     const r = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
     G.roomId=r.room_id; G.token=r.player_token; G.playerId=r.player_id; G.isCPU=false;
     captureSyncMeta(r);
@@ -15408,6 +15474,7 @@ async function doJoin() {
   const name=el('inp-name').value.trim()||defaultPlayerName(2);
   setErr(''); G.roomId=code;
   try {
+    await ensureLobbyExperimentDeckReady();
     const r = await apiPost('join_room',{room_id:code,name,...lobbyDeckPayload()});
     G.token=r.player_token; G.playerId=r.player_id; G.isCPU=false;
     captureSyncMeta(r);
@@ -15430,6 +15497,7 @@ async function doSolo() {
   const diff = setCpuDifficulty(G.cpuDifficulty || el('sel-cpu-diff')?.value || 'easy');
   setErr('');
   try {
+    await ensureLobbyExperimentDeckReady();
     const r1 = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
     G.roomId=r1.room_id; G.token=r1.player_token; G.playerId='p1'; G.isCPU=true;
     captureSyncMeta(r1);
