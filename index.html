@@ -2158,11 +2158,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=21"></script>
+<script src="client/js/api-client.js?v=22"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=27"></script>
+<script src="client/js/game-sync.js?v=28"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -4274,7 +4274,11 @@ function saveActiveGameSession() {
     replayHandoff: !!G.replayHandoff,
     replayStep: G.replayStep || 0,
     replayTotal: G.replayTotal || 0,
-    apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
+    apiOrigin: G.apiOrigin === 'overflow'
+      ? 'overflow'
+      : (G.apiOrigin === 'hostinger'
+        ? 'hostinger'
+        : ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger')),
     savedAt: Date.now(),
   };
   const raw = JSON.stringify(payload);
@@ -4346,6 +4350,12 @@ function readSpectatorSession() {
 }
 
 function reconnectOriginOrder(preferred, { hostingerOnly = false } = {}) {
+  // Match-primary: live rooms are on VPS. Always prefer overflow (even if an old
+  // session recorded hostinger — Hostinger can no longer accept match writes).
+  if (typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) {
+    if (hostingerOnly) return ['overflow', 'hostinger'];
+    return ['overflow', 'hostinger'];
+  }
   if (hostingerOnly) return ['hostinger'];
   // Only probe overflow when the saved session says the room lived there.
   // Speculative Hostinger→overflow fallback was locking hub traffic onto a
@@ -11532,8 +11542,10 @@ async function enterRankedMatch(st) {
   G.token = st.player_token;
   G.playerId = st.player_id;
   G.isCPU = false;
-  // Ranked rooms live on Hostinger — lock before poll/actions (match-primary otherwise uses VPS).
-  if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
+  // Match-primary pins all live rooms to VPS (Hostinger match writes are disabled).
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger');
+  }
   showScr('game');
   startPoll();
 }

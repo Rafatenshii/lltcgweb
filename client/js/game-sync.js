@@ -218,7 +218,8 @@
     clearTimeout(G.watchdogTimer);
     clearPvPWatchdog();
     stopSyncStream();
-    if (typeof global.tcgClearApiOriginLock === 'function') global.tcgClearApiOriginLock();
+    // Do not clear G.apiOrigin here — mid-match stop/start must keep the room's
+    // origin lock. endGameSession / resetLobby / tcgClearApiOriginLock clear it.
   };
 
   function gameApiBase() {

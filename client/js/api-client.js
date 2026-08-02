@@ -113,6 +113,10 @@
   /** Lock the match to one origin for its lifetime (no mid-match migrate). */
   global.tcgLockApiOrigin = function tcgLockApiOrigin(origin) {
     global.G = global.G || {};
+    // Match-primary: Hostinger cannot accept game writes — never pin matches there.
+    if (global.TCG_MATCH_API_PRIMARY && origin !== 'overflow') {
+      origin = 'overflow';
+    }
     global.G.apiOrigin = origin === 'overflow' ? 'overflow' : 'hostinger';
     const urls = global.G.apiOrigin === 'overflow' ? overflowUrls() : HOSTINGER_URLS;
     global.API = urls.API;
@@ -138,17 +142,9 @@
     }
     const locked = global.G && global.G.apiOrigin;
 
-    // Match-primary: create/join/casual always hit VPS. A leftover hostinger lock
-    // (e.g. ranked reconnect) must not route create_room to Hostinger — writes are
-    // disabled there and CPU / How to Play both fail with 503.
-    if (global.TCG_MATCH_API_PRIMARY && action && MATCHMAKE_GAME[action]) {
-      return overflowUrls();
-    }
-
-    if (locked === 'overflow') return overflowUrls();
-    if (locked === 'hostinger') return HOSTINGER_URLS;
-
-    // Overhaul Part 1B: VPS is primary for match create/join/action (Redis rooms).
+    // Match-primary: all match traffic (create/join/action/get_state) uses VPS.
+    // A leftover hostinger lock from ranked reconnect / old sessions must not win —
+    // Hostinger returns match_writes_disabled for action/create/join.
     if (global.TCG_MATCH_API_PRIMARY) {
       if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
       if (context === 'matchmake' || context === 'ingame'
@@ -156,6 +152,9 @@
         return overflowUrls();
       }
     }
+
+    if (locked === 'overflow') return overflowUrls();
+    if (locked === 'hostinger') return HOSTINGER_URLS;
 
     if (context === 'ingame' || (action && INGAME_GAME[action])) {
       return HOSTINGER_URLS;
@@ -569,8 +568,9 @@
           lastErr.code === 'match_writes_disabled'
           || /match writes disabled/i.test(String(lastErr.message || ''))
         ));
-        // Stale hostinger lock + disabled match writes: clear lock and create on VPS.
-        if (matchWritesDisabled && MATCHMAKE_GAME[action] && global.TCG_OVERFLOW_ENABLED) {
+        // Stale hostinger routing + disabled match writes: retry on VPS (create/join/action).
+        if (matchWritesDisabled && global.TCG_OVERFLOW_ENABLED
+            && (MATCHMAKE_GAME[action] || action === 'action' || action === 'dry_run_actions' || action === 'ping')) {
           if (typeof global.tcgClearApiOriginLock === 'function') global.tcgClearApiOriginLock();
           if (!(await probeOverflowAlive())) {
             global.reportApiError(lastErr, { source: 'apiPost:' + action, silent: !!opts.silent });
@@ -582,8 +582,9 @@
           return d;
         }
         global.reportApiError(lastErr, { source: 'apiPost:' + action, silent: !!opts.silent });
+        if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;
         if (ctx === 'ingame' || (global.G && global.G.apiOrigin === 'hostinger')) throw lastErr;
-        if (OVERFLOW_BLOCKED_GAME[action] || OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;
+        if (OVERFLOW_BLOCKED_GAME[action]) throw lastErr;
         if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw lastErr;
         if (!global.isTransientAccountError(lastErr)
             && !(lastErr && (lastErr.httpStatus >= 500 || lastErr.httpStatus === 429 || lastErr.httpStatus === 408 || lastErr.httpStatus === 503))) {
