@@ -1,5 +1,21 @@
-# Overflow standby — capped resources for Plan B only (not primary traffic).
+# Match-primary / overflow stack — Redis for live rooms + capped PHP API.
+# See docs/overhaul/01-match-store.md and docs/DEPLOY.md.
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: lltcgweb-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    mem_limit: 128m
+    cpus: 0.25
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
   tcg-api:
     build: .
     container_name: lltcgweb-api
@@ -15,11 +31,16 @@ services:
       TCG_PRODUCTION: "1"
       TCG_DEBUG: "0"
       TCG_CORS_ORIGINS: "https://loveliveradio.ca,https://www.loveliveradio.ca"
-      # Sync notify for rooms created on overflow (same secrets as Hostinger tcg_sync.local.php)
       TCG_SYNC_ENABLED: "1"
-    # Keep overflow from starving Chiichan / radio on 1 vCPU / 4GB
+      TCG_GAME_STORE: "redis"
+      TCG_REDIS_URL: "redis://redis:6379"
+      TCG_REDIS_PREFIX: "lltcg:room:"
+      TCG_GAME_SNAPSHOT_DIR: "/var/www/html/games"
+    depends_on:
+      redis:
+        condition: service_healthy
     mem_limit: 512m
-    cpus: "0.50"
+    cpus: 0.5
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api.php?action=ping"]

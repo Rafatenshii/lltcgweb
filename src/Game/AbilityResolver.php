@@ -4,6 +4,8 @@
  */
 
 require_once __DIR__ . '/AbilityResolverSwitch.php';
+require_once __DIR__ . '/EffectRegistry.php';
+require_once __DIR__ . '/EffectHandlers.php';
 
 function resolveAbilityEffect(array $state, string $pid, array $source, array $ab, array $ctx = []): array {
     // Do not refreshEmptyMainDecks here: WR-targeting skills (add_from_wr, etc.) must
@@ -22,7 +24,22 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
         $p['_effect_source_is_niji'] = true;
     }
 
-    $state = resolveAbilityEffectSwitch($state, $pid, $source, $ab, $ctx, $type, $p, $name);
+    // EffectRegistry is the sole dispatcher for migrated high-frequency types.
+    if ($type !== '' && class_exists(\LLTCG\Game\EffectRegistry::class)
+        && \LLTCG\Game\EffectRegistry::hasHandler($type)) {
+        $state = \LLTCG\Game\EffectRegistry::dispatch(
+            $state,
+            $pid,
+            $source,
+            $ab,
+            $ctx,
+            $type,
+            $p,
+            $name
+        );
+    } else {
+        $state = resolveAbilityEffectSwitch($state, $pid, $source, $ab, $ctx, $type, $p, $name);
+    }
 
     if (nijiIsNijigasakiEffectType($type)) {
         $state = nijiResolveNijigasakiEffect($state, $pid, $source, $ab, $ctx);

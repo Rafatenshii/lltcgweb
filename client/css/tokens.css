@@ -1,0 +1,17 @@
+/* Extracted from index.html (tokens) — overhaul Part 2A */
+/* ═══════════════════════════════════════ TOKENS */
+:root {
+  --pink:#FF6BA8; --pink-l:#FFB3D1; --pink-d:#D63384; --pink-dd:#9C1A5A;
+  --bg:#120810; --bg-mid:#1E0F18; --bg-panel:#2A1520; --bg-card:#3D1A2E;
+  --border:rgba(255,107,168,.25); --border-h:rgba(255,107,168,.6);
+  --shadow:0 4px 24px rgba(214,51,132,.18); --shadow-lg:0 12px 40px rgba(0,0,0,.5);
+  --r:12px; --rsm:8px;
+  --h-pink:#FF6BA8; --h-red:#E53E3E; --h-yellow:#D4A017;
+  --h-green:#2F855A; --h-blue:#2B6CB0; --h-purple:#6B46C1; --h-any:#718096;
+  --ui-panel-bg:rgba(6,14,28,.84);
+  --ui-panel-border:rgba(186,228,255,.32);
+  --ui-panel-border-strong:rgba(186,228,255,.5);
+  --ui-panel-glow:0 0 0 1px rgba(186,228,255,.08),0 8px 32px rgba(0,0,0,.45);
+  /* Options → Text & UI scale (1 = 100%). Applied via zoom on scrollable shells. */
+  --ui-text-scale:1;
+}

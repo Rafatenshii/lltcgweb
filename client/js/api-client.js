@@ -15,6 +15,10 @@
   global.TCG_OVERFLOW_ORIGIN = global.TCG_OVERFLOW_ORIGIN
     || 'https://stream.loveliveradio.ca/tcg/api';
   global.TCG_OVERFLOW_ENABLED = global.TCG_OVERFLOW_ENABLED !== false;
+  /** When true, new matches + in-game actions use VPS overflow API (Redis-backed). Hub/account stay Hostinger. */
+  global.TCG_MATCH_API_PRIMARY = global.TCG_MATCH_API_PRIMARY === true
+    || global.TCG_MATCH_API_PRIMARY === 1
+    || global.TCG_MATCH_API_PRIMARY === '1';
   global.TCG_OVERFLOW_FAIL_THRESHOLD = global.TCG_OVERFLOW_FAIL_THRESHOLD || 3;
   global.TCG_OVERFLOW_HOLD_MS = global.TCG_OVERFLOW_HOLD_MS || 120000;
   global.TCG_OVERFLOW_PROBE_MS = global.TCG_OVERFLOW_PROBE_MS || 45000;
@@ -135,6 +139,15 @@
     const locked = global.G && global.G.apiOrigin;
     if (locked === 'overflow') return overflowUrls();
     if (locked === 'hostinger') return HOSTINGER_URLS;
+
+    // Overhaul Part 1B: VPS is primary for match create/join/action (Redis rooms).
+    if (global.TCG_MATCH_API_PRIMARY) {
+      if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
+      if (context === 'matchmake' || context === 'ingame'
+          || (action && (MATCHMAKE_GAME[action] || INGAME_GAME[action]))) {
+        return overflowUrls();
+      }
+    }
 
     if (context === 'ingame' || (action && INGAME_GAME[action])) {
       return HOSTINGER_URLS;

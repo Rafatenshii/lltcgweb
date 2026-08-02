@@ -25,36 +25,8 @@ function tryResolveAbilityEffectSwitchDeckLook(
             }
             break;
 
-        case 'draw_if_success_lives':
-            $succ = $p['success_lives'] ?? [];
-            if (!empty($ab['group'])) {
-                $succ = array_values(array_filter(
-                    $succ,
-                    fn($c) => ($c['group'] ?? '') === ($ab['group'] ?? '')
-                ));
-            }
-            if (!empty($succ)) {
-                $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] drew $drawn (Success Live area not empty).");
-            }
-            break;
-
-        case 'draw_if_bonus_hearts_on_stage':
-            if (stageHasMemberWithExtraHearts($p)) {
-                $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] drew $drawn (Member with bonus hearts on Stage).");
-            }
-            break;
-
-        case 'draw_if_wr_min':
-            if (count($p['waiting_room'] ?? []) >= intval($ab['min_wr'] ?? 10)) {
-                $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] drew $drawn (Waiting Room has " . intval($ab['min_wr'] ?? 10) . "+ cards).");
-            }
-            break;
+        // draw_if_success_lives / draw_if_bonus_hearts_on_stage / draw_if_wr_min
+        // → LLTCG\Game\EffectHandlers via EffectRegistry (overhaul Part 3).
 
         case 'deck_surveil':
             $look = intval($ab['look'] ?? 2);

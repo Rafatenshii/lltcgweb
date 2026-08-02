@@ -23,7 +23,11 @@
         "test": "phpunit",
         "validate": [
             "@php scripts/validate_json.php",
-            "@php scripts/validate_cards.php"
+            "@php scripts/validate_cards.php",
+            "@php scripts/validate_ability_ir.php",
+            "@php scripts/validate_i18n.php",
+            "@php scripts/validate_i18n_js.php",
+            "python scripts/validate_tutorial_i18n.py"
         ],
         "lint": "bash scripts/lint_php.sh"
     }

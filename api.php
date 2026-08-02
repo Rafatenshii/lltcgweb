@@ -27,6 +27,21 @@ require_once __DIR__ . '/config/cors.php';
 require_once __DIR__ . '/config/errors.php';
 require_once __DIR__ . '/config/rate_limit.php';
 require_once __DIR__ . '/cards_data.php';
+if (is_file(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+} else {
+    // Hostinger may omit vendor; PSR-4 fallback for Game\Store.
+    spl_autoload_register(static function (string $class): void {
+        if (!str_starts_with($class, 'LLTCG\\')) {
+            return;
+        }
+        $rel = str_replace('\\', '/', substr($class, 6)) . '.php';
+        $path = __DIR__ . '/src/' . $rel;
+        if (is_file($path)) {
+            require_once $path;
+        }
+    });
+}
 tcgDefinePathConstants();
 
 header('Content-Type: application/json');
@@ -4664,21 +4679,34 @@ function generateToken(): string {
 }
 
 // ─────────────────────────────────────────────
-// Persistence (File-based)
+// Persistence (file flock or Redis via GameStore)
 // ─────────────────────────────────────────────
+
+function tcgResolveGameStore(): \LLTCG\Game\Store\GameStoreInterface {
+    if (isset($GLOBALS['__tcg_game_store'])
+        && $GLOBALS['__tcg_game_store'] instanceof \LLTCG\Game\Store\GameStoreInterface) {
+        return $GLOBALS['__tcg_game_store'];
+    }
+    $GLOBALS['__tcg_game_store'] = \LLTCG\Game\Store\GameStoreFactory::fromEnv();
+    return $GLOBALS['__tcg_game_store'];
+}
+
+/** @internal tests may inject a store */
+function tcgSetGameStore(?\LLTCG\Game\Store\GameStoreInterface $store): void {
+    $GLOBALS['__tcg_game_store'] = $store;
+}
+
 function gameFile(string $roomId): string {
+    // Legacy helper for presence/side paths — room body may live in Redis.
     return GAMES_DIR . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
 }
 
 function loadGame(string $roomId): ?array {
-    $file = gameFile($roomId);
-    if (!file_exists($file)) return null;
-    $data = json_decode(file_get_contents($file), true);
-    return $data ?: null;
+    return tcgResolveGameStore()->load($roomId);
 }
 
 function saveGame(string $roomId, array $state): void {
-    file_put_contents(gameFile($roomId), json_encode($state), LOCK_EX);
+    tcgResolveGameStore()->save($roomId, $state);
     if (!isPvpMatch($state)) {
         return;
     }
@@ -4696,23 +4724,10 @@ function saveGame(string $roomId, array $state): void {
 }
 
 function withLock(string $roomId, callable $fn, ?float $timeoutSec = null): mixed {
-    $lockFile = GAMES_DIR . 'lock_' . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId));
-    $lock = fopen($lockFile, 'w');
-    if (!$lock) throw new Exception('Cannot acquire lock');
-    $deadline = microtime(true) + ($timeoutSec ?? LOCK_TIMEOUT);
-    while (!flock($lock, LOCK_EX | LOCK_NB)) {
-        if (microtime(true) > $deadline) {
-            fclose($lock);
-            throw new Exception('Lock timeout');
-        }
-        usleep(50000);
-    }
     $GLOBALS['__tcg_sync_defer'] = intval($GLOBALS['__tcg_sync_defer'] ?? 0) + 1;
     try {
-        return $fn();
+        return tcgResolveGameStore()->withLock($roomId, $fn, $timeoutSec);
     } finally {
-        flock($lock, LOCK_UN);
-        fclose($lock);
         $GLOBALS['__tcg_sync_defer'] = max(0, intval($GLOBALS['__tcg_sync_defer'] ?? 1) - 1);
         if (intval($GLOBALS['__tcg_sync_defer'] ?? 0) === 0) {
             $pending = $GLOBALS['__tcg_sync_pending'] ?? [];
