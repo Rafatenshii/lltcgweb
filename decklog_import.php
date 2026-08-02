@@ -159,3 +159,219 @@ function tcgFetchDecklogView(string $code): array
     }
     return $data;
 }
+
+/** Family key for rarity/print variants (same set number). */
+function tcgDecklogCardFamilyKey(string $cardNo): string
+{
+    $cardNo = str_replace('＋', '+', trim($cardNo));
+    if (preg_match('/^(.+)-([A-Za-z0-9+]+)$/', $cardNo, $m)) {
+        return $m[1];
+    }
+    return $cardNo;
+}
+
+function tcgDecklogProductKind(string $boosterPack): string
+{
+    $p = $boosterPack;
+    if ($p === '') {
+        return 'other';
+    }
+    if ($p === 'PRカード') {
+        return 'pr';
+    }
+    if (str_starts_with($p, 'スタートデッキ')) {
+        return 'sd';
+    }
+    if (str_starts_with($p, 'コレクション')) {
+        return 'collection';
+    }
+    if (str_starts_with($p, 'プレミアムブースター') && str_contains($p, 'DUO')) {
+        return 'pb_duo';
+    }
+    if (str_starts_with($p, 'プレミアムブースター')) {
+        return 'pb';
+    }
+    if (str_starts_with($p, 'ブースターパック')) {
+        return 'bp';
+    }
+    return 'other';
+}
+
+/**
+ * @param array<string,mixed> $card
+ * @return array{booster_pack: string, product_kind: string}
+ */
+function tcgDecklogObtainInfo(array $card): array
+{
+    $pack = trim((string)($card['booster_pack'] ?? ''));
+    return [
+        'booster_pack' => $pack,
+        'product_kind' => tcgDecklogProductKind($pack),
+    ];
+}
+
+/**
+ * @param array<string,mixed> $target
+ * @param array<string,mixed> $candidate
+ */
+function tcgDecklogSubstituteScore(array $target, array $candidate): int
+{
+    if (($candidate['card_no'] ?? '') === ($target['card_no'] ?? '')) {
+        return 0;
+    }
+    $tType = (string)($target['card_type'] ?? '');
+    $cType = (string)($candidate['card_type'] ?? '');
+    if ($tType === '' || $tType !== $cType) {
+        return 0;
+    }
+    $score = 20;
+    if (tcgDecklogCardFamilyKey((string)$target['card_no']) === tcgDecklogCardFamilyKey((string)$candidate['card_no'])) {
+        $score += 100;
+    }
+    $tName = trim((string)($target['name_en'] ?? ''));
+    $cName = trim((string)($candidate['name_en'] ?? ''));
+    if ($tName !== '' && $tName === $cName) {
+        $score += 80;
+    } elseif (trim((string)($target['name'] ?? '')) !== ''
+        && trim((string)($target['name'] ?? '')) === trim((string)($candidate['name'] ?? ''))) {
+        $score += 70;
+    }
+    if ($tType === 'エネルギー') {
+        $score += 40;
+    }
+    if ((string)($target['group'] ?? '') !== '' && ($target['group'] ?? '') === ($candidate['group'] ?? '')) {
+        $score += 25;
+    }
+    if ($tType === 'メンバー' && intval($target['cost'] ?? -1) === intval($candidate['cost'] ?? -2)) {
+        $score += 20;
+    }
+    if ($tType === 'ライブ') {
+        if (intval($target['score'] ?? -1) === intval($candidate['score'] ?? -2)) {
+            $score += 15;
+        }
+        $tHearts = json_encode($target['required_hearts'] ?? []);
+        $cHearts = json_encode($candidate['required_hearts'] ?? []);
+        if ($tHearts !== '[]' && $tHearts === $cHearts) {
+            $score += 25;
+        }
+    }
+    return $score;
+}
+
+/**
+ * @param array<string,mixed> $target
+ * @param array<string, array<string,mixed>> $cardMap
+ * @param array<string, int> $spareByNo owned copies still available
+ * @return list<array{card_no: string, name: string, name_en: string, have: int, score: int}>
+ */
+function tcgDecklogFindSubstitutes(array $target, array $cardMap, array $spareByNo, int $limit = 8): array
+{
+    $out = [];
+    foreach ($spareByNo as $no => $have) {
+        if ($have <= 0 || !isset($cardMap[$no])) {
+            continue;
+        }
+        $cand = $cardMap[$no];
+        $score = tcgDecklogSubstituteScore($target, $cand);
+        if ($score < 40) {
+            continue;
+        }
+        $out[] = [
+            'card_no' => $no,
+            'name' => (string)($cand['name'] ?? $no),
+            'name_en' => (string)($cand['name_en'] ?? ''),
+            'have' => $have,
+            'score' => $score,
+        ];
+    }
+    usort($out, static function (array $a, array $b): int {
+        return ($b['score'] <=> $a['score']) ?: ($b['have'] <=> $a['have']);
+    });
+    return array_slice($out, 0, $limit);
+}
+
+/**
+ * Compare recipe lists to a collection map.
+ *
+ * @param list<string> $main
+ * @param list<string> $energy
+ * @param array<string, int> $owned
+ * @param array<string, array<string,mixed>> $cardMap
+ * @return list<array<string,mixed>>
+ */
+function tcgDecklogMissingFromOwned(array $main, array $energy, array $owned, array $cardMap): array
+{
+    $need = [];
+    foreach (array_merge($main, $energy) as $no) {
+        $no = (string)$no;
+        $need[$no] = ($need[$no] ?? 0) + 1;
+    }
+    $used = [];
+    foreach ($need as $no => $qty) {
+        $have = intval($owned[$no] ?? 0);
+        $used[$no] = min($have, $qty);
+    }
+    $spare = [];
+    foreach ($owned as $no => $qty) {
+        $left = intval($qty) - intval($used[$no] ?? 0);
+        if ($left > 0) {
+            $spare[(string)$no] = $left;
+        }
+    }
+    $missing = [];
+    foreach ($need as $no => $qty) {
+        $have = intval($owned[$no] ?? 0);
+        $short = $qty - $have;
+        if ($short <= 0) {
+            continue;
+        }
+        $card = $cardMap[$no] ?? ['card_no' => $no, 'name' => $no, 'name_en' => '', 'card_type' => '', 'booster_pack' => ''];
+        $subs = tcgDecklogFindSubstitutes($card, $cardMap, $spare);
+        $missing[] = [
+            'card_no' => $no,
+            'name' => (string)($card['name'] ?? $no),
+            'name_en' => (string)($card['name_en'] ?? ''),
+            'card_type' => (string)($card['card_type'] ?? ''),
+            'need' => $qty,
+            'have' => $have,
+            'shortfall' => $short,
+            'obtain' => tcgDecklogObtainInfo($card),
+            'substitutes' => $subs,
+        ];
+    }
+    usort($missing, static function (array $a, array $b): int {
+        return ($b['shortfall'] <=> $a['shortfall']) ?: strcmp($a['card_no'], $b['card_no']);
+    });
+    return $missing;
+}
+
+/**
+ * Replace shortfall copies using card_no => substitute_card_no map.
+ *
+ * @param list<string> $list
+ * @param array<string, int> $owned
+ * @param array<string, string> $substitutions
+ * @return array{0: list<string>, 1: list<string>} [result list, unresolved card_nos]
+ */
+function tcgDecklogApplySubstitutionsToList(array $list, array &$ownedLeft, array $substitutions): array
+{
+    $out = [];
+    $unresolved = [];
+    foreach ($list as $no) {
+        $no = (string)$no;
+        if (intval($ownedLeft[$no] ?? 0) > 0) {
+            $out[] = $no;
+            $ownedLeft[$no]--;
+            continue;
+        }
+        $sub = trim((string)($substitutions[$no] ?? ''));
+        if ($sub !== '' && intval($ownedLeft[$sub] ?? 0) > 0) {
+            $out[] = $sub;
+            $ownedLeft[$sub]--;
+            continue;
+        }
+        $unresolved[] = $no;
+        $out[] = $no;
+    }
+    return [$out, array_values(array_unique($unresolved))];
+}

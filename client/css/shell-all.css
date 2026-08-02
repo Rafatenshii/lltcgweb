@@ -6038,9 +6038,72 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 .experiment-pwd-active .btn-ghost{padding:4px 8px;font-size:11px}
 #inp-lobby-experiment-pwd{font-family:ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}
 #screen-deck .deck-builder-meta__slots,
-#screen-deck .deck-builder-meta__experiment{
+#screen-deck .deck-builder-meta__experiment,
+#screen-deck .deck-builder-meta__account-decklog{
   flex:1 1 280px;
   min-width:min(280px,100%);
+}
+.decklog-missing-mbox{
+  max-width:min(720px,96vw);
+  text-align:left;
+  max-height:min(85vh,900px);
+  overflow:auto;
+}
+.decklog-missing-lead{
+  font-size:13px;
+  color:rgba(255,255,255,.7);
+  margin:0 0 12px;
+}
+.decklog-missing-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:12px;
+}
+.decklog-missing-row{
+  display:grid;
+  grid-template-columns:52px 1fr minmax(140px,200px);
+  gap:10px;
+  align-items:center;
+  padding:8px 10px;
+  border-radius:8px;
+  background:rgba(0,0,0,.28);
+  border:1px solid rgba(186,228,255,.18);
+}
+.decklog-missing-thumb{
+  width:52px;
+  height:72px;
+  object-fit:cover;
+  border-radius:4px;
+  background:rgba(0,0,0,.35);
+}
+.decklog-missing-name{font-weight:700;font-size:13px;line-height:1.25}
+.decklog-missing-meta,.decklog-missing-obtain{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px}
+.decklog-missing-obtain{color:#bae4ff}
+.decklog-missing-sub label{display:block;font-size:11px;margin-bottom:4px;color:rgba(255,255,255,.75)}
+.decklog-missing-sub select{
+  width:100%;
+  font:inherit;
+  font-size:12px;
+  padding:6px 8px;
+  border-radius:6px;
+  border:1px solid rgba(186,228,255,.35);
+  background:#1a2433;
+  color:#fff;
+}
+.decklog-missing-err{color:#ffb4c8;font-size:12px;margin:0 0 10px}
+.decklog-missing-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+  align-items:center;
+}
+@media (max-width:640px){
+  .decklog-missing-row{grid-template-columns:44px 1fr;grid-template-areas:"img body" "sub sub"}
+  .decklog-missing-row img{grid-area:img}
+  .decklog-missing-body{grid-area:body}
+  .decklog-missing-sub{grid-area:sub}
 }
 #screen-deck .deck-section-head{
   display:flex;

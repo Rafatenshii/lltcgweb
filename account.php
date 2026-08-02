@@ -8,7 +8,7 @@
  *
  * Endpoints (action=):
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
- *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, reset_account,
+ *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
  *   ranked_join, ranked_leave, ranked_status, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
@@ -73,6 +73,7 @@ try {
         case 'deck_equip_starter': echo json_encode(tcgApiDeckEquipStarter($body)); break;
         case 'deck_reset_starter': echo json_encode(tcgApiDeckResetStarter($body)); break;
         case 'deck_auto_build':    echo json_encode(tcgApiDeckAutoBuild($body)); break;
+        case 'deck_import_decklog': echo json_encode(tcgApiDeckImportDecklog($body)); break;
         case 'reset_account':      echo json_encode(tcgApiResetAccount($body)); break;
         case 'ranked_join':        echo json_encode(tcgApiRankedJoin($body)); break;
         case 'ranked_leave':       echo json_encode(tcgApiRankedLeave($body)); break;
@@ -679,6 +680,84 @@ function tcgApiDeckResetStarter(array $body): array {
         'name' => $lists['name'],
         'main_deck' => $lists['main_deck'],
         'energy_deck' => $lists['energy_deck'],
+    ];
+}
+
+/**
+ * Import a Bushiroad Deck Log recipe into the account deck builder.
+ * Returns complete lists when the collection covers the recipe; otherwise
+ * missing-card details with obtain hints and substitute suggestions.
+ *
+ * Body: code|url, optional substitutions: { missing_card_no: substitute_card_no }
+ */
+function tcgApiDeckImportDecklog(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    if (function_exists('tcgRateLimitForAction')) {
+        tcgRateLimitForAction('deck_import_decklog', $body);
+    }
+    require_once __DIR__ . '/decklog_import.php';
+    $code = tcgNormalizeDecklogCode((string)($body['code'] ?? $body['url'] ?? ''));
+    $payload = tcgFetchDecklogView($code);
+    $cards = tcgLoadCardsData();
+    $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
+    $cardMap = tcgBuildCardMap($cards);
+    $owned = tcgGetCollectionMap($uid);
+    $main = $mapped['main_deck'];
+    $energy = $mapped['energy_deck'];
+    $name = trim($mapped['title']) !== ''
+        ? $mapped['title']
+        : ('Deck Log ' . ($mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code));
+
+    $rawSubs = $body['substitutions'] ?? [];
+    $substitutions = [];
+    if (is_array($rawSubs)) {
+        foreach ($rawSubs as $from => $to) {
+            $fromNo = trim((string)$from);
+            $toNo = trim((string)$to);
+            if ($fromNo === '' || $toNo === '' || !isset($cardMap[$toNo])) {
+                continue;
+            }
+            $substitutions[$fromNo] = $toNo;
+        }
+    }
+
+    if ($substitutions) {
+        $ownedLeft = $owned;
+        [$main, $unMain] = tcgDecklogApplySubstitutionsToList($main, $ownedLeft, $substitutions);
+        [$energy, $unEnergy] = tcgDecklogApplySubstitutionsToList($energy, $ownedLeft, $substitutions);
+        unset($unMain, $unEnergy);
+    }
+
+    $missing = tcgDecklogMissingFromOwned($main, $energy, $owned, $cardMap);
+    $decklogCode = $mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code;
+
+    if ($missing) {
+        return [
+            'success' => true,
+            'complete' => false,
+            'decklog_code' => $decklogCode,
+            'name' => $name,
+            'main_deck' => array_values($main),
+            'energy_deck' => array_values($energy),
+            'missing' => $missing,
+            'message' => 'The following cards are missing to create this deck',
+        ];
+    }
+
+    $validation = tcgValidateDeckLists($main, $energy, $cardMap, $owned);
+    if (!$validation['valid']) {
+        throw new Exception(implode('; ', $validation['errors']), 400);
+    }
+
+    return [
+        'success' => true,
+        'complete' => true,
+        'decklog_code' => $decklogCode,
+        'name' => $name,
+        'main_deck' => array_values($main),
+        'energy_deck' => array_values($energy),
+        'validation' => $validation,
     ];
 }
 

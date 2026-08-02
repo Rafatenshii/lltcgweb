@@ -13,6 +13,7 @@ final class DecklogImportTest extends TestCase
     {
         require_once dirname(__DIR__, 2) . '/decklog_import.php';
         require_once dirname(__DIR__, 2) . '/experiment_decks.php';
+        require_once dirname(__DIR__, 2) . '/deck_validate.php';
     }
 
     public function testNormalizeCodeFromUrlAndBare(): void
@@ -71,5 +72,91 @@ final class DecklogImportTest extends TestCase
             'list' => [],
             'sub_list' => [],
         ], $cards);
+    }
+
+    public function testMissingFromOwnedReportsShortfallAndObtain(): void
+    {
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+        $cardMap = tcgBuildCardMap($cards);
+        $fixture = dirname(__DIR__) . '/fixtures/decklog_2X7YN.json';
+        $payload = json_decode((string)file_get_contents($fixture), true);
+        $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
+
+        $owned = [];
+        foreach (array_merge($mapped['main_deck'], $mapped['energy_deck']) as $no) {
+            $owned[$no] = ($owned[$no] ?? 0) + 1;
+        }
+        $victim = $mapped['main_deck'][0];
+        $owned[$victim] = max(0, ($owned[$victim] ?? 0) - 2);
+
+        $missing = tcgDecklogMissingFromOwned(
+            $mapped['main_deck'],
+            $mapped['energy_deck'],
+            $owned,
+            $cardMap
+        );
+        $this->assertNotEmpty($missing);
+        $row = null;
+        foreach ($missing as $m) {
+            if ($m['card_no'] === $victim) {
+                $row = $m;
+                break;
+            }
+        }
+        $this->assertNotNull($row);
+        $this->assertSame(2, $row['shortfall']);
+        $this->assertArrayHasKey('booster_pack', $row['obtain']);
+        $this->assertArrayHasKey('product_kind', $row['obtain']);
+        $this->assertNotSame('', $row['obtain']['product_kind']);
+    }
+
+    public function testApplySubstitutionsFillsShortfall(): void
+    {
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+        $cardMap = tcgBuildCardMap($cards);
+        $main = ['PL!HS-bp1-002-R', 'PL!HS-bp1-002-R', 'PL!HS-bp1-002-R', 'PL!HS-bp1-002-R'];
+        $energy = [];
+        // Own 1 of target + 3 of a same-type substitute family member if possible.
+        $owned = ['PL!HS-bp1-002-R' => 1];
+        $sub = null;
+        foreach ($cardMap as $no => $card) {
+            if ($no === 'PL!HS-bp1-002-R') {
+                continue;
+            }
+            if (($card['card_type'] ?? '') !== 'メンバー') {
+                continue;
+            }
+            if (tcgDecklogSubstituteScore($cardMap['PL!HS-bp1-002-R'], $card) >= 40) {
+                $sub = $no;
+                break;
+            }
+        }
+        $this->assertNotNull($sub);
+        $owned[$sub] = 3;
+
+        $missing = tcgDecklogMissingFromOwned($main, $energy, $owned, $cardMap);
+        $this->assertCount(1, $missing);
+        $this->assertSame(3, $missing[0]['shortfall']);
+
+        $ownedLeft = $owned;
+        [$filled, $unresolved] = tcgDecklogApplySubstitutionsToList(
+            $main,
+            $ownedLeft,
+            ['PL!HS-bp1-002-R' => $sub]
+        );
+        $this->assertSame([], $unresolved);
+        $this->assertCount(4, $filled);
+        $this->assertSame(1, count(array_filter($filled, static fn($n) => $n === 'PL!HS-bp1-002-R')));
+        $this->assertSame(3, count(array_filter($filled, static fn($n) => $n === $sub)));
+
+        $after = tcgDecklogMissingFromOwned($filled, $energy, $owned, $cardMap);
+        $this->assertSame([], $after);
+    }
+
+    public function testProductKindForBoosterAndPr(): void
+    {
+        $this->assertSame('bp', tcgDecklogProductKind('ブースターパック vol.1'));
+        $this->assertSame('pr', tcgDecklogProductKind('PRカード'));
+        $this->assertSame('sd', tcgDecklogProductKind('スタートデッキ ラブライブ！'));
     }
 }

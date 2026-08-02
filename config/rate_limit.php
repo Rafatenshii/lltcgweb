@@ -103,5 +103,8 @@ function tcgRateLimitForAction(string $action, array $body = [], ?string $authTo
         case 'experiment_decklog_import':
             tcgRateLimitCheck('experiment_decklog_import', $ip, 20, TCG_RATE_WINDOW_SEC);
             break;
+        case 'deck_import_decklog':
+            tcgRateLimitCheck('deck_import_decklog', tcgRateLimitAuthKey($body, $authToken), 20, TCG_RATE_WINDOW_SEC);
+            break;
     }
 }

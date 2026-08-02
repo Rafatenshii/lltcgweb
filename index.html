@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=1">
+<link rel="stylesheet" href="client/css/shell-all.css?v=2">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -916,6 +916,14 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <label data-i18n="deck.presetSlot">Preset slot (max 10)</label>
           <div class="deck-slot-row" id="deck-slots"></div>
         </div>
+        <div class="field deck-builder-meta__account-decklog" id="deck-account-decklog-wrap" hidden>
+          <label for="inp-account-decklog" data-i18n="deck.decklogCode">Deck Log code</label>
+          <div class="experiment-pwd-row">
+            <input type="text" id="inp-account-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
+            <button class="btn-out" id="btn-account-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+          </div>
+          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a Bushiroad Deck Log code or view URL — loads into this preset if you own the cards.</p>
+        </div>
         <div class="field deck-builder-meta__experiment" id="deck-experiment-pwd-wrap" hidden>
           <label for="inp-experiment-load-pwd" data-i18n="deck.deckPassword">Deck password</label>
           <div class="experiment-pwd-row">
@@ -1015,6 +1023,21 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     <p style="font-size:13px;color:rgba(255,255,255,.65);margin-bottom:12px" data-i18n="deck.experimentStarterLead">Load an official starter list as your base — edit freely from the full card pool.</p>
     <div class="pickgrid" id="experiment-starter-grid"></div>
     <button class="btn-ghost" id="btn-experiment-starter-cancel" type="button" style="width:auto;padding:8px 18px;margin-top:8px" data-i18n="common.cancel">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay" id="modal-decklog-missing" aria-modal="true" aria-labelledby="decklog-missing-title">
+  <div class="mbox decklog-missing-mbox">
+    <button class="mcls" type="button" id="btn-decklog-missing-close" aria-label="Close">✕</button>
+    <h2 id="decklog-missing-title" data-i18n="deck.decklogMissingTitle">The following cards are missing to create this deck</h2>
+    <p class="decklog-missing-lead" id="decklog-missing-lead" data-i18n="deck.decklogMissingLead">Replace missing copies with substitutes from your collection, or cancel.</p>
+    <div class="decklog-missing-list" id="decklog-missing-list"></div>
+    <p class="decklog-missing-err" id="decklog-missing-err" hidden></p>
+    <div class="decklog-missing-actions">
+      <button class="btn-ghost" type="button" id="btn-decklog-missing-cancel" data-i18n="common.cancel">Cancel</button>
+      <button class="btn-out" type="button" id="btn-decklog-missing-auto" data-i18n="deck.decklogAutoSubs">Auto-pick substitutes</button>
+      <button class="btn-grad" type="button" id="btn-decklog-missing-apply" data-i18n="deck.decklogApplySubs">Replace &amp; add deck</button>
+    </div>
   </div>
 </div>
 
@@ -2088,7 +2111,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=88"></script>
+<script src="i18n.js?v=89"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -6533,6 +6556,7 @@ function syncDeckBuilderChrome() {
   const backBtn = el('btn-deck-back');
   const searchWrap = el('deck-pool-search-wrap');
   const pwdWrap = el('deck-experiment-pwd-wrap');
+  const accountDecklogWrap = el('deck-account-decklog-wrap');
   const slotsWrap = el('deck-builder-slots-wrap');
   const nameWrap = el('deck-builder-name-wrap');
   const metaRow = el('deck-builder-meta');
@@ -6549,6 +6573,7 @@ function syncDeckBuilderChrome() {
   }
   if (searchWrap) searchWrap.hidden = false;
   if (pwdWrap) pwdWrap.hidden = !experiment;
+  if (accountDecklogWrap) accountDecklogWrap.hidden = experiment || !isSignedInAccount();
   if (slotsWrap) {
     slotsWrap.hidden = experiment && !signedExp;
     const slotLabel = slotsWrap.querySelector('label');
@@ -9729,6 +9754,205 @@ async function importExperimentDeckFromDecklog(raw) {
         || (`Imported ${data.decklog_code || code}. Experiment password: ${pwd}`))
       : (t('deck.decklogImported', { code: data.decklog_code || code })
         || (`Imported ${data.decklog_code || code}.`));
+  } catch (e) {
+    el('deck-err').textContent = e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev || (t('deck.decklogImport') || 'Import'); }
+  }
+}
+
+/** Pending account Deck Log import awaiting substitute choices. */
+let _decklogMissingPending = null;
+
+function decklogObtainLabel(obtain) {
+  const packRaw = obtain?.booster_pack || '';
+  const pack = cardListPackDisplayName(packRaw);
+  const kind = obtain?.product_kind || '';
+  if (kind === 'bp' || kind === 'pb' || kind === 'pb_duo') {
+    return t('deck.decklogObtainBooster', { pack }) || `Open packs: ${pack}`;
+  }
+  if (kind === 'sd') {
+    return t('deck.decklogObtainStarter', { pack }) || `Starter deck: ${pack}`;
+  }
+  if (kind === 'pr') {
+    return t('deck.decklogObtainPr') || 'PR Card Pack, events, or Sticker Shop';
+  }
+  if (kind === 'collection') {
+    return t('deck.decklogObtainCollection', { pack }) || `Collection: ${pack}`;
+  }
+  return pack || (t('deck.decklogObtainUnknown') || 'See card list / Sticker Shop');
+}
+
+function applyAccountDecklogToBuilder(data) {
+  A.deckMain = [...(data.main_deck || [])];
+  A.deckEnergy = [...(data.energy_deck || [])];
+  if (data.name && el('inp-deck-name')) el('inp-deck-name').value = data.name;
+  renderDeckBuilder({ deferPool: true });
+  syncDeckBuilderChrome();
+}
+
+function closeDecklogMissingModal() {
+  _decklogMissingPending = null;
+  closeM('modal-decklog-missing');
+  const err = el('decklog-missing-err');
+  if (err) { err.hidden = true; err.textContent = ''; }
+}
+
+function collectDecklogMissingSubstitutions() {
+  const map = {};
+  document.querySelectorAll('#decklog-missing-list .decklog-missing-row').forEach(row => {
+    const from = row.getAttribute('data-card-no') || '';
+    const sel = row.querySelector('select.decklog-sub-select');
+    const to = sel?.value || '';
+    if (from && to) map[from] = to;
+  });
+  return map;
+}
+
+function renderDecklogMissingModal(payload) {
+  _decklogMissingPending = payload;
+  const list = el('decklog-missing-list');
+  const err = el('decklog-missing-err');
+  if (err) { err.hidden = true; err.textContent = ''; }
+  if (!list) return;
+  const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
+  list.innerHTML = '';
+  (payload.missing || []).forEach(row => {
+    const name = (loc === 'ja' ? row.name : (row.name_en || row.name)) || row.card_no;
+    const div = document.createElement('div');
+    div.className = 'decklog-missing-row';
+    div.setAttribute('data-card-no', row.card_no);
+    const img = document.createElement('img');
+    img.className = 'decklog-missing-thumb';
+    img.alt = '';
+    img.loading = 'lazy';
+    const card = G.allCards?.[row.card_no];
+    if (card && typeof applyCardImageToImg === 'function') {
+      applyCardImageToImg(img, card);
+    }
+    const body = document.createElement('div');
+    body.className = 'decklog-missing-body';
+    const title = document.createElement('div');
+    title.className = 'decklog-missing-name';
+    title.textContent = name;
+    const meta = document.createElement('div');
+    meta.className = 'decklog-missing-meta';
+    meta.textContent = (t('deck.decklogNeedHave', {
+      need: row.need,
+      have: row.have,
+      short: row.shortfall,
+    }) || `Need ${row.need} · own ${row.have} · missing ${row.shortfall}`)
+      + ' · ' + row.card_no;
+    const obtain = document.createElement('div');
+    obtain.className = 'decklog-missing-obtain';
+    obtain.textContent = decklogObtainLabel(row.obtain);
+    body.append(title, meta, obtain);
+    const subWrap = document.createElement('div');
+    subWrap.className = 'decklog-missing-sub';
+    const lab = document.createElement('label');
+    lab.textContent = t('deck.decklogSubstitute') || 'Substitute';
+    const sel = document.createElement('select');
+    sel.className = 'decklog-sub-select';
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = t('deck.decklogSubNone') || '— Choose —';
+    sel.appendChild(opt0);
+    (row.substitutes || []).forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.card_no;
+      const sName = (loc === 'ja' ? s.name : (s.name_en || s.name)) || s.card_no;
+      opt.textContent = `${sName} (${s.have})`;
+      sel.appendChild(opt);
+    });
+    if (!(row.substitutes || []).length) {
+      sel.disabled = true;
+      opt0.textContent = t('deck.decklogSubNoneAvailable') || 'No substitutes owned';
+    }
+    subWrap.append(lab, sel);
+    div.append(img, body, subWrap);
+    list.appendChild(div);
+  });
+  openM('modal-decklog-missing');
+}
+
+function autoPickDecklogSubstitutes() {
+  document.querySelectorAll('#decklog-missing-list .decklog-missing-row').forEach(row => {
+    const sel = row.querySelector('select.decklog-sub-select');
+    if (!sel || sel.disabled) return;
+    const first = [...sel.options].find(o => o.value);
+    if (first) sel.value = first.value;
+  });
+}
+
+async function applyDecklogMissingSubstitutes() {
+  if (!_decklogMissingPending?.code) return;
+  const substitutions = collectDecklogMissingSubstitutions();
+  const missing = _decklogMissingPending.missing || [];
+  const uncovered = missing.filter(m => !substitutions[m.card_no]);
+  const err = el('decklog-missing-err');
+  if (uncovered.length) {
+    if (err) {
+      err.hidden = false;
+      err.textContent = t('deck.decklogNeedAllSubs')
+        || 'Choose a substitute for every missing card, or cancel.';
+    }
+    return;
+  }
+  const btn = el('btn-decklog-missing-apply');
+  const prev = btn?.textContent;
+  if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
+  try {
+    const data = await accountPost('deck_import_decklog', {
+      code: _decklogMissingPending.code,
+      substitutions,
+    });
+    if (!data.complete) {
+      renderDecklogMissingModal({ ...data, code: _decklogMissingPending.code });
+      if (err) {
+        err.hidden = false;
+        err.textContent = t('deck.decklogSubsStillShort')
+          || 'Still short on copies — pick different substitutes or cancel.';
+      }
+      return;
+    }
+    applyAccountDecklogToBuilder(data);
+    closeDecklogMissingModal();
+    el('deck-err').textContent = t('deck.decklogImportedAccount', {
+      code: data.decklog_code || _decklogMissingPending.code,
+    }) || `Imported ${data.decklog_code}. Save the preset when ready.`;
+  } catch (e) {
+    if (err) { err.hidden = false; err.textContent = e.message; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev || (t('deck.decklogApplySubs') || 'Replace & add deck'); }
+  }
+}
+
+async function importAccountDeckFromDecklog(raw) {
+  const code = String(raw || '').trim();
+  if (!code) {
+    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a Deck Log code or URL.';
+    return;
+  }
+  if (!isSignedInAccount()) {
+    el('deck-err').textContent = t('deck.decklogNeedSignIn') || 'Sign in to import a Deck Log into your collection deck.';
+    return;
+  }
+  const btn = el('btn-account-decklog-import');
+  const prev = btn?.textContent;
+  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from Deck Log…';
+  if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
+  try {
+    const data = await accountPost('deck_import_decklog', { code });
+    if (data.complete) {
+      applyAccountDecklogToBuilder(data);
+      el('deck-err').textContent = t('deck.decklogImportedAccount', {
+        code: data.decklog_code || code,
+      }) || `Imported ${data.decklog_code || code}. Save the preset when ready.`;
+      return;
+    }
+    renderDecklogMissingModal({ ...data, code });
+    el('deck-err').textContent = t('deck.decklogMissingTitle')
+      || 'The following cards are missing to create this deck';
   } catch (e) {
     el('deck-err').textContent = e.message;
   } finally {
@@ -13141,6 +13365,19 @@ async function bootApp() {
       importExperimentDeckFromDecklog(el('inp-experiment-decklog')?.value);
     }
   });
+  on('btn-account-decklog-import', 'click', () => {
+    importAccountDeckFromDecklog(el('inp-account-decklog')?.value);
+  });
+  on('inp-account-decklog', 'keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      importAccountDeckFromDecklog(el('inp-account-decklog')?.value);
+    }
+  });
+  on('btn-decklog-missing-cancel', 'click', closeDecklogMissingModal);
+  on('btn-decklog-missing-close', 'click', closeDecklogMissingModal);
+  on('btn-decklog-missing-auto', 'click', autoPickDecklogSubstitutes);
+  on('btn-decklog-missing-apply', 'click', () => { applyDecklogMissingSubstitutes(); });
   on('btn-experiment-copy-pwd', 'click', async () => {
     const pwd = A.experimentPassword || el('experiment-pwd-display')?.textContent;
     if (!pwd) return;
