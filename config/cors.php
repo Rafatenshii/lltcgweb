@@ -18,6 +18,7 @@ function tcgCorsAllowedOrigins(): array {
     }
     $origins = [
         'https://loveliveradio.ca',
+        'https://www.loveliveradio.ca',
         'http://localhost:8080',
         'http://127.0.0.1:8080',
     ];
