@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-login-bonus",
+      "date": "2026-08-02",
+      "banner": "assets/kanon.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Daily login bonuses are here!",
+        "ja": "デイリーログインボーナス登場！",
+        "es": "¡Ya están los bonos de login diarios!",
+        "ko": "일일 출석 보너스가 추가되었습니다!",
+        "zh": "每日登录奖励上线！",
+        "th": "โบนัสล็อกอินรายวันมาแล้ว!"
+      },
+      "body": {
+        "en": "Signed-in players can now claim a **daily login bonus** each calendar day (**JST**).\n\n**How it works**\n- Open the game for the first time that day and the calendar appears automatically — or tap **Login** next to **Missions** on the hub anytime.\n- Rewards unlock in order across a **10-day cycle** (left to right, top then bottom).\n- Miss a day? No problem — you simply claim the **next** bonus the next time you log in. Days aren’t skipped ahead.\n- After day 10, the cycle starts over from day 1.\n\n**What’s on the calendar**\n- **Star Gems** (100 or 200)\n- **N seals** and **SR seals** for the Sticker Shop\n- **PR packs** (3 cards) — same open experience as ranked PR rewards\n\nLog in and say hi to Kanon — happy collecting!",
+        "ja": "サインイン中のプレイヤーは、カレンダー日ごと（**JST**）に**ログインボーナス**を受け取れるようになりました。\n\n**遊び方**\n- その日はじめてゲームを開くとカレンダーが自動表示されます。ハブの **ミッション** の隣の **ログイン** からもいつでも確認できます。\n- 報酬は **10日サイクル**で順番に解放されます（左から右、上段→下段）。\n- 日を空けても大丈夫。次にログインしたときに**次のボーナス**を受け取るだけです。先の日がスキップされることはありません。\n- 10日目のあとは1日目からリスタートします。\n\n**カレンダーの内容**\n- **スタージェム**（100または200）\n- シールショップ用の **Nシール** と **SRシール**\n- **PRパック**（3枚）— ランクPRと同じ開封演出\n\nかのんと一緒にログインを楽しんでください！",
+        "es": "Las cuentas con sesión iniciada ya pueden reclamar un **bono de login diario** cada día del calendario (**JST**).\n\n**Cómo funciona**\n- La primera vez que abras el juego ese día, el calendario aparece solo — o toca **Login** junto a **Misiones** en el hub cuando quieras.\n- Las recompensas se desbloquean en orden en un **ciclo de 10 días** (de izquierda a derecha, arriba y luego abajo).\n- ¿Te saltaste un día? No pasa nada: la próxima vez reclamas el **siguiente** bono. No se adelantan días.\n- Tras el día 10, el ciclo vuelve al día 1.\n\n**Qué hay en el calendario**\n- **Star Gems** (100 o 200)\n- **Sellos N** y **sellos SR** para la Tienda de stickers\n- **Packs PR** (3 cartas) — misma apertura que las recompensas PR clasificatorias\n\n¡Pasa a saludar a Kanon y sigue coleccionando!",
+        "ko": "로그인한 플레이어는 이제 달력일마다(**JST**) **출석 보너스**를 받을 수 있습니다.\n\n**이용 방법**\n- 그날 처음 게임을 열면 캘린더가 자동으로 나타납니다. 허브의 **미션** 옆 **출석**으로 언제든 확인할 수도 있습니다.\n- 보상은 **10일 사이클** 순서로 해금됩니다 (왼쪽→오른쪽, 위→아래).\n- 하루를 놓쳐도 괜찮습니다. 다음에 로그인하면 **다음 보너스**를 받으면 됩니다. 앞날을 건너뛰지 않습니다.\n- 10일째 이후에는 1일부터 다시 시작합니다.\n\n**캘린더 내용**\n- **스타 젬** (100 또는 200)\n- 스티커 상점용 **N 실**과 **SR 실**\n- **PR 팩** (3장) — 랭크 PR과 같은 개봉 연출\n\n카논에게 인사하러 로그인해 보세요. 즐거운 수집 되세요!",
+        "zh": "登录玩家现在可以按日历日（**JST**）领取**每日登录奖励**。\n\n**玩法说明**\n- 当天首次打开游戏时会自动弹出日历；也可随时在主页 **任务** 旁点击 **签到** 查看。\n- 奖励按 **10 天循环**依次解锁（从左到右，上排再到下排）。\n- 漏签也不用担心——下次登录只需领取**下一项**奖励，不会跳过进度。\n- 第 10 天后，循环从第 1 天重新开始。\n\n**日历内容**\n- **星宝石**（100 或 200）\n- 贴纸商店用的 **N 印章** 与 **SR 印章**\n- **PR 包**（3 张）——开启方式与排名赛 PR 奖励相同\n\n来跟香音打个招呼吧，祝收集愉快！",
+        "th": "ผู้เล่นที่ลงชื่อเข้าใช้สามารถรับ**โบนัสล็อกอินรายวัน**ได้ทุกวันตามปฏิทิน (**JST**)\n\n**วิธีใช้**\n- เปิดเกมครั้งแรกของวันนั้น ปฏิทินจะโผล่เอง — หรือแตะ **ล็อกอิน** ข้าง **ภารกิจ** ที่ฮับได้ทุกเมื่อ\n- รางวัลปลดล็อกตามลำดับใน**รอบ 10 วัน** (ซ้ายไปขวา แถวบนแล้วแถวล่าง)\n- พลาดวันไหนก็ไม่เป็นไร — ครั้งถัดไปรับ**โบนัสถัดไป**เท่านั้น ไม่ข้ามวันข้างหน้า\n- หลังวันที่ 10 รอบจะเริ่มใหม่จากวันที่ 1\n\n**ในปฏิทินมีอะไร**\n- **Star Gems** (100 หรือ 200)\n- **ซีล N** และ **ซีล SR** สำหรับร้านสติกเกอร์\n- **แพ็ก PR** (3 ใบ) — เปิดแบบเดียวกับรางวัล PR แรงก์\n\nแวะทักทายคานงด้วยการล็อกอินนะ สนุกกับการสะสม!"
+      }
+    },
+    {
       "id": "2026-08-deck-experiment-free",
       "date": "2026-08-02",
       "banner": "tcglogo.png",
