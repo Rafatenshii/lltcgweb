@@ -168,4 +168,88 @@ final class DecklogImportTest extends TestCase
         $this->assertSame('pr', tcgDecklogProductKind('PRカード'));
         $this->assertSame('sd', tcgDecklogProductKind('スタートデッキ ラブライブ！'));
     }
+
+    public function testAutoEnergyPrefersNonStarterAndKeepsMissingVisible(): void
+    {
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+        $cardMap = tcgBuildCardMap($cards);
+
+        $targetEnergy = null;
+        $sdEnergy = null;
+        $bpEnergy = null;
+        foreach ($cardMap as $no => $card) {
+            if (($card['card_type'] ?? '') !== 'エネルギー') {
+                continue;
+            }
+            $kind = tcgDecklogProductKind(trim((string)($card['booster_pack'] ?? '')));
+            if ($targetEnergy === null) {
+                $targetEnergy = $no;
+            }
+            if ($sdEnergy === null && $kind === 'sd' && $no !== $targetEnergy) {
+                $sdEnergy = $no;
+            }
+            if ($bpEnergy === null && $kind === 'bp' && $no !== $targetEnergy) {
+                $bpEnergy = $no;
+            }
+            if ($targetEnergy && $sdEnergy && $bpEnergy) {
+                break;
+            }
+        }
+        $this->assertNotNull($targetEnergy);
+        $this->assertNotNull($sdEnergy);
+        $this->assertNotNull($bpEnergy);
+
+        $energy = [$targetEnergy, $targetEnergy, $targetEnergy, $targetEnergy];
+        $owned = [
+            $targetEnergy => 0,
+            $sdEnergy => 4,
+            $bpEnergy => 4,
+        ];
+
+        $subs = tcgDecklogBuildAutoEnergySubstitutions([], $energy, $owned, $cardMap, []);
+        $this->assertArrayHasKey($targetEnergy, $subs);
+        $picked = $subs[$targetEnergy];
+        $this->assertCount(4, $picked);
+        foreach ($picked as $no) {
+            $this->assertSame($bpEnergy, $no, 'Auto Energy should prefer booster over starter');
+        }
+
+        // Incomplete UI should still list the original Energy shortfall (not hide it after apply).
+        $missingShow = tcgDecklogMissingFromOwned([], $energy, $owned, $cardMap);
+        $energyRow = null;
+        foreach ($missingShow as $row) {
+            if ($row['card_no'] === $targetEnergy) {
+                $energyRow = $row;
+                break;
+            }
+        }
+        $this->assertNotNull($energyRow);
+        $this->assertSame(4, $energyRow['shortfall']);
+        $this->assertSame('エネルギー', $energyRow['card_type']);
+    }
+
+    public function testEnergyMissingSortedAfterMembers(): void
+    {
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+        $cardMap = tcgBuildCardMap($cards);
+        $member = null;
+        $energy = null;
+        foreach ($cardMap as $no => $card) {
+            if ($member === null && ($card['card_type'] ?? '') === 'メンバー') {
+                $member = $no;
+            }
+            if ($energy === null && ($card['card_type'] ?? '') === 'エネルギー') {
+                $energy = $no;
+            }
+            if ($member && $energy) {
+                break;
+            }
+        }
+        $this->assertNotNull($member);
+        $this->assertNotNull($energy);
+        $missing = tcgDecklogMissingFromOwned([$member], [$energy], [], $cardMap);
+        $this->assertCount(2, $missing);
+        $this->assertSame('メンバー', $missing[0]['card_type']);
+        $this->assertSame('エネルギー', $missing[1]['card_type']);
+    }
 }

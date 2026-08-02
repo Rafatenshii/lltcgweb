@@ -10386,9 +10386,20 @@ async function applyDecklogMissingSubstitutes() {
     const data = await accountPost('deck_import_decklog', {
       code: _decklogMissingPending.code,
       substitutions,
+      // Keep Energy auto-fill on retry if the checkbox is still on (and merge any
+      // server-side Energy picks the client omitted).
+      auto_sub_energy: decklogAutoEnergyEnabled(),
     });
     if (!data.complete) {
-      renderDecklogMissingModal({ ...data, code: _decklogMissingPending.code });
+      renderDecklogMissingModal({
+        ...data,
+        code: _decklogMissingPending.code,
+        substitutions: {
+          ...(_decklogMissingPending.substitutions || {}),
+          ...(data.substitutions || {}),
+          ...substitutions,
+        },
+      });
       if (err) {
         err.hidden = false;
         err.textContent = t('deck.decklogSubsStillShort')

@@ -749,17 +749,22 @@ function tcgApiDeckImportDecklog(array $body): array {
         );
     }
 
+    // Apply onto copies for the completeness check. Incomplete responses keep the
+    // original recipe in missing[] so Energy shortfalls stay visible with pre-picks.
+    $appliedMain = $main;
+    $appliedEnergy = $energy;
     if ($substitutions) {
         $ownedLeft = $owned;
-        [$main, $unMain] = tcgDecklogApplySubstitutionsToList($main, $ownedLeft, $substitutions);
-        [$energy, $unEnergy] = tcgDecklogApplySubstitutionsToList($energy, $ownedLeft, $substitutions);
+        [$appliedMain, $unMain] = tcgDecklogApplySubstitutionsToList($main, $ownedLeft, $substitutions);
+        [$appliedEnergy, $unEnergy] = tcgDecklogApplySubstitutionsToList($energy, $ownedLeft, $substitutions);
         unset($unMain, $unEnergy);
     }
 
-    $missing = tcgDecklogMissingFromOwned($main, $energy, $owned, $cardMap);
+    $missingAfter = tcgDecklogMissingFromOwned($appliedMain, $appliedEnergy, $owned, $cardMap);
     $decklogCode = $mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code;
 
-    if ($missing) {
+    if ($missingAfter) {
+        $missingShow = tcgDecklogMissingFromOwned($main, $energy, $owned, $cardMap);
         return [
             'success' => true,
             'complete' => false,
@@ -767,12 +772,14 @@ function tcgApiDeckImportDecklog(array $body): array {
             'name' => $name,
             'main_deck' => array_values($main),
             'energy_deck' => array_values($energy),
-            'missing' => $missing,
+            'missing' => $missingShow,
+            'substitutions' => $substitutions,
+            'auto_sub_energy' => !empty($body['auto_sub_energy']),
             'message' => 'The following cards are missing to create this deck',
         ];
     }
 
-    $validation = tcgValidateDeckLists($main, $energy, $cardMap, $owned);
+    $validation = tcgValidateDeckLists($appliedMain, $appliedEnergy, $cardMap, $owned);
     if (!$validation['valid']) {
         throw new Exception(implode('; ', $validation['errors']), 400);
     }
@@ -782,8 +789,8 @@ function tcgApiDeckImportDecklog(array $body): array {
         'complete' => true,
         'decklog_code' => $decklogCode,
         'name' => $name,
-        'main_deck' => array_values($main),
-        'energy_deck' => array_values($energy),
+        'main_deck' => array_values($appliedMain),
+        'energy_deck' => array_values($appliedEnergy),
         'validation' => $validation,
     ];
 }

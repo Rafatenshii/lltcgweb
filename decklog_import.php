@@ -249,6 +249,13 @@ function tcgDecklogSubstituteScore(array $target, array $candidate): int
     }
     if ($tType === 'エネルギー') {
         $score += 40;
+        // Prefer booster/premium Energy over default starter-deck Energy when both are owned.
+        $kind = tcgDecklogProductKind(trim((string)($candidate['booster_pack'] ?? '')));
+        if ($kind === 'sd') {
+            $score -= 30;
+        } elseif (in_array($kind, ['bp', 'pb', 'pb_duo', 'pr', 'collection'], true)) {
+            $score += 15;
+        }
     }
     if ((string)($target['group'] ?? '') !== '' && ($target['group'] ?? '') === ($candidate['group'] ?? '')) {
         $score += 25;
@@ -277,6 +284,10 @@ function tcgDecklogSubstituteScore(array $target, array $candidate): int
  */
 function tcgDecklogFindSubstitutes(array $target, array $cardMap, array $spareByNo, int $limit = 8): array
 {
+    // Energy needs a wider pool so non-starter copies aren't cut off by the top-N slice.
+    if (($target['card_type'] ?? '') === 'エネルギー' && $limit < 24) {
+        $limit = 24;
+    }
     $out = [];
     foreach ($spareByNo as $no => $have) {
         if ($have <= 0 || !isset($cardMap[$no])) {
@@ -351,6 +362,12 @@ function tcgDecklogMissingFromOwned(array $main, array $energy, array $owned, ar
         ];
     }
     usort($missing, static function (array $a, array $b): int {
+        // Members/Lives first (need user picks); Energy last (often auto-preselected).
+        $aEnergy = (($a['card_type'] ?? '') === 'エネルギー') ? 1 : 0;
+        $bEnergy = (($b['card_type'] ?? '') === 'エネルギー') ? 1 : 0;
+        if ($aEnergy !== $bEnergy) {
+            return $aEnergy <=> $bEnergy;
+        }
         return ($b['shortfall'] <=> $a['shortfall']) ?: strcmp($a['card_no'], $b['card_no']);
     });
     return $missing;
@@ -424,14 +441,26 @@ function tcgDecklogBuildAutoEnergySubstitutions(
         }
         $need = intval($row['shortfall'] ?? 0) - count($existingList);
         $picked = $existingList;
+        // Prefer non-starter Energy; only use スタートデッキ Energy when needed to fill.
+        $nonSd = [];
+        $sdOnly = [];
         foreach ($row['substitutes'] as $cand) {
-            if ($need <= 0) {
-                break;
-            }
             $to = (string)($cand['card_no'] ?? '');
             if ($to === '' || $to === $from) {
                 continue;
             }
+            $kind = tcgDecklogProductKind(trim((string)(($cardMap[$to]['booster_pack'] ?? ''))));
+            if ($kind === 'sd') {
+                $sdOnly[] = $cand;
+            } else {
+                $nonSd[] = $cand;
+            }
+        }
+        foreach (array_merge($nonSd, $sdOnly) as $cand) {
+            if ($need <= 0) {
+                break;
+            }
+            $to = (string)($cand['card_no'] ?? '');
             $have = intval($cand['have'] ?? 0) - intval($spareUsed[$to] ?? 0);
             if ($have <= 0) {
                 continue;
