@@ -9,7 +9,7 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 | Part 1A — GameStore abstraction | Done | `TCG_GAME_STORE=file\|redis`, `src/Game/Store/*` |
 | Part 1B — VPS match-primary cutover | Done (flagged) | `runtime-flags.js` + `TCG_MATCH_API_PRIMARY` |
 | Part 1C — Realtime (SSE / WS note) | Done | Keep SSE; see `docs/overhaul/04-realtime.md` |
-| Part 1D — Hostinger PHP scope | Ready (code) | `TCG_HOSTINGER_MATCH_WRITES=0` kill switch; flip awaits operator |
+| Part 1D — Hostinger PHP scope | Done (cutover) | `MATCH_WRITES_DISABLED` + `.htaccess` SetEnv; client match-primary on |
 | Part 2A — Extract CSS / JS from shell | Done | `client/css/shell-all.css`, `board-render.js`, `cpu-loop.js` |
 | Part 2B — Zone web components | Done | `<ll-*>` in `client/js/components/board-zones.js` |
 | Part 2C — Playwright smoke | Done | `node scripts/overhaul_smoke.mjs` |
@@ -23,7 +23,7 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 - [x] Client can route match API to stream (`TCG_MATCH_API_PRIMARY` / `runtime-flags.js`)
 - [x] Hostinger match-write kill switch (`TCG_HOSTINGER_MATCH_WRITES`)
 - [x] Redis integration test (skips without `TCG_REDIS_URL`) + `verify_match_primary.sh`
-- [ ] Operator flip: peak-hour match `action` on VPS only (Redis up + flags)
+- [x] Operator flip: VPS Redis + match-primary client + Hostinger writes disabled
 
 ### Frontend
 - [x] `index.html` line count reduced (~40k → ~26k) via CSS/JS extraction
@@ -52,3 +52,4 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 | 2026-08-02 | Part 3 Ability IR lint + EffectRegistry draw handlers |
 | 2026-08-02 | Cursor rules updated (`lltcgweb-overhaul.mdc` + architecture/frontend/php/cards) so agents do not regress |
 | 2026-08-02 | Remaining: Hostinger kill switch, runtime-flags, Redis test, verify script, grant/blade handler migration |
+| 2026-08-02 | Production cutover: vps_overflow_up (Redis), DEFAULT_MATCH_API_PRIMARY=true, MATCH_WRITES_DISABLED |
