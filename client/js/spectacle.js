@@ -6845,6 +6845,61 @@ function liveShowPerformanceYellReady(board) {
   return attempting.every((pid) => (yr[pid]?.length || 0) > 0);
 }
 
+/**
+ * Server may log "performed Live!" and open a Live Success prompt while
+ * live_show.stage is still `performance` (hearts resolved before outcomes).
+ * Detect that so we never leave "Checking hearts…" up forever.
+ */
+function liveShowHeartsResolvedFromBoard(board) {
+  if (!board) return false;
+  const resolved = board._perf_hearts_resolved;
+  if (resolved && typeof resolved === 'object' && Object.keys(resolved).length > 0) {
+    return true;
+  }
+  if (board.phase === 'live_success_effects') return true;
+  if (typeof liveRoundPerfLogsComplete === 'function' && liveRoundPerfLogsComplete(board)) {
+    return true;
+  }
+  const start = typeof currentPerformanceRoundLogStart === 'function'
+    ? currentPerformanceRoundLogStart(board)
+    : 0;
+  return (board.log || []).slice(start).some(e => / performed Live! Blades: /.test(e.msg || ''));
+}
+
+function liveShowOutcomesPresentedForTurn(turn) {
+  if (turn == null) return false;
+  return !!G._liveShowOutcomesPresentedTurns?.has(Number(turn));
+}
+
+function markLiveShowOutcomesPresented(turn) {
+  if (turn == null || !Number.isFinite(Number(turn))) return;
+  if (!G._liveShowOutcomesPresentedTurns) G._liveShowOutcomesPresentedTurns = new Set();
+  G._liveShowOutcomesPresentedTurns.add(Number(turn));
+}
+
+/**
+ * Hearts already in the log / Live Success prompt parked on performance —
+ * play outcomes from the current board, then release chrome so the prompt can show.
+ */
+async function presentLiveShowOutcomesWhileSuccessPrompt(prior, board, myId) {
+  const showTurn = liveShowTurnFromBoards(board, prior);
+  perfClearHeartCheckHold();
+  if (!liveShowOutcomesPresentedForTurn(showTurn)) {
+    await presentOneLiveShowBeat(prior, board, myId, 'outcomes');
+    markLiveShowOutcomesPresented(showTurn);
+  } else {
+    const perfPrev = buildPerfSpectaclePrev(prior, board) || prior || board;
+    await perfSeekPhase(perfPrev, board, myId, 'outcomes', { forward: true, animate: false });
+    perfClearHeartCheckHold();
+  }
+  sealLiveShowSpectacleTurn(board, prior);
+  if (G._perfSpectacleActive) perfCloseSpectacle();
+  G.gameState = board;
+  if (typeof ensurePendingPromptSurfaced === 'function') {
+    ensurePendingPromptSurfaced(board, myId);
+  }
+}
+
 async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
@@ -6872,7 +6927,20 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (stage === 'performance' && liveShowPerformancePresentedForTurn(showTurn)) {
     TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
     await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
-    perfShowHeartCheckHold();
+    // Hearts may already be logged (Live Success prompt parked on performance).
+    // Re-arming Checking hearts here softlocks the splash against the log.
+    if (!liveShowHeartsResolvedFromBoard(next)) {
+      perfShowHeartCheckHold();
+    } else {
+      perfClearHeartCheckHold();
+    }
+    return;
+  }
+  // Outcomes already shown while a Live Success prompt held stage=performance.
+  if (stage === 'outcomes' && liveShowOutcomesPresentedForTurn(showTurn)) {
+    TCG_DEBUG.log('live', 'skip duplicate outcomes beat', { showTurn });
+    await perfSeekPhase(perfPrev, next, myId, 'outcomes', { forward: true, animate: false });
+    perfClearHeartCheckHold();
     return;
   }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
@@ -6885,10 +6953,15 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     // Heart resolution happens on the server only after this beat is acked — keep
     // the spectacle alive with a readable "Checking hearts…" hold so the gap
     // before success/fail (and PvP opponent-ack wait) isn't dead air.
-    perfShowHeartCheckHold();
+    if (!liveShowHeartsResolvedFromBoard(next)) {
+      perfShowHeartCheckHold();
+    } else {
+      perfClearHeartCheckHold();
+    }
   }
   if (stage === 'outcomes') {
     perfClearHeartCheckHold();
+    markLiveShowOutcomesPresented(showTurn);
   }
   if (stage === 'judge') {
     perfClearHeartCheckHold();
@@ -6953,6 +7026,24 @@ async function presentServerLiveShowStage(prev, next, myId) {
         if (G._perfSpectacleActive
             && (show.stage === 'reveal' || show.stage === 'live_start')) {
           perfCloseSpectacle();
+        } else if (
+          G._perfSpectacleActive
+          && show.stage === 'performance'
+          && isDeferredLiveSuccessPrompt(board)
+          && liveShowHeartsResolvedFromBoard(board)
+        ) {
+          // Hearts already logged; stage stays on performance until Live Success
+          // prompts finish. Present outcomes now so visuals match the log, then
+          // release chrome so the prompt is not deferred forever behind Checking hearts.
+          TCG_DEBUG.log('live', 'live_show outcomes while Live Success prompt', {
+            prompt: board.pending_prompt?.type,
+            phase: board.phase,
+          });
+          await presentLiveShowOutcomesWhileSuccessPrompt(prior, board, myId);
+          break;
+        } else if (G._perfHeartCheckHold) {
+          // Don't leave Checking hearts up when breaking for other prompts.
+          perfClearHeartCheckHold();
         }
         G.gameState = board;
         break;
@@ -7002,10 +7093,16 @@ async function presentServerLiveShowStage(prev, next, myId) {
           if (G._perfSpectacleActive) perfCloseSpectacle();
           sealLiveShowSpectacleTurn(board, prior);
         } else if (show.stage === 'performance') {
-          // Still waiting on opponent (or heart resolution) — keep the bridge up.
+          // Still waiting on opponent (or heart resolution) — keep the bridge up
+          // only until hearts are actually logged. Live Success prompts park on
+          // performance after hearts resolve; re-holding Checking hearts softlocks.
           if (G._perfSpectacleActive) {
             perfEnsureColumnsVisible();
-            perfShowHeartCheckHold();
+            if (liveShowHeartsResolvedFromBoard(board)) {
+              perfClearHeartCheckHold();
+            } else {
+              perfShowHeartCheckHold();
+            }
           }
         } else if (G._perfSpectacleActive) {
           perfEnsureColumnsVisible();
@@ -7015,7 +7112,13 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
 
       G._liveShowAckedKey = key;
-      if (show.stage === 'performance') perfShowHeartCheckHold();
+      if (show.stage === 'performance') {
+        if (!liveShowHeartsResolvedFromBoard(board)) {
+          perfShowHeartCheckHold();
+        } else {
+          perfClearHeartCheckHold();
+        }
+      }
       try {
         await apiPost('action', {
           room_id: G.roomId,
