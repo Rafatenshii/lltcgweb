@@ -13,6 +13,7 @@ Also follow [`.cursor/rules/lltcgweb-overhaul.mdc`](lltcgweb-overhaul.mdc) (alwa
 | Module | File | Responsibility |
 |--------|------|----------------|
 | Styles | `client/css/shell-all.css` (+ tokens/board/hub/prompts) | Extracted shell CSS — edit here, not inline in `index.html` |
+| Runtime flags | `client/js/runtime-flags.js` | `TCG_MATCH_API_PRIMARY` bootstrap (before api-client); cutover flips default here |
 | API client | `client/js/api-client.js` | `apiPost`, account fetch, sync meta, **match-primary routing** |
 | Game sync | `client/js/game-sync.js` | Poll loop, SSE sync, `pullLatestState`, `startPoll`/`stopPoll` |
 | State apply | `client/js/state-apply.js` | `onState`, `applyStateUpdate`, pending state queue |
