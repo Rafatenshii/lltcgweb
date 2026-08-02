@@ -1,30 +1,39 @@
 ---
-description: Frontend module boundaries — client/js vs index.html
+description: Frontend module boundaries — client/css, client/js, zone web components vs index.html
 globs: "index.html,client/**"
 alwaysApply: false
 ---
 
 # lltcgweb frontend
 
+Also follow [`.cursor/rules/lltcgweb-overhaul.mdc`](lltcgweb-overhaul.mdc) (always apply).
+
 ## Module layout
 
 | Module | File | Responsibility |
 |--------|------|----------------|
-| API client | `client/js/api-client.js` | `apiPost`, account fetch, sync meta |
+| Styles | `client/css/shell-all.css` (+ tokens/board/hub/prompts) | Extracted shell CSS — edit here, not inline in `index.html` |
+| API client | `client/js/api-client.js` | `apiPost`, account fetch, sync meta, **match-primary routing** |
 | Game sync | `client/js/game-sync.js` | Poll loop, SSE sync, `pullLatestState`, `startPoll`/`stopPoll` |
 | State apply | `client/js/state-apply.js` | `onState`, `applyStateUpdate`, pending state queue |
+| Board paint | `client/js/board-render.js` | `renderGame`, stage/hand/live/log paint, `llBoardViewModel` |
+| Zone WCs | `client/js/components/board-zones.js` | `<ll-stage-board>`, `<ll-hand-zone>`, `<ll-live-zone>`, `<ll-prompt-host>`, `<ll-side-panel>` |
 | Replay debug | `client/js/replay-debug.js` | `?debug` replay export |
 | Prompt UI | `client/js/prompt-renderer.js` | Full prompt UI: submit guards, pick openers, `handlePromptChoice`, **`renderPrompt`** |
-| CPU entry | `client/js/cpu-ai.js` | `cpuResolvePrompt` entry (handlers may stay inline until extracted) |
+| CPU loop | `client/js/cpu-loop.js` | CPU decision/act helpers extracted from shell |
+| CPU entry | `client/js/cpu-ai.js` | `cpuResolvePrompt` entry |
 
-Load order in `index.html`: i18n → sfx → **client/js/** (`api-client` → `game-sync` → `state-apply` → …) → main inline script → `cpu-ai.js` (after CPU helpers).
+Load order (see `index.html`): i18n → sfx → **client/js/** (`api-client` → `game-sync` → `state-apply` → …) → main inline script → spectacle → **`board-render.js`** → **`board-zones.js`** → cpu-meta/eval/expert → **`cpu-loop.js`** → **`cpu-ai.js`** → `bootApp()`.
 
 ## Rules
 
-- **Do not** add large new features inline in `index.html` — add a `client/js/*.js` module and a thin wrapper if needed.
+- **Do not** add large new features or CSS inline in `index.html` — use `client/js/*.js` / `client/css/*` and a thin mount if needed.
+- **Do not** put `apiPost` / match networking inside `<ll-*>` components — emit `ll-card-click` / `ll-slot-pick` (or call existing shell handlers).
+- Prefer feeding zones with **immutable view-models** (`llBoardViewModel` + `llApplyBoardViewModel`) after paint.
 - **Do not** introduce a bundler for Hostinger deploy unless explicitly requested.
 - i18n remains `i18n.js` / `log_i18n.js` / `tutorial_ja.json`. **All new player-visible copy must include Japanese, Spanish, Korean, Chinese, and Thai** — see `.cursor/rules/user-facing-copy.mdc` (i18n section).
+- After hub/board shell changes: `node scripts/overhaul_smoke.mjs`.
 
 ## Deploy
 
-Include changed `client/js/*` and `index.html` in `LLR_SITE_FILES` when deploying via Chiichan.
+Include changed `client/js/*`, `client/css/*`, and `index.html` in `LLR_SITE_FILES` when deploying via Chiichan.

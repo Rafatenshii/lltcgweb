@@ -1,30 +1,37 @@
 ---
-description: Card abilities and effects — validation and regression requirements
-globs: "cards.json,*_effects.php,effects.php,import_from_db.py"
+description: Card abilities — EffectRegistry first; no new routine *_effects.php batches
+globs: "cards.json,*_effects.php,effects.php,import_from_db.py,src/Game/Effect*.php,src/Game/AbilityResolver*.php"
 alwaysApply: false
 ---
 
 # lltcgweb cards & effects
 
-## Ability changes
+Also follow [`.cursor/rules/lltcgweb-overhaul.mdc`](lltcgweb-overhaul.mdc) and [`docs/overhaul/03-ability-ir.md`](../../docs/overhaul/03-ability-ir.md).
+
+## Ability changes (preferred path)
 
 1. Update `cards.json` (and `import_from_db.py` if importing from DB).
-2. Implement handler in `effects.php` or set-specific `*_effects.php`.
-3. Add client prompts in `index.html` or `client/js/` when interactive.
-4. Run `php scripts/validate_cards.php` — every `abilities[].type` should map to a known handler.
-5. If the card has printed rules text, populate **`text_es`**, **`text_ko`**, **`text_zh`**, and **`text_th`** in the same change (localized skill brackets; see `.cursor/rules/user-facing-copy.mdc`). Bulk (re)builds: `scripts/translate_text_zh_batch.py --rebuild-all-zh` and `scripts/translate_text_th_batch.py --rebuild-all-th` (coverage: `scripts/card_text_zh_coverage.php`, `scripts/card_text_th_coverage.php`).
+2. **Routine / high-frequency `type`:** implement or reuse `LLTCG\Game\EffectHandlers`, register on `EffectRegistry` (`HANDLER_OWNED_TYPES`), ensure `AbilityResolver` dispatches it; remove any obsolete switch `case`.
+3. **Truly unique set boss:** named handler in the registry/handler area (or existing set module until migrated) — **not** a new `*_effects.php` tree for one set of ordinary cards.
+4. Client prompts: `client/js/prompt-renderer.js` (not a new inline blob in `index.html`).
+5. Run:
+   - `php scripts/validate_cards.php`
+   - `php scripts/validate_ability_ir.php` — unknown types **fail**
+6. If the card has printed rules text, populate **`text_es`**, **`text_ko`**, **`text_zh`**, and **`text_th`** in the same change (see `.cursor/rules/user-facing-copy.mdc`).
 
 ## Effect registry
 
-Known types are discovered from `src/Game/AbilityResolverSwitch*.php` via `LLTCG\Game\EffectRegistry`. New core `type` strings add a `case` in `resolveAbilityEffectSwitch` or `tryResolveAbilityEffectSwitchOptional` (optional `optional_*` types), or a set module if set-specific.
+- Discovery: switch cases, `*EffectTypes()`, `$types = […]`, `$type ===` / `$ab['type']` compares, and `EffectHandlers` match arms (`LLTCG\Game\EffectRegistry`).
+- New core types must be discoverable and preferably **handler-owned** when they are pure numeric / shared prompt patterns.
+- Do **not** add a new root `hs_bpN_effects.php` / `*_effects.php` for routine draw, WR add, grant hearts/blade, or reduce-hearts patterns.
 
 ## Live modifiers
 
-Modifier `then` types (`live_score_bonus`, `blade_bonus`, `grant_bonus_hearts`, etc.) are applied via `applyModifierEffect` in `src/Game/LiveModifiers.php` — not card `abilities[].type` values and not covered by `EffectRegistry`.
+Modifier `then` types (`live_score_bonus`, `blade_bonus`, `grant_bonus_hearts`, etc.) are applied via `applyModifierEffect` in `src/Game/LiveModifiers.php` — not card `abilities[].type` values and not covered by ability IR the same way.
 
 ## Regression
 
-Engine / prompt lifecycle changes: add or update `tests/fixtures/replays/*.json` and run `composer test`.
+Engine / prompt lifecycle changes: add or update PHPUnit under `tests/Engine/` (and replays when relevant); run `composer test`.
 
 ## Chiichan parity
 

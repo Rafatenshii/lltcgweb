@@ -1,0 +1,68 @@
+---
+description: Post-overhaul architecture — do not revert to Hostinger JSON rooms, index.html monolith, or new *_effects.php batches
+alwaysApply: true
+---
+
+# lltcgweb — post-overhaul (mandatory)
+
+Progress and contracts: [`docs/OVERHAUL_PROGRESS.md`](docs/OVERHAUL_PROGRESS.md), [`docs/overhaul/`](docs/overhaul/).
+
+When this conflicts with older habits (“put it in `index.html`”, “new `hs_bpN_effects.php`”, “lock `games/*.json` on Hostinger”), **follow this file**.
+
+## Target shape (v1)
+
+```
+Client (WC + client/js) 
+  → Hostinger: static UI, cards.json, account/decks/catalog
+  → VPS match API: create/join/action (Redis rooms via GameStore)
+  → VPS SSE: seq notify (WebSocket optional later)
+```
+
+Do **not** reintroduce Hostinger as the primary live-match writer once cutover is on. Until the operator enables cutover, keep the feature flags; still write new code against `GameStore` and match-API routing.
+
+## Networking — required patterns
+
+| Do | Do not |
+|----|--------|
+| Persist rooms through `LLTCG\Game\Store\*` (`GameStoreInterface`, factory, env `TCG_GAME_STORE`) | New direct `flock` / `games/{id}.json` I/O outside `JsonFileGameStore` |
+| Route match create/join/`action`/sync via `client/js/api-client.js` (`TCG_MATCH_API_PRIMARY`, overflow origin) | Hardcode Hostinger-only match URLs in new features |
+| Keep account / ranked queue / login bonus on Hostinger until a shared-DB plan exists | Move ranked SQLite to Redis ad hoc |
+| Keep SSE notify (`tcg_sync`); document WS in `docs/overhaul/04-realtime.md` | Replace SSE with ad-hoc long-poll only |
+
+## Frontend — required patterns
+
+| Do | Do not |
+|----|--------|
+| New CSS in `client/css/` (`shell-all.css` / board / hub / prompts / tokens) | Grow the inline `<style>` block in `index.html` |
+| Board paint in `client/js/board-render.js`; CPU loop in `client/js/cpu-loop.js` (+ `cpu-ai.js` entry) | Paste large render/CPU loops back into `index.html` |
+| Zone UI via `<ll-*>` in `client/js/components/board-zones.js`; view-models from `llBoardViewModel` / state-apply | Make web components call `api.php` / `apiPost` |
+| Networking/sync in `api-client.js`, `game-sync.js`, `state-apply.js` | Put sync/action plumbing inside zone components |
+| Smoke: `node scripts/overhaul_smoke.mjs` after board/hub shell changes | Assume visual OK without smoke when touch board mount |
+
+## Rules engine — required patterns
+
+| Do | Do not |
+|----|--------|
+| Routine abilities: `cards.json` + `EffectRegistry` / `EffectHandlers` (+ PHPUnit) | New root `*_effects.php` for ordinary draw/WR/grant/blade patterns |
+| Register migrated types on `EffectRegistry::HANDLER_OWNED_TYPES` and dispatch from `AbilityResolver` | Duplicate the same type in a switch *and* a handler |
+| Lint with `php scripts/validate_ability_ir.php` (CI) | Add unknown `abilities[].type` without a discoverable handler |
+| Unique set bosses: named handler registered in the registry area | New include-tree batch file “for one set” without explicit operator ask |
+
+See also [`docs/overhaul/03-ability-ir.md`](docs/overhaul/03-ability-ir.md).
+
+## Verification (before deploy)
+
+```bash
+composer test
+php scripts/validate_json.php
+php scripts/validate_cards.php
+php scripts/validate_ability_ir.php
+bash scripts/lint_php.sh
+# UI shell / board: node scripts/overhaul_smoke.mjs
+```
+
+## Cutover / rollback (operator)
+
+- Flags: `TCG_GAME_STORE`, `TCG_MATCH_API_PRIMARY`, `TCG_REDIS_URL` — see `.env.example` / `docs/DEPLOY.md`
+- VPS Redis + overflow: `compose.overflow.yaml`
+- **Never** restart VPS units without explicit in-thread OK

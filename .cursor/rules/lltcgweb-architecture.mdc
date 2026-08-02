@@ -1,10 +1,13 @@
 ---
-description: LLTCG web architecture — source vs runtime, paths, Hostinger compatibility
+description: LLTCG web architecture — source vs runtime, paths, Hostinger + VPS match split
 globs: "**/*"
 alwaysApply: true
 ---
 
 # lltcgweb architecture
+
+**Post-overhaul rules (do not regress):** [`.cursor/rules/lltcgweb-overhaul.mdc`](lltcgweb-overhaul.mdc)  
+**Progress:** [`docs/OVERHAUL_PROGRESS.md`](../../docs/OVERHAUL_PROGRESS.md)
 
 ## Repository layout
 
@@ -12,8 +15,11 @@ alwaysApply: true
 |------|------|-------|
 | PHP entry shims | Root `*.php` | Keep deploy paths stable (`tcg/api.php`, etc.) |
 | PHP modules | `src/` | New logic goes here (PSR-4 `LLTCG\`) |
+| Match persistence | `src/Game/Store/` | `GameStoreInterface` — file or Redis via env |
 | Config | `config/` | `paths.php`, `cors.php`, `rate_limit.php` |
-| Client modules | `client/js/` | New JS — do not grow `index.html` monolith |
+| Client JS | `client/js/` | Modules + `components/` — do not grow `index.html` |
+| Client CSS | `client/css/` | `shell-all.css` (+ tokens/board/hub/prompts splits) |
+| Overhaul docs | `docs/overhaul/` | Match store, components, ability IR, realtime |
 | Tests | `tests/`, `scripts/` | Run before deploy |
 | Migrations | `migrations/*.sql` | Versioned SQLite schema |
 | Runtime (gitignored) | `data/`, `games/`, `experiment_decks/`, `cardimg/` | Use `tcgPath()` / env vars |
@@ -22,13 +28,19 @@ alwaysApply: true
 
 See [docs/RUNTIME.md](docs/RUNTIME.md). Never commit `data/tcg.db`, `games/*.json`, secrets, or art.
 
-## Hostinger deploy
+## Deploy surfaces
 
-Production uses Chiichan `deploy-loveliveradio-ca.sh` with `LLR_TCG_ROOT` → this repo. **Do not** require a `public/` docroot change on Hostinger until production Docker ([docs/DEPLOY.md](docs/DEPLOY.md)).
+| Surface | What lives there |
+|---------|------------------|
+| Hostinger `/tcg/` | Static UI, catalog, account/decks/login bonus, card images; match API only until cutover |
+| VPS overflow / match-primary | Redis rooms + PHP `api.php` actions when `TCG_GAME_STORE=redis` + client `TCG_MATCH_API_PRIMARY` |
+| VPS SSE | Seq notify (`tcg_sync`) — not full state |
+
+Production Hostinger deploy: Chiichan `deploy-loveliveradio-ca.sh` with `LLR_TCG_ROOT` → this repo. **Do not** require a `public/` docroot change on Hostinger until production Docker ([docs/DEPLOY.md](docs/DEPLOY.md)).
 
 ## Path configuration
 
-Use `config/paths.php` (`tcgPath()`, `tcgDefinePathConstants()`). Env overrides: `TCG_DATA_DIR`, `TCG_GAMES_DIR`, etc. ([.env.example](.env.example)).
+Use `config/paths.php` (`tcgPath()`, `tcgDefinePathConstants()`). Env overrides: `TCG_DATA_DIR`, `TCG_GAMES_DIR`, `TCG_GAME_STORE`, `TCG_REDIS_URL`, etc. ([.env.example](.env.example)).
 
 ## Verification
 
@@ -38,5 +50,6 @@ Before merging TCG changes:
 composer test
 php scripts/validate_json.php
 php scripts/validate_cards.php
+php scripts/validate_ability_ir.php
 bash scripts/lint_php.sh
 ```

@@ -14,7 +14,7 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 | Part 2B — Zone web components | Done | `<ll-*>` in `client/js/components/board-zones.js` |
 | Part 2C — Playwright smoke | Done | `node scripts/overhaul_smoke.mjs` |
 | Part 3A — Ability IR lint | Done | `scripts/validate_ability_ir.php` in CI |
-| Part 3B — Registry migration | In progress | Draw family → `EffectHandlers` / `EffectRegistry` |
+| Part 3B — Registry migration | Seeded | Draw family on `EffectHandlers`; further types migrate the same way (no new batch files) |
 
 ## Definition of done (by pillar)
 
@@ -48,3 +48,4 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 | 2026-08-02 | Part 1 GameStore + Redis + match-primary client flag + SSE notes |
 | 2026-08-02 | Part 2 CSS/JS extract, zone web components, Playwright smoke |
 | 2026-08-02 | Part 3 Ability IR lint + EffectRegistry draw handlers |
+| 2026-08-02 | Cursor rules updated (`lltcgweb-overhaul.mdc` + architecture/frontend/php/cards) so agents do not regress |
