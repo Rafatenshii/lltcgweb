@@ -63,6 +63,10 @@ try {
         case 'open_booster':       echo json_encode(tcgApiOpenBooster($body)); break;
         case 'deck_list':          echo json_encode(tcgApiDeckList($body)); break;
         case 'deck_save':          echo json_encode(tcgApiDeckSave($body)); break;
+        case 'experiment_preset_list':   echo json_encode(tcgApiExperimentPresetList($body)); break;
+        case 'experiment_preset_save':   echo json_encode(tcgApiExperimentPresetSave($body)); break;
+        case 'experiment_preset_delete': echo json_encode(tcgApiExperimentPresetDelete($body)); break;
+        case 'experiment_preset_get':    echo json_encode(tcgApiExperimentPresetGet($body)); break;
         case 'deck_delete':        echo json_encode(tcgApiDeckDelete($body)); break;
         case 'deck_equip':         echo json_encode(tcgApiDeckEquip($body)); break;
         case 'deck_equip_starter': echo json_encode(tcgApiDeckEquipStarter($body)); break;
@@ -463,6 +467,131 @@ function tcgApiDeckSave(array $body): array {
     return ['success' => true, 'slot' => $slot, 'name' => $name, 'validation' => $validation];
 }
 
+function tcgApiExperimentPresetList(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    require_once __DIR__ . '/experiment_decks.php';
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, share_password, updated_at
+        FROM tcg_experiment_presets WHERE discord_id = ? ORDER BY slot ASC');
+    $stmt->execute([$uid]);
+    $decks = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $main = json_decode((string)$row['main_deck'], true) ?: [];
+        $energy = json_decode((string)$row['energy_deck'], true) ?: [];
+        $decks[] = [
+            'id' => intval($row['id']),
+            'slot' => intval($row['slot']),
+            'name' => normalizeExperimentDeckName((string)$row['name']),
+            'main_deck' => $main,
+            'energy_deck' => $energy,
+            'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
+            'updated_at' => intval($row['updated_at']),
+            'main_count' => count($main),
+            'energy_count' => count($energy),
+        ];
+    }
+    return [
+        'success' => true,
+        'decks' => $decks,
+        'max_slots' => TCG_MAX_EXPERIMENT_PRESETS,
+    ];
+}
+
+function tcgApiExperimentPresetSave(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    require_once __DIR__ . '/experiment_decks.php';
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Experiment deck slot must be 1–' . TCG_MAX_EXPERIMENT_PRESETS, 400);
+    }
+    $name = normalizeExperimentDeckName((string)($body['name'] ?? ''));
+    $main = $body['main_deck'] ?? [];
+    $energy = $body['energy_deck'] ?? [];
+    if (!is_array($main) || !is_array($energy)) {
+        throw new Exception('Invalid deck payload', 400);
+    }
+    $cards = tcgLoadCardsData();
+    $validated = validateExperimentDeckPayload($main, $energy, $cards);
+    $share = normalizeExperimentPassword((string)($body['share_password'] ?? ''));
+    if ($share !== '' && (strlen($share) < 4 || strlen($share) > EXPERIMENT_PASSWORD_MAX)) {
+        throw new Exception('Share password must be 4–' . EXPERIMENT_PASSWORD_MAX . ' letters/numbers', 400);
+    }
+    $db = tcgDb();
+    $now = time();
+    $db->prepare('INSERT INTO tcg_experiment_presets
+        (discord_id, slot, name, main_deck, energy_deck, share_password, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(discord_id, slot) DO UPDATE SET
+            name = excluded.name,
+            main_deck = excluded.main_deck,
+            energy_deck = excluded.energy_deck,
+            share_password = CASE
+                WHEN excluded.share_password IS NOT NULL AND excluded.share_password != \'\'
+                THEN excluded.share_password
+                ELSE tcg_experiment_presets.share_password
+            END,
+            updated_at = excluded.updated_at')
+        ->execute([
+            $uid,
+            $slot,
+            $name,
+            json_encode($validated['main'], JSON_UNESCAPED_UNICODE),
+            json_encode($validated['energy'], JSON_UNESCAPED_UNICODE),
+            $share !== '' ? $share : null,
+            $now,
+        ]);
+    return [
+        'success' => true,
+        'slot' => $slot,
+        'name' => $name,
+        'main_count' => count($validated['main']),
+        'energy_count' => count($validated['energy']),
+    ];
+}
+
+function tcgApiExperimentPresetDelete(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    require_once __DIR__ . '/experiment_decks.php';
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Invalid experiment deck slot', 400);
+    }
+    tcgDb()->prepare('DELETE FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?')
+        ->execute([$uid, $slot]);
+    return ['success' => true, 'deleted_slot' => $slot];
+}
+
+function tcgApiExperimentPresetGet(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    require_once __DIR__ . '/experiment_decks.php';
+    $slot = intval($body['slot'] ?? $_GET['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Invalid experiment deck slot', 400);
+    }
+    $stmt = tcgDb()->prepare('SELECT slot, name, main_deck, energy_deck, share_password, updated_at
+        FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        throw new Exception('Experiment deck not found', 404);
+    }
+    $main = json_decode((string)$row['main_deck'], true) ?: [];
+    $energy = json_decode((string)$row['energy_deck'], true) ?: [];
+    return [
+        'success' => true,
+        'deck' => [
+            'slot' => intval($row['slot']),
+            'name' => normalizeExperimentDeckName((string)$row['name']),
+            'main_deck' => $main,
+            'energy_deck' => $energy,
+            'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
+            'updated_at' => intval($row['updated_at']),
+        ],
+    ];
+}
+
 function tcgApiDeckDelete(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $slot = intval($body['slot'] ?? 0);
@@ -604,7 +733,7 @@ function tcgApiRankedJoin(array $body): array {
     if (empty($user['starter_deck'])) {
         throw new Exception('Choose a starter deck first', 400);
     }
-    $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $gameMode = tcgNormalizeRankedGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $starterKey = trim((string)($body['starter'] ?? ''));
     if ($gameMode === TCG_GAME_MODE_STARTERS) {
         if ($starterKey === '') {

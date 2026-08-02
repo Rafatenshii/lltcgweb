@@ -135,6 +135,8 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
     $discordId = tcgOptionalAuthUserId($body);
     if ($gameMode === TCG_GAME_MODE_STARTERS) {
         tcgValidateCasualStartersModeDeck($body, $discordId, $cards);
+    } elseif ($gameMode === TCG_GAME_MODE_FREE) {
+        tcgValidateCasualFreeModeDeck($body);
     }
     resolveRoomDeckLists($body, $cards);
 
@@ -179,6 +181,14 @@ function tcgValidateCasualStartersModeDeck(array $body, ?string $discordId, arra
         if (!in_array($deck, tcgOwnedStarterKeys($discordId), true)) {
             throw new Exception('You do not own that starter deck');
         }
+    }
+}
+
+/** Free Mode: Deck Experiment password or account experiment preset only. */
+function tcgValidateCasualFreeModeDeck(array $body): void {
+    require_once __DIR__ . '/experiment_decks.php';
+    if (!tcgBodyUsesExperimentDeck($body)) {
+        throw new Exception('Free Mode requires a Deck Experiment deck (saved or password)');
     }
 }
 

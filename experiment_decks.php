@@ -1,15 +1,18 @@
 <?php
 /**
- * Guest Deck Experiment — save/load legal decks by short password (unranked only).
+ * Deck Experiment — save/load legal decks by short password or account preset.
+ * Playable only in Free Mode (unranked). Password load stays open for sharing.
  */
 require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/deck_validate.php';
+require_once __DIR__ . '/game_mode.php';
 tcgDefinePathConstants();
 
 define('EXPERIMENT_PASSWORD_LEN', 8);
 define('EXPERIMENT_PASSWORD_CHARS', 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789');
 define('EXPERIMENT_PASSWORD_MAX', 16);
 define('EXPERIMENT_DECK_MAX_AGE', 60 * 60 * 24 * 180); // 180 days
+define('TCG_MAX_EXPERIMENT_PRESETS', 10);
 
 function ensureExperimentDecksDir(): void {
     if (!is_dir(EXPERIMENT_DECKS_DIR)) {
@@ -35,11 +38,47 @@ function experimentDeckPath(string $password): string {
     return EXPERIMENT_DECKS_DIR . $password . '.json';
 }
 
-function assertExperimentGuestOnly(array $body): void {
-    require_once __DIR__ . '/llr_auth_load.php';
-    $uid = tcgResolveAuthUserId(tcgReadAuthTokenFromRequest($body));
-    if ($uid) {
-        throw new Exception('Deck Experiment is only available when signed out');
+/** True when the join/create body selects a Deck Experiment deck (password or account preset). */
+function tcgBodyUsesExperimentDeck(array $body): bool {
+    $deck = trim((string)($body['deck'] ?? ''));
+    if ($deck === 'experiment'
+        || str_starts_with($deck, 'experiment:')
+        || str_starts_with($deck, 'experiment_preset:')) {
+        return true;
+    }
+    if (normalizeExperimentPassword((string)($body['experiment_password'] ?? '')) !== '') {
+        return true;
+    }
+    $slot = intval($body['experiment_slot'] ?? 0);
+    return $slot >= 1;
+}
+
+/**
+ * Experiment decks are Free Mode only. CPU seats are exempt.
+ * Call before resolving player decks for unranked create/join/casual.
+ */
+function tcgAssertUnrankedDeckForGameMode(array $body): void {
+    $deck = trim((string)($body['deck'] ?? ''));
+    if ($deck === 'cpu' || str_starts_with($deck, 'cpu:')) {
+        return;
+    }
+    $mode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $usesExp = tcgBodyUsesExperimentDeck($body);
+    if (tcgIsFreeGameMode($mode)) {
+        if (!$usesExp) {
+            throw new Exception('Free Mode requires a Deck Experiment deck (saved or password)', 400);
+        }
+        return;
+    }
+    if ($usesExp) {
+        throw new Exception('Deck Experiment decks can only be used in Free Mode', 400);
+    }
+}
+
+function assertExperimentAllowedForRoom(array $body): void {
+    $mode = tcgNormalizeGameMode($body['game_mode'] ?? '');
+    if (!tcgIsFreeGameMode($mode)) {
+        throw new Exception('Deck Experiment decks can only be used in Free Mode', 400);
     }
 }
 
@@ -113,7 +152,6 @@ function writeExperimentDeckFile(string $password, string $name, array $main, ar
 }
 
 function apiExperimentDeckSave(array $body): array {
-    assertExperimentGuestOnly($body);
     $cards = json_decode(file_get_contents(CARDS_FILE), true);
     $main = $body['main_deck'] ?? null;
     $energy = $body['energy_deck'] ?? null;
@@ -173,7 +211,6 @@ function apiExperimentDeckLoad(array $body): array {
 }
 
 function apiExperimentRandomDeck(array $body): array {
-    assertExperimentGuestOnly($body);
     require_once __DIR__ . '/deckgen.php';
     $data = json_decode(file_get_contents(CARDS_FILE), true);
     $cards = $data['cards'] ?? [];
@@ -201,5 +238,30 @@ function resolveExperimentDeckFromPassword(string $password, array $cardsData): 
         'deck_label'  => $stored['name'],
         'main_nos'    => $stored['main_deck'],
         'energy_nos'  => $stored['energy_deck'],
+    ];
+}
+
+function resolveExperimentPresetDeckLists(array $body, array $cardsData, int $slot): array {
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Experiment deck slot must be 1–' . TCG_MAX_EXPERIMENT_PRESETS, 400);
+    }
+    require_once __DIR__ . '/llr_auth_load.php';
+    require_once __DIR__ . '/db.php';
+    $uid = tcgRequireAuthUser($body);
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT name, main_deck, energy_deck FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        throw new Exception('Experiment deck #' . $slot . ' not found', 400);
+    }
+    $main = json_decode((string)$row['main_deck'], true) ?: [];
+    $energy = json_decode((string)$row['energy_deck'], true) ?: [];
+    $validated = validateExperimentDeckPayload($main, $energy, $cardsData);
+    return [
+        'deck_choice' => 'experiment_preset:' . $slot,
+        'deck_label'  => normalizeExperimentDeckName((string)($row['name'] ?? ('Experiment ' . $slot))),
+        'main_nos'    => $validated['main'],
+        'energy_nos'  => $validated['energy'],
     ];
 }

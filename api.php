@@ -249,8 +249,20 @@ function resolveRoomDeckLists(array $body, array $cards): array {
         $hint = trim((string)($body['cpu_group_hint'] ?? '')) ?: null;
         return resolveCpuDeckLists($cards, $diff, $hint);
     }
+    tcgAssertUnrankedDeckForGameMode($body);
     if ($deckChoice === 'experiment' || preg_match('/^experiment:[A-Z0-9]+$/i', $deckChoice)) {
         return resolveExperimentDeckLists($body, $cards);
+    }
+    $expSlot = 0;
+    if ($deckChoice === 'experiment_preset') {
+        $expSlot = intval($body['experiment_slot'] ?? $body['deck_slot'] ?? 0);
+    } elseif (preg_match('/^experiment_preset:(\d+)$/', $deckChoice, $m)) {
+        $expSlot = intval($m[1]);
+        $deckChoice = 'experiment_preset';
+    }
+    if ($deckChoice === 'experiment_preset') {
+        assertExperimentAllowedForRoom($body);
+        return resolveExperimentPresetDeckLists($body, $cards, $expSlot);
     }
     $slot = 0;
     if ($deckChoice === 'preset') {
@@ -299,9 +311,9 @@ function resolveAccountPresetDeckLists(array $body, array $cards, int $slot): ar
     ];
 }
 
-/** Guest-only custom decks from Deck Experiment (full card pool, unranked only). */
+/** Deck Experiment decks (password / inline lists / account preset) — Free Mode only. */
 function resolveExperimentDeckLists(array $body, array $cardsData): array {
-    assertExperimentGuestOnly($body);
+    assertExperimentAllowedForRoom($body);
 
     $password = normalizeExperimentPassword((string)($body['experiment_password'] ?? ''));
     if ($password === '' && preg_match('/^experiment:([A-Z0-9]+)$/i', (string)($body['deck'] ?? ''), $m)) {
@@ -358,6 +370,8 @@ function createRoom(array $body): array {
 
     $state = initGameState($roomId, $p1Payload);
     $state['phase_timer_cfg'] = parsePhaseTimerConfigFromBody($body);
+    require_once __DIR__ . '/game_mode.php';
+    $state['game_mode'] = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
 
     saveGame($roomId, $state);
 
@@ -390,6 +404,15 @@ function joinRoom(array $body): array {
     }
 
     $cards = tcgLoadCardsData();
+    // Joiner must match the room's Free/Standard/Starters mode when the host set one.
+    require_once __DIR__ . '/game_mode.php';
+    if (!empty($state['game_mode'])) {
+        $body['game_mode'] = tcgNormalizeGameMode($state['game_mode']);
+    } elseif (!isset($body['game_mode'])) {
+        $body['game_mode'] = TCG_GAME_MODE_STANDARD;
+    } else {
+        $body['game_mode'] = tcgNormalizeGameMode($body['game_mode']);
+    }
     $resolved  = resolveRoomDeckLists($body, $cards);
 
     $mainDeck   = buildDeckForRoom($cards['cards'], $resolved['main_nos'], $body, 'main_order');

@@ -4749,6 +4749,9 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-row > .llc-menu-item{
   flex:1 1 0;width:auto;min-width:0;padding:12px 14px;
 }
+.llc-menu-row--deck > .llc-menu-item--wide{flex:3 1 0}
+.llc-menu-row--deck > .llc-menu-item--narrow{flex:1 1 0}
+.llc-menu-row--deck > .llc-menu-item--narrow .llc-menu-item-sub{display:none}
 .llc-menu-row .llc-menu-item-title{font-size:15px;letter-spacing:.04em}
 .llc-menu-row .llc-menu-item-sub{font-size:11px;margin-left:16px;line-height:1.35}
 @media (max-width: 420px) {
@@ -7322,12 +7325,20 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span class="llc-menu-item-sub" data-i18n="hub.leaderboard.sub">View the online rankings</span>
           </span>
         </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-deck" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.deck.title">Deck Builder</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.deck.sub">Edit presets and ranked loadout</span>
-          </span>
-        </button>
+        <div class="llc-menu-row llc-menu-row--deck">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide" id="btn-hub-deck" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.deck.title">Deck Builder</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.deck.sub">Edit presets and ranked loadout</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-deck-experiment" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.experiment.title">Deck Experiment</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.experiment.sub">Any card — Free Mode only</span>
+            </span>
+          </button>
+        </div>
         <button class="llc-menu-item llc-menu-hover" id="btn-hub-sticker" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Shop</span>
@@ -7656,6 +7667,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
       </div>
       <div class="deck-builder-actions">
         <button class="btn-grad" id="btn-deck-save" type="button" data-i18n="deck.savePreset">Save preset</button>
+        <button class="btn-out" id="btn-deck-share-password" type="button" hidden data-i18n="deck.generatePassword">Generate password</button>
         <button class="btn-out" id="btn-deck-equip" type="button" data-i18n="deck.equipRanked">Equip ranked</button>
         <button class="btn-out" id="btn-deck-reset-starter" type="button" data-i18n="deck.resetStarter">Reset starter</button>
         <button class="btn-out" id="btn-deck-auto-build" type="button" data-i18n="deck.autoBuild">Auto-build</button>
@@ -7791,6 +7803,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
               <select id="sel-lobby-game-mode">
                 <option value="standard" data-i18n="gameMode.standard">Standard</option>
                 <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+                <option value="free" data-i18n="gameMode.free">Free Mode</option>
               </select>
             </div>
             <p class="game-mode-desc" id="lobby-game-mode-desc"></p>
@@ -8727,7 +8740,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=79"></script>
+<script src="i18n.js?v=80"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
@@ -8920,7 +8933,9 @@ const A = {
   collection: [],
   collectionMap: {},
   decks: [],
+  experimentDecks: [],
   deckSlot: 1,
+  experimentSlot: 1,
   deckMain: [],
   deckEnergy: [],
   deckBuilderMode: 'account',
@@ -10708,7 +10723,7 @@ async function consumeLovecaChallengeInvite() {
     if (A.casualSearching) await cancelCasualSearch();
     const res = await accountPost('ranked_join', {
       challenge_discord_id: invite.challenge,
-      game_mode: currentGameMode(),
+      game_mode: rankedGameMode(),
     });
     if (res.match?.status === 'matched') {
       if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
@@ -11584,11 +11599,13 @@ function openUnrankedLobby() {
 async function refreshUnrankedLobbyInBackground() {
   if (isSignedInAccount()) {
     try {
-      const dl = await accountGet('deck_list');
-      if (dl.success) {
-        A.decks = dl.decks || [];
-        if (el('screen-lobby')?.classList.contains('active')) renderLobbyDeckOptions();
-      }
+      const [dl, exp] = await Promise.all([
+        accountGet('deck_list'),
+        accountGet('experiment_preset_list').catch(() => null),
+      ]);
+      if (dl?.success) A.decks = dl.decks || [];
+      if (exp?.success) A.experimentDecks = exp.decks || [];
+      if (el('screen-lobby')?.classList.contains('active')) renderLobbyDeckOptions();
     } catch (e) {}
   }
   if (!el('screen-lobby')?.classList.contains('active')) return;
@@ -11598,13 +11615,12 @@ async function refreshUnrankedLobbyInBackground() {
 }
 
 function syncLobbyExperimentField() {
-  const guest = !isSignedInAccount();
-  const startersOnly = isStartersGameMode();
+  const free = isFreeGameMode();
   const field = el('lobby-experiment-pwd-field');
   const expBtn = el('btn-lobby-deck-experiment');
-  if (field) field.hidden = !guest || startersOnly;
-  if (expBtn) expBtn.hidden = !guest || startersOnly;
-  if (!guest || startersOnly) return;
+  if (field) field.hidden = !free;
+  if (expBtn) expBtn.hidden = !free;
+  if (!free) return;
   const inp = el('inp-lobby-experiment-pwd');
   if (!inp) return;
   if (!inp.value) {
@@ -12829,18 +12845,20 @@ function layoutDeckBuilderActions(experiment) {
   const bar = el('deck-builder-actions');
   if (!bar) return;
   const save = el('btn-deck-save');
+  const sharePwd = el('btn-deck-share-password');
   const equip = el('btn-deck-equip');
   const reset = el('btn-deck-reset-starter');
   const random = el('btn-deck-auto-build');
   const clear = el('btn-deck-clear');
   const order = experiment
-    ? [random, reset, clear, save, equip]
-    : [save, equip, reset, random, clear];
+    ? [random, reset, clear, save, sharePwd, equip]
+    : [save, sharePwd, equip, reset, random, clear];
   order.forEach(btn => { if (btn) bar.appendChild(btn); });
 }
 
 function syncDeckBuilderChrome() {
   const experiment = A.deckBuilderMode === 'experiment';
+  const signedExp = experiment && isSignedInAccount();
   const legal = deckListsAreLegal(A.deckMain, A.deckEnergy);
   const title = el('deck-screen-title');
   const backBtn = el('btn-deck-back');
@@ -12855,14 +12873,24 @@ function syncDeckBuilderChrome() {
   if (backBtn) backBtn.textContent = experiment ? t('deck.backMenu') : t('deck.backHub');
   if (searchWrap) searchWrap.hidden = false;
   if (pwdWrap) pwdWrap.hidden = !experiment;
-  if (slotsWrap) slotsWrap.hidden = experiment;
-  if (nameWrap) nameWrap.hidden = experiment;
+  if (slotsWrap) {
+    slotsWrap.hidden = experiment && !signedExp;
+    const slotLabel = slotsWrap.querySelector('label');
+    if (slotLabel) {
+      slotLabel.textContent = signedExp
+        ? (t('deck.experimentSlot') || 'Experiment slot (max 10)')
+        : t('deck.presetSlot');
+    }
+  }
+  if (nameWrap) nameWrap.hidden = experiment && !signedExp;
   if (metaRow) metaRow.classList.toggle('deck-experiment-meta', experiment);
   const starterHint = el('deck-starter-hint');
   if (starterHint) starterHint.hidden = experiment;
   syncDeckStarterHint();
   if (hintCompact) {
-    hintCompact.textContent = experiment ? t('deck.experimentHint') : t('deck.hint');
+    hintCompact.textContent = experiment
+      ? (signedExp ? (t('deck.experimentHintSignedIn') || t('deck.experimentHint')) : t('deck.experimentHint'))
+      : t('deck.hint');
   }
   ensureDeckFilterPanel();
   syncDeckFilterUi();
@@ -12908,7 +12936,11 @@ function syncDeckBuilderChrome() {
   const saveBtn = el('btn-deck-save');
   if (saveBtn) {
     if (experiment) {
-      saveBtn.textContent = A.experimentPassword ? t('deck.updateSavedDeck') : t('deck.generatePassword');
+      if (signedExp) {
+        saveBtn.textContent = t('deck.saveExperiment') || 'Save experiment deck';
+      } else {
+        saveBtn.textContent = A.experimentPassword ? t('deck.updateSavedDeck') : t('deck.generatePassword');
+      }
       saveBtn.hidden = !legal;
       saveBtn.disabled = !legal;
     } else {
@@ -12917,8 +12949,21 @@ function syncDeckBuilderChrome() {
       saveBtn.disabled = !legal;
     }
   }
+  const shareBtn = el('btn-deck-share-password');
+  if (shareBtn) {
+    if (signedExp) {
+      shareBtn.hidden = !legal;
+      shareBtn.disabled = !legal;
+      shareBtn.textContent = A.experimentPassword ? t('deck.updateSavedDeck') : t('deck.generatePassword');
+    } else {
+      shareBtn.hidden = true;
+    }
+  }
   layoutDeckBuilderActions(experiment);
-  if (experiment) syncExperimentPasswordDisplay();
+  if (experiment) {
+    if (signedExp) renderExperimentSlots();
+    syncExperimentPasswordDisplay();
+  }
 }
 
 let _experimentPoolGen = 0;
@@ -14368,12 +14413,13 @@ async function openDeckBuilder() {
 }
 
 async function openDeckExperiment() {
-  if (isSignedInAccount()) {
-    toast('Sign out to use Deck Experiment.');
+  if (!Object.keys(G.allCards).length) await loadCards();
+  if (!Object.keys(G.allCards).length) {
+    toast(t('toast.cardsLoadFailed'), 4000);
     return;
   }
-  if (!Object.keys(G.allCards).length) await loadCards();
   A.deckBuilderMode = 'experiment';
+  exitDeckSealBatchMode({ render: false });
   A.experimentSearch = '';
   A.deckPoolFilters = defaultDeckPoolFilters();
   A.experimentPassword = '';
@@ -14384,9 +14430,58 @@ async function openDeckExperiment() {
   if (searchInp) searchInp.value = '';
   if (cardSearch) cardSearch.value = '';
   el('deck-err').textContent = '';
+  if (isSignedInAccount()) {
+    try {
+      const dl = await accountGet('experiment_preset_list');
+      A.experimentDecks = dl.decks || [];
+      if (!A.experimentDecks.some(d => d.slot === A.experimentSlot)) A.experimentSlot = 1;
+      selectExperimentSlot(A.experimentSlot);
+    } catch (e) {
+      A.experimentDecks = [];
+      renderExperimentSlots();
+      renderDeckBuilder();
+    }
+  } else {
+    syncExperimentPasswordDisplay();
+    renderDeckBuilder();
+  }
+  showScr('deck');
+}
+
+function renderExperimentSlots() {
+  const slots = el('deck-slots');
+  if (!slots) return;
+  slots.innerHTML = '';
+  const max = 10;
+  for (let i = 1; i <= max; i++) {
+    const saved = (A.experimentDecks || []).find(d => d.slot === i);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'deck-slot-btn' + (i === A.experimentSlot ? ' active' : '');
+    b.textContent = saved ? (saved.name || ('Exp ' + i)) : String(i);
+    b.title = saved ? `${saved.name || 'Experiment'} · ${saved.main_count || 0} cards` : t('deck.emptySlot') || 'Empty';
+    b.onclick = () => selectExperimentSlot(i);
+    slots.appendChild(b);
+  }
+}
+
+function selectExperimentSlot(slot) {
+  A.experimentSlot = slot;
+  const saved = (A.experimentDecks || []).find(d => d.slot === slot);
+  el('inp-deck-name').value = saved?.name || ('Experiment ' + slot);
+  if (saved?.main_deck?.length) {
+    A.deckMain = [...saved.main_deck];
+    A.deckEnergy = [...(saved.energy_deck || [])];
+    if (saved.share_password) {
+      A.experimentPassword = saved.share_password;
+    }
+  } else {
+    A.deckMain = [];
+    A.deckEnergy = [];
+  }
+  renderExperimentSlots();
   syncExperimentPasswordDisplay();
   renderDeckBuilder();
-  showScr('deck');
 }
 
 const DEBUG_CARD_NO_KEY = 'tcg_debug_last_card_no';
@@ -15920,6 +16015,20 @@ async function saveExperimentDeckPassword() {
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
     });
+    if (isSignedInAccount()) {
+      try {
+        await accountPost('experiment_preset_save', {
+          slot: A.experimentSlot || 1,
+          name: el('inp-deck-name')?.value.trim() || ('Experiment ' + (A.experimentSlot || 1)),
+          main_deck: [...A.deckMain],
+          energy_deck: [...A.deckEnergy],
+          share_password: res.password,
+        });
+        const dl = await accountGet('experiment_preset_list');
+        A.experimentDecks = dl.decks || [];
+        renderExperimentSlots();
+      } catch (e) { /* password share still succeeded */ }
+    }
     el('deck-err').textContent = A.experimentPassword === res.password && body.password
       ? 'Deck updated! Password: ' + res.password
       : 'Password generated: ' + res.password + ' — save it to load this deck later.';
@@ -15931,8 +16040,43 @@ async function saveExperimentDeckPassword() {
   }
 }
 
+async function saveExperimentPresetToAccount() {
+  el('deck-err').textContent = '';
+  if (!deckListsAreLegal(A.deckMain, A.deckEnergy)) {
+    const c = deckCounts();
+    el('deck-err').textContent = c.lovecaPoints > c.lovecaLimit
+      ? t('deck.lovecaDeckIllegal', { total: c.lovecaPoints, limit: c.lovecaLimit })
+      : t('deck.deckIllegalSize');
+    return;
+  }
+  const btn = el('btn-deck-save');
+  const prev = btn?.textContent;
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const body = {
+      slot: A.experimentSlot || 1,
+      name: el('inp-deck-name')?.value.trim() || ('Experiment ' + (A.experimentSlot || 1)),
+      main_deck: [...A.deckMain],
+      energy_deck: [...A.deckEnergy],
+    };
+    if (A.experimentPassword) body.share_password = A.experimentPassword;
+    await accountPost('experiment_preset_save', body);
+    const dl = await accountGet('experiment_preset_list');
+    A.experimentDecks = dl.decks || [];
+    renderExperimentSlots();
+    renderDeckBuilder();
+    el('deck-err').textContent = t('deck.experimentSaved') || 'Experiment deck saved to your account.';
+  } catch (e) {
+    el('deck-err').textContent = e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev || (t('deck.saveExperiment') || 'Save experiment deck'); }
+    syncDeckBuilderChrome();
+  }
+}
+
 async function saveDeckPreset() {
   if (A.deckBuilderMode === 'experiment') {
+    if (isSignedInAccount()) return saveExperimentPresetToAccount();
     return saveExperimentDeckPassword();
   }
   try {
@@ -16223,7 +16367,7 @@ async function openLeaderboardScreen() {
   persistGameMode(currentGameMode());
   syncGameModeSelects();
   try {
-    const res = await accountGet('rank_stats', { game_mode: currentGameMode() });
+    const res = await accountGet('rank_stats', { game_mode: rankedGameMode() });
     A.leaderboard = res;
     A.lastLeaderboardData = res;
     renderLeaderboardRows(res);
@@ -16549,7 +16693,7 @@ async function saveBannerCrop() {
     A.profile = A.profile || {};
     A.profile.banner = res.banner || null;
     if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats', { game_mode: currentGameMode() });
+      const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
       A.leaderboard = stats;
       A.lastLeaderboardData = stats;
       renderLeaderboardRows(stats);
@@ -16706,7 +16850,7 @@ async function saveProfileFlag() {
     syncProfileFlagStatus();
     renderProfileFlagGrid();
     if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats', { game_mode: currentGameMode() });
+      const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
       A.leaderboard = stats;
       A.lastLeaderboardData = stats;
       renderLeaderboardRows(stats);
@@ -16936,14 +17080,22 @@ async function resumeRankedSearchIfQueued() {
 }
 
 const TCG_GAME_MODE_KEY = 'tcg_game_mode';
-const TCG_GAME_MODES = ['standard', 'starters'];
+const TCG_GAME_MODES = ['standard', 'starters', 'free'];
+const TCG_RANKED_GAME_MODES = ['standard', 'starters'];
 const TCG_RANKED_DECK_BY_MODE_KEY = 'tcg_ranked_deck_by_mode';
 const TCG_LOBBY_DECK_BY_MODE_KEY = 'tcg_lobby_deck_by_mode';
 
 function normalizeGameMode(raw) {
   const m = String(raw || '').toLowerCase().trim();
   if (m === 'starters' || m === 'starter' || m === 'starter_decks' || m === 'starter-decks') return 'starters';
+  if (m === 'free' || m === 'free_mode' || m === 'freemode' || m === 'experiment') return 'free';
   return 'standard';
+}
+
+/** Ranked / leaderboard never use Free Mode. */
+function normalizeRankedGameMode(raw) {
+  const m = normalizeGameMode(raw);
+  return m === 'free' ? 'standard' : m;
 }
 
 function loadStoredGameMode() {
@@ -16965,16 +17117,27 @@ function currentGameMode() {
   return normalizeGameMode(A.gameMode || loadStoredGameMode());
 }
 
+function rankedGameMode() {
+  return normalizeRankedGameMode(currentGameMode());
+}
+
 function isStartersGameMode(mode) {
   return normalizeGameMode(mode ?? currentGameMode()) === 'starters';
 }
 
+function isFreeGameMode(mode) {
+  return normalizeGameMode(mode ?? currentGameMode()) === 'free';
+}
+
 function gameModeDescription(mode) {
-  return isStartersGameMode(mode) ? t('gameMode.startersDesc') : t('gameMode.standardDesc');
+  const m = normalizeGameMode(mode);
+  if (m === 'starters') return t('gameMode.startersDesc');
+  if (m === 'free') return t('gameMode.freeDesc');
+  return t('gameMode.standardDesc');
 }
 
 function emptyDeckByModeMap() {
-  return { standard: null, starters: null };
+  return { standard: null, starters: null, free: null };
 }
 
 function loadDeckByModePrefs(storageKey) {
@@ -17006,13 +17169,14 @@ function persistDeckByModeMap(storageKey, map) {
     localStorage.setItem(storageKey, JSON.stringify({
       standard: map?.standard || null,
       starters: map?.starters || null,
+      free: map?.free || null,
     }));
   } catch (e) {}
 }
 
 function rememberRankedDeckForMode(mode, deckKey) {
   ensureDeckByModeMaps();
-  const m = normalizeGameMode(mode);
+  const m = normalizeRankedGameMode(mode);
   const key = String(deckKey || '').trim();
   if (!key) return;
   A.rankedDeckByMode[m] = key;
@@ -17030,7 +17194,7 @@ function rememberLobbyDeckForMode(mode, deckKey) {
 
 function rememberedRankedDeckForMode(mode) {
   ensureDeckByModeMaps();
-  return A.rankedDeckByMode[normalizeGameMode(mode)] || null;
+  return A.rankedDeckByMode[normalizeRankedGameMode(mode)] || null;
 }
 
 function rememberedLobbyDeckForMode(mode) {
@@ -17049,16 +17213,19 @@ function rememberCurrentDecksForMode(mode) {
 
 function syncGameModeSelects(mode) {
   const m = normalizeGameMode(mode ?? currentGameMode());
-  ['sel-ranked-game-mode', 'sel-lobby-game-mode', 'sel-leaderboard-game-mode'].forEach(id => {
+  const rankedM = normalizeRankedGameMode(m);
+  const lobbySel = el('sel-lobby-game-mode');
+  if (lobbySel && lobbySel.value !== m) lobbySel.value = m;
+  ['sel-ranked-game-mode', 'sel-leaderboard-game-mode'].forEach(id => {
     const sel = el(id);
-    if (sel && sel.value !== m) sel.value = m;
+    if (sel && sel.value !== rankedM) sel.value = rankedM;
   });
   const rankedDesc = el('ranked-game-mode-desc');
-  if (rankedDesc) rankedDesc.textContent = gameModeDescription(m);
+  if (rankedDesc) rankedDesc.textContent = gameModeDescription(rankedM);
   const lobbyDesc = el('lobby-game-mode-desc');
   if (lobbyDesc) lobbyDesc.textContent = gameModeDescription(m);
   const lbDesc = el('leaderboard-game-mode-desc');
-  if (lbDesc) lbDesc.textContent = gameModeDescription(m);
+  if (lbDesc) lbDesc.textContent = gameModeDescription(rankedM);
 }
 
 function ownedStarterKeysForUi() {
@@ -17082,7 +17249,10 @@ function starterOptionLabel(key) {
 async function onGameModeSelectChange(sourceSelId) {
   const sel = el(sourceSelId);
   if (!sel) return;
-  const next = normalizeGameMode(sel.value);
+  let next = normalizeGameMode(sel.value);
+  if (sourceSelId === 'sel-ranked-game-mode' || sourceSelId === 'sel-leaderboard-game-mode') {
+    next = normalizeRankedGameMode(next);
+  }
   const prev = currentGameMode();
   if (next === prev) {
     syncGameModeSelects(next);
@@ -17111,7 +17281,7 @@ async function onGameModeSelectChange(sourceSelId) {
 }
 
 async function refreshRankedScreenModeStats() {
-  const mode = currentGameMode();
+  const mode = rankedGameMode();
   try {
     const stats = await accountGet('rank_stats', { game_mode: mode });
     const you = stats?.you || {};
@@ -17135,7 +17305,7 @@ async function refreshRankedScreenModeStats() {
 async function refreshLeaderboardForMode() {
   el('leaderboard-err').textContent = '';
   try {
-    const res = await accountGet('rank_stats', { game_mode: currentGameMode() });
+    const res = await accountGet('rank_stats', { game_mode: rankedGameMode() });
     A.leaderboard = res;
     A.lastLeaderboardData = res;
     renderLeaderboardRows(res);
@@ -17312,7 +17482,7 @@ async function onRankedDeckChange() {
 
 async function pollRankedStatus() {
   try {
-    const res = await accountGet('ranked_status', { game_mode: currentGameMode() });
+    const res = await accountGet('ranked_status', { game_mode: rankedGameMode() });
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
@@ -17371,13 +17541,13 @@ async function startRankedSearch() {
       if (!ok) return;
     }
     const deckKey = el('sel-ranked-deck')?.value || '';
-    if (isStartersGameMode() && !(deckKey === 'starter' || deckKey.startsWith('starter:'))) {
+    if (isStartersGameMode(rankedGameMode()) && !(deckKey === 'starter' || deckKey.startsWith('starter:'))) {
       throw new Error(t('gameMode.startersDesc'));
     }
     if (deckKey && deckKey !== rankedDeckSelectValue()) {
       await applyRankedDeckChoice(deckKey, { silent: true });
     }
-    const joinBody = { game_mode: currentGameMode() };
+    const joinBody = { game_mode: rankedGameMode() };
     if (deckKey.startsWith('starter:')) joinBody.starter = deckKey.slice(8);
     else if (deckKey === 'starter' && A.profile?.user?.starter_deck) {
       joinBody.starter = A.profile.user.starter_deck;
@@ -17389,7 +17559,7 @@ async function startRankedSearch() {
       return;
     }
     applyRankedStatusResponse({
-      ranked: { status: 'searching', wait_seconds: 0, game_mode: currentGameMode() },
+      ranked: { status: 'searching', wait_seconds: 0, game_mode: rankedGameMode() },
       queue_stats: res.queue_stats,
     });
     markRankedSearchActive(true);
@@ -17398,7 +17568,7 @@ async function startRankedSearch() {
 }
 
 async function cancelRankedSearch() {
-  await accountPost('ranked_leave', { game_mode: currentGameMode() });
+  await accountPost('ranked_leave', { game_mode: rankedGameMode() });
   markRankedSearchActive(false);
   stopRankedPoll();
   setRankedSearchingUI(false);
@@ -19062,6 +19232,7 @@ async function bootApp() {
   on('btn-hub-booster', 'click', loadBoosterScreen);
   on('btn-hub-sticker', 'click', loadStickerShopScreen);
   on('btn-hub-deck', 'click', openDeckBuilder);
+  on('btn-hub-deck-experiment', 'click', openDeckExperiment);
   on('btn-hub-ranked', 'click', openRankedScreen);
   on('btn-hub-leaderboard', 'click', openLeaderboardScreen);
   on('btn-hub-options', 'click', openOptionsScreen);
@@ -19169,6 +19340,7 @@ async function bootApp() {
   on('btn-booster-rates-close', 'click', () => closeM('modal-booster-rates'));
   on('modal-booster-rates', 'click', e => { if (e.target === el('modal-booster-rates')) closeM('modal-booster-rates'); });
   on('btn-deck-save', 'click', saveDeckPreset);
+  on('btn-deck-share-password', 'click', saveExperimentDeckPassword);
   on('btn-deck-equip', 'click', equipDeck);
   on('btn-deck-reset-starter', 'click', resetDeckToStarter);
   on('btn-experiment-starter-cancel', 'click', () => closeM('modal-experiment-starter-pick'));
@@ -20524,6 +20696,19 @@ async function loadCards() {
 function updateDeckPrev() {
   const key  = experimentDeckChoiceForPreview();
   const e2   = el('deck-prev');
+  if (key.startsWith('experiment_preset:')) {
+    const slot = parseInt(key.slice(18), 10);
+    const saved = (A.experimentDecks || []).find(d => d.slot === slot);
+    if (!saved) { e2.textContent = 'Loading experiment deck…'; return; }
+    const mbrs = (saved.main_deck || []).filter(n => G.allCards[n]?.card_type === 'メンバー').length;
+    const lvs  = (saved.main_deck || []).filter(n => G.allCards[n]?.card_type === 'ライブ').length;
+    const eq = saved.energy_deck?.length ?? 12;
+    e2.innerHTML = `<b>${saved.name || ('Experiment #' + slot)}</b><br>`
+      + `${iconHtml('icon_blade.png', 'bicon', 'Blade')} ${mbrs} ${t('cardType.member')} &nbsp;`
+      + `${iconHtml('sp_score.png', 'ticon', 'Score')} ${lvs} ${t('cardType.live')} &nbsp;`
+      + `${iconHtml('icon_energy.png', 'ticon', 'Energy')} ${eq} ${t('cardType.energy')}`;
+    return;
+  }
   if (key.startsWith('experiment:')) {
     const password = normalizeExperimentPasswordInput(key.slice(11));
     if (!password) { e2.textContent = 'Invalid experiment deck password.'; return; }
@@ -20544,7 +20729,7 @@ function updateDeckPrev() {
     apiExperimentCall('experiment_deck_load', { password })
       .then(d => {
         A.experimentDeckCache[password] = d;
-        if (el('sel-deck').value !== key) return;
+        if (el('sel-deck').value !== key && experimentDeckChoiceForPreview() !== key) return;
         updateDeckPrev();
       })
       .catch(err => { e2.textContent = err.message || 'Could not load experiment deck.'; });
@@ -20585,10 +20770,8 @@ function updateDeckPrev() {
 const LOBBY_STARTER_DECKS = ['nijigasaki', 'muse', 'sunshine', 'liella', 'hasunosora', 'superstar_cheer'];
 
 function experimentDeckChoiceForPreview() {
-  if (!isSignedInAccount()) {
-    const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
-    if (lobbyPwd) return 'experiment:' + lobbyPwd;
-  }
+  const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
+  if (isFreeGameMode() && lobbyPwd) return 'experiment:' + lobbyPwd;
   return el('sel-deck')?.value || 'nijigasaki';
 }
 
@@ -20601,86 +20784,122 @@ function renderLobbyDeckOptions(opts = {}) {
   const guest = !isSignedInAccount();
   const mode = currentGameMode();
   const startersOnly = isStartersGameMode(mode);
+  const freeMode = isFreeGameMode(mode);
 
-  const basicGroup = document.createElement('optgroup');
-  basicGroup.label = startersOnly ? t('gameMode.starters') : t('deck.basicDecks');
-  const starterIds = startersOnly && !guest
-    ? ownedStarterKeysForUi()
-    : LOBBY_STARTER_DECKS.slice();
-  if (startersOnly && !guest && !starterIds.length) {
-    const primary = A.profile?.user?.starter_deck;
-    if (primary) starterIds.push(primary);
-  }
-  starterIds.forEach(id => {
-    const o = document.createElement('option');
-    o.value = id;
-    const deck = G.starterDecks[id];
-    o.textContent = deckLocaleName(deck, id) || id;
-    basicGroup.appendChild(o);
-  });
-  if (basicGroup.children.length) sel.appendChild(basicGroup);
+  if (freeMode) {
+    const expGroup = document.createElement('optgroup');
+    expGroup.label = t('deck.experimentTitle') || 'Deck Experiment';
 
-  if (!startersOnly) {
-    const randomOpt = document.createElement('option');
-    randomOpt.value = 'random';
-    randomOpt.textContent = t('deck.randomDeck');
-    sel.appendChild(randomOpt);
+    if (!guest) {
+      const savedExp = (A.experimentDecks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      savedExp.forEach(d => {
+        const o = document.createElement('option');
+        o.value = 'experiment_preset:' + d.slot;
+        o.textContent = (d.name || ('Experiment #' + d.slot));
+        expGroup.appendChild(o);
+      });
+    }
 
-    if (guest) {
-      const remembered = loadExperimentPasswords();
-      if (remembered.length) {
-        const expGroup = document.createElement('optgroup');
-        expGroup.label = 'Deck Experiment';
-        remembered.forEach(entry => {
+    const remembered = loadExperimentPasswords();
+    remembered.forEach(entry => {
+      const o = document.createElement('option');
+      o.value = 'experiment:' + entry.password;
+      o.textContent = (entry.name || 'Deck Experiment') + ' (' + entry.password + ')';
+      expGroup.appendChild(o);
+    });
+
+    if (expGroup.children.length) {
+      sel.appendChild(expGroup);
+    } else {
+      const o = document.createElement('option');
+      o.value = '';
+      o.textContent = t('lobby.experimentDeckEmpty') || 'Enter a password or save an experiment deck';
+      o.disabled = true;
+      sel.appendChild(o);
+    }
+  } else {
+    const basicGroup = document.createElement('optgroup');
+    basicGroup.label = startersOnly ? t('gameMode.starters') : t('deck.basicDecks');
+    const starterIds = startersOnly && !guest
+      ? ownedStarterKeysForUi()
+      : LOBBY_STARTER_DECKS.slice();
+    if (startersOnly && !guest && !starterIds.length) {
+      const primary = A.profile?.user?.starter_deck;
+      if (primary) starterIds.push(primary);
+    }
+    starterIds.forEach(id => {
+      const o = document.createElement('option');
+      o.value = id;
+      const deck = G.starterDecks[id];
+      o.textContent = deckLocaleName(deck, id) || id;
+      basicGroup.appendChild(o);
+    });
+    if (basicGroup.children.length) sel.appendChild(basicGroup);
+
+    if (!startersOnly) {
+      const randomOpt = document.createElement('option');
+      randomOpt.value = 'random';
+      randomOpt.textContent = t('deck.randomDeck');
+      sel.appendChild(randomOpt);
+
+      const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      if (saved.length) {
+        const presetGroup = document.createElement('optgroup');
+        presetGroup.label = 'Saved presets';
+        saved.forEach(d => {
           const o = document.createElement('option');
-          o.value = 'experiment:' + entry.password;
-          o.textContent = (entry.name || 'Deck Experiment') + ' (' + entry.password + ')';
-          expGroup.appendChild(o);
+          o.value = 'preset:' + d.slot;
+          o.textContent = (d.name || ('Deck #' + d.slot)) + (d.equipped ? ' ★' : '');
+          presetGroup.appendChild(o);
         });
-        sel.appendChild(expGroup);
+        sel.appendChild(presetGroup);
       }
     }
-
-    const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
-    if (saved.length) {
-      const presetGroup = document.createElement('optgroup');
-      presetGroup.label = 'Saved presets';
-      saved.forEach(d => {
-        const o = document.createElement('option');
-        o.value = 'preset:' + d.slot;
-        o.textContent = (d.name || ('Deck #' + d.slot)) + (d.equipped ? ' ★' : '');
-        presetGroup.appendChild(o);
-      });
-      sel.appendChild(presetGroup);
-    }
   }
 
-  const values = [...sel.options].map(o => o.value);
+  const values = [...sel.options].map(o => o.value).filter(Boolean);
   const remembered = rememberedLobbyDeckForMode(mode);
   let chosen = '';
   if (preferRemembered) {
     if (remembered && values.includes(remembered)) chosen = remembered;
-    else chosen = values[0] || 'nijigasaki';
+    else chosen = values[0] || '';
   } else if (values.includes(prev)) {
     chosen = prev;
   } else if (remembered && values.includes(remembered)) {
     chosen = remembered;
   } else {
-    chosen = values[0] || 'nijigasaki';
+    chosen = values[0] || '';
   }
-  sel.value = chosen;
+  if (chosen) sel.value = chosen;
   if (chosen) rememberLobbyDeckForMode(mode, chosen);
   syncLobbyExperimentField();
   updateDeckPrev();
   const expBtn = el('btn-lobby-deck-experiment');
-  if (expBtn) expBtn.hidden = !guest || startersOnly;
+  if (expBtn) expBtn.hidden = !freeMode;
 }
 
 function deckPayloadFromChoice(deckSel) {
   const payload = { deck: deckSel };
+  if (deckSel.startsWith('experiment_preset:')) {
+    if (!isFreeGameMode()) {
+      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free Mode');
+    }
+    const slot = parseInt(deckSel.slice(18), 10);
+    if (!Number.isFinite(slot) || slot < 1 || slot > 10) {
+      throw new Error('Invalid experiment deck selection');
+    }
+    const token = getAuthToken();
+    if (!token) throw new Error('Sign in to use saved experiment decks');
+    return {
+      deck: 'experiment_preset',
+      experiment_slot: slot,
+      deck_slot: slot,
+      token,
+    };
+  }
   if (deckSel.startsWith('experiment:')) {
-    if (isSignedInAccount()) {
-      throw new Error('Deck Experiment is only for signed-out unranked play');
+    if (!isFreeGameMode()) {
+      throw new Error(t('gameMode.freeDesc') || 'Deck Experiment decks can only be used in Free Mode');
     }
     const password = normalizeExperimentPasswordInput(deckSel.slice(11));
     if (!password) throw new Error('Invalid experiment deck password');
@@ -20688,6 +20907,9 @@ function deckPayloadFromChoice(deckSel) {
       deck: 'experiment:' + password,
       experiment_password: password,
     };
+  }
+  if (isFreeGameMode()) {
+    throw new Error(t('lobby.freeModeNeedsExperiment') || 'Free Mode requires a Deck Experiment deck');
   }
   if (deckSel.startsWith('preset:')) {
     const slot = parseInt(deckSel.slice(7), 10);
@@ -20704,12 +20926,19 @@ function deckPayloadFromChoice(deckSel) {
 }
 
 function lobbyDeckPayload() {
+  const mode = currentGameMode();
   const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
-  if (lobbyPwd && !isSignedInAccount()) {
-    return deckPayloadFromChoice('experiment:' + lobbyPwd);
+  let deckPart;
+  if (isFreeGameMode(mode) && lobbyPwd) {
+    deckPart = deckPayloadFromChoice('experiment:' + lobbyPwd);
+  } else {
+    const choice = el('sel-deck')?.value || (isFreeGameMode(mode) ? '' : 'nijigasaki');
+    if (!choice) {
+      throw new Error(t('lobby.freeModeNeedsExperiment') || 'Pick a Deck Experiment deck or enter a password');
+    }
+    deckPart = deckPayloadFromChoice(choice);
   }
-  const choice = el('sel-deck')?.value || 'nijigasaki';
-  return deckPayloadFromChoice(choice || 'nijigasaki');
+  return { game_mode: mode, ...deckPart };
 }
 
 function phaseTimerOptsFromCfg(cfg) {
