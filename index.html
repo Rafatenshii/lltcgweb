@@ -7837,6 +7837,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
       <h2 id="pack-results-title" data-i18n="pack.opened">Pack Opened</h2>
       <p class="pack-results-god-banner" id="pack-results-god" hidden data-i18n="booster.godPack">GOD PACK!</p>
       <p id="pack-results-sub" class="hub-stat"></p>
+      <p id="pack-results-star-gems-info" class="hub-stat" hidden></p>
       <div class="pack-results-cards-block">
         <div class="pack-results-grid" id="pack-results-grid"></div>
       </div>
@@ -9689,13 +9690,23 @@ function updateStarGemsUI() {
     hubCount.textContent = count;
     hubPill.hidden = !isSignedInAccount();
   }
+  const gemLineHtml = t('booster.starGemsLabel') + ' <span class="star-gem-inline">' + starGemIconHtml(18) + '<b>' + count + '</b></span>';
   const boosterInfo = el('booster-star-gems-info');
   if (boosterInfo) {
     if (isSignedInAccount()) {
       boosterInfo.hidden = false;
-      boosterInfo.innerHTML = t('booster.starGemsLabel') + ' <span class="star-gem-inline">' + starGemIconHtml(18) + '<b>' + count + '</b></span>';
+      boosterInfo.innerHTML = gemLineHtml;
     } else {
       boosterInfo.hidden = true;
+    }
+  }
+  const packResultsInfo = el('pack-results-star-gems-info');
+  if (packResultsInfo) {
+    if (isSignedInAccount()) {
+      packResultsInfo.hidden = false;
+      packResultsInfo.innerHTML = gemLineHtml;
+    } else {
+      packResultsInfo.hidden = true;
     }
   }
   if (document.querySelector('.screen.active')?.id === 'screen-booster') {
