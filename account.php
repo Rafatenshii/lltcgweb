@@ -10,7 +10,7 @@
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
  *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, reset_account,
  *   ranked_join, ranked_leave, ranked_status, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
- *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, public_profile,
+ *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
  */
 require_once __DIR__ . '/config/paths.php';
@@ -43,6 +43,7 @@ require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/matchmaking.php';
 require_once __DIR__ . '/deckgen.php';
 require_once __DIR__ . '/missions.php';
+require_once __DIR__ . '/login_bonus.php';
 if (!defined('TCG_API_LIB_ONLY')) {
     define('TCG_API_LIB_ONLY', true);
 }
@@ -89,6 +90,8 @@ try {
         case 'replay_preserve':    echo json_encode(tcgApiReplayPreserve($body)); break;
         case 'missions_list':      echo json_encode(tcgApiMissionsList($body)); break;
         case 'missions_claim':     echo json_encode(tcgApiMissionsClaim($body)); break;
+        case 'login_bonus_status': echo json_encode(tcgApiLoginBonusStatus($body)); break;
+        case 'login_bonus_claim':  echo json_encode(tcgApiLoginBonusClaim($body)); break;
         case 'public_leaderboard': echo json_encode(tcgApiPublicLeaderboard($_GET + $body)); break;
         case 'public_profile':     echo json_encode(tcgApiPublicProfile($_GET + $body)); break;
         case 'sticker_shop_catalog': echo json_encode(tcgApiStickerShopCatalog($body)); break;

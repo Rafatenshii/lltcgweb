@@ -449,6 +449,8 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_collection', 'acquired_at', 'INTEGER');
     tcgDbEnsureColumn($db, 'tcg_daily_state', 'ranked_pr_date', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_daily_state', 'ranked_pr_today', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_daily_state', 'login_bonus_step', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_daily_state', 'login_bonus_last_date', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_replays', 'preserved', 'INTEGER NOT NULL DEFAULT 0');
 
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_replays_user_autosave
@@ -723,7 +725,8 @@ function tcgResetAccountProgress(string $discordId): void {
         $db->prepare('UPDATE tcg_users SET ranked_equipped_starter = 0, ranked_starter_key = NULL WHERE discord_id = ?')
             ->execute([$discordId]);
         $db->prepare('UPDATE tcg_daily_state SET last_open_date = NULL, packs_opened_today = 0, first_day_bonus_used = 0,
-            ranked_pr_date = NULL, ranked_pr_today = 0
+            ranked_pr_date = NULL, ranked_pr_today = 0,
+            login_bonus_step = 0, login_bonus_last_date = NULL
             WHERE discord_id = ?')->execute([$discordId]);
         $db->commit();
     } catch (Throwable $e) {

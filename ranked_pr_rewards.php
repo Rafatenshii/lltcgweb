@@ -62,24 +62,14 @@ function tcgRollSinglePrCard(array $cardsData): ?string {
 }
 
 /**
+ * Roll and grant a PR pack (3 cards) without consuming the ranked daily PR cap.
+ * Used by login bonuses and any non-ranked PR grants.
+ *
  * @return array<string, mixed>
  */
-function tcgGrantRankedWinPrReward(string $discordId): array {
-    $allow = tcgRankedPrDailyAllowance($discordId);
-    if ($allow['remaining'] <= 0) {
-        return [
-            'skipped' => true,
-            'reason' => 'daily_cap',
-            'daily' => $allow,
-        ];
-    }
-
+function tcgGrantPrPackCards(string $discordId): array {
     if (!file_exists(CARDS_FILE)) {
-        return [
-            'skipped' => true,
-            'reason' => 'empty_pool',
-            'daily' => $allow,
-        ];
+        throw new Exception('Card pool unavailable');
     }
     $cardsData = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];
     $cardNos = [];
@@ -90,14 +80,9 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
         }
     }
     if ($cardNos === []) {
-        return [
-            'skipped' => true,
-            'reason' => 'empty_pool',
-            'daily' => $allow,
-        ];
+        throw new Exception('PR card pool empty');
     }
 
-    tcgRecordRankedPrReward($discordId);
     $cardMap = tcgBuildCardMap($cardsData);
     $gemResult = tcgApplyBoosterPullWithGems($discordId, $cardNos, $cardMap);
     $cards = [];
@@ -113,7 +98,6 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
         ]);
     }
     if ($cards === []) {
-        // Extremely unlikely; keep daily consumption consistent with a granted pack.
         foreach ($cardNos as $no) {
             $base = $cardMap[$no] ?? ['card_no' => $no];
             $cards[] = array_merge($base, ['converted' => false, 'star_gems' => 0]);
@@ -124,14 +108,42 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
     return [
         'pack_size' => count($cards),
         'cards' => $cards,
-        // Legacy single-card fields (first pull) for older clients / tooling.
         'card_no' => $first['card_no'] ?? null,
         'card' => $first,
         'converted' => !empty($first['converted']),
         'star_gems_earned' => intval($gemResult['star_gems_earned'] ?? 0),
         'star_gems' => intval($gemResult['star_gems'] ?? 0),
-        'daily' => tcgRankedPrDailyAllowance($discordId),
     ];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function tcgGrantRankedWinPrReward(string $discordId): array {
+    $allow = tcgRankedPrDailyAllowance($discordId);
+    if ($allow['remaining'] <= 0) {
+        return [
+            'skipped' => true,
+            'reason' => 'daily_cap',
+            'daily' => $allow,
+        ];
+    }
+
+    try {
+        $pack = tcgGrantPrPackCards($discordId);
+    } catch (Throwable $e) {
+        return [
+            'skipped' => true,
+            'reason' => 'empty_pool',
+            'daily' => $allow,
+        ];
+    }
+
+    tcgRecordRankedPrReward($discordId);
+
+    return array_merge($pack, [
+        'daily' => tcgRankedPrDailyAllowance($discordId),
+    ]);
 }
 
 function tcgRankedPrRewardForPlayer(array $state, string $playerId): ?array {

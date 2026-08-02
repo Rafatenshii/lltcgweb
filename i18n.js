@@ -88,7 +88,8 @@
       "howToPlaySub": "Hands-on beginner lesson with Kanon",
       "officialVideo": "Official 8-min video ↗",
       "backHub": "← Hub",
-      "missions": "Missions"
+      "missions": "Missions",
+      "loginBonus": "Login"
     },
     "missions": {
       "title": "Missions",
@@ -142,6 +143,21 @@
       "starterPickTitle": "Choose a starter deck",
       "starterPickConfirm": "Unlock starter",
       "starterPickCancel": "Cancel"
+    },
+    "loginBonus": {
+      "title": "Login Bonus",
+      "lead": "Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.",
+      "day": "Day {day}",
+      "reward": {
+        "gems": "{amount} Gems",
+        "nSeals": "{amount} N Seals",
+        "srSeal": "{amount} SR Seal",
+        "prPack": "PR Pack"
+      },
+      "gotGems": "Received {amount} Star Gems!",
+      "gotNSeals": "Received {amount} N Seals!",
+      "gotSrSeal": "Received {amount} SR Seal!",
+      "gotPrPack": "Received a PR pack! Opening…"
     },
     "language": {
       "label": "Language",
@@ -1246,7 +1262,8 @@
       "howToPlaySub": "かのんと一緒に体験する初心者レッスン",
       "officialVideo": "公式8分動画 ↗",
       "backHub": "← ハブ",
-      "missions": "ミッション"
+      "missions": "ミッション",
+      "loginBonus": "ログイン"
     },
     "missions": {
       "title": "ミッション",
@@ -1300,6 +1317,21 @@
       "starterPickTitle": "スターターデッキを選ぶ",
       "starterPickConfirm": "スターターを解放",
       "starterPickCancel": "キャンセル"
+    },
+    "loginBonus": {
+      "title": "ログインボーナス",
+      "lead": "毎日ログイン（JST）で次のボーナスを受け取れます。欠席した日はスキップされ、進捗はそのまま続きます。",
+      "day": "{day}日目",
+      "reward": {
+        "gems": "ジェム×{amount}",
+        "nSeals": "Nシール×{amount}",
+        "srSeal": "SRシール×{amount}",
+        "prPack": "PRパック"
+      },
+      "gotGems": "スタージェムを{amount}個受け取りました！",
+      "gotNSeals": "Nシールを{amount}枚受け取りました！",
+      "gotSrSeal": "SRシールを{amount}枚受け取りました！",
+      "gotPrPack": "PRパックを受け取りました！開封します…"
     },
     "language": {
       "label": "言語",
@@ -2391,10 +2423,26 @@
       "officialVideo": "Vídeo oficial de 8 min ↗",
       "backHub": "← Hub",
       "missions": "Misiones",
+      "loginBonus": "Login",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "Recompensas de packs PR clasificatorias restantes hoy: {remaining} / {limit} (JST · 3 cartas c/u)",
       "stickerShop": "Tienda de stickers",
       "stickerShopSub": "Canjea sellos por cartas de tus sobres"
+    },
+    "loginBonus": {
+      "title": "Bonus de login",
+      "lead": "Inicia sesión cada día (JST) para reclamar el siguiente bonus. Los días perdidos se saltan — tu progreso se mantiene.",
+      "day": "Día {day}",
+      "reward": {
+        "gems": "{amount} gemas",
+        "nSeals": "{amount} sellos N",
+        "srSeal": "{amount} sello SR",
+        "prPack": "Pack PR"
+      },
+      "gotGems": "¡Recibiste {amount} Star Gems!",
+      "gotNSeals": "¡Recibiste {amount} sellos N!",
+      "gotSrSeal": "¡Recibiste {amount} sello SR!",
+      "gotPrPack": "¡Recibiste un pack PR! Abriendo…"
     },
     "language": {
       "label": "Idioma",
@@ -3549,10 +3597,26 @@
       "officialVideo": "공식 8분 영상 ↗",
       "backHub": "← 허브",
       "missions": "미션",
+      "loginBonus": "출석",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "오늘 남은 랭크 PR 팩: {remaining} / {limit} (JST · 각 3장)",
       "stickerShop": "스티커 샵",
       "stickerShopSub": "실을 팩 카드로 교환"
+    },
+    "loginBonus": {
+      "title": "출석 보너스",
+      "lead": "매일 로그인(JST)하면 다음 보너스를 받을 수 있습니다. 빠진 날은 건너뛰고 진행도는 그대로입니다.",
+      "day": "{day}일차",
+      "reward": {
+        "gems": "젬 {amount}",
+        "nSeals": "N 실 {amount}",
+        "srSeal": "SR 실 {amount}",
+        "prPack": "PR 팩"
+      },
+      "gotGems": "스타 젬 {amount}개를 받았습니다!",
+      "gotNSeals": "N 실 {amount}장을 받았습니다!",
+      "gotSrSeal": "SR 실 {amount}장을 받았습니다!",
+      "gotPrPack": "PR 팩을 받았습니다! 개봉 중…"
     },
     "language": {
       "label": "언어",
@@ -4731,10 +4795,26 @@
       "officialVideo": "官方8分钟视频 ↗",
       "backHub": "← 主页",
       "missions": "任务",
+      "loginBonus": "签到",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "今日剩余排名 PR 包：{remaining} / {limit}（JST · 每包 3 张）",
       "stickerShop": "贴纸商店",
       "stickerShopSub": "用印章兑换你补充包中的卡牌"
+    },
+    "loginBonus": {
+      "title": "登录奖励",
+      "lead": "每天登录（JST）即可领取下一项奖励。错过的日子会跳过，进度保留。",
+      "day": "第 {day} 天",
+      "reward": {
+        "gems": "{amount} 宝石",
+        "nSeals": "{amount} 枚 N 印章",
+        "srSeal": "{amount} 枚 SR 印章",
+        "prPack": "PR 包"
+      },
+      "gotGems": "获得了 {amount} 颗星宝石！",
+      "gotNSeals": "获得了 {amount} 枚 N 印章！",
+      "gotSrSeal": "获得了 {amount} 枚 SR 印章！",
+      "gotPrPack": "获得了 PR 包！正在打开…"
     },
     "language": {
       "label": "语言",
@@ -5911,6 +5991,7 @@
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
+      "loginBonus": "ล็อกอิน",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "รางวัลแพ็ก PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST · แพ็กละ 3 ใบ)",
       "stickerShop": "ร้านสติกเกอร์",
@@ -5918,6 +5999,21 @@
       "tournamentMode": "โหมดทัวร์นาเมนต์",
       "tournamentModeSub": "เร็ว ๆ นี้",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗"
+    },
+    "loginBonus": {
+      "title": "โบนัสล็อกอิน",
+      "lead": "ล็อกอินทุกวัน (JST) เพื่อรับโบนัสถัดไป วันที่พลาดจะถูกข้าม — ความคืบหน้ายังคงอยู่",
+      "day": "วันที่ {day}",
+      "reward": {
+        "gems": "เจม {amount}",
+        "nSeals": "ซีล N {amount}",
+        "srSeal": "ซีล SR {amount}",
+        "prPack": "แพ็ก PR"
+      },
+      "gotGems": "ได้รับ Star Gem {amount} ชิ้น!",
+      "gotNSeals": "ได้รับซีล N {amount} อัน!",
+      "gotSrSeal": "ได้รับซีล SR {amount} อัน!",
+      "gotPrPack": "ได้รับแพ็ก PR! กำลังเปิด…"
     },
     "language": {
       "label": "ภาษา",
