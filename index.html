@@ -4850,37 +4850,111 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
 .starter-opt .starter-name{font-size:13px;font-weight:700;color:#fff;margin-top:8px;line-height:1.35;letter-spacing:.04em}
 .starter-opt.sel{border-color:#fff;box-shadow:0 0 0 2px rgba(186,228,255,.55),0 0 18px rgba(186,228,255,.25)}
 .account-shell.booster-shell{max-width:min(1200px,98vw)}
-.account-shell.card-list-shell{max-width:min(1100px,98vw)}
-#screen-card-list .card-list-owned-stat{
-  margin:0 0 12px;font-size:15px;font-weight:700;letter-spacing:.02em;color:rgba(255,255,255,.88)
+.account-shell.card-list-shell{max-width:min(1120px,98vw)}
+#screen-card-list .card-list-lead{
+  margin:0 0 10px;max-width:42em
+}
+#screen-card-list .card-list-progress{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+  margin:0 0 14px;padding:10px 14px;border-radius:12px;
+  border:1px solid rgba(255,179,209,.28);
+  background:
+    linear-gradient(135deg,rgba(255,107,168,.14),rgba(186,120,255,.08) 55%,rgba(0,0,0,.18));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)
+}
+#screen-card-list .card-list-progress-label{
+  font-family:'Libre Baskerville',serif;font-size:13px;font-weight:700;
+  letter-spacing:.04em;color:rgba(255,255,255,.78)
+}
+#screen-card-list .card-list-progress-value{
+  font-family:'Fredoka One',cursive;font-size:22px;line-height:1;letter-spacing:.02em;
+  color:#fff;text-shadow:0 1px 10px rgba(255,107,168,.35)
+}
+#screen-card-list .card-list-progress-bar{
+  flex:1 1 140px;min-width:120px;height:8px;border-radius:999px;
+  background:rgba(255,255,255,.12);overflow:hidden;
+  border:1px solid rgba(255,255,255,.1)
+}
+#screen-card-list .card-list-progress-bar > i{
+  display:block;height:100%;width:0;border-radius:inherit;
+  background:linear-gradient(90deg,var(--pink-d),var(--pink-l));
+  box-shadow:0 0 10px rgba(255,107,168,.45);
+  transition:width .35s ease
 }
 #screen-card-list .card-list-scroll{
   max-height:min(72vh,760px);overflow-y:auto;overflow-x:hidden;
-  border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(0,0,0,.18);
-  padding:0 10px 14px;-webkit-overflow-scrolling:touch
+  border:1px solid rgba(255,255,255,.14);border-radius:14px;
+  background:
+    url("bg/ptn.png") top center/220px 220px repeat,
+    linear-gradient(180deg,rgba(12,22,42,.55),rgba(8,14,28,.72));
+  padding:6px 12px 16px;-webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;scrollbar-width:thin;
+  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.1)
 }
-#screen-card-list .card-list-section{margin-top:14px}
+#screen-card-list .card-list-scroll::-webkit-scrollbar{width:6px}
+#screen-card-list .card-list-scroll::-webkit-scrollbar-track{
+  background:rgba(255,255,255,.1);border-radius:999px;margin:8px 0
+}
+#screen-card-list .card-list-scroll::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,var(--pink-l),var(--pink));
+  border-radius:999px;border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 0 8px rgba(255,107,168,.28)
+}
+#screen-card-list .card-list-scroll::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,#fff,var(--pink-l))
+}
+#screen-card-list .card-list-section{margin-top:16px}
+#screen-card-list .card-list-section:first-child{margin-top:8px}
 #screen-card-list .card-list-section-head{
-  position:sticky;top:0;z-index:2;margin:0 0 10px;padding:10px 8px 8px;
-  font-size:14px;font-weight:800;letter-spacing:.03em;color:#fff;
-  background:linear-gradient(180deg,rgba(18,14,28,.98) 55%,rgba(18,14,28,.82) 100%);
-  border-bottom:1px solid rgba(255,255,255,.1)
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 12px;padding:10px 4px 10px;
+  background:linear-gradient(180deg,rgba(10,18,34,.97) 40%,rgba(10,18,34,.82) 100%);
+  border-bottom:1px solid rgba(255,179,209,.22);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
 }
-#screen-card-list .card-list-section-meta{
-  margin-left:8px;font-size:12px;font-weight:600;color:rgba(255,255,255,.55)
+#screen-card-list .card-list-section-head h3{
+  margin:0;flex:1 1 auto;min-width:0;
+  font-family:'Zen Kaku Gothic New','Nunito',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:.04em;line-height:1.35;
+  color:#fff;text-align:left
+}
+#screen-card-list .card-list-section-chip{
+  flex:0 0 auto;padding:4px 10px;border-radius:999px;
+  border:1px solid rgba(255,179,209,.35);
+  background:rgba(255,107,168,.14);
+  font-family:'Libre Baskerville',serif;font-size:12px;font-weight:700;
+  color:var(--pink-l);letter-spacing:.03em;white-space:nowrap
 }
 #screen-card-list .card-list-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(84px,1fr));
+  gap:10px;justify-items:center
 }
-#screen-card-list .deck-card-tile{cursor:pointer}
+#screen-card-list .deck-card-tile{
+  cursor:pointer;width:100%;max-width:96px;aspect-ratio:63/88;height:auto;
+  border-radius:8px;border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 6px 16px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.06);
+  background:#111;transition:border-color .15s ease,box-shadow .15s ease,opacity .15s ease,filter .15s ease
+}
+#screen-card-list .deck-card-tile:hover{
+  border-color:var(--pink);
+  box-shadow:0 8px 22px rgba(0,0,0,.45),0 0 0 1px rgba(255,107,168,.4),0 0 18px rgba(255,107,168,.2)
+}
 #screen-card-list .deck-card-tile.card-list-unowned{
-  opacity:.4;filter:grayscale(.45) brightness(.7)
+  opacity:.46;filter:saturate(.35) brightness(.72)
 }
 #screen-card-list .deck-card-tile.card-list-unowned:hover{
-  opacity:.55;filter:grayscale(.25) brightness(.82)
+  opacity:.68;filter:saturate(.55) brightness(.85)
+}
+#screen-card-list .deck-card-tile.card-list-owned{
+  border-color:rgba(255,179,209,.28)
 }
 @media (max-width:640px){
-  #screen-card-list .card-list-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+  #screen-card-list .card-list-grid{grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:7px}
+  #screen-card-list .deck-card-tile{max-width:78px}
+  #screen-card-list .card-list-section-head h3{font-size:13px}
+  #screen-card-list .card-list-progress-value{font-size:18px}
 }
 .box-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
 .booster-open-actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
@@ -7599,7 +7673,12 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
         <button class="btn-ghost" id="btn-card-list-back" type="button" data-i18n="cardList.backHub">← Hub</button>
         <h2 data-i18n="cardList.title">Card List</h2>
       </div>
-      <p class="card-list-owned-stat" id="card-list-owned-stat">—/—</p>
+      <p class="account-lead card-list-lead" data-i18n="cardList.lead">Browse every card by product. Cards you own appear in full color.</p>
+      <div class="card-list-progress" id="card-list-owned-stat" aria-live="polite">
+        <span class="card-list-progress-label" data-i18n="cardList.collection">Collection</span>
+        <span class="card-list-progress-value" id="card-list-owned-value">—/—</span>
+        <div class="card-list-progress-bar" aria-hidden="true"><i id="card-list-owned-bar"></i></div>
+      </div>
       <div class="card-list-scroll" id="card-list-scroll">
         <div id="card-list-body"></div>
       </div>
@@ -8807,7 +8886,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=82"></script>
+<script src="i18n.js?v=83"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=19"></script>
@@ -12187,7 +12266,7 @@ function appendCardListTile(parent, card) {
   tile.type = 'button';
   tile.className = 'deck-card-tile'
     + (isLiveCard(c) ? ' deck-live-tile' : '')
-    + (owned ? '' : ' card-list-unowned');
+    + (owned ? ' card-list-owned' : ' card-list-unowned');
   tile.title = (cardLocaleName(c) || c.card_no)
     + (owned ? (' ×' + ownedQty) : (' · ' + (t('cardList.notOwned') || 'Not owned')));
   appendDeckTileFace(tile, c, { lazy: true });
@@ -12209,27 +12288,34 @@ function appendCardListTile(parent, card) {
 
 function renderCardList() {
   const body = el('card-list-body');
-  const stat = el('card-list-owned-stat');
+  const valueEl = el('card-list-owned-value');
+  const barEl = el('card-list-owned-bar');
   if (!body) return;
   body.replaceChildren();
   const total = uniqueCatalogCardCount();
   const owned = uniqueOwnedCatalogCount();
-  if (stat) {
-    stat.textContent = t('cardList.ownedProgress', { owned, total })
+  if (valueEl) {
+    valueEl.textContent = t('cardList.ownedProgress', { owned, total })
       || (owned + '/' + total);
+  }
+  if (barEl) {
+    const pct = total > 0 ? Math.max(0, Math.min(100, (owned / total) * 100)) : 0;
+    barEl.style.width = pct.toFixed(2) + '%';
   }
   const groups = groupCatalogCardsByPack();
   groups.forEach(([pack, cards]) => {
     const section = document.createElement('section');
     section.className = 'card-list-section';
-    const head = document.createElement('h3');
+    const head = document.createElement('div');
     head.className = 'card-list-section-head';
+    const title = document.createElement('h3');
+    title.textContent = cardListPackDisplayName(pack);
+    head.appendChild(title);
     const ownedInPack = cards.filter(c => (A.collectionMap?.[c.card_no] || 0) > 0).length;
-    head.appendChild(document.createTextNode(cardListPackDisplayName(pack)));
-    const meta = document.createElement('span');
-    meta.className = 'card-list-section-meta';
-    meta.textContent = ownedInPack + '/' + cards.length;
-    head.appendChild(meta);
+    const chip = document.createElement('span');
+    chip.className = 'card-list-section-chip';
+    chip.textContent = ownedInPack + '/' + cards.length;
+    head.appendChild(chip);
     section.appendChild(head);
     const grid = document.createElement('div');
     grid.className = 'card-list-grid';
