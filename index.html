@@ -4745,6 +4745,18 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-screen .hub-top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .llc-menu-screen .hub-user{font-size:14px;color:rgba(255,255,255,.95);letter-spacing:.04em}
 .llc-menu-list{display:flex;flex-direction:column;gap:10px;margin:16px 0 0;width:100%}
+.llc-menu-row{display:flex;flex-direction:row;align-items:stretch;gap:10px;width:100%}
+.llc-menu-row > .llc-menu-item{
+  flex:1 1 0;width:auto;min-width:0;padding:12px 14px;
+}
+.llc-menu-row .llc-menu-item-title{font-size:15px;letter-spacing:.04em}
+.llc-menu-row .llc-menu-item-sub{font-size:11px;margin-left:16px;line-height:1.35}
+@media (max-width: 420px) {
+  .llc-menu-row{gap:8px}
+  .llc-menu-row > .llc-menu-item{padding:10px 10px;min-height:58px}
+  .llc-menu-row .llc-menu-item-title{font-size:13px;padding-left:16px}
+  .llc-menu-row .llc-menu-item-sub{font-size:10px;margin-left:16px}
+}
 .llc-menu-item{
   display:flex;align-items:stretch;gap:0;width:100%;min-height:68px;padding:14px 18px;
   border:1px solid rgba(255,255,255,.4);border-radius:10px;
@@ -6858,18 +6870,20 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span class="llc-menu-item-sub">Debug only — place a card by ID vs CPU</span>
           </span>
         </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-auth-debug-replay" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="auth.replay.title">Replay Viewer</span>
-            <span class="llc-menu-item-sub" data-i18n="auth.replay.sub">Load a saved match replay and watch it in realtime</span>
-          </span>
-        </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-auth-tutorial" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="auth.tutorial.title">How to Play</span>
-            <span class="llc-menu-item-sub" data-i18n="auth.tutorial.sub">Interactive rules walkthrough</span>
-          </span>
-        </button>
+        <div class="llc-menu-row">
+          <button class="llc-menu-item llc-menu-hover" id="btn-auth-debug-replay" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="auth.replay.title">Replay Viewer</span>
+              <span class="llc-menu-item-sub" data-i18n="auth.replay.sub">Load a saved match replay and watch it in realtime</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover" id="btn-auth-tutorial" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="auth.tutorial.title">How to Play</span>
+              <span class="llc-menu-item-sub" data-i18n="auth.tutorial.sub">Interactive rules walkthrough</span>
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -7288,22 +7302,24 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span class="llc-menu-item-sub" data-i18n="hub.booster.sub">Open card booster packs</span>
           </span>
         </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-ranked" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.ranked.title">Ranked PvP</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.ranked.sub">Climb ELO in matchmade games</span>
-          </span>
-        </button>
+        <div class="llc-menu-row">
+          <button class="llc-menu-item llc-menu-hover" id="btn-hub-ranked" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.ranked.title">Ranked PvP</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.ranked.sub">Climb ELO in matchmade games</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover" id="btn-hub-unranked" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.unranked.title">Unranked Play</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.unranked.sub">Rooms, friends, or practice vs CPU</span>
+            </span>
+          </button>
+        </div>
         <button class="llc-menu-item llc-menu-hover" id="btn-hub-leaderboard" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="hub.leaderboard.title">Leaderboard</span>
             <span class="llc-menu-item-sub" data-i18n="hub.leaderboard.sub">View the online rankings</span>
-          </span>
-        </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-unranked" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.unranked.title">Unranked Play</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.unranked.sub">Rooms, friends, or practice vs CPU</span>
           </span>
         </button>
         <button class="llc-menu-item llc-menu-hover" id="btn-hub-deck" type="button">
@@ -7324,18 +7340,20 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             <span class="llc-menu-item-sub" data-i18n="hub.tournament.sub">Coming Soon</span>
           </span>
         </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-replay" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.replay.title">Replay Viewer</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.replay.sub">Watch saved match replays from your library</span>
-          </span>
-        </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-tutorial" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.tutorial.title">How to Play</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.tutorial.sub">Interactive rules walkthrough</span>
-          </span>
-        </button>
+        <div class="llc-menu-row">
+          <button class="llc-menu-item llc-menu-hover" id="btn-hub-replay" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.replay.title">Replay Viewer</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.replay.sub">Watch saved match replays from your library</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover" id="btn-hub-tutorial" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.tutorial.title">How to Play</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.tutorial.sub">Interactive rules walkthrough</span>
+            </span>
+          </button>
+        </div>
         <a class="llc-menu-item-note" id="hub-tutorial-official-video"
            href="https://www.youtube.com/watch?v=hZhCHykfCnI" target="_blank" rel="noopener noreferrer"
            data-i18n="hub.tutorial.officialVideo">Official 8-min video ↗</a>
