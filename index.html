@@ -922,6 +922,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <input type="text" id="inp-experiment-load-pwd" placeholder="Enter password to load" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.deckPasswordPlaceholder">
             <button class="btn-out" id="btn-experiment-load-pwd" type="button" data-i18n="deck.load">Load</button>
           </div>
+          <label for="inp-experiment-decklog" data-i18n="deck.decklogCode" style="margin-top:10px">Deck Log code</label>
+          <div class="experiment-pwd-row">
+            <input type="text" id="inp-experiment-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
+            <button class="btn-out" id="btn-experiment-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
+          </div>
+          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogHint">Paste a Bushiroad Deck Log code or view URL — imports into this builder and saves an experiment password.</p>
           <div class="experiment-pwd-active" id="experiment-pwd-active" hidden>
             <span data-i18n="deck.savedPassword">Saved password:</span>
             <code id="experiment-pwd-display"></code>
@@ -2082,11 +2088,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=87"></script>
+<script src="i18n.js?v=88"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
-<script src="client/js/api-client.js?v=19"></script>
+<script src="client/js/runtime-flags.js?v=2"></script>
+<script src="client/js/api-client.js?v=20"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
@@ -6468,7 +6475,7 @@ function applyExperimentDeckToBuilder(data) {
   A.experimentPassword = data.password || '';
   if (A.experimentPassword) {
     A.experimentDeckCache[A.experimentPassword] = data;
-    rememberExperimentPassword(A.experimentPassword, 'Deck Experiment');
+    rememberExperimentPassword(A.experimentPassword, data.name || 'Deck Experiment');
   }
   syncExperimentPasswordDisplay();
   renderDeckBuilder({ deferPool: true });
@@ -9699,6 +9706,33 @@ async function loadExperimentDeckByPassword(rawPwd) {
     el('deck-err').textContent = 'Loaded deck for password ' + data.password + '.';
   } catch (e) {
     el('deck-err').textContent = e.message;
+  }
+}
+
+async function importExperimentDeckFromDecklog(raw) {
+  const code = String(raw || '').trim();
+  if (!code) {
+    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a Deck Log code or URL.';
+    return;
+  }
+  const btn = el('btn-experiment-decklog-import');
+  const prev = btn?.textContent;
+  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from Deck Log…';
+  if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
+  try {
+    const data = await apiExperimentCall('experiment_decklog_import', { code, save: true });
+    if (data.name && el('inp-deck-name')) el('inp-deck-name').value = data.name;
+    applyExperimentDeckToBuilder(data);
+    const pwd = data.password || '';
+    el('deck-err').textContent = pwd
+      ? (t('deck.decklogImportedSaved', { code: data.decklog_code || code, password: pwd })
+        || (`Imported ${data.decklog_code || code}. Experiment password: ${pwd}`))
+      : (t('deck.decklogImported', { code: data.decklog_code || code })
+        || (`Imported ${data.decklog_code || code}.`));
+  } catch (e) {
+    el('deck-err').textContent = e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prev || (t('deck.decklogImport') || 'Import'); }
   }
 }
 
@@ -13096,6 +13130,15 @@ async function bootApp() {
     if (e.key === 'Enter') {
       e.preventDefault();
       loadExperimentDeckByPassword(el('inp-experiment-load-pwd')?.value);
+    }
+  });
+  on('btn-experiment-decklog-import', 'click', () => {
+    importExperimentDeckFromDecklog(el('inp-experiment-decklog')?.value);
+  });
+  on('inp-experiment-decklog', 'keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      importExperimentDeckFromDecklog(el('inp-experiment-decklog')?.value);
     }
   });
   on('btn-experiment-copy-pwd', 'click', async () => {

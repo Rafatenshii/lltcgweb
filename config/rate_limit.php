@@ -100,5 +100,8 @@ function tcgRateLimitForAction(string $action, array $body = [], ?string $authTo
         case 'ranked_join':
             tcgRateLimitCheck('ranked_join', tcgRateLimitAuthKey($body, $authToken), 20, TCG_RATE_WINDOW_SEC);
             break;
+        case 'experiment_decklog_import':
+            tcgRateLimitCheck('experiment_decklog_import', $ip, 20, TCG_RATE_WINDOW_SEC);
+            break;
     }
 }

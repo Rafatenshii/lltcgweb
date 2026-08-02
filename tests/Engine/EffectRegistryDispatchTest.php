@@ -13,7 +13,51 @@ final class EffectRegistryDispatchTest extends TestCase
     {
         $this->assertTrue(EffectRegistry::hasHandler('draw_if_wr_min'));
         $this->assertTrue(EffectRegistry::hasHandler('draw_if_success_lives'));
+        $this->assertTrue(EffectRegistry::hasHandler('grant_hearts'));
+        $this->assertTrue(EffectRegistry::hasHandler('blade_bonus'));
+        $this->assertTrue(EffectRegistry::hasHandler('blade_per_hand_cards'));
+        $this->assertTrue(EffectRegistry::hasHandler('grant_live_score_if_success'));
         $this->assertFalse(EffectRegistry::hasHandler('add_from_wr_max_cost'));
+    }
+
+    public function testDispatchBladeBonusOnStageMember(): void
+    {
+        require_once dirname(__DIR__, 2) . '/effects.php';
+
+        $member = [
+            'instance_id' => 'm1',
+            'card_no' => 'X',
+            'name_en' => 'Member',
+            'live_blade_bonus' => 0,
+        ];
+        $state = [
+            'players' => [
+                'p1' => [
+                    'name' => 'P1',
+                    'hand' => [],
+                    'main_deck' => [],
+                    'waiting_room' => [],
+                    'stage' => ['center' => $member, 'back_left' => null, 'back_right' => null],
+                    'energy_zone' => [],
+                    'live_zone' => [],
+                    'success_lives' => [],
+                ],
+            ],
+            'log' => [],
+        ];
+        $p = &$state['players']['p1'];
+        $ab = ['type' => 'blade_bonus', 'amount' => 2];
+        $out = EffectRegistry::dispatch(
+            $state,
+            'p1',
+            $member,
+            $ab,
+            [],
+            'blade_bonus',
+            $p,
+            'Member'
+        );
+        $this->assertSame(2, intval($out['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
     }
 
     public function testDispatchDrawIfWrMin(): void

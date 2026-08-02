@@ -6,6 +6,7 @@
 require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/game_mode.php';
+require_once __DIR__ . '/decklog_import.php';
 tcgDefinePathConstants();
 
 define('EXPERIMENT_PASSWORD_LEN', 8);
@@ -207,6 +208,53 @@ function apiExperimentDeckLoad(array $body): array {
         'name'        => $stored['name'],
         'main_deck'   => $stored['main_deck'],
         'energy_deck' => $stored['energy_deck'],
+    ];
+}
+
+/**
+ * Import a Bushiroad Deck Log recipe into Deck Experiment lists.
+ * Optionally persists as an experiment password (default on).
+ */
+function apiExperimentDecklogImport(array $body): array {
+    if (function_exists('tcgRateLimitForAction')) {
+        tcgRateLimitForAction('experiment_decklog_import', $body);
+    }
+    $code = tcgNormalizeDecklogCode((string)($body['code'] ?? $body['url'] ?? $_GET['code'] ?? ''));
+    $payload = tcgFetchDecklogView($code);
+    $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+    if (!is_array($cards)) {
+        throw new Exception('Card database unavailable', 500);
+    }
+    $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
+    $validated = validateExperimentDeckPayload($mapped['main_deck'], $mapped['energy_deck'], $cards);
+    $name = normalizeExperimentDeckName(
+        $mapped['title'] !== '' ? $mapped['title'] : ('Deck Log ' . ($mapped['deck_id'] ?: $code))
+    );
+    $save = !isset($body['save']) || !in_array(
+        strtolower((string)$body['save']),
+        ['0', 'false', 'no', 'off'],
+        true
+    );
+    $password = '';
+    if ($save) {
+        $attempts = 0;
+        do {
+            $password = generateExperimentPassword();
+            $attempts++;
+        } while (is_file(experimentDeckPath($password)) && $attempts < 50);
+        if (is_file(experimentDeckPath($password))) {
+            throw new Exception('Could not generate a unique password — try again');
+        }
+        writeExperimentDeckFile($password, $name, $validated['main'], $validated['energy']);
+    }
+    return [
+        'success' => true,
+        'decklog_code' => $mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code,
+        'name' => $name,
+        'main_deck' => $validated['main'],
+        'energy_deck' => $validated['energy'],
+        'password' => $password,
+        'saved' => $save && $password !== '',
     ];
 }
 

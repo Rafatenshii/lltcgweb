@@ -106,7 +106,52 @@ if (defined('TCG_API_LIB_ONLY')) {
 $action = $_GET['action'] ?? $_POST['action'] ?? 'ping';
 $body   = json_decode(file_get_contents('php://input'), true) ?? [];
 
+/**
+ * Part 1D: when match-primary cutover is live, Hostinger must not accept room writes.
+ * Default allows writes. Disable via:
+ * - env TCG_HOSTINGER_MATCH_WRITES=0 (or false/off/no)
+ * - marker file MATCH_WRITES_DISABLED next to api.php (Hostinger-friendly, like USE_VPS_API)
+ * Leave unset / no marker on the VPS match API.
+ */
+function tcgHostingerMatchWritesEnabled(): bool {
+    if (is_file(__DIR__ . '/MATCH_WRITES_DISABLED')) {
+        return false;
+    }
+    $raw = getenv('TCG_HOSTINGER_MATCH_WRITES');
+    if ($raw === false || $raw === '') {
+        // Apache SetEnv / .user.ini often only populates $_SERVER
+        $raw = $_SERVER['TCG_HOSTINGER_MATCH_WRITES'] ?? '';
+    }
+    if ($raw === false || $raw === '') {
+        return true;
+    }
+    $v = strtolower(trim((string)$raw));
+    return !in_array($v, ['0', 'false', 'off', 'no'], true);
+}
+
+function tcgIsHostingerMatchWriteAction(string $action): bool {
+    static $blocked = [
+        'create_room' => true,
+        'join_room' => true,
+        'casual_join' => true,
+        'casual_leave' => true,
+        'action' => true,
+        'dry_run_actions' => true,
+        'debug_card_test_start' => true,
+    ];
+    return isset($blocked[$action]);
+}
+
 try {
+    if (!tcgHostingerMatchWritesEnabled() && tcgIsHostingerMatchWriteAction($action)) {
+        http_response_code(503);
+        echo json_encode([
+            'error' => 'Match writes disabled on this host. Use the VPS match API (stream.loveliveradio.ca/tcg/api).',
+            'code' => 'match_writes_disabled',
+            'match_api' => 'https://stream.loveliveradio.ca/tcg/api',
+        ]);
+        return;
+    }
     switch ($action) {
         case 'create_room':  echo json_encode(createRoom($body));    break;
         case 'join_room':    echo json_encode(joinRoom($body));       break;
@@ -121,6 +166,7 @@ try {
         case 'cache_card_image': echo json_encode(cacheCardImage($body)); break;
         case 'experiment_deck_save': echo json_encode(apiExperimentDeckSave($body)); break;
         case 'experiment_deck_load': echo json_encode(apiExperimentDeckLoad($body)); break;
+        case 'experiment_decklog_import': echo json_encode(apiExperimentDecklogImport($body)); break;
         case 'experiment_random_deck': echo json_encode(apiExperimentRandomDeck($body)); break;
         case 'debug_card_test_start': echo json_encode(apiDebugCardTestStart($body)); break;
         case 'replay_export': echo json_encode(apiReplayExport($body)); break;
