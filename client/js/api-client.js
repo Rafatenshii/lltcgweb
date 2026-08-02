@@ -51,9 +51,10 @@
     matchmakeFailovers: 0,
   };
 
-  /** Ranked matchmaking stays on Hostinger — shared queue must not split. */
+  /** Ranked matchmaking + Hostinger-only account DB features stay on Hostinger — shared queue / SQLite must not split. */
   const OVERFLOW_BLOCKED_ACCOUNT = {
     ranked_join: 1, ranked_leave: 1, ranked_status: 1,
+    login_bonus_status: 1, login_bonus_claim: 1,
   };
   const OVERFLOW_BLOCKED_GAME = {
     action: 1, // in-match always follows locked room origin
