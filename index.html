@@ -14374,18 +14374,60 @@ function experimentPoolEntries(searchQ) {
   return sortDeckPoolEntries(out, sortMode);
 }
 
+function deckBuilderScrollNodes() {
+  const nodes = [];
+  const pool = el('deck-pool');
+  if (pool) nodes.push(pool);
+  const cur = el('deck-current-list');
+  if (cur) nodes.push(cur);
+  const screen = el('screen-deck');
+  if (screen) nodes.push(screen);
+  const panel = screen?.querySelector('.account-panel');
+  if (panel) nodes.push(panel);
+  return nodes;
+}
+
+/** Snapshot pool + outer screen scroll (mobile scrolls #screen-deck, not #deck-pool). */
+function captureDeckBuilderScroll() {
+  return deckBuilderScrollNodes().map(node => ({
+    id: node.id || null,
+    cls: node.className || '',
+    top: node.scrollTop || 0,
+  }));
+}
+
+function restoreDeckBuilderScroll(snapshots) {
+  if (!snapshots?.length) return;
+  const apply = () => {
+    snapshots.forEach(snap => {
+      let node = null;
+      if (snap.id) node = el(snap.id);
+      if (!node && snap.cls) {
+        node = deckBuilderScrollNodes().find(n => n.className === snap.cls) || null;
+      }
+      if (node?.isConnected) node.scrollTop = snap.top;
+    });
+  };
+  apply();
+  requestAnimationFrame(() => {
+    apply();
+    requestAnimationFrame(apply);
+  });
+}
+
 function deckPoolScrollTop() {
   return el('deck-pool')?.scrollTop ?? 0;
 }
 
 function restoreDeckPoolScroll(top) {
+  // Legacy helper — prefer restoreDeckBuilderScroll for full page + pool.
   const pool = el('deck-pool');
   if (!pool || top == null) return;
   const apply = () => { pool.scrollTop = top; };
   requestAnimationFrame(() => requestAnimationFrame(apply));
 }
 
-function renderExperimentPoolChunked(searchQ, savedScrollTop = null) {
+function renderExperimentPoolChunked(searchQ, savedScroll = null) {
   const gen = ++_experimentPoolGen;
   const pool = el('deck-pool');
   if (!pool) return;
@@ -14403,6 +14445,7 @@ function renderExperimentPoolChunked(searchQ, savedScrollTop = null) {
     el('deck-collection-stats').textContent = searchQ || filtered
       ? t('deck.fullPoolZero')
       : t('deck.fullPoolBrowse');
+    if (savedScroll) restoreDeckBuilderScroll(savedScroll);
     return;
   }
   el('deck-collection-stats').textContent = searchQ || filtered
@@ -14417,8 +14460,9 @@ function renderExperimentPoolChunked(searchQ, savedScrollTop = null) {
       const { c0, type, available } = entries[idx];
       appendDeckCardTile(pool, enrichCard(c0), available, () => addCardToDeck(c0.card_no, type));
     }
+    // Keep scroll sticky while chunked content grows (otherwise it jumps to top).
+    if (savedScroll) restoreDeckBuilderScroll(savedScroll);
     if (idx < entries.length) requestAnimationFrame(step);
-    else if (savedScrollTop != null) restoreDeckPoolScroll(savedScrollTop);
   };
   requestAnimationFrame(step);
 }
@@ -14469,7 +14513,7 @@ function renderDeckCurrentList(experiment) {
 function renderDeckBuilder(opts = {}) {
   const deferPool = !!opts.deferPool;
   const preservePoolScroll = !!opts.preservePoolScroll;
-  const savedPoolScroll = preservePoolScroll ? deckPoolScrollTop() : null;
+  const savedScroll = preservePoolScroll ? captureDeckBuilderScroll() : null;
   syncDeckBuilderChrome();
   const experiment = A.deckBuilderMode === 'experiment';
   const slots = el('deck-slots');
@@ -14501,7 +14545,7 @@ function renderDeckBuilder(opts = {}) {
   renderDeckCurrentList(experiment);
   const pool = el('deck-pool');
   if (experiment) {
-    const renderPool = () => renderExperimentPoolChunked(searchQ, savedPoolScroll);
+    const renderPool = () => renderExperimentPoolChunked(searchQ, savedScroll);
     if (deferPool) {
       requestAnimationFrame(renderPool);
     } else {
@@ -14564,7 +14608,9 @@ function renderDeckBuilder(opts = {}) {
           : 'Open boosters to grow your collection.');
       pool.appendChild(empty);
     }
-    if (savedPoolScroll != null) restoreDeckPoolScroll(savedPoolScroll);
+    if (savedScroll) restoreDeckBuilderScroll(savedScroll);
+  } else if (savedScroll) {
+    restoreDeckBuilderScroll(savedScroll);
   }
 }
 
