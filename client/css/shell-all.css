@@ -6289,6 +6289,82 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   color:rgba(255,255,255,.86);
   line-height:1.35;
 }
+.decklog-missing-sub-tray{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+.decklog-missing-sub-mini,
+.decklog-sub-pick-mini{
+  width:36px;
+  height:50px;
+  padding:0;
+  border:0;
+  border-radius:4px;
+  overflow:hidden;
+  position:relative;
+  background:rgba(0,0,0,.35);
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  flex:0 0 auto;
+  cursor:pointer;
+}
+.decklog-missing-sub-mini{cursor:default}
+.decklog-missing-sub-mini > img,
+.decklog-sub-pick-mini > img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.decklog-missing-sub-mini--live .deck-live-art,
+.decklog-sub-pick-mini--live .deck-live-art{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:calc(100% * 88 / 63);
+  height:calc(100% * 63 / 88);
+  transform:translate(-50%,-50%) rotate(90deg);
+  transform-origin:center center;
+  overflow:hidden;
+  border-radius:inherit;
+}
+.decklog-missing-sub-mini--live .deck-live-art > img,
+.decklog-missing-sub-mini--live .deck-live-art > .noimg,
+.decklog-missing-sub-mini--live .deck-live-art > .card-face-fill,
+.decklog-sub-pick-mini--live .deck-live-art > img,
+.decklog-sub-pick-mini--live .deck-live-art > .noimg,
+.decklog-sub-pick-mini--live .deck-live-art > .card-face-fill{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+}
+.decklog-sub-pick-mini:hover{
+  box-shadow:0 0 0 2px rgba(255,107,168,.55),0 2px 8px rgba(0,0,0,.4);
+}
+.decklog-sub-pick-count{
+  margin:0 0 10px;
+  font-family:Kalnia,serif;
+  font-size:clamp(18px,2.8vw,24px);
+  font-weight:500;
+  letter-spacing:.02em;
+  color:#fff;
+}
+.decklog-sub-pick-count.is-ready{color:var(--pink-l)}
+.decklog-sub-pick-tray{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin:0 0 12px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(8,28,52,.45);
+  min-height:66px;
+}
 .decklog-missing-sub .decklog-sub-choose{
   width:100%;
   padding:8px 12px;

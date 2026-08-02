@@ -142,7 +142,7 @@ final class DecklogImportTest extends TestCase
         [$filled, $unresolved] = tcgDecklogApplySubstitutionsToList(
             $main,
             $ownedLeft,
-            ['PL!HS-bp1-002-R' => $sub]
+            ['PL!HS-bp1-002-R' => $sub] // legacy string = reuse for every shortfall
         );
         $this->assertSame([], $unresolved);
         $this->assertCount(4, $filled);
@@ -151,6 +151,15 @@ final class DecklogImportTest extends TestCase
 
         $after = tcgDecklogMissingFromOwned($filled, $energy, $owned, $cardMap);
         $this->assertSame([], $after);
+
+        $ownedLeft2 = $owned;
+        [$filledList, $unresolvedList] = tcgDecklogApplySubstitutionsToList(
+            $main,
+            $ownedLeft2,
+            ['PL!HS-bp1-002-R' => [$sub, $sub, $sub]]
+        );
+        $this->assertSame([], $unresolvedList);
+        $this->assertSame(3, count(array_filter($filledList, static fn($n) => $n === $sub)));
     }
 
     public function testProductKindForBoosterAndPr(): void

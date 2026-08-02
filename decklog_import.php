@@ -357,14 +357,41 @@ function tcgDecklogMissingFromOwned(array $main, array $energy, array $owned, ar
 }
 
 /**
+ * Normalize a substitution value to a list of card_nos.
+ * Legacy string form = one card reused for every shortfall copy (repeat).
+ *
+ * @param mixed $to
+ * @return array{0: list<string>, 1: bool} [list, repeat]
+ */
+function tcgDecklogNormalizeSubstitutionValue($to): array
+{
+    if (is_array($to)) {
+        $list = [];
+        foreach ($to as $item) {
+            $no = trim((string)$item);
+            if ($no !== '') {
+                $list[] = $no;
+            }
+        }
+        return [$list, false];
+    }
+    $no = trim((string)$to);
+    if ($no === '') {
+        return [[], false];
+    }
+    return [[$no], true];
+}
+
+/**
  * Auto-pick Energy substitutes for shortfalls (any owned Energy of the same type).
+ * Fills one substitute card_no per missing copy.
  *
  * @param list<string> $main
  * @param list<string> $energy
  * @param array<string, int> $owned
  * @param array<string, array<string,mixed>> $cardMap
- * @param array<string, string> $existing
- * @return array<string, string>
+ * @param array<string, string|list<string>> $existing
+ * @return array<string, list<string>>
  */
 function tcgDecklogBuildAutoEnergySubstitutions(
     array $main,
@@ -382,33 +409,69 @@ function tcgDecklogBuildAutoEnergySubstitutions(
         [$probeEnergy] = tcgDecklogApplySubstitutionsToList($energy, $ownedLeft, $subs);
     }
     $missing = tcgDecklogMissingFromOwned($probeMain, $probeEnergy, $owned, $cardMap);
+    $spareUsed = [];
     foreach ($missing as $row) {
         if (($row['card_type'] ?? '') !== 'エネルギー') {
             continue;
         }
         $from = (string)($row['card_no'] ?? '');
-        if ($from === '' || isset($subs[$from])) {
+        if ($from === '') {
             continue;
         }
-        $to = (string)(($row['substitutes'][0]['card_no'] ?? ''));
-        if ($to === '' || $to === $from) {
+        [$existingList] = tcgDecklogNormalizeSubstitutionValue($subs[$from] ?? []);
+        if (count($existingList) >= intval($row['shortfall'] ?? 0)) {
             continue;
         }
-        $subs[$from] = $to;
+        $need = intval($row['shortfall'] ?? 0) - count($existingList);
+        $picked = $existingList;
+        foreach ($row['substitutes'] as $cand) {
+            if ($need <= 0) {
+                break;
+            }
+            $to = (string)($cand['card_no'] ?? '');
+            if ($to === '' || $to === $from) {
+                continue;
+            }
+            $have = intval($cand['have'] ?? 0) - intval($spareUsed[$to] ?? 0);
+            if ($have <= 0) {
+                continue;
+            }
+            $take = min($have, $need);
+            for ($i = 0; $i < $take; $i++) {
+                $picked[] = $to;
+                $spareUsed[$to] = intval($spareUsed[$to] ?? 0) + 1;
+            }
+            $need -= $take;
+        }
+        if ($picked) {
+            $subs[$from] = $picked;
+        }
     }
     return $subs;
 }
 
 /**
- * Replace shortfall copies using card_no => substitute_card_no map.
+ * Replace shortfall copies using card_no => substitute list (or legacy single card_no).
  *
  * @param list<string> $list
  * @param array<string, int> $owned
- * @param array<string, string> $substitutions
+ * @param array<string, string|list<string>> $substitutions
  * @return array{0: list<string>, 1: list<string>} [result list, unresolved card_nos]
  */
 function tcgDecklogApplySubstitutionsToList(array $list, array &$ownedLeft, array $substitutions): array
 {
+    $queues = [];
+    $repeat = [];
+    foreach ($substitutions as $from => $to) {
+        $fromNo = (string)$from;
+        [$norm, $isRepeat] = tcgDecklogNormalizeSubstitutionValue($to);
+        if ($isRepeat) {
+            $repeat[$fromNo] = $norm[0] ?? '';
+        } else {
+            $queues[$fromNo] = $norm;
+        }
+    }
+
     $out = [];
     $unresolved = [];
     foreach ($list as $no) {
@@ -418,7 +481,12 @@ function tcgDecklogApplySubstitutionsToList(array $list, array &$ownedLeft, arra
             $ownedLeft[$no]--;
             continue;
         }
-        $sub = trim((string)($substitutions[$no] ?? ''));
+        $sub = '';
+        if (!empty($queues[$no])) {
+            $sub = (string)array_shift($queues[$no]);
+        } elseif (!empty($repeat[$no])) {
+            $sub = (string)$repeat[$no];
+        }
         if ($sub !== '' && intval($ownedLeft[$sub] ?? 0) > 0) {
             $out[] = $sub;
             $ownedLeft[$sub]--;

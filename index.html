@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=7">
+<link rel="stylesheet" href="client/css/shell-all.css?v=8">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1052,10 +1052,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <div class="overlay decklog-import-overlay" id="modal-decklog-sub-pick" aria-modal="true" aria-labelledby="decklog-sub-pick-title">
   <div class="decklog-import-shell decklog-sub-pick-shell">
     <div class="account-screen-head decklog-import-head">
-      <h2 id="decklog-sub-pick-title" data-i18n="deck.decklogSubPickTitle">Choose substitute</h2>
+      <h2 id="decklog-sub-pick-title" data-i18n="deck.decklogSubPickTitle">Choose substitutes</h2>
       <button class="btn-ghost decklog-import-close" type="button" id="btn-decklog-sub-pick-close" aria-label="Close">✕</button>
     </div>
-    <p class="decklog-import-lead" id="decklog-sub-pick-lead" data-i18n="deck.decklogSubPickLead">Use search, sort, and filters — tap a card you own to use it as a substitute.</p>
+    <p class="decklog-import-lead" id="decklog-sub-pick-lead" data-i18n="deck.decklogSubPickLead">Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.</p>
+    <p class="decklog-sub-pick-count" id="decklog-sub-pick-count" aria-live="polite">Choose 0 cards</p>
+    <div class="decklog-sub-pick-tray" id="decklog-sub-pick-tray" hidden></div>
     <div class="decklog-sub-pick-tools">
       <div id="decklog-sub-pick-search-host" class="decklog-sub-pick-search-host"></div>
       <div id="decklog-sub-pick-filter-host" class="decklog-sub-pick-filter-host"></div>
@@ -1068,6 +1070,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     </div>
     <div class="decklog-import-actions">
       <button class="btn-ghost" type="button" id="btn-decklog-sub-pick-cancel" data-i18n="common.cancel">Cancel</button>
+      <button class="btn-grad" type="button" id="btn-decklog-sub-pick-confirm" data-i18n="deck.decklogSubPickConfirm" disabled>Confirm substitutes</button>
     </div>
   </div>
 </div>
@@ -2142,7 +2145,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=92"></script>
+<script src="i18n.js?v=93"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -2351,6 +2354,9 @@ const A = {
   experimentSearch: '',
   experimentPassword: '',
   experimentDeckCache: {},
+  decklogSubPickFor: '',
+  decklogSubPickDraft: [],
+  decklogSubPickNeed: 0,
   deckPoolFilters: null,
   deckPoolSort: null,
   deckPoolSortDir: null,
@@ -6373,6 +6379,11 @@ function bindDeckCardPress(node, card, onTap) {
   });
   node.addEventListener('contextmenu', e => {
     e.preventDefault();
+    if (A.decklogSubPickFor) {
+      clearPickerCardHover();
+      decklogSubPickRightClick(card.card_no || card);
+      return;
+    }
     clearPickerCardHover();
     showDeckCardPreview(card);
   });
@@ -6481,7 +6492,7 @@ function appendDeckCardTile(parent, card, qty, onTap, { inDeck = false, sealBatc
   if (selected) {
     const bq = document.createElement('span');
     bq.className = 'deck-seal-batch-qty';
-    bq.textContent = '→' + sealBatchQty;
+    bq.textContent = A.decklogSubPickFor ? ('+' + sealBatchQty) : ('→' + sealBatchQty);
     tile.appendChild(bq);
   }
   if (qty > 1) {
@@ -8076,16 +8087,24 @@ function renderDeckBuilder(opts = {}) {
       const type = c0.card_type;
       if (type !== 'メンバー' && type !== 'ライブ' && type !== 'エネルギー') return;
       const inDeck = countInDeck(row.card_no);
+      const committed = A.decklogSubPickFor
+        ? decklogSubPickCommittedCount(row.card_no, A.decklogSubPickFor)
+        : 0;
+      const draftOf = A.decklogSubPickFor
+        ? (A.decklogSubPickDraft || []).filter(n => n === row.card_no).length
+        : 0;
       const available = A.decklogSubPickFor
-        ? row.qty
+        ? Math.max(0, row.qty - committed)
         : (row.qty - inDeck);
-      if (available <= 0) return;
+      const showQty = A.decklogSubPickFor ? Math.max(0, available - draftOf) : available;
+      if (available <= 0 && draftOf <= 0) return;
       if (A.decklogSubPickFor && row.card_no === A.decklogSubPickFor) return;
       poolEntries.push({
         row,
         c0,
         type,
-        available,
+        available: showQty,
+        draftOf,
         acquired_at: row.acquired_at || 0,
         _idx: poolIdx++,
       });
@@ -8093,11 +8112,13 @@ function renderDeckBuilder(opts = {}) {
     sortDeckPoolEntries(poolEntries, sortMode).forEach(entry => {
       poolCount++;
       const cardNo = entry.row.card_no;
-      const batchQty = A.deckSealBatchMode ? Number(A.deckSealBatch?.[cardNo] || 0) : 0;
+      const batchQty = A.decklogSubPickFor
+        ? Number(entry.draftOf || 0)
+        : (A.deckSealBatchMode ? Number(A.deckSealBatch?.[cardNo] || 0) : 0);
       const convertible = A.deckSealBatchMode && clientCardConvertibleToSeal(entry.c0)
         && spareConvertibleCopies(cardNo) > 0;
       const onTap = A.decklogSubPickFor
-        ? () => addCardToDeck(cardNo, entry.type)
+        ? () => addDecklogSubPickCopy(cardNo)
         : (A.deckSealBatchMode
           ? () => toggleDeckSealBatchCard(cardNo)
           : () => addCardToDeck(cardNo, entry.type));
@@ -8150,7 +8171,7 @@ function selectDeckSlot(slot) {
 
 function addCardToDeck(cardNo, type) {
   if (A.decklogSubPickFor) {
-    assignDecklogSubstitute(A.decklogSubPickFor, cardNo);
+    addDecklogSubPickCopy(cardNo);
     return;
   }
   const c = deckCounts();
@@ -9889,13 +9910,27 @@ function closeDecklogMissingModal() {
   closeDecklogSubPick({ reopenMissing: false });
   _decklogMissingPending = null;
   A.decklogSubPickFor = '';
+  A.decklogSubPickDraft = [];
+  A.decklogSubPickNeed = 0;
   closeM('modal-decklog-missing');
   const err = el('decklog-missing-err');
   if (err) { err.hidden = true; err.textContent = ''; }
 }
 
+function decklogSubList(val) {
+  if (Array.isArray(val)) return val.map(String).filter(Boolean);
+  if (val == null || val === '') return [];
+  return [String(val)];
+}
+
 function collectDecklogMissingSubstitutions() {
-  return { ...(_decklogMissingPending?.substitutions || {}) };
+  const out = {};
+  const src = _decklogMissingPending?.substitutions || {};
+  Object.keys(src).forEach(from => {
+    const list = decklogSubList(src[from]);
+    if (list.length) out[from] = list;
+  });
+  return out;
 }
 
 function decklogTypeFilterForCard(cardType) {
@@ -9905,20 +9940,136 @@ function decklogTypeFilterForCard(cardType) {
   return '';
 }
 
+/** Copies of cardNo already committed to other missing rows (or this row if excludeFrom omitted). */
+function decklogSubPickCommittedCount(cardNo, excludeFrom = '') {
+  let n = 0;
+  const subs = _decklogMissingPending?.substitutions || {};
+  Object.entries(subs).forEach(([from, list]) => {
+    if (excludeFrom && from === excludeFrom) return;
+    decklogSubList(list).forEach(no => { if (no === cardNo) n++; });
+  });
+  return n;
+}
+
+function decklogSubPickCanAdd(cardNo) {
+  if (!A.decklogSubPickFor || !cardNo || cardNo === A.decklogSubPickFor) return false;
+  const need = Number(A.decklogSubPickNeed || 0);
+  const draft = A.decklogSubPickDraft || [];
+  if (draft.length >= need) return false;
+  const owned = Number(A.collectionMap?.[cardNo] || 0);
+  const committed = decklogSubPickCommittedCount(cardNo, A.decklogSubPickFor);
+  const inDraft = draft.filter(n => n === cardNo).length;
+  return inDraft < Math.max(0, owned - committed);
+}
+
+function syncDecklogSubPickChrome() {
+  const need = Number(A.decklogSubPickNeed || 0);
+  const draft = A.decklogSubPickDraft || [];
+  const left = Math.max(0, need - draft.length);
+  const countEl = el('decklog-sub-pick-count');
+  if (countEl) {
+    countEl.textContent = left > 0
+      ? (t('deck.decklogSubPickCount', { n: left }) || `Choose ${left} cards`)
+      : (t('deck.decklogSubPickCountReady') || 'Selection complete — confirm to apply');
+    countEl.classList.toggle('is-ready', left === 0 && need > 0);
+  }
+  const confirmBtn = el('btn-decklog-sub-pick-confirm');
+  if (confirmBtn) confirmBtn.disabled = !(need > 0 && draft.length === need);
+  renderDecklogSubPickTray();
+}
+
+function renderDecklogSubPickTray() {
+  const tray = el('decklog-sub-pick-tray');
+  if (!tray) return;
+  const draft = A.decklogSubPickDraft || [];
+  tray.replaceChildren();
+  tray.hidden = draft.length === 0;
+  draft.forEach((cardNo, idx) => {
+    const card = enrichCard(G.allCards?.[cardNo] || { card_no: cardNo });
+    const mini = document.createElement('button');
+    mini.type = 'button';
+    mini.className = 'decklog-sub-pick-mini'
+      + ((typeof isLiveCard === 'function' && isLiveCard(card)) ? ' decklog-sub-pick-mini--live' : '');
+    mini.title = (t('deck.decklogSubPickRemoveHint') || 'Remove') + ': '
+      + (decklogCardDisplayName(card) || cardNo);
+    if (typeof isLiveCard === 'function' && isLiveCard(card)) {
+      const wrap = document.createElement('div');
+      wrap.className = 'deck-live-art';
+      mini.appendChild(wrap);
+      if (typeof appendCardFaceFill === 'function') appendCardFaceFill(wrap, card, { lazy: true });
+    } else if (typeof applyCardImageToImg === 'function') {
+      const img = document.createElement('img');
+      img.alt = '';
+      applyCardImageToImg(img, card);
+      mini.appendChild(img);
+    }
+    const removeAt = () => {
+      A.decklogSubPickDraft.splice(idx, 1);
+      syncDecklogSubPickChrome();
+      renderDeckBuilder({ deferPool: false, preservePoolScroll: true });
+    };
+    mini.onclick = removeAt;
+    mini.oncontextmenu = e => { e.preventDefault(); removeAt(); };
+    tray.appendChild(mini);
+  });
+}
+
+function addDecklogSubPickCopy(cardNo) {
+  if (!decklogSubPickCanAdd(cardNo)) return;
+  if (!A.decklogSubPickDraft) A.decklogSubPickDraft = [];
+  A.decklogSubPickDraft.push(cardNo);
+  syncDecklogSubPickChrome();
+  renderDeckBuilder({ deferPool: false, preservePoolScroll: true });
+}
+
+function removeDecklogSubPickCopy(cardNo) {
+  const draft = A.decklogSubPickDraft || [];
+  const idx = draft.lastIndexOf(cardNo);
+  if (idx < 0) return;
+  draft.splice(idx, 1);
+  syncDecklogSubPickChrome();
+  renderDeckBuilder({ deferPool: false, preservePoolScroll: true });
+}
+
+/** Right-click: add one copy, or remove one when the selection is already full. */
+function decklogSubPickRightClick(cardNo) {
+  const no = typeof cardNo === 'string' ? cardNo : (cardNo?.card_no || '');
+  if (!no || !A.decklogSubPickFor) return;
+  if (decklogSubPickCanAdd(no)) {
+    addDecklogSubPickCopy(no);
+    return;
+  }
+  removeDecklogSubPickCopy(no);
+}
+
+function confirmDecklogSubPick() {
+  const from = A.decklogSubPickFor;
+  const need = Number(A.decklogSubPickNeed || 0);
+  const draft = [...(A.decklogSubPickDraft || [])];
+  if (!from || !_decklogMissingPending || draft.length !== need || need < 1) return;
+  if (!_decklogMissingPending.substitutions) _decklogMissingPending.substitutions = {};
+  _decklogMissingPending.substitutions[from] = draft;
+  closeDecklogSubPick({ reopenMissing: true });
+}
+
 function openDecklogSubPick(forCardNo) {
   if (!_decklogMissingPending || !forCardNo) return;
   const row = (_decklogMissingPending.missing || []).find(m => m.card_no === forCardNo);
+  const shortfall = Math.max(0, Number(row?.shortfall || 0));
+  if (shortfall < 1) return;
   A.decklogSubPickFor = forCardNo;
+  A.decklogSubPickNeed = shortfall;
+  A.decklogSubPickDraft = decklogSubList(_decklogMissingPending.substitutions?.[forCardNo]).slice(0, shortfall);
   const title = el('decklog-sub-pick-title');
   const lead = el('decklog-sub-pick-lead');
   const name = decklogCardDisplayName(row || { card_no: forCardNo });
   if (title) {
-    title.textContent = t('deck.decklogSubPickTitleFor', { name })
-      || (`Choose substitute for ${name}`);
+    title.textContent = t('deck.decklogSubPickTitleFor', { name, n: shortfall })
+      || (`Choose ${shortfall} substitutes for ${name}`);
   }
   if (lead) {
     lead.textContent = t('deck.decklogSubPickLead')
-      || 'Use search, sort, and filters — tap a card you own to use it as a substitute.';
+      || 'Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.';
   }
 
   const f = deckPoolFilterState();
@@ -9937,6 +10088,7 @@ function openDecklogSubPick(forCardNo) {
   syncDeckFilterUi();
   closeM('modal-decklog-missing');
   openM('modal-decklog-sub-pick');
+  syncDecklogSubPickChrome();
   renderDeckBuilder({ deferPool: false });
   const stats = el('deck-collection-stats');
   const statsOut = el('decklog-sub-pick-stats');
@@ -9946,6 +10098,8 @@ function openDecklogSubPick(forCardNo) {
 function closeDecklogSubPick({ reopenMissing = true } = {}) {
   const wasOpen = !!A.decklogSubPickFor || !!_decklogSubPark;
   A.decklogSubPickFor = '';
+  A.decklogSubPickDraft = [];
+  A.decklogSubPickNeed = 0;
   if (_decklogSubPark) {
     unparkDeckNode(_decklogSubPark.pool);
     unparkDeckNode(_decklogSubPark.sort);
@@ -9960,13 +10114,6 @@ function closeDecklogSubPick({ reopenMissing = true } = {}) {
   if (reopenMissing && _decklogMissingPending) {
     renderDecklogMissingModal(_decklogMissingPending);
   }
-}
-
-function assignDecklogSubstitute(fromCardNo, toCardNo) {
-  if (!_decklogMissingPending || !fromCardNo || !toCardNo || fromCardNo === toCardNo) return;
-  if (!_decklogMissingPending.substitutions) _decklogMissingPending.substitutions = {};
-  _decklogMissingPending.substitutions[fromCardNo] = toCardNo;
-  closeDecklogSubPick({ reopenMissing: true });
 }
 
 /** Hover → left picker panel; long-press / right-click → full card info (keeps missing modal centered). */
@@ -10032,6 +10179,7 @@ function renderDecklogMissingModal(payload) {
   const subs = _decklogMissingPending.substitutions || {};
   (_decklogMissingPending.missing || []).forEach(row => {
     const name = decklogCardDisplayName(row);
+    const shortfall = Math.max(0, Number(row.shortfall || 0));
     const div = document.createElement('div');
     div.className = 'decklog-missing-row';
     div.setAttribute('data-card-no', row.card_no);
@@ -10076,22 +10224,48 @@ function renderDecklogMissingModal(payload) {
     body.append(title, meta, obtain);
     const subWrap = document.createElement('div');
     subWrap.className = 'decklog-missing-sub';
-    const picked = subs[row.card_no] || '';
-    const pickedCard = picked ? G.allCards?.[picked] : null;
+    const picked = decklogSubList(subs[row.card_no]).slice(0, shortfall);
     const status = document.createElement('div');
     status.className = 'decklog-missing-sub-status';
-    status.textContent = picked
-      ? (t('deck.decklogSubPicked', { name: decklogCardDisplayName(pickedCard || { card_no: picked }) })
-        || (`Substitute: ${decklogCardDisplayName(pickedCard || { card_no: picked })}`))
-      : (t('deck.decklogSubNone') || 'No substitute chosen');
+    if (picked.length >= shortfall && shortfall > 0) {
+      status.textContent = t('deck.decklogSubPickedCount', { n: picked.length })
+        || (`Substitutes (${picked.length})`);
+      const tray = document.createElement('div');
+      tray.className = 'decklog-missing-sub-tray';
+      picked.forEach(no => {
+        const pc = enrichCard(G.allCards?.[no] || { card_no: no });
+        const mini = document.createElement('div');
+        mini.className = 'decklog-missing-sub-mini'
+          + ((typeof isLiveCard === 'function' && isLiveCard(pc)) ? ' decklog-missing-sub-mini--live' : '');
+        mini.title = decklogCardDisplayName(pc) || no;
+        if (typeof isLiveCard === 'function' && isLiveCard(pc)) {
+          const wrap = document.createElement('div');
+          wrap.className = 'deck-live-art';
+          mini.appendChild(wrap);
+          if (typeof appendCardFaceFill === 'function') appendCardFaceFill(wrap, pc, { lazy: true });
+        } else if (typeof applyCardImageToImg === 'function') {
+          const img = document.createElement('img');
+          img.alt = '';
+          applyCardImageToImg(img, pc);
+          mini.appendChild(img);
+        }
+        tray.appendChild(mini);
+      });
+      subWrap.append(status, tray);
+    } else {
+      status.textContent = shortfall > 0
+        ? (t('deck.decklogSubNoneCount', { n: shortfall }) || `Choose ${shortfall} substitutes`)
+        : (t('deck.decklogSubNone') || 'No substitute chosen');
+      subWrap.appendChild(status);
+    }
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-out decklog-sub-choose';
-    btn.textContent = picked
-      ? (t('deck.decklogChangeSub') || 'Change substitute')
-      : (t('deck.decklogChooseSub') || 'Choose substitute');
+    btn.textContent = picked.length
+      ? (t('deck.decklogChangeSub') || 'Change substitutes')
+      : (t('deck.decklogChooseSub') || 'Choose substitutes');
     btn.onclick = () => openDecklogSubPick(row.card_no);
-    subWrap.append(status, btn);
+    subWrap.appendChild(btn);
     div.append(thumb, body, subWrap);
     list.appendChild(div);
   });
@@ -10101,10 +10275,25 @@ function renderDecklogMissingModal(payload) {
 function autoPickDecklogSubstitutes() {
   if (!_decklogMissingPending) return;
   if (!_decklogMissingPending.substitutions) _decklogMissingPending.substitutions = {};
+  const spareUsed = {};
   (_decklogMissingPending.missing || []).forEach(row => {
-    if (_decklogMissingPending.substitutions[row.card_no]) return;
-    const first = (row.substitutes || [])[0];
-    if (first?.card_no) _decklogMissingPending.substitutions[row.card_no] = first.card_no;
+    const shortfall = Math.max(0, Number(row.shortfall || 0));
+    if (shortfall < 1) return;
+    const existing = decklogSubList(_decklogMissingPending.substitutions[row.card_no]);
+    if (existing.length >= shortfall) return;
+    const picked = existing.slice();
+    let need = shortfall - picked.length;
+    (row.substitutes || []).forEach(s => {
+      if (need <= 0 || !s?.card_no) return;
+      const have = Math.max(0, Number(s.have || 0) - Number(spareUsed[s.card_no] || 0));
+      const take = Math.min(have, need);
+      for (let i = 0; i < take; i++) {
+        picked.push(s.card_no);
+        spareUsed[s.card_no] = Number(spareUsed[s.card_no] || 0) + 1;
+      }
+      need -= take;
+    });
+    if (picked.length) _decklogMissingPending.substitutions[row.card_no] = picked;
   });
   renderDecklogMissingModal(_decklogMissingPending);
 }
@@ -10113,13 +10302,16 @@ async function applyDecklogMissingSubstitutes() {
   if (!_decklogMissingPending?.code) return;
   const substitutions = collectDecklogMissingSubstitutions();
   const missing = _decklogMissingPending.missing || [];
-  const uncovered = missing.filter(m => !substitutions[m.card_no]);
+  const uncovered = missing.filter(m => {
+    const need = Math.max(0, Number(m.shortfall || 0));
+    return decklogSubList(substitutions[m.card_no]).length < need;
+  });
   const err = el('decklog-missing-err');
   if (uncovered.length) {
     if (err) {
       err.hidden = false;
       err.textContent = t('deck.decklogNeedAllSubs')
-        || 'Choose a substitute for every missing card, or cancel.';
+        || 'Choose enough substitutes for every missing card, or cancel.';
     }
     return;
   }
@@ -13630,6 +13822,7 @@ async function bootApp() {
   on('btn-decklog-missing-apply', 'click', () => { applyDecklogMissingSubstitutes(); });
   on('btn-decklog-sub-pick-cancel', 'click', () => closeDecklogSubPick({ reopenMissing: true }));
   on('btn-decklog-sub-pick-close', 'click', () => closeDecklogSubPick({ reopenMissing: true }));
+  on('btn-decklog-sub-pick-confirm', 'click', confirmDecklogSubPick);
   on('btn-experiment-copy-pwd', 'click', async () => {
     const pwd = A.experimentPassword || el('experiment-pwd-display')?.textContent;
     if (!pwd) return;

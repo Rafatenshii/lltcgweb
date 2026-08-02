@@ -688,8 +688,9 @@ function tcgApiDeckResetStarter(array $body): array {
  * Returns complete lists when the collection covers the recipe; otherwise
  * missing-card details with obtain hints and substitute suggestions.
  *
- * Body: code|url, optional substitutions: { missing_card_no: substitute_card_no },
+ * Body: code|url, optional substitutions: { missing_card_no: substitute_card_no|[card_no…] },
  * optional auto_sub_energy: bool (fill Energy shortfalls from other owned Energy).
+ * List form = one substitute per missing copy; string form = reuse that card for every copy.
  */
 function tcgApiDeckImportDecklog(array $body): array {
     $uid = tcgRequireAuthUser($body);
@@ -715,11 +716,26 @@ function tcgApiDeckImportDecklog(array $body): array {
     if (is_array($rawSubs)) {
         foreach ($rawSubs as $from => $to) {
             $fromNo = trim((string)$from);
-            $toNo = trim((string)$to);
-            if ($fromNo === '' || $toNo === '' || !isset($cardMap[$toNo])) {
+            if ($fromNo === '') {
                 continue;
             }
-            $substitutions[$fromNo] = $toNo;
+            if (is_array($to)) {
+                $list = [];
+                foreach ($to as $item) {
+                    $toNo = trim((string)$item);
+                    if ($toNo !== '' && isset($cardMap[$toNo])) {
+                        $list[] = $toNo;
+                    }
+                }
+                if ($list) {
+                    $substitutions[$fromNo] = $list;
+                }
+                continue;
+            }
+            $toNo = trim((string)$to);
+            if ($toNo !== '' && isset($cardMap[$toNo])) {
+                $substitutions[$fromNo] = $toNo;
+            }
         }
     }
 
