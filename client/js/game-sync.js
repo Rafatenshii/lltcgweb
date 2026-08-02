@@ -442,6 +442,12 @@
       }
     } catch (e) {
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
+      if (e && /room not found/i.test(String(e.message || ''))) {
+        if (typeof global.abandonDeadMatchSession === 'function') {
+          void global.abandonDeadMatchSession();
+          return;
+        }
+      }
       if (e && e.httpStatus >= 400) {
         if (handleSpectatorPollError(e.message)) return;
         reportApiError(e, { source: 'poll' });

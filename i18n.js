@@ -569,7 +569,8 @@
       "textScaleExp": "Experimental",
       "textScaleLead": "Enlarge or shrink menu text and buttons. Larger sizes use more scrolling so nothing overlaps. Match side panels stay on-screen; the board stays fitted on mobile.",
       "stuckTitle": "Stuck in a match?",
-      "stuckLead": "If ranked reconnects you to a broken or finished game, leave the active match record here. This counts as a resign if the game is still in progress.",
+      "stuckLead": "If you are stuck in a broken, finished, or missing match, leave it here. This counts as a resign if the game is still in progress.",
+      "leaveActiveConfirm": "Leave the active match? If it is still in progress, this counts as a resign.",
       "resetTitle": "Reset account",
       "resetLead": "Delete all collection cards, deck presets, ranked stats, and booster progress. You will choose a new starter deck and begin again. This cannot be undone.",
       "resetAccount": "Reset account",
@@ -1170,6 +1171,7 @@
     "toast": {
       "reconnected": "Reconnected to your game",
       "leftActiveMatch": "Left active match",
+      "leftDeadMatch": "That match no longer exists — returned to the menu.",
       "noActiveMatch": "No active match found",
       "noCardId": "No card ID to copy",
       "cardIdCopied": "Card ID copied",

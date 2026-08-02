@@ -2153,7 +2153,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=95"></script>
+<script src="i18n.js?v=96"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -2162,7 +2162,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=28"></script>
+<script src="client/js/game-sync.js?v=29"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -5156,12 +5156,13 @@ function openOptionsScreen() {
   }
   if (window.TCG_STAMPS?.renderOptionsStampPreview) window.TCG_STAMPS.renderOptionsStampPreview();
   const leaveBtn = el('btn-leave-active-game');
-  if (leaveBtn) leaveBtn.hidden = true;
+  // Show whenever a local session or in-memory room exists (CPU/dead rooms too).
+  if (leaveBtn) leaveBtn.hidden = !(G.roomId || readActiveGameSession());
   showScr('options');
   if (!getAuthToken()) return;
   accountGet('active_game')
     .then(res => {
-      if (leaveBtn) leaveBtn.hidden = !res?.active?.room_id;
+      if (leaveBtn && res?.active?.room_id) leaveBtn.hidden = false;
     })
     .catch(() => {});
 }
@@ -5169,19 +5170,13 @@ function openOptionsScreen() {
 async function leaveActiveGame() {
   el('options-err').textContent = '';
   const leaveBtn = el('btn-leave-active-game');
-  if (!confirm('Leave the active ranked match? If it is still in progress, this counts as a resign.')) return;
+  const msg = t('options.leaveActiveConfirm')
+    || 'Leave the active match? If it is still in progress, this counts as a resign.';
+  if (!confirm(msg)) return;
   try {
-    stopPoll();
-    clearActiveGameSession();
-    G.roomId = null;
-    G.token = null;
-    G.playerId = null;
-    G.gameState = null;
-    G.lastSeq = 0;
-    const res = await accountPost('leave_active_game', {});
+    await abandonDeadMatchSession({ silent: true });
     if (leaveBtn) leaveBtn.hidden = true;
-    toast(res.left ? t('toast.leftActiveMatch') : t('toast.noActiveMatch'), 2600);
-    enterHub(A.profile);
+    toast(t('toast.leftActiveMatch') || 'Left active match', 2600);
   } catch (e) {
     el('options-err').textContent = e.message || String(e);
   }
@@ -26648,7 +26643,47 @@ function endGameSession() {
   clearActiveGameSession();
   if (typeof closeApiErrorPopup === 'function') closeApiErrorPopup();
   stopPoll();
+  if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
 }
+
+/** True when the server says this room no longer exists (dead / drained Hostinger room). */
+function isRoomGoneError(errOrMsg) {
+  const msg = typeof errOrMsg === 'string'
+    ? errOrMsg
+    : (errOrMsg?.message || errOrMsg?.error || '');
+  return /room not found/i.test(String(msg || ''));
+}
+
+/**
+ * Escape a dead match: clear local session, drop ranked active_game if any, return to hub/lobby.
+ * Used when resign/get_state report Room not found after the match-primary cutover.
+ */
+async function abandonDeadMatchSession(opts = {}) {
+  const silent = !!opts.silent;
+  try { if (typeof closeApiErrorPopup === 'function') closeApiErrorPopup(); } catch (e) { /* ignore */ }
+  try { stopPoll(); } catch (e) { /* ignore */ }
+  clearActiveGameSession();
+  clearSpectatorSession();
+  if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
+  G.roomId = null;
+  G.token = null;
+  G.cpuToken = null;
+  G.playerId = null;
+  G.gameState = null;
+  G.lastSeq = 0;
+  G.isCPU = false;
+  G.rematchWaiting = false;
+  if (getAuthToken()) {
+    try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
+  }
+  G = freshGameGlobals();
+  if (A.profile) enterHub(A.profile);
+  else showScr('lobby');
+  if (!silent) {
+    toast(t('toast.leftDeadMatch') || 'That match no longer exists — returned to the menu.', 3200);
+  }
+}
+window.abandonDeadMatchSession = abandonDeadMatchSession;
 
 function resetLobby(){
   endGameSession();
@@ -27004,6 +27039,10 @@ async function sendAct(type,data){
       ensurePendingPromptSurfaced(G.gameState, G.playerId);
       renderPrompt(G.gameState, G.playerId);
       updatePhaseActionButton(G.gameState, G.playerId);
+    }
+    if (isRoomGoneError(e)) {
+      await abandonDeadMatchSession();
+      return;
     }
     if (type === 'resign') {
       G._presentationAborted = false;
