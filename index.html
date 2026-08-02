@@ -8709,11 +8709,11 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=78"></script>
+<script src="i18n.js?v=79"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=18"></script>
-<script src="client/js/api-client.js?v=16"></script>
+<script src="client/js/api-client.js?v=17"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/game-sync.js?v=25"></script>
@@ -8743,6 +8743,10 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
     // Main script is signing in / reconnecting — do not clobber with a false timeout.
     if (authEl && authEl.getAttribute('data-auth-boot') === 'booting') return;
     if (window.G && window.G.roomId) return;
+    // Never dump to guest while a saved match session exists (reconnect queue owns this).
+    try {
+      if (sessionStorage.getItem('tcg_active_game') || localStorage.getItem('tcg_active_game')) return;
+    } catch (e) { /* ignore */ }
     if (authEl) {
       authEl.setAttribute('data-i18n', i18nKey || 'auth.guestTimeout');
       authEl.textContent = I18N && I18N.t ? I18N.t(i18nKey || 'auth.guestTimeout') : 'Sign-in check timed out — play unranked, or retry Discord sign-in.';
@@ -10830,11 +10834,14 @@ function reconnectApiBaseForOrigin(apiOrigin) {
 }
 
 /** Probe an origin without locking G.apiOrigin (failed probes must not redirect hub traffic). */
-async function fetchGameStateForReconnect(roomId, token, apiOrigin) {
+async function fetchGameStateForReconnect(roomId, token, apiOrigin, opts = {}) {
   const base = reconnectApiBaseForOrigin(apiOrigin);
+  const resume = opts.resume !== false;
+  const resumeQ = resume ? '&resume=1' : '';
+  const fetchOpts = opts.signal ? { signal: opts.signal } : {};
   const r = await fetchWithTimeout(
-    `${base}?action=get_state&room_id=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&seq=0&poll=0`,
-    {},
+    `${base}?action=get_state&room_id=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&seq=0&poll=0${resumeQ}`,
+    fetchOpts,
     RECONNECT_FETCH_TIMEOUT_MS,
   );
   if (!r.ok) {
@@ -10859,7 +10866,7 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
   let roomMissingCount = 0;
   for (const origin of order) {
     try {
-      const s = await fetchGameStateForReconnect(saved.roomId, saved.token, origin);
+      const s = await fetchGameStateForReconnect(saved.roomId, saved.token, origin, opts);
       lastState = s;
       lastOrigin = origin;
       if (isReconnectRoomMissing(s)) {
@@ -11039,15 +11046,22 @@ function prepareClientReconnectState(s) {
 }
 
 async function reconnectToGame(saved, opts = {}) {
-  if (!saved?.roomId || !saved?.token) return false;
+  if (!saved?.roomId || !saved?.token) {
+    G._reconnectLastFail = 'gone';
+    return false;
+  }
   let appliedCredentials = false;
+  G._reconnectLastFail = null;
   try {
     const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved, opts);
     if (await abandonReconnectSessionIfTerminal(s, { bothOriginsMissing: !!roomMissingBoth })) {
+      G._reconnectLastFail = 'gone';
       return false;
     }
     // Transient API errors / wrong token: keep session so ranked active_game or retry can work.
     if (s.error || !s.my_id) {
+      const msg = String(s.error || '');
+      G._reconnectLastFail = /invalid|expired|unauthorized/i.test(msg) ? 'auth' : 'soft';
       return false;
     }
     if (typeof tcgLockApiOrigin === 'function') {
@@ -11072,6 +11086,7 @@ async function reconnectToGame(saved, opts = {}) {
       await restoreFinishedMatchUi(s);
       if (!hasRestoredMatchUi()) {
         rollbackFailedReconnect();
+        G._reconnectLastFail = 'ui';
         return false;
       }
       toast(t('toast.reconnected'), 2600);
@@ -11103,6 +11118,7 @@ async function reconnectToGame(saved, opts = {}) {
     startPoll();
     if (!hasRestoredMatchUi()) {
       rollbackFailedReconnect();
+      G._reconnectLastFail = 'ui';
       return false;
     }
     toast(t('toast.reconnected'), 2600);
@@ -11112,15 +11128,21 @@ async function reconnectToGame(saved, opts = {}) {
     if (appliedCredentials || (G.roomId && !hasRestoredMatchUi())) {
       rollbackFailedReconnect();
     }
+    G._reconnectLastFail = (e && (e.transient || (typeof isTransientAccountError === 'function' && isTransientAccountError(e))))
+      ? 'transient'
+      : 'transient';
     // Timeouts / network blips — keep tcg_active_game for the next reload.
     return false;
   }
 }
 
-async function reconnectToSpectator(saved) {
+async function reconnectToSpectator(saved, opts = {}) {
   if (!saved?.roomId || !saved?.token) return false;
   try {
-    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved);
+    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved, {
+      resume: true,
+      ...opts,
+    });
     if (s.status === 'finished' || roomMissingBoth) {
       clearSpectatorSession();
       return false;
@@ -11168,6 +11190,130 @@ async function resumeSpectatorSessionIfAny() {
 
 let _resumeActiveGamePromise = null;
 
+function hasStoredActiveGameSession() {
+  try {
+    if (sessionStorage.getItem(ACTIVE_GAME_KEY) || localStorage.getItem(ACTIVE_GAME_KEY)) return true;
+  } catch (e) { /* ignore */ }
+  return !!readActiveGameSession();
+}
+
+function updateReconnectBanner(attempt) {
+  const authEl = el('auth-status');
+  if (!authEl) return;
+  const n = Math.max(1, attempt || 1);
+  const key = n >= 4 ? 'auth.reconnectingWaiting' : 'auth.reconnectingTry';
+  authEl.removeAttribute('data-i18n');
+  const fallback = n >= 4
+    ? `Still waiting on server… (try ${n})`
+    : `Reconnecting to match… (try ${n})`;
+  try {
+    authEl.textContent = (typeof t === 'function' ? t(key, { n }) : null) || fallback;
+  } catch (e) {
+    authEl.textContent = fallback;
+  }
+  if (authEl.getAttribute('data-auth-boot') !== 'done') {
+    authEl.setAttribute('data-auth-boot', 'booting');
+  }
+}
+
+function reconnectBackoffMs(attempt) {
+  const steps = [500, 1000, 2000, 4000, 8000];
+  return steps[Math.min(Math.max(attempt, 1) - 1, steps.length - 1)];
+}
+
+/**
+ * Never-give-up refresh resume while a local/ranked match session exists.
+ * Uses read-only get_state?resume=1 and retries transient Hostinger failures.
+ */
+async function runReconnectQueue() {
+  let attempt = 0;
+  let rankedEmptyConfirmed = false;
+  while (true) {
+    if (hasRestoredMatchUi()) return true;
+    if (G.roomId && !hasRestoredMatchUi()) rollbackFailedReconnect();
+
+    const saved = readActiveGameSession();
+    const spectator = readSpectatorSession();
+    const canRanked = !!getAuthToken();
+
+    if (!saved && !spectator && rankedEmptyConfirmed) return false;
+    if (!saved && !spectator && !canRanked) return false;
+
+    attempt += 1;
+    updateReconnectBanner(attempt);
+
+    const attemptCtrl = new AbortController();
+    const attemptTimer = setTimeout(() => {
+      try { attemptCtrl.abort(); } catch (e) { /* ignore */ }
+    }, RECONNECT_FETCH_TIMEOUT_MS + 500);
+    const opts = { resume: true, signal: attemptCtrl.signal };
+
+    try {
+      if (saved) {
+        if (await reconnectToGame(saved, opts)) return true;
+        if (!readActiveGameSession() && G._reconnectLastFail === 'gone') {
+          // Room confirmed gone — fall through to ranked / stop.
+        } else if (G._reconnectLastFail === 'auth' && !canRanked) {
+          clearActiveGameSession();
+          return false;
+        }
+      }
+
+      if (!hasRestoredMatchUi() && spectator) {
+        if (await reconnectToSpectator(spectator, opts)) return true;
+      }
+
+      if (!hasRestoredMatchUi() && canRanked) {
+        try {
+          const res = await accountGet('active_game');
+          const active = res?.active;
+          if (active?.room_id && active?.player_token) {
+            rankedEmptyConfirmed = false;
+            if (await reconnectToGame({
+              roomId: active.room_id,
+              token: active.player_token,
+              playerId: active.player_id,
+              isCPU: false,
+              cpuToken: null,
+              screen: 'game',
+              apiOrigin: 'hostinger',
+            }, { hostingerOnly: true, resume: true, signal: attemptCtrl.signal })) {
+              return true;
+            }
+          } else {
+            rankedEmptyConfirmed = true;
+            if (!readActiveGameSession() && !readSpectatorSession()) return false;
+            // Local token rejected and no ranked row — stop. Soft/transient keep retrying.
+            if (saved && G._reconnectLastFail === 'auth') {
+              clearActiveGameSession();
+              return false;
+            }
+          }
+        } catch (e) {
+          rankedEmptyConfirmed = false;
+          if (!readActiveGameSession() && !readSpectatorSession()) {
+            if (typeof isTransientAccountError === 'function' && isTransientAccountError(e)) {
+              // Keep retrying ranked lookup under overload.
+            } else {
+              return false;
+            }
+          }
+        }
+      }
+    } finally {
+      clearTimeout(attemptTimer);
+    }
+
+    if (hasRestoredMatchUi()) return true;
+
+    const stillSession = !!(readActiveGameSession() || readSpectatorSession());
+    if (!stillSession && rankedEmptyConfirmed) return false;
+    if (!stillSession && !canRanked) return false;
+
+    await sleep(reconnectBackoffMs(attempt));
+  }
+}
+
 async function resumeActiveGameIfAny() {
   if (G.isTutorial) return false;
   // Only treat an in-memory room as restored when the match UI is actually visible.
@@ -11178,40 +11324,9 @@ async function resumeActiveGameIfAny() {
     rollbackFailedReconnect();
   }
   if (_resumeActiveGamePromise) return _resumeActiveGamePromise;
-  _resumeActiveGamePromise = (async () => {
-    try {
-      const saved = readActiveGameSession();
-      if (saved) {
-        const authEl = el('auth-status');
-        if (authEl && authEl.getAttribute('data-auth-boot') === 'booting') {
-          authEl.removeAttribute('data-i18n');
-          authEl.textContent = t('auth.reconnecting') || 'Reconnecting to match…';
-        }
-        if (await reconnectToGame(saved)) return true;
-      }
-      if (await resumeSpectatorSessionIfAny()) return true;
-      if (!getAuthToken()) return false;
-      try {
-        const res = await accountGet('active_game');
-        const active = res.active;
-        if (!active?.room_id || !active?.player_token) return false;
-        // Ranked matches always live on Hostinger (overflow is blocked for ranked queue).
-        return reconnectToGame({
-          roomId: active.room_id,
-          token: active.player_token,
-          playerId: active.player_id,
-          isCPU: false,
-          cpuToken: null,
-          screen: 'game',
-          apiOrigin: 'hostinger',
-        }, { hostingerOnly: true });
-      } catch (e) {
-        return false;
-      }
-    } finally {
-      _resumeActiveGamePromise = null;
-    }
-  })();
+  _resumeActiveGamePromise = runReconnectQueue().finally(() => {
+    _resumeActiveGamePromise = null;
+  });
   return _resumeActiveGamePromise;
 }
 
@@ -11246,6 +11361,15 @@ async function initAccountFlow() {
     if (G.roomId && !hasRestoredMatchUi()) {
       rollbackFailedReconnect();
     }
+    // Active match session: never dump to guest — reconnect queue keeps retrying.
+    if (hasStoredActiveGameSession() || readSpectatorSession()) {
+      updateReconnectBanner(1);
+      void resumeActiveGameIfAny().then((ok) => {
+        if (ok || hasRestoredMatchUi()) finishAuthBoot();
+        // If still queued, leave boot flag as booting until queue settles.
+      });
+      return;
+    }
     // Last chance resume before dumping to the guest timeout screen.
     void (async () => {
       try {
@@ -11256,6 +11380,10 @@ async function initAccountFlow() {
       } catch (e) { /* fall through */ }
       if (authDone || hasRestoredMatchUi()) {
         finishAuthBoot();
+        return;
+      }
+      if (hasStoredActiveGameSession() || readSpectatorSession()) {
+        updateReconnectBanner(1);
         return;
       }
       showGuestAuth(null, 'auth.guestTimeout');
@@ -11299,6 +11427,12 @@ async function initAccountFlow() {
         : await accountGet('me');
     } catch (authErr) {
       if (await resumePromise) return;
+      if (hasStoredActiveGameSession() || readSpectatorSession()) {
+        // Overload during /me must not cancel match resume.
+        if (await resumeActiveGameIfAny()) return;
+        updateReconnectBanner(1);
+        return;
+      }
       if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(authErr)) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         showGuestAuth(null, 'auth.sessionExpired');
@@ -11351,6 +11485,11 @@ async function initAccountFlow() {
     }, 0);
   } catch (e) {
     if (await resumePromise.catch(() => false)) return;
+    if (hasStoredActiveGameSession() || readSpectatorSession()) {
+      if (await resumeActiveGameIfAny().catch(() => false)) return;
+      updateReconnectBanner(1);
+      return;
+    }
     if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(e)) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       showGuestAuth(null, 'auth.sessionExpired');
@@ -11360,7 +11499,10 @@ async function initAccountFlow() {
       showGuestAuth(e.message || t('auth.loadError'));
     }
   } finally {
-    finishAuthBoot();
+    // Keep auth-boot "booting" while reconnect queue is still working a saved match.
+    if (!(hasStoredActiveGameSession() || readSpectatorSession()) || hasRestoredMatchUi()) {
+      finishAuthBoot();
+    }
   }
 }
 
@@ -11370,6 +11512,12 @@ function showGuestAuth(message, i18nKey) {
     const authElBusy = el('auth-status');
     if (authElBusy) authElBusy.setAttribute('data-auth-boot', 'done');
     if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
+    return;
+  }
+  // Never abandon an in-progress match resume for guest/busy UI.
+  if (hasStoredActiveGameSession() || readSpectatorSession()) {
+    updateReconnectBanner(1);
+    void resumeActiveGameIfAny();
     return;
   }
   if (G.roomId && !hasRestoredMatchUi()) {

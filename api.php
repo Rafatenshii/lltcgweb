@@ -516,7 +516,11 @@ function hideLiveJudgeSpoilersFromFilteredState(array &$filtered, array $source)
 function getStatePolling(): void {
     $roomId      = $_GET['room_id'] ?? '';
     $playerToken = $_GET['token']   ?? $_SERVER['HTTP_X_PLAYER_TOKEN'] ?? '';
-    tcgRateLimitForAction('get_state', ['room_id' => $roomId, 'token' => $playerToken]);
+    $resumeOnly  = isset($_GET['resume']) && (string)$_GET['resume'] === '1';
+    tcgRateLimitForAction(
+        $resumeOnly ? 'get_state_resume' : 'get_state',
+        ['room_id' => $roomId, 'token' => $playerToken]
+    );
     $lastSeq     = intval($_GET['seq'] ?? 0);
 
     if (!$roomId || !$playerToken) {
@@ -539,6 +543,11 @@ function getStatePolling(): void {
         }
         if (tcgIsSpectatorToken($playerToken) && !tcgSpectatorTokenValid($roomId, $playerToken)) {
             echo json_encode(['error' => 'Spectator session expired']);
+            return;
+        }
+        // Refresh reconnect: read-only snapshot — no forfeit/timeout writes under load.
+        if ($resumeOnly) {
+            echo json_encode(filterStateForClient($state, $roomId, $playerToken));
             return;
         }
         if (applyPhaseTimeouts($state)) {

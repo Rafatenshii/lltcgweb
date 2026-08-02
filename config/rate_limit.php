@@ -85,6 +85,12 @@ function tcgRateLimitForAction(string $action, array $body = [], ?string $authTo
             $max = $roomId !== '' ? 4000 : 60;
             tcgRateLimitCheck('get_state', $key, $max, TCG_RATE_WINDOW_SEC);
             break;
+        case 'get_state_resume':
+            // Refresh reconnect under overload: allow many cheap read-only snapshots.
+            $roomId = preg_replace('/[^A-Z0-9]/', '', strtoupper(trim((string)($body['room_id'] ?? ''))));
+            $key = $roomId !== '' ? $ip . '_' . $roomId : $ip;
+            tcgRateLimitCheck('get_state_resume', $key, 12000, TCG_RATE_WINDOW_SEC);
+            break;
         case 'casual_join':
             tcgRateLimitCheck('casual_join', $ip, 30, TCG_RATE_WINDOW_SEC);
             break;

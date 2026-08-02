@@ -191,8 +191,24 @@
   global.fetchWithTimeout = async function fetchWithTimeout(url, options = {}, ms = global.AUTH_FETCH_TIMEOUT_MS) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
+    const external = options && options.signal;
+    const onExternalAbort = () => {
+      try { ctrl.abort(); } catch (e) { /* ignore */ }
+    };
+    if (external) {
+      if (external.aborted) {
+        clearTimeout(timer);
+        const err = new Error('Request timed out');
+        err.httpStatus = 408;
+        err.transient = true;
+        throw err;
+      }
+      external.addEventListener('abort', onExternalAbort);
+    }
     try {
-      return await fetch(url, { ...options, signal: ctrl.signal });
+      const opts = { ...(options || {}) };
+      delete opts.signal;
+      return await fetch(url, { ...opts, signal: ctrl.signal });
     } catch (e) {
       if (e && e.name === 'AbortError') {
         const err = new Error('Request timed out');
@@ -204,6 +220,7 @@
       throw e;
     } finally {
       clearTimeout(timer);
+      if (external) external.removeEventListener('abort', onExternalAbort);
     }
   };
 
