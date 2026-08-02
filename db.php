@@ -230,6 +230,12 @@ function tcgDbMigrate(PDO $db): void {
         )');
     });
 
+    // login_bonus_* was added after bootstrap_v2; 011_login_bonus.sql is docs-only and never ALTERed prod.
+    tcgDbRunMigrationOnce($db, 'login_bonus_columns_20260802', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_daily_state', 'login_bonus_step', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_daily_state', 'login_bonus_last_date', 'TEXT');
+    });
+
     $done = true;
 }
 
