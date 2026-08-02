@@ -9116,7 +9116,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
-<script src="client/js/prompt-renderer.js?v=60"></script>
+<script src="client/js/prompt-renderer.js?v=61"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -36396,12 +36396,27 @@ function wrZonePickPromptTypes() {
   return ['pick_wr_to_hand', 'pick_wr_leave_stage_add', 'shuffle_named_from_waiting_pick'];
 }
 
+/** WR owner for picks that may target either player (e.g. Hanamaru bp3-007). */
+function wrPickOwnerId(pr, myId) {
+  const t = pr?.target || pr?.wr_owner || pr?.wr_pid;
+  if (t === 'p1' || t === 'p2') return t;
+  return myId;
+}
+
 function wrToHandPickCards(pr, s, myId) {
-  const wr = s?.players?.[myId]?.waiting_room || [];
+  const wrOwner = wrPickOwnerId(pr, myId);
+  const wr = s?.players?.[wrOwner]?.waiting_room || [];
   const byId = new Map(wr.map(c => [c.instance_id, c]));
   const seed = (pr.candidates || []).length ? pr.candidates : wr;
   return seed.map(c => {
-    const full = byId.get(c.instance_id);
+    let full = byId.get(c.instance_id);
+    // Cross-player WR picks: if owner was wrong/stale, still find the card in either WR.
+    if (!full && c?.instance_id) {
+      for (const pid of ['p1', 'p2']) {
+        const hit = (s?.players?.[pid]?.waiting_room || []).find(x => x?.instance_id === c.instance_id);
+        if (hit) { full = hit; break; }
+      }
+    }
     // Never surface WR-pick options that are no longer in Waiting Room (deck refresh).
     if (!full) return null;
     const card = enrichCard({ ...c, ...full });

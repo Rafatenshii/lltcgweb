@@ -473,7 +473,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 $ownerP['waiting_room'][] = $replaced;
                 $state = resolveOnLeaveStageAbilities($state, $owner, $replaced);
             }
-            $played['active'] = true;
+            clearMemberWait($played);
             $played['entered_turn'] = intval($state['turn'] ?? 1);
             $ownerP['stage'][$slot] = $played;
             // Clear parent before On Enter so child prompts can open and the yes/no UI cannot reopen.
@@ -581,7 +581,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 $ownerP['waiting_room'][] = $replaced;
                 $state = resolveOnLeaveStageAbilities($state, $owner, $replaced);
             }
-            $played['active'] = true;
+            clearMemberWait($played);
             $played['entered_turn'] = $turn;
             $ownerP['stage'][$slot] = $played;
             // Clear parent before On Enter so child prompts can open and the yes/no UI cannot reopen.
@@ -3480,7 +3480,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
             $targetP = $state['players'][$targetPid];
             $lives = array_values(array_filter(
                 $targetP['waiting_room'],
-                fn($c) => ($c['card_type'] ?? '') === 'ライブ'
+                fn($c) => isLiveTypeCard($c)
             ));
             if (empty($lives)) throw new Exception('No Live card in that player\'s Waiting Room');
             $state['pending_prompt'] = [
@@ -3757,7 +3757,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
             break;
         }
         if (!$played) throw new Exception('Card not in Waiting Room');
-        $played['active'] = true;
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $ownerP['stage'][$targetSlot] = $played;
         unset($state['pending_prompt']);
@@ -4019,7 +4019,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 }
             }
             if (!$played) throw new Exception('Choose a valid Member from Waiting Room');
-            $played['active'] = true;
+            clearMemberWait($played);
             $played['entered_turn'] = intval($state['turn'] ?? 1);
             $played['entered_from_wr'] = true;
             unset($played['entered_from_hand'], $played['entered_via_baton']);

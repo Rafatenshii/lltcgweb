@@ -79,11 +79,11 @@ function tryResolveAbilityEffectSwitchPlayerChoice(
             $opp = ($pid === 'p1') ? 'p2' : 'p1';
             $selfLives = array_values(array_filter(
                 $p['waiting_room'],
-                fn($c) => ($c['card_type'] ?? '') === 'ライブ'
+                fn($c) => isLiveTypeCard($c)
             ));
             $oppLives = array_values(array_filter(
                 $state['players'][$opp]['waiting_room'],
-                fn($c) => ($c['card_type'] ?? '') === 'ライブ'
+                fn($c) => isLiveTypeCard($c)
             ));
             if (empty($selfLives) && empty($oppLives)) break;
             $choices = [];

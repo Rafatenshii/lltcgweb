@@ -3378,7 +3378,7 @@ function putHandLiveOnDeckBottom(array &$p, string $instanceId): ?array {
 
 function putWrLiveOnDeckBottom(array &$p, string $instanceId): ?array {
     foreach ($p['waiting_room'] as $i => $c) {
-        if (($c['instance_id'] ?? '') === $instanceId && ($c['card_type'] ?? '') === 'ライブ') {
+        if (($c['instance_id'] ?? '') === $instanceId && isLiveTypeCard($c)) {
             $card = $c;
             array_splice($p['waiting_room'], $i, 1);
             $p['main_deck'][] = $card;

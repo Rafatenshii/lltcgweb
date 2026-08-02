@@ -360,14 +360,23 @@ global.openWrToHandPick = function openWrToHandPick(pr, opts = {}) {
   }
   const s = opts.state || G.gameState;
   const myId = opts.myId || G.playerId;
+  const wrOwner = (typeof wrPickOwnerId === 'function')
+    ? wrPickOwnerId(pr, myId)
+    : ((pr?.target === 'p1' || pr?.target === 'p2') ? pr.target : myId);
   const cfg = wrPickCfgFromPrompt(pr);
   // Live WR only — never fall back to stale prompt.candidates after a deck refresh.
+  // wrOwner follows pr.target so opponent-WR skills (Hanamaru PL!S-bp3-007) resolve.
   let cards = wrToHandPickCards(pr, s, myId).filter(c => cardMatchesWrPickClient(c, cfg));
   if (!cards.length && (pr.candidates || []).length) {
     // Server listed candidates that match cfg but client filter rejected (punctuation).
-    // Still require the card to be in the current Waiting Room.
-    const wrIds = new Set((s?.players?.[myId]?.waiting_room || []).map(c => c.instance_id).filter(Boolean));
+    // Still require the card to be in the targeted player's Waiting Room.
+    const wrIds = new Set((s?.players?.[wrOwner]?.waiting_room || []).map(c => c.instance_id).filter(Boolean));
     cards = wrToHandPickCards(pr, s, myId).filter(c => wrIds.has(c.instance_id));
+    if (!cards.length) {
+      // Last resort: show server candidates (avoids softlock when WR owner was wrong).
+      cards = (pr.candidates || []).map(c => (typeof enrichCard === 'function' ? enrichCard(c) : c))
+        .filter(c => c?.instance_id);
+    }
   }
   if (!cards.length) {
     toast(pt('prompt.wrNoMatch') || pt('prompt.wrEmpty'), 3200);
@@ -2619,7 +2628,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='player_choice_wr_live_deck_bottom_draw'&&pr.step==='pick_wr_live'&&pr.responder===myId){
     ovl.classList.remove('open');
-    openWrLivePick(pr);
+    openWrLivePick(pr, { state: s, myId });
     return;
   }
   if(pr?.type==='wait_swap_wr_member_center'&&pr.responder===myId){
