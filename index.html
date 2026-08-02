@@ -2153,7 +2153,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=94"></script>
+<script src="i18n.js?v=95"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -9877,7 +9877,7 @@ function decklogObtainLabel(obtain) {
     return t('deck.decklogObtainStarter', { pack }) || `Starter deck: ${pack}`;
   }
   if (kind === 'pr') {
-    return t('deck.decklogObtainPr') || 'PR Card Pack, events, or Sticker Shop';
+    return t('deck.decklogObtainPr') || 'PR Card Pack or Sticker Shop';
   }
   if (kind === 'collection') {
     return t('deck.decklogObtainCollection', { pack }) || `Collection: ${pack}`;
