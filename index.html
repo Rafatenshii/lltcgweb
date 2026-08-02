@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=3">
+<link rel="stylesheet" href="client/css/shell-all.css?v=4">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1039,6 +1039,24 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       <button class="btn-ghost" type="button" id="btn-decklog-missing-cancel" data-i18n="common.cancel">Cancel</button>
       <button class="btn-out" type="button" id="btn-decklog-missing-auto" data-i18n="deck.decklogAutoSubs">Auto-pick substitutes</button>
       <button class="btn-grad" type="button" id="btn-decklog-missing-apply" data-i18n="deck.decklogApplySubs">Replace &amp; add deck</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-decklog-sub-pick" aria-modal="true" aria-labelledby="decklog-sub-pick-title">
+  <div class="mbox decklog-sub-pick-mbox">
+    <button class="mcls" type="button" id="btn-decklog-sub-pick-close" aria-label="Close">✕</button>
+    <h2 id="decklog-sub-pick-title" data-i18n="deck.decklogSubPickTitle">Choose substitute</h2>
+    <p class="decklog-sub-pick-lead" id="decklog-sub-pick-lead" data-i18n="deck.decklogSubPickLead">Use search, sort, and filters — tap a card you own to use it as a substitute.</p>
+    <div id="decklog-sub-pick-search-host" class="decklog-sub-pick-search-host"></div>
+    <div id="decklog-sub-pick-filter-host" class="decklog-sub-pick-filter-host"></div>
+    <div class="decklog-sub-pick-pool-chrome">
+      <div id="decklog-sub-pick-sort-host" class="decklog-sub-pick-sort-host"></div>
+      <p class="deck-section-stats" id="decklog-sub-pick-stats"></p>
+    </div>
+    <div id="decklog-sub-pick-pool-host" class="decklog-sub-pick-pool-host"></div>
+    <div class="decklog-missing-actions">
+      <button class="btn-ghost" type="button" id="btn-decklog-sub-pick-cancel" data-i18n="common.cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -2113,7 +2131,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=90"></script>
+<script src="i18n.js?v=91"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -8021,8 +8039,11 @@ function renderDeckBuilder(opts = {}) {
       const type = c0.card_type;
       if (type !== 'メンバー' && type !== 'ライブ' && type !== 'エネルギー') return;
       const inDeck = countInDeck(row.card_no);
-      const available = row.qty - inDeck;
+      const available = A.decklogSubPickFor
+        ? row.qty
+        : (row.qty - inDeck);
       if (available <= 0) return;
+      if (A.decklogSubPickFor && row.card_no === A.decklogSubPickFor) return;
       poolEntries.push({
         row,
         c0,
@@ -8038,9 +8059,11 @@ function renderDeckBuilder(opts = {}) {
       const batchQty = A.deckSealBatchMode ? Number(A.deckSealBatch?.[cardNo] || 0) : 0;
       const convertible = A.deckSealBatchMode && clientCardConvertibleToSeal(entry.c0)
         && spareConvertibleCopies(cardNo) > 0;
-      const onTap = A.deckSealBatchMode
-        ? () => toggleDeckSealBatchCard(cardNo)
-        : () => addCardToDeck(cardNo, entry.type);
+      const onTap = A.decklogSubPickFor
+        ? () => addCardToDeck(cardNo, entry.type)
+        : (A.deckSealBatchMode
+          ? () => toggleDeckSealBatchCard(cardNo)
+          : () => addCardToDeck(cardNo, entry.type));
       appendDeckCardTile(pool, entry.c0, entry.available, onTap, {
         sealBatchQty: batchQty,
         sealBatchDim: !!(A.deckSealBatchMode && !convertible && !batchQty),
@@ -8060,6 +8083,11 @@ function renderDeckBuilder(opts = {}) {
           ? 'No extra copies — open boosters to add more cards to swap in.'
           : 'Open boosters to grow your collection.');
       pool.appendChild(empty);
+    }
+    if (A.decklogSubPickFor) {
+      const statsOut = el('decklog-sub-pick-stats');
+      const stats = el('deck-collection-stats');
+      if (statsOut && stats) statsOut.textContent = stats.textContent;
     }
     if (savedScroll) restoreDeckBuilderScroll(savedScroll);
   } else if (savedScroll) {
@@ -8084,6 +8112,10 @@ function selectDeckSlot(slot) {
 }
 
 function addCardToDeck(cardNo, type) {
+  if (A.decklogSubPickFor) {
+    assignDecklogSubstitute(A.decklogSubPickFor, cardNo);
+    return;
+  }
   const c = deckCounts();
   const haveMain = A.deckMain.filter(n => n === cardNo).length;
   const haveEnergy = A.deckEnergy.filter(n => n === cardNo).length;
@@ -9765,6 +9797,8 @@ async function importExperimentDeckFromDecklog(raw) {
 
 /** Pending account deck log import awaiting substitute choices. */
 let _decklogMissingPending = null;
+/** Markers used to park deck-builder collection UI into the substitute picker. */
+let _decklogSubPark = null;
 
 function decklogObtainLabel(obtain) {
   const packRaw = obtain?.booster_pack || '';
@@ -9785,6 +9819,13 @@ function decklogObtainLabel(obtain) {
   return pack || (t('deck.decklogObtainUnknown') || 'See card list / Sticker Shop');
 }
 
+function decklogCardDisplayName(rowOrCard) {
+  const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
+  const card = rowOrCard?.card_no ? (G.allCards?.[rowOrCard.card_no] || rowOrCard) : rowOrCard;
+  if (!card) return rowOrCard?.card_no || '';
+  return (loc === 'ja' ? (card.name || card.name_en) : (card.name_en || card.name)) || card.card_no || '';
+}
+
 function applyAccountDecklogToBuilder(data) {
   A.deckMain = [...(data.main_deck || [])];
   A.deckEnergy = [...(data.energy_deck || [])];
@@ -9793,34 +9834,125 @@ function applyAccountDecklogToBuilder(data) {
   syncDeckBuilderChrome();
 }
 
+function parkDeckNode(node, host) {
+  if (!node || !host) return null;
+  const marker = document.createComment('decklog-park');
+  node.parentNode.insertBefore(marker, node);
+  host.appendChild(node);
+  return { node, marker };
+}
+
+function unparkDeckNode(entry) {
+  if (!entry?.node || !entry?.marker?.parentNode) return;
+  entry.marker.parentNode.insertBefore(entry.node, entry.marker);
+  entry.marker.remove();
+}
+
 function closeDecklogMissingModal() {
+  closeDecklogSubPick({ reopenMissing: false });
   _decklogMissingPending = null;
+  A.decklogSubPickFor = '';
   closeM('modal-decklog-missing');
   const err = el('decklog-missing-err');
   if (err) { err.hidden = true; err.textContent = ''; }
 }
 
 function collectDecklogMissingSubstitutions() {
-  const map = {};
-  document.querySelectorAll('#decklog-missing-list .decklog-missing-row').forEach(row => {
-    const from = row.getAttribute('data-card-no') || '';
-    const sel = row.querySelector('select.decklog-sub-select');
-    const to = sel?.value || '';
-    if (from && to) map[from] = to;
-  });
-  return map;
+  return { ...(_decklogMissingPending?.substitutions || {}) };
+}
+
+function decklogTypeFilterForCard(cardType) {
+  if (cardType === 'メンバー') return 'member';
+  if (cardType === 'ライブ') return 'live';
+  if (cardType === 'エネルギー') return 'energy';
+  return '';
+}
+
+function openDecklogSubPick(forCardNo) {
+  if (!_decklogMissingPending || !forCardNo) return;
+  const row = (_decklogMissingPending.missing || []).find(m => m.card_no === forCardNo);
+  A.decklogSubPickFor = forCardNo;
+  const title = el('decklog-sub-pick-title');
+  const lead = el('decklog-sub-pick-lead');
+  const name = decklogCardDisplayName(row || { card_no: forCardNo });
+  if (title) {
+    title.textContent = t('deck.decklogSubPickTitleFor', { name })
+      || (`Choose substitute for ${name}`);
+  }
+  if (lead) {
+    lead.textContent = t('deck.decklogSubPickLead')
+      || 'Use search, sort, and filters — tap a card you own to use it as a substitute.';
+  }
+
+  const f = deckPoolFilterState();
+  const typeF = decklogTypeFilterForCard(row?.card_type || G.allCards?.[forCardNo]?.card_type || '');
+  if (typeF) f.type = typeF;
+
+  if (!_decklogSubPark) {
+    _decklogSubPark = {
+      search: parkDeckNode(el('deck-pool-search-wrap'), el('decklog-sub-pick-search-host')),
+      filter: parkDeckNode(el('deck-filter-panel'), el('decklog-sub-pick-filter-host')),
+      sort: parkDeckNode(el('deck-collection-sort-wrap'), el('decklog-sub-pick-sort-host')),
+      pool: parkDeckNode(el('deck-pool'), el('decklog-sub-pick-pool-host')),
+    };
+  }
+  ensureDeckFilterPanel();
+  syncDeckFilterUi();
+  closeM('modal-decklog-missing');
+  openM('modal-decklog-sub-pick');
+  renderDeckBuilder({ deferPool: false });
+  const stats = el('deck-collection-stats');
+  const statsOut = el('decklog-sub-pick-stats');
+  if (stats && statsOut) statsOut.textContent = stats.textContent;
+}
+
+function closeDecklogSubPick({ reopenMissing = true } = {}) {
+  const wasOpen = !!A.decklogSubPickFor || !!_decklogSubPark;
+  A.decklogSubPickFor = '';
+  if (_decklogSubPark) {
+    unparkDeckNode(_decklogSubPark.pool);
+    unparkDeckNode(_decklogSubPark.sort);
+    unparkDeckNode(_decklogSubPark.filter);
+    unparkDeckNode(_decklogSubPark.search);
+    _decklogSubPark = null;
+  }
+  closeM('modal-decklog-sub-pick');
+  if (wasOpen) {
+    renderDeckBuilder({ deferPool: true });
+  }
+  if (reopenMissing && _decklogMissingPending) {
+    renderDecklogMissingModal(_decklogMissingPending);
+  }
+}
+
+function assignDecklogSubstitute(fromCardNo, toCardNo) {
+  if (!_decklogMissingPending || !fromCardNo || !toCardNo || fromCardNo === toCardNo) return;
+  if (!_decklogMissingPending.substitutions) _decklogMissingPending.substitutions = {};
+  _decklogMissingPending.substitutions[fromCardNo] = toCardNo;
+  closeDecklogSubPick({ reopenMissing: true });
 }
 
 function renderDecklogMissingModal(payload) {
-  _decklogMissingPending = payload;
+  if (!_decklogMissingPending || _decklogMissingPending !== payload) {
+    _decklogMissingPending = {
+      ...payload,
+      substitutions: { ...(payload.substitutions || _decklogMissingPending?.substitutions || {}) },
+    };
+  } else {
+    _decklogMissingPending = {
+      ..._decklogMissingPending,
+      ...payload,
+      substitutions: { ...(_decklogMissingPending.substitutions || {}), ...(payload.substitutions || {}) },
+    };
+  }
   const list = el('decklog-missing-list');
   const err = el('decklog-missing-err');
   if (err) { err.hidden = true; err.textContent = ''; }
   if (!list) return;
-  const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
   list.innerHTML = '';
-  (payload.missing || []).forEach(row => {
-    const name = (loc === 'ja' ? row.name : (row.name_en || row.name)) || row.card_no;
+  const subs = _decklogMissingPending.substitutions || {};
+  (_decklogMissingPending.missing || []).forEach(row => {
+    const name = decklogCardDisplayName(row);
     const div = document.createElement('div');
     div.className = 'decklog-missing-row';
     div.setAttribute('data-card-no', row.card_no);
@@ -9842,8 +9974,7 @@ function renderDecklogMissingModal(payload) {
     meta.textContent = (t('deck.decklogNeedHave', {
       need: row.need,
       have: row.have,
-      short: row.shortfall,
-    }) || `Need ${row.need} · own ${row.have} · missing ${row.shortfall}`)
+    }) || `Need ${row.need} · Own ${row.have}`)
       + ' · ' + row.card_no;
     const obtain = document.createElement('div');
     obtain.className = 'decklog-missing-obtain';
@@ -9851,26 +9982,22 @@ function renderDecklogMissingModal(payload) {
     body.append(title, meta, obtain);
     const subWrap = document.createElement('div');
     subWrap.className = 'decklog-missing-sub';
-    const lab = document.createElement('label');
-    lab.textContent = t('deck.decklogSubstitute') || 'Substitute';
-    const sel = document.createElement('select');
-    sel.className = 'decklog-sub-select';
-    const opt0 = document.createElement('option');
-    opt0.value = '';
-    opt0.textContent = t('deck.decklogSubNone') || '— Choose —';
-    sel.appendChild(opt0);
-    (row.substitutes || []).forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.card_no;
-      const sName = (loc === 'ja' ? s.name : (s.name_en || s.name)) || s.card_no;
-      opt.textContent = `${sName} (${s.have})`;
-      sel.appendChild(opt);
-    });
-    if (!(row.substitutes || []).length) {
-      sel.disabled = true;
-      opt0.textContent = t('deck.decklogSubNoneAvailable') || 'No substitutes owned';
-    }
-    subWrap.append(lab, sel);
+    const picked = subs[row.card_no] || '';
+    const pickedCard = picked ? G.allCards?.[picked] : null;
+    const status = document.createElement('div');
+    status.className = 'decklog-missing-sub-status';
+    status.textContent = picked
+      ? (t('deck.decklogSubPicked', { name: decklogCardDisplayName(pickedCard || { card_no: picked }) })
+        || (`Substitute: ${decklogCardDisplayName(pickedCard || { card_no: picked })}`))
+      : (t('deck.decklogSubNone') || 'No substitute chosen');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-out decklog-sub-choose';
+    btn.textContent = picked
+      ? (t('deck.decklogChangeSub') || 'Change substitute')
+      : (t('deck.decklogChooseSub') || 'Choose substitute');
+    btn.onclick = () => openDecklogSubPick(row.card_no);
+    subWrap.append(status, btn);
     div.append(img, body, subWrap);
     list.appendChild(div);
   });
@@ -9878,12 +10005,14 @@ function renderDecklogMissingModal(payload) {
 }
 
 function autoPickDecklogSubstitutes() {
-  document.querySelectorAll('#decklog-missing-list .decklog-missing-row').forEach(row => {
-    const sel = row.querySelector('select.decklog-sub-select');
-    if (!sel || sel.disabled) return;
-    const first = [...sel.options].find(o => o.value);
-    if (first) sel.value = first.value;
+  if (!_decklogMissingPending) return;
+  if (!_decklogMissingPending.substitutions) _decklogMissingPending.substitutions = {};
+  (_decklogMissingPending.missing || []).forEach(row => {
+    if (_decklogMissingPending.substitutions[row.card_no]) return;
+    const first = (row.substitutes || [])[0];
+    if (first?.card_no) _decklogMissingPending.substitutions[row.card_no] = first.card_no;
   });
+  renderDecklogMissingModal(_decklogMissingPending);
 }
 
 async function applyDecklogMissingSubstitutes() {
@@ -13380,6 +13509,8 @@ async function bootApp() {
   on('btn-decklog-missing-close', 'click', closeDecklogMissingModal);
   on('btn-decklog-missing-auto', 'click', autoPickDecklogSubstitutes);
   on('btn-decklog-missing-apply', 'click', () => { applyDecklogMissingSubstitutes(); });
+  on('btn-decklog-sub-pick-cancel', 'click', () => closeDecklogSubPick({ reopenMissing: true }));
+  on('btn-decklog-sub-pick-close', 'click', () => closeDecklogSubPick({ reopenMissing: true }));
   on('btn-experiment-copy-pwd', 'click', async () => {
     const pwd = A.experimentPassword || el('experiment-pwd-display')?.textContent;
     if (!pwd) return;
