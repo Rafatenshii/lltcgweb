@@ -4357,6 +4357,18 @@ body.login-bonus-overlay-open{overflow:hidden}
   box-shadow:0 18px 52px rgba(0,0,0,.45),0 0 32px rgba(52,163,243,.24),inset 0 1px 0 rgba(255,255,255,.16)}
 #overlay-login-bonus .login-bonus-lead{
   text-align:left;margin:0 0 14px;font-size:13px;line-height:1.45;color:rgba(255,255,255,.88)}
+#overlay-login-bonus .login-bonus-title{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  flex:1 1 auto;min-width:0}
+#overlay-login-bonus .login-bonus-kanon{
+  flex:0 0 auto;width:44px;height:48px;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.35));
+  pointer-events:none;user-select:none}
+#overlay-login-bonus .login-bonus-title-text{
+  min-width:0;overflow-wrap:break-word;text-wrap:balance}
+@media (max-width:560px){
+  #overlay-login-bonus .login-bonus-kanon{width:36px;height:40px}
+}
 #login-bonus-grid{
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:100%}
 .login-bonus-cell{
@@ -8536,7 +8548,10 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
     <div class="panel account-panel">
       <div class="account-screen-head">
         <button type="button" class="btn-ghost" id="btn-login-bonus-close" data-i18n="news.close">Close</button>
-        <h2 id="login-bonus-title" data-i18n="loginBonus.title">Login Bonus</h2>
+        <h2 id="login-bonus-title" class="login-bonus-title">
+          <img class="login-bonus-kanon" src="assets/kanon.png" alt="" aria-hidden="true" width="44" height="48">
+          <span class="login-bonus-title-text" data-i18n="loginBonus.title">Login Bonus</span>
+        </h2>
       </div>
       <p class="account-lead login-bonus-lead" id="login-bonus-lead" data-i18n="loginBonus.lead">Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.</p>
       <div id="login-bonus-grid" class="login-bonus-grid" aria-live="polite"></div>
