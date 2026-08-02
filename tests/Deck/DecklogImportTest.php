@@ -20,10 +20,10 @@ final class DecklogImportTest extends TestCase
     {
         $this->assertSame(
             '2X7YN',
-            tcgNormalizeDecklogCode('https://decklog.bushiroad.com/view/2X7YN')
+            tcgNormalizeDecklogCode('https://decklog.example.com/view/2X7YN')
         );
         $this->assertSame('2X7YN', tcgNormalizeDecklogCode(' 2x7yn '));
-        $this->assertSame('2X7YN', tcgNormalizeDecklogCode('https://decklog.bushiroad.com/view/2x7yn?lang=en'));
+        $this->assertSame('2X7YN', tcgNormalizeDecklogCode('https://decklog.example.com/view/2x7yn?lang=en'));
     }
 
     public function testResolveFullwidthPlusCardNo(): void

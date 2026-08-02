@@ -917,12 +917,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <div class="deck-slot-row" id="deck-slots"></div>
         </div>
         <div class="field deck-builder-meta__account-decklog" id="deck-account-decklog-wrap" hidden>
-          <label for="inp-account-decklog" data-i18n="deck.decklogCode">Deck Log code</label>
+          <label for="inp-account-decklog" data-i18n="deck.decklogCode">deck log code</label>
           <div class="experiment-pwd-row">
             <input type="text" id="inp-account-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
             <button class="btn-out" id="btn-account-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
           </div>
-          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a Bushiroad Deck Log code or view URL — loads into this preset if you own the cards.</p>
+          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a deck log code or view URL — loads into this preset if you own the cards.</p>
         </div>
         <div class="field deck-builder-meta__experiment" id="deck-experiment-pwd-wrap" hidden>
           <label for="inp-experiment-load-pwd" data-i18n="deck.deckPassword">Deck password</label>
@@ -930,12 +930,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <input type="text" id="inp-experiment-load-pwd" placeholder="Enter password to load" maxlength="16" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.deckPasswordPlaceholder">
             <button class="btn-out" id="btn-experiment-load-pwd" type="button" data-i18n="deck.load">Load</button>
           </div>
-          <label for="inp-experiment-decklog" data-i18n="deck.decklogCode" style="margin-top:10px">Deck Log code</label>
+          <label for="inp-experiment-decklog" data-i18n="deck.decklogCode" style="margin-top:10px">deck log code</label>
           <div class="experiment-pwd-row">
             <input type="text" id="inp-experiment-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
             <button class="btn-out" id="btn-experiment-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
           </div>
-          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogHint">Paste a Bushiroad Deck Log code or view URL — imports into this builder and saves an experiment password.</p>
+          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogHint">Paste a deck log code or view URL — imports into this builder and saves an experiment password.</p>
           <div class="experiment-pwd-active" id="experiment-pwd-active" hidden>
             <span data-i18n="deck.savedPassword">Saved password:</span>
             <code id="experiment-pwd-display"></code>
@@ -2111,7 +2111,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=89"></script>
+<script src="i18n.js?v=90"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -9737,12 +9737,12 @@ async function loadExperimentDeckByPassword(rawPwd) {
 async function importExperimentDeckFromDecklog(raw) {
   const code = String(raw || '').trim();
   if (!code) {
-    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a Deck Log code or URL.';
+    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a deck log code or URL.';
     return;
   }
   const btn = el('btn-experiment-decklog-import');
   const prev = btn?.textContent;
-  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from Deck Log…';
+  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from deck log…';
   if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
   try {
     const data = await apiExperimentCall('experiment_decklog_import', { code, save: true });
@@ -9761,7 +9761,7 @@ async function importExperimentDeckFromDecklog(raw) {
   }
 }
 
-/** Pending account Deck Log import awaiting substitute choices. */
+/** Pending account deck log import awaiting substitute choices. */
 let _decklogMissingPending = null;
 
 function decklogObtainLabel(obtain) {
@@ -9930,16 +9930,16 @@ async function applyDecklogMissingSubstitutes() {
 async function importAccountDeckFromDecklog(raw) {
   const code = String(raw || '').trim();
   if (!code) {
-    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a Deck Log code or URL.';
+    el('deck-err').textContent = t('deck.decklogNeedCode') || 'Enter a deck log code or URL.';
     return;
   }
   if (!isSignedInAccount()) {
-    el('deck-err').textContent = t('deck.decklogNeedSignIn') || 'Sign in to import a Deck Log into your collection deck.';
+    el('deck-err').textContent = t('deck.decklogNeedSignIn') || 'Sign in to import a deck log into your collection deck.';
     return;
   }
   const btn = el('btn-account-decklog-import');
   const prev = btn?.textContent;
-  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from Deck Log…';
+  el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from deck log…';
   if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
   try {
     const data = await accountPost('deck_import_decklog', { code });

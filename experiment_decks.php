@@ -212,7 +212,7 @@ function apiExperimentDeckLoad(array $body): array {
 }
 
 /**
- * Import a Bushiroad Deck Log recipe into Deck Experiment lists.
+ * Import a deck log recipe into Deck Experiment lists.
  * Optionally persists as an experiment password (default on).
  */
 function apiExperimentDecklogImport(array $body): array {
@@ -228,7 +228,7 @@ function apiExperimentDecklogImport(array $body): array {
     $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
     $validated = validateExperimentDeckPayload($mapped['main_deck'], $mapped['energy_deck'], $cards);
     $name = normalizeExperimentDeckName(
-        $mapped['title'] !== '' ? $mapped['title'] : ('Deck Log ' . ($mapped['deck_id'] ?: $code))
+        $mapped['title'] !== '' ? $mapped['title'] : ('deck log ' . ($mapped['deck_id'] ?: $code))
     );
     $save = !isset($body['save']) || !in_array(
         strtolower((string)$body['save']),

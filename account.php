@@ -684,7 +684,7 @@ function tcgApiDeckResetStarter(array $body): array {
 }
 
 /**
- * Import a Bushiroad Deck Log recipe into the account deck builder.
+ * Import a deck log recipe into the account deck builder.
  * Returns complete lists when the collection covers the recipe; otherwise
  * missing-card details with obtain hints and substitute suggestions.
  *
@@ -707,7 +707,7 @@ function tcgApiDeckImportDecklog(array $body): array {
     $energy = $mapped['energy_deck'];
     $name = trim($mapped['title']) !== ''
         ? $mapped['title']
-        : ('Deck Log ' . ($mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code));
+        : ('deck log ' . ($mapped['deck_id'] !== '' ? $mapped['deck_id'] : $code));
 
     $rawSubs = $body['substitutions'] ?? [];
     $substitutions = [];
