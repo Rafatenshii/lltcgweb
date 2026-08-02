@@ -4881,37 +4881,16 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
   box-shadow:0 0 10px rgba(255,107,168,.45);
   transition:width .35s ease
 }
-#screen-card-list .card-list-scroll{
-  max-height:min(72vh,760px);overflow-y:auto;overflow-x:hidden;
-  border:1px solid rgba(255,255,255,.14);border-radius:14px;
-  background:
-    url("bg/ptn.png") top center/220px 220px repeat,
-    linear-gradient(180deg,rgba(12,22,42,.55),rgba(8,14,28,.72));
-  padding:6px 12px 16px;-webkit-overflow-scrolling:touch;
-  scrollbar-gutter:stable;scrollbar-width:thin;
-  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.1)
-}
-#screen-card-list .card-list-scroll::-webkit-scrollbar{width:6px}
-#screen-card-list .card-list-scroll::-webkit-scrollbar-track{
-  background:rgba(255,255,255,.1);border-radius:999px;margin:8px 0
-}
-#screen-card-list .card-list-scroll::-webkit-scrollbar-thumb{
-  background:linear-gradient(180deg,var(--pink-l),var(--pink));
-  border-radius:999px;border:1px solid rgba(255,255,255,.28);
-  box-shadow:0 0 8px rgba(255,107,168,.28)
-}
-#screen-card-list .card-list-scroll::-webkit-scrollbar-thumb:hover{
-  background:linear-gradient(180deg,#fff,var(--pink-l))
-}
-#screen-card-list .card-list-section{margin-top:16px}
-#screen-card-list .card-list-section:first-child{margin-top:8px}
+#screen-card-list .card-list-body{padding:2px 0 8px}
+#screen-card-list .card-list-section{margin-top:18px}
+#screen-card-list .card-list-section:first-child{margin-top:4px}
 #screen-card-list .card-list-section-head{
   position:sticky;top:0;z-index:2;
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  margin:0 0 12px;padding:10px 4px 10px;
-  background:linear-gradient(180deg,rgba(10,18,34,.97) 40%,rgba(10,18,34,.82) 100%);
-  border-bottom:1px solid rgba(255,179,209,.22);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
+  margin:0 0 12px;padding:10px 2px 10px;
+  background:linear-gradient(180deg,rgba(50,157,255,.96) 0%,rgba(50,157,255,.88) 55%,rgba(50,157,255,.55) 100%);
+  border-bottom:1px solid rgba(255,179,209,.28);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
 }
 #screen-card-list .card-list-section-head h3{
   margin:0;flex:1 1 auto;min-width:0;
@@ -7679,9 +7658,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
         <span class="card-list-progress-value" id="card-list-owned-value">—/—</span>
         <div class="card-list-progress-bar" aria-hidden="true"><i id="card-list-owned-bar"></i></div>
       </div>
-      <div class="card-list-scroll" id="card-list-scroll">
-        <div id="card-list-body"></div>
-      </div>
+      <div class="card-list-body" id="card-list-body"></div>
       <p class="lerr" id="card-list-err"></p>
     </div>
   </div>
@@ -12347,7 +12324,7 @@ async function openCardListScreen() {
   }
   renderCardList();
   showScr('card-list');
-  el('card-list-scroll')?.scrollTo(0, 0);
+  el('screen-card-list')?.scrollTo(0, 0);
 }
 
 function syncBoosterOpenButton(remaining, hasBox) {
