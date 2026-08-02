@@ -4752,6 +4752,9 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-row--deck > .llc-menu-item--wide{flex:3 1 0}
 .llc-menu-row--deck > .llc-menu-item--narrow{flex:1 1 0}
 .llc-menu-row--deck > .llc-menu-item--narrow .llc-menu-item-sub{display:none}
+.llc-menu-row--collect > .llc-menu-item--wide{flex:4 1 0}
+.llc-menu-row--collect > .llc-menu-item--narrow{flex:1 1 0}
+.llc-menu-row--collect > .llc-menu-item--narrow .llc-menu-item-sub{display:none}
 .llc-menu-row .llc-menu-item-title{font-size:15px;letter-spacing:.04em}
 .llc-menu-row .llc-menu-item-sub{font-size:11px;margin-left:16px;line-height:1.35}
 @media (max-width: 420px) {
@@ -4847,6 +4850,38 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
 .starter-opt .starter-name{font-size:13px;font-weight:700;color:#fff;margin-top:8px;line-height:1.35;letter-spacing:.04em}
 .starter-opt.sel{border-color:#fff;box-shadow:0 0 0 2px rgba(186,228,255,.55),0 0 18px rgba(186,228,255,.25)}
 .account-shell.booster-shell{max-width:min(1200px,98vw)}
+.account-shell.card-list-shell{max-width:min(1100px,98vw)}
+#screen-card-list .card-list-owned-stat{
+  margin:0 0 12px;font-size:15px;font-weight:700;letter-spacing:.02em;color:rgba(255,255,255,.88)
+}
+#screen-card-list .card-list-scroll{
+  max-height:min(72vh,760px);overflow-y:auto;overflow-x:hidden;
+  border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(0,0,0,.18);
+  padding:0 10px 14px;-webkit-overflow-scrolling:touch
+}
+#screen-card-list .card-list-section{margin-top:14px}
+#screen-card-list .card-list-section-head{
+  position:sticky;top:0;z-index:2;margin:0 0 10px;padding:10px 8px 8px;
+  font-size:14px;font-weight:800;letter-spacing:.03em;color:#fff;
+  background:linear-gradient(180deg,rgba(18,14,28,.98) 55%,rgba(18,14,28,.82) 100%);
+  border-bottom:1px solid rgba(255,255,255,.1)
+}
+#screen-card-list .card-list-section-meta{
+  margin-left:8px;font-size:12px;font-weight:600;color:rgba(255,255,255,.55)
+}
+#screen-card-list .card-list-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px
+}
+#screen-card-list .deck-card-tile{cursor:pointer}
+#screen-card-list .deck-card-tile.card-list-unowned{
+  opacity:.4;filter:grayscale(.45) brightness(.7)
+}
+#screen-card-list .deck-card-tile.card-list-unowned:hover{
+  opacity:.55;filter:grayscale(.25) brightness(.82)
+}
+@media (max-width:640px){
+  #screen-card-list .card-list-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+}
 .box-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
 .booster-open-actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .booster-open-actions .btn-grad:disabled,
@@ -7299,12 +7334,26 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
       </div>
       <div class="hub-stat" id="hub-rank"></div>
       <div class="llc-menu-list">
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-booster" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.booster.title">Open Boosters</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.booster.sub">Open card booster packs</span>
-          </span>
-        </button>
+        <div class="llc-menu-row llc-menu-row--collect">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide" id="btn-hub-booster" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.booster.title">Open Boosters</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.booster.sub">Open card booster packs</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-sticker" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Shop</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-card-list" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.cardList.title">Card List</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.cardList.sub">Browse every card</span>
+            </span>
+          </button>
+        </div>
         <div class="llc-menu-row">
           <button class="llc-menu-item llc-menu-hover" id="btn-hub-ranked" type="button">
             <span class="llc-menu-item-body">
@@ -7339,12 +7388,6 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
             </span>
           </button>
         </div>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-sticker" type="button">
-          <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Shop</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
-          </span>
-        </button>
         <button class="llc-menu-item" id="btn-hub-tournament" type="button" disabled aria-disabled="true">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="hub.tournament.title">Tournament Mode</span>
@@ -7537,6 +7580,30 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
         <div class="sticker-cards-grid" id="sticker-cards-grid"></div>
       </div>
       <p class="lerr" id="sticker-err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CARD LIST ══ -->
+<div id="screen-card-list" class="screen llc-menu-screen" hidden aria-hidden="true">
+  <div class="account-shell card-list-shell wide">
+    <div class="logo">
+      <img class="logo-img" src="tcglogo.png" alt="">
+      <div class="logo-foot">
+        <span class="logo-version">v0.1.3</span>
+        <p class="logo-tagline" data-i18n="tagline">The Unofficial Web Player</p>
+      </div>
+    </div>
+    <div class="panel account-panel">
+      <div class="account-screen-head">
+        <button class="btn-ghost" id="btn-card-list-back" type="button" data-i18n="cardList.backHub">← Hub</button>
+        <h2 data-i18n="cardList.title">Card List</h2>
+      </div>
+      <p class="card-list-owned-stat" id="card-list-owned-stat">—/—</p>
+      <div class="card-list-scroll" id="card-list-scroll">
+        <div id="card-list-body"></div>
+      </div>
+      <p class="lerr" id="card-list-err"></p>
     </div>
   </div>
 </div>
@@ -8740,7 +8807,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
   </div>
 </div>
 
-<script src="i18n.js?v=81"></script>
+<script src="i18n.js?v=82"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=19"></script>
@@ -12012,6 +12079,189 @@ async function loadBoosterScreen(opts = {}) {
   });
   syncBoosterOpenButton(info.remaining ?? 0, !!A.boxPick);
   showScr('booster');
+}
+
+/** Chronological product release order (JP booster_pack labels). */
+const CARD_LIST_PACK_ORDER = [
+  'スタートデッキ ラブライブ！',
+  'スタートデッキ ラブライブ！サンシャイン!!',
+  'スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会',
+  'スタートデッキ ラブライブ！スーパースター!!',
+  'スタートデッキ ラブライブ！蓮ノ空女学院スクールアイドルクラブ',
+  'ブースターパック vol.1',
+  'プレミアムブースター ラブライブ！スーパースター!!',
+  'ブースターパック NEXT STEP',
+  'プレミアムブースター ラブライブ！サンシャイン!!',
+  'プレミアムブースター ラブライブ！',
+  'ブースターパック　夏、はじまる。',
+  'ブースターパック SAPPHIRE MOON',
+  'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会',
+  'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ',
+  'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ',
+  'スタートデッキ ラブライブ！スーパースター!! cheer',
+  'ブースターパック Anniversary 2026',
+  'ブースターパック Royal Holiday',
+  'プレミアムブースター ラブライブ！スーパースター!! DUO',
+  'PRカード',
+];
+
+const CARD_LIST_PACK_NAME_EN = {
+  'スタートデッキ ラブライブ！': "Start Deck — μ's",
+  'スタートデッキ ラブライブ！サンシャイン!!': 'Start Deck — Sunshine!!',
+  'スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会': 'Start Deck — Nijigasaki',
+  'スタートデッキ ラブライブ！スーパースター!!': 'Start Deck — Superstar!!',
+  'スタートデッキ ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Start Deck — Hasunosora',
+  'スタートデッキ ラブライブ！スーパースター!! cheer': 'Start Deck — Superstar!! cheer',
+  'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Collection Clear Pocket — Hasunosora',
+  'PRカード': 'PR Cards',
+};
+
+function isCatalogCardType(card) {
+  const type = card?.card_type;
+  return type === 'メンバー' || type === 'ライブ' || type === 'エネルギー';
+}
+
+function uniqueCatalogCardCount() {
+  let n = 0;
+  Object.values(G.allCards || {}).forEach(c => {
+    if (isCatalogCardType(c)) n++;
+  });
+  return n;
+}
+
+function uniqueOwnedCatalogCount() {
+  let n = 0;
+  Object.values(G.allCards || {}).forEach(c => {
+    if (!isCatalogCardType(c)) return;
+    if ((A.collectionMap?.[c.card_no] || 0) > 0) n++;
+  });
+  return n;
+}
+
+function cardListPackDisplayName(pack) {
+  const p = pack || '';
+  if (!p) return t('cardList.other') || 'Other';
+  const box = (A.boxes || []).find(b => b.filter === p);
+  const loc = (typeof getLocale === 'function' ? getLocale() : 'en') || 'en';
+  if (box) {
+    if (loc === 'ja') return box.name_jp || box.name_en || p;
+    return box.name_en || box.name_jp || p;
+  }
+  if (loc === 'ja') return p;
+  if (CARD_LIST_PACK_NAME_EN[p]) return CARD_LIST_PACK_NAME_EN[p];
+  if (p === 'PRカード') return t('cardList.prCards') || 'PR Cards';
+  return p;
+}
+
+function cardListPackSortKey(pack) {
+  const idx = CARD_LIST_PACK_ORDER.indexOf(pack);
+  return idx >= 0 ? idx : 1000;
+}
+
+function groupCatalogCardsByPack() {
+  const groups = new Map();
+  Object.values(G.allCards || {}).forEach(raw => {
+    const c = enrichCard(raw);
+    if (!c || !isCatalogCardType(c)) return;
+    const pack = c.booster_pack || '';
+    if (!groups.has(pack)) groups.set(pack, []);
+    groups.get(pack).push(c);
+  });
+  groups.forEach(list => {
+    list.sort((a, b) => String(a.card_no || '').localeCompare(String(b.card_no || ''), 'en'));
+  });
+  return [...groups.entries()].sort((a, b) => {
+    const ka = cardListPackSortKey(a[0]);
+    const kb = cardListPackSortKey(b[0]);
+    if (ka !== kb) return ka - kb;
+    return String(a[0]).localeCompare(String(b[0]), 'ja');
+  });
+}
+
+function appendCardListTile(parent, card) {
+  const c = enrichCard(card);
+  if (!c) return;
+  const ownedQty = Number(A.collectionMap?.[c.card_no] || 0);
+  const owned = ownedQty > 0;
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = 'deck-card-tile'
+    + (isLiveCard(c) ? ' deck-live-tile' : '')
+    + (owned ? '' : ' card-list-unowned');
+  tile.title = (cardLocaleName(c) || c.card_no)
+    + (owned ? (' ×' + ownedQty) : (' · ' + (t('cardList.notOwned') || 'Not owned')));
+  appendDeckTileFace(tile, c, { lazy: true });
+  if (c.rarity) {
+    const r = document.createElement('span');
+    r.className = 'deck-rarity';
+    r.textContent = c.rarity;
+    tile.appendChild(r);
+  }
+  if (ownedQty > 1) {
+    const q = document.createElement('span');
+    q.className = 'deck-qty';
+    q.textContent = '×' + ownedQty;
+    tile.appendChild(q);
+  }
+  tile.addEventListener('click', () => showCatalogCard(c));
+  parent.appendChild(tile);
+}
+
+function renderCardList() {
+  const body = el('card-list-body');
+  const stat = el('card-list-owned-stat');
+  if (!body) return;
+  body.replaceChildren();
+  const total = uniqueCatalogCardCount();
+  const owned = uniqueOwnedCatalogCount();
+  if (stat) {
+    stat.textContent = t('cardList.ownedProgress', { owned, total })
+      || (owned + '/' + total);
+  }
+  const groups = groupCatalogCardsByPack();
+  groups.forEach(([pack, cards]) => {
+    const section = document.createElement('section');
+    section.className = 'card-list-section';
+    const head = document.createElement('h3');
+    head.className = 'card-list-section-head';
+    const ownedInPack = cards.filter(c => (A.collectionMap?.[c.card_no] || 0) > 0).length;
+    head.appendChild(document.createTextNode(cardListPackDisplayName(pack)));
+    const meta = document.createElement('span');
+    meta.className = 'card-list-section-meta';
+    meta.textContent = ownedInPack + '/' + cards.length;
+    head.appendChild(meta);
+    section.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'card-list-grid';
+    cards.forEach(c => appendCardListTile(grid, c));
+    section.appendChild(grid);
+    body.appendChild(section);
+  });
+}
+
+async function openCardListScreen() {
+  const err = el('card-list-err');
+  if (err) err.textContent = '';
+  if (!Object.keys(G.allCards || {}).length) await loadCards();
+  if (!Object.keys(G.allCards || {}).length) {
+    if (err) err.textContent = t('toast.cardsLoadFailed') || 'Could not load cards.';
+    showScr('card-list');
+    return;
+  }
+  if (isSignedInAccount()) {
+    try {
+      await refreshCollection();
+    } catch (e) {}
+    try {
+      if (!A.boxes?.length) {
+        const bx = await accountGet('booster_boxes');
+        A.boxes = bx.boxes || [];
+      }
+    } catch (e) {}
+  }
+  renderCardList();
+  showScr('card-list');
+  el('card-list-scroll')?.scrollTo(0, 0);
 }
 
 function syncBoosterOpenButton(remaining, hasBox) {
@@ -19231,6 +19481,8 @@ async function bootApp() {
   on('btn-starter-confirm', 'click', confirmStarter);
   on('btn-hub-booster', 'click', loadBoosterScreen);
   on('btn-hub-sticker', 'click', loadStickerShopScreen);
+  on('btn-hub-card-list', 'click', () => { void openCardListScreen(); });
+  on('btn-card-list-back', 'click', () => enterHub(A.profile));
   on('btn-hub-deck', 'click', openDeckBuilder);
   on('btn-hub-deck-experiment', 'click', openDeckExperiment);
   on('btn-hub-ranked', 'click', openRankedScreen);

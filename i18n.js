@@ -72,6 +72,10 @@
         "title": "Deck Experiment",
         "sub": "Any card — Free only"
       },
+      "cardList": {
+        "title": "Card List",
+        "sub": "Browse every card"
+      },
       "rankedPvp": "Ranked PvP",
       "rankedPvpSub": "Climb ELO in matchmade games",
       "leaderboard": "Leaderboard",
@@ -410,6 +414,15 @@
       "infoLead": "Convert 1 spare booster, PR, or owned-starter card into 1 matching seal. Exchange seals for cards at the costs below (PR seals cost 20, same as N).",
       "infoRarities": "Rarities",
       "infoCost": "Exchange cost"
+    },
+    "cardList": {
+      "title": "Card List",
+      "hubSub": "Browse every card",
+      "backHub": "← Hub",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "Not owned",
+      "prCards": "PR Cards",
+      "other": "Other"
     },
     "gameMode": {
       "label": "Game mode",
@@ -1548,6 +1561,15 @@
       "infoLead": "余ったブースター／PRカード、または所持スターターのカード1枚を、同じレアリティ帯のシール1枚に変換できます。下のコストでシールとカードを交換できます（PRシールはNと同じ20）。",
       "infoRarities": "レアリティ",
       "infoCost": "交換コスト"
+    },
+    "cardList": {
+      "title": "カードリスト",
+      "hubSub": "全カードを閲覧",
+      "backHub": "← ハブ",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "未所持",
+      "prCards": "PRカード",
+      "other": "その他"
     },
     "gameMode": {
       "label": "ゲームモード",
@@ -3436,6 +3458,15 @@
       "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
       "infoRarities": "Rarezas",
       "infoCost": "Coste de canje"
+    },
+    "cardList": {
+      "title": "Lista de cartas",
+      "hubSub": "Ver todas las cartas",
+      "backHub": "← Hub",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "No poseída",
+      "prCards": "Cartas PR",
+      "other": "Otras"
     }
   },
   "ko": {
@@ -4604,6 +4635,15 @@
       "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
       "infoRarities": "희귀도",
       "infoCost": "교환 비용"
+    },
+    "cardList": {
+      "title": "카드 목록",
+      "hubSub": "전체 카드 보기",
+      "backHub": "← 허브",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "미보유",
+      "prCards": "PR 카드",
+      "other": "기타"
     }
   },
   "zh": {
@@ -5773,6 +5813,15 @@
       "infoLead": "将 1 张多余的补充包卡或你拥有的入门卡转换为 1 枚对应印章。按下方费用用印章兑换卡牌。",
       "infoRarities": "稀有度",
       "infoCost": "兑换费用"
+    },
+    "cardList": {
+      "title": "卡牌一览",
+      "hubSub": "浏览全部卡牌",
+      "backHub": "← 主页",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "未拥有",
+      "prCards": "PR 卡",
+      "other": "其他"
     }
   },
   "th": {
@@ -6918,6 +6967,15 @@
       "infoLead": "แปลงการ์ดบูสเตอร์ที่มีเกินหรือการ์ดสตาร์ทเตอร์ที่คุณมี 1 ใบ เป็นซีลที่ตรงกัน 1 ชิ้น แล้วนำซีลมาแลกการ์ดตามราคาด้านล่าง",
       "infoRarities": "ความหายาก",
       "infoCost": "ราคาแลก"
+    },
+    "cardList": {
+      "title": "รายการการ์ด",
+      "hubSub": "ดูการ์ดทั้งหมด",
+      "backHub": "← ฮับ",
+      "ownedProgress": "{owned}/{total}",
+      "notOwned": "ยังไม่มี",
+      "prCards": "การ์ด PR",
+      "other": "อื่นๆ"
     }
   }
 };
@@ -6944,6 +7002,9 @@
     loc.hub.sticker = loc.hub.sticker || {};
     loc.hub.sticker.title = loc.hub.stickerShop || 'Sticker Shop';
     loc.hub.sticker.sub = loc.hub.stickerShopSub || 'Trade seals for cards from your packs';
+    loc.hub.cardList = loc.hub.cardList || {};
+    loc.hub.cardList.title = loc.hub.cardList.title || (loc.cardList && loc.cardList.title) || 'Card List';
+    loc.hub.cardList.sub = loc.hub.cardList.sub || (loc.cardList && loc.cardList.hubSub) || 'Browse every card';
     loc.hub.deck = loc.hub.deck || {};
     loc.hub.deck.title = loc.hub.deckBuilder;
     loc.hub.deck.sub = loc.hub.deckBuilderSub;
