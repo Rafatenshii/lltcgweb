@@ -688,7 +688,8 @@ function tcgApiDeckResetStarter(array $body): array {
  * Returns complete lists when the collection covers the recipe; otherwise
  * missing-card details with obtain hints and substitute suggestions.
  *
- * Body: code|url, optional substitutions: { missing_card_no: substitute_card_no }
+ * Body: code|url, optional substitutions: { missing_card_no: substitute_card_no },
+ * optional auto_sub_energy: bool (fill Energy shortfalls from other owned Energy).
  */
 function tcgApiDeckImportDecklog(array $body): array {
     $uid = tcgRequireAuthUser($body);
@@ -720,6 +721,16 @@ function tcgApiDeckImportDecklog(array $body): array {
             }
             $substitutions[$fromNo] = $toNo;
         }
+    }
+
+    if (!empty($body['auto_sub_energy'])) {
+        $substitutions = tcgDecklogBuildAutoEnergySubstitutions(
+            $main,
+            $energy,
+            $owned,
+            $cardMap,
+            $substitutions
+        );
     }
 
     if ($substitutions) {

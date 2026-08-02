@@ -357,6 +357,49 @@ function tcgDecklogMissingFromOwned(array $main, array $energy, array $owned, ar
 }
 
 /**
+ * Auto-pick Energy substitutes for shortfalls (any owned Energy of the same type).
+ *
+ * @param list<string> $main
+ * @param list<string> $energy
+ * @param array<string, int> $owned
+ * @param array<string, array<string,mixed>> $cardMap
+ * @param array<string, string> $existing
+ * @return array<string, string>
+ */
+function tcgDecklogBuildAutoEnergySubstitutions(
+    array $main,
+    array $energy,
+    array $owned,
+    array $cardMap,
+    array $existing = []
+): array {
+    $subs = $existing;
+    $probeMain = $main;
+    $probeEnergy = $energy;
+    if ($subs) {
+        $ownedLeft = $owned;
+        [$probeMain] = tcgDecklogApplySubstitutionsToList($main, $ownedLeft, $subs);
+        [$probeEnergy] = tcgDecklogApplySubstitutionsToList($energy, $ownedLeft, $subs);
+    }
+    $missing = tcgDecklogMissingFromOwned($probeMain, $probeEnergy, $owned, $cardMap);
+    foreach ($missing as $row) {
+        if (($row['card_type'] ?? '') !== 'エネルギー') {
+            continue;
+        }
+        $from = (string)($row['card_no'] ?? '');
+        if ($from === '' || isset($subs[$from])) {
+            continue;
+        }
+        $to = (string)(($row['substitutes'][0]['card_no'] ?? ''));
+        if ($to === '' || $to === $from) {
+            continue;
+        }
+        $subs[$from] = $to;
+    }
+    return $subs;
+}
+
+/**
  * Replace shortfall copies using card_no => substitute_card_no map.
  *
  * @param list<string> $list

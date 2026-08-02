@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=6">
+<link rel="stylesheet" href="client/css/shell-all.css?v=7">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -923,6 +923,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               <input type="text" id="inp-account-decklog" placeholder="2X7YN or decklog URL" maxlength="120" autocomplete="off" spellcheck="false" data-i18n-placeholder="deck.decklogCodePlaceholder">
               <button class="btn-out" id="btn-account-decklog-import" type="button" data-i18n="deck.decklogImport">Import</button>
             </div>
+            <label class="decklog-auto-energy-opt" for="chk-decklog-auto-energy">
+              <input type="checkbox" id="chk-decklog-auto-energy">
+              <span data-i18n="deck.decklogAutoEnergy">Auto-replace missing Energy</span>
+            </label>
             <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.decklogAccountHint">Paste a deck log code or view URL — loads into this preset if you own the cards.</p>
           </div>
           <div class="field deck-builder-meta__experiment" id="deck-experiment-pwd-wrap" hidden>
@@ -2138,7 +2142,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=91"></script>
+<script src="i18n.js?v=92"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -10031,15 +10035,29 @@ function renderDecklogMissingModal(payload) {
     const div = document.createElement('div');
     div.className = 'decklog-missing-row';
     div.setAttribute('data-card-no', row.card_no);
-    const img = document.createElement('img');
-    img.className = 'decklog-missing-thumb';
-    img.alt = '';
-    img.loading = 'lazy';
-    const card = G.allCards?.[row.card_no];
-    if (card && typeof applyCardImageToImg === 'function') {
-      applyCardImageToImg(img, card);
+    const card = enrichCard(G.allCards?.[row.card_no] || { card_no: row.card_no, card_type: row.card_type });
+    const thumb = document.createElement('div');
+    const live = typeof isLiveCard === 'function' && isLiveCard(card);
+    thumb.className = 'decklog-missing-thumb' + (live ? ' decklog-missing-thumb--live' : '');
+    if (live) {
+      const wrap = document.createElement('div');
+      wrap.className = 'deck-live-art';
+      thumb.appendChild(wrap);
+      if (typeof appendCardFaceFill === 'function') {
+        appendCardFaceFill(wrap, card, { lazy: true });
+      }
+    } else {
+      const img = document.createElement('img');
+      img.alt = '';
+      img.loading = 'lazy';
+      if (typeof applyCardImageToImg === 'function') {
+        applyCardImageToImg(img, card);
+      }
+      thumb.appendChild(img);
     }
-    if (card) bindDecklogMissingCardPress(img, card);
+    if (card?.card_no && G.allCards?.[card.card_no]) {
+      bindDecklogMissingCardPress(thumb, card);
+    }
     const body = document.createElement('div');
     body.className = 'decklog-missing-body';
     const title = document.createElement('div');
@@ -10074,7 +10092,7 @@ function renderDecklogMissingModal(payload) {
       : (t('deck.decklogChooseSub') || 'Choose substitute');
     btn.onclick = () => openDecklogSubPick(row.card_no);
     subWrap.append(status, btn);
-    div.append(img, body, subWrap);
+    div.append(thumb, body, subWrap);
     list.appendChild(div);
   });
   openM('modal-decklog-missing');
@@ -10134,6 +10152,26 @@ async function applyDecklogMissingSubstitutes() {
   }
 }
 
+const DECKLOG_AUTO_ENERGY_KEY = 'tcg_decklog_auto_energy';
+
+function decklogAutoEnergyEnabled() {
+  return !!el('chk-decklog-auto-energy')?.checked;
+}
+
+function initDecklogAutoEnergyCheckbox() {
+  const chk = el('chk-decklog-auto-energy');
+  if (!chk || chk.dataset.bound === '1') return;
+  chk.dataset.bound = '1';
+  try {
+    chk.checked = localStorage.getItem(DECKLOG_AUTO_ENERGY_KEY) === '1';
+  } catch (e) { /* ignore */ }
+  chk.addEventListener('change', () => {
+    try {
+      localStorage.setItem(DECKLOG_AUTO_ENERGY_KEY, chk.checked ? '1' : '0');
+    } catch (e) { /* ignore */ }
+  });
+}
+
 async function importAccountDeckFromDecklog(raw) {
   const code = String(raw || '').trim();
   if (!code) {
@@ -10149,7 +10187,10 @@ async function importAccountDeckFromDecklog(raw) {
   el('deck-err').textContent = t('deck.decklogImporting') || 'Importing from deck log…';
   if (btn) { btn.disabled = true; btn.textContent = t('deck.decklogImportingShort') || 'Importing…'; }
   try {
-    const data = await accountPost('deck_import_decklog', { code });
+    const data = await accountPost('deck_import_decklog', {
+      code,
+      auto_sub_energy: decklogAutoEnergyEnabled(),
+    });
     if (data.complete) {
       applyAccountDecklogToBuilder(data);
       el('deck-err').textContent = t('deck.decklogImportedAccount', {
@@ -13582,6 +13623,7 @@ async function bootApp() {
       importAccountDeckFromDecklog(el('inp-account-decklog')?.value);
     }
   });
+  initDecklogAutoEnergyCheckbox();
   on('btn-decklog-missing-cancel', 'click', closeDecklogMissingModal);
   on('btn-decklog-missing-close', 'click', closeDecklogMissingModal);
   on('btn-decklog-missing-auto', 'click', autoPickDecklogSubstitutes);
