@@ -4350,11 +4350,11 @@ function readSpectatorSession() {
 }
 
 function reconnectOriginOrder(preferred, { hostingerOnly = false } = {}) {
-  // Match-primary: live rooms are on VPS. Always prefer overflow (even if an old
-  // session recorded hostinger — Hostinger can no longer accept match writes).
+  // Match-primary: ONLY resume rooms that exist on the VPS. Hostinger may still
+  // have readable drain copies, but writes are disabled — restoring those traps
+  // the player in a dead match (resign → network / room not found).
   if (typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) {
-    if (hostingerOnly) return ['overflow', 'hostinger'];
-    return ['overflow', 'hostinger'];
+    return ['overflow'];
   }
   if (hostingerOnly) return ['hostinger'];
   // Only probe overflow when the saved session says the room lived there.
@@ -4407,6 +4407,7 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
   let lastOrigin = order[0];
   let lastErr = null;
   let roomMissingCount = 0;
+  let overflowMissing = false;
   for (const origin of order) {
     try {
       const s = await fetchGameStateForReconnect(saved.roomId, saved.token, origin, opts);
@@ -4414,12 +4415,22 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
       lastOrigin = origin;
       if (isReconnectRoomMissing(s)) {
         roomMissingCount += 1;
+        if (origin === 'overflow') overflowMissing = true;
         continue;
       }
       // Any non-missing response is authoritative for this room+token on this origin.
-      return { state: s, apiOrigin: origin, roomMissingBoth: false };
+      return {
+        state: s,
+        apiOrigin: origin,
+        roomMissingBoth: false,
+        overflowMissing: false,
+      };
     } catch (e) {
       lastErr = e;
+      // VPS unreachable is not the same as room missing — keep retrying.
+      if (origin === 'overflow' && e && !e.transient && /room not found/i.test(String(e.message || ''))) {
+        overflowMissing = true;
+      }
     }
   }
   if (lastState) {
@@ -4427,6 +4438,7 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
       state: lastState,
       apiOrigin: lastOrigin,
       roomMissingBoth: roomMissingCount >= order.length,
+      overflowMissing,
     };
   }
   throw lastErr || new Error('Reconnect failed');
@@ -4435,8 +4447,11 @@ async function fetchGameStateForReconnectWithFallback(saved, opts = {}) {
 /** Clear resume credentials only when the room is gone — never for finished matches.
  *  Finished games must restore the win/loss overlay so refresh cannot skip the end screen.
  */
-async function abandonReconnectSessionIfTerminal(s, { bothOriginsMissing = false } = {}) {
-  const missing = bothOriginsMissing && isReconnectRoomMissing(s);
+async function abandonReconnectSessionIfTerminal(s, { bothOriginsMissing = false, overflowMissing = false } = {}) {
+  const matchPrimary = typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY;
+  const missing = isReconnectRoomMissing(s) && (
+    bothOriginsMissing || (matchPrimary && overflowMissing)
+  );
   if (!missing) return false;
   if (getAuthToken()) {
     try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
@@ -4596,14 +4611,35 @@ async function reconnectToGame(saved, opts = {}) {
   let appliedCredentials = false;
   G._reconnectLastFail = null;
   try {
-    const { state: s, apiOrigin, roomMissingBoth } = await fetchGameStateForReconnectWithFallback(saved, opts);
-    if (await abandonReconnectSessionIfTerminal(s, { bothOriginsMissing: !!roomMissingBoth })) {
+    const { state: s, apiOrigin, roomMissingBoth, overflowMissing } = await fetchGameStateForReconnectWithFallback(saved, opts);
+    if (await abandonReconnectSessionIfTerminal(s, {
+      bothOriginsMissing: !!roomMissingBoth,
+      overflowMissing: !!overflowMissing,
+    })) {
+      G._reconnectLastFail = 'gone';
+      return false;
+    }
+    // Match-primary: never restore a Hostinger-only drain room (can't accept actions).
+    if ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY)
+        && apiOrigin !== 'overflow') {
+      if (getAuthToken()) {
+        try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+      }
+      clearActiveGameSession();
       G._reconnectLastFail = 'gone';
       return false;
     }
     // Transient API errors / wrong token: keep session so ranked active_game or retry can work.
     if (s.error || !s.my_id) {
       const msg = String(s.error || '');
+      if (isReconnectRoomMissing(s) || isRoomGoneError(msg)) {
+        if (getAuthToken()) {
+          try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+        }
+        clearActiveGameSession();
+        G._reconnectLastFail = 'gone';
+        return false;
+      }
       G._reconnectLastFail = /invalid|expired|unauthorized/i.test(msg) ? 'auth' : 'soft';
       return false;
     }
@@ -4812,6 +4848,7 @@ async function runReconnectQueue() {
           const active = res?.active;
           if (active?.room_id && active?.player_token) {
             rankedEmptyConfirmed = false;
+            const matchPrimary = typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY;
             if (await reconnectToGame({
               roomId: active.room_id,
               token: active.player_token,
@@ -4819,9 +4856,21 @@ async function runReconnectQueue() {
               isCPU: false,
               cpuToken: null,
               screen: 'game',
-              apiOrigin: 'hostinger',
-            }, { hostingerOnly: true, resume: true, signal: attemptCtrl.signal })) {
+              // Under match-primary, ranked/active rows must exist on VPS to resume.
+              apiOrigin: matchPrimary ? 'overflow' : 'hostinger',
+            }, {
+              hostingerOnly: !matchPrimary,
+              resume: true,
+              signal: attemptCtrl.signal,
+            })) {
               return true;
+            }
+            // Dead Hostinger drain room still listed as active_game — drop it.
+            if (G._reconnectLastFail === 'gone') {
+              try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+              clearActiveGameSession();
+              rankedEmptyConfirmed = true;
+              if (!readSpectatorSession()) return false;
             }
           } else {
             rankedEmptyConfirmed = true;
@@ -27040,7 +27089,10 @@ async function sendAct(type,data){
       renderPrompt(G.gameState, G.playerId);
       updatePhaseActionButton(G.gameState, G.playerId);
     }
-    if (isRoomGoneError(e)) {
+    const netFail = /failed to fetch|networkerror|network error|load failed|fetch resource/i.test(
+      String(e.message || e.name || '')
+    );
+    if (isRoomGoneError(e) || (type === 'resign' && netFail)) {
       await abandonDeadMatchSession();
       return;
     }
