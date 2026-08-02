@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=8">
+<link rel="stylesheet" href="client/css/shell-all.css?v=9">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1056,6 +1056,14 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       <button class="btn-ghost decklog-import-close" type="button" id="btn-decklog-sub-pick-close" aria-label="Close">✕</button>
     </div>
     <p class="decklog-import-lead" id="decklog-sub-pick-lead" data-i18n="deck.decklogSubPickLead">Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.</p>
+    <div class="decklog-sub-pick-target" id="decklog-sub-pick-target" hidden>
+      <div class="decklog-sub-pick-target-thumb" id="decklog-sub-pick-target-thumb"></div>
+      <div class="decklog-sub-pick-target-body">
+        <p class="decklog-sub-pick-target-label" id="decklog-sub-pick-target-label" data-i18n="deck.decklogSubPickReplacing">Replacing</p>
+        <p class="decklog-sub-pick-target-name" id="decklog-sub-pick-target-name"></p>
+        <p class="decklog-sub-pick-target-meta" id="decklog-sub-pick-target-meta"></p>
+      </div>
+    </div>
     <p class="decklog-sub-pick-count" id="decklog-sub-pick-count" aria-live="polite">Choose 0 cards</p>
     <div class="decklog-sub-pick-tray" id="decklog-sub-pick-tray" hidden></div>
     <div class="decklog-sub-pick-tools">
@@ -2145,7 +2153,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=93"></script>
+<script src="i18n.js?v=94"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
@@ -9962,6 +9970,60 @@ function decklogSubPickCanAdd(cardNo) {
   return inDraft < Math.max(0, owned - committed);
 }
 
+function renderDecklogSubPickTarget(row) {
+  const wrap = el('decklog-sub-pick-target');
+  const thumbHost = el('decklog-sub-pick-target-thumb');
+  const nameEl = el('decklog-sub-pick-target-name');
+  const metaEl = el('decklog-sub-pick-target-meta');
+  const labelEl = el('decklog-sub-pick-target-label');
+  if (!wrap || !thumbHost) return;
+  if (!row?.card_no) {
+    wrap.hidden = true;
+    thumbHost.replaceChildren();
+    return;
+  }
+  const card = enrichCard(G.allCards?.[row.card_no] || {
+    card_no: row.card_no,
+    card_type: row.card_type,
+    name: row.name,
+    name_en: row.name_en,
+  });
+  const live = typeof isLiveCard === 'function' && isLiveCard(card);
+  thumbHost.className = 'decklog-sub-pick-target-thumb'
+    + (live ? ' decklog-sub-pick-target-thumb--live' : '')
+    + ' decklog-missing-thumb--interactive';
+  thumbHost.replaceChildren();
+  if (live) {
+    const art = document.createElement('div');
+    art.className = 'deck-live-art';
+    thumbHost.appendChild(art);
+    if (typeof appendCardFaceFill === 'function') appendCardFaceFill(art, card, { lazy: true });
+  } else if (typeof applyCardImageToImg === 'function') {
+    const img = document.createElement('img');
+    img.alt = '';
+    applyCardImageToImg(img, card);
+    thumbHost.appendChild(img);
+  }
+  if (card?.card_no && G.allCards?.[card.card_no]) {
+    delete thumbHost.dataset.decklogHoverBound;
+    bindDecklogMissingCardPress(thumbHost, card);
+  }
+  if (labelEl) {
+    labelEl.textContent = t('deck.decklogSubPickReplacing') || 'Replacing';
+  }
+  if (nameEl) nameEl.textContent = decklogCardDisplayName(row) || row.card_no;
+  if (metaEl) {
+    const shortfall = Math.max(0, Number(row.shortfall || A.decklogSubPickNeed || 0));
+    metaEl.textContent = (t('deck.decklogNeedHave', {
+      need: row.need,
+      have: row.have,
+    }) || `Need ${row.need} · Own ${row.have}`)
+      + (shortfall ? ` · ${t('deck.decklogSubPickShortfall', { n: shortfall }) || (`${shortfall} to replace`)}` : '')
+      + ' · ' + row.card_no;
+  }
+  wrap.hidden = false;
+}
+
 function syncDecklogSubPickChrome() {
   const need = Number(A.decklogSubPickNeed || 0);
   const draft = A.decklogSubPickDraft || [];
@@ -10071,6 +10133,7 @@ function openDecklogSubPick(forCardNo) {
     lead.textContent = t('deck.decklogSubPickLead')
       || 'Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.';
   }
+  renderDecklogSubPickTarget(row || { card_no: forCardNo, shortfall });
 
   const f = deckPoolFilterState();
   const typeF = decklogTypeFilterForCard(row?.card_type || G.allCards?.[forCardNo]?.card_type || '');
@@ -10100,6 +10163,7 @@ function closeDecklogSubPick({ reopenMissing = true } = {}) {
   A.decklogSubPickFor = '';
   A.decklogSubPickDraft = [];
   A.decklogSubPickNeed = 0;
+  renderDecklogSubPickTarget(null);
   if (_decklogSubPark) {
     unparkDeckNode(_decklogSubPark.pool);
     unparkDeckNode(_decklogSubPark.sort);
