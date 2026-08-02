@@ -544,7 +544,8 @@ function getStatePolling(): void {
         $resumeOnly ? 'get_state_resume' : 'get_state',
         ['room_id' => $roomId, 'token' => $playerToken]
     );
-    $lastSeq     = intval($_GET['seq'] ?? 0);
+    $lastSeq     = intval($_GET['since_seq'] ?? $_GET['seq'] ?? 0);
+    $forceFull   = isset($_GET['force']) && (string)$_GET['force'] === '1';
 
     if (!$roomId || !$playerToken) {
         echo json_encode(['error' => 'room_id and token required']);
@@ -573,19 +574,36 @@ function getStatePolling(): void {
             echo json_encode(filterStateForClient($state, $roomId, $playerToken));
             return;
         }
-        if (applyPhaseTimeouts($state)) {
-            saveGame($roomId, $state);
+
+        $curSeq = intval($state['seq'] ?? 0);
+        $runSideEffects = $forceFull || tcgPollSideEffectsDue($roomId);
+        $mutated = false;
+        if ($runSideEffects) {
+            if (applyPhaseTimeouts($state)) {
+                saveGame($roomId, $state);
+                $mutated = true;
+            }
+            if (applyCoinFlipStalemate($state)) {
+                refreshPvpPhaseTimers($state);
+                saveGame($roomId, $state);
+                $mutated = true;
+            }
+            if (applyDisconnectForfeits($state, $roomId)) {
+                saveGame($roomId, $state);
+                maybeApplyRankedFinish($state);
+                saveGame($roomId, $state);
+                $mutated = true;
+            }
+            maybeRecoverUnappliedRankedFinish($roomId, $state);
+            $curSeq = intval($state['seq'] ?? 0);
         }
-        if (applyCoinFlipStalemate($state)) {
-            refreshPvpPhaseTimers($state);
-            saveGame($roomId, $state);
+
+        // Client already has this seq and nothing mutated — skip filter/encode.
+        if (!$forceFull && !$mutated && $lastSeq > 0 && $lastSeq === $curSeq) {
+            echo json_encode(['ok' => true, 'unchanged' => true, 'seq' => $curSeq]);
+            return;
         }
-        if (applyDisconnectForfeits($state, $roomId)) {
-            saveGame($roomId, $state);
-            maybeApplyRankedFinish($state);
-            saveGame($roomId, $state);
-        }
-        maybeRecoverUnappliedRankedFinish($roomId, $state);
+
         echo json_encode(filterStateForClient($state, $roomId, $playerToken));
         return;
     }
@@ -4723,6 +4741,30 @@ function touchPresence(string $roomId, string $token): void {
     }
     $data[$token] = time();
     file_put_contents($file, json_encode($data));
+}
+
+/**
+ * Throttle timeout/disconnect side-effects on poll=0 so unchanged seq can short-circuit.
+ * Still runs at least once per second per room so phase clocks stay accurate.
+ */
+function tcgPollSideEffectsDue(string $roomId): bool {
+    $safe = preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId));
+    if ($safe === '') {
+        return true;
+    }
+    $file = GAMES_DIR . 'poll_tick_' . $safe . '.json';
+    $now = time();
+    $last = 0;
+    if (is_file($file)) {
+        $raw = @file_get_contents($file);
+        $j = is_string($raw) ? json_decode($raw, true) : null;
+        $last = intval(is_array($j) ? ($j['t'] ?? 0) : 0);
+    }
+    if ($last > 0 && ($now - $last) < 1) {
+        return false;
+    }
+    @file_put_contents($file, json_encode(['t' => $now]), LOCK_EX);
+    return true;
 }
 
 function readPresence(string $roomId): array {

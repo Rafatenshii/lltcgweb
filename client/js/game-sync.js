@@ -136,10 +136,68 @@
     return null;
   }
 
+  /** After a player action, keep CPU polling snappy until the server/AI advances. */
+  global.markPollFastBurst = function markPollFastBurst(ms = 2500) {
+    G._pollFastUntil = Date.now() + Math.max(0, ms | 0);
+  };
+
+  /**
+   * CPU solo: slow polls while the local human clearly owns input; stay fast when
+   * waiting on the server/CPU so AI replies remain snappy.
+   */
+  function cpuHumanOwnsInput() {
+    if (!G.isCPU || G.isSpectator) return false;
+    if (G._pollFastUntil && Date.now() < G._pollFastUntil) return false;
+    const s = G.gameState;
+    if (!s || s.status === 'finished') return true;
+    const myId = G.playerId;
+    if (!myId) return false;
+    const pr = s.pending_prompt;
+    if (pr) return pr.responder === myId;
+    const ph = s.phase || '';
+    if (ph === 'mulligan') {
+      const done = s.mulligan_done || s.mulligan || {};
+      return !done[myId];
+    }
+    if (ph === 'coin_flip' || ph === 'choose_first') {
+      const ack = s.coin_ack || s.first_player_ack || {};
+      if (Object.prototype.hasOwnProperty.call(ack, myId)) return !ack[myId];
+      return true;
+    }
+    if ((ph === 'main_first' || ph === 'main_second'
+        || ph === 'active_first' || ph === 'active_second')
+        && s.active_player === myId) {
+      return true;
+    }
+    if (ph === 'live_set') {
+      const livePid = s.live_set_player || s.active_player;
+      return livePid === myId && !s.live_ready?.[myId];
+    }
+    if (ph === 'live_judge') {
+      // Judge prompts use pending_prompt; without one, prefer fast polls.
+      return false;
+    }
+    return false;
+  }
+
   function nextPollDelayMs(errorMsg) {
     const backoff = pollDelayAfterError(errorMsg);
     if (backoff != null) return backoff;
-    return G.isCPU ? 280 : 600;
+    if (!G.isCPU) return 600;
+    return cpuHumanOwnsInput() ? 1100 : 280;
+  }
+
+  function getStateUrl(extraQs) {
+    let url = `${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
+      + `&token=${encodeURIComponent(G.token)}&seq=${encodeURIComponent(String(G.lastSeq ?? 0))}`
+      + `&since_seq=${encodeURIComponent(String(G.lastSeq ?? 0))}&poll=0`;
+    if (extraQs) url += extraQs;
+    return url;
+  }
+
+  /** True when server says seq is unchanged (skip onState / full apply). */
+  function isUnchangedStatePayload(d) {
+    return !!(d && d.unchanged === true && !d.error);
   }
 
   function syncFallbackDelayMs() {
@@ -367,11 +425,16 @@
     try {
       TCG_DEBUG.log('poll', 'fetch', { seq: G.lastSeq, room: pollRoomId, mode: 'poll0' });
       global._tcgSyncStats.getState++;
-      const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+      const r = await fetch(getStateUrl());
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       G._pollRateLimitBackoff = 0;
-      onState(d);
+      if (isUnchangedStatePayload(d)) {
+        if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+      } else {
+        if (G._pollFastUntil && (d.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
+        onState(d);
+      }
     } catch (e) {
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       if (e && e.httpStatus >= 400) {
@@ -401,9 +464,13 @@
     TCG_DEBUG.log('poll', 'pullSkillResolutionState', { seq: G.lastSeq, room: pollRoomId });
     try {
       global._tcgSyncStats.getState++;
-      const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+      const r = await fetch(getStateUrl());
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return G.gameState || null;
+      if (isUnchangedStatePayload(d)) {
+        if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+        return G.gameState || null;
+      }
       if ((d.seq ?? 0) <= (G.lastSeq ?? 0)) return G.gameState || null;
       // Finished must go through onState/applyFinishedState — advancing lastSeq here
       // alone skips the win overlay and leaves later finished polls as "stale".
@@ -476,9 +543,15 @@
     const run = (async () => {
       try {
         global._tcgSyncStats.getState++;
-        const r = await fetch(`${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(pollRoomId)}&token=${encodeURIComponent(G.token)}&seq=${G.lastSeq}&poll=0`);
+        const forceQs = force ? '&force=1' : '';
+        const r = await fetch(getStateUrl(forceQs));
         const d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
+        if (isUnchangedStatePayload(d)) {
+          if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+          if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
+          return;
+        }
         if (force && d.status === 'finished') {
           G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d.seq ?? 0));
         }
@@ -487,6 +560,7 @@
           if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
           return;
         }
+        if (G._pollFastUntil && (d.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
         if (d.end_reason === 'disconnect') global._tcgSyncStats.disconnectHints++;
         onState(d);
       } catch (e) {

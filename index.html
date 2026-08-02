@@ -8959,7 +8959,7 @@ html:not(.foil-fx-off) #screen-game .mslot.card-tilt-enabled.foil-tilt-hover{
 <script src="client/js/api-client.js?v=17"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/game-sync.js?v=25"></script>
+<script src="client/js/game-sync.js?v=26"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -9146,6 +9146,10 @@ const A = {
   collectionMap: {},
   decks: [],
   experimentDecks: [],
+  _deckListFetchedAt: 0,
+  _deckListDirty: true,
+  _experimentListFetchedAt: 0,
+  _experimentListDirty: true,
   deckSlot: 1,
   experimentSlot: 1,
   deckMain: [],
@@ -11879,11 +11883,11 @@ async function refreshUnrankedLobbyInBackground() {
   if (isSignedInAccount()) {
     try {
       const [dl, exp] = await Promise.all([
-        accountGet('deck_list'),
-        accountGet('experiment_preset_list').catch(() => null),
+        ensureDeckList(),
+        ensureExperimentDeckList().catch(() => A.experimentDecks || []),
       ]);
-      if (dl?.success) A.decks = dl.decks || [];
-      if (exp?.success) A.experimentDecks = exp.decks || [];
+      if (Array.isArray(dl)) A.decks = dl;
+      if (Array.isArray(exp)) A.experimentDecks = exp;
       if (el('screen-lobby')?.classList.contains('active')) renderLobbyDeckOptions();
     } catch (e) {}
   }
@@ -12011,9 +12015,7 @@ function enterHub(me) {
   el('hub-rank').textContent = t('hub.rankLine', { elo, wins: r.wins ?? 0, losses: r.losses ?? 0, winPct });
   if (A.user?.username) el('inp-name').value = A.user.username.slice(0, 20);
   if (getAuthToken()) {
-    accountGet('deck_list').then(dl => {
-      if (dl.success) A.decks = dl.decks || [];
-    }).catch(() => {});
+    ensureDeckList().catch(() => {});
   }
   showScr('hub');
   if (typeof schedulePendingRankedPrReward === 'function') schedulePendingRankedPrReward();
@@ -12832,6 +12834,53 @@ async function refreshCollection() {
   A.collectionMap = {};
   A.collection.forEach(row => { A.collectionMap[row.card_no] = row.qty; });
   if (res.seals) syncSealsFromPayload(res);
+}
+
+const DECK_LIST_CACHE_TTL_MS = 45000;
+
+function markDeckListDirty() {
+  A._deckListDirty = true;
+}
+
+function markExperimentListDirty() {
+  A._experimentListDirty = true;
+}
+
+/** Cached deck_list — avoids hub/lobby/ranked refetch storms. */
+async function ensureDeckList(opts = {}) {
+  const force = !!opts.force;
+  const now = Date.now();
+  if (!force
+      && !A._deckListDirty
+      && Array.isArray(A.decks)
+      && (now - (A._deckListFetchedAt || 0)) < DECK_LIST_CACHE_TTL_MS) {
+    return A.decks;
+  }
+  const dl = await accountGet('deck_list');
+  if (dl?.success || Array.isArray(dl?.decks)) {
+    A.decks = dl.decks || [];
+    A._deckListFetchedAt = now;
+    A._deckListDirty = false;
+  }
+  return A.decks || [];
+}
+
+async function ensureExperimentDeckList(opts = {}) {
+  const force = !!opts.force;
+  const now = Date.now();
+  if (!force
+      && !A._experimentListDirty
+      && Array.isArray(A.experimentDecks)
+      && (now - (A._experimentListFetchedAt || 0)) < DECK_LIST_CACHE_TTL_MS) {
+    return A.experimentDecks;
+  }
+  const dl = await accountGet('experiment_preset_list');
+  if (dl?.success || Array.isArray(dl?.decks)) {
+    A.experimentDecks = dl.decks || [];
+    A._experimentListFetchedAt = now;
+    A._experimentListDirty = false;
+  }
+  return A.experimentDecks || [];
 }
 
 function deckLovecaPointForCard(cardNo) {
@@ -14922,8 +14971,7 @@ async function openDeckBuilder() {
     if (me.success) A.profile = me;
   }
   await refreshCollection();
-  const dl = await accountGet('deck_list');
-  A.decks = dl.decks || [];
+  await ensureDeckList({ force: true });
   const hint = el('deck-starter-hint');
   if (hint) hint.hidden = false;
   syncDeckStarterHint();
@@ -14958,8 +15006,7 @@ async function openDeckExperiment(opts) {
   el('deck-err').textContent = '';
   if (isSignedInAccount()) {
     try {
-      const dl = await accountGet('experiment_preset_list');
-      A.experimentDecks = dl.decks || [];
+      await ensureExperimentDeckList({ force: true });
       if (!A.experimentDecks.some(d => d.slot === A.experimentSlot)) A.experimentSlot = 1;
       selectExperimentSlot(A.experimentSlot);
     } catch (e) {
@@ -16550,8 +16597,8 @@ async function saveExperimentDeckPassword() {
           energy_deck: [...A.deckEnergy],
           share_password: res.password,
         });
-        const dl = await accountGet('experiment_preset_list');
-        A.experimentDecks = dl.decks || [];
+        markExperimentListDirty();
+        await ensureExperimentDeckList({ force: true });
         renderExperimentSlots();
       } catch (e) { /* password share still succeeded */ }
     }
@@ -16587,8 +16634,8 @@ async function saveExperimentPresetToAccount() {
     };
     if (A.experimentPassword) body.share_password = A.experimentPassword;
     await accountPost('experiment_preset_save', body);
-    const dl = await accountGet('experiment_preset_list');
-    A.experimentDecks = dl.decks || [];
+    markExperimentListDirty();
+    await ensureExperimentDeckList({ force: true });
     renderExperimentSlots();
     renderDeckBuilder();
     el('deck-err').textContent = t('deck.experimentSaved') || 'Experiment deck saved to your account.';
@@ -16612,8 +16659,8 @@ async function saveDeckPreset() {
       main_deck: A.deckMain,
       energy_deck: A.deckEnergy,
     });
-    const dl = await accountGet('deck_list');
-    A.decks = dl.decks || [];
+    markDeckListDirty();
+    await ensureDeckList({ force: true });
     renderDeckBuilder();
     el('deck-err').textContent = 'Saved!';
   } catch (e) { el('deck-err').textContent = e.message; }
@@ -16668,8 +16715,8 @@ async function resetDeckToStarter() {
   }
   try {
     const res = await accountPost('deck_reset_starter', { slot: A.deckSlot });
-    const dl = await accountGet('deck_list');
-    A.decks = dl.decks || [];
+    markDeckListDirty();
+    await ensureDeckList({ force: true });
     selectDeckSlot(res.slot || A.deckSlot);
     el('deck-err').textContent = t('deck.loadedStarterIntoPreset', {
       name: res.name || t('deck.loadedStarterFallbackName'),
@@ -16731,8 +16778,8 @@ async function autoBuildDeckFromCollection() {
 async function equipDeck() {
   try {
     const res = await accountPost('deck_equip', { slot: A.deckSlot });
-    const dl = await accountGet('deck_list');
-    A.decks = dl.decks || [];
+    markDeckListDirty();
+    await ensureDeckList({ force: true });
     if (A.profile) {
       A.profile.equipped_deck_slot = res.equipped_deck_slot ?? A.deckSlot;
       A.profile.equipped_deck_name = res.equipped_deck_name ?? null;
@@ -17806,7 +17853,7 @@ async function onGameModeSelectChange(sourceSelId) {
   }
 }
 
-async function refreshRankedScreenModeStats() {
+async function refreshRankedScreenModeStats(opts = {}) {
   const mode = rankedGameMode();
   try {
     const stats = await accountGet('rank_stats', { game_mode: mode });
@@ -17822,6 +17869,7 @@ async function refreshRankedScreenModeStats() {
   } catch (e) {
     /* keep last info line */
   }
+  if (opts.skipStatus) return;
   try {
     const res = await accountGet('ranked_status', { game_mode: mode });
     applyRankedStatusResponse(res);
@@ -17976,8 +18024,8 @@ async function applyRankedDeckChoice(key, { silent = false } = {}) {
       equipped_starter_key: res.equipped_starter_key ?? (key.startsWith('starter:') ? key.slice(8) : null),
     });
     rememberRankedDeckForMode(currentGameMode(), key);
-    const dl = await accountGet('deck_list');
-    A.decks = dl.decks || [];
+    markDeckListDirty();
+    await ensureDeckList({ force: true });
     renderRankedDeckOptions();
     if (!silent) el('ranked-err').textContent = '';
   } catch (e) {
@@ -18038,9 +18086,8 @@ async function openRankedScreen() {
   syncGameModeSelects();
   const me = await accountGet('me');
   A.profile = me;
-  const dl = await accountGet('deck_list');
-  A.decks = dl.decks || [];
-  await refreshRankedScreenModeStats();
+  await ensureDeckList();
+  await refreshRankedScreenModeStats({ skipStatus: true });
   syncRankedPrFromProfile(me);
   updateRankedPrUI();
   initRankedMatchSoundCheckbox();
@@ -39681,6 +39728,10 @@ async function sendAct(type,data){
       G._promptSubmitKey = null;
     }
     if (type === 'resolve_prompt') clearDeferredPromptState();
+    if (type !== 'send_stamp' && typeof markPollFastBurst === 'function') {
+      markPollFastBurst(2800);
+      if (typeof resumePollingTick === 'function') resumePollingTick(80);
+    }
     if (G.polling) {
       if (type === 'resolve_prompt' || type === 'anti_softlock_skip' || type === 'force_own_timeout') {
         await pullPromptResolutionState();
