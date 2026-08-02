@@ -2972,6 +2972,13 @@ body.tutorial-mode:not(.tutorial-live-mode) #overlay-coin{pointer-events:none}
 .sbox .sv{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
 .sbox .sv.heart-stat{gap:4px 8px;flex-wrap:wrap}
 .sbox .heart-stat-row{display:inline-flex;align-items:center;gap:3px;font-weight:800;color:#fff}
+.sbox .stat-mod-bonus,
+.sbox .heart-stat-row.heart-stat-mod .stat-mod-bonus{
+  font-family:'Fredoka One',cursive;
+  font-weight:800;color:#FBBF24;line-height:1;
+  text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95),0 1px 5px rgba(0,0,0,.92);
+}
+.sbox .heart-stat-row.heart-stat-mod{gap:2px}
 /* Match blade / blade-heart icons to colored hearts in card info stats. */
 .sbox .heart-stat-row .hicon,
 .sbox .blade-heart-stat .hicon,
@@ -32016,8 +32023,24 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
       if (isMe) bindMyStageCardInspect(d, mbr, s, myId);
     }
     outer.appendChild(d);
-    if(mbr?.blade){
-      d.appendChild(mkFieldBadge('blade', 'icon_blade.png', mbr.blade, 'Blade'));
+    if (mbr) {
+      const stageOwnerPid = isMe ? myId : oppPid;
+      const bladeBonus = memberModifierBladeBonus(mbr, s, stageOwnerPid, slot);
+      if (mbr.blade != null || bladeBonus > 0) {
+        const printedBlade = mbr.printed_blade_override != null
+          ? Number(mbr.printed_blade_override)
+          : Number(mbr.blade || 0);
+        const badge = mkFieldBadge('blade', 'icon_blade.png', printedBlade, 'Blade');
+        if (bladeBonus > 0) {
+          const bonusEl = document.createElement('span');
+          bonusEl.className = 'badge-val-bonus';
+          bonusEl.textContent = '+' + bladeBonus;
+          badge.appendChild(bonusEl);
+          badge.classList.add('score-boosted');
+          badge.title = `Printed ${printedBlade} + ${bladeBonus} from modifiers`;
+        }
+        d.appendChild(badge);
+      }
     }
     wrap.appendChild(outer);
   });
@@ -33007,20 +33030,39 @@ function fillCardDetailPanel(prefix, card, s, myId) {
   if (subEl) subEl.textContent = [cardLocaleType(card), card.rarity, card.card_no].filter(Boolean).join(' · ');
 
   sg.innerHTML = '';
-  const addS = (lbl, v, iconName) => {
+  const stageCtx = findStageMemberContext(card, s);
+  const addS = (lbl, v, iconName, bonusN = 0) => {
     const icon = iconName ? mkGameIcon(iconName, 'ticon', lbl) : null;
     const sv = document.createElement('div');
     sv.className = 'sv';
     if (icon) sv.appendChild(icon);
     sv.appendChild(document.createTextNode(String(v)));
+    if (bonusN > 0) {
+      const bonusEl = document.createElement('span');
+      bonusEl.className = 'stat-mod-bonus';
+      bonusEl.textContent = '+' + bonusN;
+      bonusEl.title = 'From active modifiers';
+      sv.appendChild(bonusEl);
+    }
     sg.innerHTML += `<div class="sbox"><div class="sk">${lbl}</div></div>`;
     sg.lastElementChild.prepend(sv);
   };
   if (card.cost !== undefined) addS(t('card.cost'), effectiveCost(card, me?.hand || []), 'icon_energy.png');
   const lovecaPt = deckLovecaPointForCard(card.card_no);
   if (lovecaPt > 0) addS(t('deck.lovecaPointLabel'), lovecaPt);
-  if (card.blade != null) addS(t('card.blade'), card.blade, 'icon_blade.png');
+  if (card.blade != null || (stageCtx && memberModifierBladeBonus(stageCtx.member, s, stageCtx.pid, stageCtx.slot) > 0)) {
+    const printedBlade = card.printed_blade_override != null
+      ? Number(card.printed_blade_override)
+      : Number(card.blade || 0);
+    const bladeBonus = stageCtx
+      ? memberModifierBladeBonus(stageCtx.member, s, stageCtx.pid, stageCtx.slot)
+      : 0;
+    addS(t('card.blade'), printedBlade, 'icon_blade.png', bladeBonus);
+  }
   if (card.score !== undefined) addS(t('card.score'), card.score, 'sp_score.png');
+  const heartBonus = stageCtx && !isLiveCard(card)
+    ? memberModifierHeartGroups(stageCtx.member, s, stageCtx.pid, stageCtx.slot)
+    : [];
   if (isLiveCard(card)) {
     const req = card.required_hearts?.length ? card.required_hearts : card.hearts;
     if (req?.length) {
@@ -33028,9 +33070,9 @@ function fillCardDetailPanel(prefix, card, s, myId) {
       appendHeartStatCounts(sg.querySelector('.heart-stat'), req);
     }
   } else {
-    if (card.hearts?.length) {
+    if (card.hearts?.length || heartBonus.length) {
       sg.innerHTML += `<div class="sbox"><div class="sv heart-stat"></div><div class="sk">${t('card.hearts')}</div></div>`;
-      appendHeartStatCounts(sg.querySelector('.heart-stat'), card.hearts);
+      appendHeartStatCounts(sg.querySelector('.heart-stat'), card.hearts || [], { bonusHearts: heartBonus });
     }
   }
   if (cardYellDrawIconCount(card) > 0 || cardYellScoreIconCount(card) > 0) {
@@ -34104,6 +34146,157 @@ function playToSlot(card, slot, s, myId, existing) {
   }
 }
 
+function findStageMemberContext(card, s) {
+  const iid = card?.instance_id;
+  if (!iid || !s?.players) return null;
+  for (const pid of ['p1', 'p2']) {
+    const stage = s.players[pid]?.stage || {};
+    for (const [slot, m] of Object.entries(stage)) {
+      if (m?.instance_id === iid) return { pid, slot, member: m };
+    }
+  }
+  return null;
+}
+
+function tcgClientCountLiveZoneCards(p) {
+  if (typeof clientCountLiveZoneCards === 'function') return clientCountLiveZoneCards(p);
+  return (p?.live_zone || []).filter(c => c != null).length;
+}
+
+function tcgClientLiveZoneHasGroupLive(p, group) {
+  if (typeof clientLiveZoneHasGroupLive === 'function') return clientLiveZoneHasGroupLive(p, group);
+  return (p?.live_zone || []).some(lc => lc && isLiveCard(lc) && (lc.group || '') === group);
+}
+
+function tcgClientCountStageMembers(p) {
+  return Object.values(p?.stage || {}).filter(Boolean).length;
+}
+
+function tcgClientCountOppWait(state, pid) {
+  const opp = pid === 'p1' ? 'p2' : 'p1';
+  return Object.values(state?.players?.[opp]?.stage || {}).filter(m => m && !(m.active ?? true)).length;
+}
+
+function appendClientHeartSpecColors(out, spec) {
+  (spec || []).forEach(h => {
+    const n = Math.max(1, h.count || 1);
+    const color = normalizeHeartColor(h.color || 'any');
+    for (let i = 0; i < n; i++) out.push(color);
+  });
+}
+
+function stageBoardContinuousGrantsForPid(state, pid) {
+  const board = state?.stage_board;
+  if (!board) return null;
+  const viewer = G.playerId || 'p1';
+  const side = pid === viewer ? board.mine : (pid === (viewer === 'p1' ? 'p2' : 'p1') ? board.opp : null);
+  if (!side) return null;
+  if (!Object.prototype.hasOwnProperty.call(side, 'continuous_heart_grants')) return null;
+  return side.continuous_heart_grants || [];
+}
+
+function tcgCardInfoInLiveHeartPhase(phase) {
+  if (typeof isLivePerformancePhase === 'function') {
+    return isLivePerformancePhase(phase) || phase === 'live_judge';
+  }
+  return phase === 'live_performance_first'
+    || phase === 'live_performance_second'
+    || phase === 'live_judge';
+}
+
+/** Always / continuous heart colors currently granted to this stage member. */
+function clientMemberContinuousHeartColors(member, state, pid, slot) {
+  const out = [];
+  const p = state?.players?.[pid];
+  if (!p || !member) return out;
+  for (const ab of member.abilities || []) {
+    if ((ab.trigger || '') !== 'continuous') continue;
+    const type = ab.type || '';
+    if (type === 'continuous_hearts_in_slot' && (ab.slot || '') === slot) {
+      appendClientHeartSpecColors(out, ab.hearts);
+    }
+    if (type === 'blade_if_live_zone_group_live' && (ab.hearts || []).length) {
+      const min = Number(ab.min_count ?? 3);
+      const group = ab.group || 'Nijigasaki';
+      if (tcgClientCountLiveZoneCards(p) >= min && tcgClientLiveZoneHasGroupLive(p, group)) {
+        appendClientHeartSpecColors(out, ab.hearts);
+      }
+    }
+    if (type === 'continuous_mus_blade_if_live_zone' && (ab.hearts || []).length) {
+      const min = Number(ab.min_count ?? 3);
+      const group = ab.group || "μ's";
+      if (tcgClientCountLiveZoneCards(p) >= min && tcgClientLiveZoneHasGroupLive(p, group)) {
+        appendClientHeartSpecColors(out, ab.hearts);
+      }
+    }
+    if (type === 'continuous_heart_if_live_zone_group_hearts') {
+      let total = 0;
+      (p.live_zone || []).forEach(lc => {
+        if (!lc || !isLiveCard(lc) || (lc.group || '') !== (ab.group || 'Superstar')) return;
+        (lc.required_hearts || lc.hearts || []).forEach(h => { total += h.count || 1; });
+      });
+      if (total >= Number(ab.min_required_total ?? 8)) {
+        appendClientHeartSpecColors(out, ab.hearts);
+      }
+    }
+    if (type === 'hearts_if_min_energy') {
+      const ae = (p.energy_zone || []).filter(energyChipActive).length;
+      if (ae >= Number(ab.min_energy ?? 10)) appendClientHeartSpecColors(out, ab.hearts);
+    }
+    if (type === 'heart_per_opp_wait') {
+      const n = tcgClientCountOppWait(state, pid) * Number(ab.amount ?? 1);
+      const color = normalizeHeartColor(ab.color || 'any');
+      for (let i = 0; i < n; i++) out.push(color);
+    }
+    if (type === 'blade_if_exact_stage_members' && (ab.hearts || []).length) {
+      if (tcgClientCountStageMembers(p) === Number(ab.count ?? 2)) {
+        appendClientHeartSpecColors(out, ab.hearts);
+      }
+    }
+  }
+  return out;
+}
+
+function memberModifierBladeBonus(member, state, pid, slot) {
+  if (!member) return 0;
+  let bonus = Number(member.live_blade_bonus || 0);
+  bonus += clientMemberContinuousBladeBonus(member, state, pid, slot);
+  return Math.max(0, bonus);
+}
+
+/** Extra hearts on this member from Live grants + active Always conditions (not printed). */
+function memberModifierHeartGroups(member, state, pid, slot) {
+  if (!member) return [];
+  const treat = member.hearts_treat_as || null;
+  const map = new Map();
+  const add = (color, count) => {
+    const c = normalizeHeartColor(treat || color);
+    map.set(c, (map.get(c) || 0) + Math.max(1, count || 1));
+  };
+  (member.bonus_hearts || []).forEach(bh => {
+    if (typeof bh === 'string') {
+      add(bh, 1);
+      return;
+    }
+    add(bh?.color || 'any', bh?.count || 1);
+  });
+  let continuous = [];
+  if (tcgCardInfoInLiveHeartPhase(state?.phase)) {
+    const grants = stageBoardContinuousGrantsForPid(state, pid);
+    if (Array.isArray(grants)) {
+      const g = grants.find(x => x.instance_id && x.instance_id === member.instance_id)
+        || grants.find(x => (x.slot || '') === slot);
+      continuous = (g?.hearts || []).map(c => normalizeHeartColor(c));
+    } else {
+      continuous = clientMemberContinuousHeartColors(member, state, pid, slot);
+    }
+  } else {
+    continuous = clientMemberContinuousHeartColors(member, state, pid, slot);
+  }
+  continuous.forEach(c => add(c, 1));
+  return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
+}
+
 function memberEffectiveHeartGroups(m) {
   if (!m) return [];
   const treat = m.hearts_treat_as || null;
@@ -34209,21 +34402,32 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
     if (type === 'blade_if_live_zone_group_live') {
       const min = Number(ab.min_count ?? 3);
       const group = ab.group || 'Nijigasaki';
-      if (clientCountLiveZoneCards(p) >= min && clientLiveZoneHasGroupLive(p, group)) {
+      if (tcgClientCountLiveZoneCards(p) >= min && tcgClientLiveZoneHasGroupLive(p, group)) {
         bonus += Number(ab.amount ?? 1);
       }
     }
     if (type === 'continuous_mus_blade_if_live_zone') {
       const min = Number(ab.min_count ?? 3);
       const group = ab.group || "μ's";
-      if (clientCountLiveZoneCards(p) >= min && clientLiveZoneHasGroupLive(p, group)) {
+      if (tcgClientCountLiveZoneCards(p) >= min && tcgClientLiveZoneHasGroupLive(p, group)) {
         bonus += Number(ab.amount ?? 1);
       }
     }
     if (type === 'blade_if_live_zone_min') {
-      if (clientCountLiveZoneCards(p) >= Number(ab.min_live_cards ?? 2)) {
+      if (tcgClientCountLiveZoneCards(p) >= Number(ab.min_live_cards ?? 2)) {
         bonus += Number(ab.amount ?? 1);
       }
+    }
+    if (type === 'blade_if_exact_stage_members') {
+      if (tcgClientCountStageMembers(p) === Number(ab.count ?? 2)) {
+        bonus += Number(ab.amount ?? 1);
+      }
+    }
+    if (type === 'blade_per_opp_wait') {
+      bonus += tcgClientCountOppWait(state, pid) * Number(ab.amount ?? 1);
+    }
+    if (type === 'blade_bonus_per_success_lives') {
+      bonus += (p.success_lives || []).length * Number(ab.amount ?? 1);
     }
     if (type === 'continuous_hearts_in_slot' && (ab.slot || '') === slot) {
       // hearts only — no blade
@@ -38836,21 +39040,48 @@ function groupHeartsByColor(hearts) {
   return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
 }
 
-function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center' } = {}) {
-  if (!container || !hearts?.length) return;
+function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center', bonusHearts = null } = {}) {
+  if (!container) return;
+  const printed = groupHeartsByColor(hearts || []);
+  const bonusMap = new Map();
+  groupHeartsByColor(bonusHearts || []).forEach(h => {
+    bonusMap.set(h.color, (bonusMap.get(h.color) || 0) + (h.count || 1));
+  });
+  if (!printed.length && !bonusMap.size) return;
   container.style.display = 'flex';
   container.style.flexWrap = 'wrap';
   container.style.justifyContent = align === 'start' ? 'flex-start' : 'center';
   container.style.alignItems = align === 'start' ? 'flex-start' : 'center';
   container.style.gap = '4px 8px';
   container.innerHTML = '';
-  groupHeartsByColor(hearts).forEach(h => {
+  const appendPrinted = (h) => {
     const row = document.createElement('span');
     row.className = 'heart-stat-row';
     row.appendChild(mkHeartIcon(h.color, lg, field));
     row.appendChild(document.createTextNode(String(h.count)));
     container.appendChild(row);
+  };
+  const appendBonus = (color, count) => {
+    if (!(count > 0)) return;
+    const row = document.createElement('span');
+    row.className = 'heart-stat-row heart-stat-mod';
+    row.title = 'From active modifiers';
+    row.appendChild(mkHeartIcon(color, lg, field));
+    const bonusEl = document.createElement('span');
+    bonusEl.className = 'stat-mod-bonus';
+    bonusEl.textContent = '+' + count;
+    row.appendChild(bonusEl);
+    container.appendChild(row);
+  };
+  printed.forEach(h => {
+    appendPrinted(h);
+    if (bonusMap.has(h.color)) {
+      appendBonus(h.color, bonusMap.get(h.color));
+      bonusMap.delete(h.color);
+    }
   });
+  sortHeartsByDisplayOrder([...bonusMap.entries()].map(([color, count]) => ({ color, count })))
+    .forEach(h => appendBonus(h.color, h.count));
 }
 
 function appendHeartIcons(container, hearts, lg=false, field=false){
