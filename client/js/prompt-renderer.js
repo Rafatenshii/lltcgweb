@@ -2767,6 +2767,23 @@ global.renderPrompt = function renderPrompt(s, myId){
       openActivateWrMemberPick(pr);
       return;
     }
+    if(pr.step==='pick_ability'){
+      ovl.classList.remove('open');
+      el('prompt-ttl').textContent=pr.wr_member_name||pr.source_name||'Choose ability';
+      el('prompt-msg').textContent=pr.prompt||'Choose 1 ability to activate.';
+      const box=el('prompt-btns'); box.innerHTML='';
+      const choices=pr.choices||[];
+      const labels=pr.choice_labels||choices;
+      choices.forEach((key,i)=>{
+        const b=document.createElement('button');
+        b.className='btn-grad';
+        b.textContent=labels[i]||('Ability '+(i+1));
+        b.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:String(key)}); };
+        box.appendChild(b);
+      });
+      ovl.classList.add('open');
+      return;
+    }
     if(pr.step==='pick_discard'){
       ovl.classList.remove('open');
       const me=s.players?.[myId];

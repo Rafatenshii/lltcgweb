@@ -209,8 +209,12 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
                 if (intval($c['cost'] ?? 0) > $maxCost) {
                     continue;
                 }
-                if (empty(listWrMemberActivatableAbilities($p, $c))
-                    && empty($ab['enter_only'] ? listWrMemberEnterAbilities($c) : [])) {
+                // Shizuku BP3-003: enter_only → only (Enter) abilities; else stage/WR activated.
+                if (!empty($ab['enter_only'])) {
+                    if (empty(listWrMemberEnterAbilities($c))) {
+                        continue;
+                    }
+                } elseif (empty(listWrMemberActivatableAbilities($p, $c))) {
                     continue;
                 }
                 $candidates[] = cardPromptSummary($c);
@@ -758,7 +762,7 @@ function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array 
         if (!$played) throw new Exception('Choose a Member from hand');
         $p['waiting_room'][] = $member;
         $p['stage'][$slot] = $played;
-        $played['active'] = true;
+        clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         nijiStackEnergyUnderMember($p, $played, intval($ab['energy'] ?? 1));
         $state = addLog($state, $state['players'][$pid]['name'] .
@@ -935,7 +939,8 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
             if (!$picked) {
                 throw new Exception('Member not in Waiting Room');
             }
-            $activatable = !empty($ab['enter_only'])
+            // Must read enter_only from $ability (prompt payload) — $ab is not in scope here.
+            $activatable = !empty($ability['enter_only'])
                 ? listWrMemberEnterAbilities($picked)
                 : listWrMemberActivatableAbilities($ownerP, $picked);
             if (empty($activatable)) {
@@ -953,7 +958,10 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
             if (count($activatable) === 1) {
                 $abIdx = intval($activatable[0]['index']);
                 $chosen = $activatable[0]['ability'];
-                $discardNeed = nijiWrActivatedAbilityDiscardCount($chosen);
+                // discard on on_enter (e.g. optional_discard_prompt) is the effect, not a WR activate cost.
+                $discardNeed = (($chosen['trigger'] ?? '') === 'activated')
+                    ? nijiWrActivatedAbilityDiscardCount($chosen)
+                    : 0;
                 if ($discardNeed > 0 && empty($data['discard_ids'])) {
                     $state['pending_prompt'] = [
                         'type'          => 'activate_wr_member_pick',
@@ -971,6 +979,9 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
                     $state['seq']++;
                     return $state;
                 }
+                // Clear this prompt so nested Enter abilities (optional_discard_prompt, etc.)
+                // are not blocked by `if (!empty($state['pending_prompt'])) break`.
+                unset($state['pending_prompt']);
                 $state = actionActivateAbility($state, $owner, [
                     'card_id'                 => $memberId,
                     'ability_index'           => $abIdx,
@@ -1014,7 +1025,9 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
                 throw new Exception('Invalid ability choice');
             }
             $chosen = $abilitiesMap[$abIdx] ?? $abilitiesMap[(string)$abIdx];
-            $discardNeed = nijiWrActivatedAbilityDiscardCount($chosen);
+            $discardNeed = (($chosen['trigger'] ?? '') === 'activated')
+                ? nijiWrActivatedAbilityDiscardCount($chosen)
+                : 0;
             if ($discardNeed > 0 && empty($data['discard_ids'])) {
                 $state['pending_prompt'] = [
                     'type'          => 'activate_wr_member_pick',
@@ -1032,6 +1045,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
                 $state['seq']++;
                 return $state;
             }
+            unset($state['pending_prompt']);
             $state = actionActivateAbility($state, $owner, [
                 'card_id'                 => $memberId,
                 'ability_index'           => $abIdx,
@@ -1058,6 +1072,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
             if (count($ids) !== $need) {
                 throw new Exception("Must discard exactly $need card(s) from hand");
             }
+            unset($state['pending_prompt']);
             $state = actionActivateAbility($state, $owner, [
                 'card_id'                 => $memberId,
                 'ability_index'           => $abIdx,

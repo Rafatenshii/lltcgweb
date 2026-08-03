@@ -3952,13 +3952,18 @@ function cpuResolvePromptBody(s, cpu, pr) {
       if(id) cpuAct('resolve_prompt',{card_id:id});
       return;
     }
+    if(pr.step==='pick_ability'){
+      const choice=pr.choices?.[0] ?? '0';
+      cpuAct('resolve_prompt',{choice:String(choice)});
+      return;
+    }
     if(pr.step==='pick_discard'){
       const need=pr.discard_count||1;
       const ids=(cpu.hand||[]).slice(0,need).map(c=>c.instance_id).filter(Boolean);
       if(ids.length>=need) cpuAct('resolve_prompt',{discard_ids:ids});
       return;
     }
-    cpuAct('resolve_prompt',{choice:'0'});
+    cpuAct('resolve_prompt',{choice:String(pr.choices?.[0] ?? '0')});
     return;
   }
   if(pr.type==='activated_pick_on_enter_ability'){
