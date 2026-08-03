@@ -2060,7 +2060,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageMemberPickById(pr);
     return;
   }
-  if(pr?.type==='pick_named_member_blade'||pr?.type==='pick_member_cost_bonus'){
+  if((pr?.type==='pick_named_member_blade'||pr?.type==='pick_member_cost_bonus')&&pr.responder===myId){
     ovl.classList.remove('open');
     openHandPick({
       hand: pr.candidates||[],
@@ -3098,6 +3098,8 @@ global.renderPrompt = function renderPrompt(s, myId){
     hideTextAnswerPrompt();
     hidePromptEffectText();
     closeM('overlay-hand-pick');
+    closeM('overlay-pick');
+    closeM('overlay-heart');
     return;
   }
   if(pr.type==='opponent_text_answer'){
