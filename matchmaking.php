@@ -233,6 +233,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     }
 
     $db = tcgDb();
+    // Ensure new columns exist before selecting them (Hostinger may boot mid-deploy).
+    tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'winner_pid', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'pr_rewarded', 'INTEGER NOT NULL DEFAULT 0');
     $stmt = $db->prepare('SELECT status, pr_rewarded, winner_pid FROM tcg_ranked_matches WHERE room_id = ? ORDER BY created_at DESC LIMIT 1');
     $stmt->execute([$roomId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
