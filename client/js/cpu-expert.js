@@ -152,7 +152,6 @@
   async function dryRunSequences(sequences) {
     const roomId = global.G?.roomId;
     const token = global.G?.cpuToken;
-    const API = global.API || './api.php';
     if (!roomId || !token) {
       throw new Error('Missing room or CPU token for dry-run');
     }
@@ -166,13 +165,11 @@
       return steps;
     }).filter((steps) => steps.length > 0);
 
-    const r = await fetch(`${API}?action=dry_run_actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room_id: roomId, token, sequences: payloadSeqs }),
-    });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error);
+    const d = await global.apiPost('dry_run_actions', {
+      room_id: roomId,
+      token,
+      sequences: payloadSeqs,
+    }, { silent: true });
     return { results: d.results || [], payloadSeqs };
   }
 

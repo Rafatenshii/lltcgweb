@@ -4661,9 +4661,18 @@ async function cpuAct(type,data) {
   tcgDebugRecordAction(type, data, 'cpu');
   TCG_DEBUG.log('action', 'cpuAct →', type, data);
   try {
-    const r=await fetch(`${API}?action=action`,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({room_id:G.roomId,token:G.cpuToken,type,data})});
-    const d=await r.json();
+    // Must use apiPost (not frozen lexical API) so match-primary routes to VPS Redis.
+    let d;
+    try {
+      d = await apiPost('action', {
+        room_id: G.roomId,
+        token: G.cpuToken,
+        type,
+        data,
+      }, { silent: true });
+    } catch (postErr) {
+      d = { error: postErr && postErr.message ? postErr.message : String(postErr || 'action failed') };
+    }
     if(d.error){
       TCG_DEBUG.warn('action', 'cpuAct failed', type, d.error);
       if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
