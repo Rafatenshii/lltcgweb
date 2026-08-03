@@ -4292,7 +4292,8 @@ html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"
 }
 html:not(.tcg-mobile-viewport)[data-ui-text-scale]:not([data-ui-text-scale="100"]) #screen-game .side-panel.side-right .side-log{
   flex:1 1 auto;
-  min-height:0
+  min-height:0;
+  max-height:100%
 }
 .account-panel .field label{color:rgba(255,255,255,.78)}
 /* ── Card tilt (all rarities) + foil textures (premium rarities) ── */

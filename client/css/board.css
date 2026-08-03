@@ -522,7 +522,7 @@ body.tutorial-live-mode.tutorial-live-action .drag-hand-wrap{
 }
 .side-panel.side-left{border-right:1px solid var(--ui-panel-border-strong);min-height:0}
 .side-panel.side-left > .side-block:not(.card-hover-panel){flex-shrink:0}
-.side-panel.side-right{border-left:1px solid var(--ui-panel-border-strong)}
+.side-panel.side-right{border-left:1px solid var(--ui-panel-border-strong);min-height:0}
 .side-panel h3{font-family:'Fredoka One',cursive;font-size:16px;color:var(--pink);margin:0 0 6px}
 .players-stats-panel{padding:8px 10px;display:flex;flex-direction:column;gap:8px}
 .player-stat-strip{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -705,11 +705,16 @@ body.tcg-replay-view-mode .overlay.replay-prompt-readonly .heart-btn{cursor:defa
 }
 .phase-panel .pmsg{font-size:11px;color:rgba(255,255,255,.55);line-height:1.45;margin-bottom:8px;min-height:32px}
 .phase-panel .pbtns{display:flex;flex-wrap:wrap;gap:6px}
-.side-panel.side-right .side-log{flex:1 1 auto;min-height:0;height:100%}
+.side-panel.side-right .side-log{flex:1 1 auto;min-height:0;height:100%;max-height:100%}
 .side-log{flex:1;display:flex;flex-direction:column;min-height:0;
   background:rgba(255,255,255,.04);border:1px solid var(--ui-panel-border);
   border-radius:12px;overflow:hidden}
-.side-log .logscroll{flex:1;overflow-y:auto;padding:8px 10px}
+.side-log > .sbs,
+.side-log > .tcg-radio-bar,
+.side-log > .phase-action-bar,
+.side-log > .sbfoot{flex:0 0 auto}
+/* min-height:0 is required or log lines force the column taller than the panel and shove footer buttons off-screen */
+.side-log .logscroll{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;padding:8px 10px}
 html:not(.tcg-mobile-viewport) .side-log.radio-open{
   --tcg-radio-stack-h:300px;
   display:grid;
@@ -717,7 +722,7 @@ html:not(.tcg-mobile-viewport) .side-log.radio-open{
   overflow:hidden;
 }
 html:not(.tcg-mobile-viewport) .side-log.radio-open .logscroll{
-  flex:none;min-height:64px;height:auto!important;max-height:none!important;
+  flex:none;min-height:64px;height:auto!important;max-height:none!important;overflow-y:auto;
 }
 .tcg-radio-stack{
   display:flex;flex-direction:column;min-height:0;overflow:hidden;
