@@ -48,7 +48,9 @@ Do **not** upload `USE_VPS_API` for this mode — that marker is full cutover on
 
 Authoritative live rooms move off Hostinger `games/*.json` flock onto VPS Redis (`TCG_GAME_STORE=redis`). PHP rules still run in the overflow/match Docker API (`compose.overflow.yaml` includes Redis).
 
-**Client:** deploy [`client/js/runtime-flags.js`](../client/js/runtime-flags.js) with `TCG_MATCH_API_PRIMARY` true (or `?match_primary=1` / `localStorage.tcg_match_api_primary=1` for soak). Casual create/join/`action` use `TCG_OVERFLOW_ORIGIN`. Account, ranked queue, ranked rooms, and login bonus stay on Hostinger until a shared DB strategy exists (client locks ranked matches to Hostinger; Hostinger still accepts `action` for `mode=ranked` rooms when match writes are otherwise disabled).
+**Client:** deploy [`client/js/runtime-flags.js`](../client/js/runtime-flags.js) with `TCG_MATCH_API_PRIMARY` true (or `?match_primary=1` / `localStorage.tcg_match_api_primary=1` for soak). Casual create/join/`action` and **ranked live rooms** use `TCG_OVERFLOW_ORIGIN` (VPS Redis). Account, ranked queue, Elo/PR, boosters, and login bonus stay on Hostinger. Hostinger `ranked_join` seeds rooms via `seed_ranked_room` (secret); VPS finish posts `ranked_apply_result` for Elo. Legacy Hostinger ranked `games/*.json` may still accept `action` for drain only (`match_api` unset).
+
+**Secrets (Hostinger `tcg_sync.local.php` + VPS compose env):** `TCG_INTERNAL_MATCH_SECRET` (shared), `TCG_MATCH_SEED_URL` (Hostinger→VPS), `TCG_ELO_APPLY_URL` (VPS→Hostinger). Recreate Docker / inject env only after explicit operator OK.
 
 **Hostinger kill switch:** upload empty `MATCH_WRITES_DISABLED` next to `api.php` and/or `.htaccess` `SetEnv TCG_HOSTINGER_MATCH_WRITES 0` so `create_room` / `join_room` / `casual_*` / `action` / `dry_run_actions` return `503` + `match_writes_disabled`. Reads (`get_state`, `get_cards`, `ping`) and account APIs stay available for drain. Do **not** place that marker on the VPS match API.
 

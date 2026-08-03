@@ -3,7 +3,8 @@
  * Ranked room creation and post-game ELO updates.
  *
  * Loads api.php as a library (TCG_API_LIB_ONLY). tcgCreateRankedRoom pairs equipped
- * deck presets; tcgOnGameFinished adjusts tcg_rank when a ranked match ends.
+ * deck presets; tcgOnGameFinished adjusts tcg_rank when a ranked match ends
+ * (locally on Hostinger, or via Hostinger webhook when running on VPS).
  */
 define('TCG_API_LIB_ONLY', true);
 require_once __DIR__ . '/api.php';
@@ -11,6 +12,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/matchmaking.php';
 require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/booster.php';
+require_once __DIR__ . '/match_bridge.php';
 
 function tcgGetEquippedDeckLists(string $discordId): ?array {
     $row = tcgGetEquippedDeckRow($discordId);
@@ -95,6 +97,7 @@ function tcgCreateRankedRoomPair(
         'p2_discord_id' => $p2DiscordId,
         'applied' => false,
         'game_mode' => $gameMode,
+        'match_api' => 'overflow',
     ];
 
     $main2 = buildDeck($allCards, $deck2['main_nos']);
@@ -116,13 +119,20 @@ function tcgCreateRankedRoomPair(
 
     $state['phase_timer_cfg'] = ['enabled' => true, 'duration' => PHASE_TIMER_MAX];
 
-    saveGame($roomId, $state);
+    // Authoritative room lives on VPS Redis — do not leave a Hostinger-only playable copy.
+    if (!tcgSeedRankedRoomToVps($state)) {
+        tcgQueueLeave($p1DiscordId, $gameMode);
+        tcgQueueLeave($p2DiscordId, $gameMode);
+        return null;
+    }
+
     $matchId = tcgCreateRankedMatchRecord($roomId, $p1DiscordId, $p2DiscordId, $p1Token, $p2Token, $gameMode);
 
     return [
         'match_id' => $matchId,
         'room_id' => $roomId,
         'game_mode' => $gameMode,
+        'match_api' => 'overflow',
         'p1' => ['discord_id' => $p1DiscordId, 'token' => $p1Token, 'player_id' => 'p1'],
         'p2' => ['discord_id' => $p2DiscordId, 'token' => $p2Token, 'player_id' => 'p2'],
     ];
@@ -142,6 +152,18 @@ function tcgOnGameFinished(array &$state): void {
     if (!$p1Id || !$p2Id) {
         return;
     }
+
+    // VPS match API (or overflow-seeded rooms): Elo/PR live on Hostinger — signed webhook.
+    $remoteElo = (($ranked['match_api'] ?? '') === 'overflow') || tcgShouldApplyRankedEloRemotely();
+    if ($remoteElo) {
+        if (!tcgPostRankedApplyResultToHostinger($state)) {
+            // Leave applied=false so a later poll/recover can retry.
+            return;
+        }
+        $state['ranked']['applied'] = true;
+        return;
+    }
+
     require_once __DIR__ . '/game_mode.php';
     $gameMode = tcgNormalizeGameMode($ranked['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     if ($winnerPid === 'p1') {
@@ -160,4 +182,70 @@ function tcgOnGameFinished(array &$state): void {
     } catch (Throwable $e) {
         // ELO already applied — PR reward is best-effort.
     }
+}
+
+/**
+ * Apply Elo/PR from a VPS finish webhook (Hostinger account DB).
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApplyRankedResultFromWebhook(array $body): array {
+    require_once __DIR__ . '/game_mode.php';
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($body['room_id'] ?? '')) ?? '');
+    if ($roomId === '') {
+        throw new Exception('room_id required', 400);
+    }
+    $p1Id = trim((string)($body['p1_discord_id'] ?? ''));
+    $p2Id = trim((string)($body['p2_discord_id'] ?? ''));
+    if ($p1Id === '' || $p2Id === '') {
+        throw new Exception('p1_discord_id and p2_discord_id required', 400);
+    }
+    $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+
+    // Idempotent: pending row already done.
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT status FROM tcg_ranked_matches WHERE room_id = ? ORDER BY created_at DESC LIMIT 1');
+    $stmt->execute([$roomId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row && ($row['status'] ?? '') === 'done') {
+        return ['success' => true, 'already_applied' => true, 'room_id' => $roomId];
+    }
+
+    $winnerPid = $body['winner'] ?? null;
+    if ($winnerPid === 'p1') {
+        tcgApplyRankResult($p1Id, $p2Id, false, $gameMode);
+    } elseif ($winnerPid === 'p2') {
+        tcgApplyRankResult($p2Id, $p1Id, false, $gameMode);
+    } else {
+        tcgApplyRankResult($p1Id, $p2Id, true, $gameMode);
+    }
+    tcgCompleteRankedMatch($roomId);
+
+    try {
+        require_once __DIR__ . '/ranked_pr_rewards.php';
+        $fakeState = [
+            'room_id' => $roomId,
+            'mode' => 'ranked',
+            'winner' => $winnerPid,
+            'end_reason' => $body['end_reason'] ?? null,
+            'resigned_by' => $body['resigned_by'] ?? null,
+            'disconnected_player' => $body['disconnected_player'] ?? null,
+            'ranked' => [
+                'p1_discord_id' => $p1Id,
+                'p2_discord_id' => $p2Id,
+                'game_mode' => $gameMode,
+                'applied' => true,
+            ],
+            'players' => [
+                'p1' => ['discord_id' => $p1Id],
+                'p2' => ['discord_id' => $p2Id],
+            ],
+        ];
+        tcgApplyRankedPrRewardOnFinish($fakeState);
+    } catch (Throwable $e) {
+        // Elo already applied.
+    }
+
+    return ['success' => true, 'room_id' => $roomId];
 }

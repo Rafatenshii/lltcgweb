@@ -79,6 +79,8 @@ function tcgQueueStatus(string $discordId): array {
 
     if ($match) {
         $isP1 = $match['p1_id'] === $discordId;
+        $roomId = (string)($match['room_id'] ?? '');
+        $localFile = $roomId !== '' && is_file(tcgRankedGameFilePath($roomId));
         return [
             'status' => 'matched',
             'room_id' => $match['room_id'],
@@ -87,6 +89,7 @@ function tcgQueueStatus(string $discordId): array {
             'opponent_id' => $isP1 ? $match['p2_id'] : $match['p1_id'],
             'match_id' => $match['match_id'],
             'game_mode' => tcgNormalizeGameMode($match['game_mode'] ?? TCG_GAME_MODE_STANDARD),
+            'match_api' => $localFile ? 'hostinger' : 'overflow',
         ];
     }
 
@@ -180,7 +183,7 @@ function tcgCompleteRankedMatch(string $roomId): void {
     tcgDb()->prepare('UPDATE tcg_ranked_matches SET status = "done" WHERE room_id = ?')->execute([$roomId]);
 }
 
-/** Drop pending ranked rows whose game file is missing or already finished. */
+/** Drop pending ranked rows whose game is missing or already finished (Hostinger file or VPS Redis). */
 function tcgSanitizeRankedMatchRow(array|false|null $row): ?array {
     if (!is_array($row)) {
         return null;
@@ -191,6 +194,16 @@ function tcgSanitizeRankedMatchRow(array|false|null $row): ?array {
     }
     $path = tcgRankedGameFilePath($roomId);
     if (!is_file($path)) {
+        // New ranked rooms live on VPS Redis — probe before clearing the Hostinger row.
+        require_once __DIR__ . '/match_bridge.php';
+        $token = (string)($row['p1_token'] ?? '');
+        if ($token === '') {
+            $token = (string)($row['p2_token'] ?? '');
+        }
+        $probe = tcgProbeOverflowRankedRoom($roomId, $token);
+        if ($probe === 'live' || $probe === 'unknown') {
+            return $row;
+        }
         tcgCompleteRankedMatch($roomId);
         return null;
     }
@@ -258,6 +271,7 @@ function tcgRankedMatchRowIsStale(string $roomId, array $state, array $row): boo
  * Without confirm_resign: only clear the DB row when the room is missing/finished.
  * Never auto-concede a live room (VPS miss / reconnect cleanup used to free-win the opponent).
  * Options "Leave active match" must pass confirm_resign=1.
+ * Overflow-seeded rooms resign via the VPS match API (Elo webhook on finish).
  */
 function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array {
     $confirmResign = !empty($opts['confirm_resign']) || !empty($opts['force']);
@@ -273,6 +287,8 @@ function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array 
     $roomId = $row['room_id'] ?? '';
     $isP1 = ($row['p1_id'] ?? '') === $discordId;
     $token = $isP1 ? ($row['p1_token'] ?? '') : ($row['p2_token'] ?? '');
+    $localPath = $roomId !== '' ? tcgRankedGameFilePath($roomId) : '';
+    $hasLocalFile = $localPath !== '' && is_file($localPath);
 
     if ($roomId !== '' && $token !== '') {
         if (!defined('TCG_API_LIB_ONLY')) {
@@ -280,45 +296,62 @@ function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array 
         }
         require_once __DIR__ . '/api.php';
         require_once __DIR__ . '/ranked_room.php';
+        require_once __DIR__ . '/match_bridge.php';
 
-        try {
-            $guard = withLock($roomId, function () use ($roomId, $token, $confirmResign) {
-                $state = loadGame($roomId);
-                if (!$state) {
-                    return ['missing' => true];
-                }
-                if (($state['status'] ?? '') === 'finished') {
-                    if (($state['mode'] ?? '') === 'ranked' && empty($state['ranked']['applied'])) {
-                        tcgOnGameFinished($state);
-                        saveGame($roomId, $state);
+        if ($hasLocalFile) {
+            try {
+                $guard = withLock($roomId, function () use ($roomId, $token, $confirmResign) {
+                    $state = loadGame($roomId);
+                    if (!$state) {
+                        return ['missing' => true];
                     }
-                    return ['finished' => true];
-                }
+                    if (($state['status'] ?? '') === 'finished') {
+                        if (($state['mode'] ?? '') === 'ranked' && empty($state['ranked']['applied'])) {
+                            tcgOnGameFinished($state);
+                            saveGame($roomId, $state);
+                        }
+                        return ['finished' => true];
+                    }
 
-                // Live match: only Options/explicit leave may concede.
-                if (!$confirmResign) {
-                    return ['blocked' => true, 'code' => 'match_still_live'];
-                }
+                    // Live match: only Options/explicit leave may concede.
+                    if (!$confirmResign) {
+                        return ['blocked' => true, 'code' => 'match_still_live'];
+                    }
 
-                $playerId = getPlayerIdByToken($state, $token);
-                if (!$playerId) {
-                    return ['missing' => true];
+                    $playerId = getPlayerIdByToken($state, $token);
+                    if (!$playerId) {
+                        return ['missing' => true];
+                    }
+                    $state = applyAction($state, $playerId, 'resign', []);
+                    saveGame($roomId, $state);
+                    tcgOnGameFinished($state);
+                    saveGame($roomId, $state);
+                    return ['resigned' => true];
+                });
+                if (is_array($guard) && !empty($guard['blocked'])) {
+                    return [
+                        'left' => false,
+                        'code' => (string)($guard['code'] ?? 'match_still_live'),
+                        'room_id' => $roomId,
+                    ];
                 }
-                $state = applyAction($state, $playerId, 'resign', []);
-                saveGame($roomId, $state);
-                tcgOnGameFinished($state);
-                saveGame($roomId, $state);
-                return ['resigned' => true];
-            });
-            if (is_array($guard) && !empty($guard['blocked'])) {
-                return [
-                    'left' => false,
-                    'code' => (string)($guard['code'] ?? 'match_still_live'),
-                    'room_id' => $roomId,
-                ];
+            } catch (Throwable $e) {
+                // Game file missing or lock failed — still clear the ranked row below.
             }
-        } catch (Throwable $e) {
-            // Game file missing or lock failed — still clear the ranked row below.
+        } else {
+            // VPS Redis room (no Hostinger games/*.json).
+            $probe = tcgProbeOverflowRankedRoom($roomId, $token);
+            if ($probe === 'live' || $probe === 'unknown') {
+                if (!$confirmResign) {
+                    return [
+                        'left' => false,
+                        'code' => 'match_still_live',
+                        'room_id' => $roomId,
+                    ];
+                }
+                tcgResignRankedRoomOnVps($roomId, $token);
+            }
+            // missing/finished: clear Hostinger pending row (Elo already applied via webhook if finished).
         }
     }
     tcgCompleteRankedMatch($roomId);
@@ -396,11 +429,13 @@ function tcgGetActiveRankedGame(string $discordId): ?array {
     }
     $roomId = $row['room_id'] ?? '';
     $isP1 = ($row['p1_id'] ?? '') === $discordId;
+    $localFile = $roomId !== '' && is_file(tcgRankedGameFilePath($roomId));
     return [
         'room_id' => $roomId,
         'player_token' => $isP1 ? ($row['p1_token'] ?? '') : ($row['p2_token'] ?? ''),
         'player_id' => $isP1 ? 'p1' : 'p2',
         'mode' => 'ranked',
+        'match_api' => $localFile ? 'hostinger' : 'overflow',
         'game_mode' => tcgNormalizeGameMode($row['game_mode'] ?? TCG_GAME_MODE_STANDARD),
     ];
 }

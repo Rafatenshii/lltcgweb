@@ -9,7 +9,7 @@
  * Endpoints (action=):
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
  *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
- *   ranked_join, ranked_leave, ranked_status, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
+ *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
  */
@@ -24,10 +24,10 @@ tcgDefinePathConstants();
 header('Content-Type: application/json');
 tcgSendCorsHeaders();
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token, Authorization, X-TCG-Internal-Secret');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    tcgSendCorsPreflight('GET, POST, OPTIONS', 'Content-Type, X-Auth-Token, Authorization');
+    tcgSendCorsPreflight('GET, POST, OPTIONS', 'Content-Type, X-Auth-Token, Authorization, X-TCG-Internal-Secret');
     http_response_code(200);
     exit;
 }
@@ -78,6 +78,7 @@ try {
         case 'ranked_join':        echo json_encode(tcgApiRankedJoin($body)); break;
         case 'ranked_leave':       echo json_encode(tcgApiRankedLeave($body)); break;
         case 'ranked_status':      echo json_encode(tcgApiRankedStatus($body)); break;
+        case 'ranked_apply_result': echo json_encode(tcgApiRankedApplyResult($body)); break;
         case 'rank_stats':         echo json_encode(tcgApiRankStats($body)); break;
         case 'rank_banner_set':    echo json_encode(tcgApiRankBannerSet($body)); break;
         case 'rank_flag_set':      echo json_encode(tcgApiRankFlagSet($body)); break;
@@ -939,6 +940,19 @@ function tcgApiActiveGame(array $body): array {
     return ['success' => true, 'active' => $active];
 }
 
+/**
+ * VPS finish webhook → Hostinger Elo/PR (secret-gated, no user session).
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApiRankedApplyResult(array $body): array {
+    require_once __DIR__ . '/match_bridge.php';
+    require_once __DIR__ . '/ranked_room.php';
+    tcgRequireInternalMatchSecret();
+    return tcgApplyRankedResultFromWebhook($body);
+}
+
 function tcgApiLeaveActiveGame(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $result = tcgAbandonActiveRankedGame($uid, [
@@ -1538,6 +1552,7 @@ function tcgFinalizeRankedPair(string $discordId, string $oppId, string $gameMod
         'opponent_id' => $isP1 ? $pair['p2']['discord_id'] : $pair['p1']['discord_id'],
         'match_id' => $pair['match_id'],
         'game_mode' => $gameMode,
+        'match_api' => (string)($pair['match_api'] ?? 'overflow'),
     ];
 }
 

@@ -143,8 +143,8 @@ function tcgIsHostingerMatchWriteAction(string $action): bool {
 }
 
 /**
- * Ranked queue + game JSON still live on Hostinger (account DB / ELO).
- * Allow action writes for those rooms while casual/create stay on the VPS.
+ * Drain-only: Hostinger may still accept action for legacy ranked rooms that were
+ * created locally (no match_api=overflow). New ranked rooms live on VPS Redis.
  */
 function tcgHostingerRankedActionAllowed(string $action, array $body): bool {
     if ($action !== 'action' && $action !== 'dry_run_actions') {
@@ -159,7 +159,14 @@ function tcgHostingerRankedActionAllowed(string $action, array $body): bool {
     } catch (Throwable $e) {
         return false;
     }
-    return is_array($state) && (($state['mode'] ?? '') === 'ranked');
+    if (!is_array($state) || (($state['mode'] ?? '') !== 'ranked')) {
+        return false;
+    }
+    // VPS-seeded rooms must not be playable on Hostinger.
+    if (($state['ranked']['match_api'] ?? '') === 'overflow') {
+        return false;
+    }
+    return true;
 }
 
 try {
@@ -201,6 +208,7 @@ try {
         case 'spectate_leave': echo json_encode(apiSpectateLeave($body)); break;
         case 'ping':         echo json_encode(ping($body));            break;
         case 'sync_ticket':  echo json_encode(apiSyncTicket($body));    break;
+        case 'seed_ranked_room': echo json_encode(apiSeedRankedRoom($body)); break;
         case 'cleanup':      echo json_encode(cleanupOldGames());      break;
         default:
             http_response_code(404);
@@ -1036,6 +1044,41 @@ function handleDryRunActions(array $body): array {
 
         return ['ok' => true, 'results' => $results];
     });
+}
+
+/**
+ * Internal: Hostinger seeds a fully-built ranked room into VPS Redis.
+ * Auth: X-TCG-Internal-Secret === TCG_INTERNAL_MATCH_SECRET.
+ */
+function apiSeedRankedRoom(array $body): array {
+    require_once __DIR__ . '/match_bridge.php';
+    tcgRequireInternalMatchSecret();
+    $state = $body['state'] ?? null;
+    if (!is_array($state)) {
+        throw new Exception('state required', 400);
+    }
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($state['room_id'] ?? '')) ?? '');
+    if ($roomId === '') {
+        throw new Exception('state.room_id required', 400);
+    }
+    $state['room_id'] = $roomId;
+    if (($state['mode'] ?? '') !== 'ranked') {
+        throw new Exception('state.mode must be ranked', 400);
+    }
+    $p1 = $state['players']['p1'] ?? null;
+    $p2 = $state['players']['p2'] ?? null;
+    if (!is_array($p1) || !is_array($p2) || empty($p1['token']) || empty($p2['token'])) {
+        throw new Exception('ranked state requires both player tokens', 400);
+    }
+    if (!isset($state['ranked']) || !is_array($state['ranked'])) {
+        $state['ranked'] = [];
+    }
+    $state['ranked']['match_api'] = 'overflow';
+    if (empty($state['seq'])) {
+        $state['seq'] = 1;
+    }
+    saveGame($roomId, $state);
+    return ['ok' => true, 'room_id' => $roomId, 'seq' => intval($state['seq'] ?? 1)];
 }
 
 function ping(array $body): array {

@@ -353,8 +353,7 @@
       TCG_DEBUG.warn('sync', 'beginGameSync skipped — missing room/token');
       return;
     }
-    // Ranked (Hostinger-native) rooms: short poll only. VPS SSE/sync_ticket is for
-    // Redis match-primary rooms — mixing them caused room-not-found / false resigns.
+    // Hostinger-only drain rooms (legacy ranked files): short poll. VPS Redis rooms use SSE.
     if (G.apiOrigin === 'hostinger') {
       G.syncEnabled = false;
       G.syncTicket = null;

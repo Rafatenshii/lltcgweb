@@ -113,8 +113,7 @@
   /** Lock the match to one origin for its lifetime (no mid-match migrate). */
   global.tcgLockApiOrigin = function tcgLockApiOrigin(origin) {
     global.G = global.G || {};
-    // Match-primary: casual/CPU live on VPS. Explicit hostinger lock is kept for
-    // ranked rooms (queue + game files + ELO still on Hostinger).
+    // Match-primary: live rooms (casual/CPU/ranked) use VPS unless explicitly locked.
     if (global.TCG_MATCH_API_PRIMARY && origin !== 'overflow' && origin !== 'hostinger') {
       origin = 'overflow';
     }
@@ -143,8 +142,8 @@
     }
     const locked = global.G && global.G.apiOrigin;
 
-    // Match-primary: casual/CPU match traffic uses VPS. Ranked keeps an explicit
-    // hostinger lock (rooms + ELO still Hostinger-local until VPS ranked cutover).
+    // Match-primary: live match traffic uses VPS. Account/queue stay Hostinger.
+    // Explicit hostinger lock remains only for legacy Hostinger drain rooms.
     if (global.TCG_MATCH_API_PRIMARY) {
       if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
       if (locked === 'hostinger') return HOSTINGER_URLS;
@@ -570,7 +569,7 @@
           || /match writes disabled/i.test(String(lastErr.message || ''))
         ));
         // Stale hostinger routing + disabled match writes: retry on VPS (create/join/action).
-        // Never migrate an explicit Hostinger lock (ranked rooms) — VPS has no copy.
+        // Do not migrate an explicit Hostinger lock (legacy drain rooms only).
         if (matchWritesDisabled && global.TCG_OVERFLOW_ENABLED
             && !(global.G && global.G.apiOrigin === 'hostinger')
             && (MATCHMAKE_GAME[action] || action === 'action' || action === 'dry_run_actions' || action === 'ping')) {

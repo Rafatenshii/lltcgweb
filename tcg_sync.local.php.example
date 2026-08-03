@@ -10,3 +10,9 @@ define('TCG_SYNC_ENABLED', true);
 define('TCG_SYNC_PUBLISH_URL', 'http://YOUR_VPS_HOST:5001/api/tcg/sync/notify');
 define('TCG_SYNC_INTERNAL_TOKEN', 'paste-LLR_SITE_INTERNAL_TOKEN-here');
 define('TCG_SYNC_SHARED_SECRET', 'generate-with-openssl-rand-hex-32');
+
+// Ranked VPS cutover (Hostinger ↔ stream match API)
+// define('TCG_INTERNAL_MATCH_SECRET', 'generate-with-openssl-rand-hex-32');
+// define('TCG_MATCH_SEED_URL', 'https://stream.loveliveradio.ca/tcg/api/api.php?action=seed_ranked_room');
+// Optional override; default is account.php ranked_apply_result on apex:
+// define('TCG_ELO_APPLY_URL', 'https://loveliveradio.ca/tcg/account.php?action=ranked_apply_result');
