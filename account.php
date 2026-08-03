@@ -9,7 +9,7 @@
  * Endpoints (action=):
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
  *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
- *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
+ *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
  */
@@ -79,6 +79,7 @@ try {
         case 'ranked_leave':       echo json_encode(tcgApiRankedLeave($body)); break;
         case 'ranked_status':      echo json_encode(tcgApiRankedStatus($body)); break;
         case 'ranked_apply_result': echo json_encode(tcgApiRankedApplyResult($body)); break;
+        case 'mission_stamp_sent': echo json_encode(tcgApiMissionStampSent($body)); break;
         case 'rank_stats':         echo json_encode(tcgApiRankStats($body)); break;
         case 'rank_banner_set':    echo json_encode(tcgApiRankBannerSet($body)); break;
         case 'rank_flag_set':      echo json_encode(tcgApiRankFlagSet($body)); break;
@@ -950,6 +951,34 @@ function tcgApiRankedApplyResult(array $body): array {
     require_once __DIR__ . '/match_bridge.php';
     tcgRequireInternalMatchSecret();
     return tcgApplyRankedResultFromWebhook($body);
+}
+
+/**
+ * Credit daily_use_stamp on Hostinger.
+ * Accepts either the VPS internal secret + discord_id, or a signed-in user token.
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApiMissionStampSent(array $body): array {
+    require_once __DIR__ . '/match_bridge.php';
+    require_once __DIR__ . '/missions.php';
+    $uid = '';
+    if (tcgInternalMatchSecretOk(tcgRequestInternalMatchSecret())) {
+        $uid = trim((string)($body['discord_id'] ?? ''));
+        if ($uid === '') {
+            throw new Exception('discord_id required', 400);
+        }
+    } else {
+        $uid = tcgRequireAuthUser($body);
+    }
+    tcgEnsureUser($uid);
+    $completions = tcgMissionOnStampSent($uid);
+    return [
+        'success' => true,
+        'mission_completions' => $completions,
+        'missions' => tcgMissionSummaryForUser($uid),
+    ];
 }
 
 function tcgApiLeaveActiveGame(array $body): array {

@@ -65,6 +65,7 @@
     ranked_join: 1, ranked_leave: 1, ranked_status: 1,
     login_bonus_status: 1, login_bonus_claim: 1,
     active_game: 1, leave_active_game: 1,
+    mission_stamp_sent: 1,
     collection: 1, deck_list: 1, deck_save: 1, deck_delete: 1,
     deck_equip: 1, deck_equip_starter: 1, deck_reset_starter: 1,
     deck_auto_build: 1, deck_import_decklog: 1,

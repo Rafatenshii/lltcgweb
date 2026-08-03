@@ -910,8 +910,17 @@ function handleAction(array $body): array {
                 require_once __DIR__ . '/missions.php';
                 $discordId = tcgMissionResolveActingDiscordId($state, $playerId, $body);
                 if ($discordId) {
-                    tcgEnsureUser($discordId);
-                    $missionCompletions = tcgMissionOnStampSent($discordId);
+                    $remoteMissions = (($state['ranked']['match_api'] ?? '') === 'overflow')
+                        || (function_exists('tcgShouldApplyRankedEloRemotely') && tcgShouldApplyRankedEloRemotely())
+                        || (is_string(getenv('TCG_GAME_STORE')) && strtolower(trim((string)getenv('TCG_GAME_STORE'))) === 'redis');
+                    if ($remoteMissions) {
+                        // Match-primary: stamp actions hit VPS; hub missions live on Hostinger.
+                        require_once __DIR__ . '/match_bridge.php';
+                        $missionCompletions = tcgPostMissionStampSentToHostinger($discordId);
+                    } else {
+                        tcgEnsureUser($discordId);
+                        $missionCompletions = tcgMissionOnStampSent($discordId);
+                    }
                 }
             }
             saveGame($roomId, $state);

@@ -633,6 +633,13 @@
       };
       if (isDebugStampsEnabled()) payload.debug_mode = true;
       await global.sendAct('send_stamp', payload);
+      // Match-primary stamps hit VPS; credit daily_use_stamp on Hostinger (idempotent).
+      if (typeof global.getAuthToken === 'function' && global.getAuthToken()
+          && typeof global.accountPost === 'function') {
+        try {
+          await global.accountPost('mission_stamp_sent', {});
+        } catch (e) { /* stamp already displayed; mission is best-effort */ }
+      }
       const myId = global.G?.playerId;
       if (myId) {
         const stamp = findStamp(stampId, locale);

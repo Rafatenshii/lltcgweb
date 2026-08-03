@@ -53,6 +53,41 @@ function tcgEloApplyUrl(): string {
     return 'https://loveliveradio.ca/tcg/account.php?action=ranked_apply_result';
 }
 
+/** Hostinger account.php URL for a given action (derived from Elo apply base). */
+function tcgHostingerAccountActionUrl(string $action): string {
+    $action = trim($action);
+    if ($action === '') {
+        return '';
+    }
+    $elo = tcgEloApplyUrl();
+    if (preg_match('#^(https?://[^?\s]+)#', $elo, $m)) {
+        return $m[1] . '?action=' . rawurlencode($action);
+    }
+    return 'https://loveliveradio.ca/tcg/account.php?action=' . rawurlencode($action);
+}
+
+/**
+ * Credit daily stamp mission on Hostinger (VPS replica writes are invisible to hub).
+ *
+ * @return list<array{id: string, i18n_key: string, reward: int}>
+ */
+function tcgPostMissionStampSentToHostinger(string $discordId): array {
+    $discordId = trim($discordId);
+    if ($discordId === '') {
+        return [];
+    }
+    $res = tcgMatchBridgeHttpPostJson(
+        tcgHostingerAccountActionUrl('mission_stamp_sent'),
+        ['discord_id' => $discordId],
+        8
+    );
+    if (!is_array($res) || empty($res['success'])) {
+        return [];
+    }
+    $completions = $res['mission_completions'] ?? null;
+    return is_array($completions) ? $completions : [];
+}
+
 function tcgInternalMatchSecretOk(?string $provided): bool {
     $expected = tcgInternalMatchSecret();
     if ($expected === '' || $provided === null || $provided === '') {

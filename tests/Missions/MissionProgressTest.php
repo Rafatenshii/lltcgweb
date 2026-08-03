@@ -368,6 +368,15 @@ final class MissionProgressTest extends TestCase
         $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'daily_use_stamp', tcgTodayJst()));
     }
 
+    public function testMissionStampSentIsIdempotent(): void
+    {
+        $first = tcgMissionOnStampSent($this->discordId);
+        $this->assertNotEmpty($first);
+        $second = tcgMissionOnStampSent($this->discordId);
+        $this->assertSame([], $second);
+        $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'daily_use_stamp', tcgTodayJst()));
+    }
+
     public function testCollectionCardMilestonesCompleteAndGrantStarter(): void
     {
         require_once dirname(__DIR__, 2) . '/booster.php';
