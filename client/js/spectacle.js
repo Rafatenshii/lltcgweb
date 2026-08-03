@@ -4758,14 +4758,44 @@ function perfMarkYellBladeHearts(chip, card, opts = {}) {
   return wrap;
 }
 
+function perfHeartCountEl(row) {
+  if (!row) return null;
+  return row.querySelector('.heart-stat-count')
+    || [...row.childNodes].find(n => n.nodeType === Node.TEXT_NODE)
+    || null;
+}
+
+function perfReadHeartCount(row) {
+  const node = perfHeartCountEl(row);
+  if (!node) return 0;
+  return parseInt(node.textContent || '0', 10) || 0;
+}
+
+function perfWriteHeartCount(row, count) {
+  if (!row) return;
+  let node = row.querySelector('.heart-stat-count');
+  if (node) {
+    node.textContent = String(count);
+    return;
+  }
+  const text = [...row.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
+  if (text) {
+    text.textContent = String(count);
+    return;
+  }
+  node = document.createElement('span');
+  node.className = 'heart-stat-count';
+  node.textContent = String(count);
+  row.appendChild(node);
+}
+
 function perfGetHeartCountMap(container) {
   const map = {};
   if (!container || container.textContent === '—') return map;
   container.querySelectorAll('.heart-stat-row').forEach(row => {
     const icon = row.querySelector('.hicon');
-    const key = icon?.dataset?.color || 'any';
-    const text = [...row.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
-    map[key] = parseInt(text?.textContent || '0', 10) || 0;
+    const key = icon?.dataset?.color || row.dataset?.color || 'any';
+    map[key] = perfReadHeartCount(row);
   });
   return map;
 }
@@ -4779,19 +4809,28 @@ function perfSetHeartCountMap(container, map) {
     container.textContent = '—';
     return;
   }
-  keys.forEach(key => {
-    const row = document.createElement('span');
-    row.className = 'heart-stat-row';
-    row.appendChild(mkHeartIcon(key, true, false));
-    row.appendChild(document.createTextNode(String(map[key])));
-    container.appendChild(row);
-  });
+  // Keep the same DOM shape as appendHeartStatCounts (.heart-stat-count spans).
+  if (typeof appendHeartStatCounts === 'function') {
+    appendHeartStatCounts(container, keys.map(color => ({ color, count: map[color] })), {
+      lg: true,
+      field: false,
+    });
+  } else {
+    keys.forEach(key => {
+      const row = document.createElement('span');
+      row.className = 'heart-stat-row';
+      row.dataset.color = key;
+      row.appendChild(mkHeartIcon(key, true, false));
+      perfWriteHeartCount(row, map[key]);
+      container.appendChild(row);
+    });
+  }
 }
 
 function perfHeartRowForColor(container, color) {
   const key = perfHeartStatKey(color);
   for (const row of container.querySelectorAll('.heart-stat-row')) {
-    if (row.querySelector('.hicon')?.dataset?.color === key) return row;
+    if ((row.dataset?.color || row.querySelector('.hicon')?.dataset?.color) === key) return row;
   }
   return null;
 }
@@ -4800,17 +4839,15 @@ function perfIncrementHeartStat(container, color) {
   const key = perfHeartStatKey(color);
   const existing = perfHeartRowForColor(container, key);
   if (existing) {
-    const text = [...existing.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
-    const next = (parseInt(text?.textContent || '0', 10) || 0) + 1;
-    if (text) text.textContent = String(next);
-    else existing.appendChild(document.createTextNode(String(next)));
+    perfWriteHeartCount(existing, perfReadHeartCount(existing) + 1);
     return existing;
   }
   if (container.textContent === '—') container.textContent = '';
   const row = document.createElement('span');
   row.className = 'heart-stat-row';
+  row.dataset.color = key;
   row.appendChild(mkHeartIcon(key, true, false));
-  row.appendChild(document.createTextNode('1'));
+  perfWriteHeartCount(row, 1);
   container.appendChild(row);
   if (container.querySelectorAll('.heart-stat-row').length >= 4) container.classList.add('dense');
   return row;
