@@ -4,6 +4,7 @@
 (function (global) {
   'use strict';
 
+  const PENDING_KEY = 'tcg_pending_ranked_pr_reward';
   let revealInProgress = false;
   let scheduleTimer = null;
 
@@ -45,10 +46,39 @@
     return rankedPrRewardCards(reward).length > 0;
   }
 
+  function persistPending(reward) {
+    try {
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify(reward));
+    } catch (e) { /* ignore */ }
+  }
+
+  function clearPersistedPending() {
+    try { sessionStorage.removeItem(PENDING_KEY); } catch (e) { /* ignore */ }
+  }
+
+  function restorePendingFromStorage() {
+    global.A = global.A || {};
+    if (rankedPrRewardHasCard(global.A.pendingRankedPrReward)) return;
+    try {
+      const raw = sessionStorage.getItem(PENDING_KEY);
+      if (!raw) return;
+      const reward = JSON.parse(raw);
+      if (rankedPrRewardHasCard(reward)) {
+        global.A.pendingRankedPrReward = reward;
+      } else {
+        clearPersistedPending();
+      }
+    } catch (e) {
+      clearPersistedPending();
+    }
+  }
+
   function queueRankedPrReward(reward) {
     if (!rankedPrRewardHasCard(reward)) return;
     global.A = global.A || {};
     global.A.pendingRankedPrReward = reward;
+    persistPending(reward);
+    schedulePendingRankedPrReward();
   }
 
   function isHubActive() {
@@ -57,7 +87,10 @@
 
   function isBlockingModalOpen() {
     const migration = el('modal-star-gem-migration');
-    return !!(migration && migration.classList.contains('open'));
+    if (migration && migration.classList.contains('open')) return true;
+    const login = el('overlay-login-bonus');
+    if (login && login.classList.contains('open')) return true;
+    return false;
   }
 
   function clearScheduleTimer() {
@@ -68,10 +101,12 @@
   }
 
   function schedulePendingRankedPrReward() {
+    restorePendingFromStorage();
     if (!global.A?.pendingRankedPrReward) return;
     clearScheduleTimer();
     const attempt = () => {
       scheduleTimer = null;
+      restorePendingFromStorage();
       if (!global.A?.pendingRankedPrReward) return;
       if (!isHubActive() || isBlockingModalOpen()) {
         scheduleTimer = setTimeout(attempt, 200);
@@ -84,21 +119,37 @@
 
   async function maybeShowPendingRankedPrReward() {
     if (revealInProgress) return;
+    restorePendingFromStorage();
     const reward = global.A?.pendingRankedPrReward;
     if (!rankedPrRewardHasCard(reward)) {
       if (global.A) global.A.pendingRankedPrReward = null;
+      clearPersistedPending();
       return;
     }
     if (!isHubActive() || isBlockingModalOpen()) {
       schedulePendingRankedPrReward();
       return;
     }
+    if (typeof global.buildPackOpenCardEl !== 'function') {
+      // Pack UI not ready yet — keep pending and retry.
+      schedulePendingRankedPrReward();
+      return;
+    }
     revealInProgress = true;
-    global.A.pendingRankedPrReward = null;
     try {
+      // Clear only after we know the reveal can paint.
+      global.A.pendingRankedPrReward = null;
+      clearPersistedPending();
       await playRankedPrReveal(reward);
+    } catch (e) {
+      // Re-queue so a hard failure does not permanently swallow the pack UI.
+      global.A.pendingRankedPrReward = reward;
+      persistPending(reward);
     } finally {
       revealInProgress = false;
+      if (typeof global.TCGLoginBonus?.scheduleHubLoginBonus === 'function') {
+        global.TCGLoginBonus.scheduleHubLoginBonus();
+      }
     }
   }
 
@@ -193,7 +244,9 @@
       }
     } catch (_) { /* continue */ }
 
-    if (typeof global.buildPackOpenCardEl !== 'function') return;
+    if (typeof global.buildPackOpenCardEl !== 'function') {
+      throw new Error('pack UI unavailable');
+    }
 
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
@@ -282,4 +335,9 @@
   global.playRankedPrReveal = playRankedPrReveal;
   global.rankedPrRewardHasCard = rankedPrRewardHasCard;
   global.rankedPrRewardCards = rankedPrRewardCards;
+  global.hasPendingRankedPrReward = function hasPendingRankedPrReward() {
+    restorePendingFromStorage();
+    return rankedPrRewardHasCard(global.A?.pendingRankedPrReward)
+      || !!el('overlay-ranked-pr-reward')?.classList.contains('active');
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

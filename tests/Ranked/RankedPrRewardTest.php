@@ -229,6 +229,15 @@ final class RankedPrRewardTest extends TestCase
         $this->assertArrayNotHasKey('skipped', $reward);
         $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
 
+        // Hostinger webhook must mark daily ranked mission (VPS replica writes are invisible).
+        require_once dirname(__DIR__, 2) . '/missions.php';
+        $this->assertNotEmpty($out['mission_completions'] ?? []);
+        $missionIds = array_column($out['mission_completions'], 'id');
+        $this->assertContains('daily_ranked_match', $missionIds);
+        $def = tcgMissionDefById('daily_ranked_match');
+        $period = tcgMissionPeriodKey($def);
+        $this->assertTrue(tcgMissionIsCompleted($winnerId, 'daily_ranked_match', $period));
+
         // Idempotent: second call must not grant another pack.
         $out2 = tcgApplyRankedResultFromWebhook([
             'room_id' => $roomId,

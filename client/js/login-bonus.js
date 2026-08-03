@@ -246,10 +246,19 @@
         setTimeout(attempt, 200);
         return;
       }
-      // Wait for migration / ranked PR overlays if they block.
+      // Wait for migration / ranked PR overlays so the pack reveal is not buried.
       const migration = el('modal-star-gem-migration');
       if (migration?.classList.contains('open')) {
         setTimeout(attempt, 300);
+        return;
+      }
+      if (typeof global.hasPendingRankedPrReward === 'function' && global.hasPendingRankedPrReward()) {
+        setTimeout(attempt, 400);
+        return;
+      }
+      const prOv = el('overlay-ranked-pr-reward');
+      if (prOv?.classList.contains('active')) {
+        setTimeout(attempt, 400);
         return;
       }
       void openLoginBonus({ auto: true });

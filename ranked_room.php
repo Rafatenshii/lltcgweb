@@ -152,7 +152,7 @@ function tcgOnGameFinished(array &$state): void {
     if (!empty($ranked['applied'])) {
         if ($remoteElo && empty($ranked['pr_reward_applied'])) {
             if (tcgPostRankedApplyResultToHostinger($state)) {
-                // pr_reward may have been merged by reference.
+                // pr_reward / seq bump applied by reference in match_bridge.
             }
         }
         return;

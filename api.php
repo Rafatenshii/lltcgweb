@@ -822,7 +822,20 @@ function handleAction(array $body): array {
         if ($phaseTimeoutChanged && ($state['status'] ?? '') === 'finished') {
             maybeApplyRankedFinish($state);
             saveGame($roomId, $state);
-            return ['ok' => true, 'seq' => $state['seq'], 'finished' => true];
+            $out = ['ok' => true, 'seq' => $state['seq'], 'finished' => true];
+            if (($state['mode'] ?? '') === 'ranked') {
+                require_once __DIR__ . '/ranked_pr_rewards.php';
+                $prReward = tcgRankedPrRewardForPlayer($state, $playerId);
+                if ($prReward !== null) {
+                    $out['ranked_pr_reward'] = $prReward;
+                }
+                if (!empty($state['_hostinger_mission_completions']) && is_array($state['_hostinger_mission_completions'])) {
+                    $out['mission_completions'] = $state['_hostinger_mission_completions'];
+                    unset($state['_hostinger_mission_completions']);
+                    saveGame($roomId, $state);
+                }
+            }
+            return $out;
         }
 
         $prevStatus = $state['status'] ?? '';
@@ -852,6 +865,11 @@ function handleAction(array $body): array {
         }
         $missionCompletions = [];
         $justFinished = $prevStatus !== 'finished' && ($state['status'] ?? '') === 'finished';
+        $rankedRemoteMissions = ($state['mode'] ?? '') === 'ranked'
+            && (
+                (($state['ranked']['match_api'] ?? '') === 'overflow')
+                || (function_exists('tcgShouldApplyRankedEloRemotely') && tcgShouldApplyRankedEloRemotely())
+            );
         if ($justFinished && $isResign) {
             // Persist concede first so ranked/mission failures cannot block resign.
             saveGame($roomId, $state);
@@ -860,7 +878,15 @@ function handleAction(array $body): array {
                 tcgMissionBackfillPlayerDiscordFromAuth($state, $playerId, $body);
                 require_once __DIR__ . '/ranked_room.php';
                 tcgOnGameFinished($state);
-                $missionCompletions = tcgMissionOnGameFinished($state);
+                // Overflow ranked: Hostinger webhook owns mission DB writes (VPS replica is one-way).
+                if ($rankedRemoteMissions) {
+                    $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
+                        ? $state['_hostinger_mission_completions']
+                        : [];
+                    unset($state['_hostinger_mission_completions']);
+                } else {
+                    $missionCompletions = tcgMissionOnGameFinished($state);
+                }
                 saveGame($roomId, $state);
             } catch (Throwable $e) {
                 // Resign already saved — ranked/mission side effects are best-effort.
@@ -870,7 +896,14 @@ function handleAction(array $body): array {
             tcgMissionBackfillPlayerDiscordFromAuth($state, $playerId, $body);
             require_once __DIR__ . '/ranked_room.php';
             tcgOnGameFinished($state);
-            $missionCompletions = tcgMissionOnGameFinished($state);
+            if ($rankedRemoteMissions) {
+                $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
+                    ? $state['_hostinger_mission_completions']
+                    : [];
+                unset($state['_hostinger_mission_completions']);
+            } else {
+                $missionCompletions = tcgMissionOnGameFinished($state);
+            }
             saveGame($roomId, $state);
         } else {
             if ($type === 'send_stamp') {
@@ -5011,11 +5044,19 @@ function maybeRecoverUnappliedRankedFinish(string $roomId, array &$state): void 
     if (($state['mode'] ?? '') !== 'ranked' || ($state['status'] ?? '') !== 'finished') {
         return;
     }
-    if (!empty($state['ranked']['applied'])) {
+    $ranked = is_array($state['ranked'] ?? null) ? $state['ranked'] : [];
+    $needsElo = empty($ranked['applied']);
+    $needsPr = !empty($ranked['applied']) && empty($ranked['pr_reward_applied']);
+    if (!$needsElo && !$needsPr) {
         return;
     }
+    $seqBefore = intval($state['seq'] ?? 0);
     maybeApplyRankedFinish($state);
-    saveGame($roomId, $state);
+    if (intval($state['seq'] ?? 0) !== $seqBefore
+        || ($needsElo && !empty($state['ranked']['applied']))
+        || ($needsPr && !empty($state['ranked']['pr_reward_applied']))) {
+        saveGame($roomId, $state);
+    }
 }
 
 function cleanupOldGames(): array {

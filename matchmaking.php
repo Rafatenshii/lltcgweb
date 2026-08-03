@@ -242,8 +242,41 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     $alreadyDone = $row && ($row['status'] ?? '') === 'done';
     $prAlready = $alreadyDone && intval($row['pr_rewarded'] ?? 0) === 1;
 
+    // Fake finished state used for PR grants + Hostinger-side mission writes.
+    // Overflow/VPS finishes must not rely on the VPS SQLite replica for missions.
+    $fakeState = [
+        'room_id' => $roomId,
+        'mode' => 'ranked',
+        'status' => 'finished',
+        'winner' => $winnerPid,
+        'end_reason' => $body['end_reason'] ?? null,
+        'resigned_by' => $body['resigned_by'] ?? null,
+        'disconnected_player' => $body['disconnected_player'] ?? null,
+        'ranked' => [
+            'p1_discord_id' => $p1Id,
+            'p2_discord_id' => $p2Id,
+            'game_mode' => $gameMode,
+            'applied' => true,
+            'match_api' => 'overflow',
+        ],
+        'players' => [
+            'p1' => ['discord_id' => $p1Id],
+            'p2' => ['discord_id' => $p2Id],
+        ],
+    ];
+
     if ($alreadyDone && $prAlready) {
-        return ['success' => true, 'already_applied' => true, 'room_id' => $roomId];
+        $out = ['success' => true, 'already_applied' => true, 'room_id' => $roomId];
+        try {
+            require_once __DIR__ . '/missions.php';
+            $missions = tcgMissionOnGameFinished($fakeState);
+            if ($missions !== []) {
+                $out['mission_completions'] = $missions;
+            }
+        } catch (Throwable $e) {
+            // Idempotent mission writes are best-effort.
+        }
+        return $out;
     }
 
     if (!$alreadyDone) {
@@ -267,25 +300,6 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
             tcgMarkRankedMatchPrRewarded($roomId);
         } else {
             // status=finished is required by tcgApplyRankedPrRewardOnFinish (overflow bug: was omitted).
-            $fakeState = [
-                'room_id' => $roomId,
-                'mode' => 'ranked',
-                'status' => 'finished',
-                'winner' => $winnerPid,
-                'end_reason' => $body['end_reason'] ?? null,
-                'resigned_by' => $body['resigned_by'] ?? null,
-                'disconnected_player' => $body['disconnected_player'] ?? null,
-                'ranked' => [
-                    'p1_discord_id' => $p1Id,
-                    'p2_discord_id' => $p2Id,
-                    'game_mode' => $gameMode,
-                    'applied' => true,
-                ],
-                'players' => [
-                    'p1' => ['discord_id' => $p1Id],
-                    'p2' => ['discord_id' => $p2Id],
-                ],
-            ];
             tcgApplyRankedPrRewardOnFinish($fakeState);
             if (!empty($fakeState['ranked']['pr_reward_applied'])) {
                 $prEntry = $fakeState['ranked']['pr_reward'] ?? null;
@@ -297,6 +311,14 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         // Elo already applied.
     }
 
+    $missionCompletions = [];
+    try {
+        require_once __DIR__ . '/missions.php';
+        $missionCompletions = tcgMissionOnGameFinished($fakeState);
+    } catch (Throwable $e) {
+        // Elo/PR already applied — missions are best-effort on Hostinger.
+    }
+
     $out = ['success' => true, 'room_id' => $roomId];
     if ($alreadyDone) {
         $out['already_applied'] = true;
@@ -304,6 +326,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     if (is_array($prEntry)) {
         $out['pr_reward'] = $prEntry;
         $out['pr_reward_applied'] = true;
+    }
+    if ($missionCompletions !== []) {
+        $out['mission_completions'] = $missionCompletions;
     }
     return $out;
 }

@@ -2159,10 +2159,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=25"></script>
-<script src="client/js/ranked-pr-reward.js?v=3"></script>
+<script src="client/js/api-client.js?v=26"></script>
+<script src="client/js/ranked-pr-reward.js?v=4"></script>
 <script src="client/js/missions.js?v=5"></script>
-<script src="client/js/login-bonus.js?v=1"></script>
+<script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=37"></script>
 <script src="client/js/state-apply.js?v=47"></script>
 <script src="client/js/stamps.js?v=17"></script>
@@ -25049,12 +25049,21 @@ function syncWinRankedPrReward(s, win) {
     // Losses must not consume daily PR or keep a prior win's reward queued.
     G.lastRankedPrReward = null;
     if (A) A.pendingRankedPrReward = null;
+    try { sessionStorage.removeItem('tcg_pending_ranked_pr_reward'); } catch (e) { /* ignore */ }
     void refreshRankedPrAllowanceFromAccount();
     return;
   }
   if (!win || s.mode !== 'ranked') return;
   // Prefer this match's payload only — never fall back to a stale prior-win reward for UI/counter.
-  const reward = s.ranked_pr_reward || null;
+  let reward = s.ranked_pr_reward || null;
+  if (!reward && s.ranked && typeof s.ranked === 'object') {
+    const nested = s.ranked.pr_reward;
+    const myId = s.my_id || G.playerId || '';
+    if (nested && typeof nested === 'object' && nested.reward
+        && (!nested.player_id || nested.player_id === myId)) {
+      reward = nested.reward;
+    }
+  }
   if (reward && typeof reward === 'object') {
     G.lastRankedPrReward = reward;
   } else if (G.lastRankedPrReward && typeof G.lastRankedPrReward === 'object') {
@@ -25063,7 +25072,7 @@ function syncWinRankedPrReward(s, win) {
     void refreshRankedPrAllowanceFromAccount();
     return;
   }
-  const resolved = s.ranked_pr_reward || G.lastRankedPrReward;
+  const resolved = reward || G.lastRankedPrReward;
   if (!resolved || typeof resolved !== 'object') return;
   if (resolved.skipped && resolved.reason === 'daily_cap') {
     rewardEl.textContent = t('win.rankedPrDailyCap', { limit: resolved.daily?.limit || 5 });

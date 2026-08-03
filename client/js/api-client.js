@@ -316,10 +316,20 @@
   };
 
   global.handleRankedPrReward = function handleRankedPrReward(res) {
-    if (!res || typeof res !== 'object' || !res.ranked_pr_reward) return;
+    if (!res || typeof res !== 'object') return;
+    let reward = res.ranked_pr_reward || null;
+    // Finished get_state may only carry the nested winner payload.
+    if (!reward && res.ranked && typeof res.ranked === 'object') {
+      const nested = res.ranked.pr_reward;
+      const myId = res.my_id || (global.G && global.G.playerId) || '';
+      if (nested && typeof nested === 'object'
+          && nested.reward && (!nested.player_id || nested.player_id === myId)) {
+        reward = nested.reward;
+      }
+    }
+    if (!reward || typeof reward !== 'object') return;
     global.G = global.G || {};
-    global.G.lastRankedPrReward = res.ranked_pr_reward;
-    const reward = res.ranked_pr_reward;
+    global.G.lastRankedPrReward = reward;
     if (reward && reward.daily && typeof global.syncRankedPrFromReward === 'function') {
       global.syncRankedPrFromReward(reward);
       if (typeof global.updateRankedPrUI === 'function') global.updateRankedPrUI();
@@ -499,6 +509,8 @@
     if (!r.ok) {
       throw global.createApiError(`Request failed (${status})`, status || 500);
     }
+    // get_state / action polls — pick up ranked PR + mission toasts even when not via apiPost.
+    global.handleMissionCompletions(d);
     return d;
   };
 
@@ -565,7 +577,6 @@
     });
     try {
       const d = await global.parseGameApiResponse(r);
-      global.handleMissionCompletions(d);
       return d;
     } catch (e) {
       if (!opts.silent && !opts.deferErrorReport) {

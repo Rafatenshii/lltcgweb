@@ -175,12 +175,23 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
         return false;
     }
     // Hostinger grants the pack; stash on VPS room so the winner's client can show it.
+    $mergedPr = false;
     if (!empty($res['pr_reward_applied']) && is_array($res['pr_reward'] ?? null)) {
         if (!isset($state['ranked']) || !is_array($state['ranked'])) {
             $state['ranked'] = [];
         }
+        $hadPr = !empty($state['ranked']['pr_reward_applied']);
         $state['ranked']['pr_reward_applied'] = true;
         $state['ranked']['pr_reward'] = $res['pr_reward'];
+        $mergedPr = !$hadPr;
+    }
+    // Late PR merge must bump seq or get_state clients stay on unchanged:true and never
+    // see ranked_pr_reward — cards land in collection with no hub popup.
+    if ($mergedPr) {
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+    }
+    if (!empty($res['mission_completions']) && is_array($res['mission_completions'])) {
+        $state['_hostinger_mission_completions'] = $res['mission_completions'];
     }
     return true;
 }
