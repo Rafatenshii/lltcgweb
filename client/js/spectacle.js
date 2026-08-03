@@ -7252,11 +7252,57 @@ function notifyBannerIdleWaiters() {
   waiters.forEach(r => r());
 }
 
-function waitForBannersIdle() {
+/** Soft-clear a drained-but-stuck banner pump so waiters cannot hang forever. */
+function ensureBannerPumpNotStuck(reason = 'idle-check') {
+  if (!G._bannerActive) return false;
+  if ((G._bannerQueue || []).length > 0) return false;
+  const root = el('center-banner');
+  const showing = !!root?.classList.contains('show');
+  // Active with nothing queued and no visible splash = abandoned drain
+  // (often from an overwritten showCenterBannerNow promise).
+  if (!showing) {
+    TCG_DEBUG.warn('banner', 'clear stuck _bannerActive', reason);
+    cancelCenterBannerAutoDismiss();
+    resolveCenterBannerShow();
+    G._bannerActive = false;
+    notifyBannerIdleWaiters();
+    return true;
+  }
+  return false;
+}
+
+function waitForBannersIdle(timeoutMs = 8000) {
+  ensureBannerPumpNotStuck('wait-enter');
   if (!G._bannerActive && G._bannerQueue.length === 0) return Promise.resolve();
   return new Promise(resolve => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
     G._bannerIdleWaiters = G._bannerIdleWaiters || [];
-    G._bannerIdleWaiters.push(resolve);
+    G._bannerIdleWaiters.push(done);
+    const started = performance.now();
+    const tick = () => {
+      if (settled) return;
+      ensureBannerPumpNotStuck('wait-tick');
+      if (!G._bannerActive && (G._bannerQueue || []).length === 0) {
+        done();
+        return;
+      }
+      if (performance.now() - started >= timeoutMs) {
+        TCG_DEBUG.warn('banner', 'waitForBannersIdle timeout — force clear', {
+          active: G._bannerActive,
+          queued: (G._bannerQueue || []).length,
+        });
+        clearCenterBannerQueue();
+        done();
+        return;
+      }
+      setTimeout(tick, 120);
+    };
+    setTimeout(tick, 120);
   });
 }
 
@@ -7351,8 +7397,21 @@ function drainCenterBannerQueue() {
       return;
     }
     showCenterBannerNow(b).then(() => {
-      if (gen !== (G._bannerDrainGen || 0)) return;
+      if (gen !== (G._bannerDrainGen || 0)) {
+        // clearCenterBannerQueue already handled idle notify for the new gen.
+        return;
+      }
       setTimeout(next, 70);
+    }).catch((e) => {
+      TCG_DEBUG.warn('banner', 'showCenterBannerNow failed', e);
+      if (gen !== (G._bannerDrainGen || 0)) return;
+      G._bannerActive = false;
+      notifyBannerIdleWaiters();
+      setTimeout(() => {
+        if (gen === (G._bannerDrainGen || 0) && (G._bannerQueue || []).length) {
+          drainCenterBannerQueue();
+        }
+      }, 70);
     });
   };
   next();
@@ -7392,6 +7451,9 @@ function showCenterBannerNow(spec) {
   const { title, subtitle, detail, kind = 'phase', duration = PHASE_BANNER_MS, judgeClass = '' } = banner;
   const titleKey = spec?.titleKey;
   return new Promise(resolve => {
+    // Never orphan a prior show promise — overwriting _cbResolve left the banner
+    // pump with _bannerActive=true and an empty queue (empty LIVE round softlock).
+    resolveCenterBannerShow();
     const root = el('center-banner');
     if (!root) { resolve(); return; }
     if (!String(title || '').trim()) { resolve(); return; }
@@ -7423,7 +7485,7 @@ function showCenterBannerNow(spec) {
         G._postSpectacleSplashPause = false;
       }
       setTimeout(resolveCenterBannerShow, SPLASH_FADE_MS);
-    }, duration);
+    }, Math.max(400, Number(duration) || PHASE_BANNER_MS));
   });
 }
 

@@ -97,6 +97,7 @@
     }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances
     // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.
+    if (typeof ensureBannerPumpNotStuck === 'function') ensureBannerPumpNotStuck('poll-gate');
     const spectacleBlocksPoll = !!G._perfSpectacleActive && !serverLiveShowInFlight;
     return !!(G.animating || spectacleBlocksPoll || G._livePollHold
       || directorActive
@@ -611,9 +612,19 @@
           G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d.seq ?? 0));
         }
         if (force && G.gameState && (d.seq ?? 0) <= (G.lastSeq ?? 0)) {
-          TCG_DEBUG.logOnce('poll', `force-stale:${d.seq}`, 'skip force pull stale', { incoming: d.seq, last: G.lastSeq });
-          if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
-          return;
+          // Hung presentation can advance lastSeq before committing gameState.
+          // Still apply when the board is behind the fetched snapshot.
+          if ((d.seq ?? 0) <= (G.gameState.seq ?? 0)) {
+            TCG_DEBUG.logOnce('poll', `force-stale:${d.seq}`, 'skip force pull stale', { incoming: d.seq, last: G.lastSeq });
+            if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
+            return;
+          }
+          TCG_DEBUG.warn('poll', 'force pull: board behind lastSeq — apply anyway', {
+            boardSeq: G.gameState.seq,
+            lastSeq: G.lastSeq,
+            incoming: d.seq,
+          });
+          if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
         }
         if (G._pollFastUntil && (d.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
         if (d.end_reason === 'disconnect') global._tcgSyncStats.disconnectHints++;
