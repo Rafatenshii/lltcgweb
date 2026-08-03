@@ -1970,6 +1970,26 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageMemberPickById(pr);
     return;
   }
+  if(pr?.type==='wait_pick_member_grant_live_score'&&pr.responder===myId){
+    // Chika (PL!S-bp3-001-R＋): Wait 1 Stage Member → that Member gains +1 Live total score.
+    ovl.classList.remove('open');
+    const raw=pr.candidates||[];
+    const candidates=raw.map(c=>{
+      if(c&&c.summary&&typeof c.summary==='object'){
+        return {...c.summary, slot:c.slot, instance_id:c.instance_id||c.summary.instance_id};
+      }
+      return c;
+    }).filter(c=>c&&c.slot);
+    if(!candidates.length){
+      if(typeof toast==='function'){
+        toast(pt('prompt.noValidTargets')||'No valid Member on Stage.', 2800);
+      }
+      sendAct('resolve_prompt',{choice:'cancel'});
+      return;
+    }
+    openStageSlotPick({...pr, candidates});
+    return;
+  }
   if(pr?.type==='buff_member_matching_discarded_group'&&pr.responder===myId){
     // Rurino (HS-bp5-003): after Live Start discard, pick matching-group Member for ♡.
     ovl.classList.remove('open');

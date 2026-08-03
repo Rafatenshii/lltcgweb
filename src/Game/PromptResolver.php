@@ -2728,8 +2728,16 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
     }
 
     if ($promptType === 'wait_pick_member_grant_live_score') {
+        if ($choice === 'cancel' || $choice === 'skip') {
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
         $slot = $data['slot'] ?? '';
         if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
+        if (!($ownerP['stage'][$slot]['active'] ?? true)) {
+            throw new Exception('Choose an active Member');
+        }
         waitMember($ownerP['stage'][$slot], $state);
         grantMemberLiveScoreBonus(
             $state,

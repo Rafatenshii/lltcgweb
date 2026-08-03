@@ -281,19 +281,21 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (!empty($ab['center_only']) && $slot !== 'center') {
             throw new Exception('This ability can only be used from the Center position');
         }
-        $others = [];
+        $candidates = [];
         foreach ($p['stage'] as $s => $mbr) {
-            if (!$mbr || $s === $slot) continue;
-            $others[] = ['slot' => $s, 'summary' => cardPromptSummary($mbr)];
+            if (!$mbr) continue;
+            // Already Waiting Members cannot pay the Wait cost again.
+            if (!($mbr['active'] ?? true)) continue;
+            $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $s]);
         }
-        if (empty($others)) throw new Exception('No other Member on Stage to put into Wait');
+        if (empty($candidates)) throw new Exception('No active Member on Stage to put into Wait');
         $state['pending_prompt'] = [
             'type'          => 'wait_pick_member_grant_live_score',
             'owner'         => $pid,
             'responder'     => $pid,
             'source_id'     => $member['instance_id'] ?? '',
             'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
-            'candidates'    => $others,
+            'candidates'    => $candidates,
             'amount'        => intval($ab['amount'] ?? 1),
             'prompt'        => 'Choose 1 Member to put into Wait: that Member gains "[Always] +1 Live total score" until this Live ends.',
         ];

@@ -4291,6 +4291,22 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     cpuAct('resolve_prompt', { choice: 'skip' });
     return true;
   }
+  if (pr.type === 'wait_pick_member_grant_live_score') {
+    // Chika: Wait a Stage Member (prefer highest blade; nested {slot,summary} ok).
+    const cands = (pr.candidates || []).map((c) => {
+      if (c && c.summary && typeof c.summary === 'object') {
+        return { ...c.summary, slot: c.slot, instance_id: c.instance_id || c.summary.instance_id };
+      }
+      return c;
+    }).filter((c) => c && c.slot);
+    const best = [...cands].sort((a, b) => (b.blade || 0) - (a.blade || 0))[0] || cands[0];
+    if (best?.slot) {
+      cpuAct('resolve_prompt', { slot: best.slot });
+      return true;
+    }
+    cpuAct('resolve_prompt', { choice: 'cancel' });
+    return true;
+  }
   if (pr.type === 'live_success_pick_energy_or_member') {
     cpuAct('resolve_prompt', { choice: pr.can_both && cpuTierHardPlus(tier) ? 'both' : (tier === 'easy' ? 'energy' : 'member') });
     return true;
