@@ -3646,7 +3646,7 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   color:#bae4ff;
 }
 .deck-filter-panel:not(.show-advanced){
-  max-height:min(20vh,132px);
+  max-height:min(16vh,110px);
 }
 .deck-filter-panel.show-advanced{
   max-height:min(52vh,400px);
@@ -3693,6 +3693,17 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 }
 .deck-filter-rows::-webkit-scrollbar-thumb:hover{
   background:linear-gradient(180deg,#fff,var(--pink-l));
+}
+.deck-filter-pair{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:6px 14px;
+  min-width:0;
+}
+.deck-filter-pair > .deck-filter-row{
+  flex:1 1 220px;
+  min-width:min(200px,100%);
 }
 .deck-filter-row{
   display:flex;
