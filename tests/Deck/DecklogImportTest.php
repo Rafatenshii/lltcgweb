@@ -24,6 +24,30 @@ final class DecklogImportTest extends TestCase
         );
         $this->assertSame('2X7YN', tcgNormalizeDecklogCode(' 2x7yn '));
         $this->assertSame('2X7YN', tcgNormalizeDecklogCode('https://decklog.example.com/view/2x7yn?lang=en'));
+        $this->assertSame(
+            '2X7YN',
+            tcgNormalizeDecklogCode('https://decklog-en.bushiroad.com/view/2X7YN')
+        );
+        $this->assertSame(
+            'ABC12',
+            tcgNormalizeDecklogCode('https://decklog-en.example.com/view/abc12?foo=1')
+        );
+    }
+
+    public function testParseDecklogInputPrefersEnHostFromUrl(): void
+    {
+        $hosts = tcgDecklogHosts();
+        $en = tcgParseDecklogInput('https://decklog-en.bushiroad.com/view/2X7YN');
+        $this->assertSame('2X7YN', $en['code']);
+        $this->assertSame($hosts['en'], $en['preferred_host']);
+
+        $jp = tcgParseDecklogInput('https://decklog.bushiroad.com/view/2X7YN');
+        $this->assertSame('2X7YN', $jp['code']);
+        $this->assertSame($hosts['jp'], $jp['preferred_host']);
+
+        $bare = tcgParseDecklogInput('2X7YN');
+        $this->assertSame('2X7YN', $bare['code']);
+        $this->assertNull($bare['preferred_host']);
     }
 
     public function testResolveFullwidthPlusCardNo(): void
