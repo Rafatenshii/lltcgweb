@@ -252,8 +252,15 @@ function tcgRankedMatchRowIsStale(string $roomId, array $state, array $row): boo
     return ($now - $latest) >= 10 * 60 && $fileAge >= 5 * 60;
 }
 
-/** Resign or clear a stuck ranked match so the player can return to the hub. */
-function tcgAbandonActiveRankedGame(string $discordId): array {
+/**
+ * Resign or clear a stuck ranked match so the player can return to the hub.
+ *
+ * @param array $opts confirm_resign=true required to concede a live room when the
+ *   opponent still has recent Hostinger presence and this seat never connected.
+ *   Prevents free wins from confused VPS "Room not found" → leave_active_game.
+ */
+function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array {
+    $confirmResign = !empty($opts['confirm_resign']) || !empty($opts['force']);
     $db = tcgDb();
     $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, p1_token, p2_token FROM tcg_ranked_matches
         WHERE status = "pending" AND (p1_id = ? OR p2_id = ?) ORDER BY created_at DESC LIMIT 1');
@@ -266,6 +273,7 @@ function tcgAbandonActiveRankedGame(string $discordId): array {
     $roomId = $row['room_id'] ?? '';
     $isP1 = ($row['p1_id'] ?? '') === $discordId;
     $token = $isP1 ? ($row['p1_token'] ?? '') : ($row['p2_token'] ?? '');
+    $oppToken = $isP1 ? ($row['p2_token'] ?? '') : ($row['p1_token'] ?? '');
 
     if ($roomId !== '' && $token !== '') {
         if (!defined('TCG_API_LIB_ONLY')) {
@@ -275,28 +283,49 @@ function tcgAbandonActiveRankedGame(string $discordId): array {
         require_once __DIR__ . '/ranked_room.php';
 
         try {
-            withLock($roomId, function () use ($roomId, $token) {
+            $guard = withLock($roomId, function () use ($roomId, $token, $oppToken, $confirmResign) {
                 $state = loadGame($roomId);
                 if (!$state) {
-                    return null;
+                    return ['missing' => true];
                 }
                 if (($state['status'] ?? '') === 'finished') {
                     if (($state['mode'] ?? '') === 'ranked' && empty($state['ranked']['applied'])) {
                         tcgOnGameFinished($state);
                         saveGame($roomId, $state);
                     }
-                    return null;
+                    return ['finished' => true];
                 }
+
+                // Confused client (polled VPS, never Hostinger) must not concede a live match.
+                if (!$confirmResign) {
+                    $presence = function_exists('readPresence') ? readPresence($roomId) : [];
+                    $now = time();
+                    $myLast = intval($presence[$token] ?? 0);
+                    $oppLast = intval($presence[$oppToken] ?? 0);
+                    $oppActive = $oppLast > 0 && ($now - $oppLast) < 180;
+                    $selfAbsent = $myLast === 0 || ($now - $myLast) > 180;
+                    if ($oppActive && $selfAbsent) {
+                        return ['blocked' => true, 'code' => 'match_still_live'];
+                    }
+                }
+
                 $playerId = getPlayerIdByToken($state, $token);
                 if (!$playerId) {
-                    return null;
+                    return ['missing' => true];
                 }
                 $state = applyAction($state, $playerId, 'resign', []);
                 saveGame($roomId, $state);
                 tcgOnGameFinished($state);
                 saveGame($roomId, $state);
-                return $state;
+                return ['resigned' => true];
             });
+            if (is_array($guard) && !empty($guard['blocked'])) {
+                return [
+                    'left' => false,
+                    'code' => (string)($guard['code'] ?? 'match_still_live'),
+                    'room_id' => $roomId,
+                ];
+            }
         } catch (Throwable $e) {
             // Game file missing or lock failed — still clear the ranked row below.
         }

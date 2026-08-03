@@ -2163,7 +2163,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=29"></script>
+<script src="client/js/game-sync.js?v=30"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -4817,9 +4817,13 @@ function reconnectBackoffMs(attempt) {
   return steps[Math.min(Math.max(attempt, 1) - 1, steps.length - 1)];
 }
 
-async function dropRankedActiveGameBestEffort() {
+async function dropRankedActiveGameBestEffort(opts = {}) {
   if (!getAuthToken()) return;
-  try { await accountPost('leave_active_game', {}); } catch (e) { /* best effort */ }
+  const body = {};
+  // Explicit Options leave / confirmed-dead rooms may concede. Auto-abandon must not
+  // pass confirm_resign — server refuses to free-win a live opponent.
+  if (opts.confirmResign) body.confirm_resign = 1;
+  try { await accountPost('leave_active_game', body); } catch (e) { /* best effort */ }
 }
 
 /**
@@ -5336,7 +5340,7 @@ async function leaveActiveGame() {
     || 'Leave the active match? If it is still in progress, this counts as a resign.';
   if (!confirm(msg)) return;
   try {
-    await abandonDeadMatchSession({ silent: true });
+    await abandonDeadMatchSession({ silent: true, forceResign: true });
     if (leaveBtn) leaveBtn.hidden = true;
     toast(t('toast.leftActiveMatch') || 'Left active match', 2600);
   } catch (e) {
@@ -26821,11 +26825,77 @@ function isRoomGoneError(errOrMsg) {
 }
 
 /**
- * Escape a dead match: clear local session, drop ranked active_game if any, return to hub/lobby.
- * Used when resign/get_state report Room not found after the match-primary cutover.
+ * Ranked rooms live on Hostinger. A VPS "Room not found" must not resign them.
+ * Returns snapshot: { missing }, { state }, or null if Hostinger unreachable.
+ */
+async function probeHostingerRoom(roomId, token) {
+  if (!roomId || !token || typeof fetchGameStateForReconnect !== 'function') return null;
+  try {
+    const s = await fetchGameStateForReconnect(roomId, token, 'hostinger', { resume: true });
+    if (isReconnectRoomMissing(s) || isRoomGoneError(s?.error)) return { missing: true };
+    if (s && s.my_id) return { missing: false, state: s };
+    if (s && s.error) return { missing: false, state: s, softError: true };
+    return { missing: false, state: s };
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Wrong-origin poll (VPS) often reports Room not found for live Hostinger ranked rooms.
+ * Relock + resume instead of resigning the opponent into a free win.
+ */
+async function recoverHostingerMatchIfLive(roomId, token) {
+  const snap = await probeHostingerRoom(roomId, token);
+  if (!snap || snap.missing || snap.softError || !snap.state?.my_id) return false;
+  if (snap.state.status === 'finished') return false;
+  if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
+  const ok = await reconnectToGame({
+    roomId,
+    token,
+    playerId: snap.state.my_id,
+    isCPU: !!snap.state.cpu_solo,
+    apiOrigin: 'hostinger',
+    mode: snap.state.mode || 'ranked',
+    screen: 'game',
+  }, { hostingerOnly: true, resume: true });
+  return !!ok;
+}
+
+/**
+ * Escape a dead match: clear local session, optionally drop ranked active_game, return to hub.
+ * Auto paths (poll room-not-found) must NOT resign a still-live Hostinger ranked room —
+ * that was handing free wins after coin flip when the opponent was stuck on VPS.
  */
 async function abandonDeadMatchSession(opts = {}) {
   const silent = !!opts.silent;
+  const forceResign = !!opts.forceResign;
+  const saved = (typeof readActiveGameSession === 'function') ? readActiveGameSession() : null;
+  const roomId = G.roomId || saved?.roomId || null;
+  const token = G.token || saved?.token || null;
+
+  // Poll / wrong-origin miss: recover live Hostinger rooms instead of resigning.
+  if (!forceResign && roomId && token) {
+    try {
+      if (await recoverHostingerMatchIfLive(roomId, token)) {
+        if (!silent) {
+          toast(t('toast.reconnected') || 'Reconnected to match…', 2600);
+        }
+        return;
+      }
+    } catch (e) { /* fall through to abandon */ }
+  }
+
+  let resignRanked = forceResign;
+  if (!forceResign && roomId && token) {
+    const snap = await probeHostingerRoom(roomId, token);
+    // Only clear the ranked DB row when Hostinger confirms the room is gone/finished.
+    // If Hostinger is unreachable, clear local session only — do not resign.
+    if (snap?.missing || snap?.state?.status === 'finished') resignRanked = true;
+  } else if (forceResign) {
+    resignRanked = true;
+  }
+
   cancelReconnectQueue();
   setAuthSkipReconnectVisible(false);
   try { if (typeof closeApiErrorPopup === 'function') closeApiErrorPopup(); } catch (e) { /* ignore */ }
@@ -26841,7 +26911,9 @@ async function abandonDeadMatchSession(opts = {}) {
   G.lastSeq = 0;
   G.isCPU = false;
   G.rematchWaiting = false;
-  await dropRankedActiveGameBestEffort();
+  if (resignRanked) {
+    await dropRankedActiveGameBestEffort({ confirmResign: forceResign });
+  }
   G = freshGameGlobals();
   const authEl = el('auth-status');
   if (authEl) authEl.setAttribute('data-auth-boot', 'done');
@@ -26862,6 +26934,7 @@ async function abandonDeadMatchSession(opts = {}) {
   }
 }
 window.abandonDeadMatchSession = abandonDeadMatchSession;
+window.recoverHostingerMatchIfLive = recoverHostingerMatchIfLive;
 window.cancelReconnectQueue = cancelReconnectQueue;
 
 function resetLobby(){
@@ -27222,8 +27295,14 @@ async function sendAct(type,data){
     const netFail = /failed to fetch|networkerror|network error|load failed|fetch resource/i.test(
       String(e.message || e.name || '')
     );
-    if (isRoomGoneError(e) || (type === 'resign' && netFail)) {
-      await abandonDeadMatchSession();
+    if (isRoomGoneError(e)) {
+      // May recover a live Hostinger ranked room after a VPS miss — do not force-resign.
+      await abandonDeadMatchSession({ silent: false, forceResign: false });
+      return;
+    }
+    if (type === 'resign' && netFail) {
+      // Network blip on resign must not call leave_active_game (that resigns for real).
+      toast(e.message || 'Resign failed — check connection and try again.', 6000);
       return;
     }
     if (type === 'resign') {

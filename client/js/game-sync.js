@@ -443,8 +443,9 @@
     } catch (e) {
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       if (e && /room not found/i.test(String(e.message || ''))) {
+        // Ranked rooms live on Hostinger — a VPS miss must recover, not resign.
         if (typeof global.abandonDeadMatchSession === 'function') {
-          void global.abandonDeadMatchSession();
+          void global.abandonDeadMatchSession({ silent: false, forceResign: false });
           return;
         }
       }

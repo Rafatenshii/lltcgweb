@@ -941,7 +941,9 @@ function tcgApiActiveGame(array $body): array {
 
 function tcgApiLeaveActiveGame(array $body): array {
     $uid = tcgRequireAuthUser($body);
-    $result = tcgAbandonActiveRankedGame($uid);
+    $result = tcgAbandonActiveRankedGame($uid, [
+        'confirm_resign' => !empty($body['confirm_resign']) || !empty($body['force']),
+    ]);
     return ['success' => true] + $result;
 }
 
