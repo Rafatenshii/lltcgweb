@@ -247,10 +247,14 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . $mName . '] choose a card from Waiting Room.');
     } elseif (($ab['type'] ?? '') === 'reveal_live_opp_discard_or_blade') {
-        $revealId = $data['card_id'] ?? '';
+        // reveal_card_id / _reveal_live_id = Live in hand; card_id must stay the Stage Member.
+        $revealId = (string)($data['reveal_card_id'] ?? $data['_reveal_live_id'] ?? '');
         $revealed = null;
         foreach ($p['hand'] as $c) {
-            if (($c['instance_id'] ?? '') === $revealId && ($c['card_type'] ?? '') === 'ライブ') {
+            if (($c['instance_id'] ?? '') !== $revealId) {
+                continue;
+            }
+            if (isLiveTypeCard($c) || ($c['card_type'] ?? '') === 'ライブ') {
                 $revealed = $c;
                 break;
             }

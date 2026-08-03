@@ -23478,11 +23478,12 @@ function activateAbilityFromCard(card, idx, ability, s, myId){
     return;
   }
   if(ability.type==='reveal_live_opp_discard_or_blade'){
-    const lives=hand.filter(c=>c.card_type==='ライブ');
+    const lives=hand.filter(c=>c.card_type==='ライブ'||c.card_type_en==='Live');
     if(!lives.length){ toast('No Live card in hand'); return; }
     openHandPick({hand:lives,count:1,title:card.name_en||card.name||'Ability',
       msg:'Reveal 1 Live card from your hand.',
-      onConfirm:(ids)=>go({card_id:ids[0]})});
+      // Keep stage member in card_id; send the revealed Live separately.
+      onConfirm:(ids)=>go({reveal_card_id:ids[0]})});
     return;
   }
   go({});
@@ -27795,7 +27796,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=6"></script>
+<script src="client/js/cpu-loop.js?v=7"></script>
 <script src="client/js/cpu-ai.js?v=8"></script>
 <script>void bootApp();</script>
 </body>

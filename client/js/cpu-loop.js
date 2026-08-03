@@ -1710,6 +1710,10 @@ function cpuBuildActivatePayload(pick, cpu, tier, winPressure, read) {
       .filter(Boolean);
     if (picked.length) payload.wr_ids = picked;
   }
+  if (t === 'reveal_live_opp_discard_or_blade') {
+    const live = (cpu.hand || []).find(c => c.card_type === 'ライブ' || c.card_type_en === 'Live');
+    if (live?.instance_id) payload.reveal_card_id = live.instance_id;
+  }
   return payload;
 }
 
