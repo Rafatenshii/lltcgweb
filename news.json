@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-decklog-import",
+      "date": "2026-08-03",
+      "banner": "tcglogo.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Import decks from deck log codes!",
+        "ja": "デッキログのコードからデッキを取り込めるようになりました！",
+        "es": "¡Importa mazos desde códigos de deck log!",
+        "ko": "덱 로그 코드로 덱을 가져올 수 있어요!",
+        "zh": "可用 deck log 代码导入牌组！",
+        "th": "นำเข้าเด็คจากรหัส deck log ได้แล้ว!"
+      },
+      "body": {
+        "en": "You can paste an official **deck log** code (or a deck log view URL) straight into Loveca Web.\n\n**Deck Builder** (your collection)\n- Open **Deck Builder**, then use the **deck log code** field near the top.\n- Paste a short code (like `2X7YN`) or a full deck log link, then tap **Import**.\n- The recipe loads into your current preset — but only cards you **own** are required.\n- Missing copies? You’ll get a clear list of what’s short, with options to **substitute** from your collection (or auto-pick substitutes).\n- Optional: turn on **Auto-replace missing Energy** so common Energy gaps fill themselves when possible.\n\n**Deck Experiment** (full card pool)\n- Open **Deck Experiment** and use the same **deck log code** field.\n- Import pulls the full recipe into the experiment builder (no ownership check).\n- After a successful import, you’ll get an **experiment password** you can save or share for Free play.\n\nBuild faster from community lists — happy brewing!",
+        "ja": "公式の**デッキログ**コード（または閲覧用URL）を、そのままLoveca Webに貼り付けて取り込めるようになりました。\n\n**デッキビルダー**（所持カード）\n- **デッキビルダー**を開き、上部付近の **デッキログコード** 欄を使います。\n- 短いコード（例：`2X7YN`）やデッキログのURLを貼って **取り込み** をタップ。\n- レシピが今のプリセットに入ります。必要なのはあなたが**所持している**カードです。\n- 足りない枚数がある場合は一覧で表示され、コレクションから**代用**（または自動代用）できます。\n- 任意で **不足エネルギーを自動補充** をオンにすると、よくあるエネルギー不足を可能な範囲で埋めます。\n\n**デッキ実験**（全カードプール）\n- **デッキ実験**を開き、同じ **デッキログコード** 欄を使います。\n- 取り込みは所持チェックなしで、レシピ全体を実験ビルダーに入れます。\n- 成功すると、フリー対戦用に保存・共有できる**実験パスワード**が発行されます。\n\nコミュニティの構築例から、もっと気軽に組んでみてください！",
+        "es": "Ya puedes pegar un código oficial de **deck log** (o una URL de vista) directamente en Loveca Web.\n\n**Constructor de mazos** (tu colección)\n- Abre el **Constructor de mazos** y usa el campo **código deck log** cerca de arriba.\n- Pega un código corto (como `2X7YN`) o un enlace completo y toca **Importar**.\n- La receta carga en tu preset actual — hacen falta las cartas que **posees**.\n- ¿Te faltan copias? Verás una lista clara, con opciones para **sustituir** desde tu colección (o elegir sustitutos automáticamente).\n- Opcional: activa **Reemplazar Energía faltante** para cubrir huecos de Energía cuando se pueda.\n\n**Experimento de mazos** (conjunto completo)\n- Abre **Experimento de mazos** y usa el mismo campo **código deck log**.\n- La importación trae la receta completa al constructor de experimento (sin comprobar posesión).\n- Tras importar bien, obtienes una **contraseña de experimento** para guardar o compartir en partidas Libre.\n\n¡Arma mazos más rápido a partir de listas de la comunidad!",
+        "ko": "공식 **덱 로그** 코드(또는 보기 URL)를 Loveca Web에 바로 붙여 넣을 수 있습니다.\n\n**덱 빌더** (보유 카드)\n- **덱 빌더**를 열고 위쪽의 **덱 로그 코드** 칸을 사용하세요.\n- 짧은 코드(예: `2X7YN`)나 덱 로그 링크를 붙인 뒤 **가져오기**를 탭하세요.\n- 레시피가 현재 프리셋에 들어갑니다 — **보유한** 카드가 필요합니다.\n- 부족한 매수가 있으면 목록으로 보여 주며, 컬렉션에서 **대용**하거나 자동 대용을 고를 수 있습니다.\n- 선택: **부족한 에너지 자동 보충**을 켜면 흔한 에너지 부족을 가능한 범위에서 채웁니다.\n\n**덱 실험** (전체 카드 풀)\n- **덱 실험**을 열고 같은 **덱 로그 코드** 칸을 사용하세요.\n- 가져오기는 소유 확인 없이 전체 레시피를 실험 빌더에 넣습니다.\n- 성공하면 프리 플레이용으로 저장·공유할 수 있는 **실험 비밀번호**가 발급됩니다.\n\n커뮤니티 리스트로 더 빠르게 연구해 보세요!",
+        "zh": "你可以将官方 **deck log** 代码（或查看页链接）直接粘贴到 Loveca Web。\n\n**牌组构筑**（你的收藏）\n- 打开**牌组构筑**，使用顶部附近的 **deck log 代码** 输入框。\n- 粘贴短代码（如 `2X7YN`）或完整 deck log 链接，然后点 **导入**。\n- 配方会载入当前预设——需要你**拥有**的卡牌。\n- 若有缺卡，会列出短缺数量，并可从收藏中**替换**（或自动挑选替换）。\n- 可选：开启 **自动补齐缺失能量**，在可能时填补常见能量缺口。\n\n**牌组实验**（完整卡池）\n- 打开**牌组实验**，使用相同的 **deck log 代码** 输入框。\n- 导入会把完整配方写入实验构筑（不检查持有）。\n- 导入成功后会得到**实验密码**，可保存或分享用于自由对战。\n\n从社区构筑列表更快开整——祝构筑愉快！",
+        "th": "วางรหัส **deck log** ทางการ (หรือ URL หน้าดูเด็ค) ลงใน Loveca Web ได้โดยตรงแล้ว\n\n**ตัวสร้างเด็ค** (คอลเลกชันของคุณ)\n- เปิด**ตัวสร้างเด็ค** แล้วใช้ช่อง **รหัส deck log** ด้านบน\n- วางรหัสสั้น (เช่น `2X7YN`) หรือลิงก์ deck log เต็ม แล้วแตะ **นำเข้า**\n- สูตรจะโหลดเข้าพรีเซ็ตปัจจุบัน — ต้องมี**การ์ดที่คุณมี**\n- ใบไม่พอ? จะมีรายการชัดเจน พร้อมตัวเลือก**ทดแทน**จากคอลเลกชัน (หรือเลือกทดแทนให้อัตโนมัติ)\n- ทางเลือก: เปิด **เติม Energy ที่ขาดอัตโนมัติ** เพื่ออุดช่อง Energy ทั่วไปเมื่อทำได้\n\n**Deck Experiment** (พูลการ์ดเต็ม)\n- เปิด **Deck Experiment** แล้วใช้ช่อง **รหัส deck log** เดียวกัน\n- การนำเข้าดึงสูตรเต็มเข้าตัวสร้างทดลอง (ไม่ตรวจการถือครอง)\n- หลังนำเข้าสำเร็จ จะได้**รหัสผ่านทดลอง** สำหรับบันทึกหรือแชร์ในโหมด Free\n\nสร้างเด็คจากลิสต์ชุมชนได้ไวขึ้น — สนุกกับการทดลองนะ!"
+      }
+    },
+    {
       "id": "2026-08-login-bonus",
       "date": "2026-08-02",
       "banner": "assets/kanon.png",
