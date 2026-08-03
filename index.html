@@ -2163,7 +2163,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=30"></script>
+<script src="client/js/game-sync.js?v=31"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -11708,6 +11708,7 @@ async function enterRankedMatch(st) {
   if (typeof tcgLockApiOrigin === 'function') {
     tcgLockApiOrigin('hostinger');
   }
+  try { saveActiveGameSession(); } catch (e) { /* ignore */ }
   showScr('game');
   startPoll();
 }

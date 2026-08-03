@@ -255,9 +255,9 @@ function tcgRankedMatchRowIsStale(string $roomId, array $state, array $row): boo
 /**
  * Resign or clear a stuck ranked match so the player can return to the hub.
  *
- * @param array $opts confirm_resign=true required to concede a live room when the
- *   opponent still has recent Hostinger presence and this seat never connected.
- *   Prevents free wins from confused VPS "Room not found" → leave_active_game.
+ * Without confirm_resign: only clear the DB row when the room is missing/finished.
+ * Never auto-concede a live room (VPS miss / reconnect cleanup used to free-win the opponent).
+ * Options "Leave active match" must pass confirm_resign=1.
  */
 function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array {
     $confirmResign = !empty($opts['confirm_resign']) || !empty($opts['force']);
@@ -273,7 +273,6 @@ function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array 
     $roomId = $row['room_id'] ?? '';
     $isP1 = ($row['p1_id'] ?? '') === $discordId;
     $token = $isP1 ? ($row['p1_token'] ?? '') : ($row['p2_token'] ?? '');
-    $oppToken = $isP1 ? ($row['p2_token'] ?? '') : ($row['p1_token'] ?? '');
 
     if ($roomId !== '' && $token !== '') {
         if (!defined('TCG_API_LIB_ONLY')) {
@@ -283,7 +282,7 @@ function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array 
         require_once __DIR__ . '/ranked_room.php';
 
         try {
-            $guard = withLock($roomId, function () use ($roomId, $token, $oppToken, $confirmResign) {
+            $guard = withLock($roomId, function () use ($roomId, $token, $confirmResign) {
                 $state = loadGame($roomId);
                 if (!$state) {
                     return ['missing' => true];
@@ -296,17 +295,9 @@ function tcgAbandonActiveRankedGame(string $discordId, array $opts = []): array 
                     return ['finished' => true];
                 }
 
-                // Confused client (polled VPS, never Hostinger) must not concede a live match.
+                // Live match: only Options/explicit leave may concede.
                 if (!$confirmResign) {
-                    $presence = function_exists('readPresence') ? readPresence($roomId) : [];
-                    $now = time();
-                    $myLast = intval($presence[$token] ?? 0);
-                    $oppLast = intval($presence[$oppToken] ?? 0);
-                    $oppActive = $oppLast > 0 && ($now - $oppLast) < 180;
-                    $selfAbsent = $myLast === 0 || ($now - $myLast) > 180;
-                    if ($oppActive && $selfAbsent) {
-                        return ['blocked' => true, 'code' => 'match_still_live'];
-                    }
+                    return ['blocked' => true, 'code' => 'match_still_live'];
                 }
 
                 $playerId = getPlayerIdByToken($state, $token);
