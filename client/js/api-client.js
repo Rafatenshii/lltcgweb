@@ -113,8 +113,9 @@
   /** Lock the match to one origin for its lifetime (no mid-match migrate). */
   global.tcgLockApiOrigin = function tcgLockApiOrigin(origin) {
     global.G = global.G || {};
-    // Match-primary: Hostinger cannot accept game writes — never pin matches there.
-    if (global.TCG_MATCH_API_PRIMARY && origin !== 'overflow') {
+    // Match-primary: casual/CPU live on VPS. Explicit hostinger lock is kept for
+    // ranked rooms (queue + game files + ELO still on Hostinger).
+    if (global.TCG_MATCH_API_PRIMARY && origin !== 'overflow' && origin !== 'hostinger') {
       origin = 'overflow';
     }
     global.G.apiOrigin = origin === 'overflow' ? 'overflow' : 'hostinger';
@@ -142,11 +143,11 @@
     }
     const locked = global.G && global.G.apiOrigin;
 
-    // Match-primary: all match traffic (create/join/action/get_state) uses VPS.
-    // A leftover hostinger lock from ranked reconnect / old sessions must not win —
-    // Hostinger returns match_writes_disabled for action/create/join.
+    // Match-primary: casual/CPU match traffic uses VPS. Ranked keeps an explicit
+    // hostinger lock (rooms + ELO still Hostinger-local until VPS ranked cutover).
     if (global.TCG_MATCH_API_PRIMARY) {
       if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
+      if (locked === 'hostinger') return HOSTINGER_URLS;
       if (context === 'matchmake' || context === 'ingame'
           || (action && (MATCHMAKE_GAME[action] || INGAME_GAME[action]))) {
         return overflowUrls();
@@ -569,7 +570,9 @@
           || /match writes disabled/i.test(String(lastErr.message || ''))
         ));
         // Stale hostinger routing + disabled match writes: retry on VPS (create/join/action).
+        // Never migrate an explicit Hostinger lock (ranked rooms) — VPS has no copy.
         if (matchWritesDisabled && global.TCG_OVERFLOW_ENABLED
+            && !(global.G && global.G.apiOrigin === 'hostinger')
             && (MATCHMAKE_GAME[action] || action === 'action' || action === 'dry_run_actions' || action === 'ping')) {
           if (typeof global.tcgClearApiOriginLock === 'function') global.tcgClearApiOriginLock();
           if (!(await probeOverflowAlive())) {

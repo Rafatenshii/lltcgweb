@@ -142,8 +142,29 @@ function tcgIsHostingerMatchWriteAction(string $action): bool {
     return isset($blocked[$action]);
 }
 
+/**
+ * Ranked queue + game JSON still live on Hostinger (account DB / ELO).
+ * Allow action writes for those rooms while casual/create stay on the VPS.
+ */
+function tcgHostingerRankedActionAllowed(string $action, array $body): bool {
+    if ($action !== 'action' && $action !== 'dry_run_actions') {
+        return false;
+    }
+    $roomId = strtoupper(trim((string)($body['room_id'] ?? '')));
+    if ($roomId === '') {
+        return false;
+    }
+    try {
+        $state = loadGame($roomId);
+    } catch (Throwable $e) {
+        return false;
+    }
+    return is_array($state) && (($state['mode'] ?? '') === 'ranked');
+}
+
 try {
-    if (!tcgHostingerMatchWritesEnabled() && tcgIsHostingerMatchWriteAction($action)) {
+    if (!tcgHostingerMatchWritesEnabled() && tcgIsHostingerMatchWriteAction($action)
+        && !tcgHostingerRankedActionAllowed($action, $body)) {
         http_response_code(503);
         echo json_encode([
             'error' => 'Match writes disabled on this host. Use the VPS match API (stream.loveliveradio.ca/tcg/api).',

@@ -2159,7 +2159,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=20"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=22"></script>
+<script src="client/js/api-client.js?v=23"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
@@ -4351,13 +4351,12 @@ function readSpectatorSession() {
 }
 
 function reconnectOriginOrder(preferred, { hostingerOnly = false } = {}) {
-  // Match-primary: ONLY resume rooms that exist on the VPS. Hostinger may still
-  // have readable drain copies, but writes are disabled — restoring those traps
-  // the player in a dead match (resign → network / room not found).
+  // Explicit Hostinger-only (ranked queue rooms) — never probe VPS.
+  if (hostingerOnly || preferred === 'hostinger') return ['hostinger'];
+  // Match-primary: casual/CPU rooms live on VPS.
   if (typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) {
     return ['overflow'];
   }
-  if (hostingerOnly) return ['hostinger'];
   // Only probe overflow when the saved session says the room lived there.
   // Speculative Hostinger→overflow fallback was locking hub traffic onto a
   // CORS-broken stream.loveliveradio.ca/tcg/api/ and breaking deck_list/me.
@@ -4620,15 +4619,20 @@ async function reconnectToGame(saved, opts = {}) {
       G._reconnectLastFail = 'gone';
       return false;
     }
-    // Match-primary: never restore a Hostinger-only drain room (can't accept actions).
+    // Match-primary: refuse Hostinger drain copies of casual/CPU rooms (writes disabled).
+    // Ranked rooms are Hostinger-native — keep those.
     if ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY)
         && apiOrigin !== 'overflow') {
-      if (getAuthToken()) {
-        try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+      const looksRanked = !!(opts.hostingerOnly
+        || (saved && (saved.mode === 'ranked' || saved.apiOrigin === 'hostinger')));
+      if (!looksRanked) {
+        if (getAuthToken()) {
+          try { await accountPost('leave_active_game', {}); } catch (e) { /* ignore */ }
+        }
+        clearActiveGameSession();
+        G._reconnectLastFail = 'gone';
+        return false;
       }
-      clearActiveGameSession();
-      G._reconnectLastFail = 'gone';
-      return false;
     }
     // Transient API errors / wrong token: keep session so ranked active_game or retry can work.
     if (s.error || !s.my_id) {
@@ -4931,10 +4935,11 @@ async function runReconnectQueue() {
               isCPU: false,
               cpuToken: null,
               screen: 'game',
-              // Under match-primary, ranked/active rows must exist on VPS to resume.
-              apiOrigin: matchPrimary ? 'overflow' : 'hostinger',
+              mode: 'ranked',
+              // Ranked active_game rows are Hostinger rooms (queue/ELO DB).
+              apiOrigin: 'hostinger',
             }, {
-              hostingerOnly: !matchPrimary,
+              hostingerOnly: true,
               resume: true,
               signal: attemptCtrl.signal,
             })) {
@@ -11694,9 +11699,10 @@ async function enterRankedMatch(st) {
   G.token = st.player_token;
   G.playerId = st.player_id;
   G.isCPU = false;
-  // Match-primary pins all live rooms to VPS (Hostinger match writes are disabled).
+  // Ranked rooms are created on Hostinger (queue + ELO DB). Keep them there even
+  // under match-primary (casual/CPU use VPS).
   if (typeof tcgLockApiOrigin === 'function') {
-    tcgLockApiOrigin((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger');
+    tcgLockApiOrigin('hostinger');
   }
   showScr('game');
   startPoll();

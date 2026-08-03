@@ -48,18 +48,22 @@ Do **not** upload `USE_VPS_API` for this mode — that marker is full cutover on
 
 Authoritative live rooms move off Hostinger `games/*.json` flock onto VPS Redis (`TCG_GAME_STORE=redis`). PHP rules still run in the overflow/match Docker API (`compose.overflow.yaml` includes Redis).
 
-**Client:** set `window.TCG_MATCH_API_PRIMARY = true` (or deploy a small bootstrap) so create/join/`action` use `TCG_OVERFLOW_ORIGIN`. Account, ranked queue, login bonus stay on Hostinger until a shared DB strategy exists.
+**Client:** deploy [`client/js/runtime-flags.js`](../client/js/runtime-flags.js) with `TCG_MATCH_API_PRIMARY` true (or `?match_primary=1` / `localStorage.tcg_match_api_primary=1` for soak). Casual create/join/`action` use `TCG_OVERFLOW_ORIGIN`. Account, ranked queue, ranked rooms, and login bonus stay on Hostinger until a shared DB strategy exists (client locks ranked matches to Hostinger; Hostinger still accepts `action` for `mode=ranked` rooms when match writes are otherwise disabled).
+
+**Hostinger kill switch:** upload empty `MATCH_WRITES_DISABLED` next to `api.php` and/or `.htaccess` `SetEnv TCG_HOSTINGER_MATCH_WRITES 0` so `create_room` / `join_room` / `casual_*` / `action` / `dry_run_actions` return `503` + `match_writes_disabled`. Reads (`get_state`, `get_cards`, `ping`) and account APIs stay available for drain. Do **not** place that marker on the VPS match API.
 
 **Operator:**
 
 ```bash
-bash scripts/vps_overflow_up.sh   # pulls compose.overflow.yaml (redis + tcg-api)
+bash scripts/verify_match_primary.sh   # read-only health (no compose up / no restart)
+bash scripts/vps_overflow_up.sh        # only after explicit OK — redis + tcg-api
 # Confirm redis health + api.php?action=ping on :5003
+# Then: runtime-flags.js primary=true + Hostinger TCG_HOSTINGER_MATCH_WRITES=0
 ```
 
 **Realtime:** SSE notify remains on `wrapped/tcg_sync.py` (seq-only wake → client `get_state`). Optional later: WebSocket fan-out from the same VPS process if poll pressure remains — see `docs/overhaul/01-match-store.md` and Part 1C in `docs/OVERHAUL_PROGRESS.md`.
 
-**Rollback:** `TCG_MATCH_API_PRIMARY=false`; Hostinger `TCG_GAME_STORE=file`.
+**Rollback:** `runtime-flags.js` / `TCG_MATCH_API_PRIMARY=false`; Hostinger `TCG_HOSTINGER_MATCH_WRITES=1` (or unset); Hostinger `TCG_GAME_STORE=file`.
 
 ### Hostinger-only deploy (no VPS API yet)
 
