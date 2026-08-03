@@ -1851,6 +1851,16 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 .lcard.live-card .stage-hearts{
   position:absolute;left:50%;top:0;transform:translate(-50%,-72%);z-index:6;
 }
+.lcard.live-card .stage-hearts.live-req{
+  display:flex;gap:3px 6px;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.7);
+}
+.lcard.live-card .stage-hearts.live-req .heart-stat-row{
+  display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#fff;line-height:1;
+}
+.lcard.live-card .stage-hearts.live-req .heart-stat-count-mod{
+  color:#FBBF24;text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.9);
+}
 .lcard.live-card .stage-hearts.live-req.req-modified,
 .stage-hearts.live-req.req-modified{
   padding:2px 6px;border-radius:999px;background:rgba(20,40,70,.82);

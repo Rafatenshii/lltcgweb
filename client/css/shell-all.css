@@ -2430,6 +2430,13 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 .lcard.live-card .stage-hearts{
   position:absolute;left:50%;top:0;transform:translate(-50%,-72%);z-index:6;
 }
+.lcard.live-card .stage-hearts.live-req{
+  display:flex;gap:3px 6px;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.7);
+}
+.lcard.live-card .stage-hearts.live-req .heart-stat-row{
+  display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#fff;line-height:1;
+}
 .lcard.live-card .stage-hearts.live-req.req-modified,
 .stage-hearts.live-req.req-modified{
   padding:2px 6px;border-radius:999px;background:rgba(20,40,70,.82);
@@ -3751,14 +3758,35 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member .perf-member-cost-delta{color:#FBD38D;font-size:10px;font-weight:800}
 .perf-card.live .perf-live-req{
   position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
-  display:flex;gap:2px;align-items:center;justify-content:center;
+  display:flex;gap:4px 6px;align-items:center;justify-content:center;flex-wrap:wrap;
   padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.72);
-  pointer-events:none;z-index:7;max-width:92%;
+  pointer-events:none;z-index:7;max-width:94%;
 }
 .perf-card.live .perf-live-req.req-modified{
   background:rgba(20,40,70,.88);box-shadow:0 0 0 1px rgba(96,165,250,.65),0 0 14px rgba(96,165,250,.35);
 }
-.perf-card.live .perf-live-req .hicon.fld{width:18px;height:18px}
+.perf-card.live .perf-live-req.req-uncleared{
+  background:rgba(70,20,30,.9);box-shadow:0 0 0 1px rgba(248,113,113,.7),0 0 12px rgba(248,113,113,.35);
+}
+.perf-card.live .perf-live-req.req-cleared{display:none!important}
+.perf-card.live .perf-live-req .hicon.fld{width:16px;height:16px}
+.perf-card.live .perf-live-req .heart-stat-row{
+  display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;color:#fff;line-height:1;
+}
+.perf-card.live .perf-live-req .heart-stat-count{font-variant-numeric:tabular-nums}
+.perf-card.live .perf-live-req .heart-stat-count-mod,
+.lcard.live-card .stage-hearts.live-req .heart-stat-count-mod{
+  color:#FBBF24;text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.9);
+}
+.perf-card.live .perf-live-req .heart-stat-count-tick{
+  transform:scale(1.35);color:#FDE68A;transition:transform .12s ease,color .12s ease;
+}
+.perf-card.live.perf-live-req-just-cleared{
+  box-shadow:0 0 0 2px rgba(104,211,145,.75),0 0 16px rgba(104,211,145,.35);
+}
+.perf-card.live.perf-live-failed-req{
+  box-shadow:0 0 0 2px rgba(248,113,113,.55),0 0 14px rgba(248,113,113,.25);
+}
 .perf-card.live .perf-card-score.perf-score-live-start{
   top:6px;left:6px;right:auto;
 }

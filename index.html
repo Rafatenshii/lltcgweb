@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=12">
+<link rel="stylesheet" href="client/css/shell-all.css?v=13">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -27698,7 +27698,7 @@ function groupHeartsByColor(hearts) {
   return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
 }
 
-function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center', bonusHearts = null } = {}) {
+function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center', bonusHearts = null, modifiedColors = null } = {}) {
   if (!container) return;
   const printed = groupHeartsByColor(hearts || []);
   const bonusMap = new Map();
@@ -27712,17 +27712,26 @@ function appendHeartStatCounts(container, hearts, { lg = true, field = false, al
   container.style.alignItems = align === 'start' ? 'flex-start' : 'center';
   container.style.gap = '4px 8px';
   container.innerHTML = '';
+  const modSet = modifiedColors instanceof Set
+    ? modifiedColors
+    : (modifiedColors ? new Set(modifiedColors) : null);
   const appendPrinted = (h) => {
     const row = document.createElement('span');
     row.className = 'heart-stat-row';
+    row.dataset.color = h.color;
     row.appendChild(mkHeartIcon(h.color, lg, field));
-    row.appendChild(document.createTextNode(String(h.count)));
+    const countEl = document.createElement('span');
+    countEl.className = 'heart-stat-count';
+    if (modSet?.has(h.color)) countEl.classList.add('heart-stat-count-mod');
+    countEl.textContent = String(h.count);
+    row.appendChild(countEl);
     container.appendChild(row);
   };
   const appendBonus = (color, count) => {
     if (!(count > 0)) return;
     const row = document.createElement('span');
     row.className = 'heart-stat-row heart-stat-mod';
+    row.dataset.color = color;
     row.title = 'From active modifiers';
     row.appendChild(mkHeartIcon(color, lg, field));
     const bonusEl = document.createElement('span');
@@ -27780,13 +27789,13 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=52"></script>
-<script src="client/js/board-render.js?v=2"></script>
+<script src="client/js/spectacle.js?v=53"></script>
+<script src="client/js/board-render.js?v=3"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=5"></script>
+<script src="client/js/cpu-loop.js?v=6"></script>
 <script src="client/js/cpu-ai.js?v=8"></script>
 <script>void bootApp();</script>
 </body>

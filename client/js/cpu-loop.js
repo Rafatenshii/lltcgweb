@@ -2284,6 +2284,32 @@ function liveCardRequirementsModified(liveCard) {
   return false;
 }
 
+/** Colors whose required count differs from printed (for yellow count styling). */
+function liveReqModifiedColors(printed, effective) {
+  const pMap = new Map();
+  const eMap = new Map();
+  (typeof groupHeartsByColor === 'function'
+    ? groupHeartsByColor(printed || [])
+    : (printed || [])).forEach((h) => {
+    const c = normalizeHeartColor(h.color || 'any');
+    pMap.set(c, (pMap.get(c) || 0) + Number(h.count || 1));
+  });
+  (typeof groupHeartsByColor === 'function'
+    ? groupHeartsByColor(effective || [])
+    : (effective || [])).forEach((h) => {
+    const c = normalizeHeartColor(h.color || 'any');
+    eMap.set(c, (eMap.get(c) || 0) + Number(h.count || 1));
+  });
+  const mod = new Set();
+  for (const [color, pCount] of pMap) {
+    if ((eMap.get(color) || 0) !== pCount) mod.add(color);
+  }
+  for (const [color, eCount] of eMap) {
+    if ((pMap.get(color) || 0) !== eCount) mod.add(color);
+  }
+  return mod;
+}
+
 /**
  * Stage Member cost for Live-temp UI (override / +bonus). Continuous printed abilities
  * are handled separately by play-cost helpers.

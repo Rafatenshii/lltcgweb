@@ -4100,7 +4100,7 @@ function perfCardEl(card, kind, opts = {}) {
   return d;
 }
 
-/** Show updated Live heart requirements after Live Start reductions (Ladybug / Proof / etc.). */
+/** Show compact Live heart requirements (1 icon + count per color; yellow if reduced). */
 function appendPerfLiveRequiredHearts(cardEl, card, state, pid) {
   if (!cardEl || !card) return;
   const printed = card.required_hearts || card.hearts || [];
@@ -4116,8 +4116,18 @@ function appendPerfLiveRequiredHearts(cardEl, card, state, pid) {
   const modified = typeof liveCardRequirementsModified === 'function'
     ? liveCardRequirementsModified(card)
     : false;
+  const modColors = typeof liveReqModifiedColors === 'function'
+    ? liveReqModifiedColors(printed, req)
+    : null;
   hr.className = 'perf-live-req' + (modified ? ' req-modified' : '');
-  if (typeof appendHeartIcons === 'function') {
+  if (typeof appendHeartStatCounts === 'function') {
+    appendHeartStatCounts(hr, req?.length ? req : [], {
+      lg: false,
+      field: true,
+      align: 'center',
+      modifiedColors: modColors,
+    });
+  } else if (typeof appendHeartIcons === 'function') {
     appendHeartIcons(hr, req?.length ? req : [], false, true);
   }
   if (modified) {
@@ -4229,6 +4239,315 @@ function buildHeartPoolFromRows(rows) {
     for (let i = 0; i < (hg.count || 1); i++) pool.push(normalizeHeartColor(hg.color));
   });
   return pool;
+}
+
+function expandHeartRequirementSlotsClient(required) {
+  const slots = [];
+  for (const req of sortHeartRequirements(required || [])) {
+    const color = normalizeHeartColor(req.color || 'any');
+    const need = Number(req.count || 1);
+    for (let i = 0; i < need; i++) slots.push(color);
+  }
+  return slots;
+}
+
+function coloredHeartDemandClient(required) {
+  const demand = {};
+  for (const req of required || []) {
+    const color = normalizeHeartColor(req.color || 'any');
+    if (color === 'any') continue;
+    demand[color] = (demand[color] || 0) + Number(req.count || 1);
+  }
+  return demand;
+}
+
+function mergeColoredHeartDemandClient(a, b) {
+  const out = { ...(a || {}) };
+  Object.entries(b || {}).forEach(([color, n]) => {
+    out[color] = (out[color] || 0) + Number(n || 0);
+  });
+  return out;
+}
+
+function isWildcardHeartColorClient(color) {
+  const c = normalizeHeartColor(color || 'any');
+  return c === 'any';
+}
+
+/** Prefer exact, then wild; for any-slots prefer surplus colors (issue #66). */
+function heartSlotCandidateIndicesClient(pool, needColor, reservedColored = {}) {
+  if (needColor !== 'any') {
+    const indices = [];
+    pool.forEach((h, i) => { if (h === needColor) indices.push(i); });
+    pool.forEach((h, i) => { if (isWildcardHeartColorClient(h)) indices.push(i); });
+    return indices;
+  }
+  const counts = {};
+  pool.forEach((h) => { counts[h] = (counts[h] || 0) + 1; });
+  const surplusBudget = {};
+  Object.entries(counts).forEach(([color, have]) => {
+    if (isWildcardHeartColorClient(color)) return;
+    surplusBudget[color] = Math.max(0, have - Number(reservedColored[color] || 0));
+  });
+  const surplus = [];
+  const reserved = [];
+  const wilds = [];
+  pool.forEach((h, i) => {
+    if (isWildcardHeartColorClient(h)) {
+      wilds.push(i);
+      return;
+    }
+    if ((surplusBudget[h] || 0) > 0) {
+      surplus.push(i);
+      surplusBudget[h] -= 1;
+    } else {
+      reserved.push(i);
+    }
+  });
+  return [...surplus, ...wilds, ...reserved];
+}
+
+/** Greedy fill of requirement slots; returns unmet colors (grouped) + leftover pool. */
+function greedyFillHeartSlotsClient(pool, required, reservedColored = {}) {
+  let p = (pool || []).map(h => normalizeHeartColor(h));
+  const unmet = [];
+  for (const need of expandHeartRequirementSlotsClient(required)) {
+    const idxs = heartSlotCandidateIndicesClient(p, need, reservedColored);
+    if (!idxs.length) {
+      unmet.push(need);
+      continue;
+    }
+    p.splice(idxs[0], 1);
+  }
+  return {
+    unmet: typeof groupHeartsByColor === 'function'
+      ? groupHeartsByColor(unmet.map(color => ({ color, count: 1 })))
+      : unmet.map(color => ({ color, count: 1 })),
+    pool: p,
+  };
+}
+
+/** Backtracking consume matching server tryConsumeHeartsForRequirementSlots. */
+function tryConsumeHeartsForSlotsClient(pool, slots, reservedColored = {}) {
+  if (!slots.length) return pool.slice();
+  const need = slots[0];
+  const rest = slots.slice(1);
+  for (const idx of heartSlotCandidateIndicesClient(pool, need, reservedColored)) {
+    const next = pool.slice();
+    next.splice(idx, 1);
+    const result = tryConsumeHeartsForSlotsClient(next, rest, reservedColored);
+    if (result) return result;
+  }
+  return null;
+}
+
+function checkHeartsClient(available, required, reservedColored = {}) {
+  const slots = expandHeartRequirementSlotsClient(required);
+  const remaining = tryConsumeHeartsForSlotsClient(
+    (available || []).map(h => normalizeHeartColor(h)),
+    slots,
+    reservedColored || {}
+  );
+  if (!remaining) return [false, (available || []).slice()];
+  return [true, remaining];
+}
+
+function cloneHeartCountRows(rows) {
+  return (rows || []).map(h => ({
+    color: normalizeHeartColor(h.color || 'any'),
+    count: Number(h.count || 1),
+  })).filter(h => h.count > 0);
+}
+
+function heartCountMap(rows) {
+  const map = new Map();
+  cloneHeartCountRows(rows).forEach((h) => {
+    map.set(h.color, (map.get(h.color) || 0) + h.count);
+  });
+  return map;
+}
+
+/** Build / reset per-Live remaining-req trackers for spectacle clearing animation. */
+function perfResetLiveReqTrackers(ctx, pid) {
+  if (!G._perfLiveReqByPid) G._perfLiveReqByPid = {};
+  const liveCards = perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard)
+    .filter(c => isLiveTypeCard(c) || isPerfSpectacleLiveSlotCard(c, ctx.next, pid));
+  const stateKey = ctx.next;
+  const entries = liveCards.map((card) => {
+    const printed = card.required_hearts || card.hearts || [];
+    const required = (typeof effectiveLiveRequiredHearts === 'function')
+      ? effectiveLiveRequiredHearts(card, stateKey, pid)
+      : (typeof applyClientLiveHeartReductions === 'function'
+        ? applyClientLiveHeartReductions(printed, card)
+        : printed);
+    const modColors = typeof liveReqModifiedColors === 'function'
+      ? liveReqModifiedColors(printed, required)
+      : new Set();
+    return {
+      iid: card.instance_id || '',
+      required: cloneHeartCountRows(required),
+      remaining: cloneHeartCountRows(required),
+      modifiedColors: modColors,
+      cardEl: typeof perfLiveCardEl === 'function'
+        ? perfLiveCardEl(ctx, pid, card.instance_id)
+        : null,
+    };
+  });
+  G._perfLiveReqByPid[pid] = entries;
+  G._perfLiveReqAppliedPool = G._perfLiveReqAppliedPool || {};
+  G._perfLiveReqAppliedPool[pid] = [];
+  entries.forEach((entry) => {
+    if (!entry.cardEl && entry.iid) {
+      entry.cardEl = perfLiveCardEl(ctx, pid, entry.iid);
+    }
+    perfPaintLiveReqRemaining(entry);
+  });
+  return entries;
+}
+
+function perfPaintLiveReqRemaining(entry) {
+  const cardEl = entry.cardEl;
+  if (!cardEl) return;
+  let hr = cardEl.querySelector('.perf-live-req');
+  const remaining = cloneHeartCountRows(entry.remaining);
+  if (!remaining.length) {
+    if (hr) {
+      hr.classList.add('req-cleared');
+      hr.innerHTML = '';
+      hr.style.display = 'none';
+    }
+    return;
+  }
+  if (!hr) {
+    hr = document.createElement('div');
+    hr.className = 'perf-live-req';
+    cardEl.appendChild(hr);
+  }
+  hr.classList.remove('req-cleared');
+  hr.style.display = '';
+  if (entry.modifiedColors?.size) hr.classList.add('req-modified');
+  if (typeof appendHeartStatCounts === 'function') {
+    appendHeartStatCounts(hr, remaining, {
+      lg: false,
+      field: true,
+      align: 'center',
+      modifiedColors: entry.modifiedColors,
+    });
+  }
+}
+
+async function perfAnimateLiveReqCountTick(entry, color) {
+  const cardEl = entry.cardEl;
+  const hr = cardEl?.querySelector('.perf-live-req');
+  const row = hr?.querySelector(`.heart-stat-row[data-color="${color}"]`);
+  const countEl = row?.querySelector('.heart-stat-count');
+  if (countEl) {
+    countEl.classList.add('heart-stat-count-tick');
+    sfxPerf('turn_tick', 0.18);
+    await perfSleepYell(90, 1);
+    countEl.classList.remove('heart-stat-count-tick');
+  }
+}
+
+/**
+ * Recompute each Live's still-needed hearts from the applied pool so far
+ * (stage → continuous → Yell), then animate count changes.
+ */
+async function perfSyncLiveReqFromAppliedPool(ctx, pid, { animate = true } = {}) {
+  const entries = G._perfLiveReqByPid?.[pid];
+  if (!entries?.length) return;
+  let working = (G._perfLiveReqAppliedPool?.[pid] || []).slice();
+  const nextRemaining = [];
+  for (let li = 0; li < entries.length; li++) {
+    const required = entries[li].required;
+    let reserve = {};
+    for (let j = li + 1; j < entries.length; j++) {
+      reserve = mergeColoredHeartDemandClient(reserve, coloredHeartDemandClient(entries[j].required));
+    }
+    const [ok, newPool] = checkHeartsClient(working, required, reserve);
+    if (ok) {
+      working = newPool;
+      nextRemaining.push([]);
+    } else {
+      // Not fully payable yet: show greedy unmet so counts tick down visually,
+      // but do not consume (matches server fail = pool unchanged).
+      const partial = greedyFillHeartSlotsClient(working, required, reserve);
+      nextRemaining.push(cloneHeartCountRows(partial.unmet));
+    }
+  }
+
+  for (let li = 0; li < entries.length; li++) {
+    const entry = entries[li];
+    const before = heartCountMap(entry.remaining);
+    const afterRows = nextRemaining[li];
+    const after = heartCountMap(afterRows);
+    const tickColors = [];
+    for (const [color, prevCount] of before) {
+      const nextCount = after.get(color) || 0;
+      if (nextCount < prevCount) tickColors.push(color);
+    }
+    entry.remaining = afterRows;
+    if (animate && tickColors.length) {
+      for (const color of tickColors) {
+        await perfAnimateLiveReqCountTick(entry, color);
+      }
+    }
+    perfPaintLiveReqRemaining(entry);
+    if (animate && !afterRows.length && before.size) {
+      entry.cardEl?.classList.add('perf-live-req-just-cleared');
+      await perfSleepYell(120, 1);
+      entry.cardEl?.classList.remove('perf-live-req-just-cleared');
+    }
+  }
+}
+
+async function perfApplyHeartsToLiveReqs(ctx, pid, colors, { animate = true } = {}) {
+  if (!G._perfLiveReqByPid?.[pid]) perfResetLiveReqTrackers(ctx, pid);
+  if (!G._perfLiveReqAppliedPool) G._perfLiveReqAppliedPool = {};
+  if (!G._perfLiveReqAppliedPool[pid]) G._perfLiveReqAppliedPool[pid] = [];
+  const list = Array.isArray(colors) ? colors : [colors];
+  for (const raw of list) {
+    if (G._perfSpectacleAborted) return;
+    G._perfLiveReqAppliedPool[pid].push(normalizeHeartColor(raw));
+    await perfSyncLiveReqFromAppliedPool(ctx, pid, { animate });
+  }
+}
+
+/** Force success Lives cleared / failed Lives keep leftovers at outcomes. */
+function perfFinalizeLiveReqOutcomes(ctx, pid) {
+  const entries = G._perfLiveReqByPid?.[pid];
+  if (!entries?.length) return;
+  const attempts = pid === ctx.myId ? ctx.mineAttempts : ctx.oppAttempts;
+  const byIid = new Map((attempts || []).map(a => [a.card?.instance_id || a.iid, a]));
+  entries.forEach((entry, li) => {
+    const att = byIid.get(entry.iid);
+    if (att?.success) {
+      entry.remaining = [];
+      perfPaintLiveReqRemaining(entry);
+      entry.cardEl?.classList.add('perf-live-cleared');
+      entry.cardEl?.classList.remove('perf-live-failed-req');
+    } else if (att?.fail) {
+      if (!entry.remaining?.length) {
+        let reserve = {};
+        for (let j = li + 1; j < entries.length; j++) {
+          reserve = mergeColoredHeartDemandClient(
+            reserve,
+            coloredHeartDemandClient(entries[j].required)
+          );
+        }
+        const pool = G._perfLiveReqAppliedPool?.[pid] || [];
+        const partial = greedyFillHeartSlotsClient(pool, entry.required, reserve);
+        entry.remaining = cloneHeartCountRows(partial.unmet.length ? partial.unmet : entry.required);
+      }
+      entry.cardEl?.classList.add('perf-live-failed-req');
+      const hr = entry.cardEl?.querySelector('.perf-live-req');
+      if (hr) {
+        hr.classList.add('req-uncleared');
+        hr.style.display = '';
+      }
+      perfPaintLiveReqRemaining(entry);
+    }
+  });
 }
 
 function perfRawStageHeartsForPlayer(ctx, pid) {
@@ -6023,6 +6342,18 @@ function perfSetOutcomesInstant(ctx, firstOnly) {
     const isMine = pid === ctx.myId;
     const out = isMine ? mineOut : oppOut;
     const attempts = isMine ? ctx.mineAttempts : ctx.oppAttempts;
+    if (!G._perfLiveReqByPid?.[pid]) {
+      perfResetLiveReqTrackers(ctx, pid);
+      const hearts = mergeHeartStatRows(
+        perfRawStageHeartsForPlayer(ctx, pid),
+        perfContinuousHeartsForPlayer(ctx, pid),
+        aggregateYellBladeHeartsFromCards(ctx.next.yell_reveal?.[pid] || [], ctx, pid)
+      );
+      G._perfLiveReqAppliedPool[pid] = buildHeartPoolFromRows(hearts);
+      // Instant path: paint remaining without animation, then finalize vs outcomes.
+      perfSyncLiveReqFromAppliedPool(ctx, pid, { animate: false });
+    }
+    perfFinalizeLiveReqOutcomes(ctx, pid);
     attempts.forEach(att => {
       const b = document.createElement('div');
       // Never treat "unknown / not yet classified" as a failure — that caused
@@ -6171,6 +6502,11 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
     var ownedPool = buildHeartPoolFromRows(stageHearts);
     var liveCards = perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard);
     var yellWildcard = liveCardsHaveYellHeartsWildcard(liveCards);
+    // Stage hearts clear Live reqs first (compact counts tick down).
+    perfResetLiveReqTrackers(ctx, pid);
+    if (ownedPool.length) {
+      await perfApplyHeartsToLiveReqs(ctx, pid, ownedPool, { animate: true });
+    }
     for (let gi = 0; gi < grants.length; gi++) {
       if (G._perfSpectacleAborted) return;
       const grant = grants[gi];
@@ -6182,6 +6518,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
         const rawColor = hearts[hi];
         await perfFlyMemberHeartToPanel(memberEl, heartsEl, rawColor, { pace: heartPace });
         ownedPool.push(normalizeHeartColor(rawColor));
+        await perfApplyHeartsToLiveReqs(ctx, pid, [rawColor], { animate: true });
         await perfSleepYell(60, heartPace);
       }
       if (hearts.length) await perfSleepYell(120, introPace);
@@ -6199,6 +6536,10 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
     );
     var liveCards = perfSpectacleLiveCards(ctx.prev, ctx.next, pid).map(enrichCard);
     var yellWildcard = liveCardsHaveYellHeartsWildcard(liveCards);
+    // Catch-up req clearing for hearts already applied before this onlyNew slice.
+    perfResetLiveReqTrackers(ctx, pid);
+    G._perfLiveReqAppliedPool[pid] = ownedPool.slice();
+    await perfSyncLiveReqFromAppliedPool(ctx, pid, { animate: false });
   }
 
   let remaining = onlyNew
@@ -6264,6 +6605,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
           flyResolvedColor: flyResolved,
           pace: heartPace,
         });
+        await perfApplyHeartsToLiveReqs(ctx, pid, [resolved], { animate: true });
       }
     }
     layoutPerfYellRail(yellRail);
@@ -6282,6 +6624,11 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
     aggregateYellBladeHeartsFromCards(yellCards, ctx, pid)
   );
   perfFillHearts(heartsEl, finalHearts);
+  // Final sync with full pool (covers blade-less yell tails / instant paths).
+  G._perfLiveReqAppliedPool = G._perfLiveReqAppliedPool || {};
+  G._perfLiveReqAppliedPool[pid] = buildHeartPoolFromRows(finalHearts);
+  if (!G._perfLiveReqByPid?.[pid]) perfResetLiveReqTrackers(ctx, pid);
+  await perfSyncLiveReqFromAppliedPool(ctx, pid, { animate: true });
   yellRow.querySelectorAll('.perf-yell-blade-hearts').forEach(w => w.remove());
   heartsEl.classList.add('pulse');
   sfxPerf('hearts_gain', 0.32);
@@ -6329,6 +6676,7 @@ async function perfAnimateOutcomesForPid(ctx, pid) {
   const attempts = isMine ? ctx.mineAttempts : ctx.oppAttempts;
   if (!out) return;
   perfClearHeartCheckHold();
+  perfFinalizeLiveReqOutcomes(ctx, pid);
   if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.setStep('outcomes');
   for (const att of attempts) {
     const b = document.createElement('div');
