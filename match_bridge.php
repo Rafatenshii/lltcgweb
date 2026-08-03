@@ -155,7 +155,7 @@ function tcgSeedRankedRoomToVps(array $state): bool {
 /**
  * @param array<string,mixed> $state
  */
-function tcgPostRankedApplyResultToHostinger(array $state): bool {
+function tcgPostRankedApplyResultToHostinger(array &$state): bool {
     $ranked = $state['ranked'] ?? [];
     if (!is_array($ranked)) {
         $ranked = [];
@@ -171,7 +171,18 @@ function tcgPostRankedApplyResultToHostinger(array $state): bool {
         'disconnected_player' => $state['disconnected_player'] ?? null,
     ];
     $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 15);
-    return is_array($res) && !empty($res['success']) && empty($res['error']);
+    if (!is_array($res) || empty($res['success']) || !empty($res['error'])) {
+        return false;
+    }
+    // Hostinger grants the pack; stash on VPS room so the winner's client can show it.
+    if (!empty($res['pr_reward_applied']) && is_array($res['pr_reward'] ?? null)) {
+        if (!isset($state['ranked']) || !is_array($state['ranked'])) {
+            $state['ranked'] = [];
+        }
+        $state['ranked']['pr_reward_applied'] = true;
+        $state['ranked']['pr_reward'] = $res['pr_reward'];
+    }
+    return true;
 }
 
 function tcgOverflowMatchApiBase(): string {

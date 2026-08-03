@@ -486,6 +486,8 @@ function tcgDbTableHasColumn(PDO $db, string $table, string $column): bool {
 function tcgDbMigrateGameModeRank(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_users', 'ranked_starter_key', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'game_mode', "TEXT NOT NULL DEFAULT 'standard'");
+    tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'winner_pid', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_ranked_matches', 'pr_rewarded', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_casual_queue', 'game_mode', "TEXT NOT NULL DEFAULT 'standard'");
 
     if (!tcgDbTableHasColumn($db, 'tcg_rank', 'game_mode')) {

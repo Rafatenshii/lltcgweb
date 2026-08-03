@@ -145,7 +145,16 @@ function tcgOnGameFinished(array &$state): void {
         return;
     }
     $ranked = $state['ranked'] ?? [];
+    $remoteElo = (($ranked['match_api'] ?? '') === 'overflow') || tcgShouldApplyRankedEloRemotely();
+
+    // Elo already applied on Hostinger — still retry PR if the VPS room never got a pack
+    // (overflow webhook previously omitted status=finished and skipped grants).
     if (!empty($ranked['applied'])) {
+        if ($remoteElo && empty($ranked['pr_reward_applied'])) {
+            if (tcgPostRankedApplyResultToHostinger($state)) {
+                // pr_reward may have been merged by reference.
+            }
+        }
         return;
     }
     $winnerPid = $state['winner'] ?? null;
@@ -156,7 +165,6 @@ function tcgOnGameFinished(array &$state): void {
     }
 
     // VPS match API (or overflow-seeded rooms): Elo/PR live on Hostinger — signed webhook.
-    $remoteElo = (($ranked['match_api'] ?? '') === 'overflow') || tcgShouldApplyRankedEloRemotely();
     if ($remoteElo) {
         if (!tcgPostRankedApplyResultToHostinger($state)) {
             // Leave applied=false so a later poll/recover can retry.
@@ -177,11 +185,18 @@ function tcgOnGameFinished(array &$state): void {
     }
     // Mark applied immediately after ELO so PR reward failures cannot leave rating unapplied.
     $state['ranked']['applied'] = true;
-    tcgCompleteRankedMatch($state['room_id'] ?? '');
+    $prOk = false;
     try {
         require_once __DIR__ . '/ranked_pr_rewards.php';
         tcgApplyRankedPrRewardOnFinish($state);
+        $reward = $state['ranked']['pr_reward']['reward'] ?? null;
+        $prOk = !empty($state['ranked']['pr_reward_applied']);
     } catch (Throwable $e) {
         // ELO already applied — PR reward is best-effort.
     }
+    tcgCompleteRankedMatch(
+        $state['room_id'] ?? '',
+        in_array($winnerPid, ['p1', 'p2'], true) ? $winnerPid : null,
+        $prOk
+    );
 }

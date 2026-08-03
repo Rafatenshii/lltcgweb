@@ -179,8 +179,34 @@ function tcgApplyRankResult(
         ->execute([$delta, $now, $loserId, $gameMode]);
 }
 
-function tcgCompleteRankedMatch(string $roomId): void {
-    tcgDb()->prepare('UPDATE tcg_ranked_matches SET status = "done" WHERE room_id = ?')->execute([$roomId]);
+function tcgCompleteRankedMatch(string $roomId, ?string $winnerPid = null, ?bool $prRewarded = null): void {
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
+    if ($roomId === '') {
+        return;
+    }
+    $sets = ['status = "done"'];
+    $params = [];
+    if ($winnerPid !== null && in_array($winnerPid, ['p1', 'p2'], true)) {
+        $sets[] = 'winner_pid = ?';
+        $params[] = $winnerPid;
+    }
+    if ($prRewarded !== null) {
+        $sets[] = 'pr_rewarded = ?';
+        $params[] = $prRewarded ? 1 : 0;
+    }
+    $params[] = $roomId;
+    tcgDb()->prepare(
+        'UPDATE tcg_ranked_matches SET ' . implode(', ', $sets) . ' WHERE room_id = ?'
+    )->execute($params);
+}
+
+function tcgMarkRankedMatchPrRewarded(string $roomId): void {
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
+    if ($roomId === '') {
+        return;
+    }
+    tcgDb()->prepare('UPDATE tcg_ranked_matches SET pr_rewarded = 1 WHERE room_id = ?')
+        ->execute([$roomId]);
 }
 
 /**
@@ -201,52 +227,82 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         throw new Exception('p1_discord_id and p2_discord_id required', 400);
     }
     $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+    $winnerPid = $body['winner'] ?? null;
+    if ($winnerPid !== null && !in_array($winnerPid, ['p1', 'p2'], true)) {
+        $winnerPid = null;
+    }
 
-    // Idempotent: pending row already done.
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT status FROM tcg_ranked_matches WHERE room_id = ? ORDER BY created_at DESC LIMIT 1');
+    $stmt = $db->prepare('SELECT status, pr_rewarded, winner_pid FROM tcg_ranked_matches WHERE room_id = ? ORDER BY created_at DESC LIMIT 1');
     $stmt->execute([$roomId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row && ($row['status'] ?? '') === 'done') {
+    $alreadyDone = $row && ($row['status'] ?? '') === 'done';
+    $prAlready = $alreadyDone && intval($row['pr_rewarded'] ?? 0) === 1;
+
+    if ($alreadyDone && $prAlready) {
         return ['success' => true, 'already_applied' => true, 'room_id' => $roomId];
     }
 
-    $winnerPid = $body['winner'] ?? null;
-    if ($winnerPid === 'p1') {
-        tcgApplyRankResult($p1Id, $p2Id, false, $gameMode);
-    } elseif ($winnerPid === 'p2') {
-        tcgApplyRankResult($p2Id, $p1Id, false, $gameMode);
-    } else {
-        tcgApplyRankResult($p1Id, $p2Id, true, $gameMode);
+    if (!$alreadyDone) {
+        if ($winnerPid === 'p1') {
+            tcgApplyRankResult($p1Id, $p2Id, false, $gameMode);
+        } elseif ($winnerPid === 'p2') {
+            tcgApplyRankResult($p2Id, $p1Id, false, $gameMode);
+        } else {
+            tcgApplyRankResult($p1Id, $p2Id, true, $gameMode);
+        }
+        tcgCompleteRankedMatch($roomId, is_string($winnerPid) ? $winnerPid : null, false);
+    } elseif ($winnerPid && empty($row['winner_pid'])) {
+        tcgCompleteRankedMatch($roomId, $winnerPid, false);
     }
-    tcgCompleteRankedMatch($roomId);
 
+    $prEntry = null;
     try {
         require_once __DIR__ . '/ranked_pr_rewards.php';
-        $fakeState = [
-            'room_id' => $roomId,
-            'mode' => 'ranked',
-            'winner' => $winnerPid,
-            'end_reason' => $body['end_reason'] ?? null,
-            'resigned_by' => $body['resigned_by'] ?? null,
-            'disconnected_player' => $body['disconnected_player'] ?? null,
-            'ranked' => [
-                'p1_discord_id' => $p1Id,
-                'p2_discord_id' => $p2Id,
-                'game_mode' => $gameMode,
-                'applied' => true,
-            ],
-            'players' => [
-                'p1' => ['discord_id' => $p1Id],
-                'p2' => ['discord_id' => $p2Id],
-            ],
-        ];
-        tcgApplyRankedPrRewardOnFinish($fakeState);
+        if (!$winnerPid) {
+            // Draws / no winner — no PR pack; mark so retries do not loop.
+            tcgMarkRankedMatchPrRewarded($roomId);
+        } else {
+            // status=finished is required by tcgApplyRankedPrRewardOnFinish (overflow bug: was omitted).
+            $fakeState = [
+                'room_id' => $roomId,
+                'mode' => 'ranked',
+                'status' => 'finished',
+                'winner' => $winnerPid,
+                'end_reason' => $body['end_reason'] ?? null,
+                'resigned_by' => $body['resigned_by'] ?? null,
+                'disconnected_player' => $body['disconnected_player'] ?? null,
+                'ranked' => [
+                    'p1_discord_id' => $p1Id,
+                    'p2_discord_id' => $p2Id,
+                    'game_mode' => $gameMode,
+                    'applied' => true,
+                ],
+                'players' => [
+                    'p1' => ['discord_id' => $p1Id],
+                    'p2' => ['discord_id' => $p2Id],
+                ],
+            ];
+            tcgApplyRankedPrRewardOnFinish($fakeState);
+            if (!empty($fakeState['ranked']['pr_reward_applied'])) {
+                $prEntry = $fakeState['ranked']['pr_reward'] ?? null;
+                // Mark whether granted or skipped (daily cap / empty pool) so we do not retry forever.
+                tcgMarkRankedMatchPrRewarded($roomId);
+            }
+        }
     } catch (Throwable $e) {
         // Elo already applied.
     }
 
-    return ['success' => true, 'room_id' => $roomId];
+    $out = ['success' => true, 'room_id' => $roomId];
+    if ($alreadyDone) {
+        $out['already_applied'] = true;
+    }
+    if (is_array($prEntry)) {
+        $out['pr_reward'] = $prEntry;
+        $out['pr_reward_applied'] = true;
+    }
+    return $out;
 }
 
 /** Drop pending ranked rows whose game is missing or already finished (Hostinger file or VPS Redis). */

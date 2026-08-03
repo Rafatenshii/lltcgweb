@@ -188,4 +188,95 @@ final class RankedPrRewardTest extends TestCase
         $this->assertNotNull($forWinner['ranked_pr_reward'] ?? null);
         $this->assertSame('p1', $forWinner['ranked']['pr_reward']['player_id'] ?? null);
     }
+
+    public function testWebhookFakeStateMustBeFinishedToGrantPr(): void
+    {
+        require_once dirname(__DIR__, 2) . '/matchmaking.php';
+
+        $winnerId = $this->discordId;
+        $loserId = 'test_ranked_pr_webhook_' . bin2hex(random_bytes(4));
+        tcgEnsureUser($loserId, ['username' => 'WebhookLoser']);
+        $roomId = 'T' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+
+        $db = tcgDb();
+        $db->prepare('INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode, pr_rewarded)
+            VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, 0)')
+            ->execute([
+                'M' . $roomId,
+                $roomId,
+                $winnerId,
+                $loserId,
+                'tok1',
+                'tok2',
+                time(),
+                'standard',
+            ]);
+
+        $before = tcgRankedPrDailyAllowance($winnerId);
+        $out = tcgApplyRankedResultFromWebhook([
+            'room_id' => $roomId,
+            'winner' => 'p1',
+            'p1_discord_id' => $winnerId,
+            'p2_discord_id' => $loserId,
+            'game_mode' => 'standard',
+        ]);
+
+        $this->assertTrue($out['success'] ?? false);
+        $this->assertArrayHasKey('pr_reward', $out);
+        $this->assertSame('p1', $out['pr_reward']['player_id'] ?? null);
+        $reward = $out['pr_reward']['reward'] ?? [];
+        $this->assertArrayNotHasKey('skipped', $reward);
+        $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
+
+        // Idempotent: second call must not grant another pack.
+        $out2 = tcgApplyRankedResultFromWebhook([
+            'room_id' => $roomId,
+            'winner' => 'p1',
+            'p1_discord_id' => $winnerId,
+            'p2_discord_id' => $loserId,
+            'game_mode' => 'standard',
+        ]);
+        $this->assertTrue($out2['already_applied'] ?? false);
+        $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
+    }
+
+    public function testWebhookRetroGrantsPrWhenEloAlreadyApplied(): void
+    {
+        require_once dirname(__DIR__, 2) . '/matchmaking.php';
+
+        $winnerId = $this->discordId;
+        $loserId = 'test_ranked_pr_retro_' . bin2hex(random_bytes(4));
+        tcgEnsureUser($loserId, ['username' => 'RetroLoser']);
+        $roomId = 'R' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+
+        $db = tcgDb();
+        $db->prepare('INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode, winner_pid, pr_rewarded)
+            VALUES (?, ?, ?, ?, ?, ?, "done", ?, ?, ?, 0)')
+            ->execute([
+                'M' . $roomId,
+                $roomId,
+                $winnerId,
+                $loserId,
+                'tok1',
+                'tok2',
+                time(),
+                'standard',
+                'p1',
+            ]);
+
+        $before = tcgRankedPrDailyAllowance($winnerId);
+        $out = tcgApplyRankedResultFromWebhook([
+            'room_id' => $roomId,
+            'winner' => 'p1',
+            'p1_discord_id' => $winnerId,
+            'p2_discord_id' => $loserId,
+            'game_mode' => 'standard',
+        ]);
+
+        $this->assertTrue($out['already_applied'] ?? false);
+        $this->assertArrayHasKey('pr_reward', $out);
+        $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
+    }
 }
