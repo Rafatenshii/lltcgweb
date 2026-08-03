@@ -574,6 +574,28 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }
+.perf-card.member .perf-member-cost{
+  position:absolute;top:4px;right:4px;display:flex;align-items:center;gap:2px;
+  background:rgba(0,0,0,.78);border-radius:6px;padding:2px 5px;font-size:11px;font-weight:700;color:#fff;
+  pointer-events:none;z-index:6;box-shadow:0 0 0 1px rgba(251,191,36,.45);
+}
+.perf-card.member .perf-member-cost.cost-up{box-shadow:0 0 0 1px rgba(251,191,36,.55)}
+.perf-card.member .perf-member-cost.cost-down{box-shadow:0 0 0 1px rgba(96,165,250,.55)}
+.perf-card.member .perf-member-cost .bicon.sm{width:14px;height:14px}
+.perf-card.member .perf-member-cost-delta{color:#FBD38D;font-size:10px;font-weight:800}
+.perf-card.live .perf-live-req{
+  position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
+  display:flex;gap:2px;align-items:center;justify-content:center;
+  padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.72);
+  pointer-events:none;z-index:7;max-width:92%;
+}
+.perf-card.live .perf-live-req.req-modified{
+  background:rgba(20,40,70,.88);box-shadow:0 0 0 1px rgba(96,165,250,.65),0 0 14px rgba(96,165,250,.35);
+}
+.perf-card.live .perf-live-req .hicon.fld{width:18px;height:18px}
+.perf-card.live .perf-card-score.perf-score-live-start{
+  top:6px;left:6px;right:auto;
+}
 /* Wait: landscape chrome matching rotated art (avoids portrait ghost/outline).
    Portrait is W×H (H=W·88/63); landscape swaps to H×W — never reuse portrait H as height
    or the frame collapses to a square. */

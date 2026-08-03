@@ -1788,11 +1788,14 @@ function countDistinctNamesAndCostsOnStage(array $p): int {
     return count($keys);
 }
 
-function countStageGroupMinCost(array $p, string $group, int $minCost): int {
+function countStageGroupMinCost(array $p, string $group, int $minCost, ?array $state = null, ?string $pid = null): int {
     $n = 0;
     foreach ($p['stage'] as $mbr) {
         if (!$mbr || ($mbr['group'] ?? '') !== $group) continue;
-        if (intval($mbr['cost'] ?? 0) >= $minCost) $n++;
+        $cost = ($state !== null && $pid !== null)
+            ? getEffectiveStageMemberCost($state, $pid, $mbr)
+            : intval($mbr['cost'] ?? 0);
+        if ($cost >= $minCost) $n++;
     }
     return $n;
 }

@@ -4063,7 +4063,7 @@ function drainTutorialNavQueue() {
   if (queued) tutorialNav(queued);
 }
 
-function perfCardEl(card, kind) {
+function perfCardEl(card, kind, opts = {}) {
   const c = enrichCard(card);
   const liveSlot = kind === 'live' || isLiveCard(c) || c.card_type === 'ライブ';
   const d = document.createElement('div');
@@ -4092,8 +4092,79 @@ function perfCardEl(card, kind) {
       badge.appendChild(num);
       d.appendChild(badge);
     }
+    appendPerfMemberLiveCostBadge(d, c);
+  } else {
+    appendPerfLiveRequiredHearts(d, c, opts.state || null, opts.pid || null);
+    appendPerfLiveScoreBoostHint(d, c);
   }
   return d;
+}
+
+/** Show updated Live heart requirements after Live Start reductions (Ladybug / Proof / etc.). */
+function appendPerfLiveRequiredHearts(cardEl, card, state, pid) {
+  if (!cardEl || !card) return;
+  const printed = card.required_hearts || card.hearts || [];
+  if (!printed.length && !liveCardRequirementsModified?.(card)) return;
+  let req = printed;
+  if (typeof effectiveLiveRequiredHearts === 'function' && state && pid) {
+    req = effectiveLiveRequiredHearts(card, state, pid);
+  } else if (typeof applyClientLiveHeartReductions === 'function') {
+    req = applyClientLiveHeartReductions(printed, card);
+  }
+  if (!req?.length && !liveCardRequirementsModified?.(card)) return;
+  const hr = document.createElement('div');
+  const modified = typeof liveCardRequirementsModified === 'function'
+    ? liveCardRequirementsModified(card)
+    : false;
+  hr.className = 'perf-live-req' + (modified ? ' req-modified' : '');
+  if (typeof appendHeartIcons === 'function') {
+    appendHeartIcons(hr, req?.length ? req : [], false, true);
+  }
+  if (modified) {
+    const tipParts = [];
+    const anyRed = Number(card.hearts_color_reduction?.any || 0)
+      + Number(card.hearts_reduction_gray || 0)
+      + Number(card.hearts_reduction || 0);
+    if (anyRed > 0) tipParts.push(`−${anyRed} gray/any ♡`);
+    Object.entries(card.hearts_color_reduction || {}).forEach(([color, n]) => {
+      if (color === 'any' || Number(n || 0) <= 0) return;
+      tipParts.push(`−${n} ${color} ♡`);
+    });
+    hr.title = tipParts.length
+      ? `Required hearts updated (${tipParts.join(', ')})`
+      : 'Required hearts updated by Live Start';
+  }
+  cardEl.appendChild(hr);
+}
+
+/** Early +N score hint when Live Start already boosted this Live (Birdcage). */
+function appendPerfLiveScoreBoostHint(cardEl, card) {
+  if (!cardEl || !card || typeof liveCardScoreInfo !== 'function') return;
+  const info = liveCardScoreInfo(card);
+  if (!(info.cardBonus > 0)) return;
+  const badge = perfMkCardScoreBadge(card, { extraBonus: 0 });
+  badge.classList.add('show', 'perf-score-live-start');
+  cardEl.appendChild(badge);
+}
+
+function appendPerfMemberLiveCostBadge(cardEl, member) {
+  if (!cardEl || !member || typeof stageMemberLiveCostInfo !== 'function') return;
+  const info = stageMemberLiveCostInfo(member);
+  if (!info.delta) return;
+  const badge = document.createElement('div');
+  badge.className = 'perf-member-cost' + (info.delta > 0 ? ' cost-up' : ' cost-down');
+  badge.appendChild(mkGameIcon('icon_energy.png', 'bicon sm', 'Cost'));
+  const num = document.createElement('span');
+  num.textContent = String(info.effective);
+  badge.appendChild(num);
+  if (info.delta) {
+    const bonus = document.createElement('span');
+    bonus.className = 'perf-member-cost-delta';
+    bonus.textContent = (info.delta > 0 ? '+' : '') + info.delta;
+    badge.appendChild(bonus);
+  }
+  badge.title = `Printed ${info.printed} → ${info.effective} until Live ends`;
+  cardEl.appendChild(badge);
 }
 
 function perfHeartStatKey(color) {
@@ -5870,8 +5941,8 @@ async function perfPopulateBase(ctx) {
   const mineEnriched = mineLiveCards.map(c => enrichCard({ ...c, revealed: true }));
   const oppEnriched = oppLiveCards.map(c => enrichCard({ ...c, revealed: true }));
   await Promise.all([...mineEnriched, ...oppEnriched].map(c => ensureCardImageLoaded(c)));
-  mineEnriched.forEach(c => mineLives?.appendChild(perfCardEl(c, 'live')));
-  oppEnriched.forEach(c => oppLives?.appendChild(perfCardEl(c, 'live')));
+  mineEnriched.forEach(c => mineLives?.appendChild(perfCardEl(c, 'live', { state: next, pid: myId })));
+  oppEnriched.forEach(c => oppLives?.appendChild(perfCardEl(c, 'live', { state: next, pid: oppId })));
   Object.values(me?.stage || {}).forEach(m => { if (m) mineStage?.appendChild(perfCardEl(enrichCard(m), 'member')); });
   Object.values(opp?.stage || {}).forEach(m => { if (m) oppStage?.appendChild(perfCardEl(enrichCard(m), 'member')); });
   perfSetYellSideInstant(ctx, myId, false);

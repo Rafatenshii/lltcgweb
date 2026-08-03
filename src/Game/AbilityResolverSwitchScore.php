@@ -374,8 +374,13 @@ function tryResolveAbilityEffectSwitchScore(
             break;
 
         case 'score_if_stage_group_cost_min':
-            if (countStageGroupMinCost($p, $ab['group'] ?? '', intval($ab['min_cost'] ?? 10))
-                >= intval($ab['min_count'] ?? 2)) {
+            if (countStageGroupMinCost(
+                    $p,
+                    $ab['group'] ?? '',
+                    intval($ab['min_cost'] ?? 10),
+                    $state,
+                    $pid
+                ) >= intval($ab['min_count'] ?? 2)) {
                 bumpLiveCardScore($state, $pid, $source['instance_id'] ?? '', intval($ab['amount'] ?? 1));
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     ' — [' . $name . '] score +' . intval($ab['amount'] ?? 1) .

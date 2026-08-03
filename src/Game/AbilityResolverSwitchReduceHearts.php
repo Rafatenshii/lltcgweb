@@ -145,13 +145,14 @@ function tryResolveAbilityEffectSwitchReduceHearts(
             $ok = false;
             foreach ($p['stage'] as $mbr) {
                 if (!$mbr || !cardMatchesNames($mbr, $baseNames)) continue;
-                $baseCost = intval($mbr['cost'] ?? 0);
+                // Use Live-modified cost (Aurora / Proof Kosuzu / Fantasy Sayaka, etc.).
+                $baseCost = getEffectiveStageMemberCost($state, $pid, $mbr);
                 break;
             }
             if ($baseCost !== null) {
                 foreach ($p['stage'] as $mbr) {
                     if (!$mbr || !cardMatchesNames($mbr, $higherNames)) continue;
-                    if (intval($mbr['cost'] ?? 0) > $baseCost) {
+                    if (getEffectiveStageMemberCost($state, $pid, $mbr) > $baseCost) {
                         $ok = true;
                         break;
                     }

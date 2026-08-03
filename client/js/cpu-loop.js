@@ -2268,6 +2268,38 @@ function liveCardPrintedScoreClient(liveCard) {
   return Number(liveCard?.score || 0);
 }
 
+/** True when Live Start / similar effects changed this Live's printed heart requirements. */
+function liveCardRequirementsModified(liveCard) {
+  if (!liveCard) return false;
+  if (Number(liveCard.hearts_reduction || 0) > 0) return true;
+  if (Number(liveCard.hearts_reduction_gray || 0) > 0) return true;
+  const colorRed = liveCard.hearts_color_reduction || {};
+  for (const n of Object.values(colorRed)) {
+    if (Number(n || 0) > 0) return true;
+  }
+  const colorInc = liveCard.hearts_color_increase || {};
+  for (const n of Object.values(colorInc)) {
+    if (Number(n || 0) > 0) return true;
+  }
+  return false;
+}
+
+/**
+ * Stage Member cost for Live-temp UI (override / +bonus). Continuous printed abilities
+ * are handled separately by play-cost helpers.
+ */
+function stageMemberLiveCostInfo(member) {
+  if (!member) return { printed: 0, effective: 0, delta: 0 };
+  const printed = Number(member.cost || 0);
+  if (member.live_cost_override != null && member.live_cost_override !== '') {
+    const effective = Number(member.live_cost_override);
+    return { printed, effective, delta: effective - printed };
+  }
+  const bonus = Number(member.live_cost_bonus || 0);
+  const effective = printed + bonus;
+  return { printed, effective, delta: bonus };
+}
+
 function effectiveLiveRequiredHearts(liveCard, state, pid) {
   let req = (liveCard?.required_hearts || liveCard?.hearts || []).map(h => ({
     color: h.color || 'any',

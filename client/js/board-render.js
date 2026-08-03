@@ -1070,6 +1070,19 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
         }
         d.appendChild(badge);
       }
+      if (typeof stageMemberLiveCostInfo === 'function') {
+        const costInfo = stageMemberLiveCostInfo(mbr);
+        if (costInfo.delta) {
+          const costBadge = mkFieldBadge('cost', 'icon_energy.png', costInfo.effective, 'Cost');
+          const bonusEl = document.createElement('span');
+          bonusEl.className = 'badge-val-bonus';
+          bonusEl.textContent = (costInfo.delta > 0 ? '+' : '') + costInfo.delta;
+          costBadge.appendChild(bonusEl);
+          costBadge.classList.add(costInfo.delta > 0 ? 'cost-boosted' : 'cost-reduced');
+          costBadge.title = `Printed ${costInfo.printed} → ${costInfo.effective} until Live ends`;
+          d.appendChild(costBadge);
+        }
+      }
     }
     wrap.appendChild(outer);
   });
@@ -1964,11 +1977,16 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     if(showFace) applyCardFoilFx(d, card);
     if(showFace && card.required_hearts?.length){
       const hr = document.createElement('div');
-      hr.className = 'stage-hearts live-req';
       const reqHearts = (typeof effectiveLiveRequiredHearts === 'function')
         ? effectiveLiveRequiredHearts(card, G.gameState, pid)
         : card.required_hearts;
+      const modified = typeof liveCardRequirementsModified === 'function'
+        && liveCardRequirementsModified(card);
+      hr.className = 'stage-hearts live-req' + (modified ? ' req-modified' : '');
       appendHeartIcons(hr, reqHearts, false, true);
+      if (modified) {
+        hr.title = 'Required hearts updated by Live Start';
+      }
       d.appendChild(hr);
     }
     outer.appendChild(d);
