@@ -910,7 +910,13 @@
     if (!G._livePollHold) return;
     TCG_DEBUG.log('poll', 'releaseLivePolls');
     G._livePollHold = false;
-    if (G.polling && !G._perfSpectacleActive && !G.animating) {
+    if (!G.polling) return;
+    // Always re-arm sync. Spectacle chrome may still be up while waiting on the
+    // opponent's live_show ack — polls are allowed then, and skipping resume left
+    // one client stale until the ~3.2s safety poll (looks like "their turn").
+    if (G.syncEnabled && G.syncTicket && typeof scheduleDeferredSyncPull === 'function') {
+      scheduleDeferredSyncPull(120);
+    } else if (typeof resumePollingTick === 'function') {
       resumePollingTick(120);
     }
   };

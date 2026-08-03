@@ -2163,8 +2163,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=33"></script>
-<script src="client/js/state-apply.js?v=44"></script>
+<script src="client/js/game-sync.js?v=34"></script>
+<script src="client/js/state-apply.js?v=45"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
 <script src="client/js/prompt-renderer.js?v=61"></script>
@@ -19874,6 +19874,20 @@ function releaseStuckPresentation() {
   flushPendingState();
 }
 
+function pvpWaitingOnOpponentTurn(live, myId, oppId) {
+  if (!live || live.pending_prompt) return false;
+  const ph = live.phase || '';
+  if (ph === 'main_first' || ph === 'main_second'
+      || ph === 'active_first' || ph === 'active_second') {
+    return live.active_player === oppId;
+  }
+  if (ph === 'live_set') {
+    const livePid = live.live_set_player || live.active_player;
+    return livePid === oppId && !live.live_ready?.[oppId];
+  }
+  return false;
+}
+
 function armPvPWatchdog(s) {
   clearTimeout(G._pvpWatchdogTimer);
   if (G.isCPU || G.isSpectator || G.isTutorial || !G.polling || !G.playerId) {
@@ -19888,13 +19902,14 @@ function armPvPWatchdog(s) {
     return;
   }
   const pr = skillPromptUiState(live)?.pending_prompt;
-  const waitingOnOpp = pr?.responder === oppId;
-  const presentationBlocked = !!(G.animating || G._livePollHold || G._perfSpectacleActive || G._liveSpectacleGateRunning);
+  const waitingOnOpp = pr?.responder === oppId || pvpWaitingOnOpponentTurn(live, myId, oppId);
+  const presentationBlocked = !!(G.animating || G._livePollHold || G._perfSpectacleActive
+    || G._liveSpectacleGateRunning || G._liveShowRunnerActive);
   if (!waitingOnOpp && !presentationBlocked) {
     clearPvPWatchdog();
     return;
   }
-  const sig = `${live.seq}|${live.phase}|${pr?.type || ''}|${pr?.responder || ''}|${G.animating}|${G._livePollHold}`;
+  const sig = `${live.seq}|${live.phase}|${live.active_player || ''}|${pr?.type || ''}|${pr?.responder || ''}|${G.animating}|${G._livePollHold}`;
   if (sig === G._pvpWatchSig) {
     G._pvpWatchStuckCount = (G._pvpWatchStuckCount || 0) + 1;
   } else {
@@ -19917,13 +19932,16 @@ async function pvpWatchdogTick(s, myId, oppId, sig) {
     return;
   }
   const pr = skillPromptUiState(live)?.pending_prompt;
-  const waitingOnOpp = pr?.responder === oppId;
-  const presentationBlocked = !!(G.animating || G._livePollHold || G._perfSpectacleActive || G._liveSpectacleGateRunning);
+  const waitingOnOpp = pr?.responder === oppId || pvpWaitingOnOpponentTurn(live, myId, oppId);
+  const presentationBlocked = !!(G.animating || G._livePollHold || G._perfSpectacleActive
+    || G._liveSpectacleGateRunning || G._liveShowRunnerActive);
   if (!waitingOnOpp && !presentationBlocked) {
     clearPvPWatchdog();
     return;
   }
   const seqBefore = G.lastSeq ?? 0;
+  const activeBefore = live.active_player;
+  const phaseBefore = live.phase;
   TCG_DEBUG.warn('pvp', 'watchdog force pull', {
     sig,
     staleMs: Date.now() - (G._lastAppliedAt || 0),
@@ -19933,7 +19951,11 @@ async function pvpWatchdogTick(s, myId, oppId, sig) {
   });
   await pullLatestState(true);
   await sleep(120);
-  const progressed = (G.lastSeq ?? 0) > seqBefore || G.gameState?.status === 'finished';
+  const after = G.gameState || live;
+  const progressed = (G.lastSeq ?? 0) > seqBefore
+    || after?.status === 'finished'
+    || after?.active_player !== activeBefore
+    || after?.phase !== phaseBefore;
   if (!progressed && (G._pvpWatchStuckCount || 0) >= 1 && presentationBlocked) {
     releaseStuckPresentation();
     await pullLatestState(true);
@@ -27707,7 +27729,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=46"></script>
+<script src="client/js/spectacle.js?v=47"></script>
 <script src="client/js/board-render.js?v=1"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>

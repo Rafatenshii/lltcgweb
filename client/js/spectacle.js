@@ -6809,8 +6809,14 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
 async function fetchLiveShowStateNow() {
   if (!G.roomId || !G.token || typeof parseGameApiResponse !== 'function') return null;
   try {
+    // Must follow the room's locked origin (overflow VPS vs Hostinger). Bare `API`
+    // stays on Hostinger and misses ranked/casual Redis rooms — both players then
+    // stall mid-spectacle ("Checking hearts…") until a later safety poll.
+    const base = (typeof tcgGameApiUrl === 'function')
+      ? tcgGameApiUrl()
+      : (typeof API !== 'undefined' ? API : './api.php');
     const r = await fetch(
-      `${API}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
+      `${base}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
       + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0`
     );
     let d = await parseGameApiResponse(r);
