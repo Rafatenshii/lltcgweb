@@ -1845,7 +1845,10 @@ function resolvedPerfSignals(next) {
 
 function currentRoundHasLivePerformance(prev, next) {
   if (!next) return false;
-  if (isEmptyLiveSkipTransition(prev, next)) return false;
+  // Use log-only empty-skip detection. Calling isEmptyLiveSkipTransition here
+  // recurses: isEmptyLiveSkipTransition → leavingEmptyLivePipeline →
+  // perfRoundHasShow → currentRoundHasLivePerformance → …
+  if (logTransitionHasEmptyLiveSkip(prev, next)) return false;
   if (shouldIgnoreStaleLivePerfSignals(prev, next)) {
     return logTransitionHasLivePerformance(prev, next);
   }
@@ -7512,7 +7515,12 @@ function leavingEmptyLivePipeline(prev, next) {
   if (!slice.length && fullLogHasEmptyLiveSkip(next)) return true;
   const showTurn = emptyLiveRoundShowTurn(prev, next) ?? inferLiveShowTurn(prev, next);
   if (!slice.length && showTurn != null && fullLogHasEmptyLiveSkipForTurn(next, showTurn)) return true;
-  return !perfRoundHasShow(prev, next);
+  // Do not call perfRoundHasShow / currentRoundHasLivePerformance — those call
+  // isEmptyLiveSkipTransition, which calls this function (stack overflow).
+  if (logTransitionHasLivePerformance(prev, next) || newLogHasLivePerformance(prev, next)) return false;
+  if (showTurn != null && logHasLivePerformanceForTurn(next, showTurn)) return false;
+  if (resolvedPerfSignalsForTransition(prev, next)) return false;
+  return true;
 }
 
 function centerBannerForPhase(phase, copy) {
