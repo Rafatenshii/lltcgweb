@@ -948,7 +948,6 @@ function tcgApiActiveGame(array $body): array {
  */
 function tcgApiRankedApplyResult(array $body): array {
     require_once __DIR__ . '/match_bridge.php';
-    require_once __DIR__ . '/ranked_room.php';
     tcgRequireInternalMatchSecret();
     return tcgApplyRankedResultFromWebhook($body);
 }
