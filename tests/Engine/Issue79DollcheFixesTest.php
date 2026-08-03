@@ -79,6 +79,18 @@ final class Issue79DollcheFixesTest extends TestCase
             $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
             $this->assertNull($state['pending_prompt'] ?? null);
             $this->assertSame(5, intval($state['players']['p1']['stage']['center']['live_cost_bonus'] ?? 0));
+            $this->assertSame(
+                intval($sayaka['cost'] ?? 0) + 5,
+                \getEffectiveStageMemberCost($state, 'p1', $state['players']['p1']['stage']['center'])
+            );
+
+            $state = \clearLiveModifiers($state);
+            $this->assertSame(0, intval($state['players']['p1']['stage']['center']['live_cost_bonus'] ?? 0));
+            $this->assertArrayNotHasKey('live_cost_bonus', $state['players']['p1']['stage']['center']);
+            $this->assertSame(
+                intval($sayaka['cost'] ?? 0),
+                \getEffectiveStageMemberCost($state, 'p1', $state['players']['p1']['stage']['center'])
+            );
         } finally {
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }

@@ -59,6 +59,10 @@ function clearLiveModifiers(array $state): array {
                 $mbr['bonus_hearts'],
                 $mbr['live_blade_bonus'],
                 $mbr['live_score_bonus'],
+                $mbr['live_cost_bonus'],
+                $mbr['live_cost_override'],
+                $mbr['live_start_negated'],
+                $mbr['printed_blade_override'],
                 $mbr['replaced_hearts'],
                 $mbr['hearts_treat_as'],
                 $mbr['on_enter_or_live_start_fired']
