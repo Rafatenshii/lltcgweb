@@ -1975,33 +1975,6 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     }
     d.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
     if(showFace) applyCardFoilFx(d, card);
-    if(showFace && card.required_hearts?.length){
-      const hr = document.createElement('div');
-      const printed = card.required_hearts;
-      const reqHearts = (typeof effectiveLiveRequiredHearts === 'function')
-        ? effectiveLiveRequiredHearts(card, G.gameState, pid)
-        : card.required_hearts;
-      const modified = typeof liveCardRequirementsModified === 'function'
-        && liveCardRequirementsModified(card);
-      const modColors = typeof liveReqModifiedColors === 'function'
-        ? liveReqModifiedColors(printed, reqHearts)
-        : null;
-      hr.className = 'stage-hearts live-req' + (modified ? ' req-modified' : '');
-      if (typeof appendHeartStatCounts === 'function') {
-        appendHeartStatCounts(hr, reqHearts, {
-          lg: false,
-          field: true,
-          align: 'center',
-          modifiedColors: modColors,
-        });
-      } else {
-        appendHeartIcons(hr, reqHearts, false, true);
-      }
-      if (modified) {
-        hr.title = 'Required hearts updated by Live Start';
-      }
-      d.appendChild(hr);
-    }
     outer.appendChild(d);
     if(showFace && card.score != null && (isMe || card.revealed)){
       const extraBonus = stagePreview && i === lastScoredLiveSlot ? stageBonus : 0;
