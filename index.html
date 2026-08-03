@@ -2163,7 +2163,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
-<script src="client/js/game-sync.js?v=32"></script>
+<script src="client/js/game-sync.js?v=33"></script>
 <script src="client/js/state-apply.js?v=44"></script>
 <script src="client/js/stamps.js?v=17"></script>
 <script src="client/js/replay-debug.js?v=7"></script>
@@ -12174,19 +12174,28 @@ async function pollRankedStatus() {
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
+      // New ranked rooms live on VPS Redis — never Hostinger-only probe (that stranded
+      // the second player on the queue screen until refresh).
+      const matchApi = (st.match_api || 'overflow') === 'hostinger' ? 'hostinger' : 'overflow';
       const check = await fetchGameStateForReconnectWithFallback({
         roomId: st.room_id,
         token: st.player_token,
-        apiOrigin: 'hostinger',
-      }, { hostingerOnly: true });
-      const s = check.state;
-      if (s.status === 'finished' || check.roomMissingBoth || !s.my_id) {
-        if (s.status === 'finished' || check.roomMissingBoth) {
-          await accountPost('leave_active_game', {}).catch(() => {});
-        }
+        apiOrigin: matchApi,
+        match_api: matchApi,
+      }, {
+        hostingerOnly: matchApi === 'hostinger',
+      });
+      const s = check.state || {};
+      const gone = s.status === 'finished'
+        || !!check.roomMissingBoth
+        || (matchApi === 'overflow' && !!check.overflowMissing);
+      if (gone) {
+        await accountPost('leave_active_game', {}).catch(() => {});
         setRankedSearchingUI(false);
         return;
       }
+      // Transient / soft error: keep polling — do not clear search or abandon.
+      if (!s.my_id) return;
       await enterRankedMatch(st);
     }
   } catch (e) {
@@ -12948,7 +12957,8 @@ function cachedCardImgUrl(cardNo) {
 function queuePersistCardImage(card) {
   if (!card?.card_no || !card?.image || _imgPersistQueued.has(card.card_no)) return;
   _imgPersistQueued.add(card.card_no);
-  fetch(`${API}?action=cache_card_image`, {
+  // Always Hostinger — card art cache is hub storage, not the VPS match API.
+  fetch(`./api.php?action=cache_card_image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ card_no: card.card_no }),

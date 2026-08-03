@@ -36,6 +36,7 @@
     clearTimeout(G._syncPullTimer);
     G._syncPullTimer = null;
     G._syncPullBlockedSpins = 0;
+    if (typeof stopSyncSafetyPoll === 'function') stopSyncSafetyPoll();
     clearInterval(G.presenceTimer);
     G.presenceTimer = null;
   };
@@ -250,6 +251,29 @@
     }, syncFallbackDelayMs());
   };
 
+  /**
+   * Slow get_state while SSE is connected. Docker→wrapped notify can miss events;
+   * without this, turns/hearts stall until a manual refresh.
+   */
+  global.startSyncSafetyPoll = function startSyncSafetyPoll() {
+    clearTimeout(G.syncSafetyTimer);
+    if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
+    const delay = G.isCPU ? 5000 : 3200;
+    G.syncSafetyTimer = setTimeout(async () => {
+      G.syncSafetyTimer = null;
+      if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
+      if (!pollPresentationBlocked()) {
+        try { await pullLatestState(false, { silent: true }); } catch (e) { /* ignore */ }
+      }
+      if (G.polling && G.syncEnabled && G.syncTicket) startSyncSafetyPoll();
+    }, delay);
+  };
+
+  global.stopSyncSafetyPoll = function stopSyncSafetyPoll() {
+    clearTimeout(G.syncSafetyTimer);
+    G.syncSafetyTimer = null;
+  };
+
   global.scheduleSyncReconnect = function scheduleSyncReconnect(ms) {
     clearTimeout(G._syncReconnectTimer);
     G._syncReconnectTimer = setTimeout(async () => {
@@ -306,6 +330,8 @@
       G._syncFailCount = 0;
       clearTimeout(G.syncFallbackTimer);
       G.syncFallbackTimer = null;
+      // Safety get_state even while SSE looks healthy (missed Redis notify).
+      startSyncSafetyPoll();
     });
     es.addEventListener('state', (ev) => {
       try { onSyncStateEvent(JSON.parse(ev.data)); } catch (e) { /* ignore */ }
@@ -384,6 +410,7 @@
       openSyncStream();
       // Bootstrap: SSE only pushes seq bumps; missed pre-subscribe notifies need one fetch.
       await pullLatestState();
+      startSyncSafetyPoll();
       return;
     }
     G.syncEnabled = false;
