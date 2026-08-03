@@ -3842,6 +3842,18 @@ function shouldHoldStateForLocalPrompt(incoming) {
     G._promptSubmitKey = null;
     return false;
   }
+  // Ginko PB1 / similar: yes+discard → pick_wr_live must apply immediately and drop
+  // the discard hand-pick + submit latch, or the WR Live picker never opens.
+  if (inPr && pr && inPr.type === pr.type
+      && (inPr.step === 'pick_wr_live' || inPr.step === 'pick_wr_member' || inPr.step === 'pick_wr')
+      && (pr.step || '') !== (inPr.step || '')) {
+    closeM('overlay-hand-pick');
+    closeM('overlay-pick');
+    G._promptSubmitKey = null;
+    G._resolvePromptSentKey = null;
+    G._lastResolvedPromptKey = null;
+    return false;
+  }
   // Server cleared or replaced our prompt (e.g. phase timer auto-resolve) — apply immediately.
   if (!inPr || inPr.responder !== pr.responder) {
     closeM('overlay-surveil');
@@ -3946,16 +3958,20 @@ function ensurePendingPromptSurfaced(s, myId) {
   if (G._lastSurfacedPromptKey === surfKey && (
     el('overlay-prompt')?.classList.contains('open')
     || el('overlay-hand-pick')?.classList.contains('open')
+    || el('overlay-pick')?.classList.contains('open')
   )) return;
   // Same identity already answered this round — do not reopen after overlay close.
   // Exception: Success-Live / leftover Live place UI closed while the server still waits.
   // Also Live Success / Live Start: players often dismiss overlays without a successful
   // resolve_prompt ack; must resurface so the phase banner is not a softlock.
+  // Also multi-step WR picks (Ginko pick_wr_live): a latched submit key must not hide the picker.
   if (G._lastResolvedPromptKey === surfKey) {
+    const wrPickStep = typeof pr.step === 'string' && /^pick_wr/.test(pr.step);
     const needsResurface = (pr.type === 'pick_judge_success_live'
         || pr.type === 'sbp6_live_wr_deck_position'
         || s.phase === 'live_success_effects'
-        || s.phase === 'live_start_effects')
+        || s.phase === 'live_start_effects'
+        || wrPickStep)
       && !el('overlay-pick')?.classList.contains('open')
       && !el('overlay-prompt')?.classList.contains('open')
       && !el('overlay-hand-pick')?.classList.contains('open');

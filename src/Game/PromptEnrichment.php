@@ -301,6 +301,8 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
 
         case 'optional_discard_prompt':
         case 'optional_discard_mill_wr_add_member':
+        case 'optional_discard_mill_add_wr_subunit_live':
+        case 'optional_discard_add_cb_member_hs_live':
         case 'optional_pay_energy_on_enter':
         case 'optional_pay_energy_if_baton':
         case 'optional_pay_energy_live_success':
@@ -311,6 +313,12 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
         case 'pick_surveil_heart_threshold':
         case 'spbp5_pay_energy_score':
         case 'live_success_pay_choice_wr_add':
+            if (($prompt['step'] ?? '') === 'pick_wr_live'
+                || ($prompt['step'] ?? '') === 'pick_wr_member'
+                || ($prompt['step'] ?? '') === 'pick_wr') {
+                $id = $prompt['candidates'][0]['instance_id'] ?? null;
+                return $id ? ['card_id' => $id] : ['choice' => 'no'];
+            }
             if (($prompt['step'] ?? '') === 'confirm') {
                 return ['choice' => 'no'];
             }
@@ -578,7 +586,8 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
         } catch (Throwable $ignored) {
         }
     }
-    if (in_array($prompt['type'] ?? '', ['pick_wr_to_hand', 'pick_wr_leave_stage_add'], true)) {
+    if (in_array($prompt['type'] ?? '', ['pick_wr_to_hand', 'pick_wr_leave_stage_add'], true)
+        || in_array($prompt['step'] ?? '', ['pick_wr_live', 'pick_wr_member', 'pick_wr'], true)) {
         foreach ($prompt['candidates'] ?? [] as $cand) {
             $id = $cand['instance_id'] ?? '';
             if ($id === '') {
@@ -588,6 +597,39 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
                 return actionResolvePrompt($state, $pid, ['card_id' => $id]);
             } catch (Throwable $ignored) {
             }
+        }
+    }
+    // Mandatory hand picks (Ruby draw→deck bottom, discard-after-draw, etc.): prefer a legal
+    // timeout resolution over force-dismiss so the board stays consistent.
+    $handPickTypes = [
+        'sbp5_draw_deck_bottom',
+        'sbp6_discard_after_draw',
+        'mandatory_discard_after_draw',
+        'mandatory_discard_look_reveal',
+        'effect_discard_hand',
+    ];
+    if (in_array($prompt['type'] ?? '', $handPickTypes, true)) {
+        try {
+            $data = buildTimeoutPromptResolution($state, $pid, $prompt);
+            $need = intval(
+                $prompt['count']
+                ?? $prompt['bottom_count']
+                ?? $prompt['discard_count']
+                ?? 1
+            );
+            $ids = $data['discard_ids'] ?? $data['card_ids'] ?? [];
+            if ($need <= 0 || count($ids) >= $need) {
+                $resolved = actionResolvePrompt($state, $pid, $data);
+                if (empty($resolved['pending_prompt'])
+                    || ($resolved['pending_prompt']['responder'] ?? '') !== $pid) {
+                    $resolved = addLog($resolved, ($resolved['players'][$pid]['name'] ?? $pid) .
+                        ($isCpu
+                            ? ' — CPU hung on skill; auto-resolved hand pick.'
+                            : ' — Anti-softlock: auto-resolved hand pick.'), 'info');
+                    return $resolved;
+                }
+            }
+        } catch (Throwable $ignored) {
         }
     }
     // Optional pick/skip prompts (e.g. Kaho Live Success) — prefer skip over force-dismiss.

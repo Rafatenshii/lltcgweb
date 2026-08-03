@@ -878,6 +878,8 @@
     if (!replayForward && !G.animating && !G._perfSpectacleActive && s.pending_prompt?.responder === G.playerId
         && (s.phase === 'live_success_effects'
             || s.phase === 'live_start_effects'
+            || s.phase === 'main_first'
+            || s.phase === 'main_second'
             || (s.phase === 'live_judge' && s.pending_prompt?.type === 'pick_judge_success_live'))) {
       ensurePendingPromptSurfaced(s, G.playerId);
     }

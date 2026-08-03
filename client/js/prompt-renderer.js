@@ -44,11 +44,9 @@
     const idKey = global.promptIdentityKey(s);
     if (!global.G._promptSubmitKey) return;
     if (idKey !== global.G._promptSubmitKey) {
-      // Chained Live Success / Live Start prompts (e.g. Kimi discard → Natsumi discard):
-      // clear the prior "resolved" lock so the next prompt can open.
-      if (s.phase === 'live_success_effects' || s.phase === 'live_start_effects') {
-        global.G._lastResolvedPromptKey = null;
-      }
+      // Multi-step skills (Ginko yes→pick_wr_live) and chained Live prompts must not
+      // keep the prior submit/resolved lock, or the next picker never opens.
+      global.G._lastResolvedPromptKey = null;
       global.G._promptSubmitKey = null;
       global.G._resolvePromptSentKey = null;
       global.G._lastSurfacedPromptKey = null;
@@ -379,9 +377,19 @@ global.openWrToHandPick = function openWrToHandPick(pr, opts = {}) {
     }
   }
   if (!cards.length) {
-    toast(pt('prompt.wrNoMatch') || pt('prompt.wrEmpty'), 3200);
+    // Never leave a mandatory WR pick hanging (Ginko PB1 second step softlock).
+    const fallbackId = (pr.candidates || []).map(c => c?.instance_id).find(Boolean);
     closeM('overlay-pick');
     G.pickCtx = null;
+    if (fallbackId && !isPromptSubmitting(s)) {
+      toast(pt('prompt.wrNoMatch') || pt('prompt.wrEmpty'), 2200);
+      sendAct('resolve_prompt', { card_id: fallbackId });
+      return;
+    }
+    if (!isPromptSubmitting(s)) {
+      toast(pt('prompt.wrNoMatch') || pt('prompt.wrEmpty'), 3200);
+      sendAct('anti_softlock_skip', {});
+    }
     return;
   }
   const upTo = need > 1 || !!pr.up_to;
@@ -1018,6 +1026,13 @@ global.ensurePromptChoices = function ensurePromptChoices(pr){
   if(!pr) return pr;
   const choices=Array.isArray(pr.choices)?pr.choices:[];
   const type=pr.type||'';
+  const step=pr.step||'';
+  // Card-pick steps already cleared choices on the server — do not reinject Yes/No
+  // (that softlocks Ginko / PB1 multi-step WR picks behind an empty choice dialog).
+  if(/^pick_wr/.test(step) || step==='pick_live' || step==='pick_member'
+      || step==='pick_hand' || step==='pick_slot' || step==='pick'){
+    return pr;
+  }
   const optionalType=isSelfActivationPrompt(pr)
     ||type==='optional_live_start'
     ||type==='optional_discard_prompt'
@@ -2170,6 +2185,10 @@ global.renderPrompt = function renderPrompt(s, myId){
         || pr.type==='optional_discard_add_cb_member_hs_live')
       && pr.step==='pick_wr_live'){
     ovl.classList.remove('open');
+    closeM('overlay-hand-pick');
+    G._promptSubmitKey = null;
+    G._resolvePromptSentKey = null;
+    G._lastResolvedPromptKey = null;
     openWrLivePick(pr, { state:s, myId });
     return;
   }

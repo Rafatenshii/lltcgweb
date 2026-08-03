@@ -182,5 +182,8 @@ final class HasunosoraPb1WaitingRoomChoiceTest extends TestCase
         );
         $this->assertStringContainsString("pr.step==='pick_wr_live'", $renderer);
         $this->assertStringContainsString("pr.step==='pick_wr_member'", $renderer);
+        // Multi-step optional prompts must not reinject Yes/No over pick_wr_* steps.
+        $this->assertStringContainsString('if(/^pick_wr/.test(step)', $renderer);
+        $this->assertStringContainsString("sendAct('anti_softlock_skip', {})", $renderer);
     }
 }
