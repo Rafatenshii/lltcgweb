@@ -2159,7 +2159,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=24"></script>
+<script src="client/js/api-client.js?v=25"></script>
 <script src="client/js/ranked-pr-reward.js?v=3"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=1"></script>
@@ -4237,12 +4237,54 @@ async function consumeLovecaChallengeInvite() {
   }
 }
 
+/** Mirror Discord session across www ↔ apex (separate localStorage origins). */
+const AUTH_COOKIE_MAX_AGE = 15552000; // ~180 days, matches TCG_TOKEN_TTL
+function readAuthCookie() {
+  try {
+    const m = document.cookie.match(/(?:^|; )llr_wrapped_token=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  } catch (e) {
+    return '';
+  }
+}
+function writeAuthCookie(t) {
+  if (!t) return;
+  const host = location.hostname || '';
+  if (host !== 'loveliveradio.ca' && !/\.loveliveradio\.ca$/i.test(host)) return;
+  try {
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = AUTH_TOKEN_KEY + '=' + encodeURIComponent(t)
+      + '; Domain=.loveliveradio.ca; Path=/; Max-Age=' + AUTH_COOKIE_MAX_AGE
+      + '; SameSite=Lax' + secure;
+  } catch (e) { /* ignore */ }
+}
+function clearAuthCookie() {
+  try {
+    document.cookie = AUTH_TOKEN_KEY + '=; Domain=.loveliveradio.ca; Path=/; Max-Age=0; SameSite=Lax';
+  } catch (e) { /* ignore */ }
+}
 function getAuthToken() {
-  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  let t = '';
+  try { t = localStorage.getItem(AUTH_TOKEN_KEY) || ''; } catch (e) { t = ''; }
+  if (!t) {
+    t = readAuthCookie();
+    if (t) {
+      try { localStorage.setItem(AUTH_TOKEN_KEY, t); } catch (e) { /* ignore */ }
+    }
+  } else {
+    writeAuthCookie(t);
+  }
+  return t;
 }
 window.getAuthToken = getAuthToken;
 function persistAuthToken(t) {
-  if (t) localStorage.setItem(AUTH_TOKEN_KEY, t);
+  if (!t) return;
+  try { localStorage.setItem(AUTH_TOKEN_KEY, t); } catch (e) { /* ignore */ }
+  writeAuthCookie(t);
+}
+function clearAuthToken() {
+  try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+  clearAuthCookie();
 }
 function discordAuthUrl() {
   return 'https://discord.com/api/oauth2/authorize?client_id=' + DISCORD_CLIENT_ID
@@ -5146,8 +5188,10 @@ async function initAccountFlow() {
         updateReconnectBanner(1);
         return;
       }
-      if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(authErr)) {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
+      if (typeof isHostingerAuthRejectedError === 'function'
+          ? isHostingerAuthRejectedError(authErr)
+          : (typeof isAuthRejectedError === 'function' && isAuthRejectedError(authErr))) {
+        clearAuthToken();
         showGuestAuth(null, 'auth.sessionExpired');
         return;
       }
@@ -5168,12 +5212,8 @@ async function initAccountFlow() {
       return;
     }
     if (!me || !me.success) {
-      if (typeof isAuthRejectedError === 'function') {
-        showGuestAuth(null, 'auth.serverBusy');
-      } else {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        showGuestAuth(null, 'auth.sessionExpired');
-      }
+      // Keep the Discord token — a soft /me failure is not a session death.
+      showGuestAuth(null, 'auth.serverBusy');
       return;
     }
     A.user = me.user;
@@ -5203,8 +5243,10 @@ async function initAccountFlow() {
       updateReconnectBanner(1);
       return;
     }
-    if (typeof isAuthRejectedError === 'function' && isAuthRejectedError(e)) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+    if (typeof isHostingerAuthRejectedError === 'function'
+        ? isHostingerAuthRejectedError(e)
+        : (typeof isAuthRejectedError === 'function' && isAuthRejectedError(e))) {
+      clearAuthToken();
       showGuestAuth(null, 'auth.sessionExpired');
     } else if (typeof isTransientAccountError === 'function' && isTransientAccountError(e) && getAuthToken()) {
       showGuestAuth(null, 'auth.serverBusy');
@@ -14158,7 +14200,7 @@ async function bootApp() {
     stopCasualPoll();
   });
   on('btn-hub-logout', 'click', () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearAuthToken();
     location.reload();
   });
 

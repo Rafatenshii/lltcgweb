@@ -55,10 +55,29 @@
     matchmakeFailovers: 0,
   };
 
-  /** Ranked matchmaking + Hostinger-only account DB features stay on Hostinger — shared queue / SQLite must not split. */
+  /**
+   * Account hub actions must never hit VPS overflow. The overflow SQLite replica is stale,
+   * and a VPS 401 during Hostinger→overflow failover was wiping Discord sessions on reload.
+   * Ranked queue / login bonus already belonged here; `me` and the rest of the hub do too.
+   */
   const OVERFLOW_BLOCKED_ACCOUNT = {
+    me: 1,
     ranked_join: 1, ranked_leave: 1, ranked_status: 1,
     login_bonus_status: 1, login_bonus_claim: 1,
+    active_game: 1, leave_active_game: 1,
+    collection: 1, deck_list: 1, deck_save: 1, deck_delete: 1,
+    deck_equip: 1, deck_equip_starter: 1, deck_reset_starter: 1,
+    deck_auto_build: 1, deck_import_decklog: 1,
+    daily_status: 1, open_booster: 1, pick_starter: 1,
+    missions_list: 1, missions_claim: 1,
+    rank_stats: 1, rank_banner_set: 1, rank_flag_set: 1,
+    stamp_favorites_set: 1, public_profile: 1, public_leaderboard: 1,
+    sticker_shop_catalog: 1, sticker_shop_cards: 1,
+    convert_to_seal: 1, convert_to_seals_batch: 1, sticker_buy: 1,
+    replay_save: 1, replay_list: 1, replay_get: 1, replay_start: 1,
+    reset_account: 1,
+    experiment_preset_list: 1, experiment_preset_save: 1,
+    experiment_preset_delete: 1, experiment_preset_get: 1,
   };
   const OVERFLOW_BLOCKED_GAME = {
     action: 1, // in-match always follows locked room origin
@@ -110,7 +129,7 @@
     return (s.overflowUntil || 0) > Date.now();
   };
 
-  /** Lock the match to one origin for its lifetime (no mid-match migrate). */
+  /** Lock the match game API to one origin for its lifetime (no mid-match migrate). */
   global.tcgLockApiOrigin = function tcgLockApiOrigin(origin) {
     global.G = global.G || {};
     // Match-primary: live rooms (casual/CPU/ranked) use VPS unless explicitly locked.
@@ -119,8 +138,11 @@
     }
     global.G.apiOrigin = origin === 'overflow' ? 'overflow' : 'hostinger';
     const urls = global.G.apiOrigin === 'overflow' ? overflowUrls() : HOSTINGER_URLS;
+    // Pin game traffic only — Discord account/session must stay on Hostinger.
     global.API = urls.API;
-    global.ACCOUNT_API = urls.ACCOUNT_API;
+    if (!global.TCG_API_ORIGIN) {
+      global.ACCOUNT_API = HOSTINGER_URLS.ACCOUNT_API;
+    }
   };
 
   global.tcgClearApiOriginLock = function tcgClearApiOriginLock() {
@@ -142,15 +164,19 @@
     }
     const locked = global.G && global.G.apiOrigin;
 
-    // Match-primary: live match traffic uses VPS. Account/queue stay Hostinger.
-    // Explicit hostinger lock remains only for legacy Hostinger drain rooms.
+    // Hub/account (including /me) always Hostinger — never follow match lock or overflow window.
+    if (context === 'hub' || (action && OVERFLOW_BLOCKED_ACCOUNT[action])) {
+      return HOSTINGER_URLS;
+    }
+
+    // Match-primary: live match traffic uses VPS. Explicit hostinger lock = legacy drain rooms.
     if (global.TCG_MATCH_API_PRIMARY) {
-      if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
       if (locked === 'hostinger') return HOSTINGER_URLS;
       if (context === 'matchmake' || context === 'ingame'
           || (action && (MATCHMAKE_GAME[action] || INGAME_GAME[action]))) {
         return overflowUrls();
       }
+      return HOSTINGER_URLS;
     }
 
     if (locked === 'overflow') return overflowUrls();
@@ -159,16 +185,14 @@
     if (context === 'ingame' || (action && INGAME_GAME[action])) {
       return HOSTINGER_URLS;
     }
-    if (action && OVERFLOW_BLOCKED_ACCOUNT[action]) return HOSTINGER_URLS;
     if (action && OVERFLOW_BLOCKED_GAME[action]) return HOSTINGER_URLS;
 
+    // Overflow window: only new matchmaking may failover — never hub/account.
     if (global.tcgOverflowActive()) {
       if (context === 'matchmake' || (action && MATCHMAKE_GAME[action])) {
         global._tcgOverflow.matchmakeFailovers += 1;
-      } else {
-        global._tcgOverflow.hubFailovers += 1;
+        return overflowUrls();
       }
-      return overflowUrls();
     }
     return HOSTINGER_URLS;
   };
@@ -247,10 +271,23 @@
 
   global.isAuthRejectedError = function isAuthRejectedError(err) {
     if (!err) return false;
+    // Overflow/VPS auth noise must not look like a Discord session death.
+    if (err.apiOrigin === 'overflow') return false;
     const status = Number(err.httpStatus) || 0;
-    if (status === 401 || status === 403) return true;
     const msg = String(err.message || '').toLowerCase();
-    return /authentication required|invalid or expired|invalid token|unauthorized|session expired/.test(msg);
+    if (/authentication required|invalid or expired token|invalid token|session expired/.test(msg)) {
+      return true;
+    }
+    // 401 = not signed in. Bare 403 is often "wrong resource", not session wipe.
+    if (status === 401) return true;
+    if (status === 403 && /unauthorized|authentication|sign in/.test(msg)) return true;
+    return false;
+  };
+
+  /** True only when Hostinger itself rejected the Discord session token. */
+  global.isHostingerAuthRejectedError = function isHostingerAuthRejectedError(err) {
+    if (!err || err.apiOrigin === 'overflow' || err.apiOrigin === 'forced') return false;
+    return global.isAuthRejectedError(err);
   };
 
   global.isTransientAccountError = function isTransientAccountError(err) {
@@ -311,6 +348,13 @@
     return d;
   };
 
+  function tagAccountError(err, urls) {
+    if (err && typeof err === 'object') {
+      err.apiOrigin = (urls && urls.origin) || 'hostinger';
+    }
+    return err;
+  }
+
   async function accountGetOnce(urls, action, extra) {
     const token = global.getAuthToken();
     const q = new URLSearchParams({ action, token, ...extra });
@@ -319,18 +363,18 @@
       r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?' + q);
     } catch (e) {
       if (e && typeof e === 'object' && !e.httpStatus) e.httpStatus = 0;
-      throw e;
+      throw tagAccountError(e, urls);
     }
     const d = await global.parseAccountJson(r);
     if (!d.success && d.error) {
       const err = new Error(d.error);
       err.httpStatus = r.status || 400;
-      throw err;
+      throw tagAccountError(err, urls);
     }
     if (!r.ok) {
       const err = new Error('Account error (' + r.status + ')');
       err.httpStatus = r.status || 500;
-      throw err;
+      throw tagAccountError(err, urls);
     }
     global.handleMissionCompletions(d);
     return d;
@@ -345,13 +389,8 @@
       return d;
     } catch (e) {
       if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(e);
-      if (global.isAuthRejectedError(e)) throw e;
-      if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw e;
-      if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw e;
-      if (!global.isTransientAccountError(e)) throw e;
-      if (!(await probeOverflowAlive())) throw e;
-      global._tcgOverflow.hubFailovers += 1;
-      return accountGetOnce(overflowUrls(), action, extra);
+      // Never fail over Discord account reads to VPS — stale replica + 401 wiped sessions.
+      throw e;
     }
   };
 
@@ -373,23 +412,29 @@
 
   async function accountPostOnce(urls, action, body) {
     const token = global.getAuthToken();
-    const r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?action=' + encodeURIComponent(action), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
-      body: JSON.stringify({ ...body, token }),
-    });
+    let r;
+    try {
+      r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?action=' + encodeURIComponent(action), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ ...body, token }),
+      });
+    } catch (e) {
+      if (e && typeof e === 'object' && !e.httpStatus) e.httpStatus = 0;
+      throw tagAccountError(e, urls);
+    }
     const d = await global.parseAccountJson(r);
     if (!d.success && d.error) {
       const err = new Error(d.error);
       err.httpStatus = r.status || 400;
       if (d.retryable) err.retryable = true;
       if (d.code) err.code = d.code;
-      throw err;
+      throw tagAccountError(err, urls);
     }
     if (!r.ok) {
       const err = new Error('Account error (' + r.status + ')');
       err.httpStatus = r.status || 500;
-      throw err;
+      throw tagAccountError(err, urls);
     }
     global.handleMissionCompletions(d);
     return d;
@@ -415,13 +460,8 @@
       }
     }
     if (primary.origin === 'hostinger') global.tcgNoteHostingerFailure(lastErr);
-    if (global.isAuthRejectedError(lastErr)) throw lastErr;
-    if (OVERFLOW_BLOCKED_ACCOUNT[action]) throw lastErr;
-    if (!global.TCG_OVERFLOW_ENABLED || primary.origin === 'overflow') throw lastErr;
-    if (!global.isTransientAccountError(lastErr) && !global.isRetryableApiError(lastErr)) throw lastErr;
-    if (!(await probeOverflowAlive())) throw lastErr;
-    global._tcgOverflow.hubFailovers += 1;
-    return accountPostOnce(overflowUrls(), action, body);
+    // Never fail over Discord account writes to VPS.
+    throw lastErr;
   };
 
   global.createApiError = function createApiError(message, status, extra = {}) {
