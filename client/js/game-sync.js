@@ -580,11 +580,17 @@
       return;
     }
     // Coalesce concurrent poll=0 fetches — overlapping callers used to stampede get_state.
+    // Never drop a follow-up: SSE can bump seq while the in-flight get_state response is
+    // already in flight; returning early left both clients hung on a stale phase.
     if (G._pullLatestInFlight) {
       await G._pullLatestInFlight;
-      if (!force) return;
-      // force: after the in-flight result, fall through for one more pull if still current.
       if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.token) return;
+      if (!force) {
+        if (pollPresentationBlocked()) scheduleDeferredSyncPull(400);
+        else scheduleDeferredSyncPull(80);
+        return;
+      }
+      // force: fall through for one more immediate pull
     }
     const pollEpoch = G._gameSessionEpoch;
     const pollRoomId = G.roomId;
