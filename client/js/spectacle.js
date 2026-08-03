@@ -4327,29 +4327,17 @@ function greedyFillHeartSlotsClient(pool, required, reservedColored = {}) {
   };
 }
 
-/** Backtracking consume matching server tryConsumeHeartsForRequirementSlots. */
-function tryConsumeHeartsForSlotsClient(pool, slots, reservedColored = {}) {
-  if (!slots.length) return pool.slice();
-  const need = slots[0];
-  const rest = slots.slice(1);
-  for (const idx of heartSlotCandidateIndicesClient(pool, need, reservedColored)) {
-    const next = pool.slice();
-    next.splice(idx, 1);
-    const result = tryConsumeHeartsForSlotsClient(next, rest, reservedColored);
-    if (result) return result;
-  }
-  return null;
-}
-
+/**
+ * Spectacle UI heart check — greedy only.
+ * Full server backtracking is too expensive when stage pools are large (dozens of
+ * wild/"any" hearts) and would freeze the tab during Yell.
+ */
 function checkHeartsClient(available, required, reservedColored = {}) {
-  const slots = expandHeartRequirementSlotsClient(required);
-  const remaining = tryConsumeHeartsForSlotsClient(
-    (available || []).map(h => normalizeHeartColor(h)),
-    slots,
-    reservedColored || {}
-  );
-  if (!remaining) return [false, (available || []).slice()];
-  return [true, remaining];
+  const filled = greedyFillHeartSlotsClient(available, required, reservedColored || {});
+  if (filled.unmet.length) {
+    return [false, (available || []).slice(), cloneHeartCountRows(filled.unmet)];
+  }
+  return [true, filled.pool, []];
 }
 
 function cloneHeartCountRows(rows) {
@@ -4464,15 +4452,13 @@ async function perfSyncLiveReqFromAppliedPool(ctx, pid, { animate = true } = {})
     for (let j = li + 1; j < entries.length; j++) {
       reserve = mergeColoredHeartDemandClient(reserve, coloredHeartDemandClient(entries[j].required));
     }
-    const [ok, newPool] = checkHeartsClient(working, required, reserve);
+    const [ok, newPool, unmet] = checkHeartsClient(working, required, reserve);
     if (ok) {
       working = newPool;
       nextRemaining.push([]);
     } else {
-      // Not fully payable yet: show greedy unmet so counts tick down visually,
-      // but do not consume (matches server fail = pool unchanged).
-      const partial = greedyFillHeartSlotsClient(working, required, reserve);
-      nextRemaining.push(cloneHeartCountRows(partial.unmet));
+      // Not fully payable yet: show greedy unmet; do not consume (server fail keeps pool).
+      nextRemaining.push(cloneHeartCountRows(unmet || []));
     }
   }
 
@@ -4501,14 +4487,21 @@ async function perfSyncLiveReqFromAppliedPool(ctx, pid, { animate = true } = {})
   }
 }
 
-async function perfApplyHeartsToLiveReqs(ctx, pid, colors, { animate = true } = {}) {
+async function perfApplyHeartsToLiveReqs(ctx, pid, colors, { animate = true, batch = false } = {}) {
   if (!G._perfLiveReqByPid?.[pid]) perfResetLiveReqTrackers(ctx, pid);
   if (!G._perfLiveReqAppliedPool) G._perfLiveReqAppliedPool = {};
   if (!G._perfLiveReqAppliedPool[pid]) G._perfLiveReqAppliedPool[pid] = [];
   const list = Array.isArray(colors) ? colors : [colors];
+  // Large stage pools must sync once — per-heart passes freeze the tab.
+  const useBatch = batch || list.length > 3;
   for (const raw of list) {
     if (G._perfSpectacleAborted) return;
     G._perfLiveReqAppliedPool[pid].push(normalizeHeartColor(raw));
+    if (!useBatch) {
+      await perfSyncLiveReqFromAppliedPool(ctx, pid, { animate });
+    }
+  }
+  if (useBatch) {
     await perfSyncLiveReqFromAppliedPool(ctx, pid, { animate });
   }
 }
@@ -6505,7 +6498,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
     // Stage hearts clear Live reqs first (compact counts tick down).
     perfResetLiveReqTrackers(ctx, pid);
     if (ownedPool.length) {
-      await perfApplyHeartsToLiveReqs(ctx, pid, ownedPool, { animate: true });
+      await perfApplyHeartsToLiveReqs(ctx, pid, ownedPool, { animate: true, batch: true });
     }
     for (let gi = 0; gi < grants.length; gi++) {
       if (G._perfSpectacleAborted) return;
