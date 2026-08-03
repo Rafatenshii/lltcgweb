@@ -3428,6 +3428,12 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
     // Always release banners ownership so Main cannot stay softlocked after empty/skip.
     if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
       LiveRoundDirector.releaseBanners();
+      // end() is required — leaving active=true makes pollPresentationBlocked() true forever
+      // so both clients stop syncing and hang on the pre-empty-round live_set board.
+      if (directorOwnedHere) LiveRoundDirector.end('presentLiveRound-finally');
+      else if (!G._liveShowRunnerActive && !G._liveSpectacleGateRunning) {
+        LiveRoundDirector.end('presentLiveRound-finally-unowned');
+      }
     }
     releaseLivePollsAndFlush();
     g.end();

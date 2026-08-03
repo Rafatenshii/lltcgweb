@@ -95,12 +95,20 @@
       G._liveRoundPostSpectacleReady = true;
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     }
+    // Soft-heal a director lock left behind after empty LIVE / aborted presentLiveRound.
+    if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active
+        && !G._liveRoundPlaybackActive && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
+        && !G._liveShowRunnerActive && !G.animating) {
+      TCG_DEBUG.warn('poll', 'clear stuck LiveRoundDirector.active');
+      LiveRoundDirector.end('poll-soft-heal');
+    }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances
     // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.
     if (typeof ensureBannerPumpNotStuck === 'function') ensureBannerPumpNotStuck('poll-gate');
     const spectacleBlocksPoll = !!G._perfSpectacleActive && !serverLiveShowInFlight;
+    const directorActiveNow = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
     return !!(G.animating || spectacleBlocksPoll || G._livePollHold
-      || directorActive
+      || directorActiveNow
       || G._replaySeekInFlight || G._replayForwardApply);
   };
 
@@ -599,6 +607,14 @@
     const run = (async () => {
       try {
         global._tcgSyncStats.getState++;
+        // If presentation advanced lastSeq without committing gameState, a normal
+        // since_seq=lastSeq fetch returns unchanged and the board stays stale forever.
+        const boardSeq = G.gameState?.seq ?? 0;
+        const last = G.lastSeq ?? 0;
+        if (force && boardSeq < last) {
+          TCG_DEBUG.warn('poll', 'force pull: rewind since_seq to board', { boardSeq, last });
+          G.lastSeq = boardSeq;
+        }
         const forceQs = force ? '&force=1' : '';
         const r = await fetch(getStateUrl(forceQs));
         const d = await parseGameApiResponse(r);

@@ -408,12 +408,22 @@
         )
       );
     if (emptyRoundDue && typeof presentLiveRound === 'function') {
+      // Keep lastSeq at the pre-presentation board until empty-round playback commits.
+      // Bumping early made get_state return unchanged while UI stayed on live_set.
+      G.lastSeq = prev?.seq ?? G.lastSeq ?? 0;
       G.animating = true;
       try {
         await presentLiveRound(emptyRoundPrev, s, G.playerId, {
           newEntries,
           forceEmptyRound: true,
         });
+        G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
+        if ((G.gameState?.seq ?? 0) < (s.seq ?? 0)) {
+          G.gameState = s;
+          if (typeof renderGame === 'function') {
+            renderGame(s, { skipLog: true });
+          }
+        }
         if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
           doCPU(G.gameState || s);
           armWatchdog(G.gameState || s);
@@ -422,6 +432,7 @@
         G._animHideIids = null;
         clearHandArrivingFlags();
         G.animating = false;
+        G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
         releaseLivePollsAndFlush();
       }
       return;
