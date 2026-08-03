@@ -360,6 +360,7 @@ function skillAuditBuildActivatePayload(
         return [
             'card_id' => $source['member']['instance_id'] ?? '',
             'ability_index' => $abilityIdx,
+            'reveal_card_id' => $liveId,
             '_reveal_live_id' => $liveId,
         ];
     }
