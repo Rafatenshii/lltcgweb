@@ -177,10 +177,7 @@ function tcgIsSpectatableHumanGame(array $state, string $roomId = ''): bool {
     if (!$p1 || !$p2 || isCpuPlayer($p1) || isCpuPlayer($p2)) {
         return false;
     }
-    // Ranked rows are DB-backed; queue stats already treat pending + non-finished as in-game.
-    if (($state['mode'] ?? '') === 'ranked' && $roomId !== '') {
-        return true;
-    }
+    // Ranked and casual both need at least one live human (filters abandoned Redis rooms).
     if ($roomId !== '' && tcgPvpLivePlayerCount($state, $roomId) < 1) {
         return false;
     }
