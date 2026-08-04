@@ -248,10 +248,23 @@ function sBp6ResolveEffect(array $state, string $pid, array $source, array $ab, 
             }));
             $state['sbp6_look_stash'] = $top;
             if (empty($eligible)) {
-                $p['waiting_room'] = array_merge($p['waiting_room'], $top);
+                // Still show looked cards; player confirms mill (same UX as shared look picks).
+                $state['surveil_stash'] = $top;
                 unset($state['sbp6_look_stash']);
+                $state['pending_prompt'] = [
+                    'type'         => 'pick_looked_deck_hand',
+                    'owner'        => $pid,
+                    'responder'    => $pid,
+                    'source_name'  => $name,
+                    'candidates'   => array_map('cardPromptSummary', $top),
+                    'eligible_ids' => [],
+                    'pick_count'   => 1,
+                    'optional'     => true,
+                    'prompt'       => 'No matching cards among these. Confirm to put them into the Waiting Room.',
+                    'ability'      => $ab,
+                ];
                 $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] looked at $look; none eligible.");
+                    " — [$name] looked at $look card(s); none eligible (confirm).");
                 break;
             }
             if (count($eligible) === 1) {
