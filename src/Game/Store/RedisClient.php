@@ -73,6 +73,26 @@ final class RedisClient
         $this->command(['DEL', $key]);
     }
 
+    /**
+     * KEYS pattern (small private Redis only — spectate listing).
+     *
+     * @return list<string>
+     */
+    public function keys(string $pattern): array
+    {
+        $r = $this->command(['KEYS', $pattern]);
+        if (!is_array($r)) {
+            return [];
+        }
+        $out = [];
+        foreach ($r as $k) {
+            if (is_string($k) && $k !== '') {
+                $out[] = $k;
+            }
+        }
+        return $out;
+    }
+
     public function close(): void
     {
         if (is_resource($this->sock)) {

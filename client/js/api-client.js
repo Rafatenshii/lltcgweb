@@ -85,7 +85,9 @@
   };
   const MATCHMAKE_GAME = {
     create_room: 1, join_room: 1, casual_join: 1, casual_leave: 1,
-    casual_status: 1, spectate_join: 1,
+    casual_status: 1,
+    // Spectate must hit the same match host as live rooms (VPS Redis under match-primary).
+    spectate_join: 1, spectate_list: 1, spectate_leave: 1,
   };
   const INGAME_GAME = {
     action: 1, ping: 1, sync_ticket: 1, dry_run_actions: 1,

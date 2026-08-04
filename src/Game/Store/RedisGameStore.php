@@ -77,6 +77,29 @@ final class RedisGameStore implements GameStoreInterface
         }
     }
 
+    /**
+     * Active room ids currently in Redis (excludes lock keys).
+     *
+     * @return list<string>
+     */
+    public function listRoomIds(): array
+    {
+        $keys = $this->redis->keys($this->prefix . '*');
+        $lockNeedle = $this->prefix . 'lock:';
+        $out = [];
+        foreach ($keys as $key) {
+            if (str_starts_with($key, $lockNeedle)) {
+                continue;
+            }
+            $id = substr($key, strlen($this->prefix));
+            if ($id === '' || str_contains($id, ':')) {
+                continue;
+            }
+            $out[] = $id;
+        }
+        return $out;
+    }
+
     public function withLock(string $roomId, callable $fn, ?float $timeoutSec = null): mixed
     {
         $lockKey = $this->lockKey($roomId);

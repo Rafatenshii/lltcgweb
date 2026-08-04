@@ -2165,7 +2165,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=27"></script>
+<script src="client/js/api-client.js?v=28"></script>
 <script src="client/js/ranked-pr-reward.js?v=4"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -27401,8 +27401,20 @@ async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
   if (bar) bar.hidden = false;
   if (barLabel) barLabel.textContent = t('spectate.barNames', { p1: p1Name || 'P1', p2: p2Name || 'P2' });
   closeM('overlay-spectate-list');
-  const s = await fetchGameStateForReconnect(roomId, token);
+  // Match-primary: spectate_join locks overflow; never boot get_state against Hostinger.
+  const preferred =
+    (G.apiOrigin === 'overflow' || G.apiOrigin === 'hostinger')
+      ? G.apiOrigin
+      : ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger');
+  const { state: s, apiOrigin } = await fetchGameStateForReconnectWithFallback({
+    roomId,
+    token,
+    apiOrigin: preferred,
+  }, { resume: false });
   if (s.error) throw new Error(s.error);
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+  }
   prepareClientReconnectState(s);
   G.gameState = s;
   showScr('game');

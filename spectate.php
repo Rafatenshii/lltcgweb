@@ -199,34 +199,78 @@ function tcgSpectatableMatchRow(string $roomId, array $state, string $category):
     ];
 }
 
+function tcgListActiveRoomIdsForSpectate(): array {
+    if (!defined('TCG_API_LIB_ONLY')) {
+        define('TCG_API_LIB_ONLY', true);
+    }
+    require_once __DIR__ . '/api.php';
+    $store = tcgResolveGameStore();
+    if ($store instanceof \LLTCG\Game\Store\RedisGameStore) {
+        return $store->listRoomIds();
+    }
+    $ids = [];
+    $files = glob(GAMES_DIR . '*.json') ?: [];
+    foreach ($files as $file) {
+        $base = basename($file);
+        if (str_starts_with($base, 'lock_')
+            || str_starts_with($base, 'presence_')
+            || str_starts_with($base, 'spectators_')
+            || str_starts_with($base, 'poll_tick_')) {
+            continue;
+        }
+        $roomId = pathinfo($base, PATHINFO_FILENAME);
+        if ($roomId !== '') {
+            $ids[] = $roomId;
+        }
+    }
+    return $ids;
+}
+
 function tcgListRankedSpectatableMatches(): array {
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/matchmaking.php';
+    if (!defined('TCG_API_LIB_ONLY')) {
+        define('TCG_API_LIB_ONLY', true);
+    }
+    require_once __DIR__ . '/api.php';
 
     $matches = [];
-    $db = tcgDb();
-    $stmt = $db->query('SELECT room_id, created_at, p1_id, p2_id, p1_token, p2_token FROM tcg_ranked_matches WHERE status = "pending"');
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $row = tcgSanitizeRankedMatchRow($row);
-        if (!$row) {
-            continue;
-        }
-        $roomId = (string)($row['room_id'] ?? '');
-        if ($roomId === '') {
-            continue;
-        }
-        $path = tcgRankedGameFilePath($roomId);
-        if (!is_file($path)) {
-            continue;
-        }
-        $state = json_decode((string)file_get_contents($path), true);
+    $seen = [];
+
+    // Prefer live GameStore (Redis under match-primary) over Hostinger-only file checks.
+    foreach (tcgListActiveRoomIdsForSpectate() as $roomId) {
+        $state = loadGame($roomId);
         if (!is_array($state) || ($state['mode'] ?? '') !== 'ranked') {
             continue;
         }
         if (!tcgIsSpectatableHumanGame($state, $roomId)) {
             continue;
         }
+        $seen[$roomId] = true;
         $matches[] = tcgSpectatableMatchRow($roomId, $state, 'ranked');
+    }
+
+    // Also include DB-pending ranked rooms that loadGame can still resolve.
+    try {
+        $db = tcgDb();
+        $stmt = $db->query('SELECT room_id FROM tcg_ranked_matches WHERE status = "pending"');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($row['room_id'] ?? '')) ?? '');
+            if ($roomId === '' || isset($seen[$roomId])) {
+                continue;
+            }
+            $state = loadGame($roomId);
+            if (!is_array($state) || ($state['mode'] ?? '') !== 'ranked') {
+                continue;
+            }
+            if (!tcgIsSpectatableHumanGame($state, $roomId)) {
+                continue;
+            }
+            $seen[$roomId] = true;
+            $matches[] = tcgSpectatableMatchRow($roomId, $state, 'ranked');
+        }
+    } catch (\Throwable $e) {
+        // SQLite may be absent/stale on match hosts — Redis scan above is enough.
     }
     return $matches;
 }
@@ -239,24 +283,12 @@ function tcgListCasualSpectatableMatches(): array {
 
     $matches = [];
     $seen = [];
-    $files = glob(GAMES_DIR . '*.json') ?: [];
-    foreach ($files as $file) {
-        $base = basename($file);
-        if (str_starts_with($base, 'lock_')
-            || str_starts_with($base, 'presence_')
-            || str_starts_with($base, 'spectators_')) {
-            continue;
-        }
-        $roomId = pathinfo($base, PATHINFO_FILENAME);
+    foreach (tcgListActiveRoomIdsForSpectate() as $roomId) {
         if ($roomId === '' || isset($seen[$roomId])) {
             continue;
         }
         $seen[$roomId] = true;
-        $raw = @file_get_contents($file);
-        if ($raw === false) {
-            continue;
-        }
-        $state = json_decode($raw, true);
+        $state = loadGame($roomId);
         if (!is_array($state)) {
             continue;
         }
