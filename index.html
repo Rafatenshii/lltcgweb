@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=15">
+<link rel="stylesheet" href="client/css/shell-all.css?v=16">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -11129,17 +11129,33 @@ function renderLeaderboardRows(data) {
     const body = document.createElement('div');
     body.className = 'rank-card-body';
 
-    if (row.avatar_url) {
+    // Always keep the profile circle — fall back to Discord default / letter if CDN 404s.
+    {
       const av = document.createElement('img');
       av.className = 'rank-avatar';
-      av.src = row.avatar_url;
       av.alt = '';
       av.decoding = 'async';
       av.referrerPolicy = 'no-referrer';
-      // Stale Discord CDN hashes 404 after avatar changes; hide broken image quietly.
+      let defaultIdx = 0;
+      const uid = String(row.user_id || '');
+      if (/^\d+$/.test(uid)) {
+        try { defaultIdx = Number((BigInt(uid) >> 22n) % 6n); } catch (e) { defaultIdx = 0; }
+      }
+      const discordDefault = `https://cdn.discordapp.com/embed/avatars/${defaultIdx}.png`;
+      av.src = row.avatar_url || discordDefault;
       av.onerror = () => {
-        av.onerror = null;
-        av.remove();
+        if (av.dataset.avatarFallback === '1') {
+          av.onerror = null;
+          const ph = document.createElement('span');
+          ph.className = 'rank-avatar rank-avatar-fallback';
+          ph.setAttribute('aria-hidden', 'true');
+          const initial = String(row.username || '?').trim().charAt(0).toUpperCase() || '?';
+          ph.textContent = initial;
+          av.replaceWith(ph);
+          return;
+        }
+        av.dataset.avatarFallback = '1';
+        av.src = discordDefault;
       };
       body.appendChild(av);
     }
