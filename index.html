@@ -4318,6 +4318,7 @@ function saveActiveGameSession() {
     isCPU: !!G.isCPU,
     cpuToken: G.cpuToken || null,
     cpuDifficulty: normalizeCpuDifficultyClient(G.cpuDifficulty),
+    mode: G.gameState?.mode || null,
     screen,
     replayMode: !!G.replayMode,
     replayHandoff: !!G.replayHandoff,
@@ -11727,9 +11728,20 @@ function applyRankedStatusResponse(res) {
   return st.status || 'idle';
 }
 
-async function leaveSideGameForRankedMatch() {
+async function leaveSideGameForRankedMatch(incomingRoomId = null) {
   if (!G.roomId || !G.token) return;
+  // Rejoining the same ranked room (reconnect / ranked_status matched) must never concede it.
+  if (incomingRoomId && G.roomId === incomingRoomId) return;
+  // gameState may still be null during auth reconnect — do not treat that as "not ranked".
   if (G.gameState?.mode === 'ranked') return;
+  const saved = (typeof readActiveGameSession === 'function') ? readActiveGameSession() : null;
+  if (saved?.mode === 'ranked') return;
+  if (saved?.roomId && saved.roomId === G.roomId
+      && (saved.apiOrigin === 'overflow' || saved.match_api === 'overflow'
+        || G.apiOrigin === 'overflow')) {
+    // Match-primary ranked rooms live on overflow; never auto-resign them as a "side game".
+    return;
+  }
   const roomId = G.roomId;
   const token = G.token;
   stopPoll();
@@ -11751,7 +11763,16 @@ async function enterRankedMatch(st) {
   stopRankedPoll();
   markRankedSearchActive(false);
   setRankedSearchingUI(false);
-  await leaveSideGameForRankedMatch();
+  // Already seated in this match (refresh / reconnect race with ranked_status=matched).
+  if (st?.room_id && G.roomId === st.room_id && G.token && st.player_token
+      && G.token === st.player_token) {
+    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('overflow');
+    try { saveActiveGameSession(); } catch (e) { /* ignore */ }
+    showScr('game');
+    if (!G.polling) startPoll();
+    return;
+  }
+  await leaveSideGameForRankedMatch(st?.room_id || null);
   playRankedMatchSound();
   toast(t('toast.rankedMatchFound'), 2800);
   G.roomId = st.room_id;
@@ -12225,6 +12246,14 @@ async function pollRankedStatus() {
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
+      // Already in this live room — do not re-enter (would race-resign during reconnect).
+      if (st?.room_id && G.roomId === st.room_id && G.token === st.player_token
+          && (hasRestoredMatchUi() || G.gameState?.status === 'playing'
+            || G.gameState?.status === 'setup')) {
+        setRankedSearchingUI(false);
+        stopRankedPoll();
+        return;
+      }
       // New ranked rooms live on VPS Redis — never Hostinger-only probe (that stranded
       // the second player on the queue screen until refresh).
       const matchApi = (st.match_api || 'overflow') === 'hostinger' ? 'hostinger' : 'overflow';
