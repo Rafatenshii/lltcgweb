@@ -11142,20 +11142,25 @@ function renderLeaderboardRows(data) {
         try { defaultIdx = Number((BigInt(uid) >> 22n) % 6n); } catch (e) { defaultIdx = 0; }
       }
       const discordDefault = `https://cdn.discordapp.com/embed/avatars/${defaultIdx}.png`;
-      av.src = row.avatar_url || discordDefault;
+      const customUrl = String(row.avatar_url || '').trim();
+      const showLetter = () => {
+        av.onerror = null;
+        const ph = document.createElement('span');
+        ph.className = 'rank-avatar rank-avatar-fallback';
+        ph.setAttribute('aria-hidden', 'true');
+        const initial = String(row.username || '?').trim().charAt(0).toUpperCase() || '?';
+        ph.textContent = initial;
+        av.replaceWith(ph);
+      };
+      av.src = customUrl || discordDefault;
       av.onerror = () => {
-        if (av.dataset.avatarFallback === '1') {
-          av.onerror = null;
-          const ph = document.createElement('span');
-          ph.className = 'rank-avatar rank-avatar-fallback';
-          ph.setAttribute('aria-hidden', 'true');
-          const initial = String(row.username || '?').trim().charAt(0).toUpperCase() || '?';
-          ph.textContent = initial;
-          av.replaceWith(ph);
+        // Custom URL failed → try Discord default once; otherwise letter circle.
+        if (customUrl && av.dataset.avatarFallback !== '1' && av.src !== discordDefault) {
+          av.dataset.avatarFallback = '1';
+          av.src = discordDefault;
           return;
         }
-        av.dataset.avatarFallback = '1';
-        av.src = discordDefault;
+        showLetter();
       };
       body.appendChild(av);
     }
