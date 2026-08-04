@@ -4531,9 +4531,10 @@ function cardLogArticle(array $card): string {
 }
 
 function effectLogDrewDetail(array $card): array {
+    // Owner sees the card name; opponent must not learn type (hand is private).
     return [
         'drew ' . cardDisplayName($card) . '.',
-        'drew ' . cardLogArticle($card) . '.',
+        'drew a card.',
     ];
 }
 
