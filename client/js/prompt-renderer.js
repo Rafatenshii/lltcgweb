@@ -179,9 +179,15 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
   const eligible=new Set(pr.eligible_ids||[]);
   const need=pr.pick_count||1;
   const optional=!!pr.optional;
+  const noneEligible=eligible.size===0;
   const singleTap=need===1;
+  const skipLabel=noneEligible
+    ? 'No matching cards — put all in Waiting Room'
+    : 'Skip — put all in Waiting Room';
   el('pick-ttl').textContent=pr.source_name||'Choose from deck';
-  el('pick-msg').textContent=pr.prompt||'Choose card(s) to add to your hand.';
+  el('pick-msg').textContent=pr.prompt||(noneEligible
+    ? 'No matching cards among these. Confirm to put them into the Waiting Room.'
+    : 'Choose card(s) to add to your hand.');
   const g=el('pick-grid'); g.innerHTML='';
   const btnOk=el('btn-pick-ok');
   const btnCancel=el('btn-pick-cancel');
@@ -201,9 +207,9 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
     });
     if(optional){
       const skipBtn=document.createElement('button');
-      skipBtn.className='btn-ghost';
+      skipBtn.className=noneEligible?'btn-grad':'btn-ghost';
       skipBtn.style.width='100%'; skipBtn.style.marginTop='10px';
-      skipBtn.textContent='Skip — put all in Waiting Room';
+      skipBtn.textContent=skipLabel;
       skipBtn.onclick=()=>{
         closeM('overlay-pick');
         sendAct('resolve_prompt',{choice:'skip'});
@@ -235,9 +241,9 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
     });
     if(optional){
       const skipBtn=document.createElement('button');
-      skipBtn.className='btn-ghost';
+      skipBtn.className=noneEligible?'btn-grad':'btn-ghost';
       skipBtn.style.width='100%'; skipBtn.style.marginTop='10px';
-      skipBtn.textContent='Skip — put all in Waiting Room';
+      skipBtn.textContent=skipLabel;
       skipBtn.onclick=()=>{
         closeM('overlay-pick');
         G.pickCtx=null; G.pickMarked.clear();
@@ -2694,39 +2700,37 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
   }
   if(pr?.type==='optional_success_wr_live_swap'&&pr.responder===myId){
-    if(pr.step==='confirm'){
-      ovl.classList.add('open');
+    // confirm: fall through to Yes/No + effect-text UI (do not open empty "Respond" overlay).
+    if(pr.step!=='confirm'){
+      ovl.classList.remove('open');
+      if(pr.step==='pick_success_live'){
+        openSuccessLiveAreaPick(pr, { state:s, myId });
+      }else{
+        openWrLivePick(pr, { state:s, myId });
+      }
       return;
     }
-    ovl.classList.remove('open');
-    if(pr.step==='pick_success_live'){
-      openSuccessLiveAreaPick(pr, { state:s, myId });
-    }else{
-      openWrLivePick(pr, { state:s, myId });
-    }
-    return;
   }
   if(pr?.type==='optional_success_live_swap'&&pr.responder===myId){
-    if(pr.step==='confirm'){
-      ovl.classList.add('open');
-      return;
-    }
-    ovl.classList.remove('open');
-    const me=s.players?.[myId];
-    if(pr.step==='pick_hand_live'){
-      openHandPick({
-        hand: (me?.hand||[]).filter(c=>c.card_type==='ライブ'),
-        count: 1,
-        title: pr.source_name||'Maki Nishikino',
-        msg: pr.prompt||'Choose 1 Live card from your hand to reveal.',
-        onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
-        onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
-      });
-      return;
-    }
-    if(pr.step==='pick_success_live'){
-      openSuccessLiveAreaPick(pr, { state: s, myId });
-      return;
+    // confirm: fall through so title/msg/buttons are filled (Maki PL!-sd1-006-SD).
+    if(pr.step!=='confirm'){
+      ovl.classList.remove('open');
+      const me=s.players?.[myId];
+      if(pr.step==='pick_hand_live'){
+        openHandPick({
+          hand: (me?.hand||[]).filter(c=>c.card_type==='ライブ'),
+          count: 1,
+          title: pr.source_name||'Maki Nishikino',
+          msg: pr.prompt||'Choose 1 Live card from your hand to reveal.',
+          onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
+          onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
+        });
+        return;
+      }
+      if(pr.step==='pick_success_live'){
+        openSuccessLiveAreaPick(pr, { state: s, myId });
+        return;
+      }
     }
   }
   if(pr?.type==='mandatory_discard_after_draw'&&pr.responder===myId){

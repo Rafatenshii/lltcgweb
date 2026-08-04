@@ -2521,6 +2521,7 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
   width:100%;max-width:210px;aspect-ratio:3.5 / 1;
   border-radius:8px;border:1px solid rgba(255,255,255,.12)}
 .rank-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.22);flex-shrink:0;background:rgba(0,0,0,.35);align-self:center}
+.rank-avatar-fallback{display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:rgba(255,255,255,.85);letter-spacing:0;line-height:1;user-select:none}
 .rank-meta{min-width:0;align-self:center}
 .rank-pos{font-size:13px;font-weight:800;color:var(--pink-l);min-width:2.2em}
 .rank-name{font-size:15px;font-weight:800;color:#fff;line-height:1.25}

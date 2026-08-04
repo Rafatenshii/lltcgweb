@@ -119,7 +119,7 @@ function sSd1ResolveEffect(array $state, string $pid, array $source, array $ab, 
                         break;
                     }
                 }
-                $played['active'] = true;
+                clearMemberWait($played);
                 $played['entered_turn'] = intval($state['turn'] ?? 1);
                 if (!empty($ab['block_entered_this_turn'])) {
                     $played['blocks_slot_entries'] = true;
@@ -350,7 +350,7 @@ function sSd1ResolvePrompt(
             }
             $played = $c;
             array_splice($ownerP['waiting_room'], $i, 1);
-            $played['active'] = true;
+            clearMemberWait($played);
             $played['entered_turn'] = intval($state['turn'] ?? 1);
             if (!empty($ability['block_entered_this_turn'])) {
                 $played['blocks_slot_entries'] = true;

@@ -27,6 +27,10 @@ final class EffectRegistry
         'draw_if_success_lives',
         'draw_if_bonus_hearts_on_stage',
         'draw_if_wr_min',
+        'grant_hearts',
+        'grant_live_score_if_success',
+        'blade_bonus',
+        'blade_per_hand_cards',
     ];
 
     /**

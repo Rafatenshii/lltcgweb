@@ -661,6 +661,8 @@ function tryResolveAbilityEffectSwitchOptional(
                 'responder'     => $pid,
                 'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
+                'ability'       => $ab,
+                'ability_index' => $ctx['ability_index'] ?? null,
                 'step'          => 'confirm',
                 'prompt'        => 'Reveal 1 Live card from your hand: add 1 Success Live card to your hand, then put the revealed card into your Success Live area?',
                 'choices'       => ['yes', 'no'],

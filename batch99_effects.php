@@ -162,18 +162,22 @@ function batch99ResolveEffect(array $state, string $pid, array $source, array $a
             $prev = $state['_prev_turn_live_result'][$opp] ?? 'none';
             if ($prev !== 'failed') break;
             if (!empty($state['pending_prompt'])) break;
-            $textFields = buildOpponentTextAnswerPromptFields($ab);
+            // Card text: "you may ask them" — owner chooses first, then opponent answers.
             $state['pending_prompt'] = [
-                'type'          => 'opponent_text_answer',
+                'type'          => 'optional_ema_punch_ask',
                 'owner'         => $pid,
-                'responder'     => $opp,
+                'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_slot'   => $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? ''),
                 'source_name'   => $name,
-                'prompt'        => $textFields['prompt'],
-                'outcome_hints' => $textFields['outcome_hints'],
+                'prompt'        => 'Ask your opponent: "Do you want an Emma Punch?"',
+                'choices'       => ['yes', 'no'],
+                'choice_labels' => ['Yes — Ask them', 'No — Skip'],
                 'ability'       => $ab,
+                'optional'      => true,
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] offers an Emma Punch?');
+                ' — [' . $name . '] may ask for an Emma Punch (opponent failed Live last turn).');
             break;
 
         case 'stack_wr_member_under':
@@ -303,6 +307,39 @@ function batch99ResolveEffect(array $state, string $pid, array $source, array $a
 
 function batch99ResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $promptType = $prompt['type'] ?? '';
+
+    if ($promptType === 'optional_ema_punch_ask') {
+        if (!isset(['yes' => true, 'no' => true, 'skip' => true][$choice])) {
+            throw new Exception('Invalid choice');
+        }
+        if ($choice === 'no' || $choice === 'skip') {
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Emma Verde') . '] skipped asking for an Emma Punch.');
+            return finishPromptEffects($state);
+        }
+        $opp = ($owner === 'p1') ? 'p2' : 'p1';
+        $ab = $prompt['ability'] ?? [];
+        $name = $prompt['source_name'] ?? 'Emma Verde';
+        $textFields = buildOpponentTextAnswerPromptFields($ab);
+        $state['pending_prompt'] = [
+            'type'          => 'opponent_text_answer',
+            'owner'         => $owner,
+            'responder'     => $opp,
+            'source_id'     => $prompt['source_id'] ?? '',
+            'source_slot'   => $prompt['source_slot'] ?? '',
+            'source_name'   => $name,
+            'prompt'        => $textFields['prompt'],
+            'outcome_hints' => $textFields['outcome_hints'],
+            'ability'       => $ab,
+        ];
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . $name . '] offers an Emma Punch?');
+        $state['seq']++;
+        return $state;
+    }
+
     if ($promptType !== 'batch99_stack_wr_member') {
         return null;
     }

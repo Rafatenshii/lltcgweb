@@ -428,55 +428,11 @@ function tryResolveAbilityEffectSwitchDeckLook(
             break;
 
         case 'look_reveal_heart_threshold':
-            $look = intval($ab['look'] ?? 4);
-            $minM = intval($ab['min_member_hearts'] ?? 2);
-            $minL = intval($ab['min_live_required'] ?? 2);
-            $heartColor = (string)($ab['heart_color'] ?? '');
-            $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
-            $eligible = array_values(array_filter(
-                $top,
-                fn($c) => cardMeetsHeartThreshold($c, $minM, $minL, $heartColor)
-            ));
-            if (empty($eligible)) {
-                if (!empty($top)) {
-                    $p['waiting_room'] = array_merge($p['waiting_room'], $top);
-                }
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] looked at $look card(s); none eligible.");
-                break;
-            }
-            if (count($eligible) === 1) {
-                $pickId = $eligible[0]['instance_id'] ?? '';
-                $rest = [];
-                foreach ($top as $c) {
-                    if (($c['instance_id'] ?? '') === $pickId) {
-                        $p['hand'][] = $c;
-                    } else {
-                        $rest[] = $c;
-                    }
-                }
-                if (!empty($rest)) {
-                    $p['waiting_room'] = array_merge($p['waiting_room'], $rest);
-                }
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . $name . '] added 1 card from surveil to hand.');
-                break;
-            }
-            $state['surveil_stash'] = $top;
-            $state['pending_prompt'] = [
-                'type'          => 'pick_surveil_heart_threshold',
-                'owner'         => $pid,
-                'responder'     => $pid,
-                'source_name'   => $name,
-                'candidates'    => array_map('cardPromptSummary', $eligible),
-                'prompt'        => 'Choose 1 eligible card to add to hand (or skip).',
-                'choices'       => array_merge(['skip'], array_map(fn($c) => $c['instance_id'] ?? '', $eligible)),
-                'choice_labels' => array_merge(
-                    ['Skip — put all in Waiting Room'],
-                    array_map(fn($c) => cardDisplayName($c), $eligible)
-                ),
-                'ability'       => $ab,
-            ];
+            // Shared look UI (pick_looked_deck_hand): always show top N, even with 0 matches.
+            $state = beginLookRevealPick($state, $pid, $name, $p, array_merge($ab, [
+                'optional_pick' => true,
+                'pick'          => intval($ab['pick'] ?? 1),
+            ]));
             break;
 
         case 'draw_discard_if_min_energy':

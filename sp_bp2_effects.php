@@ -156,11 +156,9 @@ function spBp2InheritedAbilitiesForTrigger(array $member, string $trigger): arra
 
 function spBp2MemberLiveSuccessAbilities(array $member): array {
     mergeCardCatalogFields($member);
-    $out = getAbilitiesByTrigger($member, 'live_success');
-    foreach (batch99MemberLiveSuccessAbilities($member) as $ab) {
-        $out[] = $ab;
-    }
-    return $out;
+    // batch99 already includes getAbilitiesByTrigger (own + SP-BP2 inherit) plus
+    // stacked inherit_stacked_live_success extras — do not merge again (#71).
+    return batch99MemberLiveSuccessAbilities($member);
 }
 
 function spBp2StageMemberAbilitiesSuppressed(array $state, string $pid): bool {

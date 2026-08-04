@@ -1021,6 +1021,15 @@ function lookRevealGroup(array &$p, int $look, string $group, string $filter, in
 }
 
 function cardMatchesLookPick(array $card, array $cfg): bool {
+    // Yoshiko-style: Member hearts / Live required-hearts thresholds (optional reveal).
+    if (isset($cfg['min_member_hearts']) || isset($cfg['min_live_required'])) {
+        return cardMeetsHeartThreshold(
+            $card,
+            intval($cfg['min_member_hearts'] ?? 0),
+            intval($cfg['min_live_required'] ?? 0),
+            (string)($cfg['heart_color'] ?? '')
+        );
+    }
     $nameContains = $cfg['name_contains'] ?? '';
     $label = $card['name_en'] ?? $card['name'] ?? '';
     if ($nameContains !== '' && !str_contains($label, $nameContains)) {
@@ -1072,6 +1081,9 @@ function lookPickIsOptional(array $cfg): bool {
     if (array_key_exists('optional_pick', $cfg)) {
         return !empty($cfg['optional_pick']);
     }
+    if (isset($cfg['min_member_hearts']) || isset($cfg['min_live_required'])) {
+        return true;
+    }
     $filter = $cfg['filter'] ?? '';
     $group = $cfg['group'] ?? '';
     $subunit = $cfg['subunit'] ?? '';
@@ -1081,7 +1093,7 @@ function lookPickIsOptional(array $cfg): bool {
 /** Minimum main-deck cards needed for a discard-then effect to be worth doing (0 = no deck requirement). */
 function optionalThenDeckLookMin(array $then): int {
     $type = $then['type'] ?? '';
-    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named'], true)) {
+    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named', 'look_reveal_heart_threshold'], true)) {
         return max(1, intval($then['look'] ?? 1));
     }
     if ($type === 'look_reveal_live_score_plus') {
@@ -1146,30 +1158,25 @@ function beginLookRevealPick(array $state, string $pid, string $name, array &$p,
 
     $eligible = array_values(array_filter($top, fn($c) => cardMatchesLookPick($c, $cfg)));
 
-    if (count($top) === 1 && !$optional) {
+    if (count($top) === 1 && !$optional && !empty($eligible)) {
         applyLookPickHand($p, $top, [$top[0]['instance_id'] ?? '']);
         return addLog($state, $state['players'][$pid]['name'] .
             " — [$name] looked at 1 card; added 1 to hand.");
-    }
-
-    if ($optional && empty($eligible)) {
-        $p['waiting_room'] = array_merge($p['waiting_room'], $top);
-        return addLog($state, $state['players'][$pid]['name'] .
-            ' — [' . $name . '] looked at ' . count($top) . ' card(s); none eligible.');
-    }
-
-    if (!$optional && empty($eligible)) {
-        $p['waiting_room'] = array_merge($p['waiting_room'], $top);
-        return addLog($state, $state['players'][$pid]['name'] .
-            ' — [' . $name . '] looked at ' . count($top) . ' card(s); none eligible.');
     }
 
     $eligibleIds = array_values(array_filter(array_map(
         fn($c) => $c['instance_id'] ?? '',
         $eligible
     )));
+    // Always show the looked cards — even with zero matches — so the player can confirm
+    // before they go to the Waiting Room (optional skip when nothing is eligible).
+    if (empty($eligible)) {
+        $optional = true;
+    }
     $destMode = $cfg['destination'] ?? 'hand';
-    if ($destMode === 'hand_or_stage') {
+    if (empty($eligible)) {
+        $promptText = 'No matching cards among these. Confirm to put them into the Waiting Room.';
+    } elseif ($destMode === 'hand_or_stage') {
         $promptText = $optional
             ? 'Choose 1 Member to add to your hand or play to an empty Stage area (or skip).'
             : 'Choose 1 Member to add to your hand or play to an empty Stage area.';
@@ -1196,8 +1203,11 @@ function beginLookRevealPick(array $state, string $pid, string $name, array &$p,
         'prompt'       => $promptText,
         'ability'      => $cfg,
     ];
+    $logSuffix = empty($eligible)
+        ? ' card(s); none eligible (confirm).'
+        : ' card(s) (choose).';
     return addLog($state, $state['players'][$pid]['name'] .
-        ' — [' . $name . '] looked at ' . count($top) . ' card(s) (choose).');
+        ' — [' . $name . '] looked at ' . count($top) . $logSuffix);
 }
 
 function memberHeartCount(array $member): int {

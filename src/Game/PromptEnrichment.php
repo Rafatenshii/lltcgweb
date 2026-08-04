@@ -753,7 +753,8 @@ function resolveOptionalDiscardPromptChoice(
                 }
             } elseif (($then['type'] ?? '') === 'look_reveal_filter'
                 || ($then['type'] ?? '') === 'look_reveal_group'
-                || ($then['type'] ?? '') === 'look_reveal_named') {
+                || ($then['type'] ?? '') === 'look_reveal_named'
+                || ($then['type'] ?? '') === 'look_reveal_heart_threshold') {
                 $state = beginLookRevealPick(
                     $state,
                     $owner,

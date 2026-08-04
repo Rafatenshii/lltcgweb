@@ -14,27 +14,8 @@ function tryResolveAbilityEffectSwitchGrant(
     string $name
 ): array {
     switch ($type) {
-        case 'grant_hearts':
-            if (!empty($ab['hearts'])) {
-                addBonusHeartsToModifier($state, $pid, $ab['hearts']);
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] gained bonus heart(s) until this Live ends.");
-            }
-            break;
+        // grant_hearts / grant_live_score_if_success → EffectHandlers via EffectRegistry
 
-        case 'grant_live_score_if_success':
-            $succCount = count($p['success_lives'] ?? []);
-            $scoreSum = sumSuccessLiveScores($p);
-            if ($succCount >= intval($ab['min_success_count'] ?? 1)
-                && $scoreSum <= intval($ab['max_success_score_sum'] ?? 1)) {
-                $state = applyModifierEffect($state, $pid, [
-                    'type'   => 'live_score_bonus',
-                    'amount' => intval($ab['amount'] ?? 1),
-                ]);
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . $name . '] Live total score +' . intval($ab['amount'] ?? 1) . ' until Live ends.');
-            }
-            break;
         case 'grant_hearts_if_slot_blade_hearts':
             $slot = $ab['slot'] ?? 'left';
             $mbr = $p['stage'][$slot] ?? null;

@@ -157,7 +157,7 @@ function tryResolveAbilityEffectSwitchBaton(
                         break;
                     }
                 }
-                $played['active'] = true;
+                clearMemberWait($played);
                 $played['entered_turn'] = intval($state['turn'] ?? 1);
                 $p['stage'][$emptySlots[0]] = $played;
                 $state = addLog($state, $state['players'][$pid]['name'] .

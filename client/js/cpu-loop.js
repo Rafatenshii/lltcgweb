@@ -1584,7 +1584,7 @@ function cpuResolveHangRiskPrompts(pr, cpu, tier, read, s) {
         if (b.card_type === 'メンバー') return 1;
         return (b.score || 0) - (a.score || 0);
       });
-    const id = ranked[0]?.instance_id || eligible[0] || pr.candidates?.[0]?.instance_id;
+    const id = ranked[0]?.instance_id || eligible[0];
     if (id) { cpuAct('resolve_prompt', { card_id: id }); return true; }
     if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
     cpuSchedulePromptRetryIfStuck(s, cpu);
@@ -3666,7 +3666,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
   if(pr.type==='pick_looked_deck_hand'){
     if (cpuResolveHangRiskPrompts(pr, cpu, tier, read, s)) return;
     const eligible=pr.eligible_ids||[];
-    const id=eligible[0]||(pr.candidates?.[0]?.instance_id);
+    const id=eligible[0];
     if(id) { cpuAct('resolve_prompt',{card_id:id}); return; }
     if(pr.optional) { cpuAct('resolve_prompt',{choice:'skip'}); return; }
     cpuSchedulePromptRetryIfStuck(s, cpu);
@@ -4503,7 +4503,7 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
         if (b.card_type === 'メンバー') return 1;
         return (b.score || 0) - (a.score || 0);
       });
-    const id = ranked[0]?.instance_id || eligible[0] || pr.candidates?.[0]?.instance_id;
+    const id = ranked[0]?.instance_id || eligible[0];
     if (id) { cpuAct('resolve_prompt', { card_id: id }); return true; }
     if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
     cpuSchedulePromptRetryIfStuck(s, cpu);

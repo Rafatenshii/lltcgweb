@@ -52,52 +52,8 @@ function tryResolveAbilityEffectSwitchBlade(
                 'ability'       => $ab,
             ];
             break;
-        case 'blade_bonus':
-            $bladeAmt = intval($ab['amount'] ?? 1);
-            // Always attribute Stage-source blade to the Member (not player-wide).
-            // Player-wide blade_bonus survives a later Wait and still counts toward Yell
-            // (Rurino PB1 Auto / GitHub #82 class of bug).
-            $srcSlot = findMemberSlot($p, $source['instance_id'] ?? '');
-            if ($srcSlot !== '' && !empty($p['stage'][$srcSlot])) {
-                $p['stage'][$srcSlot]['live_blade_bonus'] =
-                    intval($p['stage'][$srcSlot]['live_blade_bonus'] ?? 0) + $bladeAmt;
-            } else {
-                $state = applyModifierEffect($state, $pid, $ab);
-            }
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] gains +' . $bladeAmt . ' Blade until this Live ends.');
-            break;
-        case 'blade_per_hand_cards':
-            if (($ab['trigger'] ?? '') === 'live_start' || ($ctx['phase'] ?? '') === 'live_start') {
-                $handCount = count($p['hand'] ?? []);
-                $div = max(1, intval($ab['per_cards'] ?? 2));
-                $bonus = intdiv($handCount, $div) * intval($ab['amount'] ?? 1);
-                if ($bonus > 0) {
-                    // Attribute to the source Member (not player-wide blade_bonus) so a
-                    // Waited Natsumi / similar Live Start blade grant does not still
-                    // count toward Yell — see GitHub issue #82.
-                    $srcSlot = findMemberSlot($p, $source['instance_id'] ?? '');
-                    if ($srcSlot !== '' && !empty($p['stage'][$srcSlot])) {
-                        $p['stage'][$srcSlot]['live_blade_bonus'] =
-                            intval($p['stage'][$srcSlot]['live_blade_bonus'] ?? 0) + $bonus;
-                    } else {
-                        $state = applyModifierEffect($state, $pid, [
-                            'type'   => 'blade_bonus',
-                            'amount' => $bonus,
-                        ]);
-                    }
-                }
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] gains +$bonus Blade until Live ends (+1 per " .
-                    intval($ab['per_cards'] ?? 2) . " cards in hand at Live Start, hand was $handCount).");
-                break;
-            }
-            $state = initLiveModifiers($state);
-            $state['live_modifiers'][$pid]['blade_per_hand_divisor'] = max(1, intval($ab['per_cards'] ?? 2));
-            $state['live_modifiers'][$pid]['blade_per_hand_amount'] = intval($ab['amount'] ?? 1);
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] +1 Blade per ' . intval($ab['per_cards'] ?? 2) . ' cards in hand until Live ends.');
-            break;
+        // blade_bonus / blade_per_hand_cards → EffectHandlers via EffectRegistry
+
         case 'blade_bonus_if_moved_in_slot':
             $needSlot = $ab['slot'] ?? '';
             $mySlot = findMemberSlot($p, $source['instance_id'] ?? '');
