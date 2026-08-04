@@ -11134,6 +11134,13 @@ function renderLeaderboardRows(data) {
       av.className = 'rank-avatar';
       av.src = row.avatar_url;
       av.alt = '';
+      av.decoding = 'async';
+      av.referrerPolicy = 'no-referrer';
+      // Stale Discord CDN hashes 404 after avatar changes; hide broken image quietly.
+      av.onerror = () => {
+        av.onerror = null;
+        av.remove();
+      };
       body.appendChild(av);
     }
 
