@@ -562,6 +562,32 @@ function tcgTodayUtc(): string {
     return tcgTodayJst();
 }
 
+/** Discord CDN avatar URL from user id + optional avatar hash (login / leaderboard). */
+function tcgDiscordAvatarUrl(string $userId, ?string $avatarHash = null): string {
+    $hash = is_string($avatarHash) ? trim($avatarHash) : '';
+    if ($hash !== '') {
+        $ext = str_starts_with($hash, 'a_') ? 'gif' : 'png';
+        return 'https://cdn.discordapp.com/avatars/' . rawurlencode($userId) . '/'
+            . rawurlencode($hash) . '.' . $ext . '?size=128';
+    }
+    // Default embed avatar index for users without a custom avatar (new username system).
+    $idx = 0;
+    if (preg_match('/^\d+$/', $userId)) {
+        if (function_exists('gmp_init')) {
+            $idx = (int)gmp_intval(gmp_mod(gmp_div_q(gmp_init($userId, 10), '4194304'), '6'));
+        } elseif (function_exists('bcdiv')) {
+            $idx = (int)bcmod(bcdiv($userId, '4194304', 0), '6');
+        } else {
+            // 64-bit PHP can hold Discord snowflakes as int.
+            $idx = (int)((((int)$userId) >> 22) % 6);
+        }
+        if ($idx < 0 || $idx > 5) {
+            $idx = 0;
+        }
+    }
+    return 'https://cdn.discordapp.com/embed/avatars/' . $idx . '.png';
+}
+
 function tcgEnsureUser(string $discordId, array $profile = []): array {
     $db = tcgDb();
     $now = time();
@@ -569,11 +595,23 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row) {
-        if (!empty($profile['username']) && $profile['username'] !== $row['username']) {
-            $db->prepare('UPDATE tcg_users SET username = ?, avatar_url = ?, updated_at = ? WHERE discord_id = ?')
-                ->execute([$profile['username'], $profile['avatar_url'] ?? $row['avatar_url'], $now, $discordId]);
-            $row['username'] = $profile['username'];
-            $row['avatar_url'] = $profile['avatar_url'] ?? $row['avatar_url'];
+        // Refresh Discord profile fields on login /me — not only when username changes.
+        // Stale avatar CDN hashes 404 after users change/remove their Discord avatar.
+        $wantUser = array_key_exists('username', $profile)
+            && $profile['username'] !== null
+            && trim((string)$profile['username']) !== '';
+        $wantAvatar = array_key_exists('avatar_url', $profile);
+        if ($wantUser || $wantAvatar) {
+            $username = $wantUser ? (string)$profile['username'] : (string)($row['username'] ?? 'Player');
+            $avatar = $wantAvatar ? ($profile['avatar_url'] ?? null) : ($row['avatar_url'] ?? null);
+            if ($username !== (string)($row['username'] ?? '')
+                || (string)($avatar ?? '') !== (string)($row['avatar_url'] ?? '')) {
+                $db->prepare('UPDATE tcg_users SET username = ?, avatar_url = ?, updated_at = ? WHERE discord_id = ?')
+                    ->execute([$username, $avatar, $now, $discordId]);
+                $row['username'] = $username;
+                $row['avatar_url'] = $avatar;
+                $row['updated_at'] = $now;
+            }
         }
         return $row;
     }
