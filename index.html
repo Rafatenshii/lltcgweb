@@ -2160,7 +2160,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=98"></script>
+<script src="i18n.js?v=99"></script>
 <script src="log_i18n.js?v=13"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
@@ -4128,6 +4128,76 @@ function playPackOpenAnimation(cards, packImage, packStyle, faceSrcByIndex = nul
   })));
 }
 
+const RESIGN_ESCAPE_KEY = 'tcg_resign_escape';
+
+/** Softlock escape: ?resign (or ?resign=1) forces leave/resign then returns to the menu. */
+function captureResignEscapeFromUrl() {
+  try {
+    const params = new URLSearchParams(location.search);
+    if (!params.has('resign')) return false;
+    // Accept bare ?resign, ?resign=1, ?resign=true (anything except explicit 0/false/no).
+    const raw = String(params.get('resign') ?? '').trim().toLowerCase();
+    const enabled = raw === '' || !['0', 'false', 'no', 'off'].includes(raw);
+    params.delete('resign');
+    const qs = params.toString();
+    history.replaceState({}, document.title, location.pathname + (qs ? '?' + qs : '') + location.hash);
+    if (!enabled) return false;
+    try { sessionStorage.setItem(RESIGN_ESCAPE_KEY, '1'); } catch (e) { /* ignore */ }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function peekResignEscape() {
+  try {
+    return sessionStorage.getItem(RESIGN_ESCAPE_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearResignEscape() {
+  try { sessionStorage.removeItem(RESIGN_ESCAPE_KEY); } catch (e) { /* ignore */ }
+}
+
+/** Best-effort resign with a hard client timeout (softlocked rooms often 504). */
+async function resignActiveRoomBestEffort(timeoutMs = 8000) {
+  const saved = (typeof readActiveGameSession === 'function') ? readActiveGameSession() : null;
+  const roomId = G.roomId || saved?.roomId || null;
+  const token = G.token || saved?.token || null;
+  if (!roomId || !token) return false;
+  try {
+    await Promise.race([
+      apiPost('action', { room_id: roomId, token, type: 'resign', data: {} }),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('resign timeout')), Math.max(1000, timeoutMs));
+      }),
+    ]);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Escape softlocked / stuck matches via ?resign — leave room, clear ranked active_game,
+ * return to hub/title. URL flag is stripped before this runs so it cannot re-fire on the next join.
+ */
+async function consumeResignEscape() {
+  if (!peekResignEscape()) return false;
+  clearResignEscape();
+  cancelReconnectQueue();
+  setAuthSkipReconnectVisible(false);
+  try { if (typeof closeApiErrorPopup === 'function') closeApiErrorPopup(); } catch (e) { /* ignore */ }
+  // Direct room resign first (casual/CPU + overflow). Ranked DB clear follows via forceResign.
+  await resignActiveRoomBestEffort(8000);
+  await abandonDeadMatchSession({ silent: true, forceResign: true });
+  toast(t('toast.leftActiveMatch') || 'Left active match', 3200);
+  return true;
+}
+window.consumeResignEscape = consumeResignEscape;
+
 function captureLovecaChallengeFromUrl() {
   try {
     const params = new URLSearchParams(location.search);
@@ -5094,12 +5164,20 @@ async function resumeActiveGameIfAny() {
 
 async function initAccountFlow() {
   captureLovecaChallengeFromUrl();
+  const resignEscape = captureResignEscapeFromUrl() || peekResignEscape();
+  if (resignEscape) {
+    // Do not reconnect into the stuck room — escape runs before resume queue.
+    cancelReconnectQueue();
+  }
   const authEl = el('auth-status');
   const loginBtn = el('btn-discord-login');
   const guestMenu = el('auth-guest-menu');
   if (authEl) {
     authEl.setAttribute('data-auth-boot', 'booting');
-    if (getAuthToken() || readActiveGameSession()) {
+    if (resignEscape) {
+      authEl.removeAttribute('data-i18n');
+      authEl.textContent = t('auth.leavingMatch') || 'Leaving match…';
+    } else if (getAuthToken() || readActiveGameSession()) {
       authEl.setAttribute('data-i18n', readActiveGameSession() ? 'auth.reconnecting' : 'auth.signingIn');
       authEl.textContent = readActiveGameSession()
         ? (t('auth.reconnecting') || 'Reconnecting to match…')
@@ -5152,8 +5230,14 @@ async function initAccountFlow() {
       finishAuthBoot();
     })();
   }, AUTH_BOOT_WATCHDOG_MS);
+  // Softlock escape must finish before any reconnect attempt.
+  if (resignEscape) {
+    try {
+      await consumeResignEscape();
+    } catch (e) { /* still continue into hub/auth below */ }
+  }
   // Reconnect in parallel with /me — never block rejoin on a slow Discord profile fetch.
-  const resumePromise = resumeActiveGameIfAny();
+  const resumePromise = resignEscape ? Promise.resolve(false) : resumeActiveGameIfAny();
   try {
     const params = new URLSearchParams(location.search);
     const oauthCode = params.get('code');
@@ -5393,6 +5477,7 @@ async function leaveActiveGame() {
     || 'Leave the active match? If it is still in progress, this counts as a resign.';
   if (!confirm(msg)) return;
   try {
+    await resignActiveRoomBestEffort(8000);
     await abandonDeadMatchSession({ silent: true, forceResign: true });
     if (leaveBtn) leaveBtn.hidden = true;
     toast(t('toast.leftActiveMatch') || 'Left active match', 2600);
