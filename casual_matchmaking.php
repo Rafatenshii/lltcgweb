@@ -259,12 +259,15 @@ function tcgSanitizeCasualMatchRow(array|false|null $row): ?array {
         tcgCasualDeleteMatchRow($queueKey);
         return null;
     }
+    tcgCasualEnsureApiHelpers();
+    $state = null;
     $path = tcgCasualGameFilePath($roomId);
-    if (!is_file($path)) {
-        tcgCasualDeleteMatchRow($queueKey);
-        return null;
+    if (is_file($path)) {
+        $state = json_decode((string)file_get_contents($path), true);
+    } elseif (function_exists('loadGame')) {
+        // Match-primary: casual rooms live in Redis, not games/*.json.
+        $state = loadGame($roomId);
     }
-    $state = json_decode((string)file_get_contents($path), true);
     if (!is_array($state) || ($state['mode'] ?? '') === 'ranked') {
         tcgCasualDeleteMatchRow($queueKey);
         return null;
@@ -503,12 +506,14 @@ function tcgCasualCountLivePvpPlayers(?string $gameMode = null): int {
             continue;
         }
         $seenRooms[$roomId] = true;
+        $state = null;
         $path = tcgCasualGameFilePath($roomId);
-        if (!is_file($path)) {
-            $db->prepare('DELETE FROM tcg_casual_matches WHERE room_id = ?')->execute([$roomId]);
-            continue;
+        if (is_file($path)) {
+            $state = json_decode((string)file_get_contents($path), true);
+        } elseif (function_exists('loadGame')) {
+            // Match-primary Redis rooms have no local games/*.json.
+            $state = loadGame($roomId);
         }
-        $state = json_decode((string)file_get_contents($path), true);
         if (!is_array($state) || ($state['status'] ?? '') === 'finished') {
             $db->prepare('DELETE FROM tcg_casual_matches WHERE room_id = ?')->execute([$roomId]);
             continue;

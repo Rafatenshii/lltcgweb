@@ -531,26 +531,50 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
 
     $inGame = 0;
     $seen = [];
-    $stmt = $db->prepare('SELECT room_id, p1_id, p2_id, game_mode FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?');
+    // Tokens needed to probe VPS Redis rooms (match-primary: no Hostinger games/*.json).
+    $stmt = $db->prepare(
+        'SELECT room_id, p1_id, p2_id, p1_token, p2_token, game_mode
+         FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?'
+    );
     $stmt->execute([$gameMode]);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $roomId = $row['room_id'] ?? '';
         $path = tcgRankedGameFilePath($roomId);
-        if (!is_file($path)) {
-            continue;
-        }
-        $raw = @file_get_contents($path);
-        if ($raw === false) {
-            continue;
-        }
-        $state = json_decode($raw, true);
-        if (!is_array($state) || ($state['mode'] ?? '') !== 'ranked') {
-            continue;
-        }
-        if (($state['status'] ?? '') === 'finished') {
-            if ($roomId !== '') {
-                tcgCompleteRankedMatch($roomId);
+        $countPlayers = false;
+        if (is_file($path)) {
+            $raw = @file_get_contents($path);
+            if ($raw === false) {
+                continue;
             }
+            $state = json_decode($raw, true);
+            if (!is_array($state) || ($state['mode'] ?? '') !== 'ranked') {
+                continue;
+            }
+            if (($state['status'] ?? '') === 'finished') {
+                if ($roomId !== '') {
+                    tcgCompleteRankedMatch($roomId);
+                }
+                continue;
+            }
+            $countPlayers = true;
+        } else {
+            // Authoritative room is on VPS — same probe as tcgSanitizeRankedMatchRow.
+            require_once __DIR__ . '/match_bridge.php';
+            $token = (string)($row['p1_token'] ?? '');
+            if ($token === '') {
+                $token = (string)($row['p2_token'] ?? '');
+            }
+            $probe = tcgProbeOverflowRankedRoom((string)$roomId, $token);
+            if ($probe === 'finished' || $probe === 'missing') {
+                if ($roomId !== '') {
+                    tcgCompleteRankedMatch($roomId);
+                }
+                continue;
+            }
+            // live or unknown (VPS timeout): still count so the hub is not stuck at 0.
+            $countPlayers = true;
+        }
+        if (!$countPlayers) {
             continue;
         }
         foreach (['p1_id', 'p2_id'] as $col) {
