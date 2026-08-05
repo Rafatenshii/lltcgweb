@@ -2,11 +2,10 @@
 # Static assets stay on Hostinger. SSE uses VPS nginx TLS
 # (https://stream.loveliveradio.ca/tcg/sync/stream). Optional Phase 2 API proxy below.
 
-# Part 1D cutover: block live match writes on Hostinger PHP (VPS owns rooms).
-# Prefer marker file MATCH_WRITES_DISABLED; SetEnv is a backup when mod_env works.
-<IfModule mod_env.c>
-  SetEnv TCG_HOSTINGER_MATCH_WRITES 0
-</IfModule>
+# Part 1D cutover: live match writes are blocked on Hostinger by the untracked
+# MATCH_WRITES_DISABLED marker next to api.php. Do not add a SetEnv fallback here:
+# the VPS match host serves this same repo with AllowOverride All, so anything set
+# in this file also disables writes on the host that actually owns the rooms.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On

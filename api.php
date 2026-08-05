@@ -107,13 +107,29 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'ping';
 $body   = json_decode(file_get_contents('php://input'), true) ?? [];
 
 /**
+ * The match host owns live rooms (Redis game store). Hostinger-only config that
+ * leaks into its deploy — e.g. a tracked .htaccess honored under AllowOverride All —
+ * must never be able to disable writes on the host serving the rooms.
+ */
+function tcgIsMatchHost(): bool {
+    $store = getenv('TCG_GAME_STORE');
+    if ($store === false || $store === '') {
+        $store = $_SERVER['TCG_GAME_STORE'] ?? '';
+    }
+    return strtolower(trim((string)$store)) === 'redis';
+}
+
+/**
  * Part 1D: when match-primary cutover is live, Hostinger must not accept room writes.
  * Default allows writes. Disable via:
  * - env TCG_HOSTINGER_MATCH_WRITES=0 (or false/off/no)
  * - marker file MATCH_WRITES_DISABLED next to api.php (Hostinger-friendly, like USE_VPS_API)
- * Leave unset / no marker on the VPS match API.
+ * Both are ignored on the match host itself (see tcgIsMatchHost).
  */
 function tcgHostingerMatchWritesEnabled(): bool {
+    if (tcgIsMatchHost()) {
+        return true;
+    }
     if (is_file(__DIR__ . '/MATCH_WRITES_DISABLED')) {
         return false;
     }
