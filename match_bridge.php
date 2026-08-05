@@ -364,6 +364,83 @@ function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
     return $inGame;
 }
 
+/**
+ * POST JSON to the overflow match API without the internal secret
+ * (player-token gated actions like replay_export).
+ *
+ * @param array<string,mixed> $payload
+ * @return array<string,mixed>|null
+ */
+function tcgOverflowHttpPostJson(string $url, array $payload, int $timeoutSec = 30): ?array {
+    $url = trim($url);
+    if ($url === '') {
+        return null;
+    }
+    $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
+    if ($body === false) {
+        return null;
+    }
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => min(8, $timeoutSec),
+            CURLOPT_TIMEOUT => $timeoutSec,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if (!is_string($raw) || $code < 200 || $code >= 300) {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\n",
+            'content' => $body,
+            'timeout' => $timeoutSec,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $raw = @file_get_contents($url, false, $ctx);
+    if (!is_string($raw) || $raw === '') {
+        return null;
+    }
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * Pull a finished-match replay from the VPS match API (match-primary rooms).
+ *
+ * @return array<string,mixed>|null Replay file payload
+ */
+function tcgFetchOverflowReplayExport(string $roomId, string $token): ?array {
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
+    $token = trim($token);
+    if ($roomId === '' || $token === '') {
+        return null;
+    }
+    $url = tcgOverflowMatchApiBase() . '/api.php?action=replay_export';
+    $res = tcgOverflowHttpPostJson($url, [
+        'room_id' => $roomId,
+        'token' => $token,
+    ], 45);
+    if (!is_array($res) || empty($res['replay']) || !is_array($res['replay'])) {
+        return null;
+    }
+    return $res['replay'];
+}
+
 function tcgResignRankedRoomOnVps(string $roomId, string $token): bool {
     $url = tcgOverflowMatchApiBase() . '/api.php?action=action';
     $payload = json_encode([

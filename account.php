@@ -1015,12 +1015,46 @@ function tcgReplayOpponentName(array $state, string $playerId): string {
 function tcgAssertReplaySaveAllowedForAccount(string $uid, array $state, string $playerId): void {
     $ranked = $state['ranked'] ?? null;
     if (!is_array($ranked)) {
+        $seatDiscord = $state['players'][$playerId]['discord_id'] ?? null;
+        if ($seatDiscord !== null && (string)$seatDiscord !== '' && (string)$seatDiscord !== $uid) {
+            throw new Exception('This replay belongs to a different account', 403);
+        }
         return;
     }
     $expected = $ranked[$playerId . '_discord_id'] ?? null;
     if ($expected !== null && (string)$expected !== $uid) {
         throw new Exception('This ranked replay belongs to a different account', 403);
     }
+}
+
+/** Ownership checks when saving a client/VPS-exported replay payload (no local room file). */
+function tcgAssertReplaySaveAllowedFromPayload(string $uid, array $payload): void {
+    $saver = (string)($payload['meta']['saver_player_id'] ?? '');
+    if ($saver !== 'p1' && $saver !== 'p2') {
+        throw new Exception('Replay missing saver_player_id', 400);
+    }
+    $baseline = $payload['baseline'] ?? [];
+    if (!is_array($baseline)) {
+        throw new Exception('Replay missing baseline', 400);
+    }
+    $ranked = $baseline['ranked'] ?? null;
+    if (is_array($ranked)) {
+        $expected = $ranked[$saver . '_discord_id'] ?? null;
+        if ($expected !== null && (string)$expected !== $uid) {
+            throw new Exception('This ranked replay belongs to a different account', 403);
+        }
+        return;
+    }
+    $seatDiscord = $baseline['players'][$saver]['discord_id'] ?? null;
+    if ($seatDiscord !== null && (string)$seatDiscord !== '' && (string)$seatDiscord !== $uid) {
+        throw new Exception('This replay belongs to a different account', 403);
+    }
+}
+
+function tcgReplayOpponentNameFromPayload(array $payload): string {
+    $saver = (string)($payload['meta']['saver_player_id'] ?? 'p1');
+    $opp = ($saver === 'p1') ? 'p2' : 'p1';
+    return (string)($payload['baseline']['players'][$opp]['name'] ?? $opp);
 }
 
 function tcgReplayLoadOwnedRow(string $uid, int $id): array {
@@ -1103,19 +1137,6 @@ function tcgApiReplaySave(array $body): array {
         $wantPreserve = false;
     }
 
-    $state = loadGame($roomId);
-    if (!$state) {
-        throw new Exception('Room not found', 404);
-    }
-    $playerId = getPlayerIdByToken($state, $token);
-    if (!$playerId) {
-        throw new Exception('Invalid player token', 403);
-    }
-    tcgAssertReplaySaveAllowedForAccount($uid, $state, $playerId);
-    if (($state['status'] ?? '') !== 'finished') {
-        throw new Exception('Replay can only be saved after the match finishes', 400);
-    }
-
     $existing = tcgReplayFindOwnedByRoom($uid, $roomId);
     if ($existing) {
         if ($wantPreserve && empty($existing['preserved'])) {
@@ -1130,10 +1151,67 @@ function tcgApiReplaySave(array $body): array {
         ];
     }
 
-    $payload = buildReplayExportPayload($state, $playerId);
+    // Match-primary: finished rooms live on VPS Redis/disk. Prefer a client-exported
+    // payload (already pulled from the match origin), else fetch replay_export from overflow.
+    $payload = null;
+    $playerId = null;
+    $winner = null;
+    $endReason = null;
+    $state = null;
+    $clientReplay = $body['replay'] ?? null;
+    if (is_array($clientReplay)) {
+        validateReplayFile($clientReplay);
+        $metaRoom = strtoupper(trim((string)($clientReplay['meta']['room_id'] ?? '')));
+        if ($metaRoom !== '' && $metaRoom !== $roomId) {
+            throw new Exception('Replay room mismatch', 400);
+        }
+        tcgAssertReplaySaveAllowedFromPayload($uid, $clientReplay);
+        $payload = $clientReplay;
+        $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
+        $winner = $payload['baseline']['winner'] ?? null;
+        $endReason = $payload['baseline']['end_reason'] ?? null;
+    } else {
+        $state = loadGame($roomId);
+        if ($state) {
+            $playerId = getPlayerIdByToken($state, $token);
+            if (!$playerId) {
+                throw new Exception('Invalid player token', 403);
+            }
+            tcgAssertReplaySaveAllowedForAccount($uid, $state, $playerId);
+            if (($state['status'] ?? '') !== 'finished') {
+                throw new Exception('Replay can only be saved after the match finishes', 400);
+            }
+            $payload = buildReplayExportPayload($state, $playerId);
+            $winner = $state['winner'] ?? null;
+            $endReason = $state['end_reason'] ?? null;
+        } else {
+            require_once __DIR__ . '/match_bridge.php';
+            $payload = tcgFetchOverflowReplayExport($roomId, $token);
+            if (!$payload) {
+                throw new Exception('Room not found', 404);
+            }
+            validateReplayFile($payload);
+            tcgAssertReplaySaveAllowedFromPayload($uid, $payload);
+            $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
+            $winner = $payload['baseline']['winner'] ?? null;
+            $endReason = $payload['baseline']['end_reason'] ?? null;
+            if (($payload['baseline']['status'] ?? '') !== 'finished'
+                && ($payload['meta']['phase'] ?? '') !== 'finished'
+                && ($payload['baseline']['phase'] ?? '') !== 'finished') {
+                // Export is only allowed after finish on the match host; still accept
+                // if actions exist (status may be live_judge at terminal).
+                if (($winner === null || $winner === '') && empty($payload['baseline']['winner'])) {
+                    throw new Exception('Replay can only be saved after the match finishes', 400);
+                }
+            }
+        }
+    }
     validateReplayFile($payload);
     if (count($payload['actions'] ?? []) === 0) {
         throw new Exception('No recorded actions yet', 400);
+    }
+    if ($playerId !== 'p1' && $playerId !== 'p2') {
+        throw new Exception('Invalid saver player', 400);
     }
     $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES);
     if ($payloadJson === false) {
@@ -1144,6 +1222,9 @@ function tcgApiReplaySave(array $body): array {
     $db = tcgDb();
     $now = time();
     $preserved = $wantPreserve ? 1 : 0;
+    $opponentName = isset($state) && is_array($state)
+        ? tcgReplayOpponentName($state, $playerId)
+        : tcgReplayOpponentNameFromPayload($payload);
     $db->prepare('INSERT INTO tcg_replays (
             discord_id, room_id, saver_player_id, saver_name, opponent_name, winner, end_reason,
             turn, phase, action_count, duration_seconds, payload_json, saved_at, preserved
@@ -1152,12 +1233,12 @@ function tcgApiReplaySave(array $body): array {
             $uid,
             (string)($meta['room_id'] ?? $roomId),
             $playerId,
-            (string)($meta['saver_name'] ?? ($state['players'][$playerId]['name'] ?? $playerId)),
-            tcgReplayOpponentName($state, $playerId),
-            $state['winner'] ?? null,
-            $state['end_reason'] ?? null,
-            intval($meta['turn'] ?? $state['turn'] ?? 0),
-            (string)($meta['phase'] ?? $state['phase'] ?? ''),
+            (string)($meta['saver_name'] ?? $playerId),
+            $opponentName,
+            $winner,
+            $endReason,
+            intval($meta['turn'] ?? ($payload['baseline']['turn'] ?? 0)),
+            (string)($meta['phase'] ?? ($payload['baseline']['phase'] ?? '')),
             count($payload['actions'] ?? []),
             intval($meta['duration_seconds'] ?? 0),
             $payloadJson,

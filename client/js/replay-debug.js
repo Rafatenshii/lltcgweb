@@ -76,6 +76,22 @@
     }
   };
 
+  /** Export replay JSON from the match host (Hostinger or VPS overflow). */
+  global.exportReplayPayload = async function exportReplayPayload(creds) {
+    const roomId = creds?.roomId || '';
+    const token = creds?.token || '';
+    if (!roomId || !token) {
+      throw new Error(t('replay.noCredentials'));
+    }
+    const r = await global.apiPost('replay_export', {
+      room_id: roomId,
+      token,
+    });
+    if (r.error) throw new Error(r.error);
+    if (!r.replay) throw new Error('No replay payload');
+    return r.replay;
+  };
+
   /** End-of-match replay — account library (realtime) or JSON download. */
   global.saveReplayFile = async function saveReplayFile() {
     if (!global.replaySaveEnabled()) {
@@ -88,12 +104,14 @@
       return;
     }
     try {
+      const replay = await global.exportReplayPayload(creds);
       if (typeof global.isSignedInAccount === 'function' && global.isSignedInAccount()) {
         const saved = await global.accountPost('replay_save', {
           room_id: creds.roomId,
           player_token: creds.token,
           preserve: true,
           kind: 'library',
+          replay,
         });
         if (saved.error) throw new Error(saved.error);
         const summary = saved.replay;
@@ -107,13 +125,6 @@
         return;
       }
 
-      const r = await global.apiPost('replay_export', {
-        room_id: creds.roomId,
-        token: creds.token,
-      });
-      if (r.error) throw new Error(r.error);
-      const replay = r.replay;
-      if (!replay) throw new Error('No replay payload');
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
       const room = replay.meta?.room_id || global.G.roomId || 'room';
       global.downloadJsonFile(`tcg-replay-${room}-${stamp}.json`, replay);
@@ -141,11 +152,13 @@
     }
     if (global.G) G._replayAutosavePendingRoom = creds.roomId;
     try {
+      const replay = await global.exportReplayPayload(creds);
       const saved = await global.accountPost('replay_save', {
         room_id: creds.roomId,
         player_token: creds.token,
         autosave: true,
         kind: 'autosave',
+        replay,
       });
       if (saved.error) throw new Error(saved.error);
       if (global.G) G._replayAutosavedRoom = creds.roomId;

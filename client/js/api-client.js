@@ -91,6 +91,8 @@
   };
   const INGAME_GAME = {
     action: 1, ping: 1, sync_ticket: 1, dry_run_actions: 1,
+    // Finished rooms live on the match host (VPS under match-primary).
+    replay_export: 1,
   };
 
   function sleepMs(ms) {
