@@ -1955,9 +1955,9 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   <div class="ljo-inner">
     <div class="ljo-title llc-splash-title" data-i18n="live.liveJudge" data-text="Live Win/Loss Check">Live Win/Loss Check</div>
     <div class="ljo-scores">
-      <div class="sblock"><div class="snum mine" id="ljo-my-scr">0</div><div class="slbl" data-i18n="live.yourScore">Your Score</div></div>
+      <div class="sblock"><div class="snum mine" id="ljo-my-scr">0</div><div class="slbl" id="ljo-my-lbl" data-i18n="live.yourScore">Your Score</div></div>
       <div class="vssep">VS</div>
-      <div class="sblock"><div class="snum opp" id="ljo-op-scr">0</div><div class="slbl" data-i18n="live.oppScore">Opp Score</div></div>
+      <div class="sblock"><div class="snum opp" id="ljo-op-scr">0</div><div class="slbl" id="ljo-op-lbl" data-i18n="live.oppScore">Opp Score</div></div>
     </div>
     <p class="judge-hint" id="judge-hint"></p>
   </div>
@@ -27982,7 +27982,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=56"></script>
+<script src="client/js/spectacle.js?v=57"></script>
 <script src="client/js/board-render.js?v=4"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>

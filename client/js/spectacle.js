@@ -5775,6 +5775,42 @@ function perfTieSuccessLiveVerdict(ctx) {
   return { text: 'Tie — both earn a Success Live!', cls: 'tie' };
 }
 
+function perfIsObserverView() {
+  return !!G.isSpectator
+    || (typeof isReplayViewing === 'function' && isReplayViewing());
+}
+
+function perfBottomSeatName(ctx, fallback = 'You') {
+  const name = String(ctx?.me?.name || '').trim();
+  if (perfIsObserverView()) return name || fallback;
+  if (typeof t === 'function') {
+    const you = t('game.you');
+    if (you) return you;
+  }
+  return 'You';
+}
+
+function perfTopSeatName(ctx, fallback = 'Opponent') {
+  return String(ctx?.opp?.name || '').trim() || fallback;
+}
+
+function perfWinsLiveLine(ctx, bottomSeatWins) {
+  if (bottomSeatWins) {
+    if (perfIsObserverView()) {
+      return `${perfBottomSeatName(ctx, 'Player')} wins the Live!`;
+    }
+    return 'You win the Live!';
+  }
+  return `${perfTopSeatName(ctx)} wins the Live!`;
+}
+
+function perfLosesLiveLine(ctx) {
+  if (perfIsObserverView()) {
+    return `${perfBottomSeatName(ctx, 'Player')} loses the Live!`;
+  }
+  return 'You lose the Live!';
+}
+
 function perfJudgeVerdict(ctx) {
   const { opp } = ctx;
   const mineOk = playerClearedLiveInCtx(ctx, ctx.myId);
@@ -5784,8 +5820,8 @@ function perfJudgeVerdict(ctx) {
     ? ' (includes Live Score modifiers)'
     : '';
   if (mineOk && oppOk) {
-    if (myScore > oppScore) return { text: 'You win the Live!' + modifierNote, cls: 'win' };
-    if (oppScore > myScore) return { text: `${opp?.name || 'Opponent'} wins the Live!` + modifierNote, cls: 'lose' };
+    if (myScore > oppScore) return { text: perfWinsLiveLine(ctx, true) + modifierNote, cls: 'win' };
+    if (oppScore > myScore) return { text: perfWinsLiveLine(ctx, false) + modifierNote, cls: 'lose' };
     const tieVerdict = perfTieSuccessLiveVerdict(ctx);
     return { text: tieVerdict.text + modifierNote, cls: tieVerdict.cls };
   }
@@ -5794,13 +5830,13 @@ function perfJudgeVerdict(ctx) {
         && !playerHasPerfLogThisRound(ctx.next, ctx.oppId)) {
       return { text: '', cls: 'tie' };
     }
-    return { text: 'You win the Live!', cls: 'win' };
+    return { text: perfWinsLiveLine(ctx, true), cls: 'win' };
   }
   if (oppOk) {
     if (!ctx.mineAttempts.length) {
-      return { text: `${opp?.name || 'Opponent'} wins the Live!`, cls: 'lose' };
+      return { text: perfWinsLiveLine(ctx, false), cls: 'lose' };
     }
-    return { text: 'You lose the Live!', cls: 'lose' };
+    return { text: perfLosesLiveLine(ctx), cls: 'lose' };
   }
   return { text: 'Nobody clears a Live this turn', cls: 'tie' };
 }
@@ -6072,9 +6108,9 @@ function perfJudgeSoloLine(ctx) {
   const verdict = perfJudgeVerdict(ctx);
   const mineOk = playerClearedLiveInCtx(ctx, ctx.myId);
   const oppOk = playerClearedLiveInCtx(ctx, ctx.oppId);
-  if (mineOk && !oppOk) return { text: 'You win the Live!', cls: 'win' };
+  if (mineOk && !oppOk) return { text: perfWinsLiveLine(ctx, true), cls: 'win' };
   if (oppOk && !mineOk) return { text: verdict.text, cls: 'lose' };
-  if (verdict.cls === 'win') return { text: 'You win the Live!', cls: 'win' };
+  if (verdict.cls === 'win') return { text: perfWinsLiveLine(ctx, true), cls: 'win' };
   if (verdict.cls === 'lose') return { text: verdict.text, cls: 'lose' };
   return { text: verdict.text, cls: verdict.cls };
 }
@@ -6276,7 +6312,9 @@ async function perfPopulateBase(ctx) {
   perfClearHeartsBladeUi();
   perfResetYellEffectAccumulators();
   const { prev, next, myId, oppId, me, opp } = ctx;
-  el('perf-mine-lbl').textContent = me?.name || 'You';
+  el('perf-mine-lbl').textContent = perfIsObserverView()
+    ? (me?.name || 'Player')
+    : (me?.name || (typeof t === 'function' ? t('game.you') : 'You') || 'You');
   el('perf-opp-lbl').textContent = opp?.name || 'Opponent';
   const mineLives = el('perf-mine-lives');
   const oppLives = el('perf-opp-lives');
@@ -6410,8 +6448,8 @@ function perfSetJudgeInstant(ctx) {
   const soloEl = el('perf-judge-solo');
   const myNum = el('perf-judge-my-num');
   const oppNum = el('perf-judge-opp-num');
-  el('perf-judge-my-lbl').textContent = 'You';
-  el('perf-judge-opp-lbl').textContent = ctx.opp?.name || 'Opponent';
+  el('perf-judge-my-lbl').textContent = perfBottomSeatName(ctx);
+  el('perf-judge-opp-lbl').textContent = perfTopSeatName(ctx);
   const titleEl = el('perf-judge-title');
   if (bothSucceeded) {
     titleEl?.removeAttribute('hidden');
@@ -6747,8 +6785,8 @@ async function perfAnimateJudge(ctx) {
   el('perf-judge-panel')?.removeAttribute('hidden');
   el('perf-judge-panel')?.classList.add('show');
 
-  el('perf-judge-my-lbl').textContent = 'You';
-  el('perf-judge-opp-lbl').textContent = ctx.opp?.name || 'Opponent';
+  el('perf-judge-my-lbl').textContent = perfBottomSeatName(ctx);
+  el('perf-judge-opp-lbl').textContent = perfTopSeatName(ctx);
 
   const duelEl = el('perf-judge-duel');
   const titleEl = el('perf-judge-title');
@@ -7770,6 +7808,17 @@ function updateLiveJudgeOverlay(s, me, opp, myId) {
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   el('ljo-my-scr').textContent = cached ? G._liveJudgeScores.my : judgeLiveTotalScore(s, myId, me.live_zone);
   el('ljo-op-scr').textContent = cached ? G._liveJudgeScores.opp : judgeLiveTotalScore(s, oppId, opp.live_zone);
+  const myLbl = el('ljo-my-lbl');
+  const opLbl = el('ljo-op-lbl');
+  if (myLbl || opLbl) {
+    if (perfIsObserverView()) {
+      if (myLbl) myLbl.textContent = String(me?.name || 'Player').trim() || 'Player';
+      if (opLbl) opLbl.textContent = String(opp?.name || 'Player').trim() || 'Player';
+    } else {
+      if (myLbl) myLbl.textContent = (typeof t === 'function' ? t('live.yourScore') : null) || 'Your Score';
+      if (opLbl) opLbl.textContent = (typeof t === 'function' ? t('live.oppScore') : null) || 'Opp Score';
+    }
+  }
 }
 
 function notifyBannerIdleWaiters() {
