@@ -13,6 +13,7 @@ function plMuseGapEffectTypes(): array {
         'auto_yell_blade_if_no_blade_count',
         'draw_if_live_zone_count',
         'both_players_trim_then_draw',
+        'both_players_trim_continue',
         'blade_if_success_score_min',
         'mill_then_add_wr_group',
         'reduce_hearts_center_mus_blade_pairs',
@@ -326,6 +327,65 @@ function plMuseGapApplyHandCostReduction(array $state, string $pid, array $card,
     return $base;
 }
 
+/**
+ * Nozomi bp5-007: each player chooses their own discards down to `target_hand`,
+ * then both draw. Owner picks first, opponent second; draws happen once both are done.
+ */
+function plMuseGapStartBothTrimThenDraw(
+    array $state,
+    string $pid,
+    string $name,
+    int $target,
+    int $draw
+): array {
+    $opp = ($pid === 'p1') ? 'p2' : 'p1';
+    $state['_both_trim_chain'] = [
+        'source_name' => $name,
+        'target'      => max(0, $target),
+        'draw'        => max(0, $draw),
+        'order'       => [$pid, $opp],
+        'done'        => [],
+    ];
+    return plMuseGapAdvanceBothTrim($state);
+}
+
+function plMuseGapAdvanceBothTrim(array $state): array {
+    $chain = $state['_both_trim_chain'] ?? null;
+    if (!is_array($chain)) {
+        return $state;
+    }
+    $target = intval($chain['target'] ?? 3);
+    $name = (string)($chain['source_name'] ?? 'Member');
+
+    foreach (($chain['order'] ?? []) as $id) {
+        if (in_array($id, $chain['done'] ?? [], true)) {
+            continue;
+        }
+        $chain['done'][] = $id;
+        $state['_both_trim_chain'] = $chain;
+        $excess = count($state['players'][$id]['hand'] ?? []) - $target;
+        if ($excess > 0) {
+            return startEffectDiscardHandPrompt(
+                $state,
+                $id,
+                $name,
+                $excess,
+                $excess === 1
+                    ? "Choose 1 card to put into the Waiting Room (hand down to $target)."
+                    : "Choose $excess cards to put into the Waiting Room (hand down to $target).",
+                ['then' => ['type' => 'both_players_trim_continue']]
+            );
+        }
+    }
+
+    unset($state['_both_trim_chain']);
+    $drawCount = intval($chain['draw'] ?? 3);
+    foreach (($chain['order'] ?? []) as $id) {
+        drawCardsForPlayer($state, $id, $drawCount);
+    }
+    return addLog($state, "Both players trimmed to $target and drew $drawCount.");
+}
+
 function plMuseGapResolveEffect(array $state, string $pid, array $source, array $ab, array $ctx = []): array {
     $type = $ab['type'] ?? '';
     if (!plMuseGapIsEffectType($type)) return $state;
@@ -415,15 +475,17 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             break;
 
         case 'both_players_trim_then_draw':
-            foreach (['p1', 'p2'] as $id) {
-                $pl = &$state['players'][$id];
-                while (count($pl['hand']) > intval($ab['target_hand'] ?? 3) && !empty($pl['hand'])) {
-                    $pl['waiting_room'][] = array_pop($pl['hand']);
-                }
-                drawCardsForPlayer($state, $id, intval($ab['draw'] ?? 3));
-            }
-            unset($pl);
-            $state = addLog($state, 'Both players trimmed to ' . intval($ab['target_hand'] ?? 3) . ' and drew ' . intval($ab['draw'] ?? 3) . '.');
+            $state = plMuseGapStartBothTrimThenDraw(
+                $state,
+                $pid,
+                $name,
+                intval($ab['target_hand'] ?? 3),
+                intval($ab['draw'] ?? 3)
+            );
+            break;
+
+        case 'both_players_trim_continue':
+            $state = plMuseGapAdvanceBothTrim($state);
             break;
 
         case 'mill_then_add_wr_group':
