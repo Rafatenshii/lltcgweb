@@ -4375,6 +4375,45 @@ function applyCoinFlipStalemate(array &$state): bool {
     return $changed;
 }
 
+/** Snapshot of everything the live_show cursor can move, to detect no-op advances. */
+function liveShowProgressSignature(array $state): string {
+    $show = $state['live_show'] ?? [];
+    return implode('|', [
+        (string)($show['stage'] ?? ''),
+        (string)intval($show['stage_seq'] ?? 0),
+        (string)($state['phase'] ?? ''),
+        empty($state['pending_prompt']) ? '0' : '1',
+        empty($state['_perf_yell_both_done']) ? '0' : '1',
+        (string)($state['status'] ?? ''),
+        (string)count($state['log'] ?? []),
+    ]);
+}
+
+/**
+ * Resume a Performance parked after the Yell step. advanceLiveShowStage() is a
+ * no-op while `_perf_yell_both_done` is unset, so a skill that finished without
+ * continuing the chain would otherwise leave the room on stage `performance`
+ * forever — hearts never checked, no winner, and the room lingers in spectate.
+ */
+function healStalledLiveShowPerformance(array $state): array {
+    if (($state['live_show']['stage'] ?? '') !== 'performance'
+        || !empty($state['pending_prompt'])
+        || !empty($GLOBALS['TUT_PERF_MANUAL_PHASES'])) {
+        return $state;
+    }
+    $pid = $state['_performance_continue']
+        ?? $state['_live_start_perf_pid']
+        ?? ($state['first_player'] ?? 'p1');
+    if (!is_string($pid) || !isset($state['players'][$pid])) {
+        $pid = $state['first_player'] ?? 'p1';
+    }
+    unset($state['_performance_continue']);
+    if (!empty($state['_perf_yell_both_done'])) {
+        return finishYellRetryAndHearts($state);
+    }
+    return continuePerformanceYellPhase($state, $pid);
+}
+
 /** Auto end main / live when PvP phase timers expire. Returns true if state changed. */
 function applyPhaseTimeouts(array &$state): bool {
     if (!empty($state['live_show'])
@@ -4384,8 +4423,18 @@ function applyPhaseTimeouts(array &$state): bool {
             // Solo/CPU: give the human time to finish watching; PvP keeps a tighter sync.
             count(liveShowRequiredAckPlayers($state)) >= 2 ? 25 : 90
         )) {
+        $before = liveShowProgressSignature($state);
         $state = advanceLiveShowStage($state);
-        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        if (liveShowProgressSignature($state) === $before) {
+            $state = healStalledLiveShowPerformance($state);
+        }
+        if (liveShowProgressSignature($state) !== $before) {
+            $state['seq'] = intval($state['seq'] ?? 0) + 1;
+            return true;
+        }
+        // Nothing left to advance: re-arm the window instead of bumping seq every
+        // poll (that starved the phase timers below and spammed clients forever).
+        $state['live_show']['started_at'] = time();
         return true;
     }
     if (!phaseTimerEnabled($state)) {

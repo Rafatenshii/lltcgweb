@@ -98,6 +98,25 @@
       G._liveRoundPostSpectacleReady = true;
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     }
+    // Spectators cannot ack a beat: if the server's live_show cursor stops moving
+    // (stalled room, slow players), drop the chrome instead of freezing the view
+    // on the Yell columns with no hearts and no judge.
+    if (!!G.isSpectator && G._perfSpectacleActive && !G._liveShowRunnerActive
+        && !G.animating && !directorActive && !G._liveSpectacleGateRunning
+        && !G._liveRoundPlaybackActive) {
+      const show = G.gameState?.live_show || null;
+      const beat = show ? `${show.turn}:${show.stage_seq}:${show.stage}` : 'none';
+      if (G._spectatorBeatKey !== beat) {
+        G._spectatorBeatKey = beat;
+        G._spectatorBeatSince = Date.now();
+      } else if (Date.now() - (G._spectatorBeatSince || Date.now()) > 20000) {
+        TCG_DEBUG.warn('poll', 'spectator live_show beat stalled — close spectacle', { beat });
+        if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+        if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
+        if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+        G._spectatorBeatSince = Date.now();
+      }
+    }
     // Soft-heal a director lock left behind after empty LIVE / aborted presentLiveRound.
     if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active
         && !G._liveRoundPlaybackActive && !G._perfSpectacleActive && !G._liveSpectacleGateRunning

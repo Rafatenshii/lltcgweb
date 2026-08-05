@@ -84,6 +84,18 @@ function finishPromptEffects(array $state): array {
     if ($phase === 'live_start_effects') {
         return finishLiveStartEffects($state);
     }
+    // Prompts raised during the Yell step (auto Yell abilities and their chained
+    // mill/search prompts) park the Performance chain on _performance_continue.
+    // Generic resolvers end here, so without this the round stalls after the Yell:
+    // live_show stays on `performance`, hearts never resolve, no winner is judged.
+    if ($phase === 'live_performance_first' || $phase === 'live_performance_second') {
+        $pid = $state['_performance_continue'] ?? null;
+        if (is_string($pid) && isset($state['players'][$pid])
+            && function_exists('continuePerformanceAfterYellAbilities')) {
+            unset($state['_performance_continue']);
+            return continuePerformanceAfterYellAbilities($state, $pid);
+        }
+    }
     return $state;
 }
 
