@@ -320,13 +320,15 @@
 
   global.handleRankedPrReward = function handleRankedPrReward(res) {
     if (!res || typeof res !== 'object') return;
+    // Spectators / observer get_state must never queue the winner's pack popup.
+    if (res.spectator || (global.G && global.G.isSpectator)) return;
     let reward = res.ranked_pr_reward || null;
     // Finished get_state may only carry the nested winner payload.
     if (!reward && res.ranked && typeof res.ranked === 'object') {
       const nested = res.ranked.pr_reward;
       const myId = res.my_id || (global.G && global.G.playerId) || '';
       if (nested && typeof nested === 'object'
-          && nested.reward && (!nested.player_id || nested.player_id === myId)) {
+          && nested.reward && myId && nested.player_id === myId) {
         reward = nested.reward;
       }
     }

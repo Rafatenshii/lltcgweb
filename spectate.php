@@ -576,6 +576,13 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         );
     }
 
+    // Never expose the winner's ranked PR pack payload to spectators — the client
+    // would treat G.playerId (view-as seat) as the winner and queue a false pack popup.
+    unset($filtered['ranked_pr_reward']);
+    if (isset($filtered['ranked']) && is_array($filtered['ranked'])) {
+        unset($filtered['ranked']['pr_reward']);
+    }
+
     return enrichReplayFieldsForClient($filtered, $state);
 }
 

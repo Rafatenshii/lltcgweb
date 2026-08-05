@@ -2165,7 +2165,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=28"></script>
+<script src="client/js/api-client.js?v=29"></script>
 <script src="client/js/ranked-pr-reward.js?v=4"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -27405,6 +27405,10 @@ function abortSpectatorBootUi() {
 async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
   resetMatchTransientState();
   G.isSpectator = true;
+  // Never carry a prior ranked-win PR popup into / out of a spectate session.
+  G.lastRankedPrReward = null;
+  if (A) A.pendingRankedPrReward = null;
+  try { sessionStorage.removeItem('tcg_pending_ranked_pr_reward'); } catch (e) { /* ignore */ }
   G._spectateReturnScreen = G._spectateReturnScreen || 'lobby';
   G._spectateP1Name = p1Name || null;
   G._spectateP2Name = p2Name || null;

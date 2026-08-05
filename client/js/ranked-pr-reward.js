@@ -74,6 +74,7 @@
   }
 
   function queueRankedPrReward(reward) {
+    if (global.G && global.G.isSpectator) return;
     if (!rankedPrRewardHasCard(reward)) return;
     global.A = global.A || {};
     global.A.pendingRankedPrReward = reward;
