@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stand up capped TCG API overflow on VPS (Plan B). Does not flip Hostinger primary.
 set -euo pipefail
-VPS_HOST="${VPS_HOST:-root@45.76.173.164}"
+VPS_HOST="${VPS_HOST:-root@stream.loveliveradio.ca}"
 VPS_DIR="${VPS_TCG_DIR:-/opt/lltcgweb}"
 REPO_URL="${LLTCGWEB_REPO:-https://github.com/Yumegipsu/lltcgweb.git}"
 LOCAL_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

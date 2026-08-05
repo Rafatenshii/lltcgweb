@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Cut over TCG dynamic API from Hostinger PHP to VPS Docker (:5003).
 # Run from Chiichan repo root on an operator machine with:
-#   - SSH to VPS (root@45.76.173.164 or configured host)
+#   - SSH to VPS (VPS_HOST, defaults to the stream host by name — never an IP literal)
 #   - Hostinger FTP/.env.deploy for marker upload
 #   - Local lltcgweb sibling with data/ to seed (optional)
 #
 # Does NOT restart wrapped-api or chisato. Starts/updates lltcgweb-api container only.
 set -euo pipefail
 
-VPS_HOST="${VPS_HOST:-root@45.76.173.164}"
+VPS_HOST="${VPS_HOST:-root@stream.loveliveradio.ca}"
 VPS_TCG_DIR="${VPS_TCG_DIR:-/home/discord/bots/lltcgweb}"
 LLTCGWEB_ROOT="${LLTCGWEB_ROOT:-$(cd "$(dirname "$0")/../../lltcgweb" 2>/dev/null && pwd || true)}"
 if [[ -z "${LLTCGWEB_ROOT}" || ! -d "${LLTCGWEB_ROOT}" ]]; then
@@ -51,7 +51,8 @@ ssh "${VPS_HOST}" "mkdir -p '${VPS_TCG_DIR}' && cd '${VPS_TCG_DIR}' && docker co
 
 echo "==> Health check"
 for i in 1 2 3 4 5 6 7 8 9 10; do
-  if curl -fsS --connect-timeout 3 "http://45.76.173.164:5003/api.php?action=ping" >/dev/null 2>&1; then
+  # :5003 is bound to the VPS loopback — probe it from the host over SSH.
+  if ssh "${VPS_HOST}" "curl -fsS --connect-timeout 3 'http://127.0.0.1:5003/api.php?action=ping'" >/dev/null 2>&1; then
     echo "VPS TCG API healthy on :5003"
     break
   fi

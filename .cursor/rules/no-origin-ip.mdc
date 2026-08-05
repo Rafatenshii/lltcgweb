@@ -1,0 +1,31 @@
+---
+description: Never commit the VPS origin IP to this public repo
+alwaysApply: true
+---
+
+# No raw host IPs in this repo
+
+**This repository is public.** Never write the VPS / match-host origin IP address
+(or any other server IP) into tracked files — code, config, `.htaccess`, scripts,
+docs, comments, or commit messages. That applies even to lines that are commented
+out or gated behind a marker file.
+
+Address the match host by name or by an overridable variable instead:
+
+```bash
+# ❌ BAD — origin IP literal in a public file
+VPS_HOST="${VPS_HOST:-root@203.0.113.10}"
+curl "http://203.0.113.10:5003/api.php?action=ping"
+
+# ✅ GOOD — hostname default, operator can override
+VPS_HOST="${VPS_HOST:-root@stream.loveliveradio.ca}"
+ssh "$VPS_HOST" "curl -fsS 'http://127.0.0.1:5003/api.php?action=ping'"
+```
+
+- Public HTTP endpoints: use `https://stream.loveliveradio.ca/tcg/api` (its nginx
+  TLS front), never `http://<ip>:<port>`.
+- Loopback (`127.0.0.1`) and container service names (`redis`) are fine.
+- Anything that must carry a real address belongs in a gitignored operator file
+  (`.env.deploy`, `tcg_sync.local.php`) or an environment variable.
+- Same for user-visible client code: `client/js/**` and `index.html` may only
+  reference public hostnames.
