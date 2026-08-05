@@ -122,6 +122,32 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
     return $live;
 }
 
+/**
+ * Cheap pre-filter before paying for a full state load.
+ *
+ * Listing every room with loadGame() made spectate_list take ~30s on Hostinger
+ * (thousands of dead games/*.json), which in turn timed out ranked_status.
+ * A spectatable room always has a fresh presence file: tcgIsSpectatableHumanGame()
+ * requires at least one seat polling within PRESENCE_DISCONNECT_SEC, and presence
+ * is file-backed on both the file and Redis stores.
+ */
+function tcgSpectateRoomHasFreshPresence(string $roomId, ?int $now = null): bool {
+    if (!defined('GAMES_DIR')) {
+        return true;
+    }
+    $safe = preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId));
+    if ($safe === '') {
+        return false;
+    }
+    $file = GAMES_DIR . 'presence_' . $safe . '.json';
+    $mtime = @filemtime($file);
+    if ($mtime === false) {
+        return false;
+    }
+    $grace = defined('PRESENCE_DISCONNECT_SEC') ? PRESENCE_DISCONNECT_SEC : 120;
+    return (($now ?? time()) - $mtime) < $grace;
+}
+
 function tcgIsSpectatableHumanGame(array $state, string $roomId = ''): bool {
     if (!tcgIsActiveGameplayStatus($state)) {
         return false;
@@ -219,6 +245,8 @@ function tcgSpectatableMatchRow(string $roomId, array $state, string $category):
         'p2_name' => (string)($state['players']['p2']['name'] ?? 'Player 2'),
         'turn' => intval($state['turn'] ?? 0),
         'phase' => (string)($state['phase'] ?? ''),
+        // Seats actually polling — hub "in ranked games" must not assume 2 per room.
+        'live_players' => tcgPvpLivePlayerCount($state, $roomId),
         'spectators' => tcgLiveSpectatorCount($roomId),
         'seq' => intval($state['seq'] ?? 0),
         'p1_discord' => $p1Discord,
@@ -271,6 +299,9 @@ function tcgListRankedSpectatableMatches(): array {
 
     // Prefer live GameStore (Redis under match-primary) over Hostinger-only file checks.
     foreach (tcgListActiveRoomIdsForSpectate() as $roomId) {
+        if (!tcgSpectateRoomHasFreshPresence($roomId)) {
+            continue;
+        }
         $state = loadGame($roomId);
         if (!is_array($state) || ($state['mode'] ?? '') !== 'ranked') {
             continue;
@@ -289,6 +320,9 @@ function tcgListRankedSpectatableMatches(): array {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($row['room_id'] ?? '')) ?? '');
             if ($roomId === '' || isset($seen[$roomId])) {
+                continue;
+            }
+            if (!tcgSpectateRoomHasFreshPresence($roomId)) {
                 continue;
             }
             $state = loadGame($roomId);
@@ -320,6 +354,9 @@ function tcgListCasualSpectatableMatches(): array {
             continue;
         }
         $seen[$roomId] = true;
+        if (!tcgSpectateRoomHasFreshPresence($roomId)) {
+            continue;
+        }
         $state = loadGame($roomId);
         if (!is_array($state)) {
             continue;
@@ -335,14 +372,30 @@ function tcgListCasualSpectatableMatches(): array {
     return $matches;
 }
 
+/** Cache path for a spectate list category (hub polls must not rescan every room). */
+function tcgSpectateListCacheFile(string $category): string {
+    require_once __DIR__ . '/config/paths.php';
+    $safe = preg_replace('/[^a-z]/', '', strtolower($category));
+    return tcgPath('data') . 'spectate_list_' . $safe . '.json';
+}
+
 function tcgListSpectatableMatches(string $category): array {
     $category = strtolower(trim($category));
+    if ($category !== 'ranked' && $category !== 'casual' && $category !== 'unranked') {
+        throw new Exception('category must be ranked or casual');
+    }
+    $cacheFile = tcgSpectateListCacheFile($category);
+    $cacheAge = is_file($cacheFile) ? (time() - (int)@filemtime($cacheFile)) : null;
+    if ($cacheAge !== null && $cacheAge < 5) {
+        $cached = json_decode((string)@file_get_contents($cacheFile), true);
+        if (is_array($cached) && isset($cached['matches']) && is_array($cached['matches'])) {
+            return $cached['matches'];
+        }
+    }
     if ($category === 'ranked') {
         $matches = tcgListRankedSpectatableMatches();
-    } elseif ($category === 'casual' || $category === 'unranked') {
-        $matches = tcgListCasualSpectatableMatches();
     } else {
-        throw new Exception('category must be ranked or casual');
+        $matches = tcgListCasualSpectatableMatches();
     }
     $matches = tcgDedupSpectatableMatchesByPlayers($matches);
     usort($matches, static function (array $a, array $b): int {
@@ -353,6 +406,7 @@ function tcgListSpectatableMatches(string $category): array {
         }
         return strcmp((string)($a['room_id'] ?? ''), (string)($b['room_id'] ?? ''));
     });
+    @file_put_contents($cacheFile, json_encode(['matches' => $matches]), LOCK_EX);
     return $matches;
 }
 

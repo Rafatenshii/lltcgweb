@@ -244,12 +244,58 @@ function tcgOverflowMatchApiBase(): string {
 }
 
 /**
+ * Circuit breaker for interactive overflow lookups (ranked_status / queue stats).
+ *
+ * A slow or unreachable VPS used to cost one full curl timeout per probe inside a
+ * single hub request, which blew past the client's 12s budget ("Request timed out").
+ * After a failure, short-circuit further probes for a cooldown window.
+ */
+function tcgOverflowProbeCooldownFile(): string {
+    require_once __DIR__ . '/config/paths.php';
+    return tcgPath('data') . 'overflow_probe_cooldown.json';
+}
+
+function tcgOverflowProbeUnavailable(): bool {
+    static $memo = null;
+    if ($memo !== null && $memo > time()) {
+        return true;
+    }
+    $file = tcgOverflowProbeCooldownFile();
+    $mtime = @filemtime($file);
+    if ($mtime === false) {
+        return false;
+    }
+    return (time() - $mtime) < 30;
+}
+
+function tcgNoteOverflowProbeFailure(): void {
+    @file_put_contents(tcgOverflowProbeCooldownFile(), (string)time(), LOCK_EX);
+}
+
+function tcgNoteOverflowProbeSuccess(): void {
+    $file = tcgOverflowProbeCooldownFile();
+    if (is_file($file)) {
+        @unlink($file);
+    }
+}
+
+/**
  * Probe VPS ranked room. Returns live|finished|missing|unknown.
  */
 function tcgProbeOverflowRankedRoom(string $roomId, string $token): string {
     $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
     $token = trim($token);
     if ($roomId === '' || $token === '') {
+        return 'unknown';
+    }
+    // Same room is probed by queue status and queue stats in one request.
+    static $memo = [];
+    $memoKey = $roomId . '|' . substr(hash('sha256', $token), 0, 12);
+    if (isset($memo[$memoKey])) {
+        return $memo[$memoKey];
+    }
+    if (tcgOverflowProbeUnavailable()) {
+        // 'unknown' keeps pending rows intact — never clears a match on a blip.
         return 'unknown';
     }
     $url = tcgOverflowMatchApiBase() . '/api.php?action=get_state'
@@ -265,36 +311,38 @@ function tcgProbeOverflowRankedRoom(string $roomId, string $token): string {
         }
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 5,
         ]);
         $raw = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
     } else {
-        $ctx = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => true]]);
+        $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
         $raw = @file_get_contents($url, false, $ctx);
         if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
             $code = (int)$m[1];
         }
     }
     if (!is_string($raw) || $code < 200 || $code >= 500) {
-        return 'unknown';
+        tcgNoteOverflowProbeFailure();
+        return $memo[$memoKey] = 'unknown';
     }
+    tcgNoteOverflowProbeSuccess();
     $decoded = json_decode($raw, true);
     if (!is_array($decoded)) {
-        return 'unknown';
+        return $memo[$memoKey] = 'unknown';
     }
     if (!empty($decoded['error']) && preg_match('/room not found/i', (string)$decoded['error'])) {
-        return 'missing';
+        return $memo[$memoKey] = 'missing';
     }
     if (($decoded['status'] ?? '') === 'finished') {
-        return 'finished';
+        return $memo[$memoKey] = 'finished';
     }
     if (!empty($decoded['my_id']) || ($decoded['mode'] ?? '') === 'ranked') {
-        return 'live';
+        return $memo[$memoKey] = 'live';
     }
-    return 'unknown';
+    return $memo[$memoKey] = 'unknown';
 }
 
 /**
@@ -304,6 +352,9 @@ function tcgProbeOverflowRankedRoom(string $roomId, string $token): string {
 function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
     require_once __DIR__ . '/game_mode.php';
     $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
+    if (tcgOverflowProbeUnavailable()) {
+        return null;
+    }
     $url = tcgOverflowMatchApiBase() . '/api.php?action=spectate_list';
     $payload = json_encode(['category' => 'ranked'], JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
@@ -321,8 +372,8 @@ function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => $payload,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_TIMEOUT => 6,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT => 4,
         ]);
         $raw = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -333,7 +384,7 @@ function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
                 'method' => 'POST',
                 'header' => "Content-Type: application/json\r\n",
                 'content' => $payload,
-                'timeout' => 6,
+                'timeout' => 4,
                 'ignore_errors' => true,
             ],
         ]);
@@ -343,8 +394,10 @@ function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
         }
     }
     if (!is_string($raw) || $code < 200 || $code >= 300) {
+        tcgNoteOverflowProbeFailure();
         return null;
     }
+    tcgNoteOverflowProbeSuccess();
     $decoded = json_decode($raw, true);
     if (!is_array($decoded) || !isset($decoded['matches']) || !is_array($decoded['matches'])) {
         return null;
@@ -358,7 +411,13 @@ function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
         if ($mMode !== $gameMode) {
             continue;
         }
-        // Each spectatable ranked room is 1v1.
+        // Count seats that are actually polling; a room with one disconnected
+        // player must not report two people in ranked games. Older match hosts
+        // do not send live_players — fall back to the 1v1 assumption.
+        if (array_key_exists('live_players', $m)) {
+            $inGame += max(0, min(2, intval($m['live_players'])));
+            continue;
+        }
         $inGame += 2;
     }
     return $inGame;

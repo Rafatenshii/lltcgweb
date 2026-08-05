@@ -12356,6 +12356,11 @@ async function onRankedDeckChange() {
 async function pollRankedStatus() {
   try {
     const res = await accountGet('ranked_status', { game_mode: rankedGameMode() });
+    A.rankedPollFails = 0;
+    if (A.rankedPollErrShown && el('ranked-err')) {
+      el('ranked-err').textContent = '';
+      A.rankedPollErrShown = false;
+    }
     const outcome = applyRankedStatusResponse(res);
     if (outcome === 'matched') {
       const st = res.ranked;
@@ -12392,7 +12397,16 @@ async function pollRankedStatus() {
       await enterRankedMatch(st);
     }
   } catch (e) {
-    if (el('ranked-err')) el('ranked-err').textContent = e.message;
+    // Queue polling is best-effort: one slow hub reply must not read as a failed
+    // search. Only surface a timeout / 5xx once it keeps repeating.
+    A.rankedPollFails = (A.rankedPollFails || 0) + 1;
+    const transient = typeof isTransientAccountError === 'function'
+      ? isTransientAccountError(e)
+      : !!(e && e.transient);
+    if (el('ranked-err') && (!transient || A.rankedPollFails >= 3)) {
+      el('ranked-err').textContent = e.message;
+      A.rankedPollErrShown = true;
+    }
   }
 }
 

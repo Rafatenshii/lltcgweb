@@ -513,17 +513,61 @@ function tcgRankedGameFilePath(string $roomId): string {
     return tcgPath('games') . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
 }
 
-/** Public queue stats for the ranked menu (waiting in lobby vs in active ranked games). */
+/** Last computed stats regardless of age (fallback while another worker recomputes). */
+function tcgQueueStatsFromCache(string $cacheFile, string $gameMode, ?int $maxAgeSec = null): ?array {
+    if (!is_file($cacheFile)) {
+        return null;
+    }
+    if ($maxAgeSec !== null && (time() - (int)@filemtime($cacheFile)) >= $maxAgeSec) {
+        return null;
+    }
+    $cached = json_decode((string)@file_get_contents($cacheFile), true);
+    if (!is_array($cached) || !isset($cached['waiting'], $cached['in_game'])) {
+        return null;
+    }
+    $cached['game_mode'] = $gameMode;
+    return $cached;
+}
+
+/**
+ * Public queue stats for the ranked menu (waiting in lobby vs in active ranked games).
+ *
+ * Hot path for ranked_status polling: it must never block on the VPS or on a long
+ * pending-row probe loop, or the client aborts at 12s with "Request timed out".
+ */
 function tcgQueuePublicStats(?string $gameMode = null): array {
     $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
     $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $gameMode) . '.json';
-    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 5) {
-        $cached = json_decode((string)file_get_contents($cacheFile), true);
-        if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
-            return $cached;
+    $fresh = tcgQueueStatsFromCache($cacheFile, $gameMode, 5);
+    if ($fresh !== null) {
+        return $fresh;
+    }
+
+    // Single-flight: only one request recomputes; the rest serve the last value.
+    $lockFile = $cacheFile . '.lock';
+    $lock = @fopen($lockFile, 'c');
+    $owner = $lock !== false && @flock($lock, LOCK_EX | LOCK_NB);
+    if (!$owner) {
+        if ($lock !== false) {
+            fclose($lock);
+        }
+        $stale = tcgQueueStatsFromCache($cacheFile, $gameMode);
+        if ($stale !== null) {
+            return $stale;
         }
     }
 
+    try {
+        return tcgComputeQueuePublicStats($gameMode, $cacheFile);
+    } finally {
+        if ($owner && $lock !== false) {
+            @flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+}
+
+function tcgComputeQueuePublicStats(string $gameMode, string $cacheFile): array {
     $db = tcgDb();
     $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
     $stmt->execute([$gameMode]);
@@ -540,8 +584,17 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
         return $stats;
     }
 
+    // Overflow unreachable: reuse the last known in_game rather than probing every
+    // pending row over HTTP (that is what pushed ranked_status past the client budget).
+    $stale = tcgQueueStatsFromCache($cacheFile, $gameMode, 60);
+    if ($stale !== null) {
+        $stale['waiting'] = $waiting;
+        return $stale;
+    }
+
     $inGame = 0;
     $seen = [];
+    $probeDeadline = microtime(true) + 2.0;
     $stmt = $db->prepare(
         'SELECT room_id, p1_id, p2_id, p1_token, p2_token, game_mode
          FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?'
@@ -568,6 +621,10 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
             }
             $countPlayers = true;
         } else {
+            if (microtime(true) >= $probeDeadline) {
+                // Budget spent: leave the rest for the next refresh instead of stalling.
+                break;
+            }
             $token = (string)($row['p1_token'] ?? '');
             if ($token === '') {
                 $token = (string)($row['p2_token'] ?? '');
