@@ -99,14 +99,11 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
     }
     $now = $now ?? time();
     $presence = readPresence($roomId);
-    $path = gameFile($roomId);
-    // Match-primary Redis rooms often have no games/{id}.json — gameAge must stay unset
-    // so we do not treat age=0 as "brand new" and list every abandoned Redis room.
-    $hasLocalFile = is_file($path);
-    $gameAge = $hasLocalFile ? ($now - filemtime($path)) : null;
     $grace = defined('PRESENCE_DISCONNECT_SEC') ? PRESENCE_DISCONNECT_SEC : 120;
-    $noShowSec = (defined('PRESENCE_NO_SHOW_SEC') ? PRESENCE_NO_SHOW_SEC : 300) * 2;
 
+    // Only count seats with a fresh player poll. Redis snapshot games/*.json mtime must
+    // NOT mark everyone live — rematch leaves the previous room's snapshot fresh and
+    // duplicated the same pair (or same player) in the spectate list.
     $live = 0;
     foreach (['p1', 'p2'] as $pid) {
         $player = $state['players'][$pid] ?? null;
@@ -122,64 +119,6 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
             $live++;
         }
     }
-
-    if ($live > 0) {
-        return $live;
-    }
-
-    // Fresh local/snapshot file grace (Hostinger drain or Redis disk snapshot).
-    if ($hasLocalFile && $gameAge !== null && $gameAge < $grace) {
-        foreach (['p1', 'p2'] as $pid) {
-            $player = $state['players'][$pid] ?? null;
-            if ($player && !isCpuPlayer($player)) {
-                $live++;
-            }
-        }
-        return $live;
-    }
-
-    // Long turns between saves: ranked Hostinger file rooms only.
-    if ($hasLocalFile && $gameAge !== null
-        && ($state['mode'] ?? '') === 'ranked' && $gameAge < 45 * 60) {
-        foreach (['p1', 'p2'] as $pid) {
-            $player = $state['players'][$pid] ?? null;
-            if ($player && !isCpuPlayer($player)) {
-                $live++;
-            }
-        }
-        return $live;
-    }
-
-    // Redis-only rooms: presence file mtime means someone polled recently.
-    if (!$hasLocalFile) {
-        $presenceFile = GAMES_DIR . 'presence_'
-            . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
-        if (is_file($presenceFile) && ($now - filemtime($presenceFile)) < $grace) {
-            foreach (['p1', 'p2'] as $pid) {
-                $player = $state['players'][$pid] ?? null;
-                if ($player && !isCpuPlayer($player)) {
-                    $live++;
-                }
-            }
-            return $live;
-        }
-        return 0;
-    }
-
-    if ($gameAge !== null && $gameAge < $noShowSec) {
-        foreach (['p1', 'p2'] as $pid) {
-            $player = $state['players'][$pid] ?? null;
-            if (!$player || isCpuPlayer($player)) {
-                continue;
-            }
-            $token = (string)($player['token'] ?? '');
-            $last = intval($presence[$token] ?? 0);
-            if ($last > 0 && ($now - $last) < 60) {
-                $live++;
-            }
-        }
-    }
-
     return $live;
 }
 
@@ -198,14 +137,80 @@ function tcgIsSpectatableHumanGame(array $state, string $roomId = ''): bool {
     if (!$p1 || !$p2 || isCpuPlayer($p1) || isCpuPlayer($p2)) {
         return false;
     }
-    // Ranked and casual both need at least one live human (filters abandoned Redis rooms).
     if ($roomId !== '' && tcgPvpLivePlayerCount($state, $roomId) < 1) {
         return false;
     }
     return true;
 }
 
+/**
+ * One seat cannot appear in two spectate rows (rematch ghosts / overlapping rooms).
+ * Keep the furthest-along room (seq, then turn) when the same Discord id overlaps.
+ *
+ * @param list<array<string,mixed>> $matches
+ * @return list<array<string,mixed>>
+ */
+function tcgDedupSpectatableMatchesByPlayers(array $matches): array {
+    usort($matches, static function (array $a, array $b): int {
+        $sa = intval($a['seq'] ?? 0);
+        $sb = intval($b['seq'] ?? 0);
+        if ($sa !== $sb) {
+            return $sb <=> $sa;
+        }
+        $ta = intval($a['turn'] ?? 0);
+        $tb = intval($b['turn'] ?? 0);
+        if ($ta !== $tb) {
+            return $tb <=> $ta;
+        }
+        return strcmp((string)($a['room_id'] ?? ''), (string)($b['room_id'] ?? ''));
+    });
+
+    $used = [];
+    $out = [];
+    foreach ($matches as $row) {
+        $ids = [];
+        foreach (['p1_discord', 'p2_discord'] as $col) {
+            $id = trim((string)($row[$col] ?? ''));
+            if ($id !== '') {
+                $ids[] = $id;
+            }
+        }
+        if ($ids === []) {
+            $n1 = strtolower(trim((string)($row['p1_name'] ?? '')));
+            $n2 = strtolower(trim((string)($row['p2_name'] ?? '')));
+            if ($n1 !== '') {
+                $ids[] = 'n:' . $n1;
+            }
+            if ($n2 !== '') {
+                $ids[] = 'n:' . $n2;
+            }
+        }
+        $overlap = false;
+        foreach ($ids as $id) {
+            if (isset($used[$id])) {
+                $overlap = true;
+                break;
+            }
+        }
+        if ($overlap) {
+            continue;
+        }
+        foreach ($ids as $id) {
+            $used[$id] = true;
+        }
+        unset($row['seq'], $row['p1_discord'], $row['p2_discord']);
+        $out[] = $row;
+    }
+    return $out;
+}
+
 function tcgSpectatableMatchRow(string $roomId, array $state, string $category): array {
+    $p1Discord = (string)($state['players']['p1']['discord_id']
+        ?? $state['ranked']['p1_discord_id']
+        ?? '');
+    $p2Discord = (string)($state['players']['p2']['discord_id']
+        ?? $state['ranked']['p2_discord_id']
+        ?? '');
     return [
         'room_id' => $roomId,
         'category' => $category,
@@ -214,6 +219,9 @@ function tcgSpectatableMatchRow(string $roomId, array $state, string $category):
         'turn' => intval($state['turn'] ?? 0),
         'phase' => (string)($state['phase'] ?? ''),
         'spectators' => tcgLiveSpectatorCount($roomId),
+        'seq' => intval($state['seq'] ?? 0),
+        'p1_discord' => $p1Discord,
+        'p2_discord' => $p2Discord,
     ];
 }
 
@@ -330,6 +338,7 @@ function tcgListSpectatableMatches(string $category): array {
     } else {
         throw new Exception('category must be ranked or casual');
     }
+    $matches = tcgDedupSpectatableMatchesByPlayers($matches);
     usort($matches, static function (array $a, array $b): int {
         $ta = intval($a['turn'] ?? 0);
         $tb = intval($b['turn'] ?? 0);
