@@ -684,6 +684,14 @@
     "twicePerTurn": {
       "title": "Dos veces por turno",
       "body": "Puedes usar este efecto hasta dos veces en cada turno."
+    },
+    "leftSide": {
+      "title": "Lado izquierdo",
+      "body": "Solo aplica si este Miembro está en un espacio izquierdo del Escenario cuando el efecto se resuelve."
+    },
+    "rightSide": {
+      "title": "Lado derecho",
+      "body": "Solo aplica si este Miembro está en un espacio derecho del Escenario cuando el efecto se resuelve."
     }
   },
   "heart": {

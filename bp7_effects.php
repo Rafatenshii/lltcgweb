@@ -910,6 +910,72 @@ function bp7StartChoices(
 }
 
 /* ------------------------------------------------------------------ *
+ * Activated entry point
+ * ------------------------------------------------------------------ */
+
+/**
+ * [Activated] hook for BP07 abilities, called from `actionActivateAbility`.
+ *
+ * `actionActivateAbility` runs its own per-product dispatch chain before a legacy
+ * type switch, so BP07 activated types are unreachable from `resolveAbilityEffect`
+ * alone and would raise "Ability type not implemented".
+ *
+ * @return array|null New state, or null when `$ab` is not a BP07 activated type.
+ */
+function bp7ResolveActivatedAbility(
+    array $state,
+    string $pid,
+    array &$p,
+    array $member,
+    $slot,
+    array $ab,
+    int|string $abilityIdx,
+    array $data
+): ?array {
+    $type = $ab['type'] ?? '';
+    if (!bp7IsEffectType($type) || in_array($type, bp7ContinuousOnlyTypes(), true)) {
+        return null;
+    }
+
+    // `once_per_turn` is checked by the caller; `max_uses_per_turn` is ours to enforce.
+    $maxUses = intval($ab['max_uses_per_turn'] ?? 0);
+    $useKey = '_auto_uses_' . $abilityIdx;
+    if ($maxUses > 0 && intval($member[$useKey] ?? 0) >= $maxUses) {
+        throw new Exception('Ability already used the maximum number of times this turn');
+    }
+
+    $cost = intval($ab['energy_cost'] ?? 0);
+    if ($cost > 0 && !payEnergyCost($p, $cost)) {
+        throw new Exception("Need $cost active Energy");
+    }
+
+    // Costs are paid inside the effect, so commit the use counters before resolving:
+    // an abandoned prompt must not hand back a free re-mill / re-discard.
+    if (!empty($ab['once_per_turn'])) {
+        markAbilityUsed($member, $abilityIdx);
+    }
+    if ($maxUses > 0) {
+        $member[$useKey] = intval($member[$useKey] ?? 0) + 1;
+    }
+    if ($slot !== null && $slot !== '' && array_key_exists($slot, $p['stage'] ?? [])) {
+        $p['stage'][$slot] = $member;
+    }
+
+    $state = bp7ResolveEffect($state, $pid, $member, $ab, [
+        'slot'          => $slot ?? '',
+        'phase'         => 'activated',
+        'ability_index' => $abilityIdx,
+        'data'          => $data,
+    ]);
+
+    if (!empty($state['pending_prompt'])) {
+        $state['pending_prompt']['ability_index'] = $abilityIdx;
+        $state['pending_prompt']['source_slot'] = $slot ?? '';
+    }
+    return $state;
+}
+
+/* ------------------------------------------------------------------ *
  * Effect resolution
  * ------------------------------------------------------------------ */
 

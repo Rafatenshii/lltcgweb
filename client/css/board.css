@@ -2666,6 +2666,8 @@ body.deck-card-preview #modal-card{z-index:970}
 .rule-kw--once-per-turn .rule-kw-label{color:rgba(255,255,255,.78)}
 .rule-kw--twice-per-turn .rule-kw-label{color:rgba(255,255,255,.78)}
 .rule-kw--center .rule-kw-label{color:#FDE047}
+.rule-kw--left-side .rule-kw-label{color:#FDE047}
+.rule-kw--right-side .rule-kw-label{color:#FDE047}
 .rule-kw--yell .rule-kw-label{color:#7AE582}
 .rule-kw--wait .rule-kw-label{color:#38BDF8}
 .card-hover-panel .hc-text .rule-kw--on-enter,

@@ -25,3 +25,11 @@
 <IfModule mod_authz_core.c>
   RedirectMatch 403 (?i)^/tcg/(data|games|experiment_decks)/
 </IfModule>
+
+# Developer trees are deployed alongside the app but must never be served: the PHP
+# under tests/ and scripts/ fatals when hit over HTTP (each one burns a worker and
+# an error-log entry), and the docs describe deploy hosts. Browser assets live in
+# client/, assets/ and icons/, so nothing here is needed by the page.
+RedirectMatch 403 (?i)^/tcg/(tests|docs|scripts|src|migrations|node_modules|\.git)(/|$)
+RedirectMatch 403 (?i)^/tcg/.*\.(md|lock|dist|sql|sh|py|mjs)$
+RedirectMatch 403 (?i)^/tcg/(composer\.json|package(-lock)?\.json|phpunit\.xml)$

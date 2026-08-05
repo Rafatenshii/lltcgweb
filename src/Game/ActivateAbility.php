@@ -126,6 +126,11 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         return $spBp5Activated;
     }
 
+    $bp7Activated = bp7ResolveActivatedAbility($state, $pid, $p, $member, $slot, $ab, $abilityIdx, $data);
+    if ($bp7Activated !== null) {
+        return $bp7Activated;
+    }
+
     if (($ab['type'] ?? '') === 'hand_discard_named_blade') {
         if ($zone !== 'hand') throw new Exception('Activate from hand only');
         return hsResolveHandDiscardNamedBlade($state, $pid, $p, $ab, $data);
@@ -1169,6 +1174,30 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         } elseif (empty($state['pending_prompt'])) {
             markAbilityUsed($member, $abilityIdx);
             persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+        }
+    } elseif (($ab['type'] ?? '') === 'optional_pay_energy') {
+        // As an [Activated] ability the opt-in is the activation itself, so the
+        // Energy is paid up front rather than behind a yes/no prompt.
+        $cost = intval($ab['cost'] ?? $ab['energy_cost'] ?? 0);
+        if ($cost > 0 && !payEnergyCost($p, $cost)) {
+            throw new Exception("Need $cost active Energy");
+        }
+        if ($cost > 0) {
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . ($member['name_en'] ?? $member['name'] ?? 'Member') . "] paid $cost Energy.");
+        }
+        markAbilityUsed($member, $abilityIdx);
+        persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+        if (is_array($ab['then'] ?? null)) {
+            $state = resolveAbilityEffect($state, $pid, $member, $ab['then'], [
+                'slot'          => $slot ?? '',
+                'phase'         => 'activated',
+                'ability_index' => $abilityIdx,
+            ]);
+        }
+        if (!empty($state['pending_prompt'])) {
+            $state['pending_prompt']['ability_index'] = $abilityIdx;
+            $state['pending_prompt']['source_slot'] = $slot ?? '';
         }
     } else {
         throw new Exception('Ability type not implemented');

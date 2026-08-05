@@ -186,7 +186,7 @@ try {
         case 'get_state':    getStatePolling();                        break;
         case 'action':       echo json_encode(handleAction($body));   break;
         case 'dry_run_actions': echo json_encode(handleDryRunActions($body)); break;
-        case 'get_cards':    echo getCards();                          break;
+        case 'get_cards':    sendCards();                              break;
         case 'preview_random_deck': echo json_encode(previewRandomDeck(
             CARDS_FILE,
             trim((string)($_GET['group'] ?? $body['group'] ?? '')) ?: null
@@ -224,6 +224,35 @@ try {
 // ─────────────────────────────────────────────
 // Card Data
 // ─────────────────────────────────────────────
+
+/**
+ * The catalog is ~2MB per locale and only changes on deploy, but it shipped with no
+ * validators, so every page load and every locale switch re-sent all of it and the
+ * CDN marked it DYNAMIC. ETag + max-age lets repeat loads come from cache instead of
+ * the PHP pool.
+ */
+function sendCards(): void {
+    $payload = getCards();
+    $mtime = file_exists(CARDS_FILE) ? (int)filemtime(CARDS_FILE) : 0;
+    $etag = '"cards-' . $mtime . '-' . strlen($payload) . '"';
+
+    header('ETag: ' . $etag);
+    header('Cache-Control: public, max-age=300, stale-while-revalidate=86400');
+    if ($mtime > 0) {
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
+    }
+
+    $ifNoneMatch = (string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? '');
+    foreach (explode(',', $ifNoneMatch) as $candidate) {
+        $candidate = trim($candidate);
+        if ($candidate !== '' && ($candidate === $etag || $candidate === 'W/' . $etag)) {
+            http_response_code(304);
+            return;
+        }
+    }
+    echo $payload;
+}
+
 function getCards(): string {
     if (!file_exists(CARDS_FILE)) {
         return json_encode(['cards' => [], 'starter_decks' => []]);

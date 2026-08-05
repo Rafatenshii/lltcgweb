@@ -5842,11 +5842,15 @@ const CARD_LIST_PACK_ORDER = [
   'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ',
   'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ',
   'スタートデッキ ラブライブ！スーパースター!! cheer',
+  'スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会 cheer',
   'ブースターパック Anniversary 2026',
   'ブースターパック Royal Holiday',
+  'ブースターパック MELLOW MOMENT',
   'プレミアムブースター ラブライブ！スーパースター!! DUO',
-  'PRカード',
 ];
+
+/** PR cards always render last, after any product missing from CARD_LIST_PACK_ORDER. */
+const CARD_LIST_PACK_SORT_LAST = 'PRカード';
 
 /** JP catalog booster_pack → English product name (card list + deck-log obtain hints). */
 const CARD_LIST_PACK_NAME_EN = {
@@ -5856,6 +5860,7 @@ const CARD_LIST_PACK_NAME_EN = {
   'スタートデッキ ラブライブ！スーパースター!!': 'Start Deck — Superstar!!',
   'スタートデッキ ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Start Deck — Hasunosora',
   'スタートデッキ ラブライブ！スーパースター!! cheer': 'Start Deck — Superstar!! cheer',
+  'スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会 cheer': 'Start Deck — Nijigasaki cheer',
   'コレクション クリアポケット ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'Collection Clear Pocket — Hasunosora',
   'ブースターパック vol.1': 'Booster Pack vol.1',
   'ブースターパック NEXT STEP': 'Booster Pack NEXT STEP',
@@ -5863,6 +5868,7 @@ const CARD_LIST_PACK_NAME_EN = {
   'ブースターパック SAPPHIRE MOON': 'Booster Pack SAPPHIRE MOON',
   'ブースターパック Royal Holiday': 'Booster Pack Royal Holiday',
   'ブースターパック Anniversary 2026': 'Booster Pack Anniversary 2026',
+  'ブースターパック MELLOW MOMENT': 'Booster Pack MELLOW MOMENT',
   'プレミアムブースター ラブライブ！': "Premium Booster μ's",
   'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会': 'Premium Booster Nijigasaki',
   'プレミアムブースター ラブライブ！サンシャイン!!': 'Premium Booster Sunshine!!',
@@ -5915,7 +5921,9 @@ function cardListPackDisplayName(pack) {
 }
 
 function cardListPackSortKey(pack) {
+  if (pack === CARD_LIST_PACK_SORT_LAST) return Number.MAX_SAFE_INTEGER;
   const idx = CARD_LIST_PACK_ORDER.indexOf(pack);
+  // Products not yet listed above still sort ahead of PR rather than after it.
   return idx >= 0 ? idx : 1000;
 }
 
@@ -21125,6 +21133,14 @@ const RULE_KEYWORD_TIPS = {
     title: 'Center',
     body: 'Only applies if this Member is in the center Stage slot when the effect resolves.',
   },
+  'Left Side': {
+    title: 'Left Side',
+    body: 'Only applies if this Member is in a left-side Stage slot when the effect resolves.',
+  },
+  'Right Side': {
+    title: 'Right Side',
+    body: 'Only applies if this Member is in a right-side Stage slot when the effect resolves.',
+  },
   'Live Success': {
     title: 'Live Success',
     body: 'Resolves when your Live Performance succeeds — required hearts were met for the attempted Live cards.',
@@ -21139,10 +21155,10 @@ const RULE_KEYWORD_TIPS = {
   },
 };
 
-const RULE_KW_BRACKET_LABELS_EN = 'On Enter|On Leave|Live Start|Live Success|Activated|Always|Continuous|Once per turn|Twice per turn|Twice per Turn|Automatic|Auto|Center|Yell|On Play';
-const RULE_KW_BRACKET_LABELS_JA = '登場時|退場時|ライブ開始時|ライブ開始|ライブ成功時|ライブ成功|起動|常時|ターン1回|ターン2回|自動|センター|エール';
-const RULE_KW_BRACKET_LABELS_ES = 'Al entrar|Al salir|Inicio de Live|Éxito de Live|Activada|Siempre|Una vez por turno|Dos veces por turno|Automático|Centro|Yell';
-const RULE_KW_BRACKET_LABELS_KO = '등장 시|퇴장 시|라이브 개시|라이브 성공|기동|상시|턴에 1회|턴당 2회|자동|센터|Yell';
+const RULE_KW_BRACKET_LABELS_EN = 'On Enter|On Leave|Live Start|Live Success|Activated|Always|Continuous|Once per turn|Once per Turn|Twice per turn|Twice per Turn|Automatic|Auto|Center|Left Side|Right Side|Yell|On Play';
+const RULE_KW_BRACKET_LABELS_JA = '登場時|退場時|ライブ開始時|ライブ開始|ライブ成功時|ライブ成功|起動|常時|ターン1回|ターン2回|自動|センター|左サイド|右サイド|エール';
+const RULE_KW_BRACKET_LABELS_ES = 'Al entrar|Al salir|Inicio de Live|Éxito de Live|Activada|Siempre|Una vez por turno|Dos veces por turno|Automático|Centro|Lado izquierdo|Lado derecho|Yell';
+const RULE_KW_BRACKET_LABELS_KO = '등장 시|퇴장 시|라이브 개시|라이브 성공|기동|상시|턴에 1회|턴당 2회|자동|센터|왼쪽|오른쪽|Yell';
 const RULE_KW_BRACKET_LABELS_ZH = '入场时|离场时|Live开始|Live成功|起动|永续|每回合1次|每回合2次|自动|中央|左侧|右侧|Yell';
 const RULE_KW_BRACKET_LABELS_TH = 'เมื่อเข้าสนาม|เมื่อออกจากสนาม|เริ่ม Live|Live สำเร็จ|เปิดใช้|ต่อเนื่อง|เทิร์นละ 1 ครั้ง|เทิร์นละ 2 ครั้ง|อัตโนมัติ|เซ็นเตอร์|Yell|ฝั่งซ้าย|ฝั่งขวา';
 
@@ -21159,6 +21175,8 @@ const RULE_KW_JA_TO_EN = {
   'ターン2回': 'Twice per turn',
   '自動': 'Automatic',
   'センター': 'Center',
+  '左サイド': 'Left Side',
+  '右サイド': 'Right Side',
   'エール': 'Yell',
 };
 
@@ -21173,6 +21191,8 @@ const RULE_KW_ES_TO_EN = {
   'Dos veces por turno': 'Twice per turn',
   'Automático': 'Automatic',
   'Centro': 'Center',
+  'Lado izquierdo': 'Left Side',
+  'Lado derecho': 'Right Side',
   'Yell': 'Yell',
 };
 
@@ -21187,6 +21207,8 @@ const RULE_KW_KO_TO_EN = {
   '턴당 2회': 'Twice per turn',
   '자동': 'Automatic',
   '센터': 'Center',
+  '왼쪽': 'Left Side',
+  '오른쪽': 'Right Side',
   'Yell': 'Yell',
 };
 
@@ -21233,6 +21255,8 @@ const RULE_KW_EN_TO_JA = {
   'Twice per turn': 'ターン2回',
   'Automatic': '自動',
   'Center': 'センター',
+  'Left Side': '左サイド',
+  'Right Side': '右サイド',
   'Yell': 'エール',
 };
 
@@ -21247,6 +21271,8 @@ const RULE_KW_TIP_I18N = {
   'Twice per turn': 'skillKw.twicePerTurn',
   'Automatic': 'skillKw.automatic',
   'Center': 'skillKw.center',
+  'Left Side': 'skillKw.leftSide',
+  'Right Side': 'skillKw.rightSide',
   'Yell': 'skillKw.yell',
   'Wait': 'skillKw.wait',
 };
@@ -21448,6 +21474,8 @@ const RULE_KEYWORD_COLORS = {
   'Once per turn': 'rgba(255,255,255,.78)',
   'Twice per turn': 'rgba(255,255,255,.78)',
   'Center': '#FDE047',
+  'Left Side': '#FDE047',
+  'Right Side': '#FDE047',
   'Yell': '#7AE582',
   'Wait': '#38BDF8',
 };
@@ -21457,6 +21485,7 @@ function resolveRuleKwKey(raw) {
   if (raw === 'Continuous') return 'Always';
   if (raw === 'On Play') return 'Always';
   if (raw === 'Twice per Turn') return 'Twice per turn';
+  if (raw === 'Once per Turn') return 'Once per turn';
   return raw;
 }
 
