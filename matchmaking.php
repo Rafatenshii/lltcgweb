@@ -538,8 +538,17 @@ function tcgQueueStatsFromCache(string $cacheFile, string $gameMode, ?int $maxAg
 function tcgQueuePublicStats(?string $gameMode = null): array {
     $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
     $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $gameMode) . '.json';
-    $fresh = tcgQueueStatsFromCache($cacheFile, $gameMode, 5);
+
+    // Queue size is a local COUNT(*) — always live. in_game needs the match host,
+    // so it is cached longer: polling it every few seconds buried the 0.5 CPU VPS.
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
+    $stmt->execute([$gameMode]);
+    $waiting = (int)$stmt->fetchColumn();
+
+    $fresh = tcgQueueStatsFromCache($cacheFile, $gameMode, 15);
     if ($fresh !== null) {
+        $fresh['waiting'] = $waiting;
         return $fresh;
     }
 
@@ -553,12 +562,13 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
         }
         $stale = tcgQueueStatsFromCache($cacheFile, $gameMode);
         if ($stale !== null) {
+            $stale['waiting'] = $waiting;
             return $stale;
         }
     }
 
     try {
-        return tcgComputeQueuePublicStats($gameMode, $cacheFile);
+        return tcgComputeQueuePublicStats($gameMode, $cacheFile, $waiting);
     } finally {
         if ($owner && $lock !== false) {
             @flock($lock, LOCK_UN);
@@ -567,11 +577,8 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
     }
 }
 
-function tcgComputeQueuePublicStats(string $gameMode, string $cacheFile): array {
+function tcgComputeQueuePublicStats(string $gameMode, string $cacheFile, int $waiting): array {
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
-    $stmt->execute([$gameMode]);
-    $waiting = (int)$stmt->fetchColumn();
 
     // Match-primary: in_game must match the presence-accurate VPS spectate list.
     // Pending Hostinger rows still include rematch ghosts (probe=live/unknown) and
