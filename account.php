@@ -701,8 +701,10 @@ function tcgApiDeckImportDecklog(array $body): array {
         tcgRateLimitForAction('deck_import_decklog', $body);
     }
     require_once __DIR__ . '/decklog_import.php';
-    $code = tcgNormalizeDecklogCode((string)($body['code'] ?? $body['url'] ?? ''));
-    $payload = tcgFetchDecklogView($code);
+    $raw = trim((string)($body['code'] ?? $body['url'] ?? ''));
+    // Pass raw input through so EN/JP view URLs keep preferred host (do not normalize first).
+    $payload = tcgFetchDecklogView($raw);
+    $code = tcgNormalizeDecklogCode($raw);
     $cards = tcgLoadCardsData();
     $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
     $cardMap = tcgBuildCardMap($cards);

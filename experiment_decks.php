@@ -219,8 +219,10 @@ function apiExperimentDecklogImport(array $body): array {
     if (function_exists('tcgRateLimitForAction')) {
         tcgRateLimitForAction('experiment_decklog_import', $body);
     }
-    $code = tcgNormalizeDecklogCode((string)($body['code'] ?? $body['url'] ?? $_GET['code'] ?? ''));
-    $payload = tcgFetchDecklogView($code);
+    $raw = trim((string)($body['code'] ?? $body['url'] ?? $_GET['code'] ?? ''));
+    // Pass raw input through so EN/JP view URLs keep preferred host (do not normalize first).
+    $payload = tcgFetchDecklogView($raw);
+    $code = tcgNormalizeDecklogCode($raw);
     $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
     if (!is_array($cards)) {
         throw new Exception('Card database unavailable', 500);
