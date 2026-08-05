@@ -680,6 +680,10 @@
     "wait": {
       "body": "Un Miembro puesto en Wait no aporta su Blade ese turno: su Blade no aumenta las cartas reveladas para Yell en la Presentación Live. No es la Sala de espera.",
       "title": "Wait (ウェイト)"
+    },
+    "twicePerTurn": {
+      "title": "Dos veces por turno",
+      "body": "Puedes usar este efecto hasta dos veces en cada turno."
     }
   },
   "heart": {

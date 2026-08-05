@@ -691,6 +691,10 @@
     "wait": {
       "body": "处于 Wait（待机）的成员本回合不贡献 Blade——不会增加 Live 表演中为 Yell 翻开的牌的 Blade。这与等候室不同。",
       "title": "Wait（待机）"
+    },
+    "twicePerTurn": {
+      "title": "每回合2次",
+      "body": "该效果每回合最多可以使用两次。"
     }
   },
   "heart": {

@@ -690,6 +690,10 @@
     "wait": {
       "body": "Wait 상태가 된 멤버는 그 턴 Blade를 기여하지 않습니다 — Live 퍼포먼스에서 Yell로 공개되는 카드의 Blade를 올리지 않습니다. Waiting Room과는 다릅니다.",
       "title": "Wait (ウェイト)"
+    },
+    "twicePerTurn": {
+      "title": "턴당 2회",
+      "body": "이 효과는 각 턴에 최대 두 번까지 사용할 수 있습니다."
     }
   },
   "heart": {

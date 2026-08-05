@@ -774,6 +774,10 @@
     "wait": {
       "title": "Wait (ウェイト)",
       "body": "A Member put into Wait cannot contribute its Blade that turn — its Blade does not increase cards revealed for Yell during Live Performance. This is not the Waiting Room."
+    },
+    "twicePerTurn": {
+      "title": "Twice per turn",
+      "body": "You can use this effect up to two times each turn."
     }
   },
   "heart": {

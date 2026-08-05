@@ -17,8 +17,26 @@
     'Automatic': '自動',
     'Auto': '自動',
     'Once per turn': 'ターン1回',
+    'Twice per turn': 'ターン2回',
+    'Twice per Turn': 'ターン2回',
     'Center': 'センター',
     'Yell': 'エール',
+  };
+
+  var SKILL_BRACKETS_ES = {
+    'On Enter': 'Al entrar',
+    'On Leave': 'Al salir',
+    'Live Start': 'Inicio de Live',
+    'Live Success': 'Éxito de Live',
+    'Activated': 'Activada',
+    'Always': 'Siempre',
+    'Automatic': 'Automático',
+    'Auto': 'Automático',
+    'Once per turn': 'Una vez por turno',
+    'Twice per turn': 'Dos veces por turno',
+    'Twice per Turn': 'Dos veces por turno',
+    'Center': 'Centro',
+    'Yell': 'Yell',
   };
 
   var SKILL_BRACKETS_KO = {
@@ -31,6 +49,8 @@
     'Automatic': '자동',
     'Auto': '자동',
     'Once per turn': '턴에 1회',
+    'Twice per turn': '턴당 2회',
+    'Twice per Turn': '턴당 2회',
     'Center': '센터',
     'Yell': 'Yell',
   };
@@ -46,6 +66,7 @@
     'Auto': '自动',
     'Once per turn': '每回合1次',
     'Twice per turn': '每回合2次',
+    'Twice per Turn': '每回合2次',
     'Center': '中央',
     'Yell': 'Yell',
     'Left Side': '左侧',
@@ -63,6 +84,8 @@
     'Automatic': 'อัตโนมัติ',
     'Auto': 'อัตโนมัติ',
     'Once per turn': 'เทิร์นละ 1 ครั้ง',
+    'Twice per turn': 'เทิร์นละ 2 ครั้ง',
+    'Twice per Turn': 'เทิร์นละ 2 ครั้ง',
     'Center': 'เซ็นเตอร์',
     'Yell': 'Yell',
     'Left Side': 'ฝั่งซ้าย',
@@ -1134,6 +1157,7 @@
   function localizePromptTextEs(msg, catalog) {
     if (!msg) return msg;
     var out = String(msg);
+    out = replaceSkillBrackets(out, SKILL_BRACKETS_ES);
     out = applyRules(out, PHRASE_RULES_ES);
     out = applyRules(out, EFFECT_RULES_ES);
     return out;
@@ -1218,6 +1242,7 @@
 
     var out = String(msg);
     out = applyRules(out, STRUCTURAL_PHRASE_RULES_ES);
+    out = replaceSkillBrackets(out, SKILL_BRACKETS_ES);
     out = applyRules(out, PHRASE_RULES_ES);
     out = applyRules(out, EFFECT_RULES_ES);
     return out;

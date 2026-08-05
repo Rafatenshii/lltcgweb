@@ -25662,7 +25662,7 @@
             ],
             "rarity": "P+",
             "text": "[Auto] [Twice per turn] Whenever another Cerise Bouquet Member enters your Stage, you may pay 1 Energy: activate 2 Energy.\n[Live Start] You may pay 2 Energy: until this Live ends, you gain 1 green ♡ and +1 Blade.",
-            "text_jp": "自分のステージにほかの『スリーズブーケ』のメンバーが登場するたび、支払ってもよい。そうした場合、エネルギーを2枚アクティブにする。\n\n支払ってもよい：ライブ終了時まで、を得る。",
+            "text_jp": "[自動] [ターン2回] 自分のステージにほかの『スリーズブーケ』のメンバーが登場するたび、エネルギーを支払ってもよい。そうした場合、エネルギーを2枚アクティブにする。\n\n[ライブ開始時] エネルギーを2つ支払ってもよい：ライブ終了時まで、緑の♡とブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-001-P2.png",
             "subunit": "スリーズブーケ",
             "abilities": [
@@ -25720,7 +25720,7 @@
             ],
             "rarity": "R",
             "text": "[Auto] [Twice per turn] Whenever another Cerise Bouquet Member enters your Stage, you may pay 1 Energy: activate 2 Energy.\n[Live Start] You may pay 2 Energy: until this Live ends, you gain 1 green ♡ and +1 Blade.",
-            "text_jp": "自分のステージにほかの『スリーズブーケ』のメンバーが登場するたび、支払ってもよい。そうした場合、エネルギーを2枚アクティブにする。\n\n支払ってもよい：ライブ終了時まで、を得る。",
+            "text_jp": "[自動] [ターン2回] 自分のステージにほかの『スリーズブーケ』のメンバーが登場するたび、エネルギーを支払ってもよい。そうした場合、エネルギーを2枚アクティブにする。\n\n[ライブ開始時] エネルギーを2つ支払ってもよい：ライブ終了時まで、緑の♡とブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-001-R.png",
             "subunit": "スリーズブーケ",
             "abilities": [
@@ -25866,7 +25866,7 @@
             "blade_hearts": [],
             "rarity": "P+",
             "text": "[On Enter] Put any number of Mira-Cra Park! Member cards from your hand into the Waiting Room, then draw that many +1.\n[Auto] [Twice per Turn] Whenever 1 or more cards are put from your hand into the Waiting Room, until this Live ends, you gain +1 Blade and 1 Pink Heart.",
-            "text_jp": "手札の『みらくらぱーく！』のメンバーカードを好きな枚数控え室に置き、その後、その枚数に1を足した枚数のカードを引く。\n\n自分の手札からカードが1枚以上控え室に置かれるたび、ライブ終了時まで、を得る。",
+            "text_jp": "[登場時] 手札の『みらくらぱーく！』のメンバーカードを好きな枚数控え室に置き、その後、その枚数に1を足した枚数のカードを引く。\n\n[自動] [ターン2回] 自分の手札からカードが1枚以上控え室に置かれるたび、ライブ終了時まで、ピンクの♡とブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-003-P2.png",
             "subunit": "みらくらぱーく！",
             "abilities": [
@@ -25920,7 +25920,7 @@
             "blade_hearts": [],
             "rarity": "R",
             "text": "[On Enter] Put any number of Mira-Cra Park! Member cards from your hand into the Waiting Room, then draw that many +1.\n[Auto] [Twice per Turn] Whenever 1 or more cards are put from your hand into the Waiting Room, until this Live ends, you gain +1 Blade and 1 Pink Heart.",
-            "text_jp": "手札の『みらくらぱーく！』のメンバーカードを好きな枚数控え室に置き、その後、その枚数に1を足した枚数のカードを引く。\n\n自分の手札からカードが1枚以上控え室に置かれるたび、ライブ終了時まで、を得る。",
+            "text_jp": "[登場時] 手札の『みらくらぱーく！』のメンバーカードを好きな枚数控え室に置き、その後、その枚数に1を足した枚数のカードを引く。\n\n[自動] [ターン2回] 自分の手札からカードが1枚以上控え室に置かれるたび、ライブ終了時まで、ピンクの♡とブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-003-R.png",
             "subunit": "みらくらぱーく！",
             "abilities": [
@@ -26470,7 +26470,7 @@
             ],
             "rarity": "P+",
             "text": "[Auto] [Center] [Twice per Turn] Whenever a Hasunosora Member enters your Stage, until this Live ends, you gain +2 Blade.\n[Live Start] If this Member has 8 or more Blades, draw 2 cards and put 1 card from your hand into the Waiting Room.",
-            "text_jp": "自分のステージに『蓮ノ空』のメンバーが登場するたび、ライブ終了時まで、を得る。\n\nこのメンバーが持つの数が8つ以上の場合、カードを2枚引き、手札を1枚控え室に置く。",
+            "text_jp": "[自動] [センター] [ターン2回] 自分のステージに『蓮ノ空』のメンバーが登場するたび、ライブ終了時まで、ブレードを2つ得る。\n\n[ライブ開始時] このメンバーが持つブレードの数が8つ以上の場合、カードを2枚引き、手札を1枚控え室に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-009-P2.png",
             "subunit": "スリーズブーケ",
             "abilities": [
@@ -26493,7 +26493,7 @@
             "text_es": "[Automático] [Centro] [Dos veces por turno] Siempre que un Miembro Hasunosora entre en tu Escenario, hasta que termine este Live, obtienes +2 Blade.\n[Inicio de Live] Si este Miembro tiene 8 o más Blade, roba 2 cartas y coloca 1 carta de tu mano en la Sala de espera.",
             "text_ko": "[자동] [센터] [턴당 2회] 자신의 스테이지에 하스노소라 멤버가 등장할 때마다, 이 라이브가 끝날 때까지 Blade +2를 얻는다.\n[라이브 개시] 이 멤버의 Blade가 8 이상이면, 카드 2장을 드로우하고 패에서 카드 1장을 대기실에 놓는다.",
             "text_zh": "[自动] [中央] [每回合2次] 每当莲之空成员进入你的舞台时，直到本场比赛结束，你获得+2Blade。\n[Live开始] 如果该成员的Blade数量为 8 个或以上，则抽 2 张卡并将 1 张手牌放入等候室。",
-            "text_th": "[อัตโนมัติ] [เซ็นเตอร์] [เทิร์นละ 2 ครั้ง] เมื่อใดก็ตามที่สมาชิก Hasunosหรือa เข้าสู่ด่านของคุณ จนกว่า Live นี้จบลง คุณจะได้รับ +2 เบลด\n[เริ่ม Live] หากสมาชิกคนนี้มีใบมีด 8 เล่มขึ้นไป จั่วการ์ด 2 ใบแล้วนำการ์ด 1 ใบจากมือของคุณไปไว้ในห้องรอ"
+            "text_th": "[อัตโนมัติ] [เซ็นเตอร์] [เทิร์นละ 2 ครั้ง] เมื่อใดก็ตามที่สมาชิก Hasunosora เข้าสู่ด่านของคุณ จนกว่า Live นี้จบลง คุณจะได้รับ +2 เบลด\n[เริ่ม Live] หากสมาชิกคนนี้มีใบมีด 8 เล่มขึ้นไป จั่วการ์ด 2 ใบแล้วนำการ์ด 1 ใบจากมือของคุณไปไว้ในห้องรอ"
         },
         {
             "card_no": "PL!HS-pb1-009-R",
@@ -26524,7 +26524,7 @@
             ],
             "rarity": "R",
             "text": "[Auto] [Center] [Twice per Turn] Whenever a Hasunosora Member enters your Stage, until this Live ends, you gain +2 Blade.\n[Live Start] If this Member has 8 or more Blades, draw 2 cards and put 1 card from your hand into the Waiting Room.",
-            "text_jp": "自分のステージに『蓮ノ空』のメンバーが登場するたび、ライブ終了時まで、を得る。\n\nこのメンバーが持つの数が8つ以上の場合、カードを2枚引き、手札を1枚控え室に置く。",
+            "text_jp": "[自動] [センター] [ターン2回] 自分のステージに『蓮ノ空』のメンバーが登場するたび、ライブ終了時まで、ブレードを2つ得る。\n\n[ライブ開始時] このメンバーが持つブレードの数が8つ以上の場合、カードを2枚引き、手札を1枚控え室に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBHS/PL!HS-pb1-009-R.png",
             "subunit": "スリーズブーケ",
             "abilities": [
@@ -26547,7 +26547,7 @@
             "text_es": "[Automático] [Centro] [Dos veces por turno] Siempre que un Miembro Hasunosora entre en tu Escenario, hasta que termine este Live, obtienes +2 Blade.\n[Inicio de Live] Si este Miembro tiene 8 o más Blade, roba 2 cartas y coloca 1 carta de tu mano en la Sala de espera.",
             "text_ko": "[자동] [센터] [턴당 2회] 자신의 스테이지에 하스노소라 멤버가 등장할 때마다, 이 라이브가 끝날 때까지 Blade +2를 얻는다.\n[라이브 개시] 이 멤버의 Blade가 8 이상이면, 카드 2장을 드로우하고 패에서 카드 1장을 대기실에 놓는다.",
             "text_zh": "[自动] [中央] [每回合2次] 每当莲之空成员进入你的舞台时，直到本场比赛结束，你获得+2Blade。\n[Live开始] 如果该成员的Blade数量为 8 个或以上，则抽 2 张卡并将 1 张手牌放入等候室。",
-            "text_th": "[อัตโนมัติ] [เซ็นเตอร์] [เทิร์นละ 2 ครั้ง] เมื่อใดก็ตามที่สมาชิก Hasunosหรือa เข้าสู่ด่านของคุณ จนกว่า Live นี้จบลง คุณจะได้รับ +2 เบลด\n[เริ่ม Live] หากสมาชิกคนนี้มีใบมีด 8 เล่มขึ้นไป จั่วการ์ด 2 ใบแล้วนำการ์ด 1 ใบจากมือของคุณไปไว้ในห้องรอ"
+            "text_th": "[อัตโนมัติ] [เซ็นเตอร์] [เทิร์นละ 2 ครั้ง] เมื่อใดก็ตามที่สมาชิก Hasunosora เข้าสู่ด่านของคุณ จนกว่า Live นี้จบลง คุณจะได้รับ +2 เบลด\n[เริ่ม Live] หากสมาชิกคนนี้มีใบมีด 8 เล่มขึ้นไป จั่วการ์ด 2 ใบแล้วนำการ์ด 1 ใบจากมือของคุณไปไว้ในห้องรอ"
         },
         {
             "card_no": "PL!HS-pb1-010-P＋",
@@ -30524,7 +30524,7 @@
             ],
             "rarity": "PR",
             "text": "[Automatic] [Twice per turn] When this Member or another Member enters your Stage via Baton Touch, draw 1 card.",
-            "text_jp": "自分のステージに、このメンバーか、ほかのメンバーがバトンタッチして登場したとき、カードを1枚引く。",
+            "text_jp": "[自動] [ターン2回] 自分のステージに、このメンバーか、ほかのメンバーがバトンタッチして登場したとき、カードを1枚引く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!N-PR-025-PR.png",
             "abilities": [
                 {

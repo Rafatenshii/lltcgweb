@@ -892,6 +892,10 @@
         "title": "Once per turn",
         "body": "You can only use this effect one time each turn."
       },
+      "twicePerTurn": {
+        "title": "Twice per turn",
+        "body": "You can use this effect up to two times each turn."
+      },
       "automatic": {
         "title": "Automatic",
         "body": "Fires by itself when the listed condition happens — no activation required."
@@ -2103,6 +2107,10 @@
         "title": "ターン1回",
         "body": "この効果は1ターンに1回だけ使えます。"
       },
+      "twicePerTurn": {
+        "title": "ターン2回",
+        "body": "この効果は1ターンに2回まで使えます。"
+      },
       "automatic": {
         "title": "自動",
         "body": "条件が満たされると自動で発動します。発動操作は不要です。"
@@ -3187,6 +3195,10 @@
       "oncePerTurn": {
         "title": "Una vez por turno",
         "body": "Solo puedes usar este efecto una vez en cada turno."
+      },
+      "twicePerTurn": {
+        "title": "Dos veces por turno",
+        "body": "Puedes usar este efecto hasta dos veces en cada turno."
       },
       "automatic": {
         "title": "Automático",
@@ -4413,6 +4425,10 @@
       "oncePerTurn": {
         "title": "턴에 1회",
         "body": "이 효과는 각 턴에 한 번만 사용할 수 있습니다."
+      },
+      "twicePerTurn": {
+        "title": "턴당 2회",
+        "body": "이 효과는 각 턴에 최대 두 번까지 사용할 수 있습니다."
       },
       "automatic": {
         "title": "자동",
@@ -5655,6 +5671,10 @@
         "title": "每回合1次",
         "body": "该效果每回合只能使用一次。"
       },
+      "twicePerTurn": {
+        "title": "每回合2次",
+        "body": "该效果每回合最多可以使用两次。"
+      },
       "automatic": {
         "title": "自动",
         "body": "当列出的条件发生时自行触发 - 无需激活。"
@@ -6885,6 +6905,10 @@
       "oncePerTurn": {
         "title": "เทิร์นละ 1 ครั้ง",
         "body": "คุณใช้เอฟเฟกต์นี้ได้เพียงครั้งเดียวต่อเทิร์น"
+      },
+      "twicePerTurn": {
+        "title": "เทิร์นละ 2 ครั้ง",
+        "body": "คุณใช้เอฟเฟกต์นี้ได้สูงสุดสองครั้งต่อเทิร์น"
       },
       "automatic": {
         "title": "อัตโนมัติ",
