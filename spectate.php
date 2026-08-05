@@ -100,12 +100,14 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
     $now = $now ?? time();
     $presence = readPresence($roomId);
     $path = gameFile($roomId);
-    $gameAge = is_file($path) ? ($now - filemtime($path)) : 0;
+    // Match-primary Redis rooms often have no games/{id}.json — gameAge must stay unset
+    // so we do not treat age=0 as "brand new" and list every abandoned Redis room.
+    $hasLocalFile = is_file($path);
+    $gameAge = $hasLocalFile ? ($now - filemtime($path)) : null;
     $grace = defined('PRESENCE_DISCONNECT_SEC') ? PRESENCE_DISCONNECT_SEC : 120;
     $noShowSec = (defined('PRESENCE_NO_SHOW_SEC') ? PRESENCE_NO_SHOW_SEC : 300) * 2;
 
     $live = 0;
-    $anyPresenceEver = false;
     foreach (['p1', 'p2'] as $pid) {
         $player = $state['players'][$pid] ?? null;
         if (!$player || isCpuPlayer($player)) {
@@ -116,15 +118,17 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
             continue;
         }
         $last = intval($presence[$token] ?? 0);
-        if ($last > 0) {
-            $anyPresenceEver = true;
-            if (($now - $last) < $grace) {
-                $live++;
-            }
+        if ($last > 0 && ($now - $last) < $grace) {
+            $live++;
         }
     }
 
-    if ($live === 0 && $gameAge < $grace) {
+    if ($live > 0) {
+        return $live;
+    }
+
+    // Fresh local/snapshot file grace (Hostinger drain or Redis disk snapshot).
+    if ($hasLocalFile && $gameAge !== null && $gameAge < $grace) {
         foreach (['p1', 'p2'] as $pid) {
             $player = $state['players'][$pid] ?? null;
             if ($player && !isCpuPlayer($player)) {
@@ -134,8 +138,9 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
         return $live;
     }
 
-    // Long turns between saves: ranked rows stay pending while the file is still fresh.
-    if ($live === 0 && ($state['mode'] ?? '') === 'ranked' && $gameAge < 45 * 60) {
+    // Long turns between saves: ranked Hostinger file rooms only.
+    if ($hasLocalFile && $gameAge !== null
+        && ($state['mode'] ?? '') === 'ranked' && $gameAge < 45 * 60) {
         foreach (['p1', 'p2'] as $pid) {
             $player = $state['players'][$pid] ?? null;
             if ($player && !isCpuPlayer($player)) {
@@ -145,7 +150,23 @@ function tcgPvpLivePlayerCount(array $state, string $roomId, ?int $now = null): 
         return $live;
     }
 
-    if ($live === 0 && $gameAge < $noShowSec) {
+    // Redis-only rooms: presence file mtime means someone polled recently.
+    if (!$hasLocalFile) {
+        $presenceFile = GAMES_DIR . 'presence_'
+            . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
+        if (is_file($presenceFile) && ($now - filemtime($presenceFile)) < $grace) {
+            foreach (['p1', 'p2'] as $pid) {
+                $player = $state['players'][$pid] ?? null;
+                if ($player && !isCpuPlayer($player)) {
+                    $live++;
+                }
+            }
+            return $live;
+        }
+        return 0;
+    }
+
+    if ($gameAge !== null && $gameAge < $noShowSec) {
         foreach (['p1', 'p2'] as $pid) {
             $player = $state['players'][$pid] ?? null;
             if (!$player || isCpuPlayer($player)) {

@@ -27379,7 +27379,27 @@ async function joinSpectateMatch(roomId) {
     });
   } catch (e) {
     if (errEl) errEl.textContent = e.message || String(e);
+    // Overlay may already be closed; surface failure on the hub too.
+    toast(e.message || 'Could not spectate that match.', 4200);
   }
+}
+
+/** Undo partial spectate boot (bar / flags) when get_state fails before the game screen. */
+function abortSpectatorBootUi() {
+  try { stopPoll(); } catch (e) { /* ignore */ }
+  clearSpectatorSession();
+  document.body.classList.remove('tcg-spectator-mode');
+  const bar = el('spectate-bar');
+  if (bar) bar.hidden = true;
+  G.isSpectator = false;
+  G.spectatorViewAs = 'p1';
+  G._spectateP1Name = null;
+  G._spectateP2Name = null;
+  G.roomId = null;
+  G.token = null;
+  G.gameState = null;
+  G.lastSeq = 0;
+  if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
 }
 
 async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
@@ -27395,26 +27415,35 @@ async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
   G.isCPU = false;
   G.cpuToken = null;
   G.cpuPlayerId = null;
+  closeM('overlay-spectate-list');
+  // Match-primary: spectate_join locks overflow; never boot get_state against Hostinger.
+  // Use resume=1 — poll=0 without resume runs phase/disconnect side-effects and can
+  // stall ~lock-timeout on busy live rooms, leaving the hub with only the spectate bar.
+  const preferred =
+    (G.apiOrigin === 'overflow' || G.apiOrigin === 'hostinger')
+      ? G.apiOrigin
+      : ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger');
+  let s;
+  let apiOrigin;
+  try {
+    ({ state: s, apiOrigin } = await fetchGameStateForReconnectWithFallback({
+      roomId,
+      token,
+      apiOrigin: preferred,
+    }, { resume: true }));
+    if (s.error) throw new Error(s.error);
+  } catch (e) {
+    abortSpectatorBootUi();
+    throw e;
+  }
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
+  }
   document.body.classList.add('tcg-spectator-mode');
   const bar = el('spectate-bar');
   const barLabel = el('spectate-bar-label');
   if (bar) bar.hidden = false;
   if (barLabel) barLabel.textContent = t('spectate.barNames', { p1: p1Name || 'P1', p2: p2Name || 'P2' });
-  closeM('overlay-spectate-list');
-  // Match-primary: spectate_join locks overflow; never boot get_state against Hostinger.
-  const preferred =
-    (G.apiOrigin === 'overflow' || G.apiOrigin === 'hostinger')
-      ? G.apiOrigin
-      : ((typeof TCG_MATCH_API_PRIMARY !== 'undefined' && TCG_MATCH_API_PRIMARY) ? 'overflow' : 'hostinger');
-  const { state: s, apiOrigin } = await fetchGameStateForReconnectWithFallback({
-    roomId,
-    token,
-    apiOrigin: preferred,
-  }, { resume: false });
-  if (s.error) throw new Error(s.error);
-  if (typeof tcgLockApiOrigin === 'function') {
-    tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
-  }
   prepareClientReconnectState(s);
   G.gameState = s;
   showScr('game');

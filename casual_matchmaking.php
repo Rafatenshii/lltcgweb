@@ -576,12 +576,12 @@ function tcgCasualLivePlayersInRoom(array $state, string $roomId, int $now): int
 
     $presence = readPresence($roomId);
     $path = tcgCasualGameFilePath($roomId);
-    $gameAge = is_file($path) ? ($now - filemtime($path)) : 0;
+    $hasLocalFile = is_file($path);
+    $gameAge = $hasLocalFile ? ($now - filemtime($path)) : null;
     $grace = PRESENCE_DISCONNECT_SEC;
     $noShowSec = PRESENCE_NO_SHOW_SEC * 2;
 
     $live = 0;
-    $anyPresenceEver = false;
     foreach (['p1', 'p2'] as $pid) {
         $player = $state['players'][$pid] ?? null;
         if (!$player || isCpuPlayer($player)) {
@@ -592,15 +592,17 @@ function tcgCasualLivePlayersInRoom(array $state, string $roomId, int $now): int
             continue;
         }
         $last = intval($presence[$token] ?? 0);
-        if ($last > 0) {
-            $anyPresenceEver = true;
-            if (($now - $last) < $grace) {
-                $live++;
-            }
+        if ($last > 0 && ($now - $last) < $grace) {
+            $live++;
         }
     }
 
-    if ($live === 0 && !$anyPresenceEver && $gameAge < $grace) {
+    if ($live > 0) {
+        return $live;
+    }
+
+    // Local/snapshot file only — Redis rooms without a file must not use age=0 as "fresh".
+    if ($hasLocalFile && $gameAge !== null && $gameAge < $grace) {
         foreach (['p1', 'p2'] as $pid) {
             $player = $state['players'][$pid] ?? null;
             if ($player && !isCpuPlayer($player)) {
@@ -610,7 +612,21 @@ function tcgCasualLivePlayersInRoom(array $state, string $roomId, int $now): int
         return $live;
     }
 
-    if ($live === 0 && $gameAge < $noShowSec) {
+    if (!$hasLocalFile) {
+        $presenceFile = GAMES_DIR . 'presence_'
+            . preg_replace('/[^A-Z0-9]/', '', strtoupper($roomId)) . '.json';
+        if (is_file($presenceFile) && ($now - filemtime($presenceFile)) < $grace) {
+            foreach (['p1', 'p2'] as $pid) {
+                $player = $state['players'][$pid] ?? null;
+                if ($player && !isCpuPlayer($player)) {
+                    $live++;
+                }
+            }
+        }
+        return $live;
+    }
+
+    if ($gameAge !== null && $gameAge < $noShowSec) {
         foreach (['p1', 'p2'] as $pid) {
             $player = $state['players'][$pid] ?? null;
             if (!$player || isCpuPlayer($player)) {
