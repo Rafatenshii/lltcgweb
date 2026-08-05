@@ -77,6 +77,13 @@ final class DecklogImportTest extends TestCase
         );
     }
 
+    public function testLoveLiveGameTitleIdsIncludeEnLlc(): void
+    {
+        $ids = tcgDecklogLoveLiveGameTitleIds();
+        $this->assertContains(11, $ids);
+        $this->assertContains(109, $ids);
+    }
+
     public function testResolveFullwidthPlusCardNo(): void
     {
         $cardNos = ['PL!HS-bp1-001-R＋' => true];

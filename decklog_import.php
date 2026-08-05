@@ -274,6 +274,9 @@ function tcgFetchDecklogViewFromHost(string $code, string $host, string $apiAppP
  * Preferred host (from URL) is tried first; the other region is the fallback.
  * EN hosts also try locale API prefixes (app-ja) when /system/app/api is metadata-only.
  *
+ * Bare codes can collide across games (same code on JP Vanguard vs EN Love Live).
+ * With no preferred host, Love Live recipes are preferred over other titles.
+ *
  * @return array<string,mixed>
  */
 function tcgFetchDecklogView(string $codeOrUrl): array
@@ -284,9 +287,10 @@ function tcgFetchDecklogView(string $codeOrUrl): array
         throw new Exception('Enter a valid deck log code (or view URL).', 400);
     }
     $hosts = tcgDecklogHosts();
+    $preferredHost = $parsed['preferred_host'] ?? null;
     $order = [];
-    if (!empty($parsed['preferred_host'])) {
-        $order[] = $parsed['preferred_host'];
+    if (!empty($preferredHost)) {
+        $order[] = $preferredHost;
     }
     foreach ([$hosts['jp'], $hosts['en']] as $h) {
         if (!in_array($h, $order, true)) {
@@ -297,11 +301,26 @@ function tcgFetchDecklogView(string $codeOrUrl): array
     $sawUnreachable = false;
     $sawBad = false;
     $preferredPrefix = $parsed['preferred_api_prefix'] ?? null;
+    $llIds = tcgDecklogLoveLiveGameTitleIds();
+    $firstComplete = null;
     foreach ($order as $host) {
         foreach (tcgDecklogApiAppPrefixesForHost($host, $preferredPrefix) as $apiPrefix) {
             $result = tcgFetchDecklogViewFromHost($code, $host, $apiPrefix);
             if (!empty($result['ok']) && isset($result['data']) && is_array($result['data'])) {
-                return $result['data'];
+                $data = $result['data'];
+                // Explicit JP/EN URL: honor that host's recipe (mapper rejects non-LL).
+                if ($preferredHost !== null) {
+                    return $data;
+                }
+                $gid = intval($data['game_title_id'] ?? 0);
+                if (in_array($gid, $llIds, true)) {
+                    return $data;
+                }
+                if ($firstComplete === null) {
+                    $firstComplete = $data;
+                }
+                // Bare code: keep scanning other hosts for a Love Live recipe.
+                break;
             }
             if (!empty($result['unreachable'])) {
                 $sawUnreachable = true;
@@ -310,6 +329,9 @@ function tcgFetchDecklogView(string $codeOrUrl): array
                 $sawBad = true;
             }
         }
+    }
+    if ($firstComplete !== null) {
+        return $firstComplete;
     }
     if ($sawUnreachable && !$sawBad) {
         throw new Exception('Could not reach deck log. Try again later.', 502);
