@@ -67,6 +67,18 @@
         }
       ]
     },
+    "bp_mellow": {
+      "asin": "",
+      "amazon_url": "",
+      "pack_style": "promo",
+      "note": "Promo pack art uses official BP07 box render until pack photos are cropped.",
+      "packs": [
+        {
+          "output": "bp_mellow-promo.png",
+          "source_url": "https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png"
+        }
+      ]
+    },
     "bp_anniv": {
       "asin": "B0DNB1BCYP",
       "amazon_url": "https://www.amazon.co.jp/dp/B0DNB1BCYP",
@@ -112,6 +124,17 @@
         {
           "output": "pb_superstar-a.jpg",
           "source_url": "https://m.media-amazon.com/images/I/81tIMFho91L._AC_SL1500_.jpg",
+          "crop": "auto"
+        }
+      ]
+    },
+    "pb_superstar_duo": {
+      "note": "Pack wrapper from user-provided Amazon listing photo (Chisato & Natsumi DUO art).",
+      "pack_style": "photo",
+      "packs": [
+        {
+          "output": "pb_superstar_duo-a.jpg",
+          "source_url": "https://m.media-amazon.com/images/I/81HdzmlFDGL._AC_SL1500_.jpg",
           "crop": "auto"
         }
       ]

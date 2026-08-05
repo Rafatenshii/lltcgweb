@@ -32,6 +32,7 @@ require_once __DIR__ . '/play_stats.php';
 require_once __DIR__ . '/pl_muse_gap_effects.php';
 require_once __DIR__ . '/pl_sp_sd2_effects.php';
 require_once __DIR__ . '/batch99_effects.php';
+require_once __DIR__ . '/bp7_effects.php';
 require_once __DIR__ . '/src/Game/LiveScoreBonus.php';
 require_once __DIR__ . '/src/Game/AbilityResolver.php';
 require_once __DIR__ . '/src/Game/LiveStartEffects.php';
@@ -1464,7 +1465,11 @@ function memberPerformanceHeartsFlat(array $member): array {
         }
     }
     $out = [];
-    foreach ($member['hearts'] ?? [] as $hg) {
+    // N-bp7-003 copies the hearts of the card it put underneath for this Live.
+    $printed = (!empty($member['bp7_hearts_override']) && is_array($member['bp7_hearts_override']))
+        ? $member['bp7_hearts_override']
+        : ($member['hearts'] ?? []);
+    foreach ($printed as $hg) {
         $color = $replaceColor ?? normalizeHeartColor((string)($hg['color'] ?? 'any'));
         if ($treatAs) {
             $color = normalizeHeartColor((string)$treatAs);
@@ -2388,6 +2393,7 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
             $memberHearts = spBp5ApplyContinuousHearts($state, $pid, $member, $slot, $memberHearts);
             $memberHearts = spBp2ApplyContinuousHearts($state, $pid, $member, $ab, $memberHearts);
             $memberHearts = batch99ApplyContinuousHearts($state, $pid, $member, $slot, $memberHearts);
+            $memberHearts = bp7ApplyContinuousHearts($state, $pid, $member, (string)$slot, $ab, $memberHearts);
             if (($ab['type'] ?? '') === 'blade_if_exact_stage_members' && !empty($ab['hearts'])) {
                 if (countStageMembers($state['players'][$pid]) === intval($ab['count'] ?? 2)) {
                     appendContinuousHeartsFromSpec($memberHearts, $ab['hearts']);
@@ -2971,6 +2977,7 @@ function getEffectiveStageMemberCost(array $state, string $pid, array $member): 
             $base += $stacked * intval($ab['cost_plus_per'] ?? 4);
         }
     }
+    $base = bp7ApplyContinuousMemberCost($state, $pid, $member, $base);
     return spBp2ApplyContinuousMemberCost($member, $base);
 }
 
@@ -2984,6 +2991,7 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
         $handCount = count($state['players'][$pid]['hand'] ?? []);
         $blade += intdiv($handCount, $div) * intval($lm['blade_per_hand_amount'] ?? 1);
     }
+    $blade += bp7ApplyBladeAuras($state, $pid, $member, $slot);
     if (cardHasAbilities($member)) {
         foreach ($member['abilities'] as $ab) {
             if (($ab['trigger'] ?? '') === 'continuous' && ($ab['type'] ?? '') === 'blade_per_opp_wait') {
@@ -3086,6 +3094,7 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
                 }
             }
             $blade += sBp6ApplyContinuousBlade($state, $pid, $member, $ab);
+            $blade += bp7ApplyContinuousBlade($state, $pid, $member, $slot, $ab);
             if (($ab['trigger'] ?? '') === 'continuous'
                 && ($ab['type'] ?? '') === 'blade_if_moved_in_slot') {
                 $needSlot = $ab['slot'] ?? '';
@@ -3270,12 +3279,17 @@ function waitOpponentMemberAtSlot(
     if (!$mbr || memberIsInWait($mbr)) {
         return false;
     }
+    if ($effectSourcePid !== null && bp7ProtectedFromOppWait($state, $oppId, $mbr)) {
+        unset($mbr);
+        return false;
+    }
     $snap = memberSnapshot($mbr);
     waitMember($mbr, $state);
     unset($mbr);
     if ($effectSourcePid) {
         $state = resolveAutomaticOpponentWaitEffects($state, $effectSourcePid, $snap);
     }
+    $state = bp7ResolveAutoOnAllyWait($state, $oppId, $snap);
     return true;
 }
 
@@ -3416,20 +3430,26 @@ function waitOpponentStageByCost(
     bool $activeOnly = false
 ): int {
     $waited = 0;
+    $bp7Waited = [];
     foreach ($state['players'][$oppId]['stage'] as &$mbr) {
         if (!$mbr) continue;
         if (memberIsInWait($mbr)) continue;
         if ($activeOnly && !memberIsActiveForGame($mbr)) continue;
         if (intval($mbr['cost'] ?? 0) > $maxCost) continue;
+        if ($effectSourcePid !== null && bp7ProtectedFromOppWait($state, $oppId, $mbr)) continue;
         if ($pickCount !== null && $waited >= $pickCount) break;
         $snap = memberSnapshot($mbr);
         waitMember($mbr, $state);
         if ($effectSourcePid) {
             $state = resolveAutomaticOpponentWaitEffects($state, $effectSourcePid, $snap);
         }
+        $bp7Waited[] = $snap;
         $waited++;
     }
     unset($mbr);
+    foreach ($bp7Waited as $snap) {
+        $state = bp7ResolveAutoOnAllyWait($state, $oppId, $snap);
+    }
     return $waited;
 }
 
@@ -3524,20 +3544,26 @@ function waitOpponentStageByMaxBlade(
     bool $activeOnly = false
 ): int {
     $waited = 0;
+    $bp7Waited = [];
     foreach ($state['players'][$oppId]['stage'] as &$mbr) {
         if (!$mbr) continue;
         if (memberIsInWait($mbr)) continue;
         if ($activeOnly && !memberIsActiveForGame($mbr)) continue;
         if (memberBladeIconCount($mbr) > $maxBlade) continue;
+        if ($effectSourcePid !== null && bp7ProtectedFromOppWait($state, $oppId, $mbr)) continue;
         if ($pickCount !== null && $waited >= $pickCount) break;
         $snap = memberSnapshot($mbr);
         waitMember($mbr, $state);
         if ($effectSourcePid) {
             $state = resolveAutomaticOpponentWaitEffects($state, $effectSourcePid, $snap);
         }
+        $bp7Waited[] = $snap;
         $waited++;
     }
     unset($mbr);
+    foreach ($bp7Waited as $snap) {
+        $state = bp7ResolveAutoOnAllyWait($state, $oppId, $snap);
+    }
     return $waited;
 }
 
@@ -3900,7 +3926,17 @@ function countDistinctYellMembers(array $yellCards, string $group = ''): int {
 }
 
 function memberBladeHeartCount(array $member): int {
-    return count($member['blade_hearts'] ?? []);
+    $n = 0;
+    foreach ($member['blade_hearts'] ?? [] as $bh) {
+        $type = is_string($bh) ? $bh : ($bh['type'] ?? $bh['color'] ?? '');
+        $type = strtolower(trim((string)$type));
+        if (in_array($type, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
+            $n += 2;
+        } elseif ($type !== '' && $type !== 'draw' && $type !== 'score') {
+            $n += 1;
+        }
+    }
+    return $n;
 }
 
 function applyOnEnterSideEffect(
@@ -4069,20 +4105,26 @@ function waitOpponentStageByOriginalBlades(
     bool $activeOnly = false
 ): int {
     $waited = 0;
+    $bp7Waited = [];
     foreach ($state['players'][$oppId]['stage'] as &$mbr) {
         if (!$mbr) continue;
         if (memberIsInWait($mbr)) continue;
         if ($activeOnly && !memberIsActiveForGame($mbr)) continue;
         if (intval($mbr['blade'] ?? 0) > $maxBlades) continue;
+        if ($effectSourcePid !== null && bp7ProtectedFromOppWait($state, $oppId, $mbr)) continue;
         if ($pickCount !== null && $waited >= $pickCount) break;
         $snap = memberSnapshot($mbr);
         waitMember($mbr, $state);
         if ($effectSourcePid) {
             $state = resolveAutomaticOpponentWaitEffects($state, $effectSourcePid, $snap);
         }
+        $bp7Waited[] = $snap;
         $waited++;
     }
     unset($mbr);
+    foreach ($bp7Waited as $snap) {
+        $state = bp7ResolveAutoOnAllyWait($state, $oppId, $snap);
+    }
     return $waited;
 }
 
@@ -5205,6 +5247,8 @@ function resolveOnLeaveStageAbilities(array $state, string $pid, array &$member,
         $state = addLog($state, $state['players'][$pid]['name'] .
             " — $returned Energy under [$mName] returned to Energy Zone (inactive).");
     }
+    // BP07 authors its leave triggers as `trigger: auto`, so they are not in on_leave_stage.
+    $state = bp7ResolveOnLeaveAbilities($state, $pid, $member, $ctx);
     $abilities = getAbilitiesByTrigger($member, 'on_leave_stage');
     if (empty($abilities)) {
         return $state;
@@ -5386,7 +5430,7 @@ function resolveOnEnterAbilities(array $state, string $pid, array $member, strin
     // has no On Enter abilities (e.g. SD Kaho with only Automatic/on-leave text).
     $state = hsResolveAutoOnOtherMemberEnter($state, $pid, $member);
     $state = hsPb1ExtendAutoOnOtherMemberEnter($state, $pid, $member);
-    return $state;
+    return bp7ResolveOnEnterAutos($state, $pid, $member);
 }
 
 // resolveLiveStartAbilities, isQueuedOptionalLiveStart — see src/Game/LiveStartEffects.php

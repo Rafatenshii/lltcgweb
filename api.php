@@ -1456,6 +1456,14 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     } else {
         $cost = getEffectiveHandCost($state, $pid, $card);
     }
+    // BP07 optional play-cost options (PL!N-bp7-011 shuffle WR Members, LL-bp7-001 discard
+    // named set). The client opts in explicitly, so a plain play still pays full cost.
+    [$cost, $bp7CostOption] = bp7AdjustHandPlayCost($state, $pid, $card, $cost, [
+        'shuffle_wr_members' => !empty($data['bp7_shuffle_wr_members']),
+        'discard_named_ids'  => is_array($data['bp7_discard_named_ids'] ?? null)
+            ? $data['bp7_discard_named_ids']
+            : [],
+    ]);
     if ($isBaton && $allowsDoubleBaton && $batonCardId2) {
         foreach ($p['stage'] as $existing2) {
             if (!$existing2 || ($existing2['instance_id'] ?? '') !== $batonCardId2) {
@@ -1606,7 +1614,20 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     $card['entered_turn'] = intval($state['turn'] ?? 1);
     $card['entered_from_hand'] = true;
     $p['stage'][$targetSlot] = $card;
-    array_splice($p['hand'], $cardIdx, 1);
+    if ($bp7CostOption !== null) {
+        // Paying the option can remove other hand cards, so re-find the played card.
+        $state = bp7ApplyHandPlayCostOption($state, $pid, $card, $bp7CostOption, [
+            'discard_named_ids' => is_array($data['bp7_discard_named_ids'] ?? null)
+                ? $data['bp7_discard_named_ids']
+                : [],
+        ]);
+        $p = &$state['players'][$pid];
+        $reIdx = findInHand($p['hand'], $instanceId);
+        $cardIdx = ($reIdx === false) ? $cardIdx : $reIdx;
+    }
+    if (isset($p['hand'][$cardIdx])) {
+        array_splice($p['hand'], $cardIdx, 1);
+    }
 
     $state = addLog($state, $state['players'][$pid]['name'] . ' played ' .
         ($card['name_en'] ?? $card['name']) . ' to ' . $targetSlot . ' area.', 'action', array_merge($anims, [[
@@ -1617,6 +1638,8 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             'slot' => $targetSlot,
             'from_index' => $cardIdx,
         ]]));
+    // BP07 [On Leave] stacks (self / Energy deck) wait for the incoming Member to land.
+    $state = bp7ApplyPendingBatonStacks($state, $pid, $targetSlot);
     $state = resolveOnEnterAbilities($state, $pid, $card, $targetSlot);
     $state = nijiOnMemberEntered($state, $pid, $card);
     $state['seq']++;
@@ -2171,6 +2194,12 @@ function doActivePhase(array $state, string $pid): array {
     unset($p['succeeded_live_this_turn']);
     // Active Phase: stand all Energy in storage (spent last turn becomes usable again).
     foreach ($p['energy_zone'] as &$e) {
+        // PL!SP-bp7-005 puts Energy into Wait "locked": it skips exactly one Active Phase.
+        if (!empty($e['skip_activate_next_turn'])) {
+            unset($e['skip_activate_next_turn']);
+            $e['active'] = false;
+            continue;
+        }
         $e['active'] = true;
     }
     unset($e);
@@ -2325,7 +2354,8 @@ function drawYellCardsForPlayer(array $state, string $pid): array {
     $drawBlade = max(0, $totalBlade - $yellReduction);
     $yellCards = [];
     if ($drawBlade > 0) {
-        $yellCards = drawMainDeckCards($state, $pid, $drawBlade);
+        // PL!S-bp7-022 flips this seat's Yell to come off the bottom of the deck.
+        $yellCards = drawYellDeckCards($state, $pid, $drawBlade);
     }
     foreach ($yellCards as &$yc) {
         mergeYellCardCatalogFields($yc);
@@ -3617,13 +3647,28 @@ function getHeartIconsFromBladeHeart(
         $resolvePool[] = normalizeHeartColor($color);
         return [$color];
     }
+    // Double colorless blade heart (BP07+): resolves to two any-color Yell hearts.
+    if ($resolvePool !== null && $liveCards !== null
+        && in_array($type, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
+        $out = [];
+        for ($i = 0; $i < 2; $i++) {
+            $color = resolveAllBladeHeartColor($resolvePool, $liveCards, $state, $pid);
+            $resolvePool[] = normalizeHeartColor($color);
+            $out[] = $color;
+        }
+        return $out;
+    }
     $heartsMap = [
         'pink'   => 'pink',   'red'    => 'red',
         'yellow' => 'yellow', 'green'  => 'green',
         'blue'   => 'blue',   'purple' => 'purple',
         'any'    => 'any',    'gray'   => 'any', 'wild' => 'any', 'all' => 'any',
+        'all2'   => 'any', 'all_2' => 'any', 'b_heart07' => 'any', 'heart07' => 'any',
     ];
     if (isset($heartsMap[$type])) {
+        if (in_array($type, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
+            return [$heartsMap[$type], $heartsMap[$type]];
+        }
         return [$heartsMap[$type]];
     }
     return [];

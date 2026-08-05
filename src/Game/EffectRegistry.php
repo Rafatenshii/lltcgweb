@@ -31,6 +31,14 @@ final class EffectRegistry
         'grant_live_score_if_success',
         'blade_bonus',
         'blade_per_hand_cards',
+        // BP07 Mellow Moment routines (no prompts) — see bp7_effects.php for the rest.
+        'both_mill_deck_to_wr',
+        'energy_wait_from_deck_locked',
+        'activate_energy_if_more_than_opp',
+        'live_score_if_more_energy_than_opp',
+        'live_success_score_if_energy_lead',
+        'if_baton_from_group',
+        'if_named_on_stage',
     ];
 
     /**

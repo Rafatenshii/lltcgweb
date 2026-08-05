@@ -452,6 +452,19 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             markAbilityUsed($member, $abilityIdx);
             $p['stage'][$slot] = $member;
         }
+    } elseif (($ab['type'] ?? '') === 'wait_self_draw') {
+        // PL!SP-bp7-008: Wait is the cost, the draw has no discard follow-up.
+        waitMember($member, $state);
+        markAbilityUsed($member, $abilityIdx);
+        $p['stage'][$slot] = $member;
+        $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            ' — [' . $mName . '] put self into Wait.');
+        $drawnCards = drawCardInstances($p, intval($ab['draw'] ?? 1));
+        foreach ($drawnCards as $c) {
+            $state = logEffectDraw($state, $pid, $mName, $c,
+                [animSpec($c['instance_id'], 'main_deck', 'hand', $pid)]);
+        }
     } elseif (($ab['type'] ?? '') === 'discard_cost_add_live_subunit') {
         $need = max(
             0,

@@ -7387,14 +7387,27 @@ function countRequiredHeartsOfColor(c, color) {
 
 function countBladeHeartsOnCard(c, key) {
   const list = c.blade_hearts || [];
+  const isAll2 = (bh) => {
+    const t = typeof bh === 'string' ? bh : (bh?.type || bh?.color || '');
+    return t === 'all2' || t === 'all_2' || t === 'b_heart07' || t === 'heart07';
+  };
+  const isAll = (bh) => {
+    const t = typeof bh === 'string' ? bh : (bh?.type || bh?.color || '');
+    return t === 'all' || t === 'all_blades' || t === 'all1';
+  };
   if (key === 'all') {
-    return list.some(bh => bh === 'all' || (typeof bh === 'object' && (bh.type === 'all' || bh.color === 'all'))) ? 1 : 0;
+    let n = 0;
+    for (const bh of list) {
+      if (isAll2(bh)) n += 2;
+      else if (isAll(bh)) n += 1;
+    }
+    return n;
   }
   const col = normalizeHeartColor(key);
   let n = 0;
   for (const bh of list) {
+    if (isAll(bh) || isAll2(bh)) continue;
     if (typeof bh === 'string') {
-      if (bh === 'all') continue;
       const k = normalizeHeartColor(bh);
       if (k === col || k === 'any') n++;
     } else if (bh) {
@@ -27887,11 +27900,22 @@ function appendBladeHeartIcons(container, bladeHearts, { lg = false } = {}) {
   (bladeHearts || []).forEach(bh => {
     if (typeof bh === 'string') {
       if (bh === 'draw' || bh === 'score') return;
+      if (bh === 'all2' || bh === 'all_2' || bh === 'b_heart07' || bh === 'heart07') {
+        // Double colorless: show two ALL blade hearts.
+        container.appendChild(mkBladeHeartIcon('all', lg));
+        container.appendChild(mkBladeHeartIcon('all', lg));
+        return;
+      }
       container.appendChild(mkBladeHeartIcon(bh, lg));
       return;
     }
     const t = bh?.type || bh?.color || '';
     if (t === 'draw' || t === 'score') return;
+    if (t === 'all2' || t === 'all_2' || t === 'b_heart07' || t === 'heart07') {
+      container.appendChild(mkBladeHeartIcon('all', lg));
+      container.appendChild(mkBladeHeartIcon('all', lg));
+      return;
+    }
     container.appendChild(mkBladeHeartIcon(t, lg));
   });
 }

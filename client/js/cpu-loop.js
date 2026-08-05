@@ -625,6 +625,112 @@ function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
   return true;
 }
 
+/**
+ * BP07 (Mellow Moment) prompts. The server uses five generic shapes (`bp7_confirm`,
+ * `bp7_pick_cards`, `bp7_pick_stage_member`, `bp7_pick_slot`, `bp7_choose_player`),
+ * so one resolver covers every new card instead of one branch per ability.
+ *
+ * Card picks are scored with the shared surveil heuristic. When every candidate is
+ * already in the CPU's hand the pick is a cost (discard / reveal-and-bin), so the
+ * ranking is inverted and the CPU gives up its least useful cards.
+ */
+function cpuResolveBp7Prompt(s, cpu, pr, tier, winPressure, read) {
+  if (!pr || !String(pr.type || '').startsWith('bp7_')) return false;
+  const hand = cpuLiveHand(cpu);
+
+  if (pr.type === 'bp7_pick_stage_member') {
+    const cands = (pr.candidates || []).filter((c) => c && (c.slot || c.instance_id));
+    if (!cands.length) {
+      cpuAct('resolve_prompt', { choice: 'skip' });
+      return true;
+    }
+    // Prefer the highest-Blade Member: BP07 stage picks grant Blade / stack cards.
+    const best = [...cands].sort((a, b) => (Number(b.blade || 0) - Number(a.blade || 0))
+      || (Number(b.cost || 0) - Number(a.cost || 0)))[0];
+    cpuAct('resolve_prompt', { card_id: best.instance_id, slot: best.slot || '' });
+    return true;
+  }
+
+  if (pr.type === 'bp7_pick_cards') {
+    const cands = (pr.candidates || []).filter((c) => c?.instance_id);
+    const min = Math.max(0, Number(pr.pick_min ?? 0));
+    const max = Math.max(1, Number(pr.pick_max ?? 1));
+    if (!cands.length) {
+      cpuAct('resolve_prompt', { card_ids: [] });
+      return true;
+    }
+    const handIds = new Set(hand.map((c) => c.instance_id).filter(Boolean));
+    const isCost = cands.every((c) => handIds.has(c.instance_id));
+    const ranked = [...cands].sort((a, b) => {
+      const d = cpuScoreSurveilCandidate(b, cpu, hand, tier, read)
+        - cpuScoreSurveilCandidate(a, cpu, hand, tier, read);
+      return isCost ? -d : d;
+    });
+    // Optional picks (min 0): easy CPUs decline, others take the full allowance
+    // unless taking cards costs them hand resources.
+    let take = max;
+    if (min === 0) {
+      if (tier === 'easy') take = isCost ? 0 : 1;
+      else if (isCost) take = Math.min(max, Math.max(0, hand.length - 2));
+    } else {
+      take = Math.max(min, isCost ? min : max);
+    }
+    take = Math.min(take, ranked.length);
+    const ids = ranked.slice(0, take).map((c) => c.instance_id);
+    const payload = { card_ids: ids };
+    if (ids.length === 1) payload.card_id = ids[0];
+    if (!ids.length && (pr.choices || []).includes('skip')) payload.choice = 'skip';
+    cpuAct('resolve_prompt', payload);
+    return true;
+  }
+
+  if (pr.type === 'bp7_choose_player') {
+    // Every `choose a player` BP07 effect is a tempo hit, so aim it at the human.
+    const choices = pr.choices || ['self', 'opponent'];
+    const pick = choices.includes('opponent') ? 'opponent' : choices[0];
+    cpuAct('resolve_prompt', { choice: pick });
+    return true;
+  }
+
+  if (pr.type === 'bp7_pick_slot') {
+    const choices = (pr.choices || []).filter((c) => c != null && c !== '');
+    if (!choices.length) {
+      cpuAct('resolve_prompt', { choice: 'skip' });
+      return true;
+    }
+    const ctx = cpuAbilityCtx(cpu, tier, read, winPressure,
+      (cpu.energy_zone || []).filter(energyChipActive).length, null);
+    if (cpuResolveScoredChoicePrompt(pr, cpu, tier, ctx)) return true;
+    // Center first when the prompt offers Stage areas: BP07 center bonuses are the
+    // strongest, otherwise fall back to the first legal option.
+    const pick = choices.includes('center') ? 'center' : choices[0];
+    cpuAct('resolve_prompt', { choice: String(pick), slot: String(pick) });
+    return true;
+  }
+
+  if (pr.type === 'bp7_confirm') {
+    const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
+    const ab = pr.ability || {};
+    const discardCost = Number(ab.discard ?? ab.optional_discard ?? 0);
+    if (discardCost > 0 && hand.length <= discardCost) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    if (tier === 'easy' && discardCost > 0) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    const score = cpuScoreOptionalAbility(ab, cpu, tier, ae, hand, winPressure, read);
+    // Free BP07 optionals (no discard / Energy cost) are upside-only, so take them
+    // even when the generic scorer has no opinion about the new ability type.
+    const yes = discardCost > 0 ? score >= cpuOptionalYesThreshold(tier) : true;
+    cpuAct('resolve_prompt', { choice: yes ? 'yes' : 'no' });
+    return true;
+  }
+
+  return false;
+}
+
 function cpuSurveilConfirmPayload(pr, cpu, tier) {
   const looked = pr.looked_cards || [];
   const hand = cpuLiveHand(cpu);
@@ -3585,6 +3691,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
   const winPressure = cpuWinPressure(cpu);
   const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
   if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return;
+  if (cpuResolveBp7Prompt(s, cpu, pr, tier, winPressure, read)) return;
   if (pr.type === 'optional_discard_prompt') {
     const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
     const ab = pr.ability || {};

@@ -142,7 +142,8 @@ function getLiveScoreBonusBreakdown(array $state, string $pid, bool $omitUnrevea
                 + sBp5ApplyContinuousLiveScore($state, $pid, $member, $ab)
                 + sBp6ApplyContinuousLiveScore($state, $pid, $member, $ab)
                 + spBp5ApplyContinuousLiveScore($state, $pid, $member, $ab)
-                + plMuseGapApplyContinuousLiveScore($state, $pid, $member, $ab, is_string($slot) ? $slot : '');
+                + plMuseGapApplyContinuousLiveScore($state, $pid, $member, $ab, is_string($slot) ? $slot : '')
+                + bp7ApplyContinuousLiveScore($state, $pid, $member, $ab);
             if ($packAmt > 0) {
                 pushLiveScoreBonusEntry($entries, $bonus, $who, $packAmt, "+{$packAmt} Live Score");
             }

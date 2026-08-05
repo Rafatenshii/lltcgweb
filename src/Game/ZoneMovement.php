@@ -249,6 +249,67 @@ function takeFromMainDeckTop(array &$state, string $pid, int $count): array {
     return $taken;
 }
 
+/**
+ * Take cards from the bottom of main deck ("bottom N cards", bottom Yell).
+ * Returned order is bottom-most first, matching how card text reads them.
+ */
+function takeFromMainDeckBottom(array &$state, string $pid, int $count): array {
+    if ($count <= 0) {
+        return [];
+    }
+    $p = &$state['players'][$pid];
+    $taken = [];
+    while (count($taken) < $count) {
+        if (empty($p['main_deck'])) {
+            if (refreshMainDeckFromWaitingRoom($state, $pid) <= 0) {
+                break;
+            }
+        }
+        $need = $count - count($taken);
+        $have = count($p['main_deck']);
+        $batch = array_splice($p['main_deck'], max(0, $have - min($need, $have)));
+        if (empty($batch)) {
+            break;
+        }
+        $taken = array_merge($taken, array_reverse($batch));
+        if (empty($p['main_deck']) && count($taken) < $count) {
+            refreshMainDeckFromWaitingRoom($state, $pid);
+        }
+    }
+    return $taken;
+}
+
+/** Put cards on the bottom of the main deck in the given order (first listed ends up highest). */
+function putCardsOnMainDeckBottom(array &$state, string $pid, array $cards): int {
+    if (empty($cards)) {
+        return 0;
+    }
+    $p = &$state['players'][$pid];
+    $n = 0;
+    foreach ($cards as $c) {
+        if (!is_array($c)) {
+            continue;
+        }
+        $p['main_deck'][] = $c;
+        $n++;
+    }
+    return $n;
+}
+
+/**
+ * Yell draws come off the deck top by default. PL!S-bp7-022 flips the whole seat to
+ * draw from the bottom while it is on Stage, so every Yell path routes through here.
+ */
+function drawYellDeckCards(array &$state, string $pid, int $count): array {
+    if ($count <= 0) {
+        return [];
+    }
+    if (function_exists('bp7YellFromDeckBottom') && bp7YellFromDeckBottom($state, $pid)) {
+        return takeFromMainDeckBottom($state, $pid, $count);
+    }
+    return drawMainDeckCards($state, $pid, $count);
+}
+
 function activateEnergyForPlayer(array &$p, int $max): int {
     $n = 0;
     foreach ($p['energy_zone'] as &$e) {

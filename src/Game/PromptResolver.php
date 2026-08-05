@@ -207,6 +207,11 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         return $plSpSd2Prompt;
     }
 
+    $bp7Prompt = bp7ResolvePrompt($state, $owner, $prompt, $choice, $data);
+    if ($bp7Prompt !== null) {
+        return $bp7Prompt;
+    }
+
     $batch99Prompt = batch99ResolvePrompt($state, $owner, $prompt, $choice, $data);
     if ($batch99Prompt !== null) {
         return $batch99Prompt;

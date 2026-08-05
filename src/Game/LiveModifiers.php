@@ -65,6 +65,8 @@ function clearLiveModifiers(array $state): array {
                 $mbr['printed_blade_override'],
                 $mbr['replaced_hearts'],
                 $mbr['hearts_treat_as'],
+                $mbr['bp7_hearts_override'],
+                $mbr['bp7_live_zone_ability_used'],
                 $mbr['on_enter_or_live_start_fired']
             );
         }

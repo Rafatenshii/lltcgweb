@@ -166,6 +166,11 @@ function tryResolveAbilityEffectSwitchDeckLook(
                 $state = spBp5NotifyCardsToWr($state, $pid, $milled);
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] put " . count($milled) . ' card(s) from deck top into Waiting Room.');
+                $state = bp7ResolveAutoSelfMilled($state, $pid, $milled);
+                if (($ab['trigger'] ?? '') === 'live_success' || ($ctx['phase'] ?? '') === 'live_success') {
+                    // PL!N-bp7-031 watches deck→WR moves made by your [Live Success] abilities.
+                    $state = bp7ResolveAutoOnLiveSuccessMill($state, $pid, $milled);
+                }
             }
             break;
 

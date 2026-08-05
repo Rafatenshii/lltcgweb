@@ -1818,6 +1818,79 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
   sendResolvePrompt(choice, needsPay?{pay:true}:{});
 }
 
+/**
+ * BP07 (Mellow Moment) picks. The server emits two generic shapes so new cards do
+ * not each need bespoke UI: `bp7_pick_cards` (candidate list + pick_min/pick_max)
+ * and `bp7_pick_stage_member` (candidates carry `slot`). Yes/No (`bp7_confirm`) and
+ * labelled option lists (`bp7_pick_slot`, `bp7_choose_player`) fall through to the
+ * shared branch-choice renderer.
+ * @returns {boolean} true when this renderer took over the prompt.
+ */
+global.renderPromptBp7Pick = function renderPromptBp7Pick(s, myId, pr) {
+  if (!pr || pr.responder !== myId) return false;
+  if (pr.type !== 'bp7_pick_cards' && pr.type !== 'bp7_pick_stage_member') return false;
+  const ovl = el('overlay-prompt');
+  ovl?.classList.remove('open');
+  const cands = (pr.candidates || []).filter((c) => c && c.instance_id);
+
+  if (pr.type === 'bp7_pick_stage_member') {
+    if (!cands.length) {
+      sendAct('resolve_prompt', { choice: 'skip' });
+      return true;
+    }
+    openStageMemberPickById(pr);
+    return true;
+  }
+
+  const min = Math.max(0, Number(pr.pick_min ?? 0));
+  const max = Math.max(1, Number(pr.pick_max ?? 1));
+  if (!cands.length) {
+    sendAct('resolve_prompt', { card_ids: [] });
+    return true;
+  }
+  const enrich = (c) => (typeof enrichCard === 'function' ? enrichCard(c) : c);
+  const cards = cands.map(enrich);
+  el('pick-ttl').textContent = pr.source_name || 'Choose card(s)';
+  el('pick-msg').textContent = pr.prompt || (max === 1
+    ? 'Choose 1 card.'
+    : `Choose ${min > 0 ? '' : 'up to '}${max} card(s).`);
+  const g = el('pick-grid');
+  g.innerHTML = '';
+  const btnOk = el('btn-pick-ok');
+  const btnCancel = el('btn-pick-cancel');
+  const single = max === 1 && min === 1;
+  if (btnOk) btnOk.style.display = single ? 'none' : '';
+  if (btnCancel) btnCancel.style.display = single ? 'none' : '';
+  G.pickMarked.clear();
+  G.pickCtx = single ? null : {
+    count: max,
+    min,
+    onConfirm: (ids) => sendAct('resolve_prompt', { card_ids: ids }),
+    onCancel: () => sendAct('resolve_prompt', { card_ids: [], choice: 'skip' }),
+  };
+  cards.forEach((card) => {
+    g.appendChild(mkPickCardEl(card, 'pickcard', () => {
+      if (single) {
+        closeM('overlay-pick');
+        sendAct('resolve_prompt', { card_id: card.instance_id, card_ids: [card.instance_id] });
+        return;
+      }
+      if (G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
+      else {
+        if (G.pickMarked.size >= max) { toast(`Select at most ${max}`); return; }
+        G.pickMarked.add(card.instance_id);
+        sfxCardPick();
+      }
+      [...g.children].forEach((c) => c.classList.toggle('sel', G.pickMarked.has(c.dataset.id)));
+      el('pick-count').textContent = formatSelectedCount(G.pickMarked.size, max);
+    }));
+  });
+  el('pick-count').textContent = single ? '' : formatSelectedCount(0, max);
+  if (!single) syncPickOverlayButtons();
+  openM('overlay-pick');
+  return true;
+};
+
 global.renderPromptSurveilBranch = function renderPromptSurveilBranch(s, myId, pr) {
   const ovl = el('overlay-prompt');
   ovl.classList.remove('open');
@@ -1926,6 +1999,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     return;
   }
   closeM('overlay-surveil');
+  if (renderPromptBp7Pick(s, myId, pr)) return;
   if (pr?.type === 'optional_wait_group_member_draw_discard' && pr.step === 'pick_member' && pr.responder === myId) {
     ovl.classList.remove('open');
     const members = pr.stage_members || [];
