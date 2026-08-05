@@ -508,6 +508,25 @@ function tryResolveAbilityEffectSwitchDeckLook(
             }
             break;
 
+        case 'draw_if_opp_succeeded_this_turn':
+            $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] drew $drawn (Live Success).");
+            $opp = ($pid === 'p1') ? 'p2' : 'p1';
+            if (!empty($state['players'][$opp]['succeeded_live_this_turn'])) {
+                $bonusDraw = intval($ab['bonus_draw'] ?? 1);
+                if ($bonusDraw > 0) {
+                    $extra = drawCardsForPlayer($state, $pid, $bonusDraw);
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] drew $extra more (opponent also succeeded a Live this turn).");
+                }
+                $bonusDiscard = intval($ab['bonus_discard'] ?? 1);
+                if ($bonusDiscard > 0 && !empty($p['hand'])) {
+                    return startEffectDiscardHandPrompt($state, $pid, $name, $bonusDiscard);
+                }
+            }
+            break;
+
     }
     return $state;
 }

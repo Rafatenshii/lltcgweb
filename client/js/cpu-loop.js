@@ -708,6 +708,8 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'sbp5_pick_yell_members', 'sbp5_wr_lives_deck_top',
   'spbp5_wait_discard_surveil', 'bp5_wait_discard_look_reveal',
   'optional_wait_self_look_reveal',
+  'optional_wait_group_member_blade', 'optional_wait_up_to_group_live_score',
+  'activate_members_pick', 'auto_on_ally_wait_activate_blade',
   'spbp5_wait_draw_discard', 'spbp5_wait_or_discard_activate',
   'sbp5_discard_bladeless_wr_live', 'sbp5_live_start_discard_heart',
   'spbp5_subunit_blade_pick', 'spbp5_distinct_groups', 'spbp5_pick_wr_live',
@@ -3391,6 +3393,74 @@ function cpuResolveStepPrompt(pr, cpu, tier, winPressure, read) {
     const group = pr.group || pr.ability?.group || 'Nijigasaki';
     const hasGroup = Object.values(cpu.stage || {}).some(m => m && (m.group || '') === group);
     cpuAct('resolve_prompt', { choice: hasGroup ? 'yes' : 'no' });
+    return true;
+  }
+  if (pr.type === 'optional_wait_group_member_blade') {
+    if (pr.step === 'pick_member') {
+      const id = pr.stage_members?.[0]?.instance_id;
+      if (id) {
+        cpuAct('resolve_prompt', { member_id: id });
+        return true;
+      }
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    if (tier === 'easy') {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    const group = pr.group || pr.ability?.group || 'Nijigasaki';
+    const hasGroup = Object.values(cpu.stage || {}).some(
+      m => m && (m.group || '') === group && !m.in_wait
+    );
+    cpuAct('resolve_prompt', { choice: hasGroup ? 'yes' : 'no' });
+    return true;
+  }
+  if (pr.type === 'optional_wait_up_to_group_live_score') {
+    if (pr.step === 'pick_members') {
+      const max = pr.max_wait || pr.ability?.max_wait || 3;
+      const ids = (pr.stage_members || []).slice(0, max).map(m => m.instance_id).filter(Boolean);
+      cpuAct('resolve_prompt', { member_ids: ids });
+      return true;
+    }
+    if (tier === 'easy') {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    const group = pr.group || pr.ability?.group || 'Nijigasaki';
+    const hasGroup = Object.values(cpu.stage || {}).some(
+      m => m && (m.group || '') === group && !m.in_wait
+    );
+    cpuAct('resolve_prompt', { choice: hasGroup ? 'yes' : 'no' });
+    return true;
+  }
+  if (pr.type === 'activate_members_pick') {
+    const cands = pr.candidates || [];
+    const best = [...cands].sort((a, b) => (b.blade || 0) - (a.blade || 0))[0] || cands[0];
+    const id = best?.instance_id;
+    if (id) {
+      cpuAct('resolve_prompt', { member_id: id, slot: best?.slot });
+      return true;
+    }
+    cpuAct('resolve_prompt', { choice: 'skip' });
+    return true;
+  }
+  if (pr.type === 'auto_on_ally_wait_activate_blade') {
+    if (pr.step === 'discard') {
+      const need = pr.discard_count || 1;
+      const ids = cpuPickDiscardIds(cpu.hand || [], need, tier, winPressure, read);
+      if (ids.length >= need) {
+        cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
+        return true;
+      }
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    if (tier === 'easy' || (cpu.hand || []).length < (pr.discard_count || 1)) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { choice: 'yes' });
     return true;
   }
   if (pr.type === 'optional_wait_self_look_reveal') {

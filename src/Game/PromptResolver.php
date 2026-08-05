@@ -43,6 +43,75 @@ function applyWaitGroupMemberDrawDiscard(
     return finishPromptEffects($state);
 }
 
+function applyOptionalWaitGroupMemberBlade(
+    array $state,
+    string $owner,
+    array $prompt,
+    string $memberId
+): array {
+    $ability = $prompt['ability'] ?? [];
+    $group = $ability['group'] ?? $prompt['group'] ?? 'Nijigasaki';
+    $ownerP = &$state['players'][$owner];
+    $found = false;
+    foreach ($ownerP['stage'] as &$mbr) {
+        if ($mbr && ($mbr['instance_id'] ?? '') === $memberId
+            && ($mbr['group'] ?? '') === $group
+            && !memberIsInWait($mbr)) {
+            waitMember($mbr, $state);
+            $found = true;
+            break;
+        }
+    }
+    unset($mbr);
+    if (!$found) {
+        throw new Exception('Choose a ' . $group . ' Member on Stage');
+    }
+    $amt = intval($prompt['amount'] ?? $ability['amount'] ?? 2);
+    $srcName = $prompt['source_name'] ?? 'Member';
+    $srcId = $prompt['source_id'] ?? '';
+    if ($srcId !== '') {
+        foreach ($ownerP['stage'] as &$mbr) {
+            if ($mbr && ($mbr['instance_id'] ?? '') === $srcId) {
+                $mbr['live_blade_bonus'] = intval($mbr['live_blade_bonus'] ?? 0) + $amt;
+                break;
+            }
+        }
+        unset($mbr);
+    } else {
+        $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => $amt]);
+    }
+    $state = addLog($state, $state['players'][$owner]['name'] .
+        " — [$srcName] Waited Member; gained +$amt Blade until Live ends.");
+    unset($state['pending_prompt']);
+    $state['seq']++;
+    return finishLiveStartEffects($state);
+}
+
+function applyAutoOnAllyWaitActivateBlade(array $state, string $owner, array $prompt): array {
+    $ownerP = &$state['players'][$owner];
+    $waitedId = (string)($prompt['waited_id'] ?? '');
+    $amt = intval($prompt['amount'] ?? 2);
+    $slot = $prompt['source_slot'] ?? '';
+    $idx = intval($prompt['ability_index'] ?? -1);
+    $srcName = $prompt['source_name'] ?? 'Member';
+    if ($slot !== '' && $idx >= 0 && !empty($ownerP['stage'][$slot])) {
+        markAbilityUsed($ownerP['stage'][$slot], $idx);
+    }
+    foreach ($ownerP['stage'] as &$wMbr) {
+        if ($wMbr && ($wMbr['instance_id'] ?? '') === $waitedId) {
+            clearMemberWait($wMbr);
+            $wMbr['live_blade_bonus'] = intval($wMbr['live_blade_bonus'] ?? 0) + $amt;
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . $srcName . '] activated ' .
+                ($wMbr['name_en'] ?? $wMbr['name'] ?? 'Member') .
+                " and granted +$amt Blade (ally Wait Auto).");
+            break;
+        }
+    }
+    unset($wMbr);
+    return $state;
+}
+
 // actionResolvePrompt — completes pending_prompt from client resolve_prompt actions
 
 function actionResolvePrompt(array $state, string $pid, array $data): array {
@@ -723,6 +792,205 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         unset($state['pending_prompt']);
         $state['seq']++;
         return finishPromptEffects($state);
+    }
+
+    if ($promptType === 'optional_wait_group_member_blade') {
+        $step = $prompt['step'] ?? '';
+        if ($step === 'pick_member') {
+            $mid = $data['member_id'] ?? '';
+            if ($mid === '' && !empty($data['slot'])) {
+                $mid = trim((string)($ownerP['stage'][$data['slot']]['instance_id'] ?? ''));
+            }
+            if ($mid === '') {
+                throw new Exception('Choose a Member on Stage');
+            }
+            return applyOptionalWaitGroupMemberBlade($state, $owner, $prompt, $mid);
+        }
+        if (!isset(['yes' => true, 'no' => true][$choice])) {
+            throw new Exception('Invalid choice');
+        }
+        if ($choice === 'yes') {
+            $group = $ability['group'] ?? $prompt['group'] ?? 'Nijigasaki';
+            $members = listGroupStageMembersNotWaiting($ownerP, $group);
+            if (empty($members)) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] no $group Members on Stage.");
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishLiveStartEffects($state);
+            }
+            if (count($members) === 1) {
+                return applyOptionalWaitGroupMemberBlade(
+                    $state,
+                    $owner,
+                    $prompt,
+                    (string)($members[0]['instance_id'] ?? '')
+                );
+            }
+            $state['pending_prompt'] = [
+                'type'          => 'optional_wait_group_member_blade',
+                'step'          => 'pick_member',
+                'owner'         => $owner,
+                'responder'     => $owner,
+                'source_id'     => $prompt['source_id'] ?? '',
+                'source_name'   => $prompt['source_name'] ?? 'Member',
+                'group'         => $group,
+                'amount'        => intval($prompt['amount'] ?? $ability['amount'] ?? 2),
+                'stage_members' => $members,
+                'prompt'        => 'Choose 1 ' . $group . ' Member to put into Wait.',
+                'ability'       => $ability,
+            ];
+            $state['seq']++;
+            return $state;
+        }
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional Live Start effect.');
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        return finishLiveStartEffects($state);
+    }
+
+    if ($promptType === 'optional_wait_up_to_group_live_score') {
+        $step = $prompt['step'] ?? '';
+        if ($step === 'pick_members') {
+            $ids = $data['member_ids'] ?? [];
+            if (!is_array($ids)) {
+                $ids = [];
+            }
+            $max = intval($prompt['max_wait'] ?? $ability['max_wait'] ?? 3);
+            if (count($ids) > $max) {
+                throw new Exception("Choose at most $max Member(s)");
+            }
+            $group = $ability['group'] ?? $prompt['group'] ?? 'Nijigasaki';
+            $waited = 0;
+            foreach ($ownerP['stage'] as &$mbr) {
+                if (!$mbr || !in_array($mbr['instance_id'] ?? '', $ids, true)) {
+                    continue;
+                }
+                if (($mbr['group'] ?? '') !== $group) {
+                    continue;
+                }
+                waitMember($mbr, $state);
+                $waited++;
+            }
+            unset($mbr);
+            $scorePer = intval($prompt['score_per'] ?? $ability['score_per'] ?? 1);
+            if ($waited > 0 && $scorePer > 0) {
+                bumpLiveCardScore($state, $owner, $prompt['source_id'] ?? '', $waited * $scorePer);
+            }
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Live') . "] put $waited Member(s) into Wait; score +"
+                . ($waited * $scorePer) . '.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishLiveStartEffects($state);
+        }
+        if (!isset(['yes' => true, 'no' => true][$choice])) {
+            throw new Exception('Invalid choice');
+        }
+        if ($choice === 'yes') {
+            $group = $ability['group'] ?? $prompt['group'] ?? 'Nijigasaki';
+            $members = listGroupStageMembersNotWaiting($ownerP, $group);
+            $max = intval($prompt['max_wait'] ?? $ability['max_wait'] ?? 3);
+            if (empty($members)) {
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishLiveStartEffects($state);
+            }
+            $state['pending_prompt'] = [
+                'type'          => 'optional_wait_up_to_group_live_score',
+                'step'          => 'pick_members',
+                'owner'         => $owner,
+                'responder'     => $owner,
+                'source_id'     => $prompt['source_id'] ?? '',
+                'source_name'   => $prompt['source_name'] ?? 'Live',
+                'group'         => $group,
+                'max_wait'      => $max,
+                'score_per'     => intval($prompt['score_per'] ?? $ability['score_per'] ?? 1),
+                'stage_members' => $members,
+                'prompt'        => "Choose up to $max $group Member(s) to put into Wait.",
+                'ability'       => $ability,
+            ];
+            $state['seq']++;
+            return $state;
+        }
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Live') . '] skipped optional Live Start effect.');
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        return finishLiveStartEffects($state);
+    }
+
+    if ($promptType === 'activate_members_pick') {
+        $memberId = trim((string)($data['member_id'] ?? ''));
+        if ($memberId === '' && !empty($data['slot'])) {
+            $memberId = trim((string)($ownerP['stage'][$data['slot']]['instance_id'] ?? ''));
+        }
+        if ($memberId === '') {
+            throw new Exception('Choose a Member to activate');
+        }
+        $cands = $prompt['candidates'] ?? [];
+        $ok = false;
+        foreach ($cands as $c) {
+            if (($c['instance_id'] ?? '') === $memberId) {
+                $ok = true;
+                break;
+            }
+        }
+        if (!$ok) {
+            throw new Exception('Invalid Member');
+        }
+        $activated = activateStageMemberByInstanceId($ownerP, $memberId);
+        if ($activated > 0) {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Card') . '] activated 1 Member.');
+        }
+        unset($state['pending_prompt']);
+        $state['seq']++;
+        if (!empty($prompt['live_start']) || ($state['phase'] ?? '') === 'live_start_effects') {
+            return finishLiveStartEffects($state);
+        }
+        return finishPromptEffects($state);
+    }
+
+    if ($promptType === 'auto_on_ally_wait_activate_blade') {
+        $step = $prompt['step'] ?? '';
+        if ($step === 'discard' || !empty($data['discard_ids'])) {
+            $need = intval($prompt['discard_count'] ?? 1);
+            $ids = $data['discard_ids'] ?? [];
+            if (count($ids) !== $need) {
+                throw new Exception("Must select exactly $need card(s) to discard");
+            }
+            discardHandCardsByIds($ownerP, $ids);
+            $state = applyAutoOnAllyWaitActivateBlade($state, $owner, $prompt);
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
+        if (!isset(['yes' => true, 'no' => true][$choice])) {
+            throw new Exception('Invalid choice');
+        }
+        if ($choice === 'no') {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped ally Wait Auto.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
+        $need = intval($prompt['discard_count'] ?? 1);
+        if (count($ownerP['hand'] ?? []) < $need) {
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
+        $state['pending_prompt'] = array_merge($prompt, [
+            'step'   => 'discard',
+            'prompt' => $need === 1
+                ? 'Choose 1 card to put into the Waiting Room.'
+                : "Choose $need cards to put into the Waiting Room.",
+        ]);
+        $state['seq']++;
+        return $state;
     }
 
     if ($promptType === 'live_success_pick_energy_or_member') {

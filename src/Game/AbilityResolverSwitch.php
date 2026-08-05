@@ -106,7 +106,9 @@ function resolveAbilityEffectSwitch(
         return tryResolveAbilityEffectSwitchBlade($state, $pid, $source, $ab, $ctx, $type, $p, $name);
     }
 
-    if (str_starts_with($type, 'grant_')) {
+    if (str_starts_with($type, 'grant_')
+        || $type === 'pick_group_member_grant_hearts'
+        || $type === 'pick_member_grant_hearts') {
         return tryResolveAbilityEffectSwitchGrant($state, $pid, $source, $ab, $ctx, $type, $p, $name);
     }
 

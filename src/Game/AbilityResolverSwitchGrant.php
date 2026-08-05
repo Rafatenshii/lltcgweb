@@ -49,6 +49,59 @@ function tryResolveAbilityEffectSwitchGrant(
                     " — [$name] $n named Member(s) gained Blade until Live ends.");
             }
             break;
+
+        case 'pick_group_member_grant_hearts':
+        case 'pick_member_grant_hearts':
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $group = (string)($ab['group'] ?? '');
+            $minBlade = intval($ab['min_blade'] ?? 0);
+            $candidates = [];
+            foreach ($p['stage'] as $slot => $mbr) {
+                if (!$mbr) {
+                    continue;
+                }
+                if ($group !== '' && ($mbr['group'] ?? '') !== $group) {
+                    continue;
+                }
+                $blade = memberBladeIconCount($mbr) + intval($mbr['live_blade_bonus'] ?? 0);
+                if ($blade < $minBlade) {
+                    continue;
+                }
+                $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+            }
+            if (empty($candidates)) {
+                break;
+            }
+            $hearts = $ab['hearts'] ?? [];
+            if (count($candidates) === 1) {
+                applyNamedMemberHeartsBlade($state, $pid, $candidates[0]['instance_id'], [
+                    'hearts' => $hearts,
+                ]);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] granted bonus hearts to ' .
+                    ($candidates[0]['name_en'] ?? $candidates[0]['name'] ?? 'Member') . '.');
+                break;
+            }
+            $state['pending_prompt'] = [
+                'type'        => 'pick_member_grant_hearts',
+                'owner'       => $pid,
+                'responder'   => $pid,
+                'source_id'   => $source['instance_id'] ?? '',
+                'source_name' => $name,
+                'candidates'  => $candidates,
+                'hearts'      => $hearts,
+                'prompt'      => $group !== ''
+                    ? "Choose 1 $group Member"
+                        . ($minBlade > 0 ? " with Blade $minBlade or more" : '')
+                        . ' for bonus hearts until Live ends.'
+                    : 'Choose 1 Member for bonus hearts until Live ends.',
+                'ability'     => $ab,
+            ];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] choose a Member for bonus hearts.");
+            break;
     }
     return $state;
 }

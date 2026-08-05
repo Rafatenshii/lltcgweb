@@ -82,6 +82,24 @@ function tryResolveAbilityEffectSwitchWaitActivate(
             }
             break;
 
+        case 'wait_opp_max_original_blade_if_stage_group':
+            if (!stageAllMembersInGroup($p, $ab['group'] ?? '')) {
+                break;
+            }
+            $state = beginWaitOpponentStagePick(
+                $state,
+                $pid,
+                $name,
+                array_merge($ab, [
+                    'max_original_blade' => intval($ab['max_original_blade'] ?? 2),
+                    'pick_count' => intval($ab['pick_count'] ?? 1),
+                ]),
+                $source['instance_id'] ?? '',
+                ($ctx['phase'] ?? '') === 'live_start'
+                    || ($state['phase'] ?? '') === 'live_start_effects'
+            );
+            break;
+
         case 'activate_subunit_members':
             $activated = activateSubunitMembers($p, $ab['subunit'] ?? '', intval($ab['max'] ?? 1));
             if ($activated > 0) {
@@ -113,7 +131,45 @@ function tryResolveAbilityEffectSwitchWaitActivate(
             break;
 
         case 'activate_members':
-            $activated = activateMembersByEffect($state, $p, intval($ab['max'] ?? 1));
+            $max = intval($ab['max'] ?? 1);
+            $group = (string)($ab['group'] ?? '');
+            $candidates = listActivatableStageMembers($p, $group);
+            if (empty($candidates)) {
+                break;
+            }
+            if ($max <= 1 && count($candidates) === 1) {
+                $activated = activateStageMemberByInstanceId($p, (string)($candidates[0]['instance_id'] ?? ''));
+                if ($activated > 0) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] activated $activated Member(s).");
+                }
+                break;
+            }
+            if ($max <= 1 && count($candidates) > 1) {
+                if (!empty($state['pending_prompt'])) {
+                    break;
+                }
+                $state['pending_prompt'] = [
+                    'type'          => 'activate_members_pick',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $source['instance_id'] ?? '',
+                    'source_name'   => $name,
+                    'candidates'    => $candidates,
+                    'max'           => $max,
+                    'group'         => $group,
+                    'prompt'        => $group !== ''
+                        ? "Choose 1 $group Member to activate."
+                        : 'Choose 1 Member to activate.',
+                    'ability'       => $ab,
+                    'live_start'    => ($ctx['phase'] ?? '') === 'live_start'
+                        || ($state['phase'] ?? '') === 'live_start_effects',
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] choose a Member to activate.");
+                break;
+            }
+            $activated = activateMembersByEffect($state, $p, $max, $group);
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] activated $activated Member(s).");
             break;

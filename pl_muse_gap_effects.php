@@ -319,8 +319,21 @@ function plMuseGapApplyHandCostReduction(array $state, string $pid, array $card,
     foreach ($card['abilities'] as $ab) {
         if (($ab['trigger'] ?? '') !== 'continuous') continue;
         if (($ab['type'] ?? '') !== 'hand_cost_reduction_if_success_live_group') continue;
-        if (empty($p['success_lives'])) continue;
-        if (($card['group'] ?? '') !== ($ab['group'] ?? "μ's")) continue;
+        $group = $ab['group'] ?? "μ's";
+        if (!empty($ab['require_success_has_group'])) {
+            $hasGroup = false;
+            foreach ($p['success_lives'] ?? [] as $lc) {
+                if ($lc && ($lc['group'] ?? '') === $group) {
+                    $hasGroup = true;
+                    break;
+                }
+            }
+            if (!$hasGroup) continue;
+        } elseif (empty($p['success_lives'])) {
+            continue;
+        }
+        if (($card['group'] ?? '') !== $group) continue;
+        // Default 17 for Muse Music S.T.A.R.T!!; Niji cheer uses min_original_cost: 0.
         if (intval($card['cost'] ?? 0) < intval($ab['min_original_cost'] ?? 17)) continue;
         $base = max(0, $base - intval($ab['amount'] ?? 2));
     }

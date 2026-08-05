@@ -1940,6 +1940,59 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
+  if (pr?.type === 'optional_wait_group_member_blade' && pr.responder === myId) {
+    if (pr.step === 'pick_member') {
+      ovl.classList.remove('open');
+      const members = pr.stage_members || [];
+      if (!members.length) {
+        sendAct('resolve_prompt', { choice: 'no' });
+        return;
+      }
+      openOppActiveMemberPick({
+        ...pr,
+        stage_members: members,
+        prompt: pr.prompt || `Choose 1 ${pr.group || 'Nijigasaki'} Member to put into Wait.`,
+      });
+      return;
+    }
+  }
+  if (pr?.type === 'optional_wait_up_to_group_live_score' && pr.step === 'pick_members' && pr.responder === myId) {
+    ovl.classList.remove('open');
+    openMemberWaitPick({
+      ...pr,
+      max_members: pr.max_wait || pr.ability?.max_wait || 3,
+      min_members: 0,
+      stage_members: pr.stage_members || [],
+    }, myId);
+    return;
+  }
+  if (pr?.type === 'activate_members_pick' && pr.responder === myId) {
+    ovl.classList.remove('open');
+    const cands = pr.candidates || [];
+    if (!cands.length) {
+      sendAct('resolve_prompt', { choice: 'skip' });
+      return;
+    }
+    openStageMemberPickById(pr);
+    return;
+  }
+  if (pr?.type === 'auto_on_ally_wait_activate_blade' && pr.responder === myId) {
+    if (pr.step === 'discard') {
+      ovl.classList.remove('open');
+      const me = s.players?.[myId];
+      const need = pr.discard_count || 1;
+      openHandPick({
+        hand: me?.hand || [],
+        count: need,
+        title: pr.source_name || 'Discard',
+        msg: pr.prompt || (need === 1
+          ? 'Choose 1 card to put into the Waiting Room.'
+          : `Choose ${need} cards to put into the Waiting Room.`),
+        onConfirm: (ids) => sendAct('resolve_prompt', { discard_ids: ids }),
+      });
+      return;
+    }
+  }
   if(pr?.type==='effect_discard_hand'&&pr.responder===myId){
     renderPromptDiscardHandBranch(s, myId, pr);
     return;

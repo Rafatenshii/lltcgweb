@@ -1026,6 +1026,61 @@ function tryResolveAbilityEffectSwitchOptional(
                 ' — [' . $name . '] optional WR member re-enter (choose).');
             break;
 
+        case 'optional_wait_group_member_blade':
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $group = $ab['group'] ?? 'Nijigasaki';
+            if (!stageHasGroupMember($p, $group)) {
+                break;
+            }
+            $amt = intval($ab['amount'] ?? 2);
+            $state['pending_prompt'] = [
+                'type'          => 'optional_wait_group_member_blade',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_name'   => $name,
+                'group'         => $group,
+                'amount'        => $amt,
+                'prompt'        => "Put 1 $group Member into Wait: until this Live ends, gain +$amt Blade?",
+                'choices'       => ['yes', 'no'],
+                'choice_labels' => ['Yes', 'No — Skip'],
+                'ability'       => $ab,
+            ];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . $name . '] optional Live Start (choose).');
+            break;
+
+        case 'optional_wait_up_to_group_live_score':
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $group = $ab['group'] ?? 'Nijigasaki';
+            $maxWait = intval($ab['max_wait'] ?? 3);
+            $members = listGroupStageMembersNotWaiting($p, $group);
+            if (empty($members)) {
+                break;
+            }
+            $state['pending_prompt'] = [
+                'type'          => 'optional_wait_up_to_group_live_score',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_name'   => $name,
+                'group'         => $group,
+                'max_wait'      => $maxWait,
+                'score_per'     => intval($ab['score_per'] ?? 1),
+                'prompt'        => "Put up to $maxWait $group Member(s) into Wait: this card's score +"
+                    . intval($ab['score_per'] ?? 1) . ' for each?',
+                'choices'       => ['yes', 'no'],
+                'choice_labels' => ['Yes — choose Members', 'No — Skip'],
+                'ability'       => $ab,
+            ];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . $name . '] optional Live Start (choose).');
+            break;
+
         default:
             return null;
 

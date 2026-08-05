@@ -550,6 +550,124 @@ function resolveAutoOnWaitAbilities(array $state, string $pid, array $member): a
             );
         }
     }
+    return resolveAutoOnAllyWaitAbilities($state, $pid, $member);
+}
+
+/**
+ * NSD02 Shioriko-style: when an ally Wait happens, other Stage Members may optionally
+ * discard to Activate that Waited Member and grant Blade until Live ends.
+ */
+function resolveAutoOnAllyWaitAbilities(array $state, string $pid, array $waitedMember): array {
+    if (!empty($state['pending_prompt'])) {
+        return $state;
+    }
+    $waitedId = (string)($waitedMember['instance_id'] ?? '');
+    $waitedGroup = (string)($waitedMember['group'] ?? '');
+    if ($waitedId === '') {
+        return $state;
+    }
+    $p = &$state['players'][$pid];
+    foreach ($p['stage'] as $slot => $ally) {
+        if (!$ally) {
+            continue;
+        }
+        if (($ally['instance_id'] ?? '') === $waitedId) {
+            continue;
+        }
+        foreach ($ally['abilities'] ?? [] as $idx => $ab) {
+            if (($ab['trigger'] ?? '') !== 'auto') {
+                continue;
+            }
+            if (($ab['type'] ?? '') !== 'auto_on_ally_wait_activate_blade') {
+                continue;
+            }
+            if (!empty($ab['once_per_turn']) && isAbilityUsed($ally, $idx)) {
+                continue;
+            }
+            $needGroup = (string)($ab['group'] ?? '');
+            if ($needGroup !== '' && $waitedGroup !== $needGroup) {
+                continue;
+            }
+            $name = $ally['name_en'] ?? $ally['name'] ?? 'Member';
+            $discardNeed = intval($ab['optional_discard'] ?? 0);
+            if ($discardNeed > 0) {
+                if (empty($p['hand'])) {
+                    continue;
+                }
+                $state['pending_prompt'] = [
+                    'type'              => 'auto_on_ally_wait_activate_blade',
+                    'owner'             => $pid,
+                    'responder'         => $pid,
+                    'source_id'         => $ally['instance_id'] ?? '',
+                    'source_slot'       => $slot,
+                    'source_name'       => $name,
+                    'waited_id'         => $waitedId,
+                    'ability_index'     => $idx,
+                    'amount'            => intval($ab['amount'] ?? 2),
+                    'discard_count'     => $discardNeed,
+                    'prompt'            => "Put $discardNeed card(s) from your hand into the Waiting Room: activate the Waited Member and grant +"
+                        . intval($ab['amount'] ?? 2) . ' Blade until this Live ends?',
+                    'choices'           => ['yes', 'no'],
+                    'choice_labels'     => ['Yes — Discard', 'No — Skip'],
+                    'ability'           => $ab,
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] optional Auto (ally Wait).");
+                return $state;
+            }
+            // No discard cost — apply immediately.
+            markAbilityUsed($p['stage'][$slot], $idx);
+            $amt = intval($ab['amount'] ?? 2);
+            foreach ($p['stage'] as $wSlot => &$wMbr) {
+                if ($wMbr && ($wMbr['instance_id'] ?? '') === $waitedId) {
+                    clearMemberWait($wMbr);
+                    $wMbr['live_blade_bonus'] = intval($wMbr['live_blade_bonus'] ?? 0) + $amt;
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        ' — [' . $name . '] activated ' .
+                        ($wMbr['name_en'] ?? $wMbr['name'] ?? 'Member') .
+                        " and granted +$amt Blade (ally Wait Auto).");
+                    break;
+                }
+            }
+            unset($wMbr);
+            return $state;
+        }
+    }
+    return $state;
+}
+
+function flushAutoOnWaitAbilities(array $state): array {
+    $phase = $state['phase'] ?? '';
+    // Main phases always; live phases allowed when Wait can occur mid-Live.
+    $livePhases = [
+        'live_start_effects', 'live_performance_first', 'live_performance_second',
+        'live_join', 'live_judge', 'live_success_effects',
+    ];
+    if (!in_array($phase, ['main_first', 'main_second'], true)
+        && !in_array($phase, $livePhases, true)
+        && !str_starts_with((string)$phase, 'live_')) {
+        return $state;
+    }
+    foreach (['p1', 'p2'] as $pid) {
+        $p = &$state['players'][$pid];
+        foreach ($p['stage'] as $slot => &$mbr) {
+            if (!$mbr || empty($mbr['_was_active_before_wait'])) {
+                continue;
+            }
+            unset($mbr['_was_active_before_wait']);
+            if ($mbr['active'] ?? true) {
+                continue;
+            }
+            $state = resolveAutoOnWaitAbilities($state, $pid, $mbr);
+            $p['stage'][$slot] = $mbr;
+            if (!empty($state['pending_prompt'])) {
+                unset($p);
+                return $state;
+            }
+        }
+        unset($mbr);
+        unset($p);
+    }
     return $state;
 }
 
@@ -2474,6 +2592,9 @@ function resolveLiveSuccessAbilitiesBody(
     array $excessColors,
     array $yellCards
 ): array {
+    if (!empty($successCards)) {
+        $state['players'][$pid]['succeeded_live_this_turn'] = true;
+    }
     foreach ($successCards as $lc) {
         if (!$lc) {
             continue;
@@ -3089,34 +3210,6 @@ function waitMember(array &$member, array $state): void {
     $member['active'] = false;
 }
 
-function flushAutoOnWaitAbilities(array $state): array {
-    $phase = $state['phase'] ?? '';
-    if (!in_array($phase, ['main_first', 'main_second'], true)) {
-        return $state;
-    }
-    foreach (['p1', 'p2'] as $pid) {
-        $p = &$state['players'][$pid];
-        foreach ($p['stage'] as $slot => &$mbr) {
-            if (!$mbr || empty($mbr['_was_active_before_wait'])) {
-                continue;
-            }
-            unset($mbr['_was_active_before_wait']);
-            if ($mbr['active'] ?? true) {
-                continue;
-            }
-            $state = resolveAutoOnWaitAbilities($state, $pid, $mbr);
-            $p['stage'][$slot] = $mbr;
-            if (!empty($state['pending_prompt'])) {
-                unset($p);
-                return $state;
-            }
-        }
-        unset($mbr);
-        unset($p);
-    }
-    return $state;
-}
-
 function memberSnapshot(array $member): array {
     $snap = $member;
     $snap['active'] = true;
@@ -3206,6 +3299,20 @@ function listGroupStageMembers(array $p, string $group): array {
     return $out;
 }
 
+function listGroupStageMembersNotWaiting(array $p, string $group): array {
+    $out = [];
+    foreach ($p['stage'] as $slot => $mbr) {
+        if (!$mbr || ($mbr['group'] ?? '') !== $group) {
+            continue;
+        }
+        if (memberIsInWait($mbr)) {
+            continue;
+        }
+        $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+    }
+    return $out;
+}
+
 function listActiveStageMembers(array $p): array {
     $out = [];
     foreach ($p['stage'] as $slot => $mbr) {
@@ -3236,11 +3343,12 @@ function countRequiredHeartsOfColor(array $card, string $color): int {
     return $n;
 }
 
-function activateMembersForPlayer(array &$p, int $max): int {
+function activateMembersForPlayer(array &$p, int $max, string $group = ''): int {
     $n = 0;
     foreach ($p['stage'] as &$mbr) {
         if ($n >= $max) break;
         if (!$mbr) continue;
+        if ($group !== '' && ($mbr['group'] ?? '') !== $group) continue;
         // Wait only blocks printed Blade contribution — "Activate" clears Wait.
         if (memberIsInWait($mbr)) {
             clearMemberWait($mbr);
@@ -3256,6 +3364,47 @@ function activateMembersForPlayer(array &$p, int $max): int {
     }
     unset($mbr);
     return $n;
+}
+
+/** Stage Members that can be activated (Wait or inactive), optionally filtered by group. */
+function listActivatableStageMembers(array $p, string $group = ''): array {
+    $out = [];
+    foreach ($p['stage'] as $slot => $mbr) {
+        if (!$mbr) continue;
+        if ($group !== '' && ($mbr['group'] ?? '') !== $group) continue;
+        if (memberIsInWait($mbr) || !memberIsActiveForGame($mbr)) {
+            $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+        }
+    }
+    return $out;
+}
+
+function activateStageMemberByInstanceId(array &$p, string $instanceId): int {
+    if ($instanceId === '') {
+        return 0;
+    }
+    foreach ($p['stage'] as &$mbr) {
+        if (!$mbr || ($mbr['instance_id'] ?? '') !== $instanceId) {
+            continue;
+        }
+        if (memberIsInWait($mbr)) {
+            clearMemberWait($mbr);
+            if (!empty($p['_effect_source_is_niji'])) {
+                $p['_niji_turn_flags']['activated_wait_member'] = true;
+            }
+            unset($mbr);
+            return 1;
+        }
+        if (!memberIsActiveForGame($mbr)) {
+            $mbr['active'] = true;
+            unset($mbr);
+            return 1;
+        }
+        unset($mbr);
+        return 0;
+    }
+    unset($mbr);
+    return 0;
 }
 
 function waitOpponentStageByCost(
@@ -3456,6 +3605,23 @@ function listOppStageMembersByMaxCost(array $state, string $oppId, int $maxCost,
         if (!$mbr) continue;
         if ($activeOnly && memberIsInWait($mbr)) continue;
         if (intval($mbr['cost'] ?? 0) > $maxCost) continue;
+        $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+    }
+    return $out;
+}
+
+function listOppStageMembersByMaxOriginalBlade(
+    array $state,
+    string $oppId,
+    int $maxBlade,
+    bool $activeOnly = false
+): array {
+    $out = [];
+    foreach ($state['players'][$oppId]['stage'] as $slot => $mbr) {
+        if (!$mbr) continue;
+        if (memberIsInWait($mbr)) continue;
+        if ($activeOnly && !memberIsActiveForGame($mbr)) continue;
+        if (intval($mbr['blade'] ?? 0) > $maxBlade) continue;
         $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
     }
     return $out;
@@ -3861,11 +4027,11 @@ function activateSubunitMembers(array &$p, string $subunit, int $max): int {
     return $n;
 }
 
-function activateMembersByEffect(array &$state, array &$p, int $max): int {
+function activateMembersByEffect(array &$state, array &$p, int $max, string $group = ''): int {
     if (!empty($state['block_effect_member_activate'])) {
         return 0;
     }
-    return activateMembersForPlayer($p, $max);
+    return activateMembersForPlayer($p, $max, $group);
 }
 
 function waitOpponentStageByOriginalHearts(
@@ -4765,15 +4931,19 @@ function logOpponentMembersWaitedOutcome(
     string $ownerPid,
     string $srcName,
     int $waited,
-    int $maxCost
+    int $maxCost,
+    string $mode = 'cost'
 ): array {
     $prefix = $state['players'][$ownerPid]['name'] . ' — [' . $srcName . '] ';
+    $thresh = $mode === 'blade'
+        ? ('original Blade ≤' . $maxCost)
+        : ('cost ≤' . $maxCost);
     if ($waited > 0) {
         return addLog($state, $prefix . "put $waited opponent Stage Member" .
-            ($waited === 1 ? '' : 's') . ' into Wait (cost ≤' . $maxCost . ').');
+            ($waited === 1 ? '' : 's') . " into Wait ($thresh).");
     }
     return addLog($state, $prefix .
-        'no opponent Stage Members matched (cost ≤' . $maxCost . '); none put into Wait.');
+        "no opponent Stage Members matched ($thresh); none put into Wait.");
 }
 
 function applyDrawThenDiscard(
@@ -5062,45 +5232,73 @@ function beginWaitOpponentStagePick(
     bool $liveStart = false
 ): array {
     $opp = ($owner === 'p1') ? 'p2' : 'p1';
+    $byBlade = array_key_exists('max_original_blade', $effect);
     $maxCost = intval($effect['max_cost'] ?? 9);
+    $maxBlade = intval($effect['max_original_blade'] ?? 2);
     $pickCount = isset($effect['pick_count']) ? intval($effect['pick_count']) : null;
     $activeOnly = !empty($effect['active_only']);
     // "Your opponent puts … into Wait" → opponent picks which of their Members.
     // Default "Put 1 opponent Stage Member … into Wait" → effect controller picks.
     $oppChooses = !empty($effect['opp_chooses']);
-    $members = listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
+    $members = $byBlade
+        ? listOppStageMembersByMaxOriginalBlade($state, $opp, $maxBlade, $activeOnly)
+        : listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
+    $thresholdLabel = $byBlade ? "original Blade ≤$maxBlade" : "cost ≤$maxCost";
     if (empty($members)) {
-        return logOpponentMembersWaitedOutcome($state, $owner, $srcName, 0, $maxCost);
+        return logOpponentMembersWaitedOutcome(
+            $state,
+            $owner,
+            $srcName,
+            0,
+            $byBlade ? $maxBlade : $maxCost,
+            $byBlade ? 'blade' : 'cost'
+        );
     }
     // No pick_count = wait all matching (legacy / "put all … into Wait").
     if ($pickCount === null) {
-        $waited = waitOpponentStageByCost($state, $opp, $maxCost, null, $owner);
-        return logOpponentMembersWaitedOutcome($state, $owner, $srcName, $waited, $maxCost);
+        $waited = $byBlade
+            ? waitOpponentStageByOriginalBlades($state, $opp, $maxBlade, null, $owner, $activeOnly)
+            : waitOpponentStageByCost($state, $opp, $maxCost, null, $owner, $activeOnly);
+        return logOpponentMembersWaitedOutcome(
+            $state,
+            $owner,
+            $srcName,
+            $waited,
+            $byBlade ? $maxBlade : $maxCost,
+            $byBlade ? 'blade' : 'cost'
+        );
     }
     $pickCount = max(1, $pickCount);
     // Exactly one legal target and pick 1 → auto-resolve.
     if ($pickCount === 1 && count($members) === 1) {
         waitOpponentMemberAtSlot($state, $opp, $members[0]['slot'], $owner);
-        return logOpponentMembersWaitedOutcome($state, $owner, $srcName, 1, $maxCost);
+        return logOpponentMembersWaitedOutcome(
+            $state,
+            $owner,
+            $srcName,
+            1,
+            $byBlade ? $maxBlade : $maxCost,
+            $byBlade ? 'blade' : 'cost'
+        );
     }
     if ($oppChooses) {
         if ($pickCount > 1) {
             $prompt = $activeOnly
                 ? "Choose up to $pickCount active Member(s) on your Stage to put into Wait."
                 : "Choose up to $pickCount Member(s) on your Stage to put into Wait.";
-            if ($maxCost < 99) {
+            if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
                 $prompt = $activeOnly
-                    ? "Choose up to $pickCount active Member(s) on your Stage with cost ≤$maxCost to put into Wait."
-                    : "Choose up to $pickCount Member(s) on your Stage with cost ≤$maxCost to put into Wait.";
+                    ? "Choose up to $pickCount active Member(s) on your Stage with $thresholdLabel to put into Wait."
+                    : "Choose up to $pickCount Member(s) on your Stage with $thresholdLabel to put into Wait.";
             }
         } else {
             $prompt = $activeOnly
                 ? 'Choose 1 active Member on your Stage to put into Wait.'
                 : 'Choose 1 Member on your Stage to put into Wait.';
-            if ($maxCost < 99) {
+            if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
                 $prompt = $activeOnly
-                    ? "Choose 1 active Member on your Stage with cost ≤$maxCost to put into Wait."
-                    : "Choose 1 Member on your Stage with cost ≤$maxCost to put into Wait.";
+                    ? "Choose 1 active Member on your Stage with $thresholdLabel to put into Wait."
+                    : "Choose 1 Member on your Stage with $thresholdLabel to put into Wait.";
             }
         }
         $responder = $opp;
@@ -5108,8 +5306,8 @@ function beginWaitOpponentStagePick(
         $prompt = $activeOnly
             ? "Choose up to $pickCount active opponent Stage Member(s)"
             : "Choose up to $pickCount opponent Stage Member(s)";
-        if ($maxCost < 99) {
-            $prompt .= " (cost ≤$maxCost)";
+        if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+            $prompt .= " ($thresholdLabel)";
         }
         $prompt .= ' to put into Wait.';
         $responder = $owner;
@@ -5117,8 +5315,8 @@ function beginWaitOpponentStagePick(
         $prompt = $activeOnly
             ? "Choose 1 active opponent Stage Member"
             : 'Choose 1 opponent Stage Member';
-        if ($maxCost < 99) {
-            $prompt .= " (cost ≤$maxCost)";
+        if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+            $prompt .= " ($thresholdLabel)";
         }
         $prompt .= ' to put into Wait.';
         $responder = $owner;
@@ -5135,7 +5333,8 @@ function beginWaitOpponentStagePick(
         'live_start'    => $liveStart,
         'prompt'        => $prompt,
         'candidates'    => $members,
-        'max_cost'      => $maxCost,
+        'max_cost'      => $byBlade ? 99 : $maxCost,
+        'max_original_blade' => $byBlade ? $maxBlade : null,
         'pick_count'    => $pickCount,
         'up_to'         => $pickCount > 1,
         'ability'       => $effect,

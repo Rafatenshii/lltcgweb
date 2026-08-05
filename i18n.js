@@ -136,7 +136,8 @@
         "cards800": "Own 800 cards",
         "cards1200": "Own 1,200 cards",
         "cards1600": "Own 1,600 cards",
-        "cards2000": "Own 2,000 cards"
+        "cards2000": "Own 2,000 cards",
+        "cards2400": "Own 2,400 cards"
       },
       "rewardStarter": "Choose a starter deck",
       "rewardStarterOwned": "Already owned",
@@ -1358,7 +1359,8 @@
         "cards800": "カードを800枚所持する",
         "cards1200": "カードを1,200枚所持する",
         "cards1600": "カードを1,600枚所持する",
-        "cards2000": "カードを2,000枚所持する"
+        "cards2000": "カードを2,000枚所持する",
+        "cards2400": "カードを2,400枚所持する"
       },
       "rewardStarter": "スターターデッキを選ぶ",
       "rewardStarterOwned": "所持済み",
@@ -3570,6 +3572,7 @@
         "cards1200": "Posee 1.200 cartas",
         "cards1600": "Posee 1.600 cartas",
         "cards2000": "Posee 2.000 cartas",
+        "cards2400": "Posee 2.400 cartas",
         "cards400": "Posee 400 cartas",
         "cards800": "Posee 800 cartas",
         "profileBanner": "Actualiza tu banner de perfil",
@@ -4814,6 +4817,7 @@
         "cards1200": "카드 1,200장 보유",
         "cards1600": "카드 1,600장 보유",
         "cards2000": "카드 2,000장 보유",
+        "cards2400": "카드 2,400장 보유",
         "cards400": "카드 400장 보유",
         "cards800": "카드 800장 보유",
         "profileBanner": "프로필 배너 변경",
@@ -6059,6 +6063,7 @@
         "cards1200": "拥有 1,200 张卡",
         "cards1600": "拥有 1,600 张卡",
         "cards2000": "拥有 2,000 张卡",
+        "cards2400": "拥有 2,400 张卡",
         "cards400": "拥有 400 张卡",
         "cards800": "拥有 800 张卡",
         "profileBanner": "更新个人资料横幅",
@@ -7280,6 +7285,7 @@
         "cards1200": "มีการ์ดครบ 1,200 ใบ",
         "cards1600": "มีการ์ดครบ 1,600 ใบ",
         "cards2000": "มีการ์ดครบ 2,000 ใบ",
+        "cards2400": "มีการ์ดครบ 2,400 ใบ",
         "cards400": "มีการ์ดครบ 400 ใบ",
         "cards800": "มีการ์ดครบ 800 ใบ",
         "profileBanner": "อัปเดตแบนเนอร์โปรไฟล์",

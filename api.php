@@ -2168,6 +2168,7 @@ function doActivePhase(array $state, string $pid): array {
     $p = &$state['players'][$pid];
     // Per-turn Nijigasaki activation tracking (Cara Tesoro Live Start, etc.).
     unset($p['_niji_turn_flags'], $p['_effect_source_is_niji']);
+    unset($p['succeeded_live_this_turn']);
     // Active Phase: stand all Energy in storage (spent last turn becomes usable again).
     foreach ($p['energy_zone'] as &$e) {
         $e['active'] = true;
@@ -3018,6 +3019,7 @@ function liveJudgePlaceSuccessLive(array $state, string $winnerId, array $toAdd,
     $toAdd = $removed;
     $successIdx = count($state['players'][$winnerId]['success_lives']);
     $state['players'][$winnerId]['success_lives'][] = $toAdd;
+    $state['players'][$winnerId]['succeeded_live_this_turn'] = true;
     notifyLiveEnteredSuccess($state, $winnerId, $toAdd);
     $ctx = &$state['_live_judge_ctx'];
     if ($ctx && !in_array($winnerId, $ctx['success_placed_by'] ?? [], true)) {
