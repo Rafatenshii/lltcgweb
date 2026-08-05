@@ -52,7 +52,9 @@ Authoritative live rooms move off Hostinger `games/*.json` flock onto VPS Redis 
 
 **Secrets (Hostinger `tcg_sync.local.php` + VPS compose env):** `TCG_INTERNAL_MATCH_SECRET` (shared), `TCG_MATCH_SEED_URL` (Hostinger→VPS), `TCG_ELO_APPLY_URL` (VPS→Hostinger). Recreate Docker / inject env only after explicit operator OK.
 
-**Hostinger kill switch:** upload empty `MATCH_WRITES_DISABLED` next to `api.php` and/or `.htaccess` `SetEnv TCG_HOSTINGER_MATCH_WRITES 0` so `create_room` / `join_room` / `casual_*` / `action` / `dry_run_actions` return `503` + `match_writes_disabled`. Reads (`get_state`, `get_cards`, `ping`) and account APIs stay available for drain. Do **not** place that marker on the VPS match API.
+**Hostinger kill switch:** upload an empty `MATCH_WRITES_DISABLED` next to `api.php` so `create_room` / `join_room` / `casual_*` / `action` / `dry_run_actions` return `503` + `match_writes_disabled`. Reads (`get_state`, `get_cards`, `ping`) and account APIs stay available for drain. The marker is gitignored, so it reaches Hostinger only by upload. Do **not** place it on the VPS match API.
+
+Never put `SetEnv TCG_HOSTINGER_MATCH_WRITES 0` in the tracked `.htaccess`: the VPS match host serves this same repo from its docroot, and the `php:apache` image grants `AllowOverride All`, so the file is honored there too and disables writes on the host that owns the rooms. `api.php` now ignores both switches when `TCG_GAME_STORE=redis` (`tcgIsMatchHost`), but keep host-specific config out of tracked files regardless.
 
 **Operator:**
 
