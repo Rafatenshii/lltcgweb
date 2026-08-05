@@ -5,8 +5,21 @@
 
 declare(strict_types=1);
 
-/** Love Live! series TCG on deck log. */
+/** Love Live! series TCG on JP deck log. */
 const TCG_DECKLOG_GAME_TITLE_ID = 11;
+
+/** Love Live! series TCG on EN deck log (LLC). */
+const TCG_DECKLOG_GAME_TITLE_ID_EN = 109;
+
+/**
+ * Accepted Love Live! deck log game_title_id values (JP + EN).
+ *
+ * @return list<int>
+ */
+function tcgDecklogLoveLiveGameTitleIds(): array
+{
+    return [TCG_DECKLOG_GAME_TITLE_ID, TCG_DECKLOG_GAME_TITLE_ID_EN];
+}
 
 /** Official deck log vendor domain (assembled; avoid a contiguous hostname in source). */
 function tcgDecklogVendorDomain(): string
@@ -39,9 +52,13 @@ function tcgDecklogHostEn(): string
     return tcgDecklogHosts()['en'];
 }
 
-function tcgDecklogViewApiBaseForHost(string $host): string
+/**
+ * @param string $apiAppPrefix e.g. app, app-ja (EN locale SPA uses app-ja)
+ */
+function tcgDecklogViewApiBaseForHost(string $host, string $apiAppPrefix = 'app'): string
 {
-    return 'https://' . $host . '/system/app/api/view/';
+    $prefix = preg_replace('/[^a-z0-9\-]/i', '', $apiAppPrefix) ?: 'app';
+    return 'https://' . $host . '/system/' . $prefix . '/api/view/';
 }
 
 function tcgDecklogViewApiBase(): string
@@ -50,28 +67,59 @@ function tcgDecklogViewApiBase(): string
 }
 
 /**
- * Parse a bare code or JP/EN view URL.
+ * API app prefixes to try for a deck log host (EN locale sites need app-ja).
  *
- * @return array{code: string, preferred_host: ?string}
+ * @return list<string>
+ */
+function tcgDecklogApiAppPrefixesForHost(string $host, ?string $preferredPrefix = null): array
+{
+    $hosts = tcgDecklogHosts();
+    $order = [];
+    if ($preferredPrefix !== null && $preferredPrefix !== '') {
+        $order[] = $preferredPrefix;
+    }
+    if ($host === $hosts['en']) {
+        foreach (['app-ja', 'app'] as $p) {
+            if (!in_array($p, $order, true)) {
+                $order[] = $p;
+            }
+        }
+        return $order;
+    }
+    foreach (['app'] as $p) {
+        if (!in_array($p, $order, true)) {
+            $order[] = $p;
+        }
+    }
+    return $order !== [] ? $order : ['app'];
+}
+
+/**
+ * Parse a bare code or JP/EN view URL (optional locale segment: /ja/view/…).
+ *
+ * @return array{code: string, preferred_host: ?string, preferred_api_prefix: ?string}
  */
 function tcgParseDecklogInput(string $raw): array
 {
     $raw = trim($raw);
     if ($raw === '') {
-        return ['code' => '', 'preferred_host' => null];
+        return ['code' => '', 'preferred_host' => null, 'preferred_api_prefix' => null];
     }
     $hosts = tcgDecklogHosts();
-    // Accept decklog.*/view/{code} and decklog-en.*/view/{code} (query string ok).
-    if (preg_match('#(decklog(?:-en)?)\.[^/\s]+/view/([A-Za-z0-9]+)#i', $raw, $m)) {
+    // Accept …/view/{code} and …/{locale}/view/{code} on decklog / decklog-en hosts.
+    if (preg_match('#(decklog(?:-en)?)\.[^/\s]+/(?:([a-z]{2})/)?view/([A-Za-z0-9]+)#i', $raw, $m)) {
         $label = strtolower($m[1]);
         $preferred = ($label === 'decklog-en') ? $hosts['en'] : $hosts['jp'];
+        $locale = isset($m[2]) && $m[2] !== '' ? strtolower($m[2]) : null;
+        $apiPrefix = $locale !== null ? ('app-' . $locale) : null;
         return [
-            'code' => strtoupper($m[2]),
+            'code' => strtoupper($m[3]),
             'preferred_host' => $preferred,
+            'preferred_api_prefix' => $apiPrefix,
         ];
     }
     $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $raw) ?? '');
-    return ['code' => $code, 'preferred_host' => null];
+    return ['code' => $code, 'preferred_host' => null, 'preferred_api_prefix' => null];
 }
 
 function tcgNormalizeDecklogCode(string $raw): string
@@ -145,7 +193,7 @@ function tcgExpandDecklogEntries(array $entries, array $cardNos): array
 function tcgMapDecklogPayloadToExperimentLists(array $payload, array $cardsData): array
 {
     $gameId = intval($payload['game_title_id'] ?? 0);
-    if ($gameId !== TCG_DECKLOG_GAME_TITLE_ID) {
+    if (!in_array($gameId, tcgDecklogLoveLiveGameTitleIds(), true)) {
         throw new Exception(
             'That deck log recipe is not a Love Live! TCG deck (game_title_id=' . $gameId . ').',
             400
@@ -176,13 +224,16 @@ function tcgMapDecklogPayloadToExperimentLists(array $payload, array $cardsData)
 }
 
 /**
- * Fetch a recipe from one deck log host.
+ * Fetch a recipe from one deck log host + API app prefix.
  *
- * @return array{ok: bool, data?: array<string,mixed>, unreachable?: bool, not_found?: bool, bad_response?: bool}
+ * @return array{ok: bool, data?: array<string,mixed>, unreachable?: bool, not_found?: bool, bad_response?: bool, incomplete?: bool}
  */
-function tcgFetchDecklogViewFromHost(string $code, string $host): array
+function tcgFetchDecklogViewFromHost(string $code, string $host, string $apiAppPrefix = 'app'): array
 {
-    $url = tcgDecklogViewApiBaseForHost($host) . rawurlencode($code);
+    $url = tcgDecklogViewApiBaseForHost($host, $apiAppPrefix) . rawurlencode($code);
+    $refererPath = ($apiAppPrefix !== 'app' && str_starts_with($apiAppPrefix, 'app-'))
+        ? ('/' . substr($apiAppPrefix, 4) . '/view/' . $code)
+        : ('/view/' . $code);
     $ctx = stream_context_create([
         'http' => [
             'method' => 'GET',
@@ -190,7 +241,7 @@ function tcgFetchDecklogViewFromHost(string $code, string $host): array
             'header' => implode("\r\n", [
                 'User-Agent: Mozilla/5.0 (compatible; LLTCG-DeckExperiment/1.0)',
                 'Accept: application/json',
-                'Referer: https://' . $host . '/view/' . $code,
+                'Referer: https://' . $host . $refererPath,
                 'Origin: https://' . $host,
             ]),
             'ignore_errors' => true,
@@ -205,11 +256,15 @@ function tcgFetchDecklogViewFromHost(string $code, string $host): array
         $status = intval($m[1]);
     }
     $data = json_decode($raw, true);
-    if (!is_array($data)) {
+    if (!is_array($data) || array_is_list($data)) {
         return ['ok' => false, 'bad_response' => true];
     }
     if ($status >= 400 || isset($data['error']) || empty($data['deck_id'])) {
         return ['ok' => false, 'not_found' => true];
+    }
+    // EN /system/app/api/view often returns metadata only (no list); treat as incomplete.
+    if (!array_key_exists('list', $data)) {
+        return ['ok' => false, 'incomplete' => true, 'data' => $data];
     }
     return ['ok' => true, 'data' => $data];
 }
@@ -217,6 +272,7 @@ function tcgFetchDecklogViewFromHost(string $code, string $host): array
 /**
  * Fetch a deck log recipe. Accepts a bare code or JP/EN view URL.
  * Preferred host (from URL) is tried first; the other region is the fallback.
+ * EN hosts also try locale API prefixes (app-ja) when /system/app/api is metadata-only.
  *
  * @return array<string,mixed>
  */
@@ -240,16 +296,19 @@ function tcgFetchDecklogView(string $codeOrUrl): array
 
     $sawUnreachable = false;
     $sawBad = false;
+    $preferredPrefix = $parsed['preferred_api_prefix'] ?? null;
     foreach ($order as $host) {
-        $result = tcgFetchDecklogViewFromHost($code, $host);
-        if (!empty($result['ok']) && isset($result['data']) && is_array($result['data'])) {
-            return $result['data'];
-        }
-        if (!empty($result['unreachable'])) {
-            $sawUnreachable = true;
-        }
-        if (!empty($result['bad_response'])) {
-            $sawBad = true;
+        foreach (tcgDecklogApiAppPrefixesForHost($host, $preferredPrefix) as $apiPrefix) {
+            $result = tcgFetchDecklogViewFromHost($code, $host, $apiPrefix);
+            if (!empty($result['ok']) && isset($result['data']) && is_array($result['data'])) {
+                return $result['data'];
+            }
+            if (!empty($result['unreachable'])) {
+                $sawUnreachable = true;
+            }
+            if (!empty($result['bad_response'])) {
+                $sawBad = true;
+            }
         }
     }
     if ($sawUnreachable && !$sawBad) {

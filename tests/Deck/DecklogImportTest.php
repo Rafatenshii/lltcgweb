@@ -32,6 +32,10 @@ final class DecklogImportTest extends TestCase
             'ABC12',
             tcgNormalizeDecklogCode('https://decklog-en.example.com/view/abc12?foo=1')
         );
+        $this->assertSame(
+            '755SH',
+            tcgNormalizeDecklogCode('https://decklog-en.bushiroad.com/ja/view/755SH')
+        );
     }
 
     public function testParseDecklogInputPrefersEnHostFromUrl(): void
@@ -40,6 +44,12 @@ final class DecklogImportTest extends TestCase
         $en = tcgParseDecklogInput('https://decklog-en.bushiroad.com/view/2X7YN');
         $this->assertSame('2X7YN', $en['code']);
         $this->assertSame($hosts['en'], $en['preferred_host']);
+        $this->assertNull($en['preferred_api_prefix']);
+
+        $enJa = tcgParseDecklogInput('https://decklog-en.bushiroad.com/ja/view/755SH');
+        $this->assertSame('755SH', $enJa['code']);
+        $this->assertSame($hosts['en'], $enJa['preferred_host']);
+        $this->assertSame('app-ja', $enJa['preferred_api_prefix']);
 
         $jp = tcgParseDecklogInput('https://decklog.bushiroad.com/view/2X7YN');
         $this->assertSame('2X7YN', $jp['code']);
@@ -48,6 +58,23 @@ final class DecklogImportTest extends TestCase
         $bare = tcgParseDecklogInput('2X7YN');
         $this->assertSame('2X7YN', $bare['code']);
         $this->assertNull($bare['preferred_host']);
+    }
+
+    public function testEnHostPrefersAppJaApiPrefix(): void
+    {
+        $hosts = tcgDecklogHosts();
+        $this->assertSame(
+            ['app-ja', 'app'],
+            tcgDecklogApiAppPrefixesForHost($hosts['en'], 'app-ja')
+        );
+        $this->assertSame(
+            ['app-ja', 'app'],
+            tcgDecklogApiAppPrefixesForHost($hosts['en'], null)
+        );
+        $this->assertSame(
+            ['app'],
+            tcgDecklogApiAppPrefixesForHost($hosts['jp'], null)
+        );
     }
 
     public function testResolveFullwidthPlusCardNo(): void
@@ -76,6 +103,27 @@ final class DecklogImportTest extends TestCase
 
         $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
         $this->assertSame('2X7YN', $mapped['deck_id']);
+        $this->assertSame(60, count($mapped['main_deck']));
+        $this->assertSame(12, count($mapped['energy_deck']));
+
+        $validated = validateExperimentDeckPayload($mapped['main_deck'], $mapped['energy_deck'], $cards);
+        $this->assertCount(60, $validated['main']);
+        $this->assertCount(12, $validated['energy']);
+    }
+
+    public function testMapEn755SHFixtureAcceptsGameTitleId109(): void
+    {
+        $fixture = dirname(__DIR__) . '/fixtures/decklog_755SH_en.json';
+        $this->assertFileExists($fixture);
+        $payload = json_decode((string)file_get_contents($fixture), true);
+        $this->assertIsArray($payload);
+        $this->assertSame(109, intval($payload['game_title_id'] ?? 0));
+
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true);
+        $this->assertIsArray($cards);
+
+        $mapped = tcgMapDecklogPayloadToExperimentLists($payload, $cards);
+        $this->assertSame('755SH', $mapped['deck_id']);
         $this->assertSame(60, count($mapped['main_deck']));
         $this->assertSame(12, count($mapped['energy_deck']));
 
