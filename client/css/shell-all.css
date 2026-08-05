@@ -6615,15 +6615,6 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   background:rgba(0,0,0,.22);
 }
 /* Card tiles parked into the substitute picker keep deck-builder hover chrome */
-#modal-decklog-sub-pick .deck-live-tile .deck-live-art{
-  position:absolute;left:50%;top:50%;
-  width:calc(100% * 88 / 63);height:calc(100% * 63 / 88);
-  transform:translate(-50%,-50%) rotate(90deg);transform-origin:center center;
-  overflow:hidden;border-radius:inherit}
-#modal-decklog-sub-pick .deck-live-tile .deck-live-art > img,
-#modal-decklog-sub-pick .deck-live-tile .deck-live-art > .noimg,
-#modal-decklog-sub-pick .deck-live-tile .deck-live-art > .card-face-fill{
-  width:100%;height:100%;object-fit:contain;object-position:center;display:block}
 #modal-decklog-sub-pick .deck-card-tile:hover{
   border-color:var(--pink);box-shadow:0 0 0 1px rgba(255,107,168,.35)}
 @media (max-width:640px){
@@ -7378,14 +7369,17 @@ html.tcg-mobile-viewport #screen-deck #deck-card-hover-panel{
   justify-self:start;align-self:start;aspect-ratio:63/88;border-radius:6px;overflow:hidden;
   position:relative;cursor:pointer;border:2px solid transparent;background:rgba(0,0,0,.35);
   flex-shrink:0;transition:border-color .12s,box-shadow .12s;box-sizing:border-box}
-#screen-deck .deck-live-tile .deck-live-art{
+/* Live art is landscape-native; rotate it into the portrait 63:88 tile.
+   Unscoped so every surface that builds a .deck-live-tile (deck builder,
+   card list, decklog substitute picker) gets the same orientation. */
+.deck-live-tile .deck-live-art{
   position:absolute;left:50%;top:50%;
   width:calc(100% * 88 / 63);height:calc(100% * 63 / 88);
   transform:translate(-50%,-50%) rotate(90deg);transform-origin:center center;
   overflow:hidden;border-radius:inherit}
-#screen-deck .deck-live-tile .deck-live-art > img,
-#screen-deck .deck-live-tile .deck-live-art > .noimg,
-#screen-deck .deck-live-tile .deck-live-art > .card-face-fill{
+.deck-live-tile .deck-live-art > img,
+.deck-live-tile .deck-live-art > .noimg,
+.deck-live-tile .deck-live-art > .card-face-fill{
   width:100%;height:100%;object-fit:contain;object-position:center;display:block}
 #screen-deck .deck-card-tile:not(.deck-live-tile):hover,
 #screen-deck .deck-card-tile.deck-live-tile:hover,
