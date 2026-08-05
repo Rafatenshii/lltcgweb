@@ -8,29 +8,75 @@ declare(strict_types=1);
 /** Love Live! series TCG on deck log. */
 const TCG_DECKLOG_GAME_TITLE_ID = 11;
 
-/** Official deck log host (assembled; avoid a contiguous vendor hostname in source). */
+/** Official deck log vendor domain (assembled; avoid a contiguous hostname in source). */
+function tcgDecklogVendorDomain(): string
+{
+    return base64_decode('YnVzaGlyb2Fk') . '.com';
+}
+
+/**
+ * JP + EN deck log hosts (same recipe API shape).
+ *
+ * @return array{jp: string, en: string}
+ */
+function tcgDecklogHosts(): array
+{
+    $vendor = tcgDecklogVendorDomain();
+    return [
+        'jp' => 'decklog.' . $vendor,
+        'en' => 'decklog-en.' . $vendor,
+    ];
+}
+
+/** Official JP deck log host (assembled). */
 function tcgDecklogHost(): string
 {
-    return 'decklog.' . base64_decode('YnVzaGlyb2Fk') . '.com';
+    return tcgDecklogHosts()['jp'];
+}
+
+function tcgDecklogHostEn(): string
+{
+    return tcgDecklogHosts()['en'];
+}
+
+function tcgDecklogViewApiBaseForHost(string $host): string
+{
+    return 'https://' . $host . '/system/app/api/view/';
 }
 
 function tcgDecklogViewApiBase(): string
 {
-    return 'https://' . tcgDecklogHost() . '/system/app/api/view/';
+    return tcgDecklogViewApiBaseForHost(tcgDecklogHost());
+}
+
+/**
+ * Parse a bare code or JP/EN view URL.
+ *
+ * @return array{code: string, preferred_host: ?string}
+ */
+function tcgParseDecklogInput(string $raw): array
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return ['code' => '', 'preferred_host' => null];
+    }
+    $hosts = tcgDecklogHosts();
+    // Accept decklog.*/view/{code} and decklog-en.*/view/{code} (query string ok).
+    if (preg_match('#(decklog(?:-en)?)\.[^/\s]+/view/([A-Za-z0-9]+)#i', $raw, $m)) {
+        $label = strtolower($m[1]);
+        $preferred = ($label === 'decklog-en') ? $hosts['en'] : $hosts['jp'];
+        return [
+            'code' => strtoupper($m[2]),
+            'preferred_host' => $preferred,
+        ];
+    }
+    $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $raw) ?? '');
+    return ['code' => $code, 'preferred_host' => null];
 }
 
 function tcgNormalizeDecklogCode(string $raw): string
 {
-    $raw = trim($raw);
-    if ($raw === '') {
-        return '';
-    }
-    // Accept any decklog.*/view/{code} URL (users paste full view links).
-    if (preg_match('#decklog\.[^/\s]+/view/([A-Za-z0-9]+)#i', $raw, $m)) {
-        return strtoupper($m[1]);
-    }
-    $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $raw) ?? '');
-    return $code;
+    return tcgParseDecklogInput($raw)['code'];
 }
 
 /**
@@ -130,16 +176,13 @@ function tcgMapDecklogPayloadToExperimentLists(array $payload, array $cardsData)
 }
 
 /**
- * @return array<string,mixed>
+ * Fetch a recipe from one deck log host.
+ *
+ * @return array{ok: bool, data?: array<string,mixed>, unreachable?: bool, not_found?: bool, bad_response?: bool}
  */
-function tcgFetchDecklogView(string $code): array
+function tcgFetchDecklogViewFromHost(string $code, string $host): array
 {
-    $code = tcgNormalizeDecklogCode($code);
-    if ($code === '' || strlen($code) < 3 || strlen($code) > 16) {
-        throw new Exception('Enter a valid deck log code (or view URL).', 400);
-    }
-    $host = tcgDecklogHost();
-    $url = tcgDecklogViewApiBase() . rawurlencode($code);
+    $url = tcgDecklogViewApiBaseForHost($host) . rawurlencode($code);
     $ctx = stream_context_create([
         'http' => [
             'method' => 'GET',
@@ -155,7 +198,7 @@ function tcgFetchDecklogView(string $code): array
     ]);
     $raw = @file_get_contents($url, false, $ctx);
     if ($raw === false || $raw === '') {
-        throw new Exception('Could not reach deck log. Try again later.', 502);
+        return ['ok' => false, 'unreachable' => true];
     }
     $status = 0;
     if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
@@ -163,12 +206,59 @@ function tcgFetchDecklogView(string $code): array
     }
     $data = json_decode($raw, true);
     if (!is_array($data)) {
-        throw new Exception('deck log returned an unexpected response.', 502);
+        return ['ok' => false, 'bad_response' => true];
     }
     if ($status >= 400 || isset($data['error']) || empty($data['deck_id'])) {
-        throw new Exception('deck log recipe not found for code ' . $code . '.', 404);
+        return ['ok' => false, 'not_found' => true];
     }
-    return $data;
+    return ['ok' => true, 'data' => $data];
+}
+
+/**
+ * Fetch a deck log recipe. Accepts a bare code or JP/EN view URL.
+ * Preferred host (from URL) is tried first; the other region is the fallback.
+ *
+ * @return array<string,mixed>
+ */
+function tcgFetchDecklogView(string $codeOrUrl): array
+{
+    $parsed = tcgParseDecklogInput($codeOrUrl);
+    $code = $parsed['code'];
+    if ($code === '' || strlen($code) < 3 || strlen($code) > 16) {
+        throw new Exception('Enter a valid deck log code (or view URL).', 400);
+    }
+    $hosts = tcgDecklogHosts();
+    $order = [];
+    if (!empty($parsed['preferred_host'])) {
+        $order[] = $parsed['preferred_host'];
+    }
+    foreach ([$hosts['jp'], $hosts['en']] as $h) {
+        if (!in_array($h, $order, true)) {
+            $order[] = $h;
+        }
+    }
+
+    $sawUnreachable = false;
+    $sawBad = false;
+    foreach ($order as $host) {
+        $result = tcgFetchDecklogViewFromHost($code, $host);
+        if (!empty($result['ok']) && isset($result['data']) && is_array($result['data'])) {
+            return $result['data'];
+        }
+        if (!empty($result['unreachable'])) {
+            $sawUnreachable = true;
+        }
+        if (!empty($result['bad_response'])) {
+            $sawBad = true;
+        }
+    }
+    if ($sawUnreachable && !$sawBad) {
+        throw new Exception('Could not reach deck log. Try again later.', 502);
+    }
+    if ($sawBad) {
+        throw new Exception('deck log returned an unexpected response.', 502);
+    }
+    throw new Exception('deck log recipe not found for code ' . $code . '.', 404);
 }
 
 /** Family key for rarity/print variants (same set number). */
