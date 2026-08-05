@@ -205,6 +205,7 @@ function tcgDedupSpectatableMatchesByPlayers(array $matches): array {
 }
 
 function tcgSpectatableMatchRow(string $roomId, array $state, string $category): array {
+    require_once __DIR__ . '/game_mode.php';
     $p1Discord = (string)($state['players']['p1']['discord_id']
         ?? $state['ranked']['p1_discord_id']
         ?? '');
@@ -222,6 +223,11 @@ function tcgSpectatableMatchRow(string $roomId, array $state, string $category):
         'seq' => intval($state['seq'] ?? 0),
         'p1_discord' => $p1Discord,
         'p2_discord' => $p2Discord,
+        'game_mode' => tcgNormalizeGameMode(
+            $state['game_mode']
+                ?? $state['ranked']['game_mode']
+                ?? TCG_GAME_MODE_STANDARD
+        ),
     ];
 }
 

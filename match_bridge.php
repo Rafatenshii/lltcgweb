@@ -297,6 +297,73 @@ function tcgProbeOverflowRankedRoom(string $roomId, string $token): string {
     return 'unknown';
 }
 
+/**
+ * Live ranked player count from the VPS spectate list (presence-accurate).
+ * Returns null when the overflow host cannot be reached.
+ */
+function tcgFetchOverflowRankedLivePlayerCount(?string $gameMode = null): ?int {
+    require_once __DIR__ . '/game_mode.php';
+    $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
+    $url = tcgOverflowMatchApiBase() . '/api.php?action=spectate_list';
+    $payload = json_encode(['category' => 'ranked'], JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        return null;
+    }
+    $raw = null;
+    $code = 0;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 6,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    } else {
+        $ctx = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/json\r\n",
+                'content' => $payload,
+                'timeout' => 6,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $code = (int)$m[1];
+        }
+    }
+    if (!is_string($raw) || $code < 200 || $code >= 300) {
+        return null;
+    }
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded) || !isset($decoded['matches']) || !is_array($decoded['matches'])) {
+        return null;
+    }
+    $inGame = 0;
+    foreach ($decoded['matches'] as $m) {
+        if (!is_array($m)) {
+            continue;
+        }
+        $mMode = tcgNormalizeGameMode($m['game_mode'] ?? TCG_GAME_MODE_STANDARD);
+        if ($mMode !== $gameMode) {
+            continue;
+        }
+        // Each spectatable ranked room is 1v1.
+        $inGame += 2;
+    }
+    return $inGame;
+}
+
 function tcgResignRankedRoomOnVps(string $roomId, string $token): bool {
     $url = tcgOverflowMatchApiBase() . '/api.php?action=action';
     $payload = json_encode([

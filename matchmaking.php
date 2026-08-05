@@ -529,9 +529,19 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
     $stmt->execute([$gameMode]);
     $waiting = (int)$stmt->fetchColumn();
 
+    // Match-primary: in_game must match the presence-accurate VPS spectate list.
+    // Pending Hostinger rows still include rematch ghosts (probe=live/unknown) and
+    // produce odd counts like "5" while only two real matches (4 players) exist.
+    require_once __DIR__ . '/match_bridge.php';
+    $overflowInGame = tcgFetchOverflowRankedLivePlayerCount($gameMode);
+    if ($overflowInGame !== null) {
+        $stats = ['waiting' => $waiting, 'in_game' => $overflowInGame, 'game_mode' => $gameMode];
+        @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
+        return $stats;
+    }
+
     $inGame = 0;
     $seen = [];
-    // Tokens needed to probe VPS Redis rooms (match-primary: no Hostinger games/*.json).
     $stmt = $db->prepare(
         'SELECT room_id, p1_id, p2_id, p1_token, p2_token, game_mode
          FROM tcg_ranked_matches WHERE status = "pending" AND game_mode = ?'
@@ -558,8 +568,6 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
             }
             $countPlayers = true;
         } else {
-            // Authoritative room is on VPS — same probe as tcgSanitizeRankedMatchRow.
-            require_once __DIR__ . '/match_bridge.php';
             $token = (string)($row['p1_token'] ?? '');
             if ($token === '') {
                 $token = (string)($row['p2_token'] ?? '');
@@ -571,8 +579,8 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
                 }
                 continue;
             }
-            // live or unknown (VPS timeout): still count so the hub is not stuck at 0.
-            $countPlayers = true;
+            // Fallback only: require a confirmed live probe (not unknown timeouts).
+            $countPlayers = ($probe === 'live');
         }
         if (!$countPlayers) {
             continue;
