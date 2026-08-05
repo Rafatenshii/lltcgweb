@@ -4597,8 +4597,14 @@ function filterStateForPlayer(array $state, string $token): array {
             'live_start_effects', 'live_performance_first', 'live_performance_second',
             'live_success_effects', 'live_judge',
         ], true) || ($state['status'] ?? '') === 'finished';
-        $mineStageHearts = aggregateStageHeartsByColor($state['players'][$myId]['stage'] ?? []);
-        $oppStageHearts = aggregateStageHeartsByColor($state['players'][$oppId]['stage'] ?? []);
+        $mineStage = is_array($state['players'][$myId] ?? null)
+            ? ($state['players'][$myId]['stage'] ?? [])
+            : [];
+        $oppStage = is_array($state['players'][$oppId] ?? null)
+            ? ($state['players'][$oppId]['stage'] ?? [])
+            : [];
+        $mineStageHearts = aggregateStageHeartsByColor(is_array($mineStage) ? $mineStage : []);
+        $oppStageHearts = aggregateStageHeartsByColor(is_array($oppStage) ? $oppStage : []);
         // Live-start modifier hearts (Eli/Kotori choose_heart_per_success, etc.)
         $mineStageHearts = mergeHeartColorCounts(
             $mineStageHearts,

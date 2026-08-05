@@ -111,4 +111,31 @@ final class ApiSmokeTest extends TestCase
         $this->assertTrue($filtered['pvp'] ?? false);
         $this->assertArrayHasKey('rematch', $filtered);
     }
+
+    public function testWaitingRoomFilterStateHandlesMissingP2(): void
+    {
+        $created = createRoom(['name' => 'Wait P1', 'deck' => 'nijigasaki']);
+        $roomId = (string)$created['room_id'];
+        $token = (string)$created['player_token'];
+        $state = loadGame($roomId);
+        $this->assertNotNull($state);
+        $this->assertSame('waiting', $state['status'] ?? '');
+        $this->assertEmpty($state['players']['p2'] ?? null);
+
+        $prev = error_reporting(E_ALL);
+        set_error_handler(static function (int $severity, string $errstr): bool {
+            throw new \RuntimeException("PHP warning leaked into waiting-room filter: $errstr");
+        });
+        try {
+            $filtered = filterStateForPlayer($state, $token);
+        } finally {
+            restore_error_handler();
+            error_reporting($prev);
+        }
+
+        $this->assertSame('p1', $filtered['my_id'] ?? null);
+        $this->assertArrayHasKey('stage_board', $filtered);
+        $this->assertSame([], $filtered['stage_board']['opp']['stage_hearts'] ?? ['x']);
+        $this->assertSame([], collectContinuousPerformanceHeartGrants($state, 'p2'));
+    }
 }

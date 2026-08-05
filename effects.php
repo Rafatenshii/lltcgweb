@@ -2183,7 +2183,15 @@ function appendContinuousHeartsFromSpec(array &$hearts, array $spec): void {
 /** Per-member continuous hearts for Performance (UI animation + pool). */
 function collectContinuousPerformanceHeartGrants(array $state, string $pid): array {
     $grants = [];
-    foreach ($state['players'][$pid]['stage'] as $slot => $member) {
+    // Waiting rooms (friend code) have p2=null until join — never warn into JSON bodies.
+    if (empty($state['players'][$pid]) || !is_array($state['players'][$pid])) {
+        return [];
+    }
+    $stage = $state['players'][$pid]['stage'] ?? [];
+    if (!is_array($stage)) {
+        return [];
+    }
+    foreach ($stage as $slot => $member) {
         if (!$member) {
             continue;
         }
