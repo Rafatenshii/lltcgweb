@@ -69,14 +69,17 @@
     // Do not special-case spectators beyond missing prompts: a broader live_judge clear
     // used to abort Performance mid-show when animating briefly dropped.
     const judgeWaitNoLocalPrompt = ph === 'live_judge' && !prType;
+    const spectatorHeartCheckStuck = !!G.isSpectator && !!G._perfHeartCheckHold
+      && (mainStable || !serverLiveShowInFlight);
     if (!directorActive
-        && !serverLiveShowInFlight
+        && (!serverLiveShowInFlight || spectatorHeartCheckStuck)
         && G._perfSpectacleActive && !G.animating && !G._liveSpectacleGateRunning
         && !G._liveRoundPlaybackActive
-        && (mainStable || judgePickReady || judgeWaitNoLocalPrompt)) {
+        && (mainStable || judgePickReady || judgeWaitNoLocalPrompt || spectatorHeartCheckStuck)) {
       TCG_DEBUG.warn('poll', 'clear stuck perfSpectacleActive', { phase: ph, prType, spectator: !!G.isSpectator });
       if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       else G._perfSpectacleActive = false;
+      if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     }
     // Spectators stuck mid Win/Loss with playback held but no animation — release

@@ -7286,12 +7286,13 @@ async function fetchLiveShowStateNow() {
     // Must follow the room's locked origin (overflow VPS vs Hostinger). Bare `API`
     // stays on Hostinger and misses ranked/casual Redis rooms — both players then
     // stall mid-spectacle ("Checking hearts…") until a later safety poll.
+    // resume=1 skips poll side-effects that can lock-timeout on busy live rooms.
     const base = (typeof tcgGameApiUrl === 'function')
       ? tcgGameApiUrl()
       : (typeof API !== 'undefined' ? API : './api.php');
     const r = await fetch(
       `${base}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
-      + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0`
+      + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0&resume=1`
     );
     let d = await parseGameApiResponse(r);
     if (d?.error) return null;
@@ -7409,10 +7410,12 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
     // Hearts may already be logged (Live Success prompt parked on performance).
     // Re-arming Checking hearts here softlocks the splash against the log.
-    if (!liveShowHeartsResolvedFromBoard(next)) {
-      perfShowHeartCheckHold();
-    } else {
+    const isObserver = !!G.isSpectator
+      || (typeof isReplayViewing === 'function' && isReplayViewing());
+    if (isObserver || liveShowHeartsResolvedFromBoard(next)) {
       perfClearHeartCheckHold();
+    } else {
+      perfShowHeartCheckHold();
     }
     return;
   }
@@ -7433,10 +7436,13 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     // Heart resolution happens on the server only after this beat is acked — keep
     // the spectacle alive with a readable "Checking hearts…" hold so the gap
     // before success/fail (and PvP opponent-ack wait) isn't dead air.
-    if (!liveShowHeartsResolvedFromBoard(next)) {
-      perfShowHeartCheckHold();
-    } else {
+    // Spectators / replay never ack — parking on Checking hearts softlocks until refresh.
+    const isObserver = !!G.isSpectator
+      || (typeof isReplayViewing === 'function' && isReplayViewing());
+    if (isObserver || liveShowHeartsResolvedFromBoard(next)) {
       perfClearHeartCheckHold();
+    } else {
+      perfShowHeartCheckHold();
     }
   }
   if (stage === 'outcomes') {
@@ -7560,6 +7566,52 @@ async function presentServerLiveShowStage(prev, next, myId) {
         // (they break before the player ack loop that reaches stage=done).
         if (show.stage === 'judge' || show.stage === 'done') {
           if (G._perfSpectacleActive) perfCloseSpectacle();
+          break;
+        }
+        if (show.stage === 'performance') {
+          // Never park observers on Checking hearts — they cannot live_show_ack.
+          perfClearHeartCheckHold();
+          // Catch up if players already advanced while we animated Performance.
+          let advanced = await fetchLiveShowStateNow();
+          const waitStart = performance.now();
+          while (
+            advanced
+            && advanced.live_show?.stage === 'performance'
+            && !liveShowHeartsResolvedFromBoard(advanced)
+            && !G._perfSpectacleAborted
+            && (performance.now() - waitStart < 2500)
+          ) {
+            await perfSleep(150);
+            const again = await fetchLiveShowStateNow();
+            if (again && (again.seq ?? 0) >= (advanced.seq ?? 0)) advanced = again;
+          }
+          if (advanced && (advanced.seq ?? 0) >= (board.seq ?? 0)) {
+            const nextStage = advanced.live_show?.stage;
+            const mainish = ['main_first', 'main_second', 'active_first', 'active_second']
+              .includes(String(advanced.phase || ''));
+            if (nextStage && nextStage !== 'performance' && nextStage !== 'done') {
+              prior = board;
+              board = advanced;
+              G.gameState = board;
+              G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
+              if (typeof renderGame === 'function') {
+                renderGame(board, { skipLog: true, skipPrompt: true });
+              }
+              continue;
+            }
+            if (!nextStage || nextStage === 'done' || mainish) {
+              prior = board;
+              board = advanced;
+              G.gameState = board;
+              G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
+              if (G._perfSpectacleActive) perfCloseSpectacle();
+              sealLiveShowSpectacleTurn(board, prior);
+              if (typeof renderGame === 'function') {
+                renderGame(board, { skipLog: true, skipPrompt: true });
+              }
+              break;
+            }
+          }
         }
         break;
       }
