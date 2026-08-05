@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-nijigasaki-cheer",
+      "date": "2026-08-05",
+      "banner": "tcglogo.png",
+      "bannerStyle": "wide",
+      "title": {
+        "en": "New Nijigasaki cheer starter deck!",
+        "ja": "虹ヶ咲 cheerスタートデッキ追加！",
+        "es": "¡Nuevo mazo inicial Nijigasaki cheer!",
+        "ko": "니지가사키 cheer 스타터 덱 추가!",
+        "zh": "新增虹咲 cheer 入门牌组！",
+        "th": "เด็คเริ่มต้น Nijigasaki cheer มาแล้ว!"
+      },
+      "body": {
+        "en": "The **Start Deck — Love Live! Nijigasaki School Idol Club cheer** is now collectible in Loveca Web.\n\n- Added as a new **starter deck** you can choose and play.\n- If you already picked a starter earlier, unlock this one from **Missions** — claim the new **Own 2,400 cards** milestone and pick any starter you don’t own yet (including this cheer deck).\n- Collect every starter by finishing the card milestones.",
+        "ja": "**スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会 cheer** がLoveca Webで入手できるようになりました。\n\n- 新しい**スターターデッキ**として追加され、選択してプレイできます。\n- すでにスターターを選んでいる場合も、**ミッション**の新マイルストーン **カードを2,400枚所持する** を達成すると、まだ持っていないスターター（このcheerデッキを含む）を選べます。\n- カード所持マイルストーンを進めれば、すべてのスターターを揃えられます。",
+        "es": "El **mazo inicial — Love Live! Nijigasaki School Idol Club cheer** ya se puede coleccionar en Loveca Web.\n\n- Añadido como un nuevo **mazo inicial** que puedes elegir y jugar.\n- Si ya elegiste un inicial antes, desbloquéalo en **Misiones**: reclama el nuevo hito **Posee 2.400 cartas** y elige cualquier inicial que aún no tengas (incluido este mazo cheer).\n- Puedes conseguir todos los iniciales al completar los hitos de cartas.",
+        "ko": "**스타트 덱 — 러브라이브! 니지가사키 학원 스쿨 아이돌 동호회 cheer**가 이제 Loveca Web에서 수집할 수 있습니다.\n\n- 새로운 **스타터 덱**으로 추가되어 선택하고 플레이할 수 있습니다.\n- 이미 스타터를 고른 경우에도 **미션**의 새 마일스톤 **카드 2,400장 보유**를 달성하면, 아직 없는 스타터(이 cheer 덱 포함)를 고를 수 있습니다.\n- 카드 보유 마일스톤을 끝까지 가면 모든 스타터를 모을 수 있습니다.",
+        "zh": "**入门牌组 — Love Live! 虹咲学园学园偶像同好会 cheer** 现已可在 Loveca Web 中收集。\n\n- 已作为新的**入门牌组**加入，可选择并使用。\n- 若你已选过其他入门牌组，仍可通过**任务**解锁：领取新的里程碑 **拥有 2,400 张卡**，并选择任意尚未拥有的入门牌组（含本 cheer 牌组）。\n- 完成卡牌数量里程碑后，即可集齐全部入门牌组。",
+        "th": "**เด็คเริ่มต้น — Love Live! ชมรมไอดอลโรงเรียนนิจิตาสากิ cheer** สามารถสะสมใน Loveca Web ได้แล้ว\n\n- เพิ่มเป็น**เด็คเริ่มต้น**ใหม่ที่เลือกและเล่นได้\n- ถ้าเลือกเด็คเริ่มต้นไปแล้ว ก็ยังปลดล็อกอันนี้ได้จาก**ภารกิจ** — เคลมไมล์สโตนใหม่ **มีการ์ดครบ 2,400 ใบ** แล้วเลือกเด็คเริ่มต้นที่ยังไม่มี (รวมเด็ค cheer นี้)\n- สะสมเด็คเริ่มต้นครบได้เมื่อทำไมล์สโตนการ์ดจนจบ"
+      }
+    },
+    {
       "id": "2026-08-decklog-import",
       "date": "2026-08-03",
       "banner": "tcglogo.png",
