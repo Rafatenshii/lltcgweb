@@ -52,8 +52,14 @@ function tryResolveAbilityEffectSwitchBaton(
             if ($batonCard && cardNameMatchesList($batonCard, $ab['exclude_names'] ?? [])) {
                 break;
             }
+            // group / exclude_names gate the Baton source Member only — the Live
+            // added from WR is any Live (PL!HS-sd1-005 Kosuzu: "1 Live card").
             if (!$batonCard || !cardMatchesGroup($batonCard, $ab['group'] ?? '', 'member')) break;
-            $cfg = wrPickCfgFromAbility(array_merge($ab, ['filter' => 'live']));
+            $cfg = wrPickCfgFromAbility([
+                'type'   => $type,
+                'filter' => 'live',
+                'group'  => '',
+            ]);
             $added = addFromWaitingRoomWithChoice($state, $pid, $source, $ab, $ctx, $cfg, 1);
             if ($added === null) {
                 $state = addLog($state, $state['players'][$pid]['name'] .
