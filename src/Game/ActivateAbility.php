@@ -864,55 +864,47 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . ($member['name_en'] ?? $member['name']) . '] choose area to swap.');
     } elseif (($ab['type'] ?? '') === 'activated_discard_trigger_on_enter') {
-        $handId = $data['hand_card_id'] ?? '';
-        $discarded = null;
-        foreach ($p['hand'] as $i => $c) {
-            if (($c['instance_id'] ?? '') === $handId) {
-                if (!cardMatchesGroup($c, $ab['group'] ?? '', 'member')) {
-                    throw new Exception('Must discard a matching Member from hand');
-                }
-                if (intval($c['cost'] ?? 0) > intval($ab['max_cost'] ?? 4)) {
-                    throw new Exception('Member cost too high');
-                }
-                $discarded = $c;
-                array_splice($p['hand'], $i, 1);
-                break;
+        // Prefer explicit hand_card_id (skill audit / legacy). Otherwise open a hand pick
+        // so the player can select a matching Member (issue #86 Kinako BP2).
+        $handId = (string)($data['hand_card_id'] ?? '');
+        if ($handId === '') {
+            $eligible = spBp2EligibleDiscardTriggerOnEnterFromHand($p['hand'] ?? [], $ab);
+            if (empty($eligible)) {
+                $grp = groupPromptLabel($ab['group'] ?? '');
+                $max = intval($ab['max_cost'] ?? 4);
+                throw new Exception(
+                    "No $grp Member with cost $max or less and an [On Enter] ability in hand"
+                );
             }
-        }
-        if (!$discarded) throw new Exception('Choose a Member card from your hand');
-        $p['waiting_room'][] = $discarded;
-        $onEnter = getAbilitiesByTrigger($discarded, 'on_enter');
-        if (empty($onEnter)) {
-            throw new Exception('Discarded Member has no [On Enter] abilities');
-        }
-        if (count($onEnter) === 1) {
-            markAbilityUsed($member, $abilityIdx);
-            $p['stage'][$slot] = $member;
-            $state = resolveAbilityEffect($state, $pid, $discarded, $onEnter[0], ['phase' => 'on_enter']);
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . ($member['name_en'] ?? $member['name']) . '] triggered [On Enter] of ' .
-                cardDisplayName($discarded) . '.');
-        } else {
+            $grp = groupPromptLabel($ab['group'] ?? '');
+            $max = intval($ab['max_cost'] ?? 4);
             $state['pending_prompt'] = [
-                'type'          => 'activated_pick_on_enter_ability',
+                'type'          => 'activated_discard_trigger_on_enter',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_id'     => $member['instance_id'] ?? '',
-                'source_slot'   => $slot,
+                'source_slot'   => $slot ?? '',
                 'ability_index' => $abilityIdx,
-                'discarded_id'  => $discarded['instance_id'] ?? '',
                 'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
-                'choices'       => array_map(fn($i) => (string)$i, array_keys($onEnter)),
-                'choice_labels' => array_map(
-                    fn($i) => 'Ability ' . ($i + 1),
-                    array_keys($onEnter)
-                ),
-                'on_enter'      => $onEnter,
-                'prompt'        => 'Choose 1 [On Enter] ability to activate from the discarded Member.',
+                'group'         => $ab['group'] ?? '',
+                'max_cost'      => $max,
+                'candidates'    => array_map('cardPromptSummary', $eligible),
+                'prompt'        => "Put 1 $grp Member with cost $max or less from your hand into the Waiting Room: activate 1 of that Member's [On Enter] abilities.",
                 'ability'       => $ab,
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . ($member['name_en'] ?? $member['name']) . '] choose [On Enter] to trigger.');
+                ' — [' . ($member['name_en'] ?? $member['name']) . '] choose a Member from hand.');
+        } else {
+            $state = spBp2ApplyDiscardTriggerOnEnter(
+                $state,
+                $pid,
+                $slot ?? '',
+                $abilityIdx,
+                $ab,
+                $handId,
+                $member['name_en'] ?? $member['name'] ?? 'Member',
+                $member['instance_id'] ?? ''
+            );
         }
     } elseif (($ab['type'] ?? '') === 'wait_swap_wr_member_center') {
         if (!empty($ab['center_only']) && $slot !== 'center') {

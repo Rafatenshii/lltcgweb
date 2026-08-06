@@ -831,6 +831,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'optional_discard_prompt', 'pick_looked_deck_hand',
   'spbp2_stack_wr_member', 'spbp2_wait_self_opp_heart_gap',
   'spbp2_center_move_choose', 'spbp2_center_move_position',
+  'activated_discard_trigger_on_enter',
   'both_shuffle_wr_members_deck_bottom_threshold',
   'live_start_unless_discard_return_energy', 'live_success_choose_draw_or_energy_wait',
 ]);
@@ -4135,6 +4136,13 @@ function cpuResolvePromptBody(s, cpu, pr) {
     } else {
       cpuAct('resolve_prompt',{choice:'no'});
     }
+    return;
+  }
+  if(pr.type==='activated_discard_trigger_on_enter'){
+    const pool=(pr.candidates&&pr.candidates.length)?pr.candidates:hand;
+    const pick=cpuPickBestCandidate(pool, cpu, hand, tier, read)||pool[0];
+    if(pick?.instance_id) cpuAct('resolve_prompt',{card_id:pick.instance_id});
+    else cpuAct('anti_softlock_skip',{});
     return;
   }
   if(pr.type==='spbp2_discard_liella_choice'){

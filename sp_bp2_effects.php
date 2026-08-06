@@ -877,9 +877,138 @@ function spBp2ApplyDeferredYellLiveStartBonuses(array $state, string $pid, array
     return $state;
 }
 
+/** Hand Members eligible for Kinako BP2-style activated discard → [On Enter]. */
+function spBp2EligibleDiscardTriggerOnEnterFromHand(array $hand, array $ab): array {
+    $group = $ab['group'] ?? '';
+    $maxCost = intval($ab['max_cost'] ?? 4);
+    $out = [];
+    foreach ($hand as $c) {
+        if (!is_array($c)) {
+            continue;
+        }
+        if (!cardMatchesGroup($c, $group, 'member')) {
+            continue;
+        }
+        if (intval($c['cost'] ?? 0) > $maxCost) {
+            continue;
+        }
+        if (empty(getAbilitiesByTrigger($c, 'on_enter'))) {
+            continue;
+        }
+        $out[] = $c;
+    }
+    return $out;
+}
+
+/**
+ * Discard a matching hand Member and activate one of its [On Enter] abilities.
+ * May leave pending_prompt = activated_pick_on_enter_ability when multiple exist.
+ */
+function spBp2ApplyDiscardTriggerOnEnter(
+    array $state,
+    string $pid,
+    string $slot,
+    int $abilityIdx,
+    array $ab,
+    string $handId,
+    string $sourceName,
+    string $sourceId
+): array {
+    $p = &$state['players'][$pid];
+    $discarded = null;
+    foreach ($p['hand'] as $i => $c) {
+        if (($c['instance_id'] ?? '') !== $handId) {
+            continue;
+        }
+        if (!cardMatchesGroup($c, $ab['group'] ?? '', 'member')) {
+            throw new Exception('Must discard a matching Member from hand');
+        }
+        if (intval($c['cost'] ?? 0) > intval($ab['max_cost'] ?? 4)) {
+            throw new Exception('Member cost too high');
+        }
+        $discarded = $c;
+        array_splice($p['hand'], $i, 1);
+        break;
+    }
+    if (!$discarded) {
+        throw new Exception('Choose a Member card from your hand');
+    }
+    $p['waiting_room'][] = $discarded;
+    $onEnter = getAbilitiesByTrigger($discarded, 'on_enter');
+    if (empty($onEnter)) {
+        throw new Exception('Discarded Member has no [On Enter] abilities');
+    }
+    if (count($onEnter) === 1) {
+        if ($slot !== '' && !empty($p['stage'][$slot])) {
+            markAbilityUsed($p['stage'][$slot], $abilityIdx);
+        }
+        $state = resolveAbilityEffect($state, $pid, $discarded, $onEnter[0], ['phase' => 'on_enter']);
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            ' — [' . $sourceName . '] triggered [On Enter] of ' .
+            cardDisplayName($discarded) . '.');
+        return $state;
+    }
+    $state['pending_prompt'] = [
+        'type'          => 'activated_pick_on_enter_ability',
+        'owner'         => $pid,
+        'responder'     => $pid,
+        'source_id'     => $sourceId,
+        'source_slot'   => $slot,
+        'ability_index' => $abilityIdx,
+        'discarded_id'  => $discarded['instance_id'] ?? '',
+        'source_name'   => $sourceName,
+        'choices'       => array_map(fn($i) => (string)$i, array_keys($onEnter)),
+        'choice_labels' => array_map(
+            fn($i) => 'Ability ' . ($i + 1),
+            array_keys($onEnter)
+        ),
+        'on_enter'      => $onEnter,
+        'prompt'        => 'Choose 1 [On Enter] ability to activate from the discarded Member.',
+        'ability'       => $ab,
+    ];
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        ' — [' . $sourceName . '] choose [On Enter] to trigger.');
+    return $state;
+}
+
 function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $type = $prompt['type'] ?? '';
     $ownerP = &$state['players'][$owner];
+
+    if ($type === 'activated_discard_trigger_on_enter') {
+        $handId = (string)($data['card_id'] ?? $data['hand_card_id'] ?? $choice);
+        if ($handId === '') {
+            throw new Exception('Choose a Member card from your hand');
+        }
+        $candIds = array_values(array_filter(array_map(
+            fn($c) => is_array($c) ? ($c['instance_id'] ?? '') : '',
+            $prompt['candidates'] ?? []
+        )));
+        if (!empty($candIds) && !in_array($handId, $candIds, true)) {
+            throw new Exception('Choose a listed Member from your hand');
+        }
+        $ab = $prompt['ability'] ?? [];
+        $state = spBp2ApplyDiscardTriggerOnEnter(
+            $state,
+            $owner,
+            (string)($prompt['source_slot'] ?? ''),
+            intval($prompt['ability_index'] ?? 0),
+            $ab,
+            $handId,
+            (string)($prompt['source_name'] ?? 'Member'),
+            (string)($prompt['source_id'] ?? '')
+        );
+        // Clear only if still on the hand-pick prompt. Keep multi-[On Enter] pick or
+        // nested prompts opened by the discarded Member's [On Enter] effect.
+        if (($state['pending_prompt']['type'] ?? '') === 'activated_discard_trigger_on_enter') {
+            unset($state['pending_prompt']);
+        }
+        $state['seq']++;
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+        return finishPromptEffects($state);
+    }
 
     if ($type === 'spbp2_stack_wr_member') {
         if ($choice === 'skip' || $choice === 'no') {

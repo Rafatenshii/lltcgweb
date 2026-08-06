@@ -2544,6 +2544,30 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
+  if(pr?.type==='activated_discard_trigger_on_enter'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const me=s.players?.[myId];
+    const maxCost=Number(pr.max_cost??4);
+    const grp=pr.group||'Superstar';
+    const hand=(pr.candidates&&pr.candidates.length)
+      ? pr.candidates
+      : (me?.hand||[]).filter(c=>{
+          if((c.group||'')!==grp) return false;
+          if(c.card_type!=='メンバー'&&c.card_type_en!=='Member') return false;
+          return Number(c.cost||0)<=maxCost;
+        });
+    openHandPick({
+      hand,
+      count: 1,
+      min: 1,
+      title: pr.source_name||'Discard',
+      msg: pr.prompt||`Put 1 Member with cost ${maxCost} or less from your hand into the Waiting Room.`,
+      onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
+      onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
+      forceConfirm: true,
+    });
+    return;
+  }
   if(pr?.type==='spbp2_discard_liella_choice'&&pr.responder===myId){
     if(pr.step==='pick_hand'){
       ovl.classList.remove('open');
