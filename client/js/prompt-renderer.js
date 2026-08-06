@@ -522,6 +522,8 @@ global.openYellRevealPick = function openYellRevealPick(pr, opts = {}) {
 global.openJudgeSuccessLivePick = function openJudgeSuccessLivePick(pr, opts = {}) {
   const s = opts.state || G.gameState;
   const myId = opts.myId || G.playerId;
+  if (s?.status === 'finished') return;
+  if (typeof isPromptSubmitting === 'function' && isPromptSubmitting(s)) return;
   const cards = judgeSuccessLivePickCards(pr, s, myId);
   if (!cards.length) {
     toast(pt('prompt.noLiveSuccess'), 3200);
@@ -538,6 +540,8 @@ global.openJudgeSuccessLivePick = function openJudgeSuccessLivePick(pr, opts = {
   if (btnCancel) btnCancel.style.display = 'none';
   cards.forEach(card => {
     g.appendChild(mkPickCardEl(card, 'pickcard', () => {
+      if (typeof isPromptSubmitting === 'function' && isPromptSubmitting(G.gameState || s)) return;
+      if (typeof markPromptSubmitting === 'function') markPromptSubmitting(G.gameState || s);
       closeM('overlay-pick');
       G.pickCtx = null;
       sendAct('resolve_prompt', { card_id: card.instance_id });

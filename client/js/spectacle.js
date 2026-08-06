@@ -369,7 +369,11 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
     if (isResolved(cur)) return;
     const pr = cur.pending_prompt;
     if (pr?.type === 'pick_judge_success_live' && pr?.responder === myId) {
-      ensurePendingPromptSurfaced(cur, myId);
+      if (!(typeof isPromptSubmitting === 'function' && isPromptSubmitting(cur))
+          && !(G._resolvePromptSentKey && typeof promptIdentityKey === 'function'
+            && G._resolvePromptSentKey === promptIdentityKey(cur))) {
+        ensurePendingPromptSurfaced(cur, myId);
+      }
     }
     if (G.isCPU && pr?.responder === 'p2') {
       doCPU(cur);
@@ -382,11 +386,14 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
     const seqBefore = G.lastSeq ?? 0;
     if (pr?.responder === myId && !isMyBlockingPromptOpen(cur)) {
       if (isLiveSuccessDiscardPrompt(cur)) clearLiveSuccessHandDeferral(cur);
-      if (isLiveSuccessDiscardPrompt(cur)
+      const submitting = (typeof isPromptSubmitting === 'function' && isPromptSubmitting(cur))
+        || (G._resolvePromptSentKey && typeof promptIdentityKey === 'function'
+          && G._resolvePromptSentKey === promptIdentityKey(cur));
+      if (!submitting && (isLiveSuccessDiscardPrompt(cur)
           || pr.type === 'pick_judge_success_live'
           || isMidSpectacleYellRetryPrompt(cur)
           || isPostLiveSkillPrompt(cur)
-          || isDeferredLiveSuccessPrompt(cur)) {
+          || isDeferredLiveSuccessPrompt(cur))) {
         ensurePendingPromptSurfaced(cur, myId);
       }
       if (!isMyBlockingPromptOpen(cur)) await pullPromptResolutionState();
@@ -3902,6 +3909,17 @@ function waitForBlockingOverlaysIdle(state) {
 
 function ensurePendingPromptSurfaced(s, myId) {
   if (!s) return;
+  // Match already over — never reopen Success-Live / skill pickers over the win UI.
+  if (s.status === 'finished' || G.gameState?.status === 'finished') {
+    if (el('overlay-pick')?.classList.contains('open')) closeM('overlay-pick');
+    if (el('overlay-prompt')?.classList.contains('open')) closeM('overlay-prompt');
+    if (el('overlay-hand-pick')?.classList.contains('open')) {
+      closeM('overlay-hand-pick');
+      clearPickerCardHover();
+    }
+    clearDeferredPromptState({ skipBannerRefresh: true });
+    return;
+  }
   // Never re-apply an older snapshot after live-start / spectacle advanced the board.
   // (Re-surfacing gate-entry state was showing Natsumi / Kurage / Live Start prompts after Performance.)
   const live = G.gameState;
@@ -3967,6 +3985,11 @@ function ensurePendingPromptSurfaced(s, myId) {
   // Also multi-step WR picks (Ginko pick_wr_live): a latched submit key must not hide the picker.
   if (G._lastResolvedPromptKey === surfKey) {
     const wrPickStep = typeof pr.step === 'string' && /^pick_wr/.test(pr.step);
+    // Never resurface while this exact prompt was just submitted — that reopened
+    // pick_judge_success_live in a loop and hid the win screen after a 3rd Success.
+    if (G._resolvePromptSentKey && G._resolvePromptSentKey === surfKey) return;
+    if (G._promptSubmitKey && G._promptSubmitKey === surfKey) return;
+    if ((G.gameState?.status === 'finished') || s.status === 'finished') return;
     const needsResurface = (pr.type === 'pick_judge_success_live'
         || pr.type === 'sbp6_live_wr_deck_position'
         || s.phase === 'live_success_effects'

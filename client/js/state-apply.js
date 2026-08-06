@@ -32,6 +32,7 @@
     G._deferPerfSpectaclePrev = null;
     G._livePostRevealBoard = null;
     G._liveStorageOutcomePending = false;
+    G._liveStorageOutcomesPlayedKey = null;
     G._liveRoundPlaybackActive = false;
     G._liveRoundPostSpectacleReady = false;
     G._liveSpectacleGateRunning = false;
@@ -216,6 +217,24 @@
   };
 
   global.applyFinishedState = async function applyFinishedState(s, prev) {
+    // Drop Success-Live pick / skill overlays immediately so a late resurface cannot
+    // cover the win screen after a 3rd Success (softlock until refresh).
+    if (typeof global.closeM === 'function') {
+      global.closeM('overlay-pick');
+      global.closeM('overlay-prompt');
+      global.closeM('overlay-hand-pick');
+    }
+    G._livePostRevealBoard = null;
+    G._liveStorageOutcomePending = false;
+    G._liveStorageOutcomesPlayedKey = null;
+    G._liveStorageOutcomesPlayedKey = null;
+    G._promptSubmitKey = null;
+    G._resolvePromptSentKey = null;
+    G._lastResolvedPromptKey = null;
+    G._lastSurfacedPromptKey = null;
+    if (typeof global.clearDeferredPromptState === 'function') {
+      global.clearDeferredPromptState({ skipBannerRefresh: true });
+    }
     if (G.isSpectator) {
       G.lastSeq = s.seq;
       if (typeof alignSpectatorStageBoard === 'function') {

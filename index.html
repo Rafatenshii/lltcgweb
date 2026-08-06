@@ -14104,6 +14104,7 @@ let G = {
   _liveRoundPlaybackActive:false,
   _liveRoundPostSpectacleReady:false,
   _liveStorageOutcomePending:false,
+  _liveStorageOutcomesPlayedKey:null,
   _liveSetStorageBaseline:null,
   _emptyLiveRoundPresentedTurns:null,
   _deferredLiveState:null,
@@ -17756,7 +17757,17 @@ function preLiveRevealMoves(prev, final) {
 }
 
 function postLiveRevealOutcomeMoves(prev, final) {
-  return diffCardMoves(prev, final).filter(m => isLiveCardOutcomeMove(prev, m));
+  return diffCardMoves(prev, final).filter(m => {
+    if (!isLiveCardOutcomeMove(prev, m)) return false;
+    // Card already sits in Success on the from-board — re-flying causes ghost Success chips.
+    if ((m.to?.zone || '') === 'success') {
+      const pid = m.to?.pid || m.from?.pid;
+      const already = (prev.players?.[pid]?.success_lives || [])
+        .some(c => c && c.instance_id === m.iid);
+      if (already) return false;
+    }
+    return true;
+  });
 }
 
 async function playPostLiveRevealOutcomes(fromState, final, myId) {
@@ -17780,6 +17791,12 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
 async function playDeferredLiveStorageOutcomes(fromState, final, myId) {
   let board = fromState || G.gameState;
   if (!board || !final) return false;
+  if (final.status === 'finished' || G.gameState?.status === 'finished') {
+    // Still fly once into Success for the winning card, but never from a snapshot
+    // that already shows those cards in success_lives (ghost replay).
+  }
+  const outcomeKey = `${final.room_id || G.roomId || ''}:${final.turn ?? '?'}:${final.seq ?? 0}:outcomes`;
+  if (G._liveStorageOutcomesPlayedKey === outcomeKey) return false;
   let ran = false;
   if (collectLiveBluffDiscards(board, final).length) {
     await playLiveStorageWrDiscards(board, final, myId, {
@@ -17790,6 +17807,7 @@ async function playDeferredLiveStorageOutcomes(fromState, final, myId) {
     ran = true;
   }
   if (await playPostLiveRevealOutcomes(board || G.gameState, final, myId)) ran = true;
+  if (ran) G._liveStorageOutcomesPlayedKey = outcomeKey;
   return ran;
 }
 
@@ -18108,6 +18126,8 @@ function flushLiveStorageFlipScheduling(myId) {
 function liveZoneForRender(s, pid) {
   const current = clampLiveZoneCards(s?.players?.[pid]?.live_zone || []);
   if (G._liveWrDiscardInProgress) return current;
+  // Finished / Main: never keep a stale post-reveal snapshot (ghost Success flights).
+  if (s?.status === 'finished') return current;
   // Never keep ghost post-reveal storage once Main/Active has sealed the reveal.
   if (isMainOrActivePhase(s?.phase)
       && (s?.turn == null || liveStorageRevealDoneForTurn(s.turn)
