@@ -1355,12 +1355,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <h4 data-i18n="game.stageBoard">Stage Board</h4>
         <div class="stage-board-grid">
           <div class="stage-board-side mine">
-            <div class="stage-board-side-lbl" data-i18n="game.you">You</div>
+            <div class="stage-board-side-lbl" id="sb-my-lbl" data-i18n="game.you">You</div>
             <div class="stage-board-hearts" id="sb-my-hearts"></div>
             <div class="stage-board-yell" id="sb-my-yell">—</div>
           </div>
           <div class="stage-board-side opp">
-            <div class="stage-board-side-lbl" data-i18n="game.opp">Opp</div>
+            <div class="stage-board-side-lbl" id="sb-opp-lbl" data-i18n="game.opp">Opp</div>
             <div class="stage-board-hearts" id="sb-opp-hearts"></div>
             <div class="stage-board-yell" id="sb-opp-yell">—</div>
           </div>
@@ -1431,7 +1431,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 
       <!-- Your playmat -->
       <div class="playmat-frame my-mat" id="game-stage">
-        <span class="mat-owner-label" data-i18n="game.you">You</span>
+        <span class="mat-owner-label" id="my-mat-label" data-i18n="game.you">You</span>
         <img class="playmat-img" src="playmat.png" width="1024" height="563" alt="" draggable="false">
         <div class="playmat-overlay">
           <div class="mat-zone success-col slot-fill z-my-success" id="my-pips"></div>

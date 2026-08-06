@@ -25,19 +25,33 @@ function renderGame(s, opts = {}) {
   if(!me||!opp) return;
   syncPrepHandsChrome(s);
 
-  // Names
+  // Names — spectators never see "You" for the bottom seat (perspective player).
   const tutNames = G.isTutorial && G.tutorialLabels;
-  el('my-name').textContent  = tutNames ? G.tutorialLabels.p1 : (me.name||'You');
-  el('opp-name').textContent = tutNames ? G.tutorialLabels.p2 : (opp.name||'Opponent');
+  const youFallback = (typeof t === 'function' ? t('game.you') : null) || 'You';
+  const oppFallback = (typeof t === 'function' ? t('game.opponent') : null) || 'Opponent';
+  const mySeatName = tutNames
+    ? G.tutorialLabels.p1
+    : (me.name || (G.isSpectator ? 'Player' : youFallback));
+  const oppSeatName = tutNames
+    ? G.tutorialLabels.p2
+    : (opp.name || oppFallback);
+  el('my-name').textContent = mySeatName;
+  el('opp-name').textContent = oppSeatName;
   const handSuffix = ' · hand';
-  if (el('opp-hand-label')) el('opp-hand-label').textContent = (tutNames ? G.tutorialLabels.p2 : (opp.name||'Opponent')) + handSuffix;
+  if (el('opp-hand-label')) el('opp-hand-label').textContent = oppSeatName + handSuffix;
   if (el('my-hand-label')) {
     el('my-hand-label').textContent = G.isSpectator
-      ? (me.name || 'Player') + handSuffix
+      ? mySeatName + handSuffix
       : t('game.yourHand');
   }
-  if (el('opp-mat-label')) el('opp-mat-label').textContent = tutNames ? G.tutorialLabels.p2 : (opp.name||'Opponent');
-
+  if (el('opp-mat-label')) el('opp-mat-label').textContent = oppSeatName;
+  if (el('my-mat-label')) el('my-mat-label').textContent = mySeatName;
+  if (el('sb-my-lbl')) el('sb-my-lbl').textContent = mySeatName;
+  if (el('sb-opp-lbl')) {
+    el('sb-opp-lbl').textContent = tutNames
+      ? G.tutorialLabels.p2
+      : (opp.name || ((typeof t === 'function' ? t('game.opp') : null) || 'Opp'));
+  }
   // Counters
   const ae=(me.energy_zone||[]).filter(energyChipActive).length;
   const te=(me.energy_zone||[]).length;
