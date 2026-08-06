@@ -942,6 +942,72 @@ function takeActiveEnergyFromZone(array &$p, int $count): array {
     return $taken;
 }
 
+/**
+ * Move Energy from the Energy Zone under a Member.
+ * Prefers unused (active) chips, then used; optional $preferIds for player choice (#90).
+ */
+function takeEnergyFromZoneForStack(array &$p, int $count, array $preferIds = []): array {
+    if ($count <= 0) {
+        return [];
+    }
+    $taken = [];
+    $zone = &$p['energy_zone'];
+    $preferIds = array_values(array_filter($preferIds, fn($id) => is_string($id) && $id !== ''));
+
+    $takeAt = static function (array &$zone, int $i) use (&$taken): void {
+        $card = $zone[$i];
+        array_splice($zone, $i, 1);
+        $card['active'] = false;
+        $taken[] = $card;
+    };
+
+    if (!empty($preferIds)) {
+        foreach ($preferIds as $wantId) {
+            if (count($taken) >= $count) {
+                break;
+            }
+            foreach ($zone as $i => $e) {
+                if (($e['instance_id'] ?? '') === $wantId) {
+                    $takeAt($zone, $i);
+                    break;
+                }
+            }
+        }
+        return $taken;
+    }
+
+    // Pass 1: unused (active) Energy.
+    for ($i = 0; $i < count($zone) && count($taken) < $count; ) {
+        if (!($zone[$i]['active'] ?? false)) {
+            $i++;
+            continue;
+        }
+        $takeAt($zone, $i);
+    }
+    // Pass 2: used Energy still in the zone (#90).
+    for ($i = 0; $i < count($zone) && count($taken) < $count; ) {
+        $takeAt($zone, $i);
+    }
+    return $taken;
+}
+
+/** Energy Zone cards ordered unused-first for stack-under picks. */
+function energyZoneStackCandidates(array $p): array {
+    $active = [];
+    $used = [];
+    foreach ($p['energy_zone'] ?? [] as $e) {
+        if (!is_array($e)) {
+            continue;
+        }
+        if ($e['active'] ?? false) {
+            $active[] = $e;
+        } else {
+            $used[] = $e;
+        }
+    }
+    return array_merge($active, $used);
+}
+
 function returnMemberStackedEnergyToDeck(array &$p, array &$member, int $count): int {
     if ($count <= 0) {
         return 0;

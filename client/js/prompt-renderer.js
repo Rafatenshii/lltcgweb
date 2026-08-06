@@ -2544,6 +2544,24 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
+  if(pr?.type==='stack_energy_zone_pick'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const need=Math.max(1, Number(pr.energy_count||pr.max_pick||1));
+    const hand=(pr.candidates&&pr.candidates.length)
+      ? pr.candidates
+      : (s.players?.[myId]?.energy_zone||[]);
+    openHandPick({
+      hand,
+      count: need,
+      min: need,
+      title: pr.source_name||'Energy',
+      msg: pr.prompt||`Choose ${need} Energy from your Energy Zone to place under this Member.`,
+      onConfirm: (ids)=> sendAct('resolve_prompt',{energy_ids:ids, card_ids:ids}),
+      onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
+      forceConfirm: true,
+    });
+    return;
+  }
   if(pr?.type==='activated_discard_trigger_on_enter'&&pr.responder===myId){
     ovl.classList.remove('open');
     const me=s.players?.[myId];

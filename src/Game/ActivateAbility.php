@@ -1115,6 +1115,11 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
                 }
             }
             $state = plMuseGapResolveEffect($state, $pid, $member, $ab, ['slot' => $slot ?? '']);
+            if (($ab['type'] ?? '') === 'leave_stage_wait_opp_max_cost') {
+                // Source Member is already in Waiting Room — never write it back to Stage.
+                $state['seq']++;
+                return $state;
+            }
             if (empty($state['pending_prompt'])) {
                 markAbilityUsed($member, $abilityIdx);
                 persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);

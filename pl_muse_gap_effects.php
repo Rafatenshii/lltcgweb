@@ -791,18 +791,34 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             unset($mbr);
             break;
 
-        case 'leave_stage_wait_opp_max_cost':
-            $state = resolveAbilityEffect($state, $pid, $source, [
-                'type'   => 'leave_stage_add_from_wr',
-                'filter' => 'member',
-                'count'  => 0,
-            ], $ctx);
-            $state = resolveAbilityEffect($state, $pid, $source, [
+        case 'leave_stage_wait_opp_max_cost': {
+            // Honoka bp6-010: put THIS Member into the Waiting Room, then Wait an opp Member.
+            // Do not use leave_stage_add_from_wr (that opens a WR-to-hand pick and was
+            // overwritten by the wait-opp prompt, so the Member never left — #90).
+            $slot = (string)($ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? '') ?? '');
+            if ($slot === '' || empty($p['stage'][$slot])) {
+                break;
+            }
+            $leaving = $p['stage'][$slot];
+            $p['stage'][$slot] = null;
+            $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $ctx);
+            if (!empty($state['pending_prompt'])) {
+                // Rare nested leave prompt: put Member back until that resolves.
+                $p['stage'][$slot] = $leaving;
+                break;
+            }
+            $state = appendCardsToWaitingRoom($state, $pid, [$leaving]);
+            $p = &$state['players'][$pid];
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . ($leaving['name_en'] ?? $leaving['name'] ?? 'Member') .
+                '] left Stage into the Waiting Room.');
+            $state = resolveAbilityEffect($state, $pid, $leaving, [
                 'type'       => 'wait_opponent_stage_max_cost',
                 'max_cost'   => intval($ab['max_cost'] ?? 4),
                 'pick_count' => intval($ab['pick_count'] ?? 1),
             ], $ctx);
             break;
+        }
 
         case 'add_wr_live_if_success_score':
             if (sumSuccessLiveScores($p, $state, $pid) >= intval($ab['min_success_score_sum'] ?? 6)) {

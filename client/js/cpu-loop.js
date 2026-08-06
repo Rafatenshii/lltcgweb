@@ -832,6 +832,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'spbp2_stack_wr_member', 'spbp2_wait_self_opp_heart_gap',
   'spbp2_center_move_choose', 'spbp2_center_move_position',
   'activated_discard_trigger_on_enter',
+  'stack_energy_zone_pick',
   'both_shuffle_wr_members_deck_bottom_threshold',
   'live_start_unless_discard_return_energy', 'live_success_choose_draw_or_energy_wait',
 ]);
@@ -4136,6 +4137,16 @@ function cpuResolvePromptBody(s, cpu, pr) {
     } else {
       cpuAct('resolve_prompt',{choice:'no'});
     }
+    return;
+  }
+  if(pr.type==='stack_energy_zone_pick'){
+    const need=Math.max(1, Number(pr.energy_count||pr.max_pick||1));
+    const pool=(pr.candidates&&pr.candidates.length)?pr.candidates:(cpu.energy_zone||[]);
+    // Prefer unused (active) chips for CPU.
+    const ordered=[...pool].sort((a,b)=>Number(!!(b.active))-Number(!!(a.active)));
+    const ids=ordered.slice(0,need).map(c=>c.instance_id).filter(Boolean);
+    if(ids.length>=need) cpuAct('resolve_prompt',{energy_ids:ids, card_ids:ids});
+    else cpuAct('anti_softlock_skip',{});
     return;
   }
   if(pr.type==='activated_discard_trigger_on_enter'){

@@ -4,9 +4,9 @@
  * Included by effects.php.
  */
 
-function nijiStackEnergyUnderMember(array &$p, array &$member, int $count): int {
+function nijiStackEnergyUnderMember(array &$p, array &$member, int $count, array $preferIds = []): int {
     normalizeLegacyStackedEnergyZoneRefs($p, $member);
-    $taken = takeActiveEnergyFromZone($p, $count);
+    $taken = takeEnergyFromZoneForStack($p, $count, $preferIds);
     if (!empty($taken)) {
         attachStackedEnergyCardsToMember($member, $taken);
     }
@@ -723,14 +723,47 @@ function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array 
     }
     if ($type === 'optional_stack_energy_add_wr_live') {
         $needEnergy = max(1, intval($ab['energy'] ?? 1));
-        if (countActiveEnergyInZone($p) < $needEnergy) {
+        if (countEnergyInZone($p) < $needEnergy) {
             throw new Exception("Need $needEnergy Energy in Energy Zone");
         }
         $cfg = wrPickCfgFromAbility(array_merge($ab, ['filter' => 'live']));
         if (wrPickMatchCount($p, $cfg, 1) < 1) {
             return fizzleActivatedAbilityNoWr($state, $pid, $member, 'no matching Live card in Waiting Room.');
         }
-        $placed = nijiStackEnergyUnderMember($p, $member, $needEnergy);
+        $energyIds = normalizeDiscardIds($data['energy_ids'] ?? $data['card_ids'] ?? []);
+        if (count($energyIds) < $needEnergy) {
+            $cands = energyZoneStackCandidates($p);
+            // Single chip: no need to ask.
+            if (count($cands) === $needEnergy) {
+                $energyIds = array_values(array_filter(array_map(
+                    fn($e) => $e['instance_id'] ?? '',
+                    $cands
+                )));
+            } else {
+                $state['pending_prompt'] = [
+                    'type'          => 'stack_energy_zone_pick',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $member['instance_id'] ?? '',
+                    'source_slot'   => $slot,
+                    'ability_index' => $abilityIdx,
+                    'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
+                    'energy_count'  => $needEnergy,
+                    'min_pick'      => $needEnergy,
+                    'max_pick'      => $needEnergy,
+                    'candidates'    => array_map('cardPromptSummary', $cands),
+                    'prompt'        => $needEnergy === 1
+                        ? 'Choose 1 Energy from your Energy Zone to place under this Member (unused Energy is listed first).'
+                        : "Choose $needEnergy Energy from your Energy Zone to place under this Member (unused Energy is listed first).",
+                    'ability'       => $ab,
+                    'then'          => 'add_wr_live',
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . ($member['name_en'] ?? $member['name']) . '] choose Energy to stack.');
+                return $state;
+            }
+        }
+        $placed = nijiStackEnergyUnderMember($p, $member, $needEnergy, $energyIds);
         if ($placed < 1) {
             throw new Exception('Could not place Energy under Member');
         }
@@ -1318,6 +1351,72 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         }
     }
 
+    if ($promptType === 'stack_energy_zone_pick') {
+        $need = max(1, intval($prompt['energy_count'] ?? $prompt['max_pick'] ?? 1));
+        $energyIds = normalizeDiscardIds($data['energy_ids'] ?? $data['card_ids'] ?? []);
+        if (count($energyIds) === 1 && $need === 1 && $choice !== '' && $choice !== 'yes' && $choice !== 'no') {
+            // Single-tap resolve_prompt may send choice=instance_id.
+            if (!in_array($choice, $energyIds, true)) {
+                $energyIds = [$choice];
+            }
+        }
+        if ($choice !== '' && $choice !== 'yes' && $choice !== 'no' && empty($energyIds)) {
+            $energyIds = [$choice];
+        }
+        if (count($energyIds) < $need) {
+            throw new Exception($need === 1
+                ? 'Choose 1 Energy from your Energy Zone'
+                : "Choose $need Energy from your Energy Zone");
+        }
+        $candIds = array_values(array_filter(array_map(
+            fn($c) => is_array($c) ? ($c['instance_id'] ?? '') : '',
+            $prompt['candidates'] ?? []
+        )));
+        foreach (array_slice($energyIds, 0, $need) as $eid) {
+            if (!empty($candIds) && !in_array($eid, $candIds, true)) {
+                throw new Exception('Choose listed Energy from your Energy Zone');
+            }
+        }
+        $srcId = $prompt['source_id'] ?? '';
+        $slot = $prompt['source_slot'] ?? findMemberSlot($ownerP, $srcId);
+        if ($slot === null || $slot === '' || empty($ownerP['stage'][$slot])) {
+            throw new Exception('Member no longer on Stage');
+        }
+        $member = &$ownerP['stage'][$slot];
+        $ability = $prompt['ability'] ?? [];
+        $abIdx = intval($prompt['ability_index'] ?? 0);
+        $placed = nijiStackEnergyUnderMember($ownerP, $member, $need, array_slice($energyIds, 0, $need));
+        if ($placed < 1) {
+            throw new Exception('Could not place Energy under Member');
+        }
+        $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            " — placed $placed Energy under [$mName].");
+        $then = $prompt['then'] ?? '';
+        if ($then === 'add_wr_live' || ($ability['type'] ?? '') === 'optional_stack_energy_add_wr_live') {
+            if (!empty($ability['once_per_turn'])) {
+                markAbilityUsed($member, $abIdx);
+            }
+            $cfg = wrPickCfgFromAbility(array_merge($ability, ['filter' => 'live']));
+            startPickWrToHandPrompt($state, $owner, $member, (string)$slot, $abIdx, $ability, $cfg);
+            $ownerP['stage'][$slot] = $member;
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$mName] choose a Nijigasaki Live from Waiting Room.");
+            $state['seq']++;
+            return $state;
+        }
+        if ($then === 'draw' || ($ability['type'] ?? '') === 'optional_stack_energy_draw') {
+            drawCardsForPlayer($state, $owner, intval($ability['draw'] ?? 2));
+        }
+        if (!empty($ability['once_per_turn'])) {
+            markAbilityUsed($member, $abIdx);
+        }
+        $ownerP['stage'][$slot] = $member;
+        unset($member, $state['pending_prompt']);
+        $state['seq']++;
+        return finishPromptEffects($state);
+    }
+
     if ($promptType === 'optional_stack_energy_draw_blade_all' && $choice === 'yes') {
         $srcId = $prompt['source_id'] ?? '';
         foreach ($ownerP['stage'] as &$mbr) {
@@ -1350,8 +1449,48 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
     if (in_array($promptType, ['optional_stack_energy_draw', 'optional_stack_energy', 'optional_stack_energy_add_wr_live'], true) && $choice === 'yes') {
         $srcId = $prompt['source_id'] ?? '';
         $slot = findMemberSlot($ownerP, $srcId);
+        $needEnergy = max(1, intval($ability['energy'] ?? 1));
         if ($slot !== null && !empty($ownerP['stage'][$slot])) {
-            $placed = nijiStackEnergyUnderMember($ownerP, $ownerP['stage'][$slot], intval($ability['energy'] ?? 1));
+            if (countEnergyInZone($ownerP) < $needEnergy) {
+                throw new Exception("Need $needEnergy Energy in Energy Zone");
+            }
+            $cands = energyZoneStackCandidates($ownerP);
+            $energyIds = normalizeDiscardIds($data['energy_ids'] ?? $data['card_ids'] ?? []);
+            if (count($energyIds) < $needEnergy && count($cands) > $needEnergy) {
+                $state['pending_prompt'] = [
+                    'type'          => 'stack_energy_zone_pick',
+                    'owner'         => $owner,
+                    'responder'     => $owner,
+                    'source_id'     => $srcId,
+                    'source_slot'   => $slot,
+                    'ability_index' => intval($prompt['ability_index'] ?? 0),
+                    'source_name'   => $prompt['source_name'] ?? 'Member',
+                    'energy_count'  => $needEnergy,
+                    'min_pick'      => $needEnergy,
+                    'max_pick'      => $needEnergy,
+                    'candidates'    => array_map('cardPromptSummary', $cands),
+                    'prompt'        => $needEnergy === 1
+                        ? 'Choose 1 Energy from your Energy Zone to place under this Member (unused Energy is listed first).'
+                        : "Choose $needEnergy Energy from your Energy Zone to place under this Member (unused Energy is listed first).",
+                    'ability'       => $ability,
+                    'then'          => $promptType === 'optional_stack_energy_add_wr_live' ? 'add_wr_live'
+                        : ($promptType === 'optional_stack_energy_draw' ? 'draw' : ''),
+                ];
+                $state['seq']++;
+                return $state;
+            }
+            if (count($energyIds) < $needEnergy) {
+                $energyIds = array_values(array_filter(array_map(
+                    fn($e) => $e['instance_id'] ?? '',
+                    array_slice($cands, 0, $needEnergy)
+                )));
+            }
+            $placed = nijiStackEnergyUnderMember(
+                $ownerP,
+                $ownerP['stage'][$slot],
+                $needEnergy,
+                $energyIds
+            );
             if ($placed > 0) {
                 $mName = $ownerP['stage'][$slot]['name_en'] ?? $ownerP['stage'][$slot]['name'] ?? 'Member';
                 $state = addLog($state, $state['players'][$owner]['name'] .
