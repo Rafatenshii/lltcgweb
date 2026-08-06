@@ -2392,9 +2392,7 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
                 }
             }
             $memberHearts = plMuseGapApplyContinuousHearts($state, $pid, $member, $ab, $memberHearts);
-            $memberHearts = spBp5ApplyContinuousHearts($state, $pid, $member, $slot, $memberHearts);
             $memberHearts = spBp2ApplyContinuousHearts($state, $pid, $member, $ab, $memberHearts);
-            $memberHearts = batch99ApplyContinuousHearts($state, $pid, $member, $slot, $memberHearts);
             $memberHearts = bp7ApplyContinuousHearts($state, $pid, $member, (string)$slot, $ab, $memberHearts);
             if (($ab['type'] ?? '') === 'blade_if_exact_stage_members' && !empty($ab['hearts'])) {
                 if (countStageMembers($state['players'][$pid]) === intval($ab['count'] ?? 2)) {
@@ -2414,6 +2412,10 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
                 }
             }
         }
+        // Full-member scanners — must run once per Member, not once per ability
+        // (Tomari BP5 etc. have 3 continuous_hearts_in_slot lines; #89 tripled hearts).
+        $memberHearts = spBp5ApplyContinuousHearts($state, $pid, $member, (string)$slot, $memberHearts);
+        $memberHearts = batch99ApplyContinuousHearts($state, $pid, $member, (string)$slot, $memberHearts);
         foreach (hsPb1ApplyContinuousPurpleHeart($member, $state, $pid) as $color) {
             $memberHearts[] = normalizeHeartColor((string)$color);
         }
