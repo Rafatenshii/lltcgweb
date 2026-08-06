@@ -714,8 +714,36 @@ function getStatePolling(): void {
             echo json_encode(['error' => 'Spectator session expired']);
             return;
         }
-        // Refresh reconnect: read-only snapshot — no forfeit/timeout writes under load.
+        // Refresh reconnect: usually read-only — but live_show stalls must still heal.
+        // Spectacle parks on resume=1 during "Checking hearts…"; skipping timeouts there
+        // left PvP rooms stuck when one player never acked (and thrashing workers OOMed).
         if ($resumeOnly) {
+            $agedLiveShow = !empty($state['live_show'])
+                && ($state['live_show']['stage'] ?? '') !== 'done'
+                && empty($state['pending_prompt'])
+                && (time() - intval($state['live_show']['started_at'] ?? time()) >= (
+                    count(liveShowRequiredAckPlayers($state)) >= 2 ? 25 : 90
+                ));
+            if ($agedLiveShow) {
+                try {
+                    $healed = withLock($roomId, static function () use ($roomId) {
+                        $s = loadGame($roomId);
+                        if (!$s) {
+                            return null;
+                        }
+                        if (applyPhaseTimeouts($s)) {
+                            saveGame($roomId, $s);
+                            return $s;
+                        }
+                        return null;
+                    }, 8.0);
+                    if (is_array($healed)) {
+                        $state = $healed;
+                    }
+                } catch (Throwable $e) {
+                    // Keep the read-only snapshot if the lock is busy.
+                }
+            }
             echo json_encode(filterStateForClient($state, $roomId, $playerToken));
             return;
         }
@@ -3558,6 +3586,36 @@ function tryConsumeHeartsForRequirementSlots(array $pool, array $slots, array $r
     if (empty($slots)) {
         return array_values($pool);
     }
+    // Fat Lives (e.g. COMPASS 16 hearts) with a short pool used to DFS-explode for
+    // minutes and softlock the match host — "Checking hearts…" forever + lock timeouts.
+    if (count($pool) < count($slots)) {
+        return null;
+    }
+    // Once only "any" slots remain, assignment order cannot fail if the count fits.
+    // Consume in surplus→wild→reserved preference (issue #66) without backtracking.
+    $allAny = true;
+    foreach ($slots as $slotColor) {
+        if ($slotColor !== 'any') {
+            $allAny = false;
+            break;
+        }
+    }
+    if ($allAny) {
+        $order = heartSlotCandidateIndices($pool, 'any', $reservedColored);
+        if (count($order) < count($slots)) {
+            return null;
+        }
+        $remove = array_fill_keys(array_slice($order, 0, count($slots)), true);
+        $remaining = [];
+        foreach ($pool as $i => $h) {
+            if (isset($remove[$i])) {
+                unset($remove[$i]);
+                continue;
+            }
+            $remaining[] = $h;
+        }
+        return $remaining;
+    }
     $need = $slots[0];
     $rest = array_slice($slots, 1);
     foreach (heartSlotCandidateIndices($pool, $need, $reservedColored) as $idx) {
@@ -4523,7 +4581,10 @@ function healStalledLiveShowPerformance(array $state): array {
     }
     unset($state['_performance_continue']);
     if (!empty($state['_perf_yell_both_done'])) {
-        return finishYellRetryAndHearts($state);
+        // finishYellRetryAndHearts() intentionally no-ops while stage=performance and
+        // hearts have not started (client spectacle hold). Timeouts / stall heals must
+        // actually resolve hearts or rooms softlock on "Checking hearts…".
+        return resolvePerformanceHeartsAfterYell($state);
     }
     return continuePerformanceYellPhase($state, $pid);
 }

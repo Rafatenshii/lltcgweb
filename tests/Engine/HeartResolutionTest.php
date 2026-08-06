@@ -136,4 +136,24 @@ final class HeartResolutionTest extends TestCase
         [$ok2] = checkHearts($rem, $reqRed);
         $this->assertTrue($ok1 && $ok2);
     }
+
+    /** COMPASS-sized Live (16 slots) with a short pool must fail fast — not DFS for minutes. */
+    public function testCheckHeartsFailsFastWhenPoolSmallerThanSlots(): void {
+        $required = [
+            ['color' => 'pink', 'count' => 1],
+            ['color' => 'green', 'count' => 1],
+            ['color' => 'blue', 'count' => 7],
+            ['color' => 'any', 'count' => 7],
+        ];
+        $owned = array_merge(
+            ['pink', 'green', 'purple'],
+            array_fill(0, 10, 'blue'),
+            ['any']
+        ); // 14 < 16
+        $t0 = microtime(true);
+        [$ok] = checkHearts($owned, $required);
+        $elapsed = microtime(true) - $t0;
+        $this->assertFalse($ok);
+        $this->assertLessThan(0.05, $elapsed, 'undersized pool must not combinatorial-explode');
+    }
 }

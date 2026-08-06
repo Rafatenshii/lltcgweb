@@ -7318,19 +7318,22 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
   G._liveRoundPostSpectacleReady = true;
 }
 
-async function fetchLiveShowStateNow() {
+async function fetchLiveShowStateNow(opts = {}) {
   if (!G.roomId || !G.token || typeof parseGameApiResponse !== 'function') return null;
   try {
     // Must follow the room's locked origin (overflow VPS vs Hostinger). Bare `API`
     // stays on Hostinger and misses ranked/casual Redis rooms — both players then
     // stall mid-spectacle ("Checking hearts…") until a later safety poll.
-    // resume=1 skips poll side-effects that can lock-timeout on busy live rooms.
+    // Default resume=1 avoids heavy side-effects; allowHeal runs timeouts so a
+    // parked "Checking hearts…" wait can still advance when an ack is missing.
+    const allowHeal = !!opts.allowHeal;
     const base = (typeof tcgGameApiUrl === 'function')
       ? tcgGameApiUrl()
       : (typeof API !== 'undefined' ? API : './api.php');
+    const resumeQ = allowHeal ? '' : '&resume=1';
     const r = await fetch(
       `${base}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
-      + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0&resume=1`
+      + `&token=${encodeURIComponent(G.token)}&seq=0&poll=0${resumeQ}`
     );
     let d = await parseGameApiResponse(r);
     if (d?.error) return null;
@@ -7620,7 +7623,9 @@ async function presentServerLiveShowStage(prev, next, myId) {
             && (performance.now() - waitStart < 2500)
           ) {
             await perfSleep(150);
-            const again = await fetchLiveShowStateNow();
+            const again = await fetchLiveShowStateNow({
+              allowHeal: performance.now() - waitStart > 900,
+            });
             if (again && (again.seq ?? 0) >= (advanced.seq ?? 0)) advanced = again;
           }
           if (advanced && (advanced.seq ?? 0) >= (board.seq ?? 0)) {
@@ -7725,9 +7730,14 @@ async function presentServerLiveShowStage(prev, next, myId) {
           && (performance.now() - waitStart < 4000)
         ) {
           await perfSleep(120);
-          const again = await fetchLiveShowStateNow();
+          const again = await fetchLiveShowStateNow({
+            // After ~1s still on performance, allow server live_show timeout heal
+            // (resume=1 alone skipped applyPhaseTimeouts and softlocked PvP).
+            allowHeal: performance.now() - waitStart > 1000,
+          });
           if (again && (again.seq ?? 0) >= (advanced.seq ?? 0)) advanced = again;
           if (['outcomes', 'judge', 'done'].includes(advanced?.live_show?.stage)) break;
+          if (liveShowHeartsResolvedFromBoard(advanced)) break;
         }
         const elapsed = performance.now() - waitStart;
         if (elapsed < minBridgeMs) await perfSleep(minBridgeMs - elapsed);

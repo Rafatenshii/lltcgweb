@@ -43,8 +43,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    mem_limit: 512m
-    cpus: 0.5
+    mem_limit: 1024m
+    cpus: 1.0
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api.php?action=ping"]
