@@ -1,4 +1,21 @@
 /** Board paint — extracted from index.html (overhaul Part 2A) */
+
+/**
+ * Stage Member cost for Live-temp UI (override / +bonus).
+ * Defined here so board badges work even when cpu-loop.js is not loaded yet.
+ */
+function stageMemberLiveCostInfo(member) {
+  if (!member) return { printed: 0, effective: 0, delta: 0 };
+  const printed = Number(member.cost || 0);
+  if (member.live_cost_override != null && member.live_cost_override !== '') {
+    const effective = Number(member.live_cost_override);
+    return { printed, effective, delta: effective - printed };
+  }
+  const bonus = Number(member.live_cost_bonus || 0);
+  const effective = printed + bonus;
+  return { printed, effective, delta: bonus };
+}
+
 function renderGame(s, opts = {}) {
   if(!s?.players) return;
   if (isReplayViewing()) opts = { ...opts, skipPrompt: true };

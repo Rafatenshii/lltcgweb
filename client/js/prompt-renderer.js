@@ -349,6 +349,20 @@ global.openStageSlotPick = function openStageSlotPick(pr){
       sendAct('resolve_prompt',{slot:card.slot});
     }));
   });
+  // COMPASS / other optional stage picks — allow decline (card text is "you may").
+  if (pr.optional || pr.type === 'live_start_activate_stage_live_start_ability'
+      || (Array.isArray(pr.choices) && pr.choices.includes('skip'))) {
+    const skipBtn=document.createElement('button');
+    skipBtn.className='btn-ghost';
+    skipBtn.style.width='100%';
+    skipBtn.style.marginTop='10px';
+    skipBtn.textContent=(typeof t==='function' ? (t('prompt.skip') || 'Skip') : 'Skip');
+    skipBtn.onclick=()=>{
+      closeM('overlay-pick');
+      sendAct('resolve_prompt',{choice:'skip'});
+    };
+    g.appendChild(skipBtn);
+  }
   el('pick-count').textContent='';
   openM('overlay-pick');
 }

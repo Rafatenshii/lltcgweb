@@ -2423,20 +2423,9 @@ function liveReqModifiedColors(printed, effective) {
 }
 
 /**
- * Stage Member cost for Live-temp UI (override / +bonus). Continuous printed abilities
- * are handled separately by play-cost helpers.
+ * stageMemberLiveCostInfo — defined in board-render.js (loaded before this file).
+ * Do not redeclare here or board badges lose the shared helper.
  */
-function stageMemberLiveCostInfo(member) {
-  if (!member) return { printed: 0, effective: 0, delta: 0 };
-  const printed = Number(member.cost || 0);
-  if (member.live_cost_override != null && member.live_cost_override !== '') {
-    const effective = Number(member.live_cost_override);
-    return { printed, effective, delta: effective - printed };
-  }
-  const bonus = Number(member.live_cost_bonus || 0);
-  const effective = printed + bonus;
-  return { printed, effective, delta: bonus };
-}
 
 function effectiveLiveRequiredHearts(liveCard, state, pid) {
   let req = (liveCard?.required_hearts || liveCard?.hearts || []).map(h => ({

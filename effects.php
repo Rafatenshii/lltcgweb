@@ -1981,10 +1981,12 @@ function addWrLiveNameSuperset(array &$p, string $needle): int {
 }
 
 function getEffectiveMemberCost(array $member): int {
-    if (isset($member['live_cost_override'])) {
-        return intval($member['live_cost_override']);
+    if (array_key_exists('live_cost_override', $member)
+        && $member['live_cost_override'] !== null
+        && $member['live_cost_override'] !== '') {
+        return max(0, intval($member['live_cost_override']));
     }
-    return intval($member['cost'] ?? 0);
+    return intval($member['cost'] ?? 0) + intval($member['live_cost_bonus'] ?? 0);
 }
 
 function countOtherLiveZoneGroup(array $p, string $group, string $excludeId = ''): int {
@@ -2951,6 +2953,12 @@ function stageMemberWhoLabel(array $member, string $slot = ''): string {
 // liveScoreBonusEntry … getLiveScoreBonus — see src/Game/LiveScoreBonus.php
 
 function getEffectiveStageMemberCost(array $state, string $pid, array $member): int {
+    // Absolute Live-temp cost (Aurora Kosuzu copy, etc.) replaces printed + bonuses.
+    if (array_key_exists('live_cost_override', $member)
+        && $member['live_cost_override'] !== null
+        && $member['live_cost_override'] !== '') {
+        return max(0, intval($member['live_cost_override']));
+    }
     $base = intval($member['cost'] ?? 0);
     $base += intval($member['live_cost_bonus'] ?? 0);
     $p = $state['players'][$pid] ?? [];

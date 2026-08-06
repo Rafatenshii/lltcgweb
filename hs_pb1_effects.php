@@ -849,19 +849,24 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
                 if (!$mbr || !cardMatchesSubunit($mbr, $sub)) continue;
                 $effCost = getEffectiveStageMemberCost($state, $pid, $mbr);
                 if ($effCost < intval($ab['min_cost'] ?? 10)) continue;
-                $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+                $candidates[] = array_merge(cardPromptSummary($mbr), [
+                    'slot' => $slot,
+                    'effective_cost' => $effCost,
+                ]);
             }
             if (empty($candidates)) break;
+            $minCost = intval($ab['min_cost'] ?? 10);
             $state['pending_prompt'] = [
                 'type'        => 'live_start_activate_stage_live_start_ability',
                 'owner'       => $pid,
                 'responder'   => $pid,
                 'source_name' => $name,
                 'candidates'  => $candidates,
-                'prompt'      => "Choose 1 $sub Member (cost " . intval($ab['min_cost'] ?? 10) .
-                    '+) to activate one [Live Start] ability.',
+                'optional'    => true,
+                'choices'     => ['skip'],
+                'prompt'      => "You may choose 1 $sub Member (cost $minCost+) to activate one [Live Start] ability (or skip).",
             ];
-            $state = addLog($state, $state['players'][$pid]['name'] . " — [$name] pick Member ability.");
+            $state = addLog($state, $state['players'][$pid]['name'] . " — [$name] optional pick Member ability.");
             break;
 
         case 'live_start_mp_extra_hearts_draw_reduce':
@@ -1424,17 +1429,46 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         $slot = $data['slot'] ?? $choice;
         if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
         $mbr = $ownerP['stage'][$slot];
-        // Clear COMPASS parent first so nested Live Start prompts (Kosuzu pick_number)
-        // can open — resolveAbilityEffect no-ops while pending_prompt is set.
+        // Clear COMPASS parent first so nested Live Start prompts can open.
         unset($state['pending_prompt']);
         $state = addLog($state, $state['players'][$owner]['name'] .
             ' — [' . ($prompt['source_name'] ?? 'Live') . '] activating [' .
             ($mbr['name_en'] ?? $mbr['name'] ?? 'Member') . '] Live Start.');
-        foreach ($mbr['abilities'] ?? [] as $ab) {
-            if (($ab['trigger'] ?? '') === 'live_start') {
-                $state = resolveAbilityEffect($state, $owner, $mbr, $ab, ['phase' => 'live_start', 'pay' => true]);
-                break;
+        $activated = false;
+        foreach ($mbr['abilities'] ?? [] as $abIdx => $ab) {
+            $trigger = $ab['trigger'] ?? '';
+            if ($trigger !== 'live_start' && $trigger !== 'on_enter_or_live_start') {
+                continue;
             }
+            $activated = true;
+            // Optional Live Starts must open their yes/no (or discard) UI — never force-pay
+            // (that softlocked DB Tsuzuri and skipped PR Sayaka discard prompts).
+            if (function_exists('isQueuedOptionalLiveStart') && isQueuedOptionalLiveStart($ab)) {
+                $srcId = (string)($mbr['instance_id'] ?? '');
+                $key = liveStartOptionalResolvedKey($owner, $srcId, intval($abIdx));
+                if (!empty($state['live_start_optional_resolved'][$key])) {
+                    unset($state['live_start_optional_resolved'][$key]);
+                }
+                $state['pending_prompt'] = buildOptionalLiveStartPrompt($state, [
+                    'owner'         => $owner,
+                    'source_id'     => $srcId,
+                    'source_name'   => $mbr['name_en'] ?? $mbr['name'] ?? 'Member',
+                    'ability_index' => intval($abIdx),
+                    'ability'       => $ab,
+                ]);
+                $state['_live_start_resume_from'] = $owner;
+                $state['seq']++;
+                return $state;
+            }
+            $state = resolveAbilityEffect($state, $owner, $mbr, $ab, [
+                'phase' => 'live_start',
+                'ability_index' => intval($abIdx),
+            ]);
+            break;
+        }
+        if (!$activated) {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Live') . '] no Live Start ability to activate.');
         }
         if (!empty($state['pending_prompt'])) {
             $state['seq']++;
