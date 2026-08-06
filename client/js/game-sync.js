@@ -11,6 +11,13 @@
   global.TCG_SYNC_MAX_FAILS = 6;
   /** Prefer Apache-proxied VPS stream; Hostinger PHP proxy is fallback only. */
   global.TCG_SYNC_USE_PHP_PROXY = false;
+  /** Debounce SSE→get_state so a burst of seq notifies becomes one fetch. */
+  global.TCG_SYNC_SSE_DEBOUNCE_MS = 220;
+  /** After an in-flight get_state, wait this long before one follow-up pull. */
+  global.TCG_SYNC_COALESCE_FOLLOW_MS = 450;
+  /** Safety get_state while SSE looks healthy (PvP / CPU). */
+  global.TCG_SYNC_SAFETY_POLL_MS = 5500;
+  global.TCG_SYNC_SAFETY_POLL_CPU_MS = 5000;
 
   global._tcgSyncStats = global._tcgSyncStats || {
     streamDirect: 0,
@@ -134,7 +141,7 @@
       || G._replaySeekInFlight || G._replayForwardApply);
   };
 
-  global.scheduleDeferredSyncPull = function scheduleDeferredSyncPull(delayMs = 400) {
+  global.scheduleDeferredSyncPull = function scheduleDeferredSyncPull(delayMs = 500) {
     clearTimeout(G._syncPullTimer);
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.syncEnabled) return;
     G._syncPullTimer = setTimeout(async () => {
@@ -144,7 +151,7 @@
         // Re-arm once presentation frees — avoid a tight timer spin while blocked.
         const spins = (G._syncPullBlockedSpins || 0) + 1;
         G._syncPullBlockedSpins = spins;
-        scheduleDeferredSyncPull(Math.min(2000, 400 + spins * 100));
+        scheduleDeferredSyncPull(Math.min(2500, 500 + spins * 150));
         return;
       }
       G._syncPullBlockedSpins = 0;
@@ -152,11 +159,14 @@
     }, delayMs);
   };
 
-  global.resumePollingTick = function resumePollingTick(delayMs = 120) {
+  global.resumePollingTick = function resumePollingTick(delayMs = 200) {
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     clearTimeout(G.pollTimer);
-    if (G.syncEnabled && G.syncTicket) scheduleDeferredSyncPull(Math.max(delayMs, 150));
-    else G.pollTimer = setTimeout(doPollLegacy, delayMs);
+    if (G.syncEnabled && G.syncTicket) {
+      scheduleDeferredSyncPull(Math.max(delayMs, global.TCG_SYNC_SSE_DEBOUNCE_MS || 220));
+    } else {
+      G.pollTimer = setTimeout(doPollLegacy, delayMs);
+    }
   };
 
   function pollDelayAfterError(errorMsg) {
@@ -289,7 +299,9 @@
   global.startSyncSafetyPoll = function startSyncSafetyPoll() {
     clearTimeout(G.syncSafetyTimer);
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
-    const delay = G.isCPU ? 5000 : 3200;
+    const delay = G.isCPU
+      ? (global.TCG_SYNC_SAFETY_POLL_CPU_MS || 5000)
+      : (global.TCG_SYNC_SAFETY_POLL_MS || 5500);
     G.syncSafetyTimer = setTimeout(async () => {
       G.syncSafetyTimer = null;
       if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
@@ -326,11 +338,11 @@
     const seq = parseInt(data?.seq, 10);
     if (!Number.isFinite(seq) || seq <= (G.lastSeq ?? 0)) return;
     TCG_DEBUG.log('sync', 'state event', { seq, last: G.lastSeq });
-    if (pollPresentationBlocked()) {
-      scheduleDeferredSyncPull(400);
-      return;
-    }
-    void pullLatestState();
+    // Debounce: several notifies in one action burst → one get_state.
+    const delay = pollPresentationBlocked()
+      ? 500
+      : (global.TCG_SYNC_SSE_DEBOUNCE_MS || 220);
+    scheduleDeferredSyncPull(delay);
   }
 
   function syncStreamUrl(mode) {
@@ -606,22 +618,18 @@
   global.pullLatestState = async function pullLatestState(force, opts = {}) {
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.token) return;
     if (!force && pollPresentationBlocked()) {
-      if (G.syncEnabled && G.syncTicket) scheduleDeferredSyncPull(400);
-      else resumePollingTick(400);
+      if (G.syncEnabled && G.syncTicket) scheduleDeferredSyncPull(500);
+      else resumePollingTick(500);
       return;
     }
     // Coalesce concurrent poll=0 fetches — overlapping callers used to stampede get_state.
-    // Never drop a follow-up: SSE can bump seq while the in-flight get_state response is
-    // already in flight; returning early left both clients hung on a stale phase.
+    // Mark one follow-up instead of every waiter scheduling its own ~80ms pull.
     if (G._pullLatestInFlight) {
+      G._pullLatestNeedsFollowUp = true;
       await G._pullLatestInFlight;
       if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.token) return;
-      if (!force) {
-        if (pollPresentationBlocked()) scheduleDeferredSyncPull(400);
-        else scheduleDeferredSyncPull(80);
-        return;
-      }
-      // force: fall through for one more immediate pull
+      if (!force) return;
+      // force: fall through for one more immediate pull after the in-flight finishes
     }
     const pollEpoch = G._gameSessionEpoch;
     const pollRoomId = G.roomId;
@@ -691,6 +699,17 @@
       await run;
     } finally {
       if (G._pullLatestInFlight === run) G._pullLatestInFlight = null;
+      if (G._pullLatestNeedsFollowUp) {
+        G._pullLatestNeedsFollowUp = false;
+        if (G.polling && G.syncEnabled && G.syncTicket) {
+          const followMs = pollPresentationBlocked()
+            ? 500
+            : (global.TCG_SYNC_COALESCE_FOLLOW_MS || 450);
+          scheduleDeferredSyncPull(followMs);
+        } else if (G.polling) {
+          resumePollingTick(global.TCG_SYNC_COALESCE_FOLLOW_MS || 450);
+        }
+      }
     }
   };
 

@@ -928,9 +928,9 @@
     // opponent's live_show ack — polls are allowed then, and skipping resume left
     // one client stale until the ~3.2s safety poll (looks like "their turn").
     if (G.syncEnabled && G.syncTicket && typeof scheduleDeferredSyncPull === 'function') {
-      scheduleDeferredSyncPull(120);
+      scheduleDeferredSyncPull(250);
     } else if (typeof resumePollingTick === 'function') {
-      resumePollingTick(120);
+      resumePollingTick(250);
     }
   };
 
