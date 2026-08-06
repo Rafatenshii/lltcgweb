@@ -736,6 +736,7 @@ function getStatePolling(): void {
             if (applyDisconnectForfeits($state, $roomId)) {
                 saveGame($roomId, $state);
                 maybeApplyRankedFinish($state);
+                maybeCreditCasualFinishMissions($state);
                 saveGame($roomId, $state);
                 $mutated = true;
             }
@@ -776,6 +777,7 @@ function getStatePolling(): void {
         if (applyDisconnectForfeits($state, $roomId)) {
             saveGame($roomId, $state);
             maybeApplyRankedFinish($state);
+            maybeCreditCasualFinishMissions($state);
             saveGame($roomId, $state);
         }
         maybeRecoverUnappliedRankedFinish($roomId, $state);
@@ -802,6 +804,7 @@ function getStatePolling(): void {
     if ($state && applyDisconnectForfeits($state, $roomId)) {
         saveGame($roomId, $state);
         maybeApplyRankedFinish($state);
+        maybeCreditCasualFinishMissions($state);
         saveGame($roomId, $state);
     }
     if ($state) {
@@ -852,6 +855,7 @@ function handleAction(array $body): array {
         if (applyDisconnectForfeits($state, $roomId)) {
             saveGame($roomId, $state);
             maybeApplyRankedFinish($state);
+            maybeCreditCasualFinishMissions($state);
             saveGame($roomId, $state);
             $state = loadGame($roomId);
         }
@@ -866,6 +870,7 @@ function handleAction(array $body): array {
         // mutate the finished game. Finalize the ranked result and return the new seq.
         if ($phaseTimeoutChanged && ($state['status'] ?? '') === 'finished') {
             maybeApplyRankedFinish($state);
+            maybeCreditCasualFinishMissions($state);
             saveGame($roomId, $state);
             $out = ['ok' => true, 'seq' => $state['seq'], 'finished' => true];
             if (($state['mode'] ?? '') === 'ranked') {
@@ -874,11 +879,11 @@ function handleAction(array $body): array {
                 if ($prReward !== null) {
                     $out['ranked_pr_reward'] = $prReward;
                 }
-                if (!empty($state['_hostinger_mission_completions']) && is_array($state['_hostinger_mission_completions'])) {
-                    $out['mission_completions'] = $state['_hostinger_mission_completions'];
-                    unset($state['_hostinger_mission_completions']);
-                    saveGame($roomId, $state);
-                }
+            }
+            if (!empty($state['_hostinger_mission_completions']) && is_array($state['_hostinger_mission_completions'])) {
+                $out['mission_completions'] = $state['_hostinger_mission_completions'];
+                unset($state['_hostinger_mission_completions']);
+                saveGame($roomId, $state);
             }
             return $out;
         }
@@ -915,6 +920,12 @@ function handleAction(array $body): array {
                 (($state['ranked']['match_api'] ?? '') === 'overflow')
                 || (function_exists('tcgShouldApplyRankedEloRemotely') && tcgShouldApplyRankedEloRemotely())
             );
+        $hostingerMissionWrites = false;
+        if (!$rankedRemoteMissions) {
+            require_once __DIR__ . '/match_bridge.php';
+            $hostingerMissionWrites = function_exists('tcgMissionShouldWriteOnHostinger')
+                && tcgMissionShouldWriteOnHostinger();
+        }
         if ($justFinished && $isResign) {
             // Persist concede first so ranked/mission failures cannot block resign.
             saveGame($roomId, $state);
@@ -924,13 +935,19 @@ function handleAction(array $body): array {
                 require_once __DIR__ . '/ranked_room.php';
                 tcgOnGameFinished($state);
                 // Overflow ranked: Hostinger webhook owns mission DB writes (VPS replica is one-way).
-                if ($rankedRemoteMissions) {
-                    $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
-                        ? $state['_hostinger_mission_completions']
-                        : [];
-                    unset($state['_hostinger_mission_completions']);
-                } else {
-                    $missionCompletions = tcgMissionOnGameFinished($state);
+                if (empty($state['_missions_applied'])) {
+                    if ($rankedRemoteMissions) {
+                        $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
+                            ? $state['_hostinger_mission_completions']
+                            : [];
+                        unset($state['_hostinger_mission_completions']);
+                    } elseif ($hostingerMissionWrites) {
+                        // Casual/CPU on match-primary: credit hub missions on Hostinger.
+                        $missionCompletions = tcgPostMissionGameFinishedToHostinger($state);
+                    } else {
+                        $missionCompletions = tcgMissionOnGameFinished($state);
+                    }
+                    $state['_missions_applied'] = true;
                 }
                 saveGame($roomId, $state);
             } catch (Throwable $e) {
@@ -941,13 +958,18 @@ function handleAction(array $body): array {
             tcgMissionBackfillPlayerDiscordFromAuth($state, $playerId, $body);
             require_once __DIR__ . '/ranked_room.php';
             tcgOnGameFinished($state);
-            if ($rankedRemoteMissions) {
-                $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
-                    ? $state['_hostinger_mission_completions']
-                    : [];
-                unset($state['_hostinger_mission_completions']);
-            } else {
-                $missionCompletions = tcgMissionOnGameFinished($state);
+            if (empty($state['_missions_applied'])) {
+                if ($rankedRemoteMissions) {
+                    $missionCompletions = is_array($state['_hostinger_mission_completions'] ?? null)
+                        ? $state['_hostinger_mission_completions']
+                        : [];
+                    unset($state['_hostinger_mission_completions']);
+                } elseif ($hostingerMissionWrites) {
+                    $missionCompletions = tcgPostMissionGameFinishedToHostinger($state);
+                } else {
+                    $missionCompletions = tcgMissionOnGameFinished($state);
+                }
+                $state['_missions_applied'] = true;
             }
             saveGame($roomId, $state);
         } else {
@@ -5193,6 +5215,31 @@ function maybeApplyRankedFinish(array &$state): void {
     }
     require_once __DIR__ . '/ranked_room.php';
     tcgOnGameFinished($state);
+}
+
+/**
+ * Casual/CPU finishes that land via disconnect/timeout (get_state) never hit handleAction's
+ * justFinished path — credit Hostinger missions once when match-primary owns the room.
+ */
+function maybeCreditCasualFinishMissions(array &$state): void {
+    if (($state['status'] ?? '') !== 'finished') {
+        return;
+    }
+    if (($state['mode'] ?? '') === 'ranked') {
+        return;
+    }
+    if (!empty($state['_missions_applied'])) {
+        return;
+    }
+    require_once __DIR__ . '/match_bridge.php';
+    if (!tcgMissionShouldWriteOnHostinger()) {
+        return;
+    }
+    $completions = tcgPostMissionGameFinishedToHostinger($state);
+    $state['_missions_applied'] = true;
+    if ($completions !== []) {
+        $state['_hostinger_mission_completions'] = $completions;
+    }
 }
 
 /** Poll recovery: apply ELO if a finished ranked room never got ranked.applied. */

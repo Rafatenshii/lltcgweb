@@ -250,6 +250,78 @@ final class RankedPrRewardTest extends TestCase
         $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
     }
 
+    public function testWebhookGroupWinMissionNeedsDeckSnapshot(): void
+    {
+        require_once dirname(__DIR__, 2) . '/matchmaking.php';
+        require_once dirname(__DIR__, 2) . '/missions.php';
+        require_once dirname(__DIR__, 2) . '/deck_validate.php';
+
+        $winnerId = $this->discordId;
+        $loserId = 'test_ranked_group_' . bin2hex(random_bytes(4));
+        tcgEnsureUser($loserId, ['username' => 'GroupLoser']);
+        $roomId = 'G' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+
+        $cards = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];
+        $niji = $cards['starter_decks']['nijigasaki']['main_deck'] ?? [];
+        $this->assertNotEmpty($niji);
+
+        $db = tcgDb();
+        $db->prepare('INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode, pr_rewarded)
+            VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, 0)')
+            ->execute([
+                'M' . $roomId,
+                $roomId,
+                $winnerId,
+                $loserId,
+                'tok1',
+                'tok2',
+                time(),
+                'standard',
+            ]);
+
+        // Without deck snapshot: group win must NOT complete (regression of overflow bug).
+        $outNoDeck = tcgApplyRankedResultFromWebhook([
+            'room_id' => $roomId,
+            'winner' => 'p1',
+            'p1_discord_id' => $winnerId,
+            'p2_discord_id' => $loserId,
+            'game_mode' => 'standard',
+        ]);
+        $idsNoDeck = array_column($outNoDeck['mission_completions'] ?? [], 'id');
+        $this->assertNotContains('ms_win_nijigasaki', $idsNoDeck);
+        $this->assertFalse(tcgMissionIsCompleted($winnerId, 'ms_win_nijigasaki', ''));
+
+        // With deck snapshot on a second room: group win completes.
+        $roomId2 = 'G' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+        $db->prepare('INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode, pr_rewarded)
+            VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?, 0)')
+            ->execute([
+                'M' . $roomId2,
+                $roomId2,
+                $winnerId,
+                $loserId,
+                'tok1',
+                'tok2',
+                time(),
+                'standard',
+            ]);
+
+        $out = tcgApplyRankedResultFromWebhook([
+            'room_id' => $roomId2,
+            'winner' => 'p1',
+            'p1_discord_id' => $winnerId,
+            'p2_discord_id' => $loserId,
+            'game_mode' => 'standard',
+            'p1_deck_snapshot' => ['main_nos' => $niji, 'energy_nos' => []],
+            'p2_deck_snapshot' => ['main_nos' => $niji, 'energy_nos' => []],
+        ]);
+        $ids = array_column($out['mission_completions'] ?? [], 'id');
+        $this->assertContains('ms_win_nijigasaki', $ids);
+        $this->assertTrue(tcgMissionIsCompleted($winnerId, 'ms_win_nijigasaki', ''));
+    }
+
     public function testWebhookRetroGrantsPrWhenEloAlreadyApplied(): void
     {
         require_once dirname(__DIR__, 2) . '/matchmaking.php';

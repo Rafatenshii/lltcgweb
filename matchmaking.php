@@ -217,6 +217,7 @@ function tcgMarkRankedMatchPrRewarded(string $roomId): void {
  */
 function tcgApplyRankedResultFromWebhook(array $body): array {
     require_once __DIR__ . '/game_mode.php';
+    require_once __DIR__ . '/match_bridge.php';
     $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($body['room_id'] ?? '')) ?? '');
     if ($roomId === '') {
         throw new Exception('room_id required', 400);
@@ -244,6 +245,32 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
 
     // Fake finished state used for PR grants + Hostinger-side mission writes.
     // Overflow/VPS finishes must not rely on the VPS SQLite replica for missions.
+    // Deck snapshots are required for group-only win milestones (ms_win_*).
+    $p1Snap = tcgMissionNormalizeDeckSnapshot($body['p1_deck_snapshot'] ?? null);
+    $p2Snap = tcgMissionNormalizeDeckSnapshot($body['p2_deck_snapshot'] ?? null);
+    // Legacy: nested players.{p1,p2}.deck_snapshot if present.
+    if ($p1Snap === null && is_array($body['players']['p1']['deck_snapshot'] ?? null)) {
+        $p1Snap = tcgMissionNormalizeDeckSnapshot($body['players']['p1']['deck_snapshot']);
+    }
+    if ($p2Snap === null && is_array($body['players']['p2']['deck_snapshot'] ?? null)) {
+        $p2Snap = tcgMissionNormalizeDeckSnapshot($body['players']['p2']['deck_snapshot']);
+    }
+    $p1Player = [
+        'discord_id' => $p1Id,
+        'name' => (string)($body['p1_name'] ?? ($body['players']['p1']['name'] ?? '')),
+        'deck_choice' => (string)($body['p1_deck_choice'] ?? ($body['players']['p1']['deck_choice'] ?? '')),
+    ];
+    $p2Player = [
+        'discord_id' => $p2Id,
+        'name' => (string)($body['p2_name'] ?? ($body['players']['p2']['name'] ?? '')),
+        'deck_choice' => (string)($body['p2_deck_choice'] ?? ($body['players']['p2']['deck_choice'] ?? '')),
+    ];
+    if ($p1Snap !== null) {
+        $p1Player['deck_snapshot'] = $p1Snap;
+    }
+    if ($p2Snap !== null) {
+        $p2Player['deck_snapshot'] = $p2Snap;
+    }
     $fakeState = [
         'room_id' => $roomId,
         'mode' => 'ranked',
@@ -260,8 +287,8 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
             'match_api' => 'overflow',
         ],
         'players' => [
-            'p1' => ['discord_id' => $p1Id],
-            'p2' => ['discord_id' => $p2Id],
+            'p1' => $p1Player,
+            'p2' => $p2Player,
         ],
     ];
 

@@ -9,7 +9,7 @@
  * Endpoints (action=):
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
  *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
- *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
+ *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, mission_game_finished, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
  */
@@ -80,6 +80,7 @@ try {
         case 'ranked_status':      echo json_encode(tcgApiRankedStatus($body)); break;
         case 'ranked_apply_result': echo json_encode(tcgApiRankedApplyResult($body)); break;
         case 'mission_stamp_sent': echo json_encode(tcgApiMissionStampSent($body)); break;
+        case 'mission_game_finished': echo json_encode(tcgApiMissionGameFinished($body)); break;
         case 'rank_stats':         echo json_encode(tcgApiRankStats($body)); break;
         case 'rank_banner_set':    echo json_encode(tcgApiRankBannerSet($body)); break;
         case 'rank_flag_set':      echo json_encode(tcgApiRankFlagSet($body)); break;
@@ -980,6 +981,43 @@ function tcgApiMissionStampSent(array $body): array {
         'success' => true,
         'mission_completions' => $completions,
         'missions' => tcgMissionSummaryForUser($uid),
+    ];
+}
+
+/**
+ * Credit finish missions (group wins, unranked thresholds, etc.) on Hostinger.
+ * VPS match-primary posts here; ranked overflow uses ranked_apply_result instead.
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApiMissionGameFinished(array $body): array {
+    require_once __DIR__ . '/match_bridge.php';
+    require_once __DIR__ . '/missions.php';
+    tcgRequireInternalMatchSecret();
+    $playersIn = is_array($body['players'] ?? null) ? $body['players'] : [];
+    $p1 = tcgMissionPlayerSlim(is_array($playersIn['p1'] ?? null) ? $playersIn['p1'] : null);
+    $p2 = tcgMissionPlayerSlim(is_array($playersIn['p2'] ?? null) ? $playersIn['p2'] : null);
+    $state = [
+        'room_id' => (string)($body['room_id'] ?? ''),
+        'mode' => (string)($body['mode'] ?? ''),
+        'status' => 'finished',
+        'winner' => $body['winner'] ?? null,
+        'end_reason' => $body['end_reason'] ?? null,
+        'resigned_by' => $body['resigned_by'] ?? null,
+        'disconnected_player' => $body['disconnected_player'] ?? null,
+        'players' => [
+            'p1' => $p1,
+            'p2' => $p2,
+        ],
+    ];
+    if (is_array($body['ranked'] ?? null)) {
+        $state['ranked'] = $body['ranked'];
+    }
+    $completions = tcgMissionOnGameFinished($state);
+    return [
+        'success' => true,
+        'mission_completions' => $completions,
     ];
 }
 

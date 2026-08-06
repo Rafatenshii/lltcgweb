@@ -356,6 +356,7 @@ function tcgDeckMainIsSingleGroup(array $mainNos, string $targetGroup, array $ca
         return false;
     }
     $targetGroup = trim($targetGroup);
+    $matched = 0;
     foreach ($mainNos as $no) {
         $no = trim((string)$no);
         if ($no === '') {
@@ -376,8 +377,9 @@ function tcgDeckMainIsSingleGroup(array $mainNos, string $targetGroup, array $ca
         if ($group !== $targetGroup) {
             return false;
         }
+        $matched++;
     }
-    return true;
+    return $matched > 0;
 }
 
 function tcgMissionIdForGroup(string $group): ?string {

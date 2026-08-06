@@ -67,6 +67,71 @@ function tcgHostingerAccountActionUrl(string $action): string {
 }
 
 /**
+ * True when match finish / stamp mission rows must be written on Hostinger
+ * (VPS SQLite replica is one-way and invisible to the hub).
+ */
+function tcgMissionShouldWriteOnHostinger(): bool {
+    if (function_exists('tcgShouldApplyRankedEloRemotely') && tcgShouldApplyRankedEloRemotely()) {
+        return true;
+    }
+    $store = getenv('TCG_GAME_STORE');
+    return is_string($store) && strtolower(trim($store)) === 'redis';
+}
+
+/**
+ * Slim player slice for Hostinger mission credit (deck purity + CPU checks).
+ *
+ * @param array<string,mixed>|null $player
+ * @return array<string,mixed>
+ */
+function tcgMissionPlayerSlim(?array $player): array {
+    if (!is_array($player)) {
+        return [];
+    }
+    $out = [
+        'discord_id' => $player['discord_id'] ?? null,
+        'name' => $player['name'] ?? null,
+        'deck_choice' => $player['deck_choice'] ?? null,
+    ];
+    $snap = $player['deck_snapshot'] ?? null;
+    if (is_array($snap)) {
+        $main = $snap['main_nos'] ?? [];
+        $energy = $snap['energy_nos'] ?? [];
+        $out['deck_snapshot'] = [
+            'main_nos' => is_array($main)
+                ? array_values(array_map(static fn($n): string => trim((string)$n), $main))
+                : [],
+            'energy_nos' => is_array($energy)
+                ? array_values(array_map(static fn($n): string => trim((string)$n), $energy))
+                : [],
+        ];
+    }
+    return $out;
+}
+
+/**
+ * @param array<string,mixed>|null $snap
+ * @return array{main_nos: list<string>, energy_nos: list<string>}|null
+ */
+function tcgMissionNormalizeDeckSnapshot(mixed $snap): ?array {
+    if (!is_array($snap)) {
+        return null;
+    }
+    $main = $snap['main_nos'] ?? [];
+    $energy = $snap['energy_nos'] ?? [];
+    if (!is_array($main)) {
+        $main = [];
+    }
+    if (!is_array($energy)) {
+        $energy = [];
+    }
+    return [
+        'main_nos' => array_values(array_map(static fn($n): string => trim((string)$n), $main)),
+        'energy_nos' => array_values(array_map(static fn($n): string => trim((string)$n), $energy)),
+    ];
+}
+
+/**
  * Credit daily stamp mission on Hostinger (VPS replica writes are invisible to hub).
  *
  * @return list<array{id: string, i18n_key: string, reward: int}>
@@ -80,6 +145,48 @@ function tcgPostMissionStampSentToHostinger(string $discordId): array {
         tcgHostingerAccountActionUrl('mission_stamp_sent'),
         ['discord_id' => $discordId],
         8
+    );
+    if (!is_array($res) || empty($res['success'])) {
+        return [];
+    }
+    $completions = $res['mission_completions'] ?? null;
+    return is_array($completions) ? $completions : [];
+}
+
+/**
+ * Credit unranked/CPU (and any non-Elo) finish missions on Hostinger.
+ * Ranked overflow finishes use ranked_apply_result instead (includes deck snapshots).
+ *
+ * @param array<string,mixed> $state
+ * @return list<array{id: string, i18n_key: string, reward: int}>
+ */
+function tcgPostMissionGameFinishedToHostinger(array $state): array {
+    $payload = [
+        'room_id' => (string)($state['room_id'] ?? ''),
+        'mode' => (string)($state['mode'] ?? ''),
+        'status' => 'finished',
+        'winner' => $state['winner'] ?? null,
+        'end_reason' => $state['end_reason'] ?? null,
+        'resigned_by' => $state['resigned_by'] ?? null,
+        'disconnected_player' => $state['disconnected_player'] ?? null,
+        'players' => [
+            'p1' => tcgMissionPlayerSlim(is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : null),
+            'p2' => tcgMissionPlayerSlim(is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : null),
+        ],
+    ];
+    $ranked = $state['ranked'] ?? null;
+    if (is_array($ranked)) {
+        $payload['ranked'] = [
+            'p1_discord_id' => $ranked['p1_discord_id'] ?? null,
+            'p2_discord_id' => $ranked['p2_discord_id'] ?? null,
+            'game_mode' => $ranked['game_mode'] ?? null,
+            'match_api' => $ranked['match_api'] ?? null,
+        ];
+    }
+    $res = tcgMatchBridgeHttpPostJson(
+        tcgHostingerAccountActionUrl('mission_game_finished'),
+        $payload,
+        12
     );
     if (!is_array($res) || empty($res['success'])) {
         return [];
@@ -195,6 +302,8 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
     if (!is_array($ranked)) {
         $ranked = [];
     }
+    $p1 = is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : [];
+    $p2 = is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : [];
     $payload = [
         'room_id' => (string)($state['room_id'] ?? ''),
         'winner' => $state['winner'] ?? null,
@@ -204,6 +313,13 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
         'game_mode' => (string)($ranked['game_mode'] ?? 'standard'),
         'resigned_by' => $state['resigned_by'] ?? null,
         'disconnected_player' => $state['disconnected_player'] ?? null,
+        // Group-win milestones need deck lists; Elo-only payload previously dropped them.
+        'p1_deck_snapshot' => tcgMissionNormalizeDeckSnapshot($p1['deck_snapshot'] ?? null),
+        'p2_deck_snapshot' => tcgMissionNormalizeDeckSnapshot($p2['deck_snapshot'] ?? null),
+        'p1_deck_choice' => (string)($p1['deck_choice'] ?? ''),
+        'p2_deck_choice' => (string)($p2['deck_choice'] ?? ''),
+        'p1_name' => (string)($p1['name'] ?? ''),
+        'p2_name' => (string)($p2['name'] ?? ''),
     ];
     $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 15);
     if (!is_array($res) || empty($res['success']) || !empty($res['error'])) {
