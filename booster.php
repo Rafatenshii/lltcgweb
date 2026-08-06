@@ -66,8 +66,12 @@ function tcgBoosterBoxes(): array {
          // Official product: 10 packs per box (not the usual 30).
          'packs_per_box' => 10,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png',
-         'pack_style' => 'promo',
-         'pack_images' => ['assets/packs/bp_mellow-promo.png']],
+         'pack_style' => 'photo',
+         'pack_images' => [
+             'assets/packs/bp_mellow-a.png',
+             'assets/packs/bp_mellow-b.png',
+             'assets/packs/bp_mellow-c.png',
+         ]],
         ['id' => 'bp_anniv', 'name_en' => 'Booster Pack Anniversary 2026', 'name_jp' => 'ブースターパック Anniversary 2026',
          'filter' => 'ブースターパック Anniversary 2026', 'kind' => 'bp',
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/10/05190851/L_TCG_-BP_vol4_box_image-1.png',
