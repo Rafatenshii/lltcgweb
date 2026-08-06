@@ -8200,8 +8200,8 @@ function announceLogEntry(entry, s, myId) {
 }
 function effectiveCost(card, hand){
   let base=card.cost||0;
-  if(!card.abilities?.length) return base;
-  if(hand?.length){
+  const me = (typeof G !== 'undefined' && G.state) ? (G.state.players?.[G.myId] || null) : null;
+  if(card.abilities?.length && hand?.length){
     const others=hand.filter(c=>c.instance_id!==card.instance_id).length;
     for(const ab of card.abilities){
       if(ab.trigger==='continuous'&&ab.type==='hand_cost_reduction')
@@ -8209,8 +8209,7 @@ function effectiveCost(card, hand){
     }
   }
   // Emma Verde PB1 etc.: −2 while a Wait Nijigasaki Member is on Stage.
-  const me = (typeof G !== 'undefined' && G.state) ? (G.state.players?.[G.myId] || null) : null;
-  if (me?.stage) {
+  if (me?.stage && card.abilities?.length) {
     for (const ab of card.abilities) {
       if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_if_wait_group') continue;
       const group = ab.group || 'Nijigasaki';
@@ -8222,6 +8221,33 @@ function effectiveCost(card, hand){
       if (hasWait) base = Math.max(0, base - (ab.amount || 2));
     }
   }
+  // Shizuku SD2: −2 while a matching group Live is in Success.
+  if (card.abilities?.length) {
+    for (const ab of card.abilities) {
+      if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_if_success_live_group') continue;
+      if (!ab.require_success_has_group) continue;
+      const group = ab.group || "μ's";
+      const hasGroup = (me?.success_lives || []).some(lc => lc && (lc.group || '') === group);
+      if (!hasGroup) continue;
+      if ((card.group || '') !== group) continue;
+      if (Number(card.cost || 0) < Number(ab.min_original_cost ?? 0)) continue;
+      base = Math.max(0, base - (ab.amount || 2));
+    }
+  }
+  // Music S.T.A.R.T!! etc.: Success Live aura (−2 for μ's Members cost ≥17; does not stack).
+  let bestLiveReduce = 0;
+  for (const lc of (me?.success_lives || [])) {
+    if (!lc?.abilities?.length) continue;
+    for (const ab of lc.abilities) {
+      if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_if_success_live_group') continue;
+      if (ab.require_success_has_group) continue;
+      const group = ab.group || "μ's";
+      if ((card.group || '') !== group) continue;
+      if (Number(card.cost || 0) < Number(ab.min_original_cost ?? 17)) continue;
+      bestLiveReduce = Math.max(bestLiveReduce, Number(ab.amount || 2));
+    }
+  }
+  if (bestLiveReduce > 0) base = Math.max(0, base - bestLiveReduce);
   return base;
 }
 function memberBlocksBaton(card){

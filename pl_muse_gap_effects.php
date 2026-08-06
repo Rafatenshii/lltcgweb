@@ -314,28 +314,77 @@ function plMuseGapApplyContinuousBlade(int $blade, array $member, array $state, 
 }
 
 function plMuseGapApplyHandCostReduction(array $state, string $pid, array $card, int $base): int {
-    if (!cardHasAbilities($card)) return $base;
     $p = $state['players'][$pid] ?? [];
-    foreach ($card['abilities'] as $ab) {
-        if (($ab['trigger'] ?? '') !== 'continuous') continue;
-        if (($ab['type'] ?? '') !== 'hand_cost_reduction_if_success_live_group') continue;
-        $group = $ab['group'] ?? "μ's";
-        if (!empty($ab['require_success_has_group'])) {
-            $hasGroup = false;
-            foreach ($p['success_lives'] ?? [] as $lc) {
-                if ($lc && ($lc['group'] ?? '') === $group) {
-                    $hasGroup = true;
-                    break;
-                }
+
+    // Member-side (e.g. Shizuku SD2): continuous on the card being played.
+    if (cardHasAbilities($card)) {
+        foreach ($card['abilities'] as $ab) {
+            if (($ab['trigger'] ?? '') !== 'continuous') {
+                continue;
             }
-            if (!$hasGroup) continue;
-        } elseif (empty($p['success_lives'])) {
+            if (($ab['type'] ?? '') !== 'hand_cost_reduction_if_success_live_group') {
+                continue;
+            }
+            $group = $ab['group'] ?? "μ's";
+            if (!empty($ab['require_success_has_group'])) {
+                $hasGroup = false;
+                foreach ($p['success_lives'] ?? [] as $lc) {
+                    if ($lc && ($lc['group'] ?? '') === $group) {
+                        $hasGroup = true;
+                        break;
+                    }
+                }
+                if (!$hasGroup) {
+                    continue;
+                }
+            } elseif (empty($p['success_lives'])) {
+                continue;
+            }
+            if (($card['group'] ?? '') !== $group) {
+                continue;
+            }
+            // Default 17 for Muse Music S.T.A.R.T!!; Niji cheer uses min_original_cost: 0.
+            if (intval($card['cost'] ?? 0) < intval($ab['min_original_cost'] ?? 17)) {
+                continue;
+            }
+            $base = max(0, $base - intval($ab['amount'] ?? 2));
+        }
+    }
+
+    // Live-side (Music S.T.A.R.T!!): continuous on a Success Live card.
+    // Does not stack — take the best single reduction among matching Lives.
+    $bestLiveReduce = 0;
+    foreach ($p['success_lives'] ?? [] as $lc) {
+        if (!$lc || !is_array($lc)) {
             continue;
         }
-        if (($card['group'] ?? '') !== $group) continue;
-        // Default 17 for Muse Music S.T.A.R.T!!; Niji cheer uses min_original_cost: 0.
-        if (intval($card['cost'] ?? 0) < intval($ab['min_original_cost'] ?? 17)) continue;
-        $base = max(0, $base - intval($ab['amount'] ?? 2));
+        mergeCardCatalogFields($lc);
+        if (!cardHasAbilities($lc)) {
+            continue;
+        }
+        foreach ($lc['abilities'] as $ab) {
+            if (($ab['trigger'] ?? '') !== 'continuous') {
+                continue;
+            }
+            if (($ab['type'] ?? '') !== 'hand_cost_reduction_if_success_live_group') {
+                continue;
+            }
+            // Member-style flag belongs on hand Members, not Live auras.
+            if (!empty($ab['require_success_has_group'])) {
+                continue;
+            }
+            $group = $ab['group'] ?? "μ's";
+            if (($card['group'] ?? '') !== $group) {
+                continue;
+            }
+            if (intval($card['cost'] ?? 0) < intval($ab['min_original_cost'] ?? 17)) {
+                continue;
+            }
+            $bestLiveReduce = max($bestLiveReduce, intval($ab['amount'] ?? 2));
+        }
+    }
+    if ($bestLiveReduce > 0) {
+        $base = max(0, $base - $bestLiveReduce);
     }
     return $base;
 }

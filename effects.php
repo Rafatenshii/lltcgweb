@@ -2818,15 +2818,15 @@ function handMembersMatchingPlayAbility(array $p, array $ab): array {
 
 function getEffectiveHandCost(array $state, string $pid, array $card): int {
     $base = intval($card['cost'] ?? 0);
+    $p = $state['players'][$pid] ?? [];
     if (!cardHasAbilities($card)) {
         $base = sBp5ApplyHandCostReduction($state, $pid, $card, $base);
+        $base = plMuseGapApplyHandCostReduction($state, $pid, $card, $base);
         return spBp5ApplyHandCostReduction($state, $pid, $card, $base);
     }
-    $p = $state['players'][$pid] ?? [];
     $base = hsApplyHandCostPerStageSubunit($card, $p);
     $hand = $state['players'][$pid]['hand'] ?? [];
     $others = count(array_filter($hand, fn($c) => ($c['instance_id'] ?? '') !== ($card['instance_id'] ?? '')));
-    $p = $state['players'][$pid] ?? [];
     foreach ($card['abilities'] as $ab) {
         if (($ab['trigger'] ?? '') === 'continuous' && ($ab['type'] ?? '') === 'hand_cost_reduction') {
             $base = max(0, $base - $others * intval($ab['per_other_card'] ?? 1));
@@ -2852,6 +2852,7 @@ function getEffectiveHandCost(array $state, string $pid, array $card): int {
             }
         }
     }
+    $base = sBp5ApplyHandCostReduction($state, $pid, $card, $base);
     $base = plMuseGapApplyHandCostReduction($state, $pid, $card, $base);
     return spBp5ApplyHandCostReduction($state, $pid, $card, $base);
 }
