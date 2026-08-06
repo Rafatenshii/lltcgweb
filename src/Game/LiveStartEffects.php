@@ -368,6 +368,37 @@ function markLiveStartOptionalResolved(array $state, string $owner, string $sour
     return $state;
 }
 
+/** Allow COMPASS (etc.) to re-open an optional Live Start already answered this round. */
+function clearLiveStartOptionalResolved(array $state, string $owner, string $sourceId, int $abilityIndex): array {
+    if ($sourceId === '') {
+        return $state;
+    }
+    $key = liveStartOptionalResolvedKey($owner, $sourceId, $abilityIndex);
+    $resolved = $state['live_start_optional_resolved'] ?? [];
+    if (!is_array($resolved) || $resolved === []) {
+        return $state;
+    }
+    // markLiveStartOptionalResolved stores a list of key strings.
+    $filtered = [];
+    foreach ($resolved as $k => $entry) {
+        if (is_string($k) && $k === $key) {
+            continue; // legacy map form
+        }
+        if ((string)$entry === $key) {
+            continue;
+        }
+        if (is_string($k) && !is_int($k)) {
+            $filtered[$k] = $entry;
+        } else {
+            $filtered[] = $entry;
+        }
+    }
+    $state['live_start_optional_resolved'] = array_is_list($filtered)
+        ? array_values($filtered)
+        : $filtered;
+    return $state;
+}
+
 /**
  * True when optional_live_start Yes caused the ability to open another yes/no
  * for the same source (double confirm before Performance).

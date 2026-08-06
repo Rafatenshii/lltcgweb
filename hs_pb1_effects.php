@@ -1428,7 +1428,9 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         }
         $slot = $data['slot'] ?? $choice;
         if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
-        $mbr = $ownerP['stage'][$slot];
+        // Hydrate Stage copy — runtime cards may omit abilities (#66 / #91 PR Sayaka).
+        mergeCardCatalogFields($ownerP['stage'][$slot]);
+        $mbr = &$ownerP['stage'][$slot];
         // Clear COMPASS parent first so nested Live Start prompts can open.
         unset($state['pending_prompt']);
         $state = addLog($state, $state['players'][$owner]['name'] .
@@ -1445,9 +1447,8 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             // (that softlocked DB Tsuzuri and skipped PR Sayaka discard prompts).
             if (function_exists('isQueuedOptionalLiveStart') && isQueuedOptionalLiveStart($ab)) {
                 $srcId = (string)($mbr['instance_id'] ?? '');
-                $key = liveStartOptionalResolvedKey($owner, $srcId, intval($abIdx));
-                if (!empty($state['live_start_optional_resolved'][$key])) {
-                    unset($state['live_start_optional_resolved'][$key]);
+                if (function_exists('clearLiveStartOptionalResolved')) {
+                    $state = clearLiveStartOptionalResolved($state, $owner, $srcId, intval($abIdx));
                 }
                 $state['pending_prompt'] = buildOptionalLiveStartPrompt($state, [
                     'owner'         => $owner,
@@ -1466,6 +1467,7 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             ]);
             break;
         }
+        unset($mbr);
         if (!$activated) {
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Live') . '] no Live Start ability to activate.');
