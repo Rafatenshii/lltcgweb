@@ -21504,7 +21504,7 @@ function mkSkillTypeIcons(kwKey, imgCls = 'skill-type-icon') {
     img.className = imgCls;
     img.src = iconSrc(file);
     img.alt = '';
-    img.loading = 'lazy';
+    img.decoding = 'async';
     wrap.appendChild(img);
   }
   return wrap;
@@ -21715,11 +21715,23 @@ function fillCardDetailPanel(prefix, card, s, myId) {
 
   sg.innerHTML = '';
   const stageCtx = findStageMemberContext(card, s);
-  const addS = (lbl, v, iconName, bonusN = 0) => {
-    const icon = iconName ? mkGameIcon(iconName, 'ticon', lbl) : null;
+  // Build boxes as nodes: `innerHTML +=` would re-parse the grid on every stat and
+  // discard the icon elements added by earlier boxes.
+  const addBox = (lbl, valueClass = 'sv') => {
+    const box = document.createElement('div');
+    box.className = 'sbox';
     const sv = document.createElement('div');
-    sv.className = 'sv';
-    if (icon) sv.appendChild(icon);
+    sv.className = valueClass;
+    const sk = document.createElement('div');
+    sk.className = 'sk';
+    sk.textContent = lbl;
+    box.append(sv, sk);
+    sg.appendChild(box);
+    return sv;
+  };
+  const addS = (lbl, v, iconName, bonusN = 0) => {
+    const sv = addBox(lbl);
+    if (iconName) sv.appendChild(mkGameIcon(iconName, 'ticon', lbl));
     sv.appendChild(document.createTextNode(String(v)));
     if (bonusN > 0) {
       const bonusEl = document.createElement('span');
@@ -21728,8 +21740,6 @@ function fillCardDetailPanel(prefix, card, s, myId) {
       bonusEl.title = 'From active modifiers';
       sv.appendChild(bonusEl);
     }
-    sg.innerHTML += `<div class="sbox"><div class="sk">${lbl}</div></div>`;
-    sg.lastElementChild.prepend(sv);
   };
   if (card.cost !== undefined) addS(t('card.cost'), effectiveCost(card, me?.hand || []), 'icon_energy.png');
   const lovecaPt = deckLovecaPointForCard(card.card_no);
@@ -21750,26 +21760,22 @@ function fillCardDetailPanel(prefix, card, s, myId) {
   if (isLiveCard(card)) {
     const req = card.required_hearts?.length ? card.required_hearts : card.hearts;
     if (req?.length) {
-      sg.innerHTML += `<div class="sbox"><div class="sv heart-stat"></div><div class="sk">${t('card.requiredHearts')}</div></div>`;
-      appendHeartStatCounts(sg.querySelector('.heart-stat'), req);
+      appendHeartStatCounts(addBox(t('card.requiredHearts'), 'sv heart-stat'), req);
     }
   } else {
     if (card.hearts?.length || heartBonus.length) {
-      sg.innerHTML += `<div class="sbox"><div class="sv heart-stat"></div><div class="sk">${t('card.hearts')}</div></div>`;
-      appendHeartStatCounts(sg.querySelector('.heart-stat'), card.hearts || [], { bonusHearts: heartBonus });
+      appendHeartStatCounts(addBox(t('card.hearts'), 'sv heart-stat'), card.hearts || [], { bonusHearts: heartBonus });
     }
   }
   if (cardYellDrawIconCount(card) > 0 || cardYellScoreIconCount(card) > 0) {
-    sg.innerHTML += `<div class="sbox"><div class="sv yell-icon-stat"></div><div class="sk">${t('card.yellIcons')}</div></div>`;
-    const yi = sg.querySelector('.yell-icon-stat');
+    const yi = addBox(t('card.yellIcons'), 'sv yell-icon-stat');
     yi.style.display = 'flex';
     yi.style.gap = '4px';
     yi.style.alignItems = 'center';
     appendYellSpecialIcons(yi, card, { lg: false });
   }
   if (card.blade_hearts?.length) {
-    sg.innerHTML += `<div class="sbox"><div class="sv blade-heart-stat"></div><div class="sk">${t('card.bladeHearts')}</div></div>`;
-    appendBladeHeartIcons(sg.querySelector('.blade-heart-stat'), card.blade_hearts, { lg: true });
+    appendBladeHeartIcons(addBox(t('card.bladeHearts'), 'sv blade-heart-stat'), card.blade_hearts, { lg: true });
   }
   const rulesDisplay = cardRulesDisplayText(card).trim();
   const skillText = rulesDisplay
@@ -27855,9 +27861,13 @@ const BLADE_HEART_ICON = {
 
 function iconSrc(file){ return ICON + file; }
 
+/* Stat/keyword icons are a handful of small shared files and are visible the moment
+   their panel opens. They must not be lazy: panels are populated while still
+   display:none, and a lazy image in a hidden subtree never intersects the viewport,
+   so it can stay unloaded and show its alt text instead. */
 function mkGameIcon(file, cls='ticon', alt=''){
   const img=document.createElement('img');
-  img.className=cls; img.src=iconSrc(file); img.alt=alt; img.loading='lazy';
+  img.className=cls; img.src=iconSrc(file); img.alt=alt; img.decoding='async';
   return img;
 }
 
@@ -27914,7 +27924,7 @@ function mkHeartIcon(color, lg=false, field=false){
   img.className='hicon'+(lg?' lg':'')+(field?' fld':'');
   img.dataset.color=c;
   img.src=iconSrc(HEART_ICON[c]||HEART_ICON.any);
-  img.alt=c; img.loading='lazy';
+  img.alt=c; img.decoding='async';
   return img;
 }
 
@@ -27956,7 +27966,7 @@ function mkBladeHeartIcon(color, lg=false){
   img.dataset.color=c;
   img.dataset.bladeHeart=c;
   img.src=iconSrc(BLADE_HEART_ICON[c]||BLADE_HEART_ICON.any);
-  img.alt=(c==='all'?'ALL':c) + ' blade heart'; img.loading='lazy';
+  img.alt=(c==='all'?'ALL':c) + ' blade heart'; img.decoding='async';
   return img;
 }
 
