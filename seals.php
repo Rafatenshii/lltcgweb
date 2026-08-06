@@ -277,15 +277,6 @@ function tcgStickerShopCatalog(string $discordId): array {
             'image' => $box['image'] ?? '',
         ];
     }
-    $out[] = [
-        'id' => 'pr:pr_cards',
-        'product_type' => 'pr',
-        'box_id' => 'pr_cards',
-        'kind' => 'pr',
-        'name_en' => 'PR Cards',
-        'name_jp' => 'PRカード',
-        'image' => TCG_SEAL_ICON['PR'],
-    ];
     $owned = array_fill_keys(tcgOwnedStarterKeys($discordId), true);
     foreach (tcgStarterDecks() as $deck) {
         $key = $deck['id'];
@@ -302,6 +293,16 @@ function tcgStickerShopCatalog(string $discordId): array {
             'image' => $deck['image'] ?? '',
         ];
     }
+    // Always last: new boosters/starters append above this, never displace PR.
+    $out[] = [
+        'id' => 'pr:pr_cards',
+        'product_type' => 'pr',
+        'box_id' => 'pr_cards',
+        'kind' => 'pr',
+        'name_en' => 'PR Cards',
+        'name_jp' => 'PRカード',
+        'image' => TCG_SEAL_ICON['PR'],
+    ];
     return $out;
 }
 

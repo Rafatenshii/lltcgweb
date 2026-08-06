@@ -181,6 +181,23 @@ final class StickerSealsTest extends TestCase
         $this->assertSame(1, $out['owned_qty']);
     }
 
+    public function testPrProductAlwaysLastInCatalog(): void
+    {
+        $catalog = tcgStickerShopCatalog($this->discordId);
+        $this->assertNotEmpty($catalog);
+        $this->assertSame('pr:pr_cards', $catalog[array_key_last($catalog)]['id'] ?? null);
+
+        // Even with owned starters listed, PR stays pinned last (new packs append above it).
+        $cards = $this->cardsData();
+        $starterKey = array_key_first($cards['starter_decks'] ?? []) ?: 'muse';
+        tcgGrantStarterDeck($this->discordId, $starterKey, $cards);
+        $catalog2 = tcgStickerShopCatalog($this->discordId);
+        $ids = array_column($catalog2, 'id');
+        $this->assertContains('starter:' . $starterKey, $ids);
+        $this->assertSame('pr:pr_cards', $ids[array_key_last($ids)] ?? null);
+        $this->assertSame(1, count(array_filter($ids, static fn($id) => $id === 'pr:pr_cards')));
+    }
+
     public function testBatchConvertMultipleCards(): void
     {
         $a = $this->findGachaCard('N');
