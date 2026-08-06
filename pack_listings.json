@@ -70,12 +70,20 @@
     "bp_mellow": {
       "asin": "",
       "amazon_url": "",
-      "pack_style": "promo",
-      "note": "Promo pack art uses official BP07 box render until pack photos are cropped.",
+      "pack_style": "photo",
+      "note": "Three retail pack wrappers (Hanamaru / Setsuna / Natsumi) for open-screen rotation.",
       "packs": [
         {
-          "output": "bp_mellow-promo.png",
-          "source_url": "https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png"
+          "output": "bp_mellow-a.png",
+          "local": "assets/packs/sources/mellow1.png"
+        },
+        {
+          "output": "bp_mellow-b.png",
+          "local": "assets/packs/sources/mellow2.png"
+        },
+        {
+          "output": "bp_mellow-c.png",
+          "local": "assets/packs/sources/mellow3.png"
         }
       ]
     },
