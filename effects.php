@@ -693,16 +693,40 @@ function resolveAutoYellAbilities(array $state, string $pid, array $yellCards): 
             $type = $ab['type'] ?? '';
             $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
 
-            if ($type === 'auto_yell_live_heart' && $hasLive) {
-                $color = $ab['heart_color'] ?? 'green';
-                $count = intval($ab['heart_count'] ?? 1);
-                $state = initLiveModifiers($state);
-                for ($i = 0; $i < $count; $i++) {
-                    $state['live_modifiers'][$pid]['bonus_hearts'][] = $color;
+            if ($type === 'auto_yell_live_heart') {
+                $group = $ab['group'] ?? '';
+                $needScore = !empty($ab['requires_score']);
+                $matched = false;
+                foreach ($yellCards as $yc) {
+                    if (!isLiveTypeCard($yc)) {
+                        continue;
+                    }
+                    if ($group !== '' && ($yc['group'] ?? '') !== $group) {
+                        continue;
+                    }
+                    if ($needScore
+                        && cardYellScoreIconCount($yc) < 1
+                        && liveCardPrintedScore($yc) < 1) {
+                        continue;
+                    }
+                    $matched = true;
+                    break;
                 }
-                markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$mName] gained $count " . ucfirst($color) . " heart(s) from Yell (Live revealed).");
+                // Legacy: no group/score filters → any Live revealed.
+                if (!$matched && $group === '' && !$needScore && $hasLive) {
+                    $matched = true;
+                }
+                if ($matched) {
+                    $color = $ab['heart_color'] ?? 'green';
+                    $count = intval($ab['heart_count'] ?? 1);
+                    $state = initLiveModifiers($state);
+                    for ($i = 0; $i < $count; $i++) {
+                        $state['live_modifiers'][$pid]['bonus_hearts'][] = $color;
+                    }
+                    markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$mName] gained $count " . ucfirst($color) . " heart(s) from Yell (Live revealed).");
+                }
             } elseif ($type === 'auto_yell_draw_if_hand_max' && $hasLive
                 && count($state['players'][$pid]['hand'] ?? []) <= intval($ab['max_hand'] ?? 7)) {
                 $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
@@ -3144,6 +3168,12 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
                 && ($ab['type'] ?? '') === 'blade_if_exact_stage_members') {
                 if (countStageMembers($state['players'][$pid]) === intval($ab['count'] ?? 2)) {
                     $blade += intval($ab['amount'] ?? 1);
+                }
+            }
+            if (($ab['trigger'] ?? '') === 'continuous'
+                && ($ab['type'] ?? '') === 'blade_bonus_if_exact_energy') {
+                if (countEnergyInZone($state['players'][$pid] ?? []) === intval($ab['exact_energy'] ?? 7)) {
+                    $blade += intval($ab['amount'] ?? 2);
                 }
             }
             if (($ab['type'] ?? '') === 'blade_if_either_stage_cost_min' && empty($ab['hearts'])) {

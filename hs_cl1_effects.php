@@ -18,7 +18,13 @@ function hsIsHasunosoraCl1EffectType(string $type): bool {
     return in_array($type, hsCl1EffectTypes(), true);
 }
 
-function hsCl1StageMemberBladeCandidates(array $p, array $ab, string $excludeId = ''): array {
+function hsCl1StageMemberBladeCandidates(
+    array $state,
+    string $pid,
+    array $ab,
+    string $excludeId = ''
+): array {
+    $p = $state['players'][$pid] ?? [];
     $group = $ab['group'] ?? '';
     $subunit = $ab['subunit'] ?? '';
     $minCost = intval($ab['min_cost'] ?? 0);
@@ -28,7 +34,8 @@ function hsCl1StageMemberBladeCandidates(array $p, array $ab, string $excludeId 
         if ($excludeId !== '' && ($mbr['instance_id'] ?? '') === $excludeId) continue;
         if ($group !== '' && ($mbr['group'] ?? '') !== $group) continue;
         if ($subunit !== '' && !cardMatchesSubunit($mbr, $subunit)) continue;
-        if ($minCost > 0 && intval($mbr['cost'] ?? 0) < $minCost) continue;
+        // Issue #94: AWOKE / wait-pick Blade need Live-temp cost (bonus/override), not printed.
+        if ($minCost > 0 && getEffectiveStageMemberCost($state, $pid, $mbr) < $minCost) continue;
         $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
     }
     return $candidates;
@@ -84,7 +91,7 @@ function hsResolveHasunosoraCl1Effect(array $state, string $pid, array $source, 
 
         case 'live_start_pick_stage_member_blade':
             if (!empty($state['pending_prompt'])) break;
-            $candidates = hsCl1StageMemberBladeCandidates($p, $ab);
+            $candidates = hsCl1StageMemberBladeCandidates($state, $pid, $ab);
             if (empty($candidates)) break;
             $amt = intval($ab['amount'] ?? 1);
             if (count($candidates) === 1) {
@@ -172,7 +179,7 @@ function hsCl1ResolveActivatedAbility(
         throw new Exception('Member not on stage');
     }
     waitMember($member, $state);
-    $candidates = hsCl1StageMemberBladeCandidates($p, $ab, $member['instance_id'] ?? '');
+    $candidates = hsCl1StageMemberBladeCandidates($state, $pid, $ab, $member['instance_id'] ?? '');
     if (empty($candidates)) {
         throw new Exception('No matching Member on Stage');
     }

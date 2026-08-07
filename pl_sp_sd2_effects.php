@@ -15,6 +15,7 @@ function plSpSd2EffectTypes(): array {
         'live_success_energy_wait_if_yell_group_count',
         'auto_yell_blade_if_group_count',
         'wait_opp_if_stage_hearts',
+        'live_start_grant_score_if_zone_score',
     ];
 }
 
@@ -142,6 +143,24 @@ function plSpSd2ResolveEffect(array $state, string $pid, array $source, array $a
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ' — [' . $name . '] score +' . intval($ab['score_bonus'] ?? 5) .
                 '; Required Hearts updated.');
+            break;
+
+        case 'live_start_grant_score_if_zone_score':
+            if (!empty($ab['center_only'])
+                && findMemberSlot($p, $source['instance_id'] ?? '') !== 'center') {
+                break;
+            }
+            $zoneSum = sumLiveZoneCardScores($p['live_zone'] ?? []);
+            if ($zoneSum < intval($ab['min_zone_score'] ?? 8)) {
+                break;
+            }
+            $state = applyModifierEffect($state, $pid, [
+                'type'   => 'live_score_bonus',
+                'amount' => intval($ab['amount'] ?? 1),
+            ]);
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . $name . '] Live total score +' . intval($ab['amount'] ?? 1) .
+                ' (Live zone score ≥' . intval($ab['min_zone_score'] ?? 8) . ').');
             break;
 
         case 'on_enter_blade_self_and_pick_group':

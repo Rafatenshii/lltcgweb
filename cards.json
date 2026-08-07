@@ -69041,6 +69041,143 @@
       "text_th": "[ต่อเนื่อง] หากมีสมาชิก 6 คนขึ้นไปในทั้งสองด่านรวมกัน จะได้รับหัวใจสีแดง 1 อันและหัวใจสีเหลือง 1 อัน"
     },
     {
+      "card_no": "PL!SP-PR-023-PR",
+      "name": "唐 可可",
+      "name_en": "Keke Tang",
+      "card_type": "エネルギー",
+      "card_type_en": "Energy",
+      "group": "Superstar",
+      "booster_pack": "PRカード",
+      "rarity": "PR",
+      "text": "",
+      "text_jp": "",
+      "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!SP-PR-023-PR.png",
+      "subunit": "KALEIDOSCORE"
+    },
+    {
+      "card_no": "PL!SP-PR-024-PR",
+      "name": "平安名すみれ",
+      "name_en": "Sumire Heanna",
+      "card_type": "メンバー",
+      "card_type_en": "Member",
+      "group": "Superstar",
+      "booster_pack": "PRカード",
+      "cost": 4,
+      "blade": 3,
+      "hearts": [
+        {
+          "color": "red",
+          "count": 1
+        }
+      ],
+      "blade_hearts": [],
+      "rarity": "PR",
+      "text": "[Auto] [Once per turn] When you Yell, if among the cards revealed by Yell there is 1 or more Liella! Live card with a Score icon, until this Live ends, you gain 1 Purple heart.",
+      "text_jp": "[自動] [ターン1回] 自分がエールしたとき、エールにより公開された自分のカードの中に、スコアを持つ『Liella!』のライブカードが1枚以上ある場合、ライブ終了時まで、紫ハートを得る。",
+      "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!SP-PR-024-PR.png",
+      "subunit": "CatChu!",
+      "abilities": [
+        {
+          "trigger": "auto",
+          "type": "auto_yell_live_heart",
+          "group": "Superstar",
+          "requires_score": true,
+          "heart_color": "purple",
+          "heart_count": 1,
+          "once_per_turn": true
+        }
+      ],
+      "text_es": "[Automático] [Una vez por turno] Cuando haces Yell, si entre las cartas reveladas hay 1 o más cartas Live de Liella! con icono de puntuación, hasta que termine este Live obtienes 1 corazón púrpura.",
+      "text_ko": "[자동] [턴당 1회] Yell로 공개된 카드 중에 점수 아이콘이 있는 Liella! 라이브 카드가 1장 이상 있으면, 이 라이브가 끝날 때까지 보라색 하트 1개를 얻는다.",
+      "text_zh": "[自动] [每回合1次] 当你应援时，若应援翻开的牌中有 1 张或以上带有得分图标的 Liella! Live 卡，直到本场 Live 结束，你获得 1 颗紫心。",
+      "text_th": "[อัตโนมัติ] [เทิร์นละ 1 ครั้ง] เมื่อ Yell หากในการ์ดที่เปิดเผยมีการ์ด Live ของ Liella! ที่มีไอคอนคะแนนอย่างน้อย 1 ใบ จนจบ Live นี้ คุณจะได้รับหัวใจสีม่วง 1 อัน"
+    },
+    {
+      "card_no": "PL!SP-PR-025-PR",
+      "name": "唐 可可",
+      "name_en": "Keke Tang",
+      "card_type": "メンバー",
+      "card_type_en": "Member",
+      "group": "Superstar",
+      "booster_pack": "PRカード",
+      "cost": 7,
+      "blade": 3,
+      "hearts": [
+        {
+          "color": "pink",
+          "count": 1
+        },
+        {
+          "color": "red",
+          "count": 1
+        }
+      ],
+      "blade_hearts": [],
+      "rarity": "PR",
+      "text": "[Always] While you have exactly 7 Energy, gain +2 Blade.",
+      "text_jp": "[常時] 自分のエネルギーがちょうど7枚あるかぎり、＋2ブレードを得る。",
+      "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!SP-PR-025-PR.png",
+      "subunit": "KALEIDOSCORE",
+      "abilities": [
+        {
+          "trigger": "continuous",
+          "type": "blade_bonus_if_exact_energy",
+          "exact_energy": 7,
+          "amount": 2
+        }
+      ],
+      "text_es": "[Siempre] Mientras tengas exactamente 7 Energía, obtienes +2 Blade.",
+      "text_ko": "[상시] 자신의 에너지가 정확히 7장일 동안 Blade +2를 얻는다.",
+      "text_zh": "[永续] 当你正好有 7 点能量时，获得 +2 Blade。",
+      "text_th": "[ต่อเนื่อง] ตราบใดที่คุณมีพลังงานพอดี 7 ใบ จะได้รับ +2 เบลด"
+    },
+    {
+      "card_no": "PL!SP-PR-026-PR",
+      "name": "鬼塚夏美",
+      "name_en": "Natsumi Onitsuka",
+      "card_type": "メンバー",
+      "card_type_en": "Member",
+      "group": "Superstar",
+      "booster_pack": "PRカード",
+      "cost": 13,
+      "blade": 4,
+      "hearts": [
+        {
+          "color": "pink",
+          "count": 1
+        },
+        {
+          "color": "red",
+          "count": 1
+        },
+        {
+          "color": "purple",
+          "count": 2
+        }
+      ],
+      "blade_hearts": [
+        "purple"
+      ],
+      "rarity": "PR",
+      "text": "[Live Start] [Center] If the total score of Live cards in your Live area is 8 or more, until this Live ends, gain \"[Always] +1 total Live score\".",
+      "text_jp": "[ライブ開始時] [センター] 自分のライブカード置き場にあるライブカードのスコアの合計が8以上の場合、「常時 ライブの合計スコアを＋１する。」を得る。",
+      "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!SP-PR-026-PR.png",
+      "subunit": "Sunny Passion",
+      "abilities": [
+        {
+          "trigger": "live_start",
+          "type": "live_start_grant_score_if_zone_score",
+          "center_only": true,
+          "min_zone_score": 8,
+          "amount": 1
+        }
+      ],
+      "text_es": "[Inicio de Live] [Centro] Si la puntuación total de las cartas Live en tu área Live es 8 o más, hasta que termine este Live obtienes \"[Siempre] +1 puntuación total de Live\".",
+      "text_ko": "[라이브 개시] [센터] 자신의 라이브 영역 라이브 카드 점수 합계가 8 이상이면, 이 라이브가 끝날 때까지 \"[상시] 라이브 총점 +1\"을 얻는다.",
+      "text_zh": "[Live开始] [中央] 若你 Live 区中 Live 卡的得分合计为 8 或以上，直到本场 Live 结束，获得“[永续] Live 总分 +1”。",
+      "text_th": "[เริ่ม Live] [เซ็นเตอร์] หากคะแนนรวมของการ์ด Live ในโซน Live ของคุณเป็น 8 ขึ้นไป จนจบ Live นี้ จะได้รับ \"[ต่อเนื่อง] คะแนนสดรวม +1\""
+    },
+    {
       "card_no": "PL!SP-bp1-000-LLE",
       "name": "澁谷かのん",
       "name_en": "Kanon Shibuya",
