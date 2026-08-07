@@ -47,6 +47,38 @@ function hsIsHasunosoraPb1EffectType(string $type): bool {
     return in_array($type, hsPb1EffectTypes(), true);
 }
 
+/** Count Member cards currently under a Stage Member (ignore non-Member debris). */
+function hsPb1CountStackedMembers(array $member): int {
+    $n = 0;
+    foreach ($member['stacked_members'] ?? [] as $under) {
+        if (!$under) {
+            continue;
+        }
+        if (isMemberCard($under) || (($under['card_type'] ?? '') === 'メンバー')
+            || strcasecmp((string)($under['card_type_en'] ?? ''), 'Member') === 0) {
+            $n++;
+        }
+    }
+    return $n;
+}
+
+/**
+ * Max Members allowed under this host for reveal_hand_named_stack_under.
+ * Prefer explicit ability max_stacked; else sibling Live Start cost/hearts max.
+ */
+function hsPb1StackUnderMax(array $member, array $ab = []): int {
+    if (isset($ab['max_stacked']) && intval($ab['max_stacked']) > 0) {
+        return intval($ab['max_stacked']);
+    }
+    foreach ($member['abilities'] ?? [] as $sibling) {
+        if (($sibling['type'] ?? '') === 'live_start_cost_hearts_per_stacked'
+            && intval($sibling['max_stacked'] ?? 0) > 0) {
+            return intval($sibling['max_stacked']);
+        }
+    }
+    return 0;
+}
+
 function hsPb1OpponentStageBlockedFromActivate(array $state, string $pid): bool {
     $opp = ($pid === 'p1') ? 'p2' : 'p1';
     foreach ($state['players'][$opp]['stage'] ?? [] as $mbr) {
@@ -343,6 +375,11 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             if (!empty($ab['once_per_turn']) && $abilityIdx !== null && isAbilityUsed($source, $abilityIdx)) {
                 break;
             }
+            // Fantasy Sayaka (pb1-002): skill text max applies to cards under her.
+            $maxStacked = hsPb1StackUnderMax($source, $ab);
+            if ($maxStacked > 0 && hsPb1CountStackedMembers($source) >= $maxStacked) {
+                throw new Exception("This Member already has the maximum of $maxStacked card(s) stacked underneath");
+            }
             $names = $ab['names'] ?? [];
             $candidates = array_values(array_filter(
                 $p['hand'] ?? [],
@@ -359,6 +396,7 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
                 'ability_idx'   => $abilityIdx,
                 'once_per_turn' => !empty($ab['once_per_turn']),
                 'ability'       => $ab,
+                'max_stacked'   => $maxStacked,
                 'candidates'    => array_map('cardPromptSummary', $candidates),
                 'prompt'        => 'Reveal 1 matching Member from your hand to stack under this Member?',
             ];
@@ -418,7 +456,7 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
         case 'live_start_cost_hearts_per_stacked':
             // PL!HS-pb1-002: Live Start (not Always) — lock cost/hearts from stacks this Live (#79).
             $stacked = min(
-                count($source['stacked_members'] ?? []),
+                hsPb1CountStackedMembers($source),
                 intval($ab['max_stacked'] ?? 3)
             );
             if ($stacked <= 0) {
@@ -1112,6 +1150,12 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             // Never delete the revealed card if the Stage host is missing (#76).
             $ownerP['hand'][] = $stacked;
             throw new Exception('Source Member not on Stage');
+        }
+        $host = $ownerP['stage'][$slot];
+        $maxStacked = intval($prompt['max_stacked'] ?? hsPb1StackUnderMax($host, $prompt['ability'] ?? []));
+        if ($maxStacked > 0 && hsPb1CountStackedMembers($host) >= $maxStacked) {
+            $ownerP['hand'][] = $stacked;
+            throw new Exception("This Member already has the maximum of $maxStacked card(s) stacked underneath");
         }
         if (!isset($ownerP['stage'][$slot]['stacked_members'])) {
             $ownerP['stage'][$slot]['stacked_members'] = [];
