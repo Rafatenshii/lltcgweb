@@ -1096,6 +1096,7 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
       d.classList.toggle('card-arriving', !!(G._animHideIids?.has(mbr.instance_id)));
       const ownerPid = isMe ? myId : oppPid;
       appendMemberStackedEnergyBadge(d, mbr, s?.players?.[ownerPid]);
+      appendMemberStackedMembersBadge(d, mbr);
       if (isMe) bindMyStageCardInspect(d, mbr, s, myId);
     }
     outer.appendChild(d);

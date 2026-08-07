@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=18">
+<link rel="stylesheet" href="client/css/shell-all.css?v=19">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 
 </head>
@@ -21855,6 +21855,13 @@ function fillCardDetailPanel(prefix, card, s, myId) {
   if (card.blade_hearts?.length) {
     appendBladeHeartIcons(addBox(t('card.bladeHearts'), 'sv blade-heart-stat'), card.blade_hearts, { lg: true });
   }
+  {
+    const stageMember = stageCtx?.member || card;
+    const underN = typeof countMemberStackedMembers === 'function'
+      ? countMemberStackedMembers(stageMember)
+      : (Array.isArray(stageMember?.stacked_members) ? stageMember.stacked_members.length : 0);
+    if (underN > 0) addS('Under', underN);
+  }
   const rulesDisplay = cardRulesDisplayText(card).trim();
   const skillText = rulesDisplay
     || ((card.abilities?.length && !rulesDisplay)
@@ -28168,8 +28175,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=59"></script>
-<script src="client/js/board-render.js?v=6"></script>
+<script src="client/js/spectacle.js?v=60"></script>
+<script src="client/js/board-render.js?v=7"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>

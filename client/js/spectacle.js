@@ -4115,6 +4115,7 @@ function perfCardEl(card, kind, opts = {}) {
       d.appendChild(badge);
     }
     appendPerfMemberLiveCostBadge(d, c);
+    appendMemberStackedMembersBadge(d, c);
   } else {
     appendPerfLiveRequiredHearts(d, c, opts.state || null, opts.pid || null);
     appendPerfLiveScoreBoostHint(d, c);
@@ -8430,6 +8431,40 @@ function appendMemberStackedEnergyBadge(slotEl, member, me) {
     badge.textContent = '×' + count;
     wrap.appendChild(badge);
   }
+  slotEl.appendChild(wrap);
+}
+function countMemberStackedMembers(member) {
+  if (!member) return 0;
+  const stack = member.stacked_members;
+  return Array.isArray(stack) ? stack.length : 0;
+}
+function appendMemberStackedMembersBadge(slotEl, member) {
+  const count = countMemberStackedMembers(member);
+  if (count <= 0) return;
+  const stack = member.stacked_members || [];
+  const names = stack
+    .map(c => (c && (c.name_en || c.name || c.card_no)) || '?')
+    .filter(Boolean);
+  const wrap = document.createElement('div');
+  wrap.className = 'member-stacked-cards';
+  wrap.title = names.length
+    ? `${count} under: ${names.join(', ')}`
+    : `${count} card${count === 1 ? '' : 's'} stacked under this Member`;
+  const faces = document.createElement('div');
+  faces.className = 'stack-faces';
+  faces.setAttribute('aria-hidden', 'true');
+  // Visual depth: up to 3 layers, independent of count (count is in the pill).
+  const layers = Math.min(3, Math.max(1, count));
+  for (let i = 0; i < layers; i++) {
+    const face = document.createElement('span');
+    face.className = 'stack-face';
+    faces.appendChild(face);
+  }
+  wrap.appendChild(faces);
+  const badge = document.createElement('span');
+  badge.className = 'stacked-cards-count';
+  badge.textContent = '×' + count;
+  wrap.appendChild(badge);
   slotEl.appendChild(wrap);
 }
 function estimateBatonWrEnergyActivation(me, occupant, incomingCard) {
