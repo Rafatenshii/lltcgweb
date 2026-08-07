@@ -1784,6 +1784,7 @@ function actionEndMain(array $state, string $pid): array {
         $state = addLog($state, possessiveName($state['players'][$second]['name']) . ' turn — Main Phase (Active · Energy · Draw complete).');
     } elseif ($state['active_player'] === $second && $state['phase'] === 'main_second') {
         $state = addLog($state, $state['players'][$pid]['name'] . ' — End Main Phase.');
+        $state = clearLiveStorageBeforeLiveSet($state);
         $state['phase'] = 'live_set';
         $state['live_ready'] = ['p1' => false, 'p2' => false];
         $state['active_player'] = $first;
@@ -1797,6 +1798,42 @@ function actionEndMain(array $state, string $pid): array {
 
 function isLiveSetPhase(string $phase): bool {
     return $phase === 'live_set';
+}
+
+/**
+ * Issue #95: Live storage must be empty when a new LIVE Phase starts.
+ * Leftovers from a failed drain (or interrupted judge) would otherwise stay in
+ * live_zone and get ADDED to by set_live_cards — ghost Lives the player never chose.
+ */
+function clearLiveStorageBeforeLiveSet(array $state): array {
+    $anims = [];
+    $moved = 0;
+    foreach (['p1', 'p2'] as $pid) {
+        $zone = $state['players'][$pid]['live_zone'] ?? [];
+        if ($zone === []) {
+            continue;
+        }
+        foreach ($zone as $li => $lc) {
+            if (!$lc) {
+                continue;
+            }
+            $anims[] = animSpec($lc['instance_id'] ?? '', 'live', 'waiting_room', $pid, [
+                'from_index' => liveZoneSlotOf($lc, $li),
+            ]);
+            $state['players'][$pid]['waiting_room'][] = $lc;
+            $moved++;
+        }
+        $state['players'][$pid]['live_zone'] = [];
+    }
+    if ($moved > 0) {
+        $state = addLog(
+            $state,
+            "Cleared $moved leftover Live storage card(s) before LIVE Phase.",
+            'action',
+            $anims
+        );
+    }
+    return $state;
 }
 
 function liveSetTurnOrder(array $state): array {

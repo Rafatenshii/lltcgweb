@@ -242,9 +242,20 @@ function augmentPerfSpectaclePrev(prev, next) {
   const base = deepCloneState(prev);
   if (!base?.players || !next?.players) return base;
   const myId = next.my_id || G.playerId || base.my_id || 'p1';
+  // New LIVE Phase / new turn: next's live_zone is authoritative — do not keep prev-only ghosts (#95).
+  const freshLiveRound = (intvalTurn(next.turn) > intvalTurn(prev.turn))
+    || (isLiveSetPhase(next.phase) && !isLiveSetPhase(prev.phase))
+    || (isLiveSetPhase(next.phase) && isMainOrActivePhase(prev.phase));
   for (const pid of ['p1', 'p2']) {
     const prevZone = base.players[pid]?.live_zone || [];
     const nextZone = next.players[pid]?.live_zone || [];
+    if (freshLiveRound) {
+      base.players[pid] = base.players[pid] || { ...next.players[pid] };
+      base.players[pid].live_zone = clampLiveZoneCards(
+        nextZone.map(c => (c ? { ...c } : c)).filter(Boolean)
+      );
+      continue;
+    }
     const byId = new Map(prevZone.filter(c => c?.instance_id).map(c => [c.instance_id, { ...c }]));
     nextZone.forEach(c => {
       if (!c?.instance_id) return;
@@ -279,6 +290,11 @@ function augmentPerfSpectaclePrev(prev, next) {
     base.players[pid].live_zone = clampLiveZoneCards([...byId.values()]);
   }
   return base;
+}
+
+function intvalTurn(t) {
+  const n = parseInt(t, 10);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function perfMergedLiveZone(perfPrev, next, pid) {

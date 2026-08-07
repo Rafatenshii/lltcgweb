@@ -18186,8 +18186,14 @@ function liveZoneForRender(s, pid) {
           || (typeof shouldSuppressLiveStorageFlipsNow === 'function' && shouldSuppressLiveStorageFlipsNow(s)))) {
     return current;
   }
+  // New LIVE placement: never prefer a previous round's held board (#95).
+  if (isLiveSetPhase(s?.phase)) return current;
   const heldRaw = G._livePostRevealBoard?.players?.[pid]?.live_zone;
   if (!heldRaw?.length) return current;
+  const heldTurn = G._livePostRevealBoard?.turn;
+  if (heldTurn != null && s?.turn != null && Number(heldTurn) !== Number(s.turn)) {
+    return current;
+  }
   const held = clampLiveZoneCards(heldRaw);
   if (G._liveStorageOutcomePending || held.length > current.length) return held;
   if (G._deferredLiveState && held.length > current.length) return held;

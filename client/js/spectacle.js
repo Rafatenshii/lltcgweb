@@ -1220,9 +1220,8 @@ function stashLiveSetStorageBaseline(s, myId, selectedIds) {
 /** Keep a full live_set board (both players) for empty-round / batched-poll reveal playback. */
 function refreshLiveSetStorageBaseline(s) {
   if (!s?.phase || !isLiveSetPhase(s.phase) || !liveStorageHasCards(s)) return;
-  G._liveSetStorageBaseline = G._liveSetStorageBaseline
-    ? augmentPerfSpectaclePrev(G._liveSetStorageBaseline, s)
-    : deepCloneState(s);
+  // Replace — never union with a prior-round baseline (Issue #95 ghost Lives in resolution).
+  G._liveSetStorageBaseline = deepCloneState(s);
 }
 
 /** Optimistic face-down placement for LIVE confirm — updates gameState + baseline for playback. */
