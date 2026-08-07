@@ -39,10 +39,35 @@ final class ActionSmokeTest extends TestCase
         $state = $this->joinedMulliganState();
         $state = applyAction($state, 'p1', 'mulligan', ['card_ids' => []]);
         $this->assertSame('setup', $state['phase'] ?? '');
+        $this->assertSame(0, intval($state['players']['p1']['mulligan_redrawn'] ?? -1));
         $state = applyAction($state, 'p2', 'mulligan', ['card_ids' => []]);
         $this->assertSame('main_first', $state['phase'] ?? '');
         $this->assertTrue($state['players']['p1']['ready_mulligan'] ?? false);
         $this->assertTrue($state['players']['p2']['ready_mulligan'] ?? false);
+        $this->assertSame(0, intval($state['players']['p1']['mulligan_redrawn'] ?? -1));
+        $this->assertSame(0, intval($state['players']['p2']['mulligan_redrawn'] ?? -1));
+        $msgs = array_map(static fn($e) => is_array($e) ? (string)($e['msg'] ?? '') : (string)$e, $state['log'] ?? []);
+        $this->assertTrue(
+            (bool) array_filter($msgs, static fn($m) => str_contains($m, 'Mulligan — ') && str_contains($m, 'redrew 0')),
+            'Expected mulligan declare summary in log'
+        );
+    }
+
+    public function testMulliganRedrawCountLogged(): void {
+        $state = $this->joinedMulliganState();
+        $hand = $state['players']['p1']['hand'] ?? [];
+        $this->assertGreaterThanOrEqual(2, count($hand));
+        $ids = [
+            (string)($hand[0]['instance_id'] ?? ''),
+            (string)($hand[1]['instance_id'] ?? ''),
+        ];
+        $state = applyAction($state, 'p1', 'mulligan', ['card_ids' => $ids]);
+        $this->assertSame(2, intval($state['players']['p1']['mulligan_redrawn'] ?? -1));
+        $msgs = array_map(static fn($e) => is_array($e) ? (string)($e['msg'] ?? '') : (string)$e, $state['log'] ?? []);
+        $this->assertTrue(
+            (bool) array_filter($msgs, static fn($m) => str_contains($m, 'mulliganed: redrew 2 card(s).')),
+            'Expected per-player mulligan redraw log'
+        );
     }
 
     public function testResolvePromptClearsLookTopOptionalWr(): void {

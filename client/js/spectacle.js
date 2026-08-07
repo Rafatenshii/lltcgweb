@@ -2164,7 +2164,8 @@ function isLivePipelineLogBanner(msg) {
 }
 
 function isPostLivePipelineLogBanner(msg) {
-  return /^=== Turn \d+ begins ===$/.test(msg || '');
+  return /^=== Turn \d+ begins ===$/.test(msg || '')
+    || /^Mulligan — .+ redrew \d+, .+ redrew \d+\.$/.test(msg || '');
 }
 
 function shouldDeferLogBannerDuringLivePlayback(msg) {
@@ -2217,6 +2218,16 @@ function parseLogToBanner(msg, kind, s, myId, prev = null, logFrom = 0) {
       subtitleKey: null,
       kind: 'phase',
       duration: PHASE_BANNER_MS,
+    });
+  }
+  if ((m = msg.match(/^Mulligan — (.+) redrew (\d+), (.+) redrew (\d+)\.$/))) {
+    const [, aName, aN, bName, bN] = m;
+    return splashBanner({
+      titleKey: 'mulligan.declareTitle',
+      subtitleKey: 'mulligan.declareSub',
+      subtitleVars: { a: aName, aN, b: bName, bN },
+      kind: 'phase',
+      duration: 3200,
     });
   }
   if (/— Active Phase:|— Energy Phase:|— Draw Phase\./.test(msg)) return null;

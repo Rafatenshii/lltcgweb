@@ -808,7 +808,27 @@ function renderPhaseBar(s,me,opp,myId,oppId) {
 
   if(ph==='setup'){
     if(me.ready_mulligan && !opp.ready_mulligan){
-      msgE.textContent = t('phaseMsg.setupWaitMulligan');
+      const n = me.mulligan_redrawn;
+      if (n == null) {
+        msgE.textContent = t('phaseMsg.setupWaitMulligan');
+      } else if (Number(n) > 0) {
+        msgE.textContent = t('phaseMsg.setupWaitMulliganYou', { n: Number(n) });
+      } else {
+        msgE.textContent = t('phaseMsg.setupWaitMulliganYouKept');
+      }
+    } else if (G.isSpectator && (me.ready_mulligan || opp.ready_mulligan)) {
+      const parts = [];
+      for (const pl of [me, opp]) {
+        if (!pl?.ready_mulligan) continue;
+        const n = pl.mulligan_redrawn;
+        const name = pl.name || '?';
+        if (n == null) parts.push(name);
+        else if (Number(n) > 0) parts.push(t('phaseMsg.setupMulliganPlayerN', { name, n: Number(n) }));
+        else parts.push(t('phaseMsg.setupMulliganPlayerKept', { name }));
+      }
+      msgE.textContent = parts.length
+        ? `${parts.join(' · ')} — ${t('phaseMsg.setupWaitMulligan')}`
+        : t('phaseMsg.setupWaitMulligan');
     } else {
       msgE.textContent = t('phaseMsg.setupMulligan');
     }

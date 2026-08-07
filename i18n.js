@@ -689,6 +689,10 @@
     "phaseBar": {
       "spectating": "Spectating — {p1} vs {p2} (read only)",
       "setupWaitMulligan": "Waiting for opponent to finish mulligan…",
+      "setupWaitMulliganYou": "You redrew {n}. Waiting for opponent to finish mulligan…",
+      "setupWaitMulliganYouKept": "You kept your hand. Waiting for opponent to finish mulligan…",
+      "setupMulliganPlayerN": "{name} redrew {n}",
+      "setupMulliganPlayerKept": "{name} kept hand",
       "setupMulligan": "Preparation — review your opening hand, mulligan any cards, then confirm.",
       "coinFlip": "Coin flip — winner chooses who goes first…",
       "mainYour": "Your Main Phase — play Members ({energy} available). End Main Phase when ready.",
@@ -780,7 +784,9 @@
       "tutorialReplaceHint": "Tap the highlighted card to mark it for replacement, then confirm.",
       "keepHand": "Keep Hand",
       "replaceCard": "Replace {n} card",
-      "replaceCards": "Replace {n} cards"
+      "replaceCards": "Replace {n} cards",
+      "declareTitle": "Mulligan",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "First Player",
@@ -1905,6 +1911,10 @@
     "phaseBar": {
       "spectating": "観戦中 — {p1} vs {p2}（閲覧のみ）",
       "setupWaitMulligan": "相手のマリガン完了を待っています…",
+      "setupWaitMulliganYou": "{n}枚引き直しました。相手のマリガン完了を待っています…",
+      "setupWaitMulliganYouKept": "手札をキープしました。相手のマリガン完了を待っています…",
+      "setupMulliganPlayerN": "{name}は{n}枚引き直し",
+      "setupMulliganPlayerKept": "{name}はキープ",
       "setupMulligan": "準備 — 初期手札を確認し、交換するカードを選んで確定してください。",
       "coinFlip": "コイントス — 勝者が先攻を選びます…",
       "mainYour": "あなたのメインフェイズ — メンバーを出せます（{energy} 使用可能）。終わったらメインフェイズ終了。",
@@ -1996,7 +2006,9 @@
       "tutorialReplaceHint": "ハイライトされたカードをタップして交換マークを付け、確定してください。",
       "keepHand": "この手札で開始",
       "replaceCard": "{n}枚交換",
-      "replaceCards": "{n}枚交換"
+      "replaceCards": "{n}枚交換",
+      "declareTitle": "マリガン",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "先攻決定",
@@ -2995,6 +3007,10 @@
     "phaseBar": {
       "spectating": "Espectando: {p1} vs {p2} (solo lectura)",
       "setupWaitMulligan": "Esperando a que el oponente termine el muligan…",
+      "setupWaitMulliganYou": "Robaste de nuevo {n}. Esperando a que el oponente termine el muligan…",
+      "setupWaitMulliganYouKept": "Conservaste tu mano. Esperando a que el oponente termine el muligan…",
+      "setupMulliganPlayerN": "{name} robó de nuevo {n}",
+      "setupMulliganPlayerKept": "{name} conservó la mano",
       "setupMulligan": "Preparación: revisa tu mano inicial, marca cartas para muligan y luego confirma.",
       "coinFlip": "Lanzamiento de moneda: el ganador elige quién va primero…",
       "mainYour": "Tu Fase principal: juega Miembros ({energy} disponible). Termina la Fase principal cuando estés listo.",
@@ -3086,7 +3102,9 @@
       "replaceCard": "Reemplazar {n} carta",
       "replaceCards": "Reemplazar {n} cartas",
       "tutorialKeepHint": "¿Te gusta esta mano? Toca Conservar mano para continuar.",
-      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo."
+      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo.",
+      "declareTitle": "Muligan",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "Primer jugador",
@@ -4226,6 +4244,10 @@
     "phaseBar": {
       "spectating": "관전 중 — {p1} vs {p2} (읽기 전용)",
       "setupWaitMulligan": "상대가 멀리건을 마치기를 기다리는 중…",
+      "setupWaitMulliganYou": "{n}장 다시 뽑음. 상대가 멀리건을 마치기를 기다리는 중…",
+      "setupWaitMulliganYouKept": "패를 유지함. 상대가 멀리건을 마치기를 기다리는 중…",
+      "setupMulliganPlayerN": "{name} {n}장 다시 뽑음",
+      "setupMulliganPlayerKept": "{name} 패 유지",
       "setupMulligan": "준비 — 시작 패를 확인하고 원하는 카드를 멀리건한 뒤 확정하세요.",
       "coinFlip": "코인 플립 — 승자가 선공을 선택합니다…",
       "mainYour": "내 메인 페이즈 — 멤버를 플레이하세요 ({energy} 사용 가능). 준비되면 메인 페이즈를 종료하세요.",
@@ -4317,7 +4339,9 @@
       "replaceCard": "{n}장 교체",
       "replaceCards": "{n}장 교체",
       "tutorialKeepHint": "이 핸드로 괜찮다면 「핸드 유지」를 눌러 계속하세요.",
-      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요."
+      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요.",
+      "declareTitle": "멀리건",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "선공 결정",
@@ -5472,7 +5496,11 @@
     "phaseBar": {
       "spectating": "观看 — {p1} vs {p2}（只读）",
       "setupWaitMulligan": "等待对手完成调度……",
-      "setupMulligan": "准备工作——检查你的起手牌，调度任何牌，然后确认。",
+      "setupWaitMulliganYou": "你重抽了 {n} 张。等待对手完成调度……",
+      "setupWaitMulliganYouKept": "你保留了手牌。等待对手完成调度……",
+      "setupMulliganPlayerN": "{name} 重抽 {n}",
+      "setupMulliganPlayerKept": "{name} 保留手牌",
+      "setupMulligan": "准备 — 查看开局手牌，调度任意张后确认。",
       "coinFlip": "抛硬币——获胜者选择谁先走……",
       "mainYour": "你的主要阶段 - 扮演成员（{energy}可用）。准备好后结束主阶段。",
       "mainOpp": "轮到{name}了——主阶段……",
@@ -5563,7 +5591,9 @@
       "replaceCard": "更换 {n} 张卡",
       "replaceCards": "替换 {n} 张卡",
       "tutorialKeepHint": "对这手满意吗？点击“保持手部”以继续。",
-      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。"
+      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。",
+      "declareTitle": "调度",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "第一个玩家",
@@ -6708,6 +6738,10 @@
     "phaseBar": {
       "spectating": "กำลังชม — {p1} ปะทะ {p2} (อ่านอย่างเดียว)",
       "setupWaitMulligan": "รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
+      "setupWaitMulliganYou": "คุณจั่วใหม่ {n} ใบ รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
+      "setupWaitMulliganYouKept": "คุณเก็บมือนี้ไว้ รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
+      "setupMulliganPlayerN": "{name} จั่วใหม่ {n}",
+      "setupMulliganPlayerKept": "{name} เก็บมือ",
       "setupMulligan": "เตรียมการ — ตรวจมือเปิด มัลลิแกนการ์ดที่ต้องการ แล้วยืนยัน",
       "coinFlip": "โยนเหรียญ — ผู้ชนะเลือกว่าใครไปก่อน…",
       "mainYour": "เฟสหลักของคุณ — เล่นสมาชิก (มีพลังงาน {energy}) กดจบเฟสหลักเมื่อพร้อม",
@@ -6799,7 +6833,9 @@
       "replaceCard": "เปลี่ยน {n} ใบ",
       "replaceCards": "เปลี่ยน {n} ใบ",
       "tutorialKeepHint": "พอใจกับมือนี้ไหม? แตะเก็บมือนี้เพื่อไปต่อ",
-      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน"
+      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน",
+      "declareTitle": "มัลลิแกน",
+      "declareSub": "{a}: {aN} · {b}: {bN}"
     },
     "coin": {
       "title": "ผู้เล่นคนแรก",

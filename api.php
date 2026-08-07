@@ -1299,6 +1299,7 @@ function initPlayerState(array $p): array {
         'waiting_room' => [],
         'score'        => 0,
         'ready_mulligan'=> false,
+        'mulligan_redrawn' => null,
     ];
 }
 
@@ -1498,23 +1499,31 @@ function actionMulligan(array $state, string $pid, array $data): array {
         throw new Exception('Already mulliganed');
     }
     $toReplace = $data['card_ids'] ?? [];
+    $redrawn = 0;
     if (!empty($toReplace)) {
         $kept = [];
         $returned = [];
         foreach ($p['hand'] as $c) {
-            if (in_array($c['instance_id'], $toReplace)) {
+            if (in_array($c['instance_id'], $toReplace, true)) {
                 $returned[] = $c;
             } else {
                 $kept[] = $c;
             }
         }
-        [$newCards, $p['main_deck']] = drawCards($p['main_deck'], count($returned));
+        $redrawn = count($returned);
+        [$newCards, $p['main_deck']] = drawCards($p['main_deck'], $redrawn);
         $p['main_deck'] = array_merge($p['main_deck'], $returned);
         shuffle($p['main_deck']);
         $p['hand'] = array_merge($kept, $newCards);
     }
     $p['ready_mulligan'] = true;
-    $state = addLog($state, $state['players'][$pid]['name'] . ' completed mulligan.');
+    $p['mulligan_redrawn'] = $redrawn;
+    $pname = $state['players'][$pid]['name'] ?? $pid;
+    if ($redrawn > 0) {
+        $state = addLog($state, "$pname mulliganed: redrew $redrawn card(s).");
+    } else {
+        $state = addLog($state, "$pname mulliganed: kept hand.");
+    }
 
     // Check if both players are ready
     $bothReady = true;
@@ -1525,6 +1534,16 @@ function actionMulligan(array $state, string $pid, array $data): array {
         }
     }
     if ($bothReady) {
+        $n1 = intval($state['players']['p1']['mulligan_redrawn'] ?? 0);
+        $n2 = intval($state['players']['p2']['mulligan_redrawn'] ?? 0);
+        $name1 = $state['players']['p1']['name'] ?? 'p1';
+        $name2 = $state['players']['p2']['name'] ?? 'p2';
+        $state['mulligan_declare'] = [
+            'p1' => $n1,
+            'p2' => $n2,
+            'seq' => intval($state['seq'] ?? 0) + 1,
+        ];
+        $state = addLog($state, "Mulligan — $name1 redrew $n1, $name2 redrew $n2.");
         $state = startTurn($state);
     }
     $state['seq']++;
