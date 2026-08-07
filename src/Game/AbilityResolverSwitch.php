@@ -83,7 +83,9 @@ function resolveAbilityEffectSwitch(
         return tryResolveAbilityEffectSwitchChooseHeart($state, $pid, $source, $ab, $ctx, $type, $p, $name);
     }
 
-    if (str_starts_with($type, 'reduce_hearts_') || $type === 'reduce_required_hearts_if_blade') {
+    if (str_starts_with($type, 'reduce_hearts_')
+        || $type === 'reduce_required_hearts_if_blade'
+        || $type === 'convert_hearts_per_distinct_subunit') {
         return tryResolveAbilityEffectSwitchReduceHearts($state, $pid, $source, $ab, $ctx, $type, $p, $name);
     }
 

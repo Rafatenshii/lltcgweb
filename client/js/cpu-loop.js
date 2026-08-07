@@ -2375,6 +2375,21 @@ function applyClientLiveHeartReductions(required, liveCard) {
       n -= take;
     }
   }
+  const colorIncreases = liveCard?.hearts_color_increase || {};
+  for (const [color, nRaw] of Object.entries(colorIncreases)) {
+    const n = Number(nRaw || 0);
+    if (n <= 0) continue;
+    const want = normalizeHeartColor(color);
+    let applied = false;
+    for (const h of req) {
+      if (normalizeHeartColor(h.color) === want) {
+        h.count += n;
+        applied = true;
+        break;
+      }
+    }
+    if (!applied) req.push({ color: want === 'any' ? 'any' : want, count: n });
+  }
   return req.filter(h => h.count > 0);
 }
 

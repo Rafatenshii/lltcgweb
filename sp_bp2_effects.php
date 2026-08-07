@@ -50,6 +50,7 @@ function spBp2EffectTypes(): array {
         'pick_wr_distinct_lives_opp_choice',
         'activated_discard_liella_choose_energy_or_hearts',
         'reduce_hearts_per_entered_moved_subunit',
+        'convert_hearts_per_distinct_subunit',
         'reduce_yell_reveal_count',
         'score_if_fewer_success_lives',
         'score_if_hand_more_than_opp',

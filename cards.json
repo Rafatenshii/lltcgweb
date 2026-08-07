@@ -89198,7 +89198,7 @@
         "red"
       ],
       "rarity": "L",
-      "text": "[Live Start] For each differently named CatChu! Member on your Stage, reduce this card's Required Hearts by 1 Gray Heart.",
+      "text": "[Live Start] For each differently named CatChu! Member on your Stage, reduce this card's Required Hearts by 2 Gray Hearts and increase them by 1 Red Heart. Then, if this card's Required Hearts include 9 or more Red Hearts, this card's score +1.",
       "text_jp": "[ライブ開始時] 自分のステージにいる名前の異なる『CatChu!』のメンバー1人につき、このカードの必要ハートをグレーハート2つ減らし、赤ハート増やす。その後、このカードの必要ハートに含まれる赤ハートが9以上の場合、このカードのスコアを＋１する。",
       "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBSP02/PL!SP-pb2-048-L.png",
       "subunit": "CatChu!",
@@ -89216,18 +89216,23 @@
       "abilities": [
         {
           "trigger": "live_start",
-          "type": "reduce_hearts_per_entered_moved_subunit",
+          "type": "convert_hearts_per_distinct_subunit",
           "subunit": "CatChu!",
-          "per_member": 1,
-          "reduce_heart_color": "gray"
+          "reduce_heart_color": "gray",
+          "reduce_per": 2,
+          "increase_heart_color": "red",
+          "increase_per": 1,
+          "score_if_color": "red",
+          "score_if_color_min": 9,
+          "score_amount": 1
         }
       ],
-      "text_es": "[Inicio de Live] Por cada Miembro CatChu! con nombre distinto en tu Escenario, reduce los Corazones requeridos de esta carta en 1 Corazón gris.",
+      "text_es": "[Inicio de Live] Por cada Miembro CatChu! con nombre distinto en tu Escenario, reduce los Corazones requeridos de esta carta en 2 Corazones grises y auméntalos en 1 Corazón rojo. Luego, si los Corazones requeridos incluyen 9 o más Corazones rojos, la puntuación de esta carta +1.",
       "special_heart": "icon_draw.png",
       "yell_draw_icon": true,
-      "text_ko": "[라이브 개시] 자신의 스테이지에 있는 이름이 다른 CatChu! 멤버 1명마다, 이 카드의 필요 하트를 회색 하트 1개만큼 줄인다.",
-      "text_zh": "[Live开始] 对于每个不同名字的 CatChu！自己舞台上的成员，将这张卡的所需心数减少 1 颗灰心。",
-      "text_th": "[เริ่ม Live] สำหรับ CatChu แต่ละตัวที่มีชื่อต่างกัน! สมาชิกที่อยู่บนเวทีของคุณ ลดจำนวนหัวใจที่จำเป็นของการ์ดใบนี้ลง 1 หัวใจสีเทา"
+      "text_ko": "[라이브 개시] 자신의 스테이지에 있는 이름이 다른 CatChu! 멤버 1명마다, 이 카드의 필요 하트를 회색 하트 2개만큼 줄이고 빨간 하트 1개만큼 늘린다. 그 후 이 카드의 필요 하트에 포함된 빨간 하트가 9개 이상이면, 이 카드의 점수 +1.",
+      "text_zh": "[Live开始] 对于每个不同名字的 CatChu！自己舞台上的成员，将这张卡的所需心数减少 2 颗灰心并增加 1 颗红心。然后，如果这张卡的所需心数包含 9 颗或更多红心，这张卡的得分 +1。",
+      "text_th": "[เริ่ม Live] สำหรับ CatChu แต่ละตัวที่มีชื่อต่างกัน! สมาชิกที่อยู่บนเวทีของคุณ ลดจำนวนหัวใจที่จำเป็นของการ์ดใบนี้ลง 2 หัวใจสีเทา และเพิ่ม 1 หัวใจสีแดง จากนั้น ถ้าหัวใจที่จำเป็นของการ์ดใบนี้มีหัวใจสีแดงอย่างน้อย 9 ดวง คะแนนของการ์ดใบนี้ +1"
     },
     {
       "card_no": "PL!SP-pb2-049-L",

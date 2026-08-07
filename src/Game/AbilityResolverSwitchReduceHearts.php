@@ -197,6 +197,74 @@ function tryResolveAbilityEffectSwitchReduceHearts(
                     " — [$name] required $label reduced.");
             }
             break;
+        case 'convert_hearts_per_distinct_subunit': {
+            // Distortion (PL!SP-pb2-048): per distinct-named subunit Member on Stage,
+            // −N gray/any required hearts and +M red; then optional score if red ≥ min.
+            $distinct = countDistinctNamedSubunit($p, $ab['subunit'] ?? '');
+            if ($distinct > 0) {
+                $reducePer = intval($ab['reduce_per'] ?? 2);
+                $increasePer = intval($ab['increase_per'] ?? 1);
+                $reduceColorRaw = (string)($ab['reduce_heart_color'] ?? 'gray');
+                $increaseColorRaw = (string)($ab['increase_heart_color'] ?? 'red');
+                $reduceColor = ($reduceColorRaw === 'gray') ? 'any' : normalizeRequiredHeartColor($reduceColorRaw);
+                $increaseColor = normalizeRequiredHeartColor($increaseColorRaw);
+                $reduceTotal = $distinct * $reducePer;
+                $increaseTotal = $distinct * $increasePer;
+                $iid = (string)($source['instance_id'] ?? '');
+                foreach ($p['live_zone'] as &$lc) {
+                    if (!$lc || ($lc['instance_id'] ?? '') !== $iid) {
+                        continue;
+                    }
+                    if ($reduceTotal > 0) {
+                        if (!isset($lc['hearts_color_reduction']) || !is_array($lc['hearts_color_reduction'])) {
+                            $lc['hearts_color_reduction'] = [];
+                        }
+                        $lc['hearts_color_reduction'][$reduceColor] =
+                            intval($lc['hearts_color_reduction'][$reduceColor] ?? 0) + $reduceTotal;
+                    }
+                    if ($increaseTotal > 0) {
+                        if (!isset($lc['hearts_color_increase']) || !is_array($lc['hearts_color_increase'])) {
+                            $lc['hearts_color_increase'] = [];
+                        }
+                        $lc['hearts_color_increase'][$increaseColor] =
+                            intval($lc['hearts_color_increase'][$increaseColor] ?? 0) + $increaseTotal;
+                    }
+                    break;
+                }
+                unset($lc);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] −{$reduceTotal} Gray / +{$increaseTotal} Red required hearts"
+                    . " ({$distinct} distinct " . ($ab['subunit'] ?? 'subunit') . ').');
+
+                $scoreMin = intval($ab['score_if_color_min'] ?? 0);
+                if ($scoreMin > 0) {
+                    $scoreColor = (string)($ab['score_if_color'] ?? 'red');
+                    $scoreAmt = intval($ab['score_amount'] ?? 1);
+                    foreach ($p['live_zone'] as $lcCheck) {
+                        if (!$lcCheck || ($lcCheck['instance_id'] ?? '') !== $iid) {
+                            continue;
+                        }
+                        $eff = applyLiveHeartReductions(
+                            $lcCheck['required_hearts'] ?? $lcCheck['hearts'] ?? [],
+                            $lcCheck
+                        );
+                        $colorCount = 0;
+                        foreach ($eff as $h) {
+                            if (heartRequirementColorsMatch((string)($h['color'] ?? ''), $scoreColor)) {
+                                $colorCount += intval($h['count'] ?? 0);
+                            }
+                        }
+                        if ($colorCount >= $scoreMin) {
+                            bumpLiveCardScore($state, $pid, $iid, $scoreAmt);
+                            $state = addLog($state, $state['players'][$pid]['name'] .
+                                " — [$name] score +{$scoreAmt} (required {$scoreColor} ≥ {$scoreMin}).");
+                        }
+                        break;
+                    }
+                }
+            }
+            break;
+        }
         case 'reduce_hearts_per_live_zone_group':
             $other = countOtherLiveZoneGroup(
                 $p,
