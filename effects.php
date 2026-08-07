@@ -31,6 +31,7 @@ require_once __DIR__ . '/sp_bp5_effects.php';
 require_once __DIR__ . '/play_stats.php';
 require_once __DIR__ . '/pl_muse_gap_effects.php';
 require_once __DIR__ . '/pl_sp_sd2_effects.php';
+require_once __DIR__ . '/pr_vol9_effects.php';
 require_once __DIR__ . '/batch99_effects.php';
 require_once __DIR__ . '/bp7_effects.php';
 require_once __DIR__ . '/src/Game/LiveScoreBonus.php';
@@ -693,7 +694,7 @@ function resolveAutoYellAbilities(array $state, string $pid, array $yellCards): 
             $type = $ab['type'] ?? '';
             $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
 
-            if ($type === 'auto_yell_live_heart') {
+            if ($type === 'auto_yell_live_heart' || $type === 'auto_yell_live_blade') {
                 $group = $ab['group'] ?? '';
                 $needScore = !empty($ab['requires_score']);
                 $matched = false;
@@ -717,15 +718,26 @@ function resolveAutoYellAbilities(array $state, string $pid, array $yellCards): 
                     $matched = true;
                 }
                 if ($matched) {
-                    $color = $ab['heart_color'] ?? 'green';
-                    $count = intval($ab['heart_count'] ?? 1);
-                    $state = initLiveModifiers($state);
-                    for ($i = 0; $i < $count; $i++) {
-                        $state['live_modifiers'][$pid]['bonus_hearts'][] = $color;
+                    if ($type === 'auto_yell_live_blade') {
+                        $amt = intval($ab['amount'] ?? 1);
+                        $state = applyModifierEffect($state, $pid, [
+                            'type'   => 'blade_bonus',
+                            'amount' => $amt,
+                        ]);
+                        markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
+                        $state = addLog($state, $state['players'][$pid]['name'] .
+                            " — [$mName] gained +$amt Blade until Live ends (Yell revealed Score Live).");
+                    } else {
+                        $color = $ab['heart_color'] ?? 'green';
+                        $count = intval($ab['heart_count'] ?? 1);
+                        $state = initLiveModifiers($state);
+                        for ($i = 0; $i < $count; $i++) {
+                            $state['live_modifiers'][$pid]['bonus_hearts'][] = $color;
+                        }
+                        markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
+                        $state = addLog($state, $state['players'][$pid]['name'] .
+                            " — [$mName] gained $count " . ucfirst($color) . " heart(s) from Yell (Live revealed).");
                     }
-                    markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
-                    $state = addLog($state, $state['players'][$pid]['name'] .
-                        " — [$mName] gained $count " . ucfirst($color) . " heart(s) from Yell (Live revealed).");
                 }
             } elseif ($type === 'auto_yell_draw_if_hand_max' && $hasLive
                 && count($state['players'][$pid]['hand'] ?? []) <= intval($ab['max_hand'] ?? 7)) {
@@ -4603,6 +4615,7 @@ function activatedAbilityRequiresStageSlot(array $ab): bool {
         'wait_self_discard_draw',
         'wait_self_draw_discard',
         'wait_self_draw_discard_activate',
+        'wait_self_draw_discard_if_stage_names',
         'wait_self_discard_reveal_until',
         'wait_self_energy_wait',
         'wait_pick_member_grant_live_score',

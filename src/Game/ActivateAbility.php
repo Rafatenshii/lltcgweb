@@ -457,6 +457,59 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             markAbilityUsed($member, $abilityIdx);
             $p['stage'][$slot] = $member;
         }
+    } elseif (($ab['type'] ?? '') === 'wait_self_draw_discard_if_stage_names') {
+        $groupA = $ab['names_group_a'] ?? [];
+        $groupB = $ab['names_group_b'] ?? [];
+        $anyNames = array_values(array_unique(array_merge($groupA, $groupB, $ab['names_any'] ?? [])));
+        $hasA = false;
+        $hasB = false;
+        foreach ($p['stage'] as $sm) {
+            if (!$sm) {
+                continue;
+            }
+            if (!$hasA && !empty($groupA) && cardMatchesNames($sm, $groupA)) {
+                $hasA = true;
+            }
+            if (!$hasB && !empty($groupB) && cardMatchesNames($sm, $groupB)) {
+                $hasB = true;
+            }
+            if (empty($groupA) && empty($groupB) && !empty($anyNames) && cardMatchesNames($sm, $anyNames)) {
+                $hasA = true;
+            }
+        }
+        if (!$hasA && !$hasB) {
+            throw new Exception('Need Rin or Hanayo on your Stage');
+        }
+        waitMember($member, $state);
+        $p['stage'][$slot] = $member;
+        $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            ' — [' . $mName . '] put self into Wait.');
+        if ($hasA && $hasB) {
+            activateMemberFully($member);
+            $p['stage'][$slot] = $member;
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$mName] Active again (Rin and Hanayo on Stage).");
+        }
+        $state = applyDrawThenDiscard(
+            $state,
+            $pid,
+            $p,
+            $mName,
+            intval($ab['draw'] ?? 2),
+            intval($ab['discard'] ?? 1)
+        );
+        if (!empty($state['pending_prompt'])) {
+            $state['pending_prompt'] = array_merge($state['pending_prompt'], [
+                'source_id'     => $member['instance_id'] ?? '',
+                'source_slot'   => $slot ?? '',
+                'ability_index' => $abilityIdx,
+                'ability'       => $ab,
+            ]);
+        } else {
+            markAbilityUsed($member, $abilityIdx);
+            $p['stage'][$slot] = $member;
+        }
     } elseif (($ab['type'] ?? '') === 'wait_self_draw') {
         // PL!SP-bp7-008: Wait is the cost, the draw has no discard follow-up.
         waitMember($member, $state);

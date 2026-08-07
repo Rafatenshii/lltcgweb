@@ -411,14 +411,18 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
 
         case 'baton_enter_draw_discard':
             if (empty($source['entered_via_baton'])) break;
-            $names = $ab['baton_names'] ?? [];
             $batonOk = false;
-            $wrId = $source['baton_wr_member_id'] ?? '';
-            if ($wrId !== '') {
-                foreach ($p['waiting_room'] as $wr) {
-                    if (($wr['instance_id'] ?? '') === $wrId && cardMatchesNames($wr, $names)) {
-                        $batonOk = true;
-                        break;
+            if (array_key_exists('baton_cost_exact', $ab)) {
+                $batonOk = intval($source['baton_from_cost'] ?? -1) === intval($ab['baton_cost_exact']);
+            } else {
+                $names = $ab['baton_names'] ?? [];
+                $wrId = $source['baton_wr_member_id'] ?? '';
+                if ($wrId !== '') {
+                    foreach ($p['waiting_room'] as $wr) {
+                        if (($wr['instance_id'] ?? '') === $wrId && cardMatchesNames($wr, $names)) {
+                            $batonOk = true;
+                            break;
+                        }
                     }
                 }
             }
