@@ -733,23 +733,90 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
     }
 
     if ($promptType === 'optional_wr_to_deck_top') {
-        if (!isset(['yes' => true, 'no' => true][$choice])) {
-            throw new Exception('Invalid choice');
-        }
-        if ($choice === 'yes') {
-            $cardId = $data['card_id'] ?? '';
+        $step = (string)($prompt['step'] ?? '');
+        $group = (string)($prompt['group'] ?? $ability['group'] ?? '');
+        $cardId = (string)($data['card_id'] ?? '');
+        // Client may send only card_id on the pick step (or bare yes first).
+        if ($step === 'pick' || ($choice === 'yes' && $cardId !== '')) {
+            if ($cardId === '' && $choice !== '' && $choice !== 'yes' && $choice !== 'no') {
+                $cardId = $choice;
+            }
+            if ($cardId === '') {
+                throw new Exception('Choose a card from Waiting Room');
+            }
+            $allowed = [];
+            foreach ($prompt['candidates'] ?? [] as $cand) {
+                if (is_array($cand) && ($cand['instance_id'] ?? '') !== '') {
+                    $allowed[$cand['instance_id']] = true;
+                }
+            }
+            if (!empty($allowed) && empty($allowed[$cardId])) {
+                throw new Exception('Choose a listed Waiting Room card');
+            }
+            if ($group !== '') {
+                $match = null;
+                foreach ($ownerP['waiting_room'] as $wrCard) {
+                    if (($wrCard['instance_id'] ?? '') === $cardId) {
+                        $match = $wrCard;
+                        break;
+                    }
+                }
+                if (!$match || ($match['group'] ?? '') !== $group) {
+                    throw new Exception('Choose a ' . groupPromptLabel($group) . ' card from Waiting Room');
+                }
+            }
             if (!putWrCardOnDeckTop($ownerP, $cardId)) {
                 throw new Exception('Choose a card from Waiting Room');
             }
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Member') . '] put a card from Waiting Room on deck top.');
-        } else {
-            $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional On Enter effect.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
         }
+        if (!isset(['yes' => true, 'no' => true][$choice])) {
+            throw new Exception('Invalid choice');
+        }
+        if ($choice === 'yes') {
+            // Bare yes without card_id → open pick step (avoids softlock / empty resolve).
+            $cands = $prompt['candidates'] ?? [];
+            if (empty($cands)) {
+                foreach ($ownerP['waiting_room'] as $wrCard) {
+                    if ($group !== '' && ($wrCard['group'] ?? '') !== $group) {
+                        continue;
+                    }
+                    $cands[] = cardPromptSummary($wrCard);
+                }
+            }
+            if (empty($cands)) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . '] no matching Waiting Room card.');
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishPromptEffects($state);
+            }
+            $label = $group !== ''
+                ? (groupPromptLabel($group) . ' card')
+                : 'card';
+            $state['pending_prompt'] = [
+                'type'          => 'optional_wr_to_deck_top',
+                'step'          => 'pick',
+                'owner'         => $owner,
+                'responder'     => $owner,
+                'source_name'   => $prompt['source_name'] ?? 'Member',
+                'candidates'    => $cands,
+                'group'         => $group,
+                'prompt'        => "Choose 1 $label from your Waiting Room to put on top of your deck.",
+                'ability'       => $ability,
+            ];
+            $state['seq']++;
+            return $state;
+        }
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional effect.');
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'optional_wait_group_member_draw_discard') {

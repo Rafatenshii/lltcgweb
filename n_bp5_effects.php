@@ -576,6 +576,7 @@ function nBp5ResolveActivatedAbility(
         $activated = activateEnergyForPlayer($p, intval($ab['activate_count'] ?? 2));
         markAbilityUsed($member, $abilityIdx);
         $p['stage'][$slot] = $member;
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
         $state = addLog($state, $state['players'][$pid]['name'] .
             " — [$name] stacked Energy; activated $activated Energy.");
         return $state;
@@ -589,6 +590,7 @@ function nBp5ResolveActivatedAbility(
         }
         markAbilityUsed($member, $abilityIdx);
         $p['stage'][$slot] = $member;
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
         $state = addLog($state, $state['players'][$pid]['name'] .
             " — [$name] stacked Energy, drew 1, gained pink heart.");
         return $state;

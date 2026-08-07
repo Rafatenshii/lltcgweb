@@ -824,6 +824,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'on_enter_blade_self_and_pick_group', 'live_start_arise_choice', 'surveil2_mus_ability_choice',
   'optional_leave_mus_score_add_wr_live',
   'opp_blind_pick_hand_reveal', 'live_success_yell_live_deck_bottom', 'optional_wr_live_deck_bottom',
+  'optional_wr_to_deck_top',
   'optional_wr_members_deck_bottom_milestones', 'player_choice_wr_members_deck_bottom',
   'sbp5_aqours_blade_or_position', 'sbp6_live_wr_deck_position', 'sbp6_hand_deck_position',
   'choice_energy_or_wr_lives_deck_top', 'activated_swap_area_pick',
@@ -2390,6 +2391,20 @@ function applyClientLiveHeartReductions(required, liveCard) {
     }
     if (!applied) req.push({ color: want === 'any' ? 'any' : want, count: n });
   }
+  // EMOTION / score_per_named_success_live (#97)
+  const grayInc = Number(liveCard?.hearts_increase_gray || 0)
+    + Number(liveCard?.hearts_increase || 0);
+  if (grayInc > 0) {
+    let applied = false;
+    for (const h of req) {
+      if (normalizeHeartColor(h.color) === 'any') {
+        h.count += grayInc;
+        applied = true;
+        break;
+      }
+    }
+    if (!applied) req.push({ color: 'any', count: grayInc });
+  }
   return req.filter(h => h.count > 0);
 }
 
@@ -2416,6 +2431,8 @@ function liveCardRequirementsModified(liveCard) {
   for (const n of Object.values(colorInc)) {
     if (Number(n || 0) > 0) return true;
   }
+  if (Number(liveCard.hearts_increase_gray || 0) > 0) return true;
+  if (Number(liveCard.hearts_increase || 0) > 0) return true;
   return false;
 }
 
@@ -3219,6 +3236,24 @@ function cpuResolveBranchPickPrompts(pr, cpu, tier, winPressure, read, s) {
     } else {
       cpuAct('resolve_prompt', { choice: 'skip' });
     }
+    return true;
+  }
+
+  if (pr.type === 'optional_wr_to_deck_top') {
+    const cands = (pr.candidates || []).filter(c => c?.instance_id);
+    if (pr.step === 'pick') {
+      if (cands[0]?.instance_id) {
+        cpuAct('resolve_prompt', { choice: 'yes', card_id: cands[0].instance_id });
+      } else {
+        cpuAct('resolve_prompt', { choice: 'no' });
+      }
+      return true;
+    }
+    if (tier === 'easy' || !cands.length) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { choice: 'yes', card_id: cands[0].instance_id });
     return true;
   }
 

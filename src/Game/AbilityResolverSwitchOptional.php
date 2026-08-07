@@ -740,19 +740,35 @@ function tryResolveAbilityEffectSwitchOptional(
             if (empty($p['waiting_room'])) {
                 break;
             }
+            $group = (string)($ab['group'] ?? '');
+            $cands = [];
+            foreach ($p['waiting_room'] as $wrCard) {
+                if ($group !== '' && ($wrCard['group'] ?? '') !== $group) {
+                    continue;
+                }
+                $cands[] = $wrCard;
+            }
+            if (empty($cands)) {
+                break;
+            }
+            $label = $group !== ''
+                ? (groupPromptLabel($group) . ' card')
+                : 'card';
             $state['pending_prompt'] = [
                 'type'          => 'optional_wr_to_deck_top',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_name'   => $name,
-                'candidates'    => array_map('cardPromptSummary', $p['waiting_room']),
-                'prompt'        => 'Put 1 card from your Waiting Room on top of your deck?',
+                'candidates'    => array_map('cardPromptSummary', $cands),
+                'group'         => $group,
+                'prompt'        => "Put 1 $label from your Waiting Room on top of your deck?",
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => ['Yes — Choose card', 'No — Skip'],
                 'ability'       => $ab,
             ];
+            $when = (($ctx['phase'] ?? '') === 'live_success') ? 'Live Success' : 'optional';
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] optional On Enter (choose).');
+                ' — [' . $name . "] $when (choose).");
             break;
 
         case 'optional_wait_group_member_draw_discard':

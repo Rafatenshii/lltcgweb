@@ -1892,6 +1892,16 @@ function applyLiveHeartReductions(array $required, array $liveCard): array {
     foreach ($liveCard['hearts_color_increase'] ?? [] as $color => $n) {
         $req = increaseHeartRequirementsByColor($req, (string)$color, intval($n));
     }
+    // EMOTION (etc.): Live Start score_per_named_success_live stores gray/any increases
+    // on hearts_increase_gray / hearts_increase — must affect heart checks + HUD (#97).
+    $grayInc = intval($liveCard['hearts_increase_gray'] ?? 0);
+    if ($grayInc > 0) {
+        $req = increaseHeartRequirementsByColor($req, 'any', $grayInc);
+    }
+    $genericInc = intval($liveCard['hearts_increase'] ?? 0);
+    if ($genericInc > 0) {
+        $req = increaseHeartRequirementsByColor($req, 'any', $genericInc);
+    }
     return $req;
 }
 

@@ -805,6 +805,7 @@ function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array 
         }
         startPickWrToHandPrompt($state, $pid, $member, $slot, $abilityIdx, $ab, $cfg);
         $p['stage'][$slot] = $member;
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . ($member['name_en'] ?? $member['name']) .
             "] stacked $placed Energy; choose a Nijigasaki Live from Waiting Room.");
@@ -831,6 +832,8 @@ function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array 
         clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         nijiStackEnergyUnderMember($p, $played, intval($ab['energy'] ?? 1));
+        $p['stage'][$slot] = $played;
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . ($member['name_en'] ?? $member['name']) . '] swapped for ' .
             ($played['name_en'] ?? $played['name']) . ' and stacked Energy.');
@@ -1433,6 +1436,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
             $cfg = wrPickCfgFromAbility(array_merge($ability, ['filter' => 'live']));
             startPickWrToHandPrompt($state, $owner, $member, (string)$slot, $abIdx, $ability, $cfg);
             $ownerP['stage'][$slot] = $member;
+            $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $owner);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$mName] choose a Nijigasaki Live from Waiting Room.");
             $state['seq']++;
@@ -1446,6 +1450,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         }
         $ownerP['stage'][$slot] = $member;
         unset($member, $state['pending_prompt']);
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $owner);
         $state['seq']++;
         return finishPromptEffects($state);
     }
@@ -1462,6 +1467,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         }
         unset($mbr);
         unset($state['pending_prompt']);
+        $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $owner);
         $state['seq']++;
         $state = finishPromptEffects($state);
         return $state;
@@ -1528,6 +1534,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
                 $mName = $ownerP['stage'][$slot]['name_en'] ?? $ownerP['stage'][$slot]['name'] ?? 'Member';
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     " — placed $placed Energy under [$mName].");
+                $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $owner);
             }
             if ($promptType === 'optional_stack_energy_draw') {
                 drawCardsForPlayer($state, $owner, intval($ability['draw'] ?? 2));

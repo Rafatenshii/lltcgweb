@@ -1756,6 +1756,29 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
     });
     return;
   }
+  if(pr.type==='optional_wr_to_deck_top'&&choice==='yes'){
+    closeM('overlay-prompt');
+    const cards=(pr.candidates||[]).filter(c=>c&&c.instance_id);
+    if(!cards.length){
+      sendAct('resolve_prompt',{choice:'yes'});
+      return;
+    }
+    openHandPick({
+      hand: cards,
+      count: 1,
+      min: 1,
+      title: pr.source_name||pt('prompt.wrPickTitle')||'Waiting Room',
+      msg: pr.prompt||'Choose 1 card from your Waiting Room to put on top of your deck.',
+      onConfirm: (picked)=> sendAct('resolve_prompt',{choice:'yes',card_id:picked[0]}),
+      onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
+    });
+    return;
+  }
+  if(pr.type==='optional_wr_to_deck_top'&&(choice==='no'||choice==='skip')){
+    closeM('overlay-prompt');
+    sendAct('resolve_prompt',{choice:'no'});
+    return;
+  }
   if((pr.type==='optional_wr_live_deck_bottom'||pr.type==='live_success_yell_live_deck_bottom'
     ||pr.type==='live_success_pick_yell_deck_top')&&choice==='pick'){
     closeM('overlay-prompt');
@@ -2834,6 +2857,24 @@ global.renderPrompt = function renderPrompt(s, myId){
       msg: pr.prompt||'Choose 1 Live card from your hand.',
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
+    });
+    return;
+  }
+  if(pr?.type==='optional_wr_to_deck_top'&&pr.step==='pick'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const cards=(pr.candidates||[]).filter(c=>c&&c.instance_id);
+    if(!cards.length){
+      sendAct('resolve_prompt',{choice:'no'});
+      return;
+    }
+    openHandPick({
+      hand: cards,
+      count: 1,
+      min: 1,
+      title: pr.source_name||pt('prompt.wrPickTitle')||'Waiting Room',
+      msg: pr.prompt||'Choose 1 card from your Waiting Room to put on top of your deck.',
+      onConfirm: (picked)=> sendAct('resolve_prompt',{choice:'yes',card_id:picked[0]}),
+      onCancel: ()=> sendAct('resolve_prompt',{choice:'no'}),
     });
     return;
   }

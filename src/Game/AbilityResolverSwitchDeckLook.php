@@ -395,12 +395,23 @@ function tryResolveAbilityEffectSwitchDeckLook(
                     ' — [' . $name . '] put ' . count($milled) . ' card(s) into Waiting Room.');
             }
             if (countDistinctWrLives($p, $ab['group'] ?? '') >= intval($ab['min_distinct'] ?? 3)) {
-                $added = addFromWaitingRoomFiltered(
-                    $p,
-                    $ab['group'] ?? '',
-                    'live',
+                $cfg = [
+                    'group'  => $ab['group'] ?? '',
+                    'filter' => 'live',
+                ];
+                // Player chooses which Live to add (never auto-first-match).
+                $added = addFromWaitingRoomWithChoice(
+                    $state,
+                    $pid,
+                    $source,
+                    $ab,
+                    array_merge($ctx, ['skip_stage_writeback' => true]),
+                    $cfg,
                     1
                 );
+                if ($added === null) {
+                    return $state;
+                }
                 if ($added > 0) {
                     $state = addLog($state, $state['players'][$pid]['name'] .
                         " — [$name] added $added Live card(s) from Waiting Room.");
