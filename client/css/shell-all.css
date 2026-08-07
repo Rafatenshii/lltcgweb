@@ -2544,7 +2544,8 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 .member-stacked-cards .stack-face:nth-child(2){transform:translate(3px,-3px);z-index:2;opacity:.9}
 .member-stacked-cards .stack-face:nth-child(3){transform:translate(6px,-6px);z-index:1;opacity:.75}
 .member-stacked-cards .stacked-cards-count{
-  margin-left:2px;min-width:16px;height:16px;padding:0 3px;
+  position:absolute;top:-5px;right:-4px;z-index:5;
+  min-width:16px;height:16px;padding:0 3px;margin:0;
   border-radius:999px;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.35);
   color:#e2e8f0;font-size:10px;font-weight:800;line-height:14px;text-align:center;
   box-shadow:0 1px 3px rgba(0,0,0,.45)
