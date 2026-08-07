@@ -1087,7 +1087,26 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 }
             }
             if ($doMember) {
-                $added = addFromWaitingRoomFiltered($ownerP, '', 'member', 1);
+                // Daydream Mermaid (#98): player chooses which Member — never auto-first/bottom.
+                $src = [
+                    'instance_id' => (string)($prompt['source_id'] ?? ''),
+                    'name_en'     => $srcName,
+                    'name'        => $srcName,
+                ];
+                $added = addFromWaitingRoomWithChoice(
+                    $state,
+                    $owner,
+                    $src,
+                    $ability,
+                    ['skip_stage_writeback' => true],
+                    ['filter' => 'member'],
+                    1
+                );
+                if ($added === null) {
+                    $state = addLog($state, $prefix . 'choose a Member from Waiting Room.');
+                    $state['seq']++;
+                    return $state;
+                }
                 if ($added > 0) {
                     $state = addLog($state, $prefix . "added $added Member card from Waiting Room to hand.");
                 } else {
