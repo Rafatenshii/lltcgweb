@@ -145,10 +145,11 @@ function tcgSealTierForCard(array $card): ?string {
         return null;
     }
     static $map = [
-        'N' => 'N', 'SD' => 'N', 'SD2' => 'N', 'CL' => 'N', 'L' => 'N', 'PE' => 'N',
+        'N' => 'N', 'SD' => 'N', 'SD2' => 'N', 'L' => 'N', 'PE' => 'N',
         'R' => 'R', 'R+' => 'R', 'RM' => 'R', 'RE' => 'R', 'L+' => 'R',
         'P' => 'P', 'P+' => 'P', 'PP' => 'P', 'AR' => 'P', 'PE+' => 'P', 'SRE' => 'P',
-        'PR' => 'PR', 'PR+' => 'PR',
+        // CL is normalized to PR in tcgNormalizePoolRarity; keep explicit for safety.
+        'PR' => 'PR', 'PR+' => 'PR', 'CL' => 'PR',
         'SEC' => 'SEC', 'SEC+' => 'SEC', 'SECE' => 'SEC', 'SECL' => 'SEC', 'SECS' => 'SEC',
         'LLE' => 'SEC', 'SRL' => 'SEC', 'DUO' => 'SEC',
     ];

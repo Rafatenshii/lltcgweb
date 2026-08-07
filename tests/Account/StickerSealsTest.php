@@ -65,6 +65,34 @@ final class StickerSealsTest extends TestCase
         $this->assertSame(($before['pr'] ?? 0) + 1, $out['seals']['pr']);
     }
 
+    /** Clear Pocket (CL) cards roll in PR packs — PR seals + PR sticker shop. */
+    public function testClClearPocketUsesPrSealsAndShop(): void
+    {
+        $map = tcgBuildCardMap($this->cardsData());
+        $cl = null;
+        foreach ($map as $c) {
+            if (($c['rarity'] ?? '') === 'CL') {
+                $cl = $c;
+                break;
+            }
+        }
+        $this->assertNotNull($cl, 'Expected at least one CL card in catalog');
+        $this->assertTrue(tcgCardEligibleForPrBoosterPool($cl));
+        $this->assertTrue(tcgIsPrCard($cl));
+        $this->assertSame('PR', tcgSealTierForCard($cl));
+        $this->assertTrue(tcgCardConvertibleToSeal($cl));
+        $this->assertTrue(
+            tcgCardInStickerShopProduct($this->discordId, $cl['card_no'], 'pr:pr_cards', $this->cardsData()),
+            'CL cards must appear in the PR sticker shop product'
+        );
+
+        tcgAddCardsToCollection($this->discordId, [$cl['card_no'], $cl['card_no']]);
+        $before = tcgSealBalances($this->discordId);
+        $out = tcgConvertCardsToSeals($this->discordId, $cl['card_no'], 1, $map);
+        $this->assertSame('PR', $out['tier']);
+        $this->assertSame(($before['pr'] ?? 0) + 1, $out['seals']['pr']);
+    }
+
     public function testConvertCreditsOneSeal(): void
     {
         $card = $this->findGachaCard('N') ?: $this->findGachaCard('R');

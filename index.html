@@ -2326,11 +2326,12 @@ const STAR_GEMS_BOX_COST = 3000;
 const SEAL_ICONS = { N: 'assets/seals/N.png', R: 'assets/seals/R.png', P: 'assets/seals/P.png', SEC: 'assets/seals/SEC.png', PR: 'assets/seals/PR.png' };
 const SEAL_BUY_COSTS = { N: 20, R: 15, P: 10, SEC: 5, PR: 20 };
 const SEAL_TIER_RARITIES = {
-  N: ['N', 'SD', 'SD2', 'CL', 'L', 'PE'],
+  N: ['N', 'SD', 'SD2', 'L', 'PE'],
   R: ['R', 'R+', 'RM', 'RE', 'L+'],
   P: ['P', 'P+', 'PP', 'AR', 'PE+', 'SRE'],
   SEC: ['SEC', 'SEC+', 'SECE', 'SECL', 'SECS', 'LLE', 'SRL', 'DUO'],
-  PR: ['PR', 'PR+'],
+  // Collection Clear Pocket (CL) rolls in PR packs — same seal tier as PR.
+  PR: ['PR', 'PR+', 'CL'],
 };
 const DEFAULT_PACK_SIZE = 5;
 const DEFAULT_PACKS_PER_BOX = 30;
@@ -2510,16 +2511,18 @@ function normalizeClientRarity(card) {
     if (m[1] === 'PE2') return 'PE+';
     return m[1];
   }
+  // Match server tcgNormalizePoolRarity — CL Clear Pocket cards use the PR seal pool.
+  if (r === 'CL') return 'PR';
   return r;
 }
 
 function clientSealTierForCard(card) {
   const r = normalizeClientRarity(card);
   const map = {
-    N: 'N', SD: 'N', SD2: 'N', CL: 'N', L: 'N', PE: 'N',
+    N: 'N', SD: 'N', SD2: 'N', L: 'N', PE: 'N',
     R: 'R', 'R+': 'R', RM: 'R', RE: 'R', 'L+': 'R',
     P: 'P', 'P+': 'P', PP: 'P', AR: 'P', 'PE+': 'P', SRE: 'P',
-    PR: 'PR', 'PR+': 'PR',
+    PR: 'PR', 'PR+': 'PR', CL: 'PR',
     SEC: 'SEC', 'SEC+': 'SEC', SECE: 'SEC', SECL: 'SEC', SECS: 'SEC',
     LLE: 'SEC', SRL: 'SEC', DUO: 'SEC',
   };
@@ -2551,6 +2554,7 @@ function clientCardConvertibleToSeal(card) {
   if (!clientSealTierForCard(full)) return false;
   const pack = String(full.booster_pack || '');
   const r = normalizeClientRarity(full);
+  // PR Card Pack + Clear Pocket (CL → PR) convert to / buy with PR seals.
   if (pack === 'PRカード' || r === 'PR' || r === 'PR+') return true;
   const no = String(full.card_no || '');
   const gachaFilters = (A.boxes || [])
