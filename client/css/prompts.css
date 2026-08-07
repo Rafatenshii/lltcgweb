@@ -1,1 +1,29 @@
-/* Extracted from index.html (prompts) — overhaul Part 2A */
+/* Skill / resolve prompts — board peek + prompt chrome */
+
+/*
+ * Hold right-click outside an open skill prompt to temporarily hide the prompt
+ * and clear dim/blur so the playmat is visible. Release restores the prompt.
+ */
+body.prompt-board-peek .overlay.skill-hand-preserve.open,
+body.prompt-board-peek .overlay.hand-pick-overlay.open {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.prompt-board-peek:has(.overlay.skill-hand-preserve.open)::before {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell,
+body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox {
+  pointer-events: none !important;
+}

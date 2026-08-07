@@ -3344,5 +3344,107 @@ global.renderPrompt = function renderPrompt(s, myId){
   bumpAntiSoftlockButton();
 }
 
+  /** In-game skill / resolve overlays that dim the board. */
+  const BOARD_PEEK_PROMPT_IDS = [
+    'overlay-prompt',
+    'overlay-pick',
+    'overlay-hand-pick',
+    'overlay-heart',
+    'overlay-surveil',
+  ];
+
+  function openBoardPeekPromptOverlay() {
+    const get = global.el || ((id) => document.getElementById(id));
+    for (const id of BOARD_PEEK_PROMPT_IDS) {
+      const ov = get(id);
+      if (ov?.classList.contains('open')) return ov;
+    }
+    return null;
+  }
+
+  function isInsideSkillPromptWindow(target, overlay) {
+    if (!overlay || !target || !(target instanceof Node)) return false;
+    const shell = overlay.querySelector('.mbox, .hand-pick-shell');
+    return !!(shell && (shell === target || shell.contains(target)));
+  }
+
+  /**
+   * Hold right-click outside the skill prompt box to peek the playmat
+   * (hide prompt + dim/blur). Release restores the prompt.
+   */
+  global.initPromptBoardPeek = function initPromptBoardPeek() {
+    if (global.G?._promptBoardPeekBound) return;
+    if (global.G) global.G._promptBoardPeekBound = true;
+
+    let peekActive = false;
+    let peekPointerId = null;
+    let suppressContextMenuUntil = 0;
+
+    function endPeek() {
+      if (!peekActive && !document.body.classList.contains('prompt-board-peek')) return;
+      peekActive = false;
+      peekPointerId = null;
+      document.body.classList.remove('prompt-board-peek', 'prompt-board-peek-holding');
+    }
+
+    function startPeek(pointerId) {
+      peekActive = true;
+      peekPointerId = pointerId;
+      suppressContextMenuUntil = performance.now() + 800;
+      document.body.classList.add('prompt-board-peek', 'prompt-board-peek-holding');
+    }
+
+    document.addEventListener('pointerdown', (e) => {
+      if (e.button !== 2) return;
+      const ov = openBoardPeekPromptOverlay();
+      if (!ov) return;
+      // Card-info modal sits above prompts — don't steal its right-click.
+      if (global.el?.('modal-card')?.classList.contains('open')) return;
+      if (isInsideSkillPromptWindow(e.target, ov)) return;
+
+      startPeek(e.pointerId);
+      try {
+        document.documentElement.setPointerCapture(e.pointerId);
+      } catch (_) { /* ignore */ }
+      e.preventDefault();
+    }, true);
+
+    const onRelease = (e) => {
+      if (!peekActive) return;
+      if (peekPointerId != null && e.pointerId !== peekPointerId) return;
+      if (e.type === 'pointerup' && e.button !== 2 && e.pointerId !== peekPointerId) return;
+      try {
+        if (peekPointerId != null) {
+          document.documentElement.releasePointerCapture(peekPointerId);
+        }
+      } catch (_) { /* ignore */ }
+      endPeek();
+    };
+
+    document.addEventListener('pointerup', onRelease, true);
+    document.addEventListener('pointercancel', onRelease, true);
+    window.addEventListener('blur', endPeek);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') endPeek();
+    });
+
+    document.addEventListener('contextmenu', (e) => {
+      if (!peekActive && performance.now() >= suppressContextMenuUntil) return;
+      const ov = openBoardPeekPromptOverlay();
+      if (!ov) return;
+      if (isInsideSkillPromptWindow(e.target, ov)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+
+    // If the prompt closes while peeking, clear the peek class.
+    const mo = new MutationObserver(() => {
+      if (peekActive && !openBoardPeekPromptOverlay()) endPeek();
+    });
+    BOARD_PEEK_PROMPT_IDS.forEach((id) => {
+      const ov = document.getElementById(id);
+      if (ov) mo.observe(ov, { attributes: true, attributeFilter: ['class'] });
+    });
+  };
 
 })(window);
