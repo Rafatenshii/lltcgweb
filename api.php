@@ -3778,11 +3778,13 @@ function getHeartIconsFromBladeHeart(
         $resolvePool[] = normalizeHeartColor($color);
         return [$color];
     }
-    // Double colorless blade heart (BP07+): resolves to two any-color Yell hearts.
+    # Double colorless blade heart (BP07+ / b_heart07): two wild gray/any Yell hearts.
+    # Do not treat as ALL blades (icon_b_all) — those are a separate token.
     if ($resolvePool !== null && $liveCards !== null
         && in_array($type, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
         $out = [];
         for ($i = 0; $i < 2; $i++) {
+            // Same payment path as printed gray/any blade hearts (may fill missing colors).
             $color = resolveAllBladeHeartColor($resolvePool, $liveCards, $state, $pid);
             $resolvePool[] = normalizeHeartColor($color);
             $out[] = $color;

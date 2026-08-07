@@ -23085,7 +23085,7 @@ function aggregateYellBladeHeartsFromCards(cards, resolveCtx = null, pid = null)
       }
       // BP07+ double colorless blade: two wild Yell hearts (not a separate "all2" HUD chip).
       const copies = isDoubleColorlessBladeHeart(raw) ? 2 : 1;
-      const base = isDoubleColorlessBladeHeart(raw) ? 'all' : raw;
+      const base = isDoubleColorlessBladeHeart(raw) ? 'any' : raw;
       for (let i = 0; i < copies; i++) {
         let color = base;
         if (yellWildcard) {
@@ -27975,9 +27975,9 @@ function appendBladeHeartIcons(container, bladeHearts, { lg = false } = {}) {
     if (typeof bh === 'string') {
       if (bh === 'draw' || bh === 'score') return;
       if (bh === 'all2' || bh === 'all_2' || bh === 'b_heart07' || bh === 'heart07') {
-        // Double colorless: show two ALL blade hearts.
-        container.appendChild(mkBladeHeartIcon('all', lg));
-        container.appendChild(mkBladeHeartIcon('all', lg));
+        // Double colorless: two gray/any hearts (not ALL blade icons).
+        container.appendChild(mkBladeHeartIcon('any', lg));
+        container.appendChild(mkBladeHeartIcon('any', lg));
         return;
       }
       container.appendChild(mkBladeHeartIcon(bh, lg));
@@ -27986,8 +27986,8 @@ function appendBladeHeartIcons(container, bladeHearts, { lg = false } = {}) {
     const t = bh?.type || bh?.color || '';
     if (t === 'draw' || t === 'score') return;
     if (t === 'all2' || t === 'all_2' || t === 'b_heart07' || t === 'heart07') {
-      container.appendChild(mkBladeHeartIcon('all', lg));
-      container.appendChild(mkBladeHeartIcon('all', lg));
+      container.appendChild(mkBladeHeartIcon('any', lg));
+      container.appendChild(mkBladeHeartIcon('any', lg));
       return;
     }
     container.appendChild(mkBladeHeartIcon(t, lg));

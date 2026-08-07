@@ -5,11 +5,15 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/api.php';
-require_once dirname(__DIR__, 2) . '/effects.php';
 
 final class Bp7All2BladeHeartTest extends TestCase
 {
-    public function testAll2ResolvesToTwoWildHearts(): void
+    public function testAll2WithoutPoolIsTwoAny(): void
+    {
+        $this->assertSame(['any', 'any'], getHeartIconsFromBladeHeart('all2'));
+    }
+
+    public function testAll2WithPoolStillYieldsTwoHearts(): void
     {
         $live = [
             'card_no' => 'PL!N-bp7-030-L',

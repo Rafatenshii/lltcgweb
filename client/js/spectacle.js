@@ -4210,7 +4210,7 @@ function cardYellBladeHeartColors(card) {
     if (typeof bh === 'string') {
       if (bh === 'draw' || bh === 'score') return;
       if (typeof isDoubleColorlessBladeHeart === 'function' && isDoubleColorlessBladeHeart(bh)) {
-        colors.push('all', 'all');
+        colors.push('any', 'any');
         return;
       }
       colors.push(bh);
@@ -4219,7 +4219,7 @@ function cardYellBladeHeartColors(card) {
     const t = bh?.type || bh?.color || '';
     if (t === 'draw' || t === 'score') return;
     if (typeof isDoubleColorlessBladeHeart === 'function' && isDoubleColorlessBladeHeart(t)) {
-      colors.push('all', 'all');
+      colors.push('any', 'any');
       return;
     }
     colors.push(bh.color || bh.type || 'any');
