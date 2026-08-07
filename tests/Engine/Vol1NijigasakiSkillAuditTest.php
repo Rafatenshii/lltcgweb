@@ -556,6 +556,42 @@ final class Vol1NijigasakiSkillAuditTest extends TestCase
         $this->assertContains('vol1n_yell_niji', array_column($state['players']['p1']['hand'], 'instance_id'));
     }
 
+    public function testPoppinUp026SkipsWhenYellHasNoNijigasaki(): void
+    {
+        $live = $this->cardByNo('PL!N-bp1-026-L', 'vol1n_poppin_skip');
+        $yell = $this->stubMember('vol1n_yell_hs', 'Hasunosora', 2);
+        $state = $this->baseState('live_success_effects');
+        $state['players']['p1']['live_zone'] = [$live];
+        $state['players']['p2']['live_zone'] = [];
+        $state['players']['p1']['_pending_yell_wr'] = [$yell];
+
+        $state = \resolveLiveSuccessAbilities($state, 'p1', [$live], 0, [], [$yell]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertSame([], $state['players']['p1']['hand']);
+        $log = implode("\n", array_map(
+            static fn($e) => is_array($e) ? (string)($e['msg'] ?? '') : (string)$e,
+            $state['log'] ?? []
+        ));
+        $this->assertStringContainsString('no Nijigasaki card in Yell reveal', $log);
+    }
+
+    public function testPoppinUp026WinsWhenOpponentLiveZoneEmpty(): void
+    {
+        $live = $this->cardByNo('PL!N-bp1-026-L', 'vol1n_poppin_empty_opp');
+        $yell = $this->stubMember('vol1n_yell_niji2', 'Nijigasaki', 2);
+        $state = $this->baseState('live_success_effects');
+        $live['score'] = 1;
+        $state['players']['p1']['live_zone'] = [$live];
+        $state['players']['p2']['live_zone'] = [];
+        $state['players']['p1']['_pending_yell_wr'] = [$yell];
+
+        $state = \resolveLiveSuccessAbilities($state, 'p1', [$live], 0, [], [$yell]);
+        if (($state['pending_prompt']['type'] ?? '') === 'pick_yell_member') {
+            $state = \actionResolvePrompt($state, 'p1', ['card_id' => 'vol1n_yell_niji2']);
+        }
+        $this->assertContains('vol1n_yell_niji2', array_column($state['players']['p1']['hand'], 'instance_id'));
+    }
+
     public function testSolitudeRain027LiveStartScoresPerDistinctHeartColors(): void
     {
         $live = $this->cardByNo('PL!N-bp1-027-L', 'vol1n_solitude');

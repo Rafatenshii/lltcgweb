@@ -79,10 +79,39 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
                 $yellPool,
                 fn($c) => cardMatchesGroup($c, $group, $filter)
             ));
-            if (empty($candidates) || !empty($state['pending_prompt'])) break;
             $requiresWinning = $ab['requires_winning'] ?? true;
-            if ($requiresWinning
-                && getLiveTotalScore($state, $pid) <= getLiveTotalScore($state, $pid === 'p1' ? 'p2' : 'p1')) break;
+            $opp = ($pid === 'p1') ? 'p2' : 'p1';
+            $myScore = getLiveTotalScore($state, $pid);
+            $oppScore = getLiveTotalScore($state, $opp);
+            $myHasLiveZone = false;
+            foreach ($p['live_zone'] ?? [] as $myLive) {
+                if ($myLive && isLiveTypeCard($myLive)) {
+                    $myHasLiveZone = true;
+                    break;
+                }
+            }
+            $oppHasLiveZone = false;
+            foreach ($state['players'][$opp]['live_zone'] ?? [] as $oppLive) {
+                if ($oppLive && isLiveTypeCard($oppLive)) {
+                    $oppHasLiveZone = true;
+                    break;
+                }
+            }
+            // Official: if opponent has no Lives in Live zone, you count as higher
+            // whenever you still have Lives there (score magnitude does not matter).
+            $isWinning = !$oppHasLiveZone ? $myHasLiveZone : ($myScore > $oppScore);
+            if ($requiresWinning && !$isWinning) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] Live Success: score not higher than opponent" .
+                    " (you $myScore vs opp $oppScore); skip Yell add.");
+                break;
+            }
+            if (empty($candidates)) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] Live Success: no {$groupLabel} card in Yell reveal; skip.");
+                break;
+            }
+            if (!empty($state['pending_prompt'])) break;
             if ($filter === 'live' && count($candidates) === 1) {
                 $picked = $candidates[0];
                 $p['hand'][] = $picked;
