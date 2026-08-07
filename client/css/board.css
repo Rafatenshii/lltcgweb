@@ -1952,7 +1952,7 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 }
 .stage-slot.opp .member-stacked-energy{bottom:auto;top:-6px}
 .member-stacked-cards{
-  position:absolute;left:2px;bottom:-4px;
+  position:absolute;left:2px;bottom:20px;
   z-index:4;pointer-events:none;display:flex;align-items:flex-end
 }
 .member-stacked-cards .stack-faces{
@@ -1973,8 +1973,8 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
   color:#e2e8f0;font-size:10px;font-weight:800;line-height:14px;text-align:center;
   box-shadow:0 1px 3px rgba(0,0,0,.45)
 }
-.stage-slot.opp .member-stacked-cards{bottom:auto;top:-6px}
-.perf-card .member-stacked-cards{bottom:2px;left:2px}
+.stage-slot.opp .member-stacked-cards{bottom:auto;top:20px}
+.perf-card .member-stacked-cards{bottom:22px;left:2px}
 .field-badge .badge-val{
   font-size:clamp(15px,4.5cqw,21px);font-weight:800;color:#fff;
   text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95),0 1px 5px rgba(0,0,0,.92),0 2px 8px rgba(0,0,0,.88);
