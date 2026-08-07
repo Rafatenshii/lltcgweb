@@ -42058,7 +42058,7 @@
       ],
       "blade_hearts": [],
       "rarity": "L",
-      "text": "[Live Start] If a Member on your Stage has 4 or more Yellow hearts, this card's score +2 and its required hearts become 5 Yellow hearts.",
+      "text": "[Live Start] If a Member on your Stage has 4 or more Red hearts, this card's score +2 and its required hearts become 5 Red hearts.",
       "text_jp": "[ライブ開始時] 自分のステージに赤ハートを4つ以上持つメンバーがいる場合、このカードのスコアを＋２し、必要ハートは赤ハート5つになる。",
       "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP05/PL!N-bp5-028-L.png",
       "score": 1,
@@ -42076,23 +42076,23 @@
         {
           "trigger": "live_start",
           "type": "live_start_yellow_heart_member_buff",
-          "color": "yellow",
+          "color": "red",
           "min_hearts": 4,
           "score_bonus": 2,
           "required_hearts": [
             {
-              "color": "yellow",
+              "color": "red",
               "count": 5
             }
           ]
         }
       ],
-      "text_es": "[Inicio de Live] Si un Miembro en tu Escenario tiene 4 o más corazones amarillos, la puntuación de esta carta +2 y sus corazones requeridos pasan a ser 5 corazones amarillos.",
+      "text_es": "[Inicio de Live] Si un Miembro en tu Escenario tiene 4 o más corazones rojos, la puntuación de esta carta +2 y sus corazones requeridos pasan a ser 5 corazones rojos.",
       "special_heart": "icon_score.png",
       "yell_score_icon": true,
-      "text_ko": "[라이브 개시] 자신의 스테이지에 노란색 하트를 4개 이상 가진 멤버가 있다면, 이 카드의 점수 +2가 되고 필요 하트가 노란색 하트 5개가 된다.",
-      "text_zh": "[Live开始] 自己舞台上的成员有4颗以上黄心时，这张卡的分数+2，所需的黄心变为5颗。",
-      "text_th": "[เริ่ม Live] หากสมาชิกบนเวทีของคุณมีหัวใจสีเหลือง 4 ดวงขึ้นไป คะแนนของการ์ดใบนี้ +2 และหัวใจที่ต้องการจะกลายเป็นหัวใจสีเหลือง 5 ดวง"
+      "text_ko": "[라이브 개시] 자신의 스테이지에 빨간 하트를 4개 이상 가진 멤버가 있다면, 이 카드의 점수 +2가 되고 필요 하트가 빨간 하트 5개가 된다.",
+      "text_zh": "[Live开始] 自己舞台上的成员有4颗以上红心时，这张卡的分数+2，所需的红心变为5颗。",
+      "text_th": "[เริ่ม Live] หากสมาชิกบนเวทีของคุณมีหัวใจสีแดง 4 ดวงขึ้นไป คะแนนของการ์ดใบนี้ +2 และหัวใจที่ต้องการจะกลายเป็นหัวใจสีแดง 5 ดวง"
     },
     {
       "card_no": "PL!N-bp5-029-L",
