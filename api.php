@@ -417,9 +417,38 @@ function resolveAccountPresetDeckLists(array $body, array $cards, int $slot): ar
     if ($slot < 1 || $slot > 10) {
         throw new Exception('Deck preset slot must be 1–10');
     }
+    require_once __DIR__ . '/deck_validate.php';
+
+    $main = $body['main_deck'] ?? null;
+    $energy = $body['energy_deck'] ?? null;
+    // Prefer inline lists so match-primary (VPS) works when presets live on Hostinger SQLite.
+    if (is_array($main) && is_array($energy)) {
+        require_once __DIR__ . '/booster.php';
+        $main = array_values(array_map('strval', $main));
+        $energy = array_values(array_map('strval', $energy));
+        $cardMap = tcgBuildCardMap($cards);
+        // Catalog legality first (no Hostinger collection on VPS).
+        $validation = tcgValidateDeckLists($main, $energy, $cardMap, null);
+        if (!$validation['valid']) {
+            throw new Exception('Preset deck is invalid: ' . implode('; ', $validation['errors']));
+        }
+        tcgRequireAuthLoader();
+        // Auth still required so the seat is tied to a signed-in player.
+        tcgRequireAuthUser($body);
+        $label = trim((string)($body['deck_label'] ?? ''));
+        if ($label === '') {
+            $label = 'Deck ' . $slot;
+        }
+        return [
+            'deck_choice' => 'preset:' . $slot,
+            'deck_label'  => tcgNormalizeDeckPresetName($label),
+            'main_nos'    => $main,
+            'energy_nos'  => $energy,
+        ];
+    }
+
     tcgRequireAuthLoader();
     require_once __DIR__ . '/db.php';
-    require_once __DIR__ . '/deck_validate.php';
     require_once __DIR__ . '/booster.php';
 
     $uid = tcgRequireAuthUser($body);

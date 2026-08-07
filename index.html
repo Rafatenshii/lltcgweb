@@ -15863,6 +15863,22 @@ function renderLobbyDeckOptions(opts = {}) {
   if (expBtn) expBtn.hidden = !freeMode;
 }
 
+/** Inline account presets so VPS match-primary can validate without Hostinger SQLite. */
+function presetInlineDeckPayload(main, energy, label, slot) {
+  const mainDeck = Array.isArray(main) ? main.map(String) : [];
+  const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
+  if (mainDeck.length < 60 || energyDeck.length < 12) {
+    throw new Error(t('lobby.presetDeckIncomplete') || 'That saved deck is incomplete or not loaded yet');
+  }
+  return {
+    deck: 'preset',
+    deck_slot: slot,
+    deck_label: label || ('Deck ' + slot),
+    main_deck: mainDeck,
+    energy_deck: energyDeck,
+  };
+}
+
 /** Inline Free-mode experiment lists so VPS match-primary can validate without Hostinger SQLite/files. */
 function experimentInlineDeckPayload(main, energy, label) {
   const mainDeck = Array.isArray(main) ? main.map(String) : [];
@@ -15934,29 +15950,49 @@ function deckPayloadFromChoice(deckSel) {
     if (!Number.isFinite(slot) || slot < 1 || slot > 10) {
       throw new Error('Invalid saved deck selection');
     }
-    payload.deck = 'preset';
-    payload.deck_slot = slot;
     const token = getAuthToken();
     if (!token) throw new Error('Sign in to use saved deck presets');
-    payload.token = token;
+    const saved = (A.decks || []).find(d => d.slot === slot);
+    if (!saved?.main_deck?.length) {
+      throw new Error(t('lobby.presetDeckNotLoaded') || ('Deck preset #' + slot + ' not loaded — reopen the lobby'));
+    }
+    return {
+      ...presetInlineDeckPayload(
+        saved.main_deck,
+        saved.energy_deck,
+        saved.name || ('Deck ' + slot),
+        slot,
+      ),
+      token,
+    };
   }
   return payload;
 }
 
 async function ensureLobbyExperimentDeckReady() {
   const mode = currentGameMode();
+  const choice = el('sel-deck')?.value || '';
+  // Account presets: refresh Hostinger deck_list so inline lists are available for VPS.
+  if (choice.startsWith('preset:') && isSignedInAccount()) {
+    await ensureDeckList();
+    const slot = parseInt(choice.slice(7), 10);
+    const saved = (A.decks || []).find(d => d.slot === slot);
+    if (!saved?.main_deck?.length) {
+      throw new Error(t('lobby.presetDeckNotLoaded') || ('Deck preset #' + slot + ' not loaded — reopen the lobby'));
+    }
+  }
   if (!isFreeGameMode(mode)) return;
   const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
-  const choice = lobbyPwd
+  const freeChoice = lobbyPwd
     ? ('experiment:' + lobbyPwd)
-    : (el('sel-deck')?.value || '');
-  if (!choice) return;
-  if (choice.startsWith('experiment_preset:')) {
+    : choice;
+  if (!freeChoice) return;
+  if (freeChoice.startsWith('experiment_preset:')) {
     await ensureExperimentDeckList();
     return;
   }
-  if (!choice.startsWith('experiment:')) return;
-  const password = normalizeExperimentPasswordInput(choice.slice(11));
+  if (!freeChoice.startsWith('experiment:')) return;
+  const password = normalizeExperimentPasswordInput(freeChoice.slice(11));
   if (!password || A.experimentDeckCache?.[password]?.main_deck?.length) return;
   const d = await apiExperimentCall('experiment_deck_load', { password });
   A.experimentDeckCache[password] = d;
