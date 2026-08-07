@@ -1477,15 +1477,31 @@ function aggregateYellHeartsByColor(array $yellCards): array {
     $flat = [];
     foreach ($yellCards as $c) {
         foreach ($c['blade_hearts'] ?? [] as $bh) {
+            // Expand all2 / heart07 into two wild hearts (same as getHeartIconsFromBladeHeart).
+            // Leaving "all2" as its own key made the stage HUD show two gray chips
+            // (any + all2) that both use heart00.png.
+            if (function_exists('getHeartIconsFromBladeHeart')) {
+                foreach (getHeartIconsFromBladeHeart($bh) as $color) {
+                    $flat[] = normalizeHeartColor((string)$color);
+                }
+                continue;
+            }
             if (is_string($bh)) {
-                if ($bh === 'draw') {
+                if ($bh === 'draw' || $bh === 'score') {
                     continue;
                 }
-                $flat[] = normalizeHeartColor($bh);
-            } elseif (($bh['type'] ?? '') === 'draw') {
+                $type = $bh;
+            } elseif (($bh['type'] ?? '') === 'draw' || ($bh['type'] ?? '') === 'score') {
                 continue;
             } else {
-                $flat[] = normalizeHeartColor((string)($bh['color'] ?? $bh['type'] ?? 'any'));
+                $type = (string)($bh['color'] ?? $bh['type'] ?? 'any');
+            }
+            $typeLower = strtolower(trim($type));
+            if (in_array($typeLower, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
+                $flat[] = 'any';
+                $flat[] = 'any';
+            } else {
+                $flat[] = normalizeHeartColor($type);
             }
         }
     }
@@ -2366,7 +2382,7 @@ function liveZoneHasPlainLive(array $liveZone): bool {
 function appendContinuousHeartsFromSpec(array &$hearts, array $spec): void {
     foreach ($spec as $h) {
         for ($i = 0; $i < intval($h['count'] ?? 1); $i++) {
-            $hearts[] = $h['color'] ?? 'any';
+            $hearts[] = normalizeHeartColor((string)($h['color'] ?? 'any'));
         }
     }
 }
@@ -2501,7 +2517,7 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
 function aggregateFlatHeartColors(array $hearts): array {
     $map = [];
     foreach ($hearts as $color) {
-        $key = (string)($color ?? 'any');
+        $key = normalizeHeartColor((string)($color ?? 'any'));
         $map[$key] = ($map[$key] ?? 0) + 1;
     }
     ksort($map);

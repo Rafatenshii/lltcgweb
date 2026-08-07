@@ -4209,11 +4209,19 @@ function cardYellBladeHeartColors(card) {
   (card?.blade_hearts || []).forEach(bh => {
     if (typeof bh === 'string') {
       if (bh === 'draw' || bh === 'score') return;
+      if (typeof isDoubleColorlessBladeHeart === 'function' && isDoubleColorlessBladeHeart(bh)) {
+        colors.push('all', 'all');
+        return;
+      }
       colors.push(bh);
       return;
     }
-    const t = bh?.type || '';
+    const t = bh?.type || bh?.color || '';
     if (t === 'draw' || t === 'score') return;
+    if (typeof isDoubleColorlessBladeHeart === 'function' && isDoubleColorlessBladeHeart(t)) {
+      colors.push('all', 'all');
+      return;
+    }
     colors.push(bh.color || bh.type || 'any');
   });
   return colors;

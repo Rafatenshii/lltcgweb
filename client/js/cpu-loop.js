@@ -2309,8 +2309,14 @@ function doCPU(s) {
 
 // Heart colors currently provided by CPU's stage (mirrors stage_heart_pool in sim_test.py)
 function normalizeHeartColor(color) {
-  const c = color || 'any';
-  return (c === 'all' || c === 'gray' || c === 'wild') ? 'any' : c;
+  const c = String(color || 'any').toLowerCase().trim();
+  if (
+    c === 'all' || c === 'gray' || c === 'wild' || c === 'any' || c === ''
+    || c === 'all2' || c === 'all_2' || c === 'b_heart07' || c === 'heart07'
+  ) {
+    return 'any';
+  }
+  return c;
 }
 
 function stageHeartPool(p) {

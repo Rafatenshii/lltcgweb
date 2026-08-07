@@ -3472,11 +3472,17 @@ function finalizeLiveJudge(array $state, array $ctx): array {
 // Heart Resolution
 // ─────────────────────────────────────────────
 function isWildcardHeartColor(string $color): bool {
-    return in_array($color, ['any', 'wild', 'gray', 'all'], true);
+    $c = strtolower(trim($color));
+    return in_array($c, [
+        'any', 'wild', 'gray', 'all',
+        // Double colorless blade hearts resolve to two wilds; treat the token as wild too
+        // so HUD merges never keep a separate "all2" chip beside "any".
+        'all2', 'all_2', 'b_heart07', 'heart07', '',
+    ], true);
 }
 
 function normalizeHeartColor(string $color): string {
-    return isWildcardHeartColor($color) ? 'any' : $color;
+    return isWildcardHeartColor($color) ? 'any' : strtolower(trim($color));
 }
 
 function sortHeartRequirements(array $required): array {

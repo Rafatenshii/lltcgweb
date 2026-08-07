@@ -23056,6 +23056,11 @@ function aggregateStageHeartsFromStage(stage) {
   return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
 }
 
+function isDoubleColorlessBladeHeart(color) {
+  const t = String(color || '').toLowerCase();
+  return t === 'all2' || t === 'all_2' || t === 'b_heart07' || t === 'heart07';
+}
+
 /** Yell performance hearts come from blade hearts on yell cards (members and live). */
 function aggregateYellBladeHeartsFromCards(cards, resolveCtx = null, pid = null) {
   const map = {};
@@ -23069,24 +23074,30 @@ function aggregateYellBladeHeartsFromCards(cards, resolveCtx = null, pid = null)
   }
   (cards || []).forEach(card => {
     (card.blade_hearts || []).forEach(bh => {
-      let color = 'any';
+      let raw = 'any';
       if (typeof bh === 'string') {
-        if (bh === 'draw') return;
-        color = bh;
-      } else if ((bh?.type || '') === 'draw') {
+        if (bh === 'draw' || bh === 'score') return;
+        raw = bh;
+      } else if ((bh?.type || '') === 'draw' || (bh?.type || '') === 'score') {
         return;
       } else {
-        color = bh.color || bh.type || 'any';
+        raw = bh.color || bh.type || 'any';
       }
-      if (yellWildcard) {
-        color = resolveAllBladeHeartColorForPool(ownedPool, liveCards);
-        ownedPool.push(normalizeHeartColor(color));
-      } else if (['all', 'gray', 'wild', 'any'].includes(color) && resolveCtx && pid) {
-        color = resolveYellBladeHeartColor(color, resolveCtx, pid, { extraOwned: ownedPool, liveCards });
-        ownedPool.push(normalizeHeartColor(color));
+      // BP07+ double colorless blade: two wild Yell hearts (not a separate "all2" HUD chip).
+      const copies = isDoubleColorlessBladeHeart(raw) ? 2 : 1;
+      const base = isDoubleColorlessBladeHeart(raw) ? 'all' : raw;
+      for (let i = 0; i < copies; i++) {
+        let color = base;
+        if (yellWildcard) {
+          color = resolveAllBladeHeartColorForPool(ownedPool, liveCards);
+          ownedPool.push(normalizeHeartColor(color));
+        } else if (['all', 'gray', 'wild', 'any'].includes(String(color).toLowerCase()) && resolveCtx && pid) {
+          color = resolveYellBladeHeartColor(color, resolveCtx, pid, { extraOwned: ownedPool, liveCards });
+          ownedPool.push(normalizeHeartColor(color));
+        }
+        const key = normalizeHeartColor(color);
+        map[key] = (map[key] || 0) + 1;
       }
-      const key = normalizeHeartColor(color);
-      map[key] = (map[key] || 0) + 1;
     });
   });
   return sortHeartsByDisplayOrder(Object.keys(map).map(color => ({ color, count: map[color] })));
@@ -27996,7 +28007,10 @@ function mkBladeHeartIcon(color, lg=false){
 
 function bladeHeartDisplayColor(color) {
   const raw = String(color || 'any').toLowerCase();
-  if (raw === 'gray' || raw === 'wild') return 'any';
+  if (raw === 'gray' || raw === 'wild' || raw === 'all2' || raw === 'all_2'
+      || raw === 'b_heart07' || raw === 'heart07') {
+    return 'any';
+  }
   return raw;
 }
 
