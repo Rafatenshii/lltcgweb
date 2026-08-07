@@ -1351,12 +1351,13 @@ function tcgApiRankedStatus(array $body): array {
     require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
     $status = tcgQueueStatus($uid);
-    $gameMode = tcgNormalizeGameMode($status['game_mode'] ?? ($body['game_mode'] ?? TCG_GAME_MODE_STANDARD));
+    // accountGet sends game_mode as a query param (body is empty on GET).
+    $gameMode = tcgRankedStatusStatsGameMode($status, $body, $_GET);
     if (($status['status'] ?? '') === 'searching') {
         $match = tcgTryMatchmake($uid, $gameMode);
         if ($match) {
             $status = tcgQueueStatus($uid);
-            $gameMode = tcgNormalizeGameMode($status['game_mode'] ?? $gameMode);
+            $gameMode = tcgRankedStatusStatsGameMode($status, $body, $_GET);
         }
     }
     $includeStats = true;
@@ -1365,7 +1366,7 @@ function tcgApiRankedStatus(array $body): array {
     } elseif (array_key_exists('include_stats', $body)) {
         $includeStats = filter_var($body['include_stats'], FILTER_VALIDATE_BOOLEAN);
     }
-    $out = ['success' => true, 'ranked' => $status];
+    $out = ['success' => true, 'ranked' => $status, 'game_mode' => $gameMode];
     if ($includeStats) {
         $out['queue_stats'] = tcgQueuePublicStats($gameMode);
     }

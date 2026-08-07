@@ -11820,6 +11820,11 @@ function playRankedMatchSound() {
 function updateRankedQueueStats(stats) {
   const node = el('ranked-queue-stats');
   if (!node || !stats) return;
+  // Drop stale replies from a previous mode after the user switches selects.
+  if (stats.game_mode != null
+      && normalizeRankedGameMode(stats.game_mode) !== rankedGameMode()) {
+    return;
+  }
   node.textContent = t('ranked.queueStats', {
     waiting: stats.waiting ?? 0,
     inGame: stats.in_game ?? 0,
@@ -12171,7 +12176,7 @@ async function onGameModeSelectChange(sourceSelId) {
     await refreshRankedScreenModeStats();
   }
   if (el('screen-lobby')?.classList.contains('active')) {
-    void refreshCasualQueueStatsQuiet();
+    await refreshCasualQueueStatsQuiet();
   }
   if (el('screen-leaderboard')?.classList.contains('active')) {
     await refreshLeaderboardForMode();
@@ -12541,6 +12546,11 @@ function stopCasualPoll() {
 function updateCasualQueueStats(stats) {
   const node = el('casual-queue-stats');
   if (!node || !stats) return;
+  // Drop stale replies from a previous mode after the user switches selects.
+  if (stats.game_mode != null
+      && normalizeGameMode(stats.game_mode) !== currentGameMode()) {
+    return;
+  }
   node.textContent = t('lobby.casualQueueStats', {
     waiting: stats.waiting ?? 0,
     inGame: stats.in_game ?? 0,

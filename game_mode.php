@@ -45,3 +45,23 @@ function tcgNormalizeRankedGameMode(mixed $raw): string {
     }
     return $m;
 }
+
+/**
+ * Which game_mode's public queue stats to return for ranked_status.
+ *
+ * Clients poll via GET with ?game_mode=… while idle. Searching/matched rows
+ * carry their own mode — prefer that so in-queue polls stay consistent.
+ *
+ * @param array<string,mixed> $status from tcgQueueStatus()
+ * @param array<string,mixed> $body JSON body (often empty on GET)
+ * @param array<string,mixed>|null $get defaults to $_GET
+ */
+function tcgRankedStatusStatsGameMode(array $status, array $body = [], ?array $get = null): string {
+    $get = $get ?? $_GET;
+    $requested = $body['game_mode'] ?? $get['game_mode'] ?? null;
+    $st = (string)($status['status'] ?? 'idle');
+    if ($st === 'searching' || $st === 'matched') {
+        return tcgNormalizeRankedGameMode($status['game_mode'] ?? $requested ?? TCG_GAME_MODE_STANDARD);
+    }
+    return tcgNormalizeRankedGameMode($requested ?? TCG_GAME_MODE_STANDARD);
+}
