@@ -21860,7 +21860,7 @@ function fillCardDetailPanel(prefix, card, s, myId) {
     const underN = typeof countMemberStackedMembers === 'function'
       ? countMemberStackedMembers(stageMember)
       : (Array.isArray(stageMember?.stacked_members) ? stageMember.stacked_members.length : 0);
-    if (underN > 0) addS('Under', underN);
+    if (underN > 0) addS('Stacked cards', underN);
   }
   const rulesDisplay = cardRulesDisplayText(card).trim();
   const skillText = rulesDisplay
