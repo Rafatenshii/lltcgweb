@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=25">
+<link rel="stylesheet" href="client/css/shell-all.css?v=26">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 
 </head>
@@ -2179,7 +2179,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=40"></script>
-<script src="client/js/state-apply.js?v=50"></script>
+<script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=73"></script>
@@ -9189,6 +9189,29 @@ function replayActionTypeAtStep(step) {
   return String(timeline[idx].type || '');
 }
 
+/** Coin / First Player overlay only while the recorded step is still in coin setup. */
+function replayShouldShowCoinOverlay(step, s) {
+  if (!s || s.phase !== 'coin_flip' || !s.coin_flip) return false;
+  const n = Math.max(0, Number(step) || 0);
+  const type = replayActionTypeAtStep(n);
+  if (type === 'ack_coin_flip' || type === 'choose_first_player') return true;
+  // Step 0 (before any action) may still be the opening flip.
+  if (!type && n <= 0) return true;
+  // Timeline missing: only trust coin phase at the very start of the scrubber.
+  if (!type && n > 0) return false;
+  return false;
+}
+
+/** Mulligan overlay only on setup / recorded mulligan steps. */
+function replayShouldShowMullOverlay(step, s) {
+  if (replayShouldShowCoinOverlay(step, s)) return false;
+  const n = Math.max(0, Number(step) || 0);
+  const type = replayActionTypeAtStep(n);
+  if (type === 'mulligan') return true;
+  if (s?.phase === 'setup' && (!type || type === 'mulligan')) return true;
+  return false;
+}
+
 function replayActionLabelForStep(step) {
   const recType = replayActionTypeAtStep(step);
   if (!recType) {
@@ -10167,16 +10190,18 @@ function abortGameplayPresentation(opts = {}) {
     ['overlay-prompt', 'overlay-pick', 'overlay-hand-pick', 'overlay-heart',
       'overlay-live', 'overlay-surveil', 'overlay-zone', 'modal-card'].forEach((id) => closeM(id));
     if (typeof isReplayViewing === 'function' && isReplayViewing()) {
-      const recType = (typeof replayActionTypeAtStep === 'function')
-        ? replayActionTypeAtStep(G.replayStep)
-        : '';
-      const keepCoin = recType === 'ack_coin_flip'
-        || (recType === 'choose_first_player' && G.gameState?.phase === 'coin_flip');
+      const step = G.replayStep;
+      const keepCoin = typeof replayShouldShowCoinOverlay === 'function'
+        ? replayShouldShowCoinOverlay(step, G.gameState)
+        : false;
       if (!keepCoin) {
         if (typeof resetCoinFlipPresentation === 'function') resetCoinFlipPresentation();
         else closeM('overlay-coin');
       }
-      if (recType !== 'mulligan' && G.gameState?.phase !== 'setup') closeM('overlay-mull');
+      const keepMull = typeof replayShouldShowMullOverlay === 'function'
+        ? replayShouldShowMullOverlay(step, G.gameState)
+        : (G.gameState?.phase === 'setup');
+      if (!keepMull) closeM('overlay-mull');
     }
     return;
   }
@@ -28353,7 +28378,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=63"></script>
-<script src="client/js/board-render.js?v=10"></script>
+<script src="client/js/board-render.js?v=11"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>

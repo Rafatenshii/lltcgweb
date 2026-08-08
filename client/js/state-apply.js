@@ -55,9 +55,11 @@
     const recType = (typeof replayActionTypeAtStep === 'function')
       ? replayActionTypeAtStep(s?.replay?.step ?? G.replayStep)
       : '';
-    const coinStep = recType === 'ack_coin_flip'
-      || (recType === 'choose_first_player' && s?.phase === 'coin_flip')
-      || (!recType && s?.phase === 'coin_flip');
+    const coinStep = typeof replayShouldShowCoinOverlay === 'function'
+      ? replayShouldShowCoinOverlay(s?.replay?.step ?? G.replayStep, s)
+      : (recType === 'ack_coin_flip'
+        || (recType === 'choose_first_player' && s?.phase === 'coin_flip')
+        || (!recType && s?.phase === 'coin_flip'));
     if (!coinStep && typeof resetCoinFlipPresentation === 'function') {
       resetCoinFlipPresentation();
     }

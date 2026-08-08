@@ -129,6 +129,33 @@ final class GoldenReplayTest extends TestCase
         $this->assertNull($state['surveil_stash'] ?? null);
     }
 
+    public function testReplaySanitizeClearsCoinFlipAfterPastSetupActions(): void {
+        $created = createRoom(['name' => 'Coin Stick P1', 'deck' => 'nijigasaki']);
+        joinRoom([
+            'room_id' => $created['room_id'],
+            'name' => 'Coin Stick P2',
+            'deck' => 'cpu',
+            'cpu_difficulty' => 'easy',
+        ]);
+        $baseline = loadGame($created['room_id']);
+        $this->assertSame('coin_flip', $baseline['phase'] ?? '');
+        $actions = [
+            ['player' => 'p1', 'type' => 'ack_coin_flip', 'data' => []],
+            ['player' => 'p2', 'type' => 'ack_coin_flip', 'data' => []],
+            ['player' => ($baseline['coin_flip']['winner'] ?? 'p1'), 'type' => 'choose_first_player', 'data' => ['first_player' => 'p1']],
+            ['player' => 'p1', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+            ['player' => 'p2', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+            ['player' => 'p1', 'type' => 'end_main', 'data' => []],
+        ];
+        // Simulate a desynced seek that left coin_flip behind after later actions applied.
+        $stuck = replayRestoreFromBaseline($baseline, 'COINSTUCK', 'tok1', 'tok2');
+        $stuck['phase'] = 'coin_flip';
+        $stuck['coin_flip'] = $baseline['coin_flip'];
+        $view = replaySanitizeViewingState($stuck, $actions, count($actions));
+        $this->assertNotSame('coin_flip', $view['phase'] ?? '');
+        $this->assertNull($view['coin_flip'] ?? null);
+    }
+
     public function testReplaySurveilFallbackUsesRecordedCardIds(): void {
         $state = $this->joinedMainFirstState();
         $p2 = &$state['players']['p2'];
@@ -268,9 +295,17 @@ final class GoldenReplayTest extends TestCase
         foreach ($steps as $step) {
             $state = replayRestoreFromBaseline($replay['baseline'], 'SEEK', 'tok1', 'tok2');
             $after = replayApplyActionsThrough($state, $actions, $step);
-            $after = replaySanitizeViewingState($after);
+            $after = replaySanitizeViewingState($after, $actions, $step);
             $this->assertIsArray($after, basename($path) . ' step ' . $step);
             $this->assertNull($after['pending_prompt'] ?? null, basename($path) . ' step ' . $step . ' pending_prompt');
+            if (replayActionsPastCoinFlip($actions, $step)) {
+                $this->assertNotSame(
+                    'coin_flip',
+                    $after['phase'] ?? '',
+                    basename($path) . ' step ' . $step . ' must leave coin_flip'
+                );
+                $this->assertNull($after['coin_flip'] ?? null, basename($path) . ' step ' . $step . ' coin_flip blob');
+            }
         }
     }
 }

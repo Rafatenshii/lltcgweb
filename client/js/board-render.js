@@ -158,13 +158,13 @@ function renderGame(s, opts = {}) {
 
   // Conditional overlays
   if (isReplayViewing()) {
-    const recType = (typeof replayActionTypeAtStep === 'function')
-      ? replayActionTypeAtStep(s?.replay?.step ?? G.replayStep)
-      : '';
-    const coinStep = recType === 'ack_coin_flip'
-      || (recType === 'choose_first_player' && s.phase === 'coin_flip')
-      || (!recType && s.phase === 'coin_flip');
-    const mullStep = recType === 'mulligan' || (s.phase === 'setup' && !coinStep);
+    const step = s?.replay?.step ?? G.replayStep ?? 0;
+    const coinStep = typeof replayShouldShowCoinOverlay === 'function'
+      ? replayShouldShowCoinOverlay(step, s)
+      : (s.phase === 'coin_flip');
+    const mullStep = typeof replayShouldShowMullOverlay === 'function'
+      ? replayShouldShowMullOverlay(step, s)
+      : (s.phase === 'setup' && !coinStep);
     document.body.classList.toggle('tcg-replay-coin', coinStep);
     document.body.classList.toggle('tcg-replay-setup', mullStep);
     // Drive coin/mull from the recorded step, not a leftover coin_flip snapshot.
@@ -175,7 +175,7 @@ function renderGame(s, opts = {}) {
       if (typeof closeM === 'function') closeM('overlay-coin');
     }
     if (mullStep) {
-      if (me.ready_mulligan && recType !== 'mulligan') {
+      if (me.ready_mulligan && replayActionTypeAtStep(step) !== 'mulligan') {
         G.mulliganPending = false;
         el('overlay-mull')?.classList.remove('open');
       } else {

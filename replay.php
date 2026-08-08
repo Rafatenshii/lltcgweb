@@ -159,11 +159,85 @@ function replayTransientPromptStateKeys(): array {
 }
 
 /** Strip unresolved prompt UI state — replay viewing is passive playback only. */
-function replaySanitizeViewingState(array $state): array {
+function replaySanitizeViewingState(array $state, array $actions = [], int $step = 0): array {
     foreach (replayTransientPromptStateKeys() as $key) {
         unset($state[$key]);
     }
     unset($state['pending_prompt_meta']);
+    $state = replayNormalizePhaseForViewing($state, $actions, $step);
+    return $state;
+}
+
+/** True when applied actions mean the match already left the coin-flip UI. */
+function replayActionsPastCoinFlip(array $actions, int $step): bool {
+    $step = max(0, min($step, count($actions)));
+    for ($i = 0; $i < $step; $i++) {
+        $type = (string)($actions[$i]['type'] ?? '');
+        if ($type === '' || $type === 'ack_coin_flip') {
+            continue;
+        }
+        // choose_first_player and everything after must not keep the coin overlay.
+        return true;
+    }
+    return false;
+}
+
+/** True when applied actions mean mulligan / main / live has started. */
+function replayActionsPastSetup(array $actions, int $step): bool {
+    $step = max(0, min($step, count($actions)));
+    for ($i = 0; $i < $step; $i++) {
+        $type = (string)($actions[$i]['type'] ?? '');
+        if (in_array($type, ['ack_coin_flip', 'choose_first_player', ''], true)) {
+            continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * After seek, drop leftover coin_flip/setup phases that soft-skips left behind.
+ * Viewing is a snapshot — never keep First Player modal on mid-match steps.
+ */
+function replayNormalizePhaseForViewing(array $state, array $actions, int $step): array {
+    $phase = (string)($state['phase'] ?? '');
+    $pid = $state['first_player'] ?? $state['active_player'] ?? 'p1';
+    if ($pid !== 'p1' && $pid !== 'p2') {
+        $pid = 'p1';
+    }
+
+    if (replayActionsPastCoinFlip($actions, $step) && ($phase === 'coin_flip' || !empty($state['coin_flip']))) {
+        $state = replayForceLeaveCoinFlip($state, $pid);
+        $phase = (string)($state['phase'] ?? '');
+    }
+
+    if (replayActionsPastSetup($actions, $step) && in_array($phase, ['coin_flip', 'setup', 'waiting', ''], true)) {
+        $state = replayForceLeaveCoinFlip($state, $pid);
+        $state = replayEnsureMulligansDone($state);
+        if (($state['first_player'] ?? null) !== 'p1' && ($state['first_player'] ?? null) !== 'p2') {
+            $state['first_player'] = $pid;
+        }
+        // Prefer an existing gameplay phase from applied actions; otherwise land on main.
+        $phase = (string)($state['phase'] ?? '');
+        if (in_array($phase, ['coin_flip', 'setup', 'waiting', ''], true)) {
+            if (empty($state['players'][$pid]['energy_zone'])) {
+                try {
+                    $state = startTurn($state);
+                } catch (Throwable $e) {
+                    $state['phase'] = 'main_first';
+                    $state['active_player'] = $pid;
+                }
+            } else {
+                $first = $state['first_player'] ?? $pid;
+                $state['phase'] = ($first === $pid) ? 'main_first' : 'main_second';
+                $state['active_player'] = $state['active_player'] ?? $first;
+            }
+        }
+    }
+
+    if (($state['phase'] ?? '') !== 'coin_flip') {
+        unset($state['coin_flip']);
+    }
     return $state;
 }
 
@@ -287,12 +361,26 @@ function replayNormalizePromptData(array $data): array {
 }
 
 /** Clear a stuck pending prompt so seek can keep applying later recorded actions. */
-function replaySoftSkipPendingPrompt(array $state, string $note = ''): array {
+function replaySoftSkipPendingPrompt(array $state, string $note = '', string $forType = ''): array {
     foreach (replayTransientPromptStateKeys() as $key) {
         unset($state[$key]);
     }
     if ($note !== '') {
         $state = addLog($state, 'Replay seek — skipped unresolved prompt (' . $note . ').');
+    }
+    // Soft-skipping a post-coin action must not leave the viewer parked on coin_flip.
+    if ($forType !== '' && $forType !== 'ack_coin_flip'
+        && (($state['phase'] ?? '') === 'coin_flip' || !empty($state['coin_flip']))) {
+        $pid = $state['first_player'] ?? $state['active_player'] ?? 'p1';
+        if ($pid !== 'p1' && $pid !== 'p2') {
+            $pid = 'p1';
+        }
+        $state = replayForceLeaveCoinFlip($state, $pid);
+        if ($forType === 'mulligan') {
+            $state['phase'] = 'setup';
+        } elseif (!in_array($forType, ['choose_first_player', ''], true)) {
+            $state = replayForcePhaseForAction($state, $pid, $forType);
+        }
     }
     try {
         $state = finishPromptEffects($state);
@@ -523,6 +611,11 @@ function replayPrepareStateForRecordedAction(array $state, string $pid, string $
         if (is_array($pr) && ($pr['responder'] ?? '') !== $pid) {
             unset($state['pending_prompt']);
         }
+        $phase = (string)($state['phase'] ?? '');
+        // resolve_prompt used to return early and leave seek stuck on coin_flip.
+        if (in_array($phase, ['coin_flip', 'setup', 'waiting', ''], true)) {
+            $state = replayForcePhaseForAction($state, $pid, 'resolve_prompt');
+        }
         return $state;
     }
     $pr = $state['pending_prompt'] ?? null;
@@ -656,7 +749,7 @@ function replayTryApplyRecordedActionOnce(array $state, string $pid, string $typ
             && $type !== 'anti_softlock_skip'
             && !empty($state['pending_prompt'])
             && replayActionBlockedByPendingPrompt($e)) {
-            $state = replaySoftSkipPendingPrompt($state, 'cleared for ' . $type);
+            $state = replaySoftSkipPendingPrompt($state, 'cleared for ' . $type, $type);
             $state = applyAction($state, $pid, $type, $data);
             return replayFinishRecordedAction($state, $pid, $type, $data);
         }
@@ -704,7 +797,8 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
         || replayLooksLikePromptInteractionError($msg)) {
         return replaySoftSkipPendingPrompt(
             $state,
-            '#' . $index . ' ' . $type . ': ' . $msg
+            '#' . $index . ' ' . $type . ': ' . $msg,
+            $type
         );
     }
     throw $lastError ?? new Exception('Replay action #' . $index . ' failed');
@@ -822,7 +916,7 @@ function apiReplayStart(array $body): array {
     ];
     $state = addLog($state, 'Replay loaded — ' . count($actions) . ' action(s). Use replay controls to play or seek.');
     $state['seq']++;
-    $state = replaySanitizeViewingState($state);
+    $state = replaySanitizeViewingState($state, $actions, 0);
 
     saveGame($roomId, $state);
 
@@ -884,7 +978,7 @@ function apiReplayGoto(array $body): array {
         $newState = replayRestoreFromBaseline($baseline, $roomId, $p1Token, $p2Token);
         $newState['cpu_difficulty'] = $cpuDiff;
         $newState = replayApplyActionsThrough($newState, $actions, $step);
-        $newState = replaySanitizeViewingState($newState);
+        $newState = replaySanitizeViewingState($newState, $actions, $step);
 
         $handoff = $wantsHandoff && $step >= $maxStep;
         if ($handoff) {
