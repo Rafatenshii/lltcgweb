@@ -830,6 +830,9 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         $pick = $data['pick'] ?? '';
         if ($pick === 'energy') {
             $activated = activateEnergyForPlayer($p, 1);
+            if ($activated > 0 && (($member['group'] ?? '') === 'Nijigasaki' || ($ab['group'] ?? '') === 'Nijigasaki')) {
+                $p['_niji_turn_flags']['activated_wait_energy'] = true;
+            }
             markAbilityUsed($member, $abilityIdx);
             $p['stage'][$slot] = $member;
             $state = addLog($state, $state['players'][$pid]['name'] .
@@ -849,6 +852,9 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             unset($mbr);
             if ($activated < 1) {
                 throw new Exception('Choose a Nijigasaki Member in Wait to activate');
+            }
+            if (($member['group'] ?? '') === 'Nijigasaki' || ($ab['group'] ?? '') === 'Nijigasaki') {
+                $p['_niji_turn_flags']['activated_wait_member'] = true;
             }
             markAbilityUsed($member, $abilityIdx);
             $p['stage'][$slot] = $member;

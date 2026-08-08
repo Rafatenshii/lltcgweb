@@ -101,6 +101,11 @@ function applyAutoOnAllyWaitActivateBlade(array $state, string $owner, array $pr
         if ($wMbr && ($wMbr['instance_id'] ?? '') === $waitedId) {
             clearMemberWait($wMbr);
             $wMbr['live_blade_bonus'] = intval($wMbr['live_blade_bonus'] ?? 0) + $amt;
+            $src = ($slot !== '' && !empty($ownerP['stage'][$slot])) ? $ownerP['stage'][$slot] : null;
+            if (($src['group'] ?? '') === 'Nijigasaki'
+                || (($prompt['ability']['group'] ?? '') === 'Nijigasaki')) {
+                $ownerP['_niji_turn_flags']['activated_wait_member'] = true;
+            }
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . $srcName . '] activated ' .
                 ($wMbr['name_en'] ?? $wMbr['name'] ?? 'Member') .
@@ -1017,8 +1022,24 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
         if (!$ok) {
             throw new Exception('Invalid Member');
         }
+        $wasWait = false;
+        foreach ($ownerP['stage'] as $mbr) {
+            if ($mbr && ($mbr['instance_id'] ?? '') === $memberId && memberIsInWait($mbr)) {
+                $wasWait = true;
+                break;
+            }
+        }
         $activated = activateStageMemberByInstanceId($ownerP, $memberId);
         if ($activated > 0) {
+            if ($wasWait) {
+                $src = findSourceCard($state, $owner, (string)($prompt['source_id'] ?? ''));
+                if (!empty($ownerP['_effect_source_is_niji'])
+                    || !empty($prompt['from_niji_effect'])
+                    || ($src['group'] ?? '') === 'Nijigasaki'
+                    || (($prompt['ability']['group'] ?? '') === 'Nijigasaki')) {
+                    $ownerP['_niji_turn_flags']['activated_wait_member'] = true;
+                }
+            }
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Card') . '] activated 1 Member.');
         }

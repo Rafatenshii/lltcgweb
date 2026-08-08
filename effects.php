@@ -620,6 +620,9 @@ function resolveAutoOnAllyWaitAbilities(array $state, string $pid, array $waited
                 if ($wMbr && ($wMbr['instance_id'] ?? '') === $waitedId) {
                     clearMemberWait($wMbr);
                     $wMbr['live_blade_bonus'] = intval($wMbr['live_blade_bonus'] ?? 0) + $amt;
+                    if (($ally['group'] ?? '') === 'Nijigasaki' || ($ab['group'] ?? '') === 'Nijigasaki') {
+                        $p['_niji_turn_flags']['activated_wait_member'] = true;
+                    }
                     $state = addLog($state, $state['players'][$pid]['name'] .
                         ' — [' . $name . '] activated ' .
                         ($wMbr['name_en'] ?? $wMbr['name'] ?? 'Member') .

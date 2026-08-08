@@ -794,7 +794,9 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
     // Seek must not stop on interactive prompt validation — soft-skip and continue.
     if ($type === 'resolve_prompt'
         || $type === 'anti_softlock_skip'
-        || replayLooksLikePromptInteractionError($msg)) {
+        || replayLooksLikePromptInteractionError($msg)
+        || str_contains($msg, 'Cannot replace a Member that was played this turn')
+        || str_contains($msg, 'Not enough active energy')) {
         return replaySoftSkipPendingPrompt(
             $state,
             '#' . $index . ' ' . $type . ': ' . $msg,

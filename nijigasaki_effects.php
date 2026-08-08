@@ -680,6 +680,33 @@ function nijiMembersShareHeartColor(array $a, array $b): bool {
 
 function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array &$member, $slot, array $ab, int|string $abilityIdx, array $data): ?array {
     $type = $ab['type'] ?? '';
+    // Activated Nijigasaki skills skip resolveAbilityEffect(), so attribute Cara Tesoro
+    // Wait Energy / Member tracking for the duration of this handler.
+    $prevNijiAttr = !empty($p['_effect_source_is_niji']);
+    $attrNiji = (($member['group'] ?? '') === 'Nijigasaki' || ($ab['group'] ?? '') === 'Nijigasaki');
+    if ($attrNiji) {
+        $p['_effect_source_is_niji'] = true;
+    }
+    try {
+        return nijiResolveActivatedEffectBody($state, $pid, $p, $member, $slot, $ab, $abilityIdx, $data, $type);
+    } finally {
+        if ($attrNiji && !$prevNijiAttr) {
+            unset($p['_effect_source_is_niji']);
+        }
+    }
+}
+
+function nijiResolveActivatedEffectBody(
+    array $state,
+    string $pid,
+    array &$p,
+    array &$member,
+    $slot,
+    array $ab,
+    int|string $abilityIdx,
+    array $data,
+    string $type
+): ?array {
     if ($type === 'wait_self_only') {
         waitMember($member, $state);
         $p['stage'][$slot] = $member;
@@ -690,6 +717,10 @@ function nijiResolveActivatedEffect(array $state, string $pid, array &$p, array 
     if ($type === 'wait_self_activate_energy') {
         waitMember($member, $state);
         $activated = activateEnergyForPlayer($p, intval($ab['count'] ?? 1));
+        if ($activated > 0) {
+            // Explicit: this is always a Nijigasaki card effect activating Wait Energy.
+            $p['_niji_turn_flags']['activated_wait_energy'] = true;
+        }
         $p['stage'][$slot] = $member;
         $state = addLog($state, $state['players'][$pid]['name'] .
             " — [" . ($member['name_en'] ?? $member['name']) . "] Waited; activated $activated Energy.");
