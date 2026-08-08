@@ -3965,17 +3965,22 @@ function cpuResolvePromptBody(s, cpu, pr) {
     return;
   }
   if(pr.type==='optional_pay_play_hand_member'){
-    const names=pr.ability?.names||[];
-    const grp=pr.ability?.group||'Nijigasaki';
-    const maxCost=pr.ability?.max_cost??4;
-    const m=(cpu.hand||[]).find(c=>{
-      if(c.card_type!=='メンバー'||(c.cost||0)>maxCost) return false;
-      if(names.length){
-        const label=c.name_en||c.name||'';
-        return names.some(n=>label===n||label.includes(n));
-      }
-      return (c.group||'')===grp;
-    });
+    const matchFn = typeof handMembersMatchingPlayAbilityClient === 'function'
+      ? handMembersMatchingPlayAbilityClient
+      : null;
+    const members = matchFn
+      ? matchFn(cpu.hand || [], pr.ability || {}, pr.candidates || [])
+      : (cpu.hand || []).filter(c => {
+          if (c.card_type !== 'メンバー' || (c.cost || 0) > (pr.ability?.max_cost ?? 4)) return false;
+          if (pr.ability?.any_group) return true;
+          const names = pr.ability?.names || [];
+          if (names.length) {
+            const label = c.name_en || c.name || '';
+            return names.some(n => label === n || label.includes(n));
+          }
+          return (c.group || '') === (pr.ability?.group || 'Nijigasaki');
+        });
+    const m = members[0];
     if(pr.step==='pick_slot'){
       const slot=(pr.slots||[])[0]||'center';
       cpuAct('resolve_prompt',{choice:slot});
@@ -4645,17 +4650,21 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     return cpuResolveOptionalSuccessWrLiveSwap(pr, cpu, tier);
   }
   if (pr.type === 'optional_pay_play_hand_member') {
-    const names = pr.ability?.names || [];
-    const grp = pr.ability?.group || 'Nijigasaki';
-    const maxCost = pr.ability?.max_cost ?? 4;
-    const members = hand.filter(c => {
-      if (c.card_type !== 'メンバー' || (c.cost || 0) > maxCost) return false;
-      if (names.length) {
-        const label = c.name_en || c.name || '';
-        return names.some(n => label === n || label.includes(n));
-      }
-      return (c.group || '') === grp;
-    });
+    const matchFn = typeof handMembersMatchingPlayAbilityClient === 'function'
+      ? handMembersMatchingPlayAbilityClient
+      : null;
+    const members = matchFn
+      ? matchFn(hand, pr.ability || {}, pr.candidates || [])
+      : hand.filter(c => {
+          if (c.card_type !== 'メンバー' || (c.cost || 0) > (pr.ability?.max_cost ?? 4)) return false;
+          if (pr.ability?.any_group) return true;
+          const names = pr.ability?.names || [];
+          if (names.length) {
+            const label = c.name_en || c.name || '';
+            return names.some(n => label === n || label.includes(n));
+          }
+          return (c.group || '') === (pr.ability?.group || 'Nijigasaki');
+        });
     const m = members.sort((a, b) =>
       cpuScoreMember(b, cpu, hand, cpuStageColors(cpu), tier, read) - cpuScoreMember(a, cpu, hand, cpuStageColors(cpu), tier, read))[0];
     if (pr.step === 'pick_slot') {

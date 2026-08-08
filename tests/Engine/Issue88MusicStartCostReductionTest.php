@@ -74,6 +74,24 @@ final class Issue88MusicStartCostReductionTest extends TestCase
         $this->assertSame(15, \getEffectiveHandCost($state, 'p1', $maki));
     }
 
+    public function testMusicStartReducesPr015MakiAndBatonPay(): void
+    {
+        $maki = $this->cardByNo('PL!-PR-015-PR', 'issue88_maki_pr015');
+        $kotori = $this->cardByNo('PL!-bp5-003-R＋', 'issue88_kotori11');
+        $music = $this->cardByNo('PL!-bp6-019-L', 'issue88_music_pr015');
+        $this->assertSame(17, intval($maki['cost'] ?? 0));
+        $this->assertSame(11, intval($kotori['cost'] ?? 0));
+
+        $state = $this->baseState();
+        $state['players']['p1']['success_lives'] = [$music];
+        $this->assertSame(15, \getEffectiveHandCost($state, 'p1', $maki));
+        $this->assertSame(
+            4,
+            \computeMemberPlayCostWithBaton($state, 'p1', $maki, $kotori),
+            'Music S.T.A.R.T!! 15 minus Kotori 11'
+        );
+    }
+
     public function testMusicStartDoesNotStackAndIgnoresLowCost(): void
     {
         $music = $this->cardByNo('PL!-bp6-019-L', 'issue88_music2');

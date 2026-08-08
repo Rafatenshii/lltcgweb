@@ -8245,9 +8245,19 @@ function announceLogEntry(entry, s, myId) {
     queueCenterBanner(banner);
   }
 }
+function clientCatalogAbilities(card) {
+  if (card?.abilities?.length) return card.abilities;
+  const no = card?.card_no;
+  const cat = (typeof G !== 'undefined' && no) ? G.allCards?.[no] : null;
+  return cat?.abilities || [];
+}
 function effectiveCost(card, hand){
   let base=card.cost||0;
-  const me = (typeof G !== 'undefined' && G.state) ? (G.state.players?.[G.myId] || null) : null;
+  const s = (typeof G !== 'undefined') ? (G.gameState || G.state || null) : null;
+  const myId = (typeof G !== 'undefined')
+    ? (G.playerId || G.myId || s?.my_id || null)
+    : null;
+  const me = (s && myId) ? (s.players?.[myId] || null) : null;
   if(card.abilities?.length && hand?.length){
     const others=hand.filter(c=>c.instance_id!==card.instance_id).length;
     for(const ab of card.abilities){
@@ -8284,8 +8294,9 @@ function effectiveCost(card, hand){
   // Music S.T.A.R.T!! etc.: Success Live aura (−2 for μ's Members cost ≥17; does not stack).
   let bestLiveReduce = 0;
   for (const lc of (me?.success_lives || [])) {
-    if (!lc?.abilities?.length) continue;
-    for (const ab of lc.abilities) {
+    const liveAbs = clientCatalogAbilities(lc);
+    if (!liveAbs.length) continue;
+    for (const ab of liveAbs) {
       if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_if_success_live_group') continue;
       if (ab.require_success_has_group) continue;
       const group = ab.group || "μ's";

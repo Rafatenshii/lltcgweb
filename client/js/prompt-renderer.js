@@ -9,6 +9,33 @@
     return i18n && typeof i18n.t === 'function' ? i18n.t(key, vars) : key;
   }
 
+  /** Mirrors PHP handMembersMatchingPlayAbility; honors any_group (Maki PR-015). */
+  global.handMembersMatchingPlayAbilityClient = function handMembersMatchingPlayAbilityClient(hand, ab, candidates) {
+    const list = Array.isArray(hand) ? hand : [];
+    const abs = ab && typeof ab === 'object' ? ab : {};
+    const names = abs.names || [];
+    const anyGroup = !!abs.any_group;
+    const grp = abs.group || 'Nijigasaki';
+    const maxCost = abs.max_cost ?? 4;
+    const candIds = new Set((candidates || []).map(c => c && c.instance_id).filter(Boolean));
+    if (candIds.size) {
+      const matched = list.filter(c => c && candIds.has(c.instance_id));
+      if (matched.length) return matched;
+      const fromPrompt = (candidates || []).filter(c => c && c.instance_id);
+      if (fromPrompt.length) return fromPrompt;
+    }
+    return list.filter(c => {
+      if (!c || c.card_type !== 'メンバー') return false;
+      if ((c.cost || 0) > maxCost) return false;
+      if (names.length) {
+        const label = c.name_en || c.name || '';
+        return names.some(n => label === n || label.includes(n));
+      }
+      if (anyGroup) return true;
+      return (c.group || '') === grp;
+    });
+  };
+
   global.promptIdentityKey = function promptIdentityKey(s) {
     const pr = s?.pending_prompt;
     if (!pr || !s) return null;
@@ -2449,22 +2476,15 @@ global.renderPrompt = function renderPrompt(s, myId){
     const names=ab.names||[];
     const grp=ab.group||'Nijigasaki';
     const maxCost=ab.max_cost??4;
-    const hand=(me?.hand||[]).filter(c=>{
-      if(c.card_type!=='メンバー') return false;
-      if((c.cost||0)>maxCost) return false;
-      if(names.length){
-        const label=c.name_en||c.name||'';
-        return names.some(n=>label===n||label.includes(n));
-      }
-      return (c.group||'')===grp;
-    });
+    const anyGroup=!!ab.any_group;
+    const hand=global.handMembersMatchingPlayAbilityClient(me?.hand||[], ab, pr.candidates||[]);
     // No legal target (e.g. no Ayumu ≤4 in hand): decline — empty single-tap
     // overlay hides Cancel and softlocks the game.
     if(!hand.length){
       sendAct('resolve_prompt',{choice:'no'});
       return;
     }
-    const label=names.length?names.join('/'):grp;
+    const label=names.length?names.join('/'):(anyGroup?'Member':grp);
     openHandPick({
       hand,
       count: 1,
