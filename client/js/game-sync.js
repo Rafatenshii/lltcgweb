@@ -523,8 +523,12 @@
     } catch (e) {
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       if (e && /room not found/i.test(String(e.message || ''))) {
-        // Ranked rooms live on Hostinger — a VPS miss must recover, not resign.
-        if (typeof global.abandonDeadMatchSession === 'function') {
+        // Replay rooms stay on Hostinger; a VPS miss is expected under match-primary.
+        if (typeof global.isReplayViewing === 'function' && global.isReplayViewing()) {
+          TCG_DEBUG.warn('poll', 'replay room miss on poll origin — keep viewing');
+          pollError = e.message;
+        } else if (typeof global.abandonDeadMatchSession === 'function') {
+          // Ranked rooms live on Hostinger — a VPS miss must recover, not resign.
           void global.abandonDeadMatchSession({ silent: false, forceResign: false });
           return;
         }
@@ -678,7 +682,10 @@
       } catch (e) {
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
         if (!opts.silent) {
-          if (e && e.httpStatus >= 400) {
+          const replayViewing = typeof global.isReplayViewing === 'function' && global.isReplayViewing();
+          if (replayViewing && e && /room not found/i.test(String(e.message || ''))) {
+            TCG_DEBUG.warn('poll', 'replay pull miss — keep viewing', e);
+          } else if (e && e.httpStatus >= 400) {
             if (!handleSpectatorPollError(e.message)) reportApiError(e, { source: 'pullLatestState' });
           } else {
             TCG_DEBUG.warn('poll', 'pullLatestState failed', e);

@@ -93,6 +93,8 @@
     action: 1, ping: 1, sync_ticket: 1, dry_run_actions: 1,
     // Finished rooms live on the match host (VPS under match-primary).
     replay_export: 1,
+    // Replay seek follows the locked origin (Hostinger replay rooms).
+    replay_goto: 1,
   };
 
   function sleepMs(ms) {
@@ -172,6 +174,16 @@
     // Hub/account (including /me) always Hostinger — never follow match lock or overflow window.
     if (context === 'hub' || (action && OVERFLOW_BLOCKED_ACCOUNT[action])) {
       return HOSTINGER_URLS;
+    }
+
+    // Replay viewing rooms live on Hostinger even when match-primary is VPS.
+    const replayViewing = !!(global.G && (global.G.replayMode || global.G.gameState?.mode === 'replay_view')
+      && !global.G.replayHandoff);
+    if (replayViewing && locked !== 'overflow') {
+      if (context === 'matchmake' || context === 'ingame'
+          || (action && (MATCHMAKE_GAME[action] || INGAME_GAME[action]))) {
+        return HOSTINGER_URLS;
+      }
     }
 
     // Match-primary: live match traffic uses VPS. Explicit hostinger lock = legacy drain rooms.
@@ -558,6 +570,9 @@
     if (!err || opts.silent) return;
     const status = err.httpStatus || opts.status || 0;
     const msg = err.message || 'Request failed';
+    const replayViewing = !!(global.G && (global.G.replayMode || global.G.gameState?.mode === 'replay_view')
+      && !global.G.replayHandoff);
+    if (replayViewing && /room not found/i.test(String(msg))) return;
     if (global.TCG_DEBUG && typeof global.TCG_DEBUG.warn === 'function') {
       global.TCG_DEBUG.warn('api', opts.source || 'error', msg, status);
     }

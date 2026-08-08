@@ -2174,11 +2174,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=30"></script>
+<script src="client/js/api-client.js?v=31"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/game-sync.js?v=39"></script>
+<script src="client/js/game-sync.js?v=40"></script>
 <script src="client/js/state-apply.js?v=50"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -8997,13 +8997,6 @@ async function refreshReplayLibrary() {
 }
 
 async function bootReplayFromPayload(startResult, replay) {
-  await bootMatchSession({
-    roomId: startResult.room_id,
-    token: startResult.player_token,
-    playerId: startResult.player_id,
-    isCPU: true,
-    cpuToken: startResult.cpu_token,
-  });
   stopReplayAutoPlay();
   G.replayTimeline = replayTimingFromActions(replay.actions);
   G.replayLoadedMeta = replay.meta || null;
@@ -9015,6 +9008,15 @@ async function bootReplayFromPayload(startResult, replay) {
   G._replaySeekAppliedStep = 0;
   G._replaySeekInFlight = false;
   G._replaySeekTarget = 0;
+  await bootMatchSession({
+    roomId: startResult.room_id,
+    token: startResult.player_token,
+    playerId: startResult.player_id,
+    isCPU: true,
+    cpuToken: startResult.cpu_token,
+    apiOrigin: 'hostinger',
+    replayViewing: true,
+  });
   syncReplayControlBar();
   toast(t('replay.loadedToast', { count: G.replayTotal }), 2800);
   if (G.replayTotal > 0) scheduleReplayAutoPlay();
@@ -9405,7 +9407,8 @@ function exitReplayViewing() {
   G.replayTimeline = null;
   G.replayLoadedMeta = null;
   G._replayHandoffPrimed = false;
-  document.body.classList.remove('tcg-replay-view-mode');
+  document.body.classList.remove('tcg-replay-view-mode', 'tcg-replay-coin', 'tcg-replay-setup');
+  if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
   syncReplayControlBar();
   openDebugReplayScreen();
   toast('Exited replay', 1800);
@@ -10181,15 +10184,34 @@ function abortGameplayPresentation(opts = {}) {
   dismissAllGameplayOverlays();
 }
 
-async function bootMatchSession({ roomId, token, playerId, isCPU, cpuToken }) {
+async function bootMatchSession({ roomId, token, playerId, isCPU, cpuToken, apiOrigin, replayViewing }) {
+  const keepReplayMode = !!replayViewing;
+  const keepReplayStep = G.replayStep || 0;
+  const keepReplayTotal = G.replayTotal || 0;
+  const keepReplayTimeline = G.replayTimeline || null;
+  const keepReplayMeta = G.replayLoadedMeta || null;
   resetMatchTransientState();
+  // Replay rooms are created on Hostinger (hub/account). Match-primary poll
+  // otherwise hits VPS Redis and immediately reports "Room not found".
+  if (apiOrigin === 'hostinger' || apiOrigin === 'overflow') {
+    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin(apiOrigin);
+  }
+  if (keepReplayMode) {
+    G.replayMode = true;
+    G.replayHandoff = false;
+    G.replayStep = keepReplayStep;
+    G.replayTotal = keepReplayTotal;
+    G.replayTimeline = keepReplayTimeline;
+    G.replayLoadedMeta = keepReplayMeta;
+  }
   G.roomId = roomId;
   G.token = token;
   G.playerId = playerId || 'p1';
   G.isCPU = !!isCPU;
   G.cpuToken = cpuToken || null;
   G.cpuPlayerId = G.isCPU ? (G.playerId === 'p1' ? 'p2' : 'p1') : null;
-  const s = await fetchGameStateForReconnect(roomId, token);
+  const origin = apiOrigin || G.apiOrigin || undefined;
+  const s = await fetchGameStateForReconnect(roomId, token, origin);
   if (s.error) throw new Error(s.error);
   applyReplayStateFromPoll(s);
   showScr('game');
