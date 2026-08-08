@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=21">
+<link rel="stylesheet" href="client/css/shell-all.css?v=22">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 
 </head>
@@ -1556,9 +1556,16 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </div>
 
 <div id="replay-control-bar" class="replay-control-bar" hidden aria-hidden="true">
-  <button type="button" class="btn-ghost" id="btn-replay-play" data-i18n-title="replay.playPause">▶</button>
+  <div class="replay-step-btns" role="group" aria-label="Replay step">
+    <button type="button" class="btn-ghost replay-step-btn" id="btn-replay-first" data-i18n-title="replay.first" title="First">⏮</button>
+    <button type="button" class="btn-ghost replay-step-btn" id="btn-replay-prev" data-i18n-title="replay.prev" title="Back">⏪</button>
+    <button type="button" class="btn-ghost replay-play-btn" id="btn-replay-play" data-i18n-title="replay.playPause" title="Play / Pause">▶</button>
+    <button type="button" class="btn-ghost replay-step-btn" id="btn-replay-next" data-i18n-title="replay.next" title="Next">⏩</button>
+    <button type="button" class="btn-ghost replay-step-btn" id="btn-replay-last" data-i18n-title="replay.last" title="Last">⏭</button>
+  </div>
   <input type="range" id="replay-step-range" min="0" max="0" value="0" step="1" data-i18n-aria-label="replay.positionAria">
   <span class="replay-step-label" id="replay-step-label">0 / 0 · 0:00</span>
+  <span class="replay-action-label" id="replay-action-label" hidden></span>
   <p class="replay-handoff-note" id="replay-handoff-note" hidden data-i18n="replay.handoffNote">Replay complete — you have control. CPU plays the opponent.</p>
 </div>
 
@@ -2161,7 +2168,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=103"></script>
+<script src="i18n.js?v=104"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
@@ -9098,25 +9105,38 @@ function syncReplayControlBar(previewStep) {
   bar.classList.toggle('show', active);
   bar.setAttribute('aria-hidden', active ? 'false' : 'true');
   const displayStep = previewStep != null ? previewStep : G.replayStep;
+  const total = G.replayTotal || 0;
   const label = el('replay-step-label');
   if (label) {
-    label.textContent = `${displayStep} / ${G.replayTotal} · ${formatReplayElapsed(replayElapsedSeconds(displayStep))}`;
+    label.textContent = `${displayStep} / ${total} · ${formatReplayElapsed(replayElapsedSeconds(displayStep))}`;
+  }
+  const actionLabel = el('replay-action-label');
+  if (actionLabel) {
+    const actionText = replayActionLabelForStep(displayStep);
+    actionLabel.hidden = !actionText;
+    actionLabel.textContent = actionText;
   }
   const range = el('replay-step-range');
   if (range) {
-    range.max = String(Math.max(0, G.replayTotal || 0));
-    range.value = String(Math.max(0, Math.min(displayStep || 0, G.replayTotal || 0)));
+    range.max = String(Math.max(0, total));
+    range.value = String(Math.max(0, Math.min(displayStep || 0, total)));
     range.disabled = !inReplay || !!G._replaySeekInFlight;
   }
   const note = el('replay-handoff-note');
   if (note) note.hidden = !G.replayHandoff;
   const playBtn = el('btn-replay-play');
   if (playBtn) playBtn.textContent = G.replayPlaying ? '⏸' : '▶';
-  bar.querySelectorAll('button').forEach((btn) => {
-    if (btn.id === 'btn-replay-play') return;
-    btn.disabled = !inReplay;
-  });
-  if (playBtn) playBtn.disabled = !inReplay || G.replayStep >= G.replayTotal;
+  const firstBtn = el('btn-replay-first');
+  const prevBtn = el('btn-replay-prev');
+  const nextBtn = el('btn-replay-next');
+  const lastBtn = el('btn-replay-last');
+  const atStart = (displayStep || 0) <= 0;
+  const atEnd = (displayStep || 0) >= total;
+  if (firstBtn) firstBtn.disabled = !inReplay || atStart || !!G._replaySeekInFlight;
+  if (prevBtn) prevBtn.disabled = !inReplay || atStart || !!G._replaySeekInFlight;
+  if (nextBtn) nextBtn.disabled = !inReplay || atEnd || !!G._replaySeekInFlight;
+  if (lastBtn) lastBtn.disabled = !inReplay || atEnd || !!G._replaySeekInFlight;
+  if (playBtn) playBtn.disabled = !inReplay || (atEnd && !G.replayPlaying);
   syncReplayExitButton();
 }
 
@@ -9153,13 +9173,34 @@ function replayElapsedSeconds(step) {
   return Math.max(0, curTs - firstTs);
 }
 
+function replayActionLabelForStep(step) {
+  const timeline = Array.isArray(G.replayTimeline) ? G.replayTimeline : [];
+  const idx = Math.max(0, Number(step) || 0) - 1;
+  if (idx < 0 || !timeline[idx]) {
+    return step <= 0 ? (typeof t === 'function' ? t('replay.startStep') : 'start') : '';
+  }
+  return formatReplayActionType(timeline[idx].type);
+}
+
+function formatReplayActionType(type) {
+  const raw = String(type || '').trim();
+  if (!raw) return '';
+  return raw.replace(/_/g, ' ');
+}
+
+/** Autoplay pacing: keep relative think-time, but never wait out real AFK/decision gaps. */
 function replayDelayMsForNextStep(nextStep) {
   const timeline = Array.isArray(G.replayTimeline) ? G.replayTimeline : [];
   const idx = Math.max(0, Number(nextStep) - 1);
-  if (idx <= 0 || !timeline[idx]) return 700;
-  const delta = Number(timeline[idx]?.delta || 0);
-  if (!Number.isFinite(delta) || delta <= 0) return 700;
-  return Math.max(350, Math.min(delta * 1000, 120000));
+  const entry = timeline[idx] || null;
+  const type = String(entry?.type || '');
+  const setupish = /^(ack_coin_flip|choose_first_player|mulligan)$/.test(type);
+  const minMs = setupish ? 220 : 280;
+  const maxMs = setupish ? 900 : 2200;
+  if (idx <= 0 || !entry) return setupish ? 400 : 700;
+  const delta = Number(entry?.delta || 0);
+  if (!Number.isFinite(delta) || delta <= 0) return setupish ? 400 : 700;
+  return Math.max(minMs, Math.min(delta * 1000, maxMs));
 }
 
 function stopReplayAutoPlay() {
@@ -9172,13 +9213,15 @@ function stopReplayAutoPlay() {
 }
 
 async function waitForReplayPresentationIdle() {
-  const deadline = Date.now() + 120000;
+  const deadline = Date.now() + 20000;
+  const coinDeadline = Date.now() + 2200;
   while (Date.now() < deadline) {
     if (!G.replayPlaying || !isReplayViewing()) return;
     if (typeof waitForBannersIdle === 'function') await waitForBannersIdle();
     const busy = !!(G.animating || G._liveRoundPlaybackActive || G._perfSpectacleActive
       || G._liveSpectacleGateRunning || G._bannerActive || (G._bannerQueue || []).length);
-    const coinBusy = G.gameState?.phase === 'coin_flip' && !G._coinFlipAnimComplete;
+    const coinBusy = G.gameState?.phase === 'coin_flip' && !G._coinFlipAnimComplete
+      && Date.now() < coinDeadline;
     if (!busy && !coinBusy) return;
     await sleep(40);
   }
@@ -9210,6 +9253,13 @@ function toggleReplayAutoPlay() {
   if (!isReplayViewing()) return;
   if (G.replayPlaying) stopReplayAutoPlay();
   else scheduleReplayAutoPlay();
+}
+
+function replayStepBy(delta) {
+  if (!isReplayViewing()) return;
+  const next = Math.max(0, Math.min(G.replayTotal || 0, (G.replayStep || 0) + delta));
+  if (next === (G.replayStep || 0) && !G._replaySeekInFlight) return;
+  void replayGotoStep(next);
 }
 
 function scheduleReplaySeekFromScrub(step) {
@@ -14220,10 +14270,39 @@ async function bootApp() {
   on('btn-debug-replay-start', 'click', startDebugReplayFromFile);
   on('btn-debug-save-replay', 'click', saveDebugSteppableReplay);
   on('btn-replay-first', 'click', () => replayGotoStep(0));
-  on('btn-replay-prev', 'click', () => replayGotoStep(Math.max(0, G.replayStep - 1)));
-  on('btn-replay-next', 'click', () => replayGotoStep(Math.min(G.replayTotal, G.replayStep + 1)));
+  on('btn-replay-prev', 'click', () => replayStepBy(-1));
+  on('btn-replay-next', 'click', () => replayStepBy(1));
   on('btn-replay-last', 'click', () => replayGotoStep(G.replayTotal));
   on('btn-replay-play', 'click', toggleReplayAutoPlay);
+  document.addEventListener('keydown', (e) => {
+    if (!isReplayViewing()) return;
+    const tag = String(e.target?.tagName || '');
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.target?.isContentEditable) return;
+    if (e.key === 'ArrowRight' || e.key === '.') {
+      e.preventDefault();
+      replayStepBy(1);
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === ',') {
+      e.preventDefault();
+      replayStepBy(-1);
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      void replayGotoStep(0);
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      void replayGotoStep(G.replayTotal);
+      return;
+    }
+    if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+      e.preventDefault();
+      toggleReplayAutoPlay();
+    }
+  });
   on('replay-step-range', 'input', (e) => scheduleReplaySeekFromScrub(Number(e.target?.value || 0)));
   on('replay-step-range', 'change', (e) => replayGotoStep(Number(e.target?.value || 0)));
   on('btn-debug-card-test-back', 'click', () => showGuestAuth(null, 'auth.guestPlayHint'));

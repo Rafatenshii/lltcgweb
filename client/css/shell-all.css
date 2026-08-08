@@ -1399,16 +1399,23 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
   display:none;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
   padding:8px 14px;border-radius:14px;
   background:rgba(12,18,32,.92);border:1px solid rgba(186,228,255,.28);
-  box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:min(96vw,640px);
+  box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:min(96vw,760px);
 }
 .replay-control-bar.show{display:flex}
 #replay-control-bar[hidden]{display:none!important}
+.replay-control-bar .replay-step-btns{display:flex;align-items:center;gap:4px}
 .replay-control-bar .replay-step-label{
-  font-size:11px;font-weight:700;color:rgba(255,255,255,.85);min-width:72px;text-align:center;
+  font-size:11px;font-weight:700;color:rgba(255,255,255,.85);min-width:84px;text-align:center;
+}
+.replay-control-bar .replay-action-label{
+  font-size:11px;font-weight:700;color:rgba(186,228,255,.88);max-width:min(42vw,220px);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:capitalize;
 }
 .replay-control-bar button{font-size:11px;padding:6px 10px}
+.replay-control-bar .replay-step-btn{min-width:36px;padding:6px 8px}
+.replay-control-bar .replay-play-btn{min-width:42px;font-size:13px}
 .replay-control-bar input[type=range]{
-  flex:1 1 240px;min-width:180px;max-width:min(54vw,420px);accent-color:var(--pink);
+  flex:1 1 200px;min-width:140px;max-width:min(48vw,360px);accent-color:var(--pink);
 }
 .replay-control-bar .replay-handoff-note{
   font-size:10px;color:rgba(186,228,255,.75);width:100%;text-align:center;margin:0;
