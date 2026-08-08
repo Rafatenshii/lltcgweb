@@ -163,6 +163,7 @@ function replaySanitizeViewingState(array $state): array {
     foreach (replayTransientPromptStateKeys() as $key) {
         unset($state[$key]);
     }
+    unset($state['pending_prompt_meta']);
     return $state;
 }
 
@@ -213,7 +214,7 @@ function replayEnsureCardInHand(array &$state, string $pid, string $cardId): voi
     if (findInHand($p['hand'], $cardId) !== false) {
         return;
     }
-    foreach (['main_deck', 'waiting_room'] as $zone) {
+    foreach (['main_deck', 'waiting_room', 'live_zone', 'success_lives', 'energy_deck'] as $zone) {
         foreach ($p[$zone] ?? [] as $i => $c) {
             if (($c['instance_id'] ?? '') === $cardId) {
                 $p['hand'][] = $c;
@@ -222,6 +223,89 @@ function replayEnsureCardInHand(array &$state, string $pid, string $cardId): voi
             }
         }
     }
+    foreach ($p['energy_zone'] ?? [] as $i => $c) {
+        if (($c['instance_id'] ?? '') === $cardId) {
+            unset($c['active'], $c['skip_activate_next_turn']);
+            $p['hand'][] = $c;
+            array_splice($p['energy_zone'], $i, 1);
+            return;
+        }
+    }
+    // Stacked under Stage Members (hand→stack effects often leave the card here after drift).
+    foreach ($p['stage'] ?? [] as $slot => &$mbr) {
+        if (!$mbr || empty($mbr['stacked_members']) || !is_array($mbr['stacked_members'])) {
+            continue;
+        }
+        foreach ($mbr['stacked_members'] as $i => $c) {
+            if (($c['instance_id'] ?? '') === $cardId) {
+                $p['hand'][] = $c;
+                array_splice($mbr['stacked_members'], $i, 1);
+                return;
+            }
+        }
+    }
+    unset($mbr);
+}
+
+/** Collect every card instance id a recorded resolve_prompt may need. */
+function replayPromptCardIdsFromData(array $data): array {
+    $ids = [];
+    foreach (['card_id', 'pick_id', 'member_id', 'baton_id', 'baton_id2'] as $key) {
+        if (!empty($data[$key]) && is_string($data[$key])) {
+            $ids[] = $data[$key];
+        }
+    }
+    foreach (['card_ids', 'discard_ids', 'member_ids', 'top_ids', 'wr_ids'] as $key) {
+        foreach ($data[$key] ?? [] as $cid) {
+            if (is_string($cid) && $cid !== '') {
+                $ids[] = $cid;
+            }
+        }
+    }
+    // Some older clients stuffed the instance id into choice.
+    $choice = $data['choice'] ?? '';
+    if (is_string($choice) && str_starts_with($choice, 'card_')) {
+        $ids[] = $choice;
+    }
+    return array_values(array_unique($ids));
+}
+
+function replayNormalizePromptData(array $data): array {
+    if (empty($data['card_id'])) {
+        foreach (['pick_id', 'member_id'] as $key) {
+            if (!empty($data[$key]) && is_string($data[$key])) {
+                $data['card_id'] = $data[$key];
+                break;
+            }
+        }
+        $choice = $data['choice'] ?? '';
+        if (empty($data['card_id']) && is_string($choice) && str_starts_with($choice, 'card_')) {
+            $data['card_id'] = $choice;
+        }
+    }
+    return $data;
+}
+
+/** Clear a stuck pending prompt so seek can keep applying later recorded actions. */
+function replaySoftSkipPendingPrompt(array $state, string $note = ''): array {
+    foreach (replayTransientPromptStateKeys() as $key) {
+        unset($state[$key]);
+    }
+    if ($note !== '') {
+        $state = addLog($state, 'Replay seek — skipped unresolved prompt (' . $note . ').');
+    }
+    try {
+        $state = finishPromptEffects($state);
+    } catch (Throwable $e) {
+        // Keep seeking even if resume hooks fail after a soft skip.
+    }
+    // finishPromptEffects may chain another interactive prompt — drop it so seek
+    // stays driven by recorded actions, not live UI validation.
+    foreach (replayTransientPromptStateKeys() as $key) {
+        unset($state[$key]);
+    }
+    unset($state['pending_prompt_meta']);
+    return $state;
 }
 
 function replayPrepareRecordedPlayAction(array $state, string $pid, string $type, array $data): array {
@@ -231,6 +315,18 @@ function replayPrepareRecordedPlayAction(array $state, string $pid, string $type
         }
     } elseif ($type === 'play_member' && !empty($data['card_id'])) {
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
+    } elseif ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
+        $owner = $pid;
+        $pr = $state['pending_prompt'] ?? null;
+        if (is_array($pr) && (($pr['owner'] ?? '') === 'p1' || ($pr['owner'] ?? '') === 'p2')) {
+            $owner = (string)$pr['owner'];
+        }
+        foreach (replayPromptCardIdsFromData($data) as $cid) {
+            replayEnsureCardInHand($state, $owner, $cid);
+            if ($owner !== $pid) {
+                replayEnsureCardInHand($state, $pid, $cid);
+            }
+        }
     }
     return $state;
 }
@@ -457,6 +553,32 @@ function replayPrepareStateForRecordedAction(array $state, string $pid, string $
     return $state;
 }
 
+function replayLooksLikePromptInteractionError(string $msg): bool {
+    $needles = [
+        'Choose a card',
+        'Choose 1',
+        'Choose cards',
+        'Card not in hand',
+        'pending skill prompt',
+        'No pending prompt',
+        'No skill prompt',
+        'That card is not',
+        'Invalid choice',
+        'must pick',
+        'Must assign',
+        'Not a valid',
+        'from your hand',
+        'from the Waiting Room',
+        'from Waiting Room',
+    ];
+    foreach ($needles as $needle) {
+        if (str_contains($msg, $needle)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Best-effort state repair before retrying a desynced recorded action. */
 function replayApplyFixForRetry(array $state, string $pid, string $type, array $data, Throwable $e): array {
     $msg = $e->getMessage();
@@ -473,7 +595,13 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
             $state['active_player'] = (string)$pr['responder'];
         }
     }
-    if (str_contains($msg, 'Card not in hand') || str_contains($msg, 'Not a member card')) {
+    if (str_contains($msg, 'Card not in hand')
+        || str_contains($msg, 'Not a member card')
+        || str_contains($msg, 'Choose a card')
+        || str_contains($msg, 'from your hand')) {
+        foreach (replayPromptCardIdsFromData($data) as $cid) {
+            replayEnsureCardInHand($state, $pid, $cid);
+        }
         if (!empty($data['card_id'])) {
             replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
         }
@@ -489,12 +617,24 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
     if ($type === 'activate_ability' && !empty($data['card_id'])) {
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
     }
-    if ($type === 'resolve_prompt' && str_contains($msg, 'Not your turn')) {
+    if ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
+        $owner = $pid;
         $pr = $state['pending_prompt'] ?? null;
-        if (is_array($pr) && !empty($pr['responder'])) {
-            $state['active_player'] = (string)$pr['responder'];
-        } else {
-            $state['active_player'] = $pid;
+        if (is_array($pr) && (($pr['owner'] ?? '') === 'p1' || ($pr['owner'] ?? '') === 'p2')) {
+            $owner = (string)$pr['owner'];
+        }
+        foreach (replayPromptCardIdsFromData($data) as $cid) {
+            replayEnsureCardInHand($state, $owner, $cid);
+            if ($owner !== $pid) {
+                replayEnsureCardInHand($state, $pid, $cid);
+            }
+        }
+        if (str_contains($msg, 'Not your turn')) {
+            if (is_array($pr) && !empty($pr['responder'])) {
+                $state['active_player'] = (string)$pr['responder'];
+            } else {
+                $state['active_player'] = $pid;
+            }
         }
     }
     return $state;
@@ -513,9 +653,10 @@ function replayTryApplyRecordedActionOnce(array $state, string $pid, string $typ
         return replayFinishRecordedAction($state, $pid, $type, $data);
     } catch (Throwable $e) {
         if ($type !== 'resolve_prompt'
+            && $type !== 'anti_softlock_skip'
             && !empty($state['pending_prompt'])
             && replayActionBlockedByPendingPrompt($e)) {
-            unset($state['pending_prompt']);
+            $state = replaySoftSkipPendingPrompt($state, 'cleared for ' . $type);
             $state = applyAction($state, $pid, $type, $data);
             return replayFinishRecordedAction($state, $pid, $type, $data);
         }
@@ -531,11 +672,17 @@ function replayTryApplyRecordedActionOnce(array $state, string $pid, string $typ
                 return $state;
             }
         }
+        if ($type === 'anti_softlock_skip' && str_contains($e->getMessage(), 'No skill prompt')) {
+            return $state;
+        }
         throw $e;
     }
 }
 
 function replayApplyRecordedAction(array $state, string $pid, string $type, array $data, int $index): array {
+    if ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
+        $data = replayNormalizePromptData($data);
+    }
     $lastError = null;
     for ($attempt = 0; $attempt < 3; $attempt++) {
         $state = replayPrepareStateForRecordedAction($state, $pid, $type);
@@ -549,6 +696,16 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
             }
             $state = replayApplyFixForRetry($state, $pid, $type, $data, $e);
         }
+    }
+    $msg = $lastError ? $lastError->getMessage() : 'failed';
+    // Seek must not stop on interactive prompt validation — soft-skip and continue.
+    if ($type === 'resolve_prompt'
+        || $type === 'anti_softlock_skip'
+        || replayLooksLikePromptInteractionError($msg)) {
+        return replaySoftSkipPendingPrompt(
+            $state,
+            '#' . $index . ' ' . $type . ': ' . $msg
+        );
     }
     throw $lastError ?? new Exception('Replay action #' . $index . ' failed');
 }

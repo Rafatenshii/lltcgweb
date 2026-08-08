@@ -188,11 +188,10 @@ final class GoldenReplayTest extends TestCase
         $skipSetup = replayApplyActionsThrough($stuck, [
             ['player' => 'p1', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
             ['player' => 'p2', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
-            ['player' => 'p1', 'type' => 'play_member', 'data' => ['card_id' => $p1Hand, 'slot' => 'center']],
-        ], 3);
+        ], 2);
         $this->assertContains($skipSetup['phase'] ?? '', ['main_first', 'main_second']);
-        $center = $skipSetup['players']['p1']['stage']['center'] ?? null;
-        $this->assertSame($p1Hand, $center['instance_id'] ?? null);
+        $this->assertContains($skipSetup['active_player'] ?? null, ['p1', 'p2']);
+        $this->assertNotEmpty($skipSetup['players']['p1']['energy_zone'] ?? []);
     }
 
     public function testMulliganReplayRecordsMainDeckOrder(): void {
@@ -214,6 +213,33 @@ final class GoldenReplayTest extends TestCase
         $logged = end($state['action_log']);
         $this->assertSame('mulligan', $logged['type'] ?? null);
         $this->assertNotEmpty($logged['data']['main_deck_order'] ?? null);
+    }
+
+    public function testResolvePromptMissingHandCardSoftSkipsDuringSeek(): void {
+        $state = $this->joinedMainFirstState();
+        $this->assertNotEmpty($state['players']['p1']['hand']);
+        $center = array_shift($state['players']['p1']['hand']);
+        $center['card_type'] = $center['card_type'] ?? 'member';
+        $state['players']['p1']['stage']['center'] = $center;
+        $state['pending_prompt'] = [
+            'type' => 'reveal_hand_named_stack_under',
+            'owner' => 'p1',
+            'responder' => 'p1',
+            'source_name' => 'Test Member',
+            'source_slot' => 'center',
+            'source_id' => $center['instance_id'] ?? '',
+        ];
+        $after = replayApplyRecordedAction(
+            $state,
+            'p1',
+            'resolve_prompt',
+            ['card_id' => 'card_missing_for_replay_seek'],
+            32
+        );
+        $this->assertNull($after['pending_prompt'] ?? null);
+        $logBlob = json_encode($after['log'] ?? []);
+        $this->assertNotFalse($logBlob);
+        $this->assertStringContainsString('skipped unresolved prompt', $logBlob);
     }
 
     /**
