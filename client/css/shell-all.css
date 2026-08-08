@@ -994,9 +994,13 @@ body:has(.overlay.skill-hand-preserve.open) .playmat-column.play-selecting .play
 .play-cost-hud .pch-cost.tick{animation:costTick .28s ease}
 .play-cost-hud .pch-hint{
   font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
-  color:rgba(255,255,255,.52);max-width:72px;line-height:1.25;text-align:left;
+  color:rgba(255,255,255,.52);max-width:min(220px,42vw);line-height:1.25;text-align:left;
+  white-space:normal;
 }
-.play-cost-hud .pch-row{display:inline-flex;align-items:flex-start;gap:8px;pointer-events:auto}
+/* Never steal stage-slot hover — that flashed baton cost ↔ pick-a-slot under the cursor. */
+.play-cost-hud .pch-row,
+.play-cost-hud .pch-row *{pointer-events:none!important}
+.play-cost-hud .pch-row{display:inline-flex;align-items:flex-start;gap:8px}
 .play-cost-hud .pch-have{font-size:10px;color:rgba(255,255,255,.42);margin-top:5px;line-height:1.35}
 .play-cost-hud .pch-have b{color:#68D391;font-size:13px;font-weight:800}
 .play-cost-hud .pch-breakdown{color:rgba(255,255,255,.38);font-size:9px}
