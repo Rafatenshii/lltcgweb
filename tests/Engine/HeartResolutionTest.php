@@ -156,4 +156,61 @@ final class HeartResolutionTest extends TestCase
         $this->assertFalse($ok);
         $this->assertLessThan(0.05, $elapsed, 'undersized pool must not combinatorial-explode');
     }
+
+    public function testPoppinUpAllBladeReminderIsNotYellWildcard(): void
+    {
+        $data = json_decode((string) file_get_contents((string) constant('CARDS_FILE')), true);
+        $poppin = null;
+        foreach ($data['cards'] ?? [] as $card) {
+            if (($card['card_no'] ?? '') === 'PL!N-bp1-026-L') {
+                $poppin = $card;
+                break;
+            }
+        }
+        $this->assertNotNull($poppin);
+        $this->assertFalse(
+            \liveCardsGrantYellHeartsWildcard([$poppin]),
+            'Poppin\' Up ALL-blade reminder must not remap printed Yell hearts'
+        );
+    }
+
+    public function testPrintedRedYellHeartStaysRedWithPoppinUp(): void
+    {
+        $poppin = [
+            'card_no' => 'PL!N-bp1-026-L',
+            'name_en' => "Poppin' Up!",
+            'required_hearts' => [
+                ['color' => 'yellow', 'count' => 1],
+                ['color' => 'any', 'count' => 2],
+            ],
+            'text' => "[Live Success] If your Live total score is higher than your opponent's, add 1 Nijigasaki card revealed for Yell to your hand.",
+            'text_jp' => "[ライブ成功時] ライブの合計スコアが相手より高い場合、エールにより公開された自分のカードの中から、『虹ヶ咲』のカードを1枚手札に加える。\n\n(必要ハートを確認する時、エールで出たALLブレードは任意の色のハートとして扱う。)",
+            'abilities' => [[
+                'trigger' => 'live_success',
+                'type' => 'live_success_add_yell_group_to_hand',
+                'group' => 'Nijigasaki',
+                'count' => 1,
+            ]],
+        ];
+        $this->assertFalse(\liveCardsGrantYellHeartsWildcard([$poppin]));
+
+        $pool = []; // no stage yellow yet
+        $icons = \getHeartIconsFromBladeHeart('red', $pool, [$poppin]);
+        $this->assertSame(['red'], $icons, 'printed red blade must stay red');
+
+        if (\liveCardsGrantYellHeartsWildcard([$poppin])) {
+            $resolved = \resolveSmartYellWildcardHeartColors(['red'], $pool, [$poppin]);
+            $this->assertSame(['red'], $resolved);
+        }
+    }
+
+    public function testExplicitYellHeartsWildcardAbilityStillDetected(): void
+    {
+        $live = [
+            'abilities' => [['type' => 'yell_hearts_wildcard']],
+            'text' => '',
+            'text_jp' => '',
+        ];
+        $this->assertTrue(\liveCardsGrantYellHeartsWildcard([$live]));
+    }
 }

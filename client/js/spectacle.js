@@ -4740,8 +4740,11 @@ function liveCardsHaveYellHeartsWildcard(liveCards) {
       if (ab.type === 'yell_hearts_wildcard') return true;
     }
     const text = `${lc.text || ''}${lc.text_jp || ''}`;
-    if (/revealed for Yell may be treated as any color/i.test(text)
-        || /エールで出た.*任意の色/.test(text)) {
+    // Standard reminder: ALL blades count as any color — not "every Yell heart is wild".
+    if (/ALL\s*ブレード/.test(text) || /\bALL blades?\b/i.test(text)) continue;
+    if (/Blade hearts revealed for Yell count as any color/i.test(text)) continue;
+    if (/hearts revealed for Yell may be treated as any color/i.test(text)
+        || /エールで出たハート[^。]*任意の色/.test(text)) {
       return true;
     }
   }

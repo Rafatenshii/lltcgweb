@@ -203,10 +203,21 @@ function liveCardsGrantYellHeartsWildcard(array $liveCards): bool {
             }
         }
         $text = (string)($lc['text'] ?? '') . (string)($lc['text_jp'] ?? '');
-        if ($text !== '' && (
-            preg_match('/revealed for Yell may be treated as any color/i', $text)
-            || preg_match('/エールで出た.*任意の色/u', $text)
-        )) {
+        if ($text === '') {
+            continue;
+        }
+        // Poppin' Up / standard reminder: ALL blades (only) count as any color.
+        // That is already handled by resolveAllBladeHeartColor — do not remap printed red/yellow/etc.
+        if (preg_match('/ALL\s*ブレード/u', $text) || preg_match('/\bALL blades?\b/i', $text)) {
+            continue;
+        }
+        if (preg_match('/Blade hearts revealed for Yell count as any color/i', $text)) {
+            continue;
+        }
+        if (
+            preg_match('/hearts revealed for Yell may be treated as any color/i', $text)
+            || preg_match('/エールで出たハート[^。]*任意の色/u', $text)
+        ) {
             return true;
         }
     }
