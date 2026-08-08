@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=22">
+<link rel="stylesheet" href="client/css/shell-all.css?v=24">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 
 </head>
@@ -1566,6 +1566,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   <input type="range" id="replay-step-range" min="0" max="0" value="0" step="1" data-i18n-aria-label="replay.positionAria">
   <span class="replay-step-label" id="replay-step-label">0 / 0 · 0:00</span>
   <span class="replay-action-label" id="replay-action-label" hidden></span>
+  <button type="button" class="btn-ghost replay-exit-btn" id="btn-replay-exit" data-i18n="replay.exitReplay">Exit Replay</button>
   <p class="replay-handoff-note" id="replay-handoff-note" hidden data-i18n="replay.handoffNote">Replay complete — you have control. CPU plays the opponent.</p>
 </div>
 
@@ -2178,7 +2179,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=39"></script>
-<script src="client/js/state-apply.js?v=48"></script>
+<script src="client/js/state-apply.js?v=50"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=73"></script>
@@ -9137,6 +9138,12 @@ function syncReplayControlBar(previewStep) {
   if (nextBtn) nextBtn.disabled = !inReplay || atEnd || !!G._replaySeekInFlight;
   if (lastBtn) lastBtn.disabled = !inReplay || atEnd || !!G._replaySeekInFlight;
   if (playBtn) playBtn.disabled = !inReplay || (atEnd && !G.replayPlaying);
+  const exitBtn = el('btn-replay-exit');
+  if (exitBtn) {
+    exitBtn.hidden = !active;
+    exitBtn.disabled = false;
+    exitBtn.textContent = typeof t === 'function' ? t('replay.exitReplay') : 'Exit Replay';
+  }
   syncReplayExitButton();
 }
 
@@ -9144,12 +9151,12 @@ function syncReplayExitButton() {
   const btn = el('btn-resign');
   if (!btn) return;
   if (isReplayViewing()) {
-    btn.textContent = t('replay.exitReplay');
-    btn.classList.remove('btn-danger');
-    btn.classList.add('btn-ghost');
-    btn.setAttribute('aria-label', t('replay.exitReplay'));
+    btn.hidden = true;
+    btn.setAttribute('aria-hidden', 'true');
     return;
   }
+  btn.hidden = false;
+  btn.removeAttribute('aria-hidden');
   btn.textContent = typeof t === 'function' ? t('game.resign') : 'Resign';
   btn.classList.add('btn-danger');
   btn.classList.remove('btn-ghost');
@@ -9173,13 +9180,19 @@ function replayElapsedSeconds(step) {
   return Math.max(0, curTs - firstTs);
 }
 
-function replayActionLabelForStep(step) {
+function replayActionTypeAtStep(step) {
   const timeline = Array.isArray(G.replayTimeline) ? G.replayTimeline : [];
   const idx = Math.max(0, Number(step) || 0) - 1;
-  if (idx < 0 || !timeline[idx]) {
+  if (idx < 0 || !timeline[idx]) return '';
+  return String(timeline[idx].type || '');
+}
+
+function replayActionLabelForStep(step) {
+  const recType = replayActionTypeAtStep(step);
+  if (!recType) {
     return step <= 0 ? (typeof t === 'function' ? t('replay.startStep') : 'start') : '';
   }
-  return formatReplayActionType(timeline[idx].type);
+  return formatReplayActionType(recType);
 }
 
 function formatReplayActionType(type) {
@@ -10150,6 +10163,18 @@ function abortGameplayPresentation(opts = {}) {
     // mirrors live UX instead of flash-dismissing setup screens / Main Phase.
     ['overlay-prompt', 'overlay-pick', 'overlay-hand-pick', 'overlay-heart',
       'overlay-live', 'overlay-surveil', 'overlay-zone', 'modal-card'].forEach((id) => closeM(id));
+    if (typeof isReplayViewing === 'function' && isReplayViewing()) {
+      const recType = (typeof replayActionTypeAtStep === 'function')
+        ? replayActionTypeAtStep(G.replayStep)
+        : '';
+      const keepCoin = recType === 'ack_coin_flip'
+        || (recType === 'choose_first_player' && G.gameState?.phase === 'coin_flip');
+      if (!keepCoin) {
+        if (typeof resetCoinFlipPresentation === 'function') resetCoinFlipPresentation();
+        else closeM('overlay-coin');
+      }
+      if (recType !== 'mulligan' && G.gameState?.phase !== 'setup') closeM('overlay-mull');
+    }
     return;
   }
   clearCenterBannerQueue();
@@ -14274,6 +14299,7 @@ async function bootApp() {
   on('btn-replay-next', 'click', () => replayStepBy(1));
   on('btn-replay-last', 'click', () => replayGotoStep(G.replayTotal));
   on('btn-replay-play', 'click', toggleReplayAutoPlay);
+  on('btn-replay-exit', 'click', exitReplayViewing);
   document.addEventListener('keydown', (e) => {
     if (!isReplayViewing()) return;
     const tag = String(e.target?.tagName || '');
@@ -24413,7 +24439,13 @@ function resetCoinFlipPresentation() {
   G._cpuCoinFlipChooseKey = null;
   G._tutCoinFlipAnimKey = null;
   hideCoinChoiceButtons();
+  const coin = el('coin-el');
+  if (coin) {
+    coin.onanimationend = null;
+    coin.className = 'coin';
+  }
   el('overlay-coin')?.classList.remove('open');
+  closeM('overlay-coin');
 }
 
 function coinFlipBothReady(s) {
@@ -28298,7 +28330,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=63"></script>
-<script src="client/js/board-render.js?v=8"></script>
+<script src="client/js/board-render.js?v=10"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>

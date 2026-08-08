@@ -52,6 +52,15 @@
     if (typeof applyReplayStateFromPoll === 'function') applyReplayStateFromPoll(s);
     if (document.querySelector('.screen.active')?.id !== 'screen-game') showScr('game');
     if (typeof dismissAllGameplayOverlays === 'function') dismissAllGameplayOverlays();
+    const recType = (typeof replayActionTypeAtStep === 'function')
+      ? replayActionTypeAtStep(s?.replay?.step ?? G.replayStep)
+      : '';
+    const coinStep = recType === 'ack_coin_flip'
+      || (recType === 'choose_first_player' && s?.phase === 'coin_flip')
+      || (!recType && s?.phase === 'coin_flip');
+    if (!coinStep && typeof resetCoinFlipPresentation === 'function') {
+      resetCoinFlipPresentation();
+    }
     primeReplaySnapshotPresentationContext(s);
     G.gameState = s;
     renderGame(s, { skipPrompt: true });

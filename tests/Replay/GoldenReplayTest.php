@@ -159,6 +159,42 @@ final class GoldenReplayTest extends TestCase
         $this->assertContains($id1, $wrIds);
     }
 
+    public function testReplayCanLeaveCoinFlipToMulliganAndMain(): void
+    {
+        $created = createRoom(['name' => 'Coin P1', 'deck' => 'nijigasaki']);
+        joinRoom([
+            'room_id' => $created['room_id'],
+            'name' => 'Coin P2',
+            'deck' => 'cpu',
+            'cpu_difficulty' => 'easy',
+        ]);
+        $baseline = loadGame($created['room_id']);
+        $this->assertSame('coin_flip', $baseline['phase'] ?? '');
+        $p1Hand = $baseline['players']['p1']['hand'][0]['instance_id'] ?? '';
+        $this->assertNotSame('', $p1Hand);
+
+        $actions = [
+            ['player' => 'p1', 'type' => 'ack_coin_flip', 'data' => []],
+            ['player' => 'p2', 'type' => 'ack_coin_flip', 'data' => []],
+            ['player' => ($baseline['coin_flip']['winner'] ?? 'p1'), 'type' => 'choose_first_player', 'data' => ['first_player' => 'p1']],
+            ['player' => 'p1', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+            ['player' => 'p2', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+        ];
+        $state = replayRestoreFromBaseline($baseline, 'COIN1', 'tok1', 'tok2');
+        $afterMull = replayApplyActionsThrough($state, $actions, count($actions));
+        $this->assertSame('main_first', $afterMull['phase'] ?? '');
+
+        $stuck = replayRestoreFromBaseline($baseline, 'COIN2', 'tok1', 'tok2');
+        $skipSetup = replayApplyActionsThrough($stuck, [
+            ['player' => 'p1', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+            ['player' => 'p2', 'type' => 'mulligan', 'data' => ['card_ids' => []]],
+            ['player' => 'p1', 'type' => 'play_member', 'data' => ['card_id' => $p1Hand, 'slot' => 'center']],
+        ], 3);
+        $this->assertContains($skipSetup['phase'] ?? '', ['main_first', 'main_second']);
+        $center = $skipSetup['players']['p1']['stage']['center'] ?? null;
+        $this->assertSame($p1Hand, $center['instance_id'] ?? null);
+    }
+
     public function testMulliganReplayRecordsMainDeckOrder(): void {
         $created = createRoom(['name' => 'Mull P1', 'deck' => 'nijigasaki']);
         joinRoom([

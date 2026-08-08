@@ -330,16 +330,129 @@ function replayApplySurveilPickOneFromRecorded(array $state, string $owner, arra
     return $state;
 }
 
+function replayForceLeaveCoinFlip(array $state, string $pid): array {
+    if (($state['phase'] ?? '') !== 'coin_flip') {
+        return $state;
+    }
+    $flip = is_array($state['coin_flip'] ?? null) ? $state['coin_flip'] : [];
+    $winner = $flip['winner'] ?? null;
+    if ($winner !== 'p1' && $winner !== 'p2') {
+        $winner = ($pid === 'p2') ? 'p2' : 'p1';
+    }
+    $first = $state['first_player'] ?? null;
+    if ($first !== 'p1' && $first !== 'p2') {
+        $first = $winner;
+    }
+    $state['first_player'] = $first;
+    $state['active_player'] = $first;
+    $state['phase'] = 'setup';
+    unset($state['coin_flip']);
+    return $state;
+}
+
+function replayEnsureMulligansDone(array $state): array {
+    foreach (['p1', 'p2'] as $id) {
+        if (empty($state['players'][$id])) {
+            continue;
+        }
+        $state['players'][$id]['ready_mulligan'] = true;
+        if (!isset($state['players'][$id]['mulligan_redrawn'])) {
+            $state['players'][$id]['mulligan_redrawn'] = 0;
+        }
+    }
+    return $state;
+}
+
+/** Advance a stuck coin/setup snapshot so recorded main/live actions can apply. */
+function replayForcePhaseForAction(array $state, string $pid, string $type): array {
+    $phase = (string)($state['phase'] ?? '');
+    if ($type === 'choose_first_player') {
+        if ($phase !== 'coin_flip') {
+            $state['phase'] = 'coin_flip';
+        }
+        $flip = is_array($state['coin_flip'] ?? null) ? $state['coin_flip'] : [];
+        $winner = $flip['winner'] ?? $pid;
+        if ($winner !== 'p1' && $winner !== 'p2') {
+            $winner = $pid;
+        }
+        $state['coin_flip'] = [
+            'winner' => $winner,
+            'ready'  => ['p1' => true, 'p2' => true],
+            'since'  => intval($flip['since'] ?? time()),
+        ];
+        return $state;
+    }
+    if ($type === 'mulligan') {
+        $state = replayForceLeaveCoinFlip($state, $pid);
+        $state['phase'] = 'setup';
+        if (($state['first_player'] ?? null) !== 'p1' && ($state['first_player'] ?? null) !== 'p2') {
+            $state['first_player'] = $pid;
+            $state['active_player'] = $pid;
+        }
+        return $state;
+    }
+
+    $mainish = in_array($type, ['play_member', 'activate_ability', 'end_main', 'force_own_timeout', 'resolve_prompt'], true);
+    $liveish = in_array($type, ['set_live_cards', 'end_live_set', 'confirm_live', 'live_show_ack'], true);
+    if (!$mainish && !$liveish) {
+        return $state;
+    }
+
+    $state = replayForceLeaveCoinFlip($state, $pid);
+    $phase = (string)($state['phase'] ?? '');
+    if ($phase === 'setup' || $phase === 'waiting' || $phase === '') {
+        $state = replayEnsureMulligansDone($state);
+        if (($state['first_player'] ?? null) !== 'p1' && ($state['first_player'] ?? null) !== 'p2') {
+            $state['first_player'] = $pid;
+        }
+        $state['active_player'] = $pid;
+        $state = startTurn($state);
+        $phase = (string)($state['phase'] ?? '');
+    }
+    if ($mainish && !in_array($phase, ['main_first', 'main_second'], true)) {
+        $first = $state['first_player'] ?? $pid;
+        $state['phase'] = ($first === $pid) ? 'main_first' : 'main_second';
+        $state['active_player'] = $pid;
+    }
+    if ($liveish && ($state['phase'] ?? '') !== 'live_set') {
+        $state['phase'] = 'live_set';
+        $state['active_player'] = $pid;
+    }
+    return $state;
+}
+
 function replayPrepareStateForRecordedAction(array $state, string $pid, string $type): array {
     if (in_array($type, ['resolve_prompt', 'anti_softlock_skip'], true)) {
+        $pr = $state['pending_prompt'] ?? null;
+        if (is_array($pr) && ($pr['responder'] ?? '') !== $pid) {
+            unset($state['pending_prompt']);
+        }
         return $state;
     }
     $pr = $state['pending_prompt'] ?? null;
-    if (!is_array($pr)) {
-        return $state;
-    }
-    if (($pr['responder'] ?? '') !== $pid) {
+    if (is_array($pr) && ($pr['responder'] ?? '') !== $pid) {
         unset($state['pending_prompt']);
+    }
+
+    $phase = (string)($state['phase'] ?? '');
+    if ($type === 'choose_first_player' && $phase === 'coin_flip') {
+        $flip = is_array($state['coin_flip'] ?? null) ? $state['coin_flip'] : [];
+        if (empty($flip['ready']['p1']) || empty($flip['ready']['p2'])) {
+            $state['coin_flip']['ready']['p1'] = true;
+            $state['coin_flip']['ready']['p2'] = true;
+        }
+    }
+    if ($type === 'mulligan' && in_array($phase, ['coin_flip', 'waiting', ''], true)) {
+        $state = replayForcePhaseForAction($state, $pid, $type);
+    }
+    $gameplayTypes = [
+        'play_member', 'activate_ability', 'end_main', 'force_own_timeout',
+        'set_live_cards', 'end_live_set', 'confirm_live', 'live_show_ack',
+        'resolve_prompt',
+    ];
+    if (in_array($type, $gameplayTypes, true)
+        && in_array($phase, ['coin_flip', 'setup', 'waiting', ''], true)) {
+        $state = replayForcePhaseForAction($state, $pid, $type);
     }
     return $state;
 }
@@ -347,6 +460,12 @@ function replayPrepareStateForRecordedAction(array $state, string $pid, string $
 /** Best-effort state repair before retrying a desynced recorded action. */
 function replayApplyFixForRetry(array $state, string $pid, string $type, array $data, Throwable $e): array {
     $msg = $e->getMessage();
+    if (str_contains($msg, 'Not in correct phase')
+        || str_contains($msg, 'Not in coin flip')
+        || str_contains($msg, 'Not in mulligan')
+        || str_contains($msg, 'Wait for the coin flip')) {
+        $state = replayForcePhaseForAction($state, $pid, $type);
+    }
     if (str_contains($msg, 'Not your turn')) {
         $state['active_player'] = $pid;
         $pr = $state['pending_prompt'] ?? null;
@@ -472,7 +591,15 @@ function replayApplyActionsThrough(array $state, array $actions, int $step): arr
         if ($type === '') {
             throw new Exception('Replay action #' . ($i + 1) . ' missing type');
         }
-        $state = replayApplyRecordedAction($state, $pid, $type, is_array($a['data'] ?? null) ? $a['data'] : [], $i + 1);
+        try {
+            $state = replayApplyRecordedAction($state, $pid, $type, is_array($a['data'] ?? null) ? $a['data'] : [], $i + 1);
+        } catch (Throwable $e) {
+            throw new Exception(
+                'Replay action #' . ($i + 1) . ' (' . $type . ' / ' . $pid . '): ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
         if (empty($state['pending_prompt'])) {
             $state = flushAutoOnWaitAbilities($state);
         }
