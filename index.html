@@ -2178,7 +2178,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=39"></script>
-<script src="client/js/state-apply.js?v=47"></script>
+<script src="client/js/state-apply.js?v=48"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=73"></script>
@@ -24634,6 +24634,28 @@ function submitCoinFirstPlayerChoice(selfFirst) {
 function maybeShowCoinFlip(s, myId) {
   if (s.phase !== 'coin_flip' || !s.coin_flip) {
     resetCoinFlipPresentation();
+    return;
+  }
+
+  // Replay stepping: land the coin instantly and mirror ack / choose-first state.
+  // Do not keep spinning while later recorded actions already applied.
+  if (typeof isReplayViewing === 'function' && isReplayViewing()) {
+    const flip = s.coin_flip;
+    const flipKey = `${G.roomId || 'game'}:${flip.winner || ''}`;
+    if (G._coinFlipTimer) {
+      clearTimeout(G._coinFlipTimer);
+      G._coinFlipTimer = null;
+    }
+    const coin = el('coin-el');
+    if (coin) {
+      coin.onanimationend = null;
+      coin.className = 'coin landed-heads';
+    }
+    G.coinFlipSeq = flipKey;
+    G._coinFlipAnimComplete = true;
+    G.coinFlipAckSent = !!flip.ready?.[myId];
+    hideCoinChoiceButtons();
+    syncCoinFlipChoiceUi(s, myId);
     return;
   }
 

@@ -63,10 +63,13 @@
 
   async function applyReplayStateUpdate(prev, s) {
     const delta = replayStepDelta(prev, s);
-    const scrub = !prev || G._replaySeekWasScrub || delta == null || delta !== 1;
+    const setupPhase = (prev?.phase === 'coin_flip' || prev?.phase === 'setup'
+      || s?.phase === 'coin_flip' || s?.phase === 'setup');
+    const scrub = !prev || G._replaySeekWasScrub || delta == null || delta !== 1 || setupPhase;
     if (typeof abortGameplayPresentation === 'function') {
       // Soft forward keeps coin/mull overlays and avoids wiping a banner only to
       // re-queue the same Main Phase splash on the next live→main mis-detect.
+      // Coin/mulligan setup still snapshots so each step matches the recorded overlay.
       abortGameplayPresentation(scrub ? {} : { softReplayForward: true, skipAbortFlag: true });
     }
     if (scrub) {
