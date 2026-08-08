@@ -2161,7 +2161,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=102"></script>
+<script src="i18n.js?v=103"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=21"></script>
@@ -21453,14 +21453,28 @@ function stripEnRuleKwPrefixes(text) {
     .trim();
 }
 
+/** Parenthetical ALL-blade reminder is global rules text, not a card skill. */
+function stripAllBladeHeartsRulesReminder(text) {
+  let s = String(text || '');
+  s = s.replace(
+    /[ \t]*[（(][^）\n)]{0,220}?(?:ALL\s*ブレード|ALL\s*blades?|When checking Required Hearts[\s\S]{0,90}?any color|필요\s*하트[\s\S]{0,90}?아무\s*색|检查所需[\s\S]{0,90}?(?:任何颜色|任意颜色)|หัวใจที่ต้องการ[\s\S]{0,90}?สีใดก็ได้)[^）\n)]{0,90}?[）)][ \t]*/giu,
+    ''
+  );
+  s = s.replace(
+    /(?:^|\n)[ \t]*When checking Required Hearts,\s*Blade hearts revealed for Yell count as any color\.?[ \t]*/gi,
+    '\n'
+  );
+  return s.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function cardRulesDisplayText(card) {
   if (!card) return '';
-  const en = (card.text || '').trim();
-  const jp = (card.text_jp || '').trim();
-  const es = (card.text_es || '').trim();
-  const ko = (card.text_ko || '').trim();
-  const zh = (card.text_zh || '').trim();
-  const th = (card.text_th || '').trim();
+  const en = stripAllBladeHeartsRulesReminder(card.text || '');
+  const jp = stripAllBladeHeartsRulesReminder(card.text_jp || '');
+  const es = stripAllBladeHeartsRulesReminder(card.text_es || '');
+  const ko = stripAllBladeHeartsRulesReminder(card.text_ko || '');
+  const zh = stripAllBladeHeartsRulesReminder(card.text_zh || '');
+  const th = stripAllBladeHeartsRulesReminder(card.text_th || '');
   const loc = getLocale();
   if (loc === 'es') return es || en;
   if (loc === 'ko') return ko || en;
@@ -28063,6 +28077,13 @@ function mkBladeHeartIcon(color, lg=false){
   img.dataset.bladeHeart=c;
   img.src=iconSrc(BLADE_HEART_ICON[c]||BLADE_HEART_ICON.any);
   img.alt=(c==='all'?'ALL':c) + ' blade heart'; img.decoding='async';
+  if (c === 'all' && typeof t === 'function') {
+    const tip = t('card.allBladeHeartsTip');
+    if (tip && !String(tip).startsWith('card.')) {
+      img.title = tip;
+      img.setAttribute('aria-label', tip);
+    }
+  }
   return img;
 }
 
@@ -28175,7 +28196,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=62"></script>
+<script src="client/js/spectacle.js?v=63"></script>
 <script src="client/js/board-render.js?v=8"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>

@@ -213,4 +213,24 @@ final class HeartResolutionTest extends TestCase
         ];
         $this->assertTrue(\liveCardsGrantYellHeartsWildcard([$live]));
     }
+
+    public function testReminderWordingWithoutAbilityIsNotYellWildcard(): void
+    {
+        $reminderOnly = [
+            'abilities' => [],
+            'text' => '(When checking Required Hearts, Blade hearts revealed for Yell count as any color.)',
+            'text_jp' => '(必要ハートを確認する時、エールで出たALLブレードは任意の色のハートとして扱う。)',
+        ];
+        $this->assertFalse(\liveCardsGrantYellHeartsWildcard([$reminderOnly]));
+
+        $legacyWording = [
+            'abilities' => [],
+            'text' => 'Hearts revealed for Yell may be treated as any color.',
+            'text_jp' => 'エールで出たハートは任意の色として扱う。',
+        ];
+        $this->assertFalse(
+            \liveCardsGrantYellHeartsWildcard([$legacyWording]),
+            'Wildcard wording without yell_hearts_wildcard IR is not a card skill'
+        );
+    }
 }

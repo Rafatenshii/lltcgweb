@@ -936,6 +936,7 @@
       "requiredHearts": "Required hearts",
       "hearts": "Hearts",
       "bladeHearts": "Blade hearts",
+      "allBladeHeartsTip": "When checking required hearts, ALL blade hearts revealed for Yell count as any color.",
       "yellIcons": "Yell icons",
       "playToSlot": "Play to slot:",
       "needEnergy": "Need",
@@ -2158,6 +2159,7 @@
       "requiredHearts": "必要ハート",
       "hearts": "ハート",
       "bladeHearts": "ブレードハート",
+      "allBladeHeartsTip": "必要ハートを確認する時、エールで出たALLブレードは任意の色のハートとして扱う。",
       "yellIcons": "エールアイコン",
       "playToSlot": "配置スロット：",
       "needEnergy": "必要",
@@ -3256,7 +3258,8 @@
       "playToSlot": "Jugar en espacio:",
       "needEnergy": "Necesitas",
       "haveEnergy": "tienes",
-      "bladeHearts": "Corazones de Blade"
+      "bladeHearts": "Corazones de Blade",
+      "allBladeHeartsTip": "Al comprobar los corazones requeridos, los corazones de Blade ALL revelados para Yell cuentan como cualquier color.",
     },
     "pack": {
       "opened": "Sobre abierto",
@@ -4493,7 +4496,8 @@
       "playToSlot": "슬롯에 플레이:",
       "needEnergy": "필요",
       "haveEnergy": "보유",
-      "bladeHearts": "Blade 하트"
+      "bladeHearts": "Blade 하트",
+      "allBladeHeartsTip": "필요 하트를 확인할 때, Yell로 공개된 ALL Blade 하트는 아무 색으로 취급한다."
     },
     "pack": {
       "opened": "팩 개봉 완료",
@@ -5745,7 +5749,8 @@
       "playToSlot": "玩老虎机：",
       "needEnergy": "需要",
       "haveEnergy": "有",
-      "bladeHearts": "刀锋之心"
+      "bladeHearts": "刀锋之心",
+      "allBladeHeartsTip": "确认所需心形时，Yell 公开的 ALL 刀锋心可视为任意颜色。",
     },
     "pack": {
       "opened": "包装已打开",
@@ -6987,7 +6992,8 @@
       "playToSlot": "เล่นลงช่อง:",
       "needEnergy": "ต้องการ",
       "haveEnergy": "มี",
-      "bladeHearts": "หัวใจเบลด"
+      "bladeHearts": "หัวใจเบลด",
+      "allBladeHeartsTip": "เมื่อตรวจหัวใจที่ต้องการ หัวใจเบลด ALL ที่เปิดสำหรับ Yell นับเป็นสีใดก็ได้"
     },
     "pack": {
       "opened": "เปิดแพ็กแล้ว",
