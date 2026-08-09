@@ -14,6 +14,8 @@ const TCG_DAILY_PACK_LIMIT = 5;
 const TCG_WELCOME_DAY_PACK_LIMIT = 10;
 /** ~1 God Pack per 16 booster boxes (extremely rare). */
 const TCG_GOD_PACK_ODDS = 480;
+/** Random Parallel (P) character Energy inserts included with a physical start deck. */
+const TCG_STARTER_PARALLEL_PROMO_COUNT = 2;
 
 /**
  * Booster box catalog.
@@ -1199,6 +1201,118 @@ function tcgGetStarterDeckLists(string $starterKey, array $cardsData): array {
     ];
 }
 
+/** JP booster_pack label for an official start-deck product (from a main-deck catalog row). */
+function tcgStarterDeckBoosterPack(string $starterKey, array $cardsData): string {
+    try {
+        $lists = tcgGetStarterDeckLists($starterKey, $cardsData);
+    } catch (Throwable $e) {
+        return '';
+    }
+    $map = [];
+    foreach ($cardsData['cards'] ?? [] as $c) {
+        $no = (string)($c['card_no'] ?? '');
+        if ($no !== '') {
+            $map[$no] = $c;
+        }
+    }
+    foreach ($lists['main_deck'] ?? [] as $no) {
+        $pack = trim((string)($map[$no]['booster_pack'] ?? ''));
+        if ($pack !== '') {
+            return $pack;
+        }
+    }
+    return '';
+}
+
+/**
+ * Parallel P character Energy cards printed with a start deck (retail random inserts).
+ * @return list<string>
+ */
+function tcgStarterParallelPromoCardNos(string $starterKey, array $cardsData): array {
+    $pack = tcgStarterDeckBoosterPack($starterKey, $cardsData);
+    if ($pack === '') {
+        return [];
+    }
+    $nos = [];
+    foreach ($cardsData['cards'] ?? [] as $c) {
+        if (!is_array($c)) {
+            continue;
+        }
+        if (($c['booster_pack'] ?? '') !== $pack) {
+            continue;
+        }
+        if (($c['card_type'] ?? '') !== 'エネルギー') {
+            continue;
+        }
+        $r = tcgNormalizePoolRarity((string)($c['rarity'] ?? ''), (string)($c['card_no'] ?? ''));
+        if ($r !== 'P' && $r !== 'P+') {
+            continue;
+        }
+        $no = trim((string)($c['card_no'] ?? ''));
+        if ($no !== '') {
+            $nos[$no] = true;
+        }
+    }
+    $list = array_keys($nos);
+    sort($list);
+    return $list;
+}
+
+/**
+ * Fixed start-deck list plus Parallel P Energies (sticker shop / seal convert).
+ * @return list<string>
+ */
+function tcgStarterShopCardNos(string $starterKey, array $cardsData): array {
+    $lists = tcgGetStarterDeckLists($starterKey, $cardsData);
+    $nos = [];
+    foreach (array_merge($lists['main_deck'] ?? [], $lists['energy_deck'] ?? []) as $no) {
+        $no = (string)$no;
+        if ($no !== '') {
+            $nos[$no] = true;
+        }
+    }
+    foreach (tcgStarterParallelPromoCardNos($starterKey, $cardsData) as $no) {
+        $nos[$no] = true;
+    }
+    return array_keys($nos);
+}
+
+/**
+ * Pick distinct random Parallel P Energies (no replacement). Fewer if the pool is smaller.
+ * @return list<string>
+ */
+function tcgPickStarterParallelPromos(
+    string $starterKey,
+    array $cardsData,
+    int $count = TCG_STARTER_PARALLEL_PROMO_COUNT
+): array {
+    $pool = tcgStarterParallelPromoCardNos($starterKey, $cardsData);
+    if ($pool === [] || $count <= 0) {
+        return [];
+    }
+    if (count($pool) <= $count) {
+        shuffle($pool);
+        return array_values($pool);
+    }
+    $picks = [];
+    $remaining = $pool;
+    for ($i = 0; $i < $count; $i++) {
+        $idx = array_rand($remaining);
+        $picks[] = $remaining[$idx];
+        array_splice($remaining, (int)$idx, 1);
+    }
+    return $picks;
+}
+
+/** @return list<string> card nos added */
+function tcgGrantStarterParallelPromos(string $discordId, string $starterKey, array $cardsData): array {
+    $picks = tcgPickStarterParallelPromos($starterKey, $cardsData);
+    if ($picks !== []) {
+        tcgAddCardsToCollection($discordId, $picks);
+    }
+    return $picks;
+}
+
 function tcgReadCardsDataFile(): array {
     static $cached = null;
     if (is_array($cached)) {
@@ -1370,6 +1484,7 @@ function tcgGrantStarterDeck(string $discordId, string $starterKey, array $cards
     }
     $all = array_merge($deck['main_deck'] ?? [], $deck['energy_deck'] ?? []);
     tcgAddCardsToCollection($discordId, $all);
+    $promos = tcgGrantStarterParallelPromos($discordId, $starterKey, $cardsData);
     tcgSaveStarterPreset($discordId, $starterKey, $cardsData, 1);
     $db = tcgDb();
     $db->prepare('UPDATE tcg_users SET starter_deck = ?, updated_at = ? WHERE discord_id = ?')
@@ -1378,7 +1493,8 @@ function tcgGrantStarterDeck(string $discordId, string $starterKey, array $cards
     return [
         'starter_deck' => $starterKey,
         'label' => $deck['name_en'] ?? $deck['name'] ?? $starterKey,
-        'cards_granted' => count($all),
+        'cards_granted' => count($all) + count($promos),
+        'promo_cards' => $promos,
         'preset_slot' => 1,
     ];
 }
@@ -1491,6 +1607,7 @@ function tcgGrantAdditionalStarterDeck(string $discordId, string $starterKey, ar
     }
     $all = array_merge($deck['main_deck'] ?? [], $deck['energy_deck'] ?? []);
     tcgAddCardsToCollection($discordId, $all);
+    $promos = tcgGrantStarterParallelPromos($discordId, $starterKey, $cardsData);
     tcgRecordStarterOwned($discordId, $starterKey, 'milestone', $missionId);
     $slot = tcgNextFreeDeckPresetSlot($discordId);
     if ($slot !== null) {
@@ -1499,7 +1616,8 @@ function tcgGrantAdditionalStarterDeck(string $discordId, string $starterKey, ar
     return [
         'starter_deck' => $starterKey,
         'label' => $deck['name_en'] ?? $deck['name'] ?? tcgStarterLabel($starterKey),
-        'cards_granted' => count($all),
+        'cards_granted' => count($all) + count($promos),
+        'promo_cards' => $promos,
         'preset_slot' => $slot,
         'mission_id' => $missionId,
     ];

@@ -162,25 +162,19 @@ function tcgSealBuyCostForTier(string $tier): int {
 
 /** Card nos from starter decks this user owns (buy-back unlocked in sticker shop). */
 function tcgOwnedStarterCardNoSet(string $discordId, array $cardsData): array {
-    static $cache = [];
-    if (isset($cache[$discordId])) {
-        return $cache[$discordId];
-    }
     $nos = [];
     foreach (tcgOwnedStarterKeys($discordId) as $key) {
         try {
-            $lists = tcgGetStarterDeckLists($key, $cardsData);
+            foreach (tcgStarterShopCardNos($key, $cardsData) as $no) {
+                $no = (string)$no;
+                if ($no !== '') {
+                    $nos[$no] = true;
+                }
+            }
         } catch (Throwable $e) {
             continue;
         }
-        foreach (array_merge($lists['main_deck'] ?? [], $lists['energy_deck'] ?? []) as $no) {
-            $no = (string)$no;
-            if ($no !== '') {
-                $nos[$no] = true;
-            }
-        }
     }
-    $cache[$discordId] = $nos;
     return $nos;
 }
 
@@ -345,15 +339,7 @@ function tcgStickerShopProductCardNos(string $productId, array $cardsData): arra
     }
     if (str_starts_with($productId, 'starter:')) {
         $key = substr($productId, 8);
-        $lists = tcgGetStarterDeckLists($key, $cardsData);
-        $nos = [];
-        foreach (array_merge($lists['main_deck'] ?? [], $lists['energy_deck'] ?? []) as $no) {
-            $no = (string)$no;
-            if ($no !== '') {
-                $nos[$no] = true;
-            }
-        }
-        return array_keys($nos);
+        return tcgStarterShopCardNos($key, $cardsData);
     }
     throw new Exception('Unknown product', 404);
 }
