@@ -776,16 +776,45 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (isset($ab['max_live_score'])) {
             $cfg['max_live_score'] = intval($ab['max_live_score']);
         }
-        $added = addLiveFromWrToZone($p, $cfg);
-        if ($added < 1) throw new Exception('No matching Live card in Waiting Room or Live storage is full');
-        $penalty = intval($ab['next_live_set_cap_penalty'] ?? 0);
-        if ($penalty > 0) {
-            $p['live_set_cap_penalty'] = intval($p['live_set_cap_penalty'] ?? 0) + $penalty;
+        $eligible = wrCandidatesMatching($p, $cfg);
+        if (empty($eligible)) {
+            throw new Exception('No matching Live card in Waiting Room or Live storage is full');
         }
-        if (!empty($ab['once_per_turn'])) markAbilityUsed($member, $abilityIdx);
-        $p['stage'][$slot] = $member;
-        $state = addLog($state, $state['players'][$pid]['name'] .
-            ' — [' . ($member['name_en'] ?? $member['name']) . "] paid $cost Energy; placed Live card from Waiting Room into storage.");
+        // activate card_id is the source Member — never treat it as the WR Live.
+        $preferId = trim((string)($data['wr_card_id'] ?? $data['target_id'] ?? ''));
+        if ($preferId === '' && count($eligible) > 1) {
+            $state['pending_prompt'] = [
+                'type'          => 'hs_pick_wr_live_to_zone',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_id'     => $member['instance_id'] ?? '',
+                'source_slot'   => $slot,
+                'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
+                'ability'       => $ab,
+                'ability_index' => $abilityIdx,
+                'cost_prepaid'  => true,
+                'candidates'    => array_map('cardPromptSummary', $eligible),
+                'wr_pick_cfg'   => $cfg,
+                'prompt'        => 'Choose 1 '
+                    . (($ab['group'] ?? '') !== '' ? ($ab['group'] . ' ') : '')
+                    . 'Live card from your Waiting Room to place face-up in Live storage.',
+            ];
+            $p['stage'][$slot] = $member;
+            $state['seq']++;
+            return $state;
+        }
+        if ($preferId === '' && count($eligible) === 1) {
+            $preferId = (string)($eligible[0]['instance_id'] ?? '');
+        }
+        $state = applyPayEnergyAddLiveZoneFromWr(
+            $state,
+            $pid,
+            $member,
+            $slot,
+            $abilityIdx,
+            $ab,
+            $preferId
+        );
     } elseif (($ab['type'] ?? '') === 'discard_play_self_from_wr') {
         $cost = intval($ab['cost'] ?? 0);
         if ($cost > 0 && !payEnergyCost($p, $cost)) {

@@ -1832,8 +1832,14 @@ function clearLiveStorageBeforeLiveSet(array $state): array {
         if ($zone === []) {
             continue;
         }
+        $keep = [];
         foreach ($zone as $li => $lc) {
             if (!$lc) {
+                continue;
+            }
+            // Hime bp2-018 etc.: face-up WR Lives placed during Main must stay.
+            if (function_exists('liveZoneCardIsPreplaced') && liveZoneCardIsPreplaced($lc)) {
+                $keep[] = $lc;
                 continue;
             }
             $anims[] = animSpec($lc['instance_id'] ?? '', 'live', 'waiting_room', $pid, [
@@ -1842,7 +1848,7 @@ function clearLiveStorageBeforeLiveSet(array $state): array {
             $state['players'][$pid]['waiting_room'][] = $lc;
             $moved++;
         }
-        $state['players'][$pid]['live_zone'] = [];
+        $state['players'][$pid]['live_zone'] = $keep;
     }
     if ($moved > 0) {
         $state = addLog(
@@ -1923,12 +1929,9 @@ function actionSetLiveCards(array $state, string $pid, array $data): array {
 
     $cardIds = $data['card_ids'] ?? [];
     $p = &$state['players'][$pid];
-    $storageMax = 3;
+    $physicalMax = 3;
     $penalty = intval($p['live_set_cap_penalty'] ?? 0);
-    if ($penalty > 0) {
-        $storageMax = max(0, $storageMax - $penalty);
-        $p['live_set_cap_penalty'] = 0;
-    }
+    $placeMax = max(0, $physicalMax - $penalty);
     $removeIds = $data['remove_ids'] ?? [];
     $anims = [];
     foreach ($removeIds as $rid) {
@@ -1940,6 +1943,10 @@ function actionSetLiveCards(array $state, string $pid, array $data): array {
         $newZone = [];
         foreach ($p['live_zone'] as $li => $c) {
             if (($c['instance_id'] ?? '') === $rid) {
+                if (function_exists('liveZoneCardIsPreplaced') && liveZoneCardIsPreplaced($c)) {
+                    $newZone[] = $c;
+                    continue;
+                }
                 $removed = $c;
                 $fromSlot = liveZoneSlotOf($c, $li);
                 continue;
@@ -1957,9 +1964,18 @@ function actionSetLiveCards(array $state, string $pid, array $data): array {
         ]);
     }
 
-    $slotsLeft = $storageMax - liveZoneCount($p['live_zone']);
+    $placedThisSet = 0;
+    foreach ($p['live_zone'] as $c) {
+        if ($c && !(function_exists('liveZoneCardIsPreplaced') && liveZoneCardIsPreplaced($c))) {
+            $placedThisSet++;
+        }
+    }
+    $slotsLeft = min(
+        $physicalMax - liveZoneCount($p['live_zone']),
+        max(0, $placeMax - $placedThisSet)
+    );
     if ($slotsLeft <= 0 && !empty($cardIds)) {
-        throw new Exception('Live Card storage is full (max ' . $storageMax . ')');
+        throw new Exception('Live Card storage is full (max ' . $placeMax . ')');
     }
     $cardIds = array_slice($cardIds, 0, $slotsLeft);
 
@@ -2019,6 +2035,9 @@ function actionEndLiveSet(array $state, string $pid): array {
 
     $name = $state['players'][$pid]['name'];
     $stored = liveZoneCount($state['players'][$pid]['live_zone']);
+    if (isset($state['players'][$pid]['live_set_cap_penalty'])) {
+        $state['players'][$pid]['live_set_cap_penalty'] = 0;
+    }
     $state['live_ready'][$pid] = true;
     $state = addLog(
         $state,

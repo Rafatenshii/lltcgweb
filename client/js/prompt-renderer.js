@@ -2288,6 +2288,11 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
+  if(pr?.type==='hs_pick_wr_live_to_zone'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    openWrLivePick(pr, { state:s, myId });
+    return;
+  }
   if(pr?.type==='hs_leave_play_wr_slot'&&pr.step==='pick'&&pr.responder===myId){
     ovl.classList.remove('open');
     const me=s.players?.[myId];

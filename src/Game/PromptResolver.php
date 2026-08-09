@@ -1553,6 +1553,32 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         return actionResolvePickJudgeSuccessLive($state, $owner, $prompt, $data);
     }
 
+    if ($promptType === 'hs_pick_wr_live_to_zone') {
+        $cardId = trim((string)($data['card_id'] ?? $data['wr_card_id'] ?? $choice));
+        if ($cardId === '' || in_array($cardId, ['yes', 'no', 'skip', 'cancel'], true)) {
+            throw new Exception('Choose a Live card from your Waiting Room');
+        }
+        $slot = (string)($prompt['source_slot'] ?? '');
+        $srcId = (string)($prompt['source_id'] ?? '');
+        $idx = intval($prompt['ability_index'] ?? -1);
+        $member = ($slot !== '' && !empty($ownerP['stage'][$slot])) ? $ownerP['stage'][$slot] : null;
+        if (!$member || ($srcId !== '' && ($member['instance_id'] ?? '') !== $srcId)) {
+            throw new Exception('Source Member no longer on Stage');
+        }
+        unset($state['pending_prompt']);
+        $state = applyPayEnergyAddLiveZoneFromWr(
+            $state,
+            $owner,
+            $member,
+            $slot,
+            $idx,
+            $prompt['ability'] ?? $ability,
+            $cardId
+        );
+        $state['seq']++;
+        return finishPromptEffects($state);
+    }
+
     if ($promptType === 'pick_wr_to_hand') {
         $pickCount = intval($prompt['pick_count'] ?? 1);
         $ids = [];

@@ -2160,25 +2160,75 @@ function stageNamedSlotsMatch(array $p, array $slots): bool {
     return true;
 }
 
-function addLiveFromWrToZone(array &$p, array $cfg): int {
+function liveZoneCardIsPreplaced(array $card): bool {
+    return !empty($card['preplaced_live_zone']);
+}
+
+function addLiveFromWrToZone(array &$p, array $cfg, string $preferId = ''): int {
     if (liveZoneCount($p['live_zone'] ?? []) >= 3) return 0;
     $picked = null;
     $rest = [];
+    $preferId = trim($preferId);
     foreach ($p['waiting_room'] as $c) {
-        if (!$picked && cardMatchesWrPick($c, $cfg)) {
+        $iid = (string)($c['instance_id'] ?? '');
+        $match = cardMatchesWrPick($c, $cfg);
+        if (!$picked && $match && ($preferId === '' || $iid === $preferId)) {
             $picked = $c;
-        } else {
-            $rest[] = $c;
+            continue;
         }
+        $rest[] = $c;
     }
-    if (!$picked) return 0;
+    if (!$picked) {
+        return 0;
+    }
     $slot = liveZoneFirstEmptySlot($p['live_zone'] ?? []);
-    if ($slot < 0) return 0;
+    if ($slot < 0) {
+        return 0;
+    }
     $p['waiting_room'] = $rest;
     $picked['revealed'] = true;
+    $picked['preplaced_live_zone'] = true;
     $picked['live_slot'] = $slot;
     $p['live_zone'][] = $picked;
     return 1;
+}
+
+/** Hime PL!HS-bp2-018 — WR Live stays face-up; next LIVE Set place-cap −N. */
+function applyPayEnergyAddLiveZoneFromWr(
+    array $state,
+    string $pid,
+    array $member,
+    string $slot,
+    int $abilityIdx,
+    array $ab,
+    string $preferId = ''
+): array {
+    $p = &$state['players'][$pid];
+    $cfg = [
+        'group' => $ab['group'] ?? '',
+        'filter' => $ab['filter'] ?? 'live',
+    ];
+    if (isset($ab['max_live_score'])) {
+        $cfg['max_live_score'] = intval($ab['max_live_score']);
+    }
+    $added = addLiveFromWrToZone($p, $cfg, $preferId);
+    if ($added < 1) {
+        throw new Exception('No matching Live card in Waiting Room or Live storage is full');
+    }
+    $penalty = intval($ab['next_live_set_cap_penalty'] ?? 0);
+    if ($penalty > 0) {
+        $p['live_set_cap_penalty'] = intval($p['live_set_cap_penalty'] ?? 0) + $penalty;
+    }
+    if (!empty($ab['once_per_turn'])) {
+        markAbilityUsed($member, $abilityIdx);
+    }
+    $p['stage'][$slot] = $member;
+    $cost = intval($ab['cost'] ?? 0);
+    return addLog(
+        $state,
+        $state['players'][$pid]['name'] .
+        ' — [' . ($member['name_en'] ?? $member['name']) . "] paid $cost Energy; placed Live card from Waiting Room into storage face-up."
+    );
 }
 
 function findActivatedAbilitySource(array &$p, string $instanceId): ?array {

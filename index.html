@@ -2182,7 +2182,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
-<script src="client/js/prompt-renderer.js?v=74"></script>
+<script src="client/js/prompt-renderer.js?v=75"></script>
 <script src="client/js/tutorial-interactive.js?v=23"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -25015,8 +25015,12 @@ function liveStorageMax(s, myId) {
 }
 
 function liveSlotsLeft(s, myId) {
-  const stored = (s?.players?.[myId]?.live_zone || []).length;
-  return Math.max(0, liveStorageMax(s, myId) - stored);
+  const zone = s?.players?.[myId]?.live_zone || [];
+  const stored = zone.length;
+  const physicalLeft = Math.max(0, 3 - stored);
+  const placedThisSet = zone.filter((c) => c && !c.preplaced_live_zone).length;
+  const placeLeft = Math.max(0, liveStorageMax(s, myId) - placedThisSet);
+  return Math.min(physicalLeft, placeLeft);
 }
 
 function liveSelScoreBreakdown(s, myId) {
@@ -28437,7 +28441,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=16"></script>
+<script src="client/js/cpu-loop.js?v=17"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script>void bootApp();</script>
 </body>
