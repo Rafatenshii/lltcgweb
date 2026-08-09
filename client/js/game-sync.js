@@ -27,6 +27,10 @@
     disconnectHints: 0,
   };
 
+  function isReplayViewingSync() {
+    return typeof global.isReplayViewing === 'function' && global.isReplayViewing();
+  }
+
   global.tcgSyncStatsSnapshot = function tcgSyncStatsSnapshot() {
     return { ...(global._tcgSyncStats || {}) };
   };
@@ -143,6 +147,7 @@
 
   global.scheduleDeferredSyncPull = function scheduleDeferredSyncPull(delayMs = 500) {
     clearTimeout(G._syncPullTimer);
+    if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.syncEnabled) return;
     G._syncPullTimer = setTimeout(async () => {
       G._syncPullTimer = null;
@@ -160,6 +165,7 @@
   };
 
   global.resumePollingTick = function resumePollingTick(delayMs = 200) {
+    if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     clearTimeout(G.pollTimer);
     if (G.syncEnabled && G.syncTicket) {
@@ -225,6 +231,7 @@
   function nextPollDelayMs(errorMsg) {
     const backoff = pollDelayAfterError(errorMsg);
     if (backoff != null) return backoff;
+    if (isReplayViewingSync()) return 30000;
     if (!G.isCPU) return 600;
     return cpuHumanOwnsInput() ? 1100 : 280;
   }
@@ -269,6 +276,7 @@
   }
 
   async function tcgPresencePing() {
+    if (isReplayViewingSync()) return;
     if (!G.polling || !G.roomId || !G.token || (G.isTutorial && !G.tutorialLive)) return;
     try {
       await apiPost('ping', { room_id: G.roomId, token: G.token }, { silent: true });
@@ -277,6 +285,7 @@
 
   global.startSyncFallbackPoll = function startSyncFallbackPoll() {
     clearTimeout(G.syncFallbackTimer);
+    if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     G.syncFallbackTimer = setTimeout(async () => {
       G.syncFallbackTimer = null;
@@ -298,6 +307,7 @@
    */
   global.startSyncSafetyPoll = function startSyncSafetyPoll() {
     clearTimeout(G.syncSafetyTimer);
+    if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     const delay = G.isCPU
       ? (global.TCG_SYNC_SAFETY_POLL_CPU_MS || 5000)
@@ -422,6 +432,14 @@
       TCG_DEBUG.warn('sync', 'beginGameSync skipped — missing room/token');
       return;
     }
+    if (isReplayViewingSync()) {
+      TCG_DEBUG.log('sync', 'beginGameSync skipped — replay viewing (no poll loop)');
+      G.polling = false;
+      G.syncEnabled = false;
+      G.syncTicket = null;
+      stopSyncStream();
+      return;
+    }
     // Hostinger-only drain rooms (legacy ranked files): short poll. VPS Redis rooms use SSE.
     if (G.apiOrigin === 'hostinger') {
       G.syncEnabled = false;
@@ -471,6 +489,18 @@
   global.startPoll = function startPoll() {
     clearTimeout(G.pollTimer);
     clearTimeout(G.watchdogTimer);
+    if (isReplayViewingSync()) {
+      // Replay rooms are local snapshots. Seeks use replay_goto; a CPU-style
+      // poll=0 loop (~280ms) only hammers Hostinger get_state for unchanged seq.
+      G.polling = false;
+      G.syncEnabled = false;
+      G.syncTicket = null;
+      stopSyncStream();
+      if (G.isSpectator) saveSpectatorSession();
+      else saveActiveGameSession();
+      TCG_DEBUG.log('sync', 'startPoll skipped — replay viewing');
+      return;
+    }
     G.polling = true;
     G._syncFailCount = 0;
     if (G.isSpectator) saveSpectatorSession();
@@ -484,6 +514,7 @@
    * Used for CPU solo and when SSE sync is unavailable.
    */
   global.doPollLegacy = async function doPollLegacy() {
+    if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
     // Must use pollPresentationBlocked — raw _perfSpectacleActive blocked CPU/spectator
     // from seeing live_show stage advances (Win/Loss freeze).
@@ -620,6 +651,7 @@
   };
 
   global.pullLatestState = async function pullLatestState(force, opts = {}) {
+    if (isReplayViewingSync() && !opts.allowReplayPull) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.token) return;
     if (!force && pollPresentationBlocked()) {
       if (G.syncEnabled && G.syncTicket) scheduleDeferredSyncPull(500);

@@ -2178,7 +2178,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/game-sync.js?v=40"></script>
+<script src="client/js/game-sync.js?v=41"></script>
 <script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -9327,7 +9327,6 @@ async function replayGotoStep(step, opts = {}) {
   const gen = G._replaySeekGen;
   G._replaySeekInFlight = true;
   syncReplayControlBar(step);
-  if (typeof holdLivePolls === 'function') holdLivePolls();
   try {
     const r = await apiPost('replay_goto', {
       room_id: G.roomId,
@@ -9363,6 +9362,7 @@ async function replayGotoStep(step, opts = {}) {
     }
     if (r.handoff && G.gameState) {
       finalizeReplayHandoff(G.gameState);
+      if (typeof startPoll === 'function' && !G.polling) startPoll();
       doCPU(G.gameState);
       armWatchdog(G.gameState);
     }
@@ -9380,7 +9380,7 @@ async function replayGotoStep(step, opts = {}) {
     if (gen === G._replaySeekGen) {
       G._replaySeekInFlight = false;
       syncReplayControlBar();
-      if (typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (G.replayHandoff && typeof startPoll === 'function' && !G.polling) startPoll();
     }
   }
 }
