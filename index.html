@@ -22988,10 +22988,61 @@ function batonPlayCostWithBestDouble(me, card, primarySlot, primaryMember, ec) {
   const best = bestDoubleBatonSecond(me, card, primarySlot, primaryMember, Infinity, ec);
   return best ? Math.min(primaryRem, best.remainder) : primaryRem;
 }
-function sendBatonMemberPlay(card, slot, batonId, batonId2) {
+function cardShuffleWrMembersPlayOpt(card) {
+  return (card?.abilities || []).find(ab =>
+    ab.trigger === 'continuous' && ab.type === 'play_cost_reduction_if_shuffle_wr_members') || null;
+}
+function waitingRoomMemberCount(me) {
+  return (me?.waiting_room || []).filter(c =>
+    c && (c.card_type === 'メンバー' || c.card_type_en === 'Member')).length;
+}
+function playCostAfterShuffleWrOpt(card, me, baseEc) {
+  const ab = cardShuffleWrMembersPlayOpt(card);
+  if (!ab || waitingRoomMemberCount(me) < 1) return baseEc;
+  return Math.max(0, baseEc - Number(ab.amount || 2));
+}
+function sendPlayMemberMaybeShuffleOpt(card, payload, me, ec) {
+  const ab = cardShuffleWrMembersPlayOpt(card);
+  const n = waitingRoomMemberCount(me);
+  if (!ab || n < 1) {
+    sendAct('play_member', payload);
+    return;
+  }
+  const amt = Number(ab.amount || 2);
+  const reduced = Math.max(0, Number(ec || 0) - amt);
+  const ae = (me?.energy_zone || []).filter(energyChipActive).length;
+  const ovl = el('overlay-prompt');
+  el('prompt-ttl').textContent = card.name_en || card.name || 'Play';
+  el('prompt-msg').textContent = `Shuffle all ${n} Member card(s) in your Waiting Room onto the bottom of your deck to reduce this card's cost by ${amt}?`;
+  const box = el('prompt-btns');
+  box.innerHTML = '';
+  const yes = document.createElement('button');
+  yes.className = 'btn-grad';
+  yes.textContent = `Yes — pay ${reduced}`;
+  yes.onclick = () => {
+    closeM('overlay-prompt');
+    sendAct('play_member', Object.assign({}, payload, { bp7_shuffle_wr_members: true }));
+  };
+  box.appendChild(yes);
+  const no = document.createElement('button');
+  no.className = 'btn-grad';
+  no.textContent = `No — full cost ${ec}`;
+  if (ae < Number(ec || 0)) {
+    no.disabled = true;
+    no.title = 'Not enough Energy without the reduction';
+  } else {
+    no.onclick = () => {
+      closeM('overlay-prompt');
+      sendAct('play_member', payload);
+    };
+  }
+  box.appendChild(no);
+  ovl.classList.add('open');
+}
+function sendBatonMemberPlay(card, slot, batonId, batonId2, me, ec) {
   const payload = { card_id: card.instance_id, slot, baton_id: batonId };
   if (batonId2) payload.baton_id2 = batonId2;
-  sendAct('play_member', payload);
+  sendPlayMemberMaybeShuffleOpt(card, payload, me || {}, ec);
 }
 function openDoubleBatonSecondPick(card, slot, s, myId, primaryMember, secondTargets, onPlay, opts = {}) {
   const me = s?.players?.[myId];
@@ -23013,7 +23064,7 @@ function openDoubleBatonSecondPick(card, slot, s, myId, primaryMember, secondTar
     skip.onclick = () => {
       closeM('overlay-prompt');
       if (onPlay) onPlay();
-      sendBatonMemberPlay(card, slot, primaryMember.instance_id, null);
+      sendBatonMemberPlay(card, slot, primaryMember.instance_id, null, me, ec);
     };
     box.appendChild(skip);
   }
@@ -23029,7 +23080,7 @@ function openDoubleBatonSecondPick(card, slot, s, myId, primaryMember, secondTar
       b.onclick = () => {
         closeM('overlay-prompt');
         if (onPlay) onPlay();
-        sendBatonMemberPlay(card, slot, primaryMember.instance_id, member.instance_id);
+        sendBatonMemberPlay(card, slot, primaryMember.instance_id, member.instance_id, me, ec);
       };
     }
     box.appendChild(b);
@@ -23056,8 +23107,9 @@ function playToSlot(card, slot, s, myId, existing) {
       const bc=Math.max(0,ec-stageMemberEffectiveCost(exist2,me));
       const ae=affordableEnergyForBatonPlay(me, exist2, card);
       const bestSecond = bestDoubleBatonSecond(me, card, slot, exist2, ae, ec);
-      if(ae<bc && !bestSecond){
-        toast(`Need ${energyCostHtml(bc)} active Energy for Baton pass`, 2500, true);
+      const minBc=Math.max(0, playCostAfterShuffleWrOpt(card, me, ec)-stageMemberEffectiveCost(exist2,me));
+      if(ae<bc && !bestSecond && ae<minBc){
+        toast(`Need ${energyCostHtml(Math.min(bc, minBc))} active Energy for Baton pass`, 2500, true);
         return;
       }
       if (cardAllowsDoubleBaton(card)) {
@@ -23069,21 +23121,23 @@ function playToSlot(card, slot, s, myId, existing) {
           return;
         }
       }
-      sendBatonMemberPlay(card, slot, exist2.instance_id, null);
+      sendBatonMemberPlay(card, slot, exist2.instance_id, null, me, ec);
       return;
     }
     if (mode === 'overplay') {
       const ae=(me.energy_zone||[]).filter(energyChipActive).length;
-      if(ae<ec){ toast(`Need ${energyCostHtml(ec)} to overplay`, 2500, true); return; }
-      sendAct('play_member',{card_id:card.instance_id,slot});
+      const minEc=playCostAfterShuffleWrOpt(card, me, ec);
+      if(ae<minEc){ toast(`Need ${energyCostHtml(minEc)} to overplay`, 2500, true); return; }
+      sendPlayMemberMaybeShuffleOpt(card,{card_id:card.instance_id,slot},me,ec);
       return;
     }
     toast('Cannot play to this slot');
     return;
   } else {
     const ae=(me.energy_zone||[]).filter(energyChipActive).length;
-    if(ae<ec){ toast(`Need ${energyCostHtml(ec)}`, 2500, true); return; }
-    sendAct('play_member',{card_id:card.instance_id,slot});
+    const minEc=playCostAfterShuffleWrOpt(card, me, ec);
+    if(ae<minEc){ toast(`Need ${energyCostHtml(minEc)}`, 2500, true); return; }
+    sendPlayMemberMaybeShuffleOpt(card,{card_id:card.instance_id,slot},me,ec);
   }
 }
 
@@ -28383,7 +28437,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=15"></script>
+<script src="client/js/cpu-loop.js?v=16"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script>void bootApp();</script>
 </body>

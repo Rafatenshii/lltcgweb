@@ -1482,6 +1482,23 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         $ownerP['stage'][$slot] = $member;
         unset($member, $state['pending_prompt']);
         $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $owner);
+        $thenBp7 = (string)($prompt['then'] ?? '');
+        if (in_array($thenBp7, ['wait_opp_by_stacked_blade', 'play_wr_empty_wait'], true)
+            && function_exists('bp7ContinueAfterZoneEnergyStacked')) {
+            $srcMember = $state['players'][$owner]['stage'][$slot] ?? ['instance_id' => $srcId, 'name_en' => $mName];
+            $state = bp7ContinueAfterZoneEnergyStacked(
+                $state,
+                $owner,
+                $srcMember,
+                $ability,
+                $thenBp7,
+                !empty($prompt['live_start'])
+            );
+            if (!empty($state['pending_prompt'])) {
+                $state['seq']++;
+                return $state;
+            }
+        }
         $state['seq']++;
         return finishPromptEffects($state);
     }

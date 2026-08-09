@@ -39,6 +39,12 @@ function promptTimerKey(?array $prompt): string {
 }
 
 function finishPromptEffects(array $state): array {
+    if (empty($state['pending_prompt']) && function_exists('bp7FlushPendingAllyWaits')) {
+        $state = bp7FlushPendingAllyWaits($state);
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+    }
     // Resume PL!-pb1-018 (etc.) after a summoned Member's [On Enter] prompt chain (#70).
     if (empty($state['pending_prompt']) && !empty($state['_resume_both_wr_member_to_empty_stage'])) {
         $r = $state['_resume_both_wr_member_to_empty_stage'];

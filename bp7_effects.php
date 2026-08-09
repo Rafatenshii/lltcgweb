@@ -29,6 +29,7 @@ function bp7EffectTypes(): array {
         'mill_then_heart_if_blade_colors',
         'auto_on_ally_wait_activate',
         'look_reveal_group_bladeless',
+        'live_start_pick_group_member_blade',
         'live_success_score_if_yell_distinct_heart_colors',
         'live_start_discard_up_to_grant_members_blade',
         'live_success_score_if_yell_bladeless_members',
@@ -130,13 +131,53 @@ function bp7IsLiveCard(array $card): bool {
     return ($card['card_type'] ?? '') === 'ライブ' || ($card['card_type_en'] ?? '') === 'Live';
 }
 
-/** Bladeless = printed Blade count 0 (Member cards only). */
+/** True when the Member prints at least one Blade heart (not printed Blade count). */
+function bp7MemberHasBladeHearts(array $card): bool {
+    foreach ($card['blade_hearts'] ?? [] as $h) {
+        if ($h === null || $h === '') {
+            continue;
+        }
+        if (is_array($h) && ($h['color'] ?? '') === '') {
+            continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+/** Official ブレードハートを持たない — Member with no Blade hearts (may still have Blade). */
 function bp7IsBladelessMember(array $card): bool {
-    return bp7IsMemberCard($card) && memberBladeIconCount($card) <= 0;
+    return bp7IsMemberCard($card) && !bp7MemberHasBladeHearts($card);
 }
 
 function bp7StackedMembers(array $member): array {
     return array_values(array_filter($member['stacked_members'] ?? [], 'is_array'));
+}
+
+function bp7FlushPendingAllyWaits(array $state): array {
+    if (!empty($state['pending_prompt'])) {
+        return $state;
+    }
+    foreach (['p1', 'p2'] as $pid) {
+        foreach ($state['players'][$pid]['stage'] ?? [] as $slot => $mbr) {
+            if (!$mbr || empty($mbr['_ally_wait_pending'])) {
+                continue;
+            }
+            unset($state['players'][$pid]['stage'][$slot]['_ally_wait_pending']);
+            $state = bp7ResolveAutoOnAllyWait($state, $pid, $state['players'][$pid]['stage'][$slot]);
+            if (!empty($state['pending_prompt'])) {
+                return $state;
+            }
+        }
+    }
+    return $state;
+}
+
+/** Detach Member cards under a host (do not append — caller places them). */
+function bp7TakeStackedMembersFromHost(array &$member): array {
+    $stacked = array_values(array_filter($member['stacked_members'] ?? [], 'is_array'));
+    unset($member['stacked_members']);
+    return $stacked;
 }
 
 function bp7StackedEnergyCount(array $member): int {
@@ -348,6 +389,94 @@ function bp7EnergyDeckUnderMember(array &$state, string $pid, string $slot, int 
     $p['stage'][$slot] = $member;
     $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
     return count($taken);
+}
+
+/**
+ * When the Energy zone has more chips than needed, open Mia-style stack_energy_zone_pick.
+ * Returns a new state with a prompt, or null to stack automatically.
+ */
+function bp7MaybeStartZoneEnergyPick(
+    array $state,
+    string $pid,
+    array $source,
+    array $ab,
+    array $ctx,
+    string $slot,
+    int $need,
+    string $then
+): ?array {
+    $p = $state['players'][$pid] ?? [];
+    $cands = function_exists('energyZoneStackCandidates') ? energyZoneStackCandidates($p) : ($p['energy_zone'] ?? []);
+    $cands = array_values(array_filter($cands, 'is_array'));
+    if (count($cands) <= $need) {
+        return null;
+    }
+    $state['pending_prompt'] = [
+        'type'          => 'stack_energy_zone_pick',
+        'owner'         => $pid,
+        'responder'     => $pid,
+        'source_id'     => $source['instance_id'] ?? '',
+        'source_slot'   => $slot,
+        'ability_index' => intval($ctx['ability_index'] ?? 0),
+        'source_name'   => bp7SourceName($source),
+        'energy_count'  => $need,
+        'min_pick'      => $need,
+        'max_pick'      => $need,
+        'candidates'    => array_map('cardPromptSummary', $cands),
+        'prompt'        => $need === 1
+            ? 'Choose 1 Energy from your Energy Zone to place under this Member (unused Energy is listed first).'
+            : "Choose $need Energy from your Energy Zone to place under this Member (unused Energy is listed first).",
+        'ability'       => $ab,
+        'then'          => $then,
+        'live_start'    => !empty($ctx['live_start']),
+    ];
+    $state['seq']++;
+    return addLog($state, $state['players'][$pid]['name'] .
+        ' — [' . bp7SourceName($source) . '] choose Energy to stack.');
+}
+
+function bp7ContinueAfterZoneEnergyStacked(
+    array $state,
+    string $pid,
+    array $source,
+    array $ab,
+    string $then,
+    bool $liveStart = false
+): array {
+    $name = bp7SourceName($source);
+    $srcId = (string)($source['instance_id'] ?? '');
+    $slot = bp7FindSlotByInstance($state['players'][$pid], $srcId);
+    if ($then === 'wait_opp_by_stacked_blade') {
+        if ($slot === '') {
+            return $state;
+        }
+        $stacked = bp7StackedEnergyCount($state['players'][$pid]['stage'][$slot]);
+        $maxBlade = $stacked + intval($ab['blade_offset'] ?? 1);
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] Energy under this Member ($stacked total); wait an opponent Member with original Blade ≤$maxBlade.");
+        return beginWaitOpponentStagePick($state, $pid, $name, [
+            'max_original_blade' => $maxBlade,
+            'pick_count'         => intval($ab['pick_count'] ?? 1),
+        ], $srcId, $liveStart);
+    }
+    if ($then === 'play_wr_empty_wait') {
+        $cands = array_values(array_filter(
+            $state['players'][$pid]['waiting_room'] ?? [],
+            fn($c) => is_array($c) && bp7IsMemberCard($c)
+                && cardMatchesGroup($c, $ab['group'] ?? '', 'member')
+                && intval($c['cost'] ?? 0) <= intval($ab['max_cost'] ?? 2)
+        ));
+        if (empty($cands)) {
+            return addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] no eligible Waiting Room Member after stacking Energy.");
+        }
+        return bp7StartCardPick(
+            $state, $pid, $source, $ab, ['live_start' => $liveStart], 'play_wr_empty_wait', $cands, 1, 1,
+            'Choose a ' . ($ab['group'] ?? '') . ' Member card (cost ' .
+            intval($ab['max_cost'] ?? 2) . ' or less) to play to an empty Stage area in Wait.'
+        );
+    }
+    return $state;
 }
 
 /** Move active Energy from the zone under a Stage Member (cost-style "put 1 Energy under"). */
@@ -1062,20 +1191,19 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             if (!empty($state['pending_prompt'])) break;
             $slot = bp7FindSlotByInstance($state['players'][$pid], $srcId);
             if ($slot === '') break;
-            $moved = bp7ZoneEnergyUnderMember($state, $pid, $slot, intval($ab['energy'] ?? 1));
-            if ($moved < intval($ab['energy'] ?? 1)) {
+            $need = intval($ab['energy'] ?? 1);
+            $picked = bp7MaybeStartZoneEnergyPick($state, $pid, $source, $ab, $ctx, $slot, $need, 'wait_opp_by_stacked_blade');
+            if ($picked !== null) {
+                $state = $picked;
+                break;
+            }
+            $moved = bp7ZoneEnergyUnderMember($state, $pid, $slot, $need);
+            if ($moved < $need) {
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] not enough active Energy to put under this Member.");
                 break;
             }
-            $stacked = bp7StackedEnergyCount($state['players'][$pid]['stage'][$slot]);
-            $maxBlade = $stacked + intval($ab['blade_offset'] ?? 1);
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                " — [$name] put $moved Energy under this Member ($stacked total).");
-            $state = beginWaitOpponentStagePick($state, $pid, $name, [
-                'max_original_blade' => $maxBlade,
-                'pick_count'         => intval($ab['pick_count'] ?? 1),
-            ], $srcId, !empty($ctx['live_start']));
+            $state = bp7ContinueAfterZoneEnergyStacked($state, $pid, $source, $ab, 'wait_opp_by_stacked_blade', !empty($ctx['live_start']));
             break;
         }
 
@@ -1132,7 +1260,7 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             }
             if (!$hit) {
                 $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] no $group Live card or bladeless $group Member among the milled cards.");
+                    " — [$name] no $group Live card or $group Member with no Blade hearts among the milled cards.");
                 break;
             }
             $state = resolveAbilityEffect($state, $pid, $source, [
@@ -1154,7 +1282,7 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             $max = max(1, intval($ab['max_pick'] ?? 4));
             $state = bp7StartCardPick(
                 $state, $pid, $source, $ab, $ctx, 'wr_bladeless_bottom_activate', $cands, 0, $max,
-                "You may put up to $max bladeless Member card(s) from your Waiting Room on the bottom " .
+                "You may put up to $max Member card(s) with no Blade hearts from your Waiting Room on the bottom " .
                 'of your deck (pick order = deck order): activate 1 Energy for each.'
             );
             break;
@@ -1176,19 +1304,21 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
                     " — [$name] no empty Stage area or eligible Waiting Room Member.");
                 break;
             }
-            $moved = bp7ZoneEnergyUnderMember($state, $pid, $slot, intval($ab['energy'] ?? 1));
-            if ($moved < intval($ab['energy'] ?? 1)) {
+            $need = intval($ab['energy'] ?? 1);
+            $picked = bp7MaybeStartZoneEnergyPick($state, $pid, $source, $ab, $ctx, $slot, $need, 'play_wr_empty_wait');
+            if ($picked !== null) {
+                $state = $picked;
+                break;
+            }
+            $moved = bp7ZoneEnergyUnderMember($state, $pid, $slot, $need);
+            if ($moved < $need) {
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] not enough active Energy to put under this Member.");
                 break;
             }
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] put $moved Energy under this Member.");
-            $state = bp7StartCardPick(
-                $state, $pid, $source, $ab, $ctx, 'play_wr_empty_wait', $cands, 1, 1,
-                'Choose a ' . ($ab['group'] ?? '') . ' Member card (cost ' .
-                intval($ab['max_cost'] ?? 2) . ' or less) to play to an empty Stage area in Wait.'
-            );
+            $state = bp7ContinueAfterZoneEnergyStacked($state, $pid, $source, $ab, 'play_wr_empty_wait', !empty($ctx['live_start']));
             break;
         }
 
@@ -1235,15 +1365,45 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
                 $state = appendCardsToWaitingRoom($state, $pid, $looked);
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] looked at " . count($looked) .
-                    ' card(s); no bladeless ' . ($ab['group'] ?? '') .
-                    ' Member to reveal. Rest to the Waiting Room.');
+                    ' card(s); no ' . ($ab['group'] ?? '') .
+                    ' Member with no Blade hearts to reveal. Rest to the Waiting Room.');
                 break;
             }
             $state = bp7StartCardPick(
                 $state, $pid, $source, $ab, $ctx, 'look_reveal_bladeless', $cands, 0,
                 max(1, intval($ab['pick'] ?? 1)),
-                'You may reveal 1 bladeless ' . ($ab['group'] ?? '') .
-                ' Member card and add it to your hand. The rest go to the Waiting Room.'
+                'You may reveal 1 ' . ($ab['group'] ?? '') .
+                ' Member card with no Blade hearts and add it to your hand. The rest go to the Waiting Room.'
+            );
+            break;
+        }
+
+        case 'live_start_pick_group_member_blade': {
+            if (!empty($state['pending_prompt'])) break;
+            $cands = bp7StageMemberCandidates($state['players'][$pid], ['group' => $ab['group'] ?? '']);
+            $cands = array_values(array_filter(
+                $cands,
+                fn($c) => !memberIsInWait($state['players'][$pid]['stage'][$c['slot']] ?? [])
+            ));
+            $n = max(1, intval($ab['count'] ?? $ab['max_members'] ?? 1));
+            $amount = intval($ab['amount'] ?? 1);
+            if (empty($cands)) break;
+            if (count($cands) <= $n) {
+                foreach ($cands as $cand) {
+                    $slot = $cand['slot'];
+                    $state['players'][$pid]['stage'][$slot]['live_blade_bonus'] =
+                        intval($state['players'][$pid]['stage'][$slot]['live_blade_bonus'] ?? 0) + $amount;
+                }
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] " . count($cands) . ' ' . ($ab['group'] ?? '') .
+                    " Member(s) gained +$amount Blade until this Live ends.");
+                break;
+            }
+            $state = bp7StartStagePick(
+                $state, $pid, $source, $ab, $ctx, 'give_group_member_blade', $cands,
+                'Choose ' . $n . ' ' . ($ab['group'] ?? '') .
+                " Member(s) to give +$amount Blade until this Live ends.",
+                ['pick_min' => $n, 'pick_max' => $n]
             );
             break;
         }
@@ -1302,7 +1462,7 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             }
             if ($n >= intval($ab['min_count'] ?? 2)) {
                 bp7BumpSelfScore($state, $pid, $source, intval($ab['amount'] ?? 1), $name,
-                    "$n bladeless Member cards revealed by Yell");
+                    "$n Member card(s) with no Blade hearts revealed by Yell");
             }
             break;
         }
@@ -2179,7 +2339,7 @@ function bp7ResolveAutoOnEnergyStackedUnderMember(array $state, string $pid): ar
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     ' — [' . bp7SourceName($mbr) . "] put $placed Energy card(s) from the Energy deck into Wait.");
             }
-            return $state;
+            $p = &$state['players'][$pid];
         }
     }
     unset($p);
@@ -2292,6 +2452,12 @@ function bp7ResolveAutoOnAllyWait(array $state, string $pid, array $waited): arr
     $waitedId = (string)($waited['instance_id'] ?? '');
     if ($waitedId === '') {
         return $state;
+    }
+    foreach ($state['players'][$pid]['stage'] ?? [] as $slot => $mbr) {
+        if ($mbr && ($mbr['instance_id'] ?? '') === $waitedId) {
+            unset($state['players'][$pid]['stage'][$slot]['_ally_wait_pending']);
+            break;
+        }
     }
     foreach ($state['players'][$pid]['stage'] ?? [] as $slot => $mbr) {
         if (!$mbr) continue;
@@ -2659,6 +2825,35 @@ function bp7ResolvePrompt(array $state, string $owner, array $prompt, string $ch
             break;
         }
 
+        case 'give_group_member_blade': {
+            $amount = intval($ab['amount'] ?? 1);
+            $pickedSlots = [];
+            if ($slot !== '') {
+                $pickedSlots[] = $slot;
+            }
+            foreach ($ids as $iid) {
+                $found = bp7FindSlotByInstance($state['players'][$owner], $iid);
+                if ($found !== '' && !in_array($found, $pickedSlots, true)) {
+                    $pickedSlots[] = $found;
+                }
+            }
+            $n = max(1, intval($ab['count'] ?? $ab['max_members'] ?? 1));
+            $applied = 0;
+            foreach (array_slice($pickedSlots, 0, $n) as $ps) {
+                if (empty($state['players'][$owner]['stage'][$ps])) {
+                    continue;
+                }
+                $state['players'][$owner]['stage'][$ps]['live_blade_bonus'] =
+                    intval($state['players'][$owner]['stage'][$ps]['live_blade_bonus'] ?? 0) + $amount;
+                $applied++;
+            }
+            if ($applied > 0) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — [$name] $applied Member(s) gained +$amount Blade until this Live ends.");
+            }
+            break;
+        }
+
         case 'wr_bladeless_bottom_activate': {
             $picked = bp7TakeCardsFromWaitingRoom($state['players'][$owner], $ids);
             if (empty($picked)) break;
@@ -2669,7 +2864,7 @@ function bp7ResolvePrompt(array $state, string $owner, array $prompt, string $ch
             );
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$name] put " . count($picked) .
-                " bladeless Member card(s) on the bottom of the deck and activated $activated Energy.");
+                " Member card(s) with no Blade hearts on the bottom of the deck and activated $activated Energy.");
             break;
         }
 

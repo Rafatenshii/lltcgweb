@@ -169,9 +169,19 @@ function resolveLiveStartAbilities(array $state, string $pid): array {
                 $state['_live_start_resume_from'] = $pid;
                 return $state;
             }
+            if (function_exists('bp7FlushPendingAllyWaits')) {
+                $state = bp7FlushPendingAllyWaits($state);
+                if (!empty($state['pending_prompt'])) {
+                    $state['_live_start_resume_from'] = $pid;
+                    return $state;
+                }
+            }
         }
     }
 
+    if (function_exists('bp7FlushPendingAllyWaits')) {
+        $state = bp7FlushPendingAllyWaits($state);
+    }
     return $state;
 }
 

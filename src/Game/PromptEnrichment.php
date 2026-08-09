@@ -754,6 +754,32 @@ function resolveOptionalDiscardPromptChoice(
                 if (!empty($state['pending_prompt'])) {
                     return $state;
                 }
+            } elseif (($then['type'] ?? '') === 'look_reveal_group_bladeless') {
+                $srcId = (string)($prompt['source_id'] ?? '');
+                $src = null;
+                foreach (['left', 'center', 'right'] as $slot) {
+                    $mbr = $ownerP['stage'][$slot] ?? null;
+                    if ($mbr && ($mbr['instance_id'] ?? '') === $srcId) {
+                        $src = $mbr;
+                        break;
+                    }
+                }
+                if ($src === null) {
+                    $src = [
+                        'instance_id' => $srcId,
+                        'name_en' => $prompt['source_name'] ?? 'Member',
+                        'name' => $prompt['source_name'] ?? 'Member',
+                    ];
+                }
+                unset($state['pending_prompt']);
+                $state = resolveAbilityEffect($state, $owner, $src, $then, [
+                    'phase' => !empty($prompt['live_start']) ? 'live_start' : 'on_enter',
+                    'ability_index' => intval($prompt['ability_index'] ?? 0),
+                ]);
+                if (!empty($state['pending_prompt'])) {
+                    $state['seq']++;
+                    return $state;
+                }
             } elseif (($then['type'] ?? '') === 'look_reveal_filter'
                 || ($then['type'] ?? '') === 'look_reveal_group'
                 || ($then['type'] ?? '') === 'look_reveal_named'

@@ -58,8 +58,27 @@ function appendCardsToWaitingRoom(array &$state, string $pid, array $cards): arr
         return $state;
     }
     $p = &$state['players'][$pid];
+    $dumped = 0;
     foreach ($cards as $c) {
+        if (!is_array($c)) {
+            continue;
+        }
+        $under = function_exists('bp7TakeStackedMembersFromHost')
+            ? bp7TakeStackedMembersFromHost($c)
+            : [];
+        unset($c['stacked_members']);
         $p['waiting_room'][] = $c;
+        foreach ($under as $sm) {
+            if (!is_array($sm)) {
+                continue;
+            }
+            $p['waiting_room'][] = $sm;
+            $dumped++;
+        }
+    }
+    if ($dumped > 0) {
+        $state = addLog($state, ($p['name'] ?? 'Player') .
+            " — $dumped Member card(s) under a leaving Member went to the Waiting Room.");
     }
     if (function_exists('spBp5NotifyCardsToWr')) {
         $state = spBp5NotifyCardsToWr($state, $pid, $cards);

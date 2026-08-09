@@ -1264,5 +1264,8 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
     }
 
     $state['seq']++;
+    if (empty($state['pending_prompt']) && function_exists('bp7FlushPendingAllyWaits')) {
+        $state = bp7FlushPendingAllyWaits($state);
+    }
     return $state;
 }

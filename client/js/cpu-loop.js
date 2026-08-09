@@ -1935,8 +1935,16 @@ function cpuPlanMemberPlay(s, cpu, hand, tier, read = null, opts = {}) {
   if (tier !== 'easy') slotOrder = cpuPreferredBatonSlotOrder(cpu, c);
   const empty = slotOrder.find(s2 => !cpu.stage?.[s2]);
   const label = `member c${c.cost || 0}/b${c.blade || 0}`;
-  if (empty && ae >= ec) {
-    const payload = { card_id: c.instance_id, slot: empty };
+  const shuffleAb = (c.abilities || []).find(a => a.type === 'play_cost_reduction_if_shuffle_wr_members');
+  const wrMembers = (cpu.waiting_room || []).filter(x => x && (x.card_type === 'メンバー' || x.card_type_en === 'Member')).length;
+  const shuffleOpts = (shuffleAb && wrMembers > 0)
+    ? { bp7_shuffle_wr_members: true }
+    : {};
+  const playEc = shuffleOpts.bp7_shuffle_wr_members
+    ? Math.max(0, ec - Number(shuffleAb.amount || 2))
+    : ec;
+  if (empty && ae >= playEc) {
+    const payload = Object.assign({ card_id: c.instance_id, slot: empty }, shuffleOpts);
     if (cpuMemberPlayBlacklisted(payload.card_id, payload.slot)) return null;
     return { kind: 'play_member', score, payload, label };
   }

@@ -1313,7 +1313,7 @@ function lookPickIsOptional(array $cfg): bool {
 /** Minimum main-deck cards needed for a discard-then effect to be worth doing (0 = no deck requirement). */
 function optionalThenDeckLookMin(array $then): int {
     $type = $then['type'] ?? '';
-    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named', 'look_reveal_heart_threshold'], true)) {
+    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named', 'look_reveal_heart_threshold', 'look_reveal_group_bladeless'], true)) {
         return max(1, intval($then['look'] ?? 1));
     }
     if ($type === 'look_reveal_live_score_plus') {
@@ -3361,6 +3361,11 @@ function waitMember(array &$member, array $state): void {
     $member['waited_turn'] = intval($state['turn'] ?? 1);
     $member['waited_active_player'] = (string)($state['active_player'] ?? '');
     $member['active'] = false;
+    // PL!N-bp7-022: only waits that happen during the Live Phase should prompt.
+    $phase = (string)($state['phase'] ?? '');
+    if (str_contains($phase, 'live') || str_contains($phase, 'performance')) {
+        $member['_ally_wait_pending'] = true;
+    }
 }
 
 function memberSnapshot(array $member): array {
