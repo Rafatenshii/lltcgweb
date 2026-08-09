@@ -134,8 +134,9 @@ final class LiveStartNoDoubleConfirmTest extends TestCase
 
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'yes', 'pay' => true]);
         $this->assertNull($state['pending_prompt'] ?? null, 'optional_pay_energy must not re-prompt after confirm');
-        $blade = intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0);
+        $blade = intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0);
         $this->assertGreaterThanOrEqual(2, $blade, 'Blade bonus should apply after single confirm');
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
     }
 
     public function testPayOrDiscardOpensNativePromptOnceNotWrapper(): void

@@ -170,7 +170,8 @@ final class SkillCardAuditBatch2Test extends TestCase
         ]);
 
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(1, \getStageBladeBonus($state, 'p1'));
+        $this->assertSame(1, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
         $this->assertSame(
             ['audit_bp2_discard_b', 'audit_bp2_other'],
             array_column($state['players']['p1']['hand'], 'instance_id')
@@ -234,7 +235,8 @@ final class SkillCardAuditBatch2Test extends TestCase
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'yes', 'pay' => true]);
 
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(3, \getStageBladeBonus($state, 'p1'));
+        $this->assertSame(3, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
         $this->assertSame(0, \countActiveEnergyInZone($state['players']['p1']));
     }
 }

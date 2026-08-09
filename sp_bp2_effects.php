@@ -1133,7 +1133,7 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             $state = applyModifierEffect($state, $owner, [
                 'type'   => 'blade_bonus',
                 'amount' => 2,
-            ]);
+            ], ['instance_id' => (string)$holderId]);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$mName] gained +2 Blade (Center moved).");
         } elseif ($choice === 'wait_opp') {

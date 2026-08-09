@@ -97,8 +97,9 @@ final class KananBp3003LiveStartDiscardBladeTest extends TestCase
             $this->assertNull($state['pending_prompt'] ?? null);
             $this->assertCount(0, $state['players']['p1']['hand']);
             $this->assertCount(2, $state['players']['p1']['waiting_room']);
-            $bonus = intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0);
+            $bonus = intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0);
             $this->assertSame(4, $bonus, '2 cards × +2 Blade');
+            $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
         } finally {
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }

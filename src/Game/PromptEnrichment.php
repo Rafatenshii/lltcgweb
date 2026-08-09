@@ -796,19 +796,21 @@ function resolveOptionalDiscardPromptChoice(
                     return $state;
                 }
             } elseif (($then['type'] ?? '') === 'blade_bonus') {
-                $state = applyModifierEffect($state, $owner, $then);
+                $src = ['instance_id' => (string)($prompt['source_id'] ?? '')];
+                $state = applyModifierEffect($state, $owner, $then, $src);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . ($prompt['source_name'] ?? 'Member') . '] gained +' .
                     intval($then['amount'] ?? 0) . ' Blade until Live ends.');
             } elseif (($then['type'] ?? '') === 'blade_bonus_named_extra') {
-                $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => intval($then['amount'] ?? 1)]);
+                $src = ['instance_id' => (string)($prompt['source_id'] ?? '')];
+                $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => intval($then['amount'] ?? 1)], $src);
                 $named = $then['named'] ?? '';
                 foreach ($discardedCards as $dc) {
                     if (cardNameKey($dc) === $named || str_contains(cardNameKey($dc), $named)) {
                         $state = applyModifierEffect($state, $owner, [
                             'type'   => 'blade_bonus',
                             'amount' => intval($then['extra_amount'] ?? 1),
-                        ]);
+                        ], $src);
                         break;
                     }
                 }
@@ -829,7 +831,9 @@ function resolveOptionalDiscardPromptChoice(
                 if ($mySum > $oppSum) {
                     $heartColor = $then['heart_color'] ?? $promptAbility['heart_color'] ?? 'pink';
                     addBonusHeartsToModifier($state, $owner, [['color' => $heartColor, 'count' => 1]]);
-                    $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => 1]);
+                    $state = applyModifierEffect($state, $owner, ['type' => 'blade_bonus', 'amount' => 1], [
+                        'instance_id' => (string)($prompt['source_id'] ?? ''),
+                    ]);
                 }
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . ($prompt['source_name'] ?? 'Member') . '] cost increased until Live ends.');

@@ -76,7 +76,8 @@ final class PrVol9PromoSkillsTest extends TestCase
             'yell_score' => 1,
         ]];
         $state = resolveAutoYellAbilities($state, 'p1', $yell);
-        $this->assertGreaterThanOrEqual(1, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+        $this->assertGreaterThanOrEqual(1, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
     }
 
     public function testMillFillWrOptionalLiveDeckTop(): void

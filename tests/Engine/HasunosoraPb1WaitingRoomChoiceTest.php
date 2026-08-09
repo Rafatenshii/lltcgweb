@@ -166,7 +166,8 @@ final class HasunosoraPb1WaitingRoomChoiceTest extends TestCase
             'threshold_live_first',
             array_column($state['players']['p1']['hand'], 'instance_id')
         );
-        $this->assertSame(2, \getStageBladeBonus($state, 'p1'));
+        $this->assertSame(2, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
     }
 
     public function testClientRoutesNewWaitingRoomChoiceSteps(): void

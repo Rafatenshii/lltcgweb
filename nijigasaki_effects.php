@@ -1823,9 +1823,11 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
                     $drawn = drawCardsForPlayer($state, $owner, intval($eff['count'] ?? 1));
                     $state = addLog($state, $prefix . "drew $drawn (cost $totalCost milestone).");
                 } elseif ($effType === 'blade_bonus') {
-                    $state = initLiveModifiers($state);
-                    $state['live_modifiers'][$owner]['blade_bonus'] +=
-                        intval($eff['amount'] ?? 1);
+                    $src = $state['_mod_source'] ?? ['instance_id' => $prompt['source_id'] ?? ''];
+                    $state = applyModifierEffect($state, $owner, [
+                        'type' => 'blade_bonus',
+                        'amount' => intval($eff['amount'] ?? 1),
+                    ], is_array($src) ? $src : []);
                     $state = addLog($state, $prefix .
                         'gained +' . intval($eff['amount'] ?? 1) . ' Blade until Live ends (cost $totalCost).');
                 } elseif ($effType === 'grant_hearts') {

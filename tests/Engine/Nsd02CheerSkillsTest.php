@@ -130,8 +130,9 @@ final class Nsd02CheerSkillsTest extends TestCase
             $this->assertNull($state['pending_prompt'] ?? null);
             $this->assertSame(
                 2,
-                intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0)
+                intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0)
             );
+            $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
         } finally {
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }

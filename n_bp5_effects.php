@@ -275,9 +275,10 @@ function nBp5ResolveEffect(array $state, string $pid, array $source, array $ab, 
         case 'live_start_score_if_all_six_hearts_stage':
             if (!nBp5StageHasAllSixHeartColors($p)) break;
             if ($type === 'live_start_blade_if_all_six_hearts_stage') {
-                $state = initLiveModifiers($state);
-                $state['live_modifiers'][$pid]['blade_bonus'] =
-                    intval($state['live_modifiers'][$pid]['blade_bonus'] ?? 0) + intval($ab['amount'] ?? 2);
+                $state = applyModifierEffect($state, $pid, [
+                    'type' => 'blade_bonus',
+                    'amount' => intval($ab['amount'] ?? 2),
+                ], $source);
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     ' — [' . $name . '] +' . intval($ab['amount'] ?? 2) . ' Blade (all heart colors on Stage).');
             } else {

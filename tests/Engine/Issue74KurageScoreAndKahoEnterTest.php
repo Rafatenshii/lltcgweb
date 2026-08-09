@@ -276,4 +276,95 @@ final class Issue74KurageScoreAndKahoEnterTest extends TestCase
         $state = \resolveOnEnterAbilities($state, 'p1', $kaho, 'left');
         $this->assertSame(0, intval($state['players']['p1']['stage']['left']['live_blade_bonus'] ?? 0));
     }
+
+    public function testKahoGainedBladesDoNotCountTowardYellWhileWaited(): void
+    {
+        $kaho = $this->cardByNo('PL!HS-pb1-009-R', 'kaho_wait');
+        $mate = $this->cardByNo('PL!HS-bp5-003-R＋', 'mate_wait_hs');
+        $matePrinted = intval($mate['blade'] ?? 0);
+        $kahoPrinted = intval($kaho['blade'] ?? 0);
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 1,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'P1',
+                    'hand' => [],
+                    'waiting_room' => [],
+                    'main_deck' => [],
+                    'energy_zone' => [],
+                    'energy_deck' => [],
+                    'live_zone' => [],
+                    'success_lives' => [],
+                    'stage' => [
+                        'left' => null,
+                        'center' => $kaho,
+                        'right' => null,
+                    ],
+                ],
+                'p2' => [
+                    'id' => 'p2',
+                    'name' => 'P2',
+                    'hand' => [],
+                    'waiting_room' => [],
+                    'main_deck' => [],
+                    'energy_zone' => [],
+                    'energy_deck' => [],
+                    'live_zone' => [],
+                    'success_lives' => [],
+                    'stage' => ['left' => null, 'center' => null, 'right' => null],
+                ],
+            ],
+        ];
+        $state['players']['p1']['stage']['left'] = $mate;
+        $state = \resolveOnEnterAbilities($state, 'p1', $mate, 'left');
+        $this->assertSame(2, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, \getStageBladeBonus($state, 'p1'), 'Kaho Auto must not be player-wide Blade');
+
+        $activeYell = \computeYellBladeTotal($state, 'p1');
+        $this->assertSame($kahoPrinted + 2 + $matePrinted, $activeYell);
+
+        \waitMember($state['players']['p1']['stage']['center'], $state);
+        $this->assertSame(
+            $matePrinted,
+            \computeYellBladeTotal($state, 'p1'),
+            'Waited Kaho printed + gained Blades must not count toward Yell'
+        );
+    }
+
+    public function testMemberBladeBonusModifierAttachesToSourceNotPlayer(): void
+    {
+        $kaho = $this->cardByNo('PL!HS-pb1-009-R', 'kaho_mod');
+        $state = [
+            'status' => 'playing',
+            'phase' => 'live_start_effects',
+            'seq' => 1,
+            'turn' => 2,
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'P1',
+                    'hand' => [],
+                    'waiting_room' => [],
+                    'main_deck' => [],
+                    'stage' => ['left' => null, 'center' => $kaho, 'right' => null],
+                    'energy_zone' => [],
+                    'live_zone' => [],
+                    'success_lives' => [],
+                ],
+            ],
+            'log' => [],
+        ];
+        $state['_mod_source'] = $kaho;
+        $state = \applyModifierEffect($state, 'p1', ['type' => 'blade_bonus', 'amount' => 3]);
+        $this->assertSame(3, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+    }
 }

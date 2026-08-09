@@ -722,7 +722,7 @@ function resolveAutoYellAbilities(array $state, string $pid, array $yellCards): 
                         $state = applyModifierEffect($state, $pid, [
                             'type'   => 'blade_bonus',
                             'amount' => $amt,
-                        ]);
+                        ], $member);
                         markAbilityUsed($state['players'][$pid]['stage'][$slot], $idx);
                         $state = addLog($state, $state['players'][$pid]['name'] .
                             " — [$mName] gained +$amt Blade until Live ends (Yell revealed Score Live).");
@@ -4001,7 +4001,7 @@ function resolveAutoAreaMoveAbilities(array $state, string $pid, string $memberI
                 $state = applyModifierEffect($state, $pid, [
                     'type'   => 'blade_bonus',
                     'amount' => intval($ab['amount'] ?? 1),
-                ]);
+                ], $member);
                 if (!empty($ab['once_per_turn'])) markAbilityUsed($member, $idx);
                 $p['stage'][$slot] = $member;
                 $mName = $member['name_en'] ?? $member['name'] ?? 'Member';

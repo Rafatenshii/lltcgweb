@@ -101,7 +101,49 @@ function getBothStagesBladeBonus(array $state): int {
     return max($a, $b);
 }
 
-function applyModifierEffect(array $state, string $pid, array $effect): array {
+/** Source Member for “＋N Blade until this Live ends” (Wait nullifies that Member’s Yell blades). */
+function liveModifierSourceCard(array $state, string $pid, array $source = []): array {
+    if (($source['instance_id'] ?? '') !== '') {
+        return $source;
+    }
+    if (!empty($state['_mod_source']) && is_array($state['_mod_source'])
+        && ($state['_mod_source']['instance_id'] ?? '') !== '') {
+        return $state['_mod_source'];
+    }
+    $pr = $state['pending_prompt'] ?? null;
+    $iid = is_array($pr) ? (string)($pr['source_id'] ?? $pr['source_instance_id'] ?? '') : '';
+    if ($iid === '') {
+        return [];
+    }
+    if (function_exists('findSourceCard')) {
+        $found = findSourceCard($state, $pid, $iid);
+        if (is_array($found) && ($found['instance_id'] ?? '') !== '') {
+            return $found;
+        }
+    }
+    return ['instance_id' => $iid];
+}
+
+/** Put until-Live Blade on the source Member when she is on Stage. Live cards stay player-wide. */
+function applyUntilLiveBladeToSourceMember(array &$state, string $pid, int $amount, array $source = []): bool {
+    if ($amount === 0) {
+        return false;
+    }
+    $src = liveModifierSourceCard($state, $pid, $source);
+    $iid = (string)($src['instance_id'] ?? '');
+    if ($iid === '' || empty($state['players'][$pid])) {
+        return false;
+    }
+    $slot = findMemberSlot($state['players'][$pid], $iid);
+    if ($slot === '' || empty($state['players'][$pid]['stage'][$slot])) {
+        return false;
+    }
+    $state['players'][$pid]['stage'][$slot]['live_blade_bonus'] =
+        intval($state['players'][$pid]['stage'][$slot]['live_blade_bonus'] ?? 0) + $amount;
+    return true;
+}
+
+function applyModifierEffect(array $state, string $pid, array $effect, array $source = []): array {
     $state = initLiveModifiers($state);
     $type = $effect['type'] ?? '';
     switch ($type) {
@@ -109,16 +151,23 @@ function applyModifierEffect(array $state, string $pid, array $effect): array {
             $state['live_modifiers'][$pid]['score_bonus'] += intval($effect['amount'] ?? 0);
             break;
         case 'blade_bonus':
-            $state['live_modifiers'][$pid]['blade_bonus'] += intval($effect['amount'] ?? 0);
+            $amt = intval($effect['amount'] ?? 0);
+            if (!applyUntilLiveBladeToSourceMember($state, $pid, $amt, $source)) {
+                $state['live_modifiers'][$pid]['blade_bonus'] += $amt;
+            }
             break;
         case 'blade_bonus_per_discarded':
-            $state['live_modifiers'][$pid]['blade_bonus'] +=
-                intval($effect['amount'] ?? 1) * intval($effect['discarded'] ?? 0);
+            $amt = intval($effect['amount'] ?? 1) * intval($effect['discarded'] ?? 0);
+            if (!applyUntilLiveBladeToSourceMember($state, $pid, $amt, $source)) {
+                $state['live_modifiers'][$pid]['blade_bonus'] += $amt;
+            }
             break;
         case 'blade_bonus_per_success':
             $succ = count($state['players'][$pid]['success_lives'] ?? []);
-            $state['live_modifiers'][$pid]['blade_bonus'] +=
-                intval($effect['amount'] ?? 1) * $succ;
+            $amt = intval($effect['amount'] ?? 1) * $succ;
+            if (!applyUntilLiveBladeToSourceMember($state, $pid, $amt, $source)) {
+                $state['live_modifiers'][$pid]['blade_bonus'] += $amt;
+            }
             break;
         case 'blade_bonus_per_live_zone':
             $state['live_modifiers'][$pid]['blade_per_live_zone'] +=
@@ -137,7 +186,10 @@ function applyModifierEffect(array $state, string $pid, array $effect): array {
                 addBonusHeartsToModifier($state, $pid, $effect['hearts']);
             }
             if (!empty($effect['blade'])) {
-                $state['live_modifiers'][$pid]['blade_bonus'] += intval($effect['blade']);
+                $b = intval($effect['blade']);
+                if (!applyUntilLiveBladeToSourceMember($state, $pid, $b, $source)) {
+                    $state['live_modifiers'][$pid]['blade_bonus'] += $b;
+                }
             }
             break;
         case 'grant_bonus_hearts':
@@ -146,8 +198,10 @@ function applyModifierEffect(array $state, string $pid, array $effect): array {
             }
             break;
         case 'blade_bonus_per_paid':
-            $state['live_modifiers'][$pid]['blade_bonus'] +=
-                intval($effect['amount'] ?? 1) * intval($effect['paid'] ?? 0);
+            $amt = intval($effect['amount'] ?? 1) * intval($effect['paid'] ?? 0);
+            if (!applyUntilLiveBladeToSourceMember($state, $pid, $amt, $source)) {
+                $state['live_modifiers'][$pid]['blade_bonus'] += $amt;
+            }
             break;
     }
     return $state;

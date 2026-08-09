@@ -801,6 +801,7 @@ function tryResolveAbilityEffectSwitchOptional(
                 'type'          => 'optional_discard_blade_per_card',
                 'owner'         => $pid,
                 'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
                 'max_discard'   => intval($ab['max_discard'] ?? 2),
                 'prompt'        => 'Put up to ' . intval($ab['max_discard'] ?? 2) .

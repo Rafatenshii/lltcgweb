@@ -120,6 +120,12 @@ function applyAutoOnAllyWaitActivateBlade(array $state, string $owner, array $pr
 // actionResolvePrompt — completes pending_prompt from client resolve_prompt actions
 
 function actionResolvePrompt(array $state, string $pid, array $data): array {
+    $out = actionResolvePromptDispatch($state, $pid, $data);
+    unset($out['_mod_source']);
+    return $out;
+}
+
+function actionResolvePromptDispatch(array $state, string $pid, array $data): array {
     $prompt = $state['pending_prompt'] ?? null;
     // Stale/duplicate submission: the prompt this player answered was already
     // resolved (poll/submit race or double-click), or it now belongs to the
@@ -138,6 +144,13 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
     $promptType = $prompt['type'] ?? '';
     $ability = $prompt['ability'] ?? [];
     $owner = $prompt['owner'] ?? $pid;
+    $srcId = (string)($prompt['source_id'] ?? $prompt['source_instance_id'] ?? '');
+    if ($srcId !== '') {
+        $found = findSourceCard($state, $owner, $srcId);
+        $state['_mod_source'] = (is_array($found) && ($found['instance_id'] ?? '') !== '')
+            ? $found
+            : ['instance_id' => $srcId];
+    }
     $ownerP = &$state['players'][$owner];
 
     $nijiPrompt = nijiHandlePrompt($state, $promptType, $prompt, $choice, $data);
@@ -3168,7 +3181,7 @@ function actionResolvePrompt(array $state, string $pid, array $data): array {
                 $state = applyModifierEffect($state, $owner, [
                     'type'   => 'blade_bonus',
                     'amount' => $n * $bladePer,
-                ]);
+                ], ['instance_id' => (string)($prompt['source_id'] ?? '')]);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     " — [{$prompt['source_name']}] discarded $n; gained +" . ($n * $bladePer) . ' Blade until Live ends.');
             }

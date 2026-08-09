@@ -144,7 +144,8 @@ final class Issue83WaitActiveTest extends TestCase
         $after = $state['players']['p1']['stage']['left'];
         $this->assertFalse(\memberIsInWait($after));
         $this->assertTrue($after['active'] ?? false);
-        $this->assertSame(2, \getStageBladeBonus($state, 'p1'));
+        $this->assertSame(2, intval($after['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
     }
 
     public function testChisatoLiveStartActivatesWaitedGroupAndEnergy(): void

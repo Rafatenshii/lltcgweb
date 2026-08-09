@@ -14,6 +14,8 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
     if (isMemberCard($source) && spBp2StageMemberAbilitiesSuppressed($state, $pid)) {
         return $state;
     }
+    $prevModSource = $state['_mod_source'] ?? null;
+    $state['_mod_source'] = $source;
     $p = &$state['players'][$pid];
     $name = $source['name_en'] ?? $source['name'] ?? 'Card';
 
@@ -43,8 +45,14 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
 
     if (nijiIsNijigasakiEffectType($type)) {
         $state = nijiResolveNijigasakiEffect($state, $pid, $source, $ab, $ctx);
+        unset($p);
         if (!$prevNijiAttr) {
             unset($state['players'][$pid]['_effect_source_is_niji']);
+        }
+        if ($prevModSource === null) {
+            unset($state['_mod_source']);
+        } else {
+            $state['_mod_source'] = $prevModSource;
         }
         return $state;
     }
@@ -86,8 +94,14 @@ function resolveAbilityEffect(array $state, string $pid, array $source, array $a
         $state = spBp2ResolveEffect($state, $pid, $source, $ab, $ctx);
     }
 
+    unset($p);
     if (!$prevNijiAttr) {
         unset($state['players'][$pid]['_effect_source_is_niji']);
+    }
+    if ($prevModSource === null) {
+        unset($state['_mod_source']);
+    } else {
+        $state['_mod_source'] = $prevModSource;
     }
     return $state;
 }

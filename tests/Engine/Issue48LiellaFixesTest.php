@@ -318,7 +318,8 @@ final class Issue48LiellaFixesTest extends TestCase
         $this->assertSame('spbp2_center_move_choose', $state['pending_prompt']['type'] ?? null);
 
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'blade']);
-        $this->assertSame(2, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+        $this->assertSame(2, intval($state['players']['p1']['stage']['left']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
         $this->assertEmpty($state['pending_prompt'] ?? null);
     }
 

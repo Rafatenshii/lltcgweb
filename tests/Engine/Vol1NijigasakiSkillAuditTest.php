@@ -198,7 +198,8 @@ final class Vol1NijigasakiSkillAuditTest extends TestCase
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'yes', 'pay' => true]);
         $this->assertNull($state['pending_prompt'] ?? null);
         $this->assertSame(0, $this->countActiveEnergy($state));
-        $this->assertSame(1, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+        $this->assertSame(1, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
     }
 
     public function testKasumi002OnEnterDeckSurveilOpensLookPrompt(): void
@@ -327,7 +328,8 @@ final class Vol1NijigasakiSkillAuditTest extends TestCase
             'discard_ids' => ['vol1n_ai_disc'],
         ]);
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(1, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
+        $this->assertSame(1, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
+        $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
         $this->assertContains('vol1n_ai_disc', array_column($state['players']['p1']['waiting_room'], 'instance_id'));
     }
 
