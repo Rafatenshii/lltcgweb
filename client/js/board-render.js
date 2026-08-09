@@ -256,10 +256,14 @@ function augmentPerfSpectaclePrev(prev, next) {
   const base = deepCloneState(prev);
   if (!base?.players || !next?.players) return base;
   const myId = next.my_id || G.playerId || base.my_id || 'p1';
-  // New LIVE Phase / new turn: next's live_zone is authoritative — do not keep prev-only ghosts (#95).
-  const freshLiveRound = (intvalTurn(next.turn) > intvalTurn(prev.turn))
-    || (isLiveSetPhase(next.phase) && !isLiveSetPhase(prev.phase))
-    || (isLiveSetPhase(next.phase) && isMainOrActivePhase(prev.phase));
+  // New LIVE placement only: next's live_zone is authoritative (#95).
+  // Do not wipe a deferred Performance baseline when the turn advanced after
+  // judge / game end — failed Lives have already left live_zone.
+  const freshLiveRound = isLiveSetPhase(next.phase) && (
+    intvalTurn(next.turn) > intvalTurn(prev.turn)
+    || !isLiveSetPhase(prev.phase)
+    || isMainOrActivePhase(prev.phase)
+  );
   for (const pid of ['p1', 'p2']) {
     const prevZone = base.players[pid]?.live_zone || [];
     const nextZone = next.players[pid]?.live_zone || [];

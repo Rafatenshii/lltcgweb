@@ -1367,6 +1367,9 @@ function shouldRevealLiveStorageForRound(prev, next, emptyRound = null) {
 function isMemberOnlyLiveStorageRound(prev, next) {
   if (!prev || !next) return false;
   if (liveRoundBoardHasLiveCards(prev) || liveRoundBoardHasLiveCards(next)) return false;
+  if (G._deferPerfSpectaclePrev && liveRoundHasLiveCardsForRound(G._deferPerfSpectaclePrev)) {
+    return false;
+  }
   if (liveSetPlacementInProgress(next) || liveSetPlacementInProgress(prev)) {
     if (liveStorageHasCards(prev) || liveStorageHasCards(next)) return false;
     const baseline = G._liveSetStorageBaseline;
@@ -1762,6 +1765,67 @@ function playerHadLivePerformance(next, pid, prev = null, showTurn = null) {
   });
 }
 
+/** Face-down Live stubs → full card from settled zones (WR / success / live). */
+function hydrateSpectacleLiveCard(state, pid, card) {
+  if (!card) return null;
+  if (isLiveTypeCard(card)) return card;
+  if (!card.instance_id || !state?.players?.[pid]) return null;
+  const pools = [
+    state.players[pid].live_zone,
+    state.players[pid].success_lives,
+    state.players[pid].waiting_room,
+  ];
+  for (const pool of pools) {
+    for (const c of pool || []) {
+      if (c?.instance_id === card.instance_id && isLiveTypeCard(c)) {
+        return { ...card, ...c, revealed: true };
+      }
+    }
+  }
+  if (typeof perfFindRevealedLiveMeta === 'function') {
+    const meta = perfFindRevealedLiveMeta(state, pid, card.instance_id);
+    if (isLiveTypeCard(meta)) return { ...card, ...meta, revealed: true };
+  }
+  return null;
+}
+
+function perfPerformingLiveNamesFromLog(next, pid, turn = null) {
+  const name = next?.players?.[pid]?.name;
+  if (!name) return [];
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`^${esc} is performing Live with (.+)\\.$`);
+  let inTurn = 1;
+  let names = [];
+  for (const e of next.log || []) {
+    const t = parseTurnMarker(e.msg);
+    if (t != null) inTurn = t;
+    if (turn != null && inTurn !== turn) continue;
+    const m = (e.msg || '').match(re);
+    if (!m) continue;
+    names = (m[1].match(/"([^"]+)"/g) || []).map(s => s.slice(1, -1));
+  }
+  return names;
+}
+
+function collectWrLivesMatchingPerformingLog(next, pid, turn = null) {
+  const names = perfPerformingLiveNamesFromLog(next, pid, turn);
+  if (!names.length || !next?.players?.[pid]) return [];
+  const wr = [...(next.players[pid].waiting_room || [])].reverse();
+  const used = new Set();
+  const out = [];
+  for (const nm of names) {
+    const hit = wr.find(c => {
+      if (!c?.instance_id || used.has(c.instance_id) || !isLiveTypeCard(c)) return false;
+      return (c.name_en || c.name) === nm;
+    });
+    if (hit) {
+      used.add(hit.instance_id);
+      out.push(hit);
+    }
+  }
+  return out;
+}
+
 function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
   if (!next?.players?.[pid]) return [];
   if (isLiveSetPlacementOnly(prev, next)) return [];
@@ -1770,31 +1834,64 @@ function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
   const deferred = G._deferPerfSpectaclePrev;
   const okIds = perfLivePerfSuccessIds(next, pid);
   const yellIds = new Set((perfYellRevealInline(next)?.[pid] || []).map(c => c?.instance_id).filter(Boolean));
+  const roundIids = new Set();
+  const noteZone = (zone) => {
+    for (const c of zone || []) {
+      if (c?.instance_id) roundIids.add(c.instance_id);
+    }
+  };
+  noteZone(deferred?.players?.[pid]?.live_zone);
+  noteZone(prev?.players?.[pid]?.live_zone);
+  noteZone(next.players[pid].live_zone);
   const byId = new Map();
   const add = (c) => {
     if (!c?.instance_id) return;
-    if (!isLiveTypeCard(c)) return;
-    if (!byId.has(c.instance_id)) byId.set(c.instance_id, enrichCard(c));
+    let card = isLiveTypeCard(c) ? c : hydrateSpectacleLiveCard(next, pid, c);
+    if (!isLiveTypeCard(card) && prev) card = hydrateSpectacleLiveCard(prev, pid, c);
+    if (!isLiveTypeCard(card)) return;
+    if (!byId.has(c.instance_id)) byId.set(c.instance_id, enrichCard(card));
   };
   if (deferred?.players?.[pid]) {
     (deferred.players[pid].live_zone || []).forEach(add);
   }
+  (prev?.players?.[pid]?.live_zone || []).forEach(add);
   (next.players[pid].live_zone || []).forEach(add);
-  // WR / success when this round's Live iids are known, or log confirms performance.
-  if (okIds?.size) {
-  (next.players[pid].success_lives || []).forEach(add);
-  (next.players[pid].waiting_room || []).forEach(add);
-  } else {
-    const performed = playerHadLivePerformanceForTurn(next, pid, turn);
-    const logSuccess = perfLiveSuccessCountFromLog(next, pid, prev);
-    if (performed && (logSuccess > 0 || playerLiveRoundSucceeded(next, pid))) {
-      (next.players[pid].success_lives || []).forEach(add);
-      (next.players[pid].waiting_room || []).forEach(add);
+  const performed = playerHadLivePerformanceForTurn(next, pid, turn)
+    || playerHasPerfLogThisRound(next, pid);
+  let logSuccess = perfLiveSuccessCountFromLog(next, pid, prev);
+  let logFail = perfLiveFailCountFromLog(next, pid, prev);
+  // log+0 / identical prev: performance lines are already in prev.log.
+  if (performed && logSuccess === 0 && logFail === 0) {
+    logSuccess = perfLiveSuccessCountFromLog(next, pid, null);
+    logFail = perfLiveFailCountFromLog(next, pid, null);
+  }
+  const shouldScanSettled = !!(okIds?.size || yellIds.size || roundIids.size
+    || (performed && (logSuccess > 0 || logFail > 0 || playerLiveRoundSucceeded(next, pid))));
+  if (shouldScanSettled) {
+    const allowSettled = (c) => !c?.instance_id
+      || !okIds?.size
+      || okIds.has(c.instance_id)
+      || roundIids.has(c.instance_id)
+      || yellIds.has(c.instance_id);
+    (next.players[pid].success_lives || []).forEach(c => {
+      if (allowSettled(c)) add(c);
+    });
+    (next.players[pid].waiting_room || []).forEach(c => {
+      if (okIds?.has(c.instance_id) || roundIids.has(c.instance_id) || yellIds.has(c.instance_id)) {
+        add(c);
+      }
+    });
+    if (performed && (logFail > 0 || logSuccess > 0) && byId.size < (logFail + logSuccess)) {
+      collectWrLivesMatchingPerformingLog(next, pid, turn).forEach(add);
     }
   }
   let cards = [...byId.values()];
-  if (okIds?.size) {
-    cards = cards.filter(c => okIds.has(c.instance_id) || yellIds.has(c.instance_id));
+  if (okIds?.size || roundIids.size) {
+    cards = cards.filter(c =>
+      (okIds && okIds.has(c.instance_id))
+      || roundIids.has(c.instance_id)
+      || yellIds.has(c.instance_id)
+    );
   }
   return clampLiveZoneCards(cards);
 }
@@ -5662,6 +5759,13 @@ function perfLiveAttempts(prev, next, pid) {
     if (!isPerfSpectacleLiveSlotCard(c, next, pid)) return;
     pushAttempt(c);
   });
+  if (!attempts.length || (playerHasPerfLogThisRound(next, pid)
+      && attempts.length < (perfLiveSuccessCountFromLog(next, pid, prev)
+        + perfLiveFailCountFromLog(next, pid, prev)))) {
+    collectPerfRoundLiveCards(next, pid, prev, inferLiveShowTurn(prev, next)).forEach(c => {
+      pushAttempt(c);
+    });
+  }
   for (const iid of succeededIds) {
     if (seen.has(iid)) continue;
     pushAttempt(perfLookupLiveAttemptCard(perfPrev, next, pid, iid), true);
