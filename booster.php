@@ -1,19 +1,24 @@
 <?php
 /**
  * Booster box definitions and pack-opening simulation.
- * Pack structure: 2×N, 1×R, 1× base (N/R/L/R+), 1× guaranteed foil (Tier 3→2→1, always last).
- * God Pack: all 5× LLE (~1/480). RM ~1/box via pity. Box pity tracked per user/box.
+ * Standard BP: 5 cards × 10 packs/box (2×N, 1×R, 1× base, 1× foil).
+ * Premium PB: 3 cards × 20 packs/box (1× common + 2× holo; 2 all-holo packs/box).
+ * God Pack: all 5× LLE (~1/160 packs ≈ 1/16 BP boxes). RM ~1/box via pity.
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/deck_validate.php';
 
-const TCG_PACKS_PER_BOX = 30;
+/** Official standard booster: 10 packs per box. */
+const TCG_PACKS_PER_BOX = 10;
 const TCG_PACK_SIZE = 5;
+/** Official premium booster defaults. */
+const TCG_PB_PACK_SIZE = 3;
+const TCG_PB_PACKS_PER_BOX = 20;
 /** Daily booster opens (JST): welcome day vs normal days. */
 const TCG_DAILY_PACK_LIMIT = 5;
 const TCG_WELCOME_DAY_PACK_LIMIT = 10;
-/** ~1 God Pack per 16 booster boxes (extremely rare). */
-const TCG_GOD_PACK_ODDS = 480;
+/** ~1 God Pack per 16 standard booster boxes (10 packs each). */
+const TCG_GOD_PACK_ODDS = 160;
 /** Random Parallel (P) character Energy inserts included with a physical start deck. */
 const TCG_STARTER_PARALLEL_PROMO_COUNT = 2;
 
@@ -65,8 +70,6 @@ function tcgBoosterBoxes(): array {
          ]],
         ['id' => 'bp_mellow', 'name_en' => 'Booster Pack MELLOW MOMENT', 'name_jp' => 'ブースターパック MELLOW MOMENT',
          'filter' => 'ブースターパック MELLOW MOMENT', 'kind' => 'bp',
-         // Official product: 10 packs per box (not the usual 30).
-         'packs_per_box' => 10,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => [
@@ -81,33 +84,43 @@ function tcgBoosterBoxes(): array {
          'pack_images' => ['assets/packs/bp_anniv-a.jpg']],
         ['id' => 'pb_muse', 'name_en' => "Premium Booster μ's", 'name_jp' => 'プレミアムブースター ラブライブ！',
          'filter' => 'プレミアムブースター ラブライブ！', 'kind' => 'pb',
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/05/26224815/L_TCG_-PBP_03_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_muse-a.jpg']],
         ['id' => 'pb_niji', 'name_en' => 'Premium Booster Nijigasaki', 'name_jp' => 'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会',
          'filter' => 'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会', 'kind' => 'pb',
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/08/01160806/L_TCG_-PBP_04_box_image.png',
          'pack_style' => 'promo',
          'pack_images' => ['assets/packs/pb_niji-promo.png']],
         ['id' => 'pb_sunshine', 'name_en' => 'Premium Booster Sunshine!!', 'name_jp' => 'プレミアムブースター ラブライブ！サンシャイン!!',
          'filter' => 'プレミアムブースター ラブライブ！サンシャイン!!', 'kind' => 'pb',
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/02/28161326/L_TCG_-PBP_02_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_sunshine-a.jpg']],
         ['id' => 'pb_superstar', 'name_en' => 'Premium Booster Superstar!!', 'name_jp' => 'プレミアムブースター ラブライブ！スーパースター!!',
          'filter' => 'プレミアムブースター ラブライブ！スーパースター!!', 'kind' => 'pb',
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/01/28114915/L_TCG_-PBP_01_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_superstar-a.jpg']],
         ['id' => 'pb_superstar_duo', 'name_en' => 'Premium Booster Superstar!! DUO', 'name_jp' => 'プレミアムブースター ラブライブ！スーパースター!! DUO',
          'filter' => 'プレミアムブースター ラブライブ！スーパースター!! DUO', 'kind' => 'pb_duo',
-         'pack_size' => 3,
-         'packs_per_box' => 20,
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171531/LLC_-PB06_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_superstar_duo-a.jpg']],
         ['id' => 'pb_hasunosora', 'name_en' => 'Premium Booster Hasunosora', 'name_jp' => 'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ',
          'filter' => 'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ', 'kind' => 'pb',
+         'pack_size' => TCG_PB_PACK_SIZE,
+         'packs_per_box' => TCG_PB_PACKS_PER_BOX,
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/11/17105656/L_TCG_-PBP_06_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_hasunosora-a.jpg']],
@@ -225,11 +238,38 @@ function tcgFoilSlotRarityWeights(): array {
 }
 
 function tcgBoxPackSize(array $box): int {
+    $kind = (string)($box['kind'] ?? '');
+    if (!isset($box['pack_size']) && ($kind === 'pb' || $kind === 'pb_duo')) {
+        return TCG_PB_PACK_SIZE;
+    }
     return max(1, intval($box['pack_size'] ?? TCG_PACK_SIZE));
 }
 
 function tcgBoxPacksPerBox(array $box): int {
+    $kind = (string)($box['kind'] ?? '');
+    if (!isset($box['packs_per_box']) && ($kind === 'pb' || $kind === 'pb_duo')) {
+        return TCG_PB_PACKS_PER_BOX;
+    }
     return max(1, intval($box['packs_per_box'] ?? TCG_PACKS_PER_BOX));
+}
+
+/** Star Gem cost for one pack of this box (20 gems × cards per pack). */
+function tcgStarGemsPackCost(array $box): int {
+    return tcgBoxPackSize($box) * TCG_STAR_GEMS_PER_CARD;
+}
+
+/** Star Gem cost for a full box (pack cost × packs per box). */
+function tcgStarGemsBoxCost(array $box): int {
+    return tcgBoxPacksPerBox($box) * tcgStarGemsPackCost($box);
+}
+
+/** Public catalog fields: sizes + gem costs always present. */
+function tcgEnrichBoosterBoxPublic(array $box): array {
+    $box['pack_size'] = tcgBoxPackSize($box);
+    $box['packs_per_box'] = tcgBoxPacksPerBox($box);
+    $box['star_gems_pack_cost'] = tcgStarGemsPackCost($box);
+    $box['star_gems_box_cost'] = tcgStarGemsBoxCost($box);
+    return $box;
 }
 
 /** Map fullwidth + / card-number suffixes into pool rarity keys. */
@@ -349,6 +389,98 @@ function tcgRollPbDuoPack(array $pools, array &$progress, int $packsPerBox, bool
         ?: tcgPickFromPool($pools['N']) ?: tcgPickFromPool($pools['R']);
     $slots[] = tcgPickPbDuoHolo($pools, $progress, $packsPerBox);
     $slots[] = tcgPickPbDuoHolo($pools, $progress, $packsPerBox);
+    return array_values(array_filter($slots));
+}
+
+/**
+ * Standard Premium Booster holo slots (2 of 3 cards are kira).
+ * Mirrors BP foil tiers with SRE as the common parallel (not DUO/SRL).
+ */
+function tcgPbHoloSlotRarityWeights(): array {
+    return [
+        ['r' => 'SECE', 'w' => 3],
+        ['r' => 'SEC', 'w' => 4],
+        ['r' => 'SECL', 'w' => 4],
+        ['r' => 'SEC+', 'w' => 2],
+        ['r' => 'LLE', 'w' => 8],
+        ['r' => 'AR', 'w' => 8],
+        ['r' => 'L+', 'w' => 12],
+        ['r' => 'L', 'w' => 25],
+        ['r' => 'PE+', 'w' => 120],
+        ['r' => 'P+', 'w' => 350],
+        ['r' => 'SRE', 'w' => 3500],
+        ['r' => 'P', 'w' => 500],
+        ['r' => 'PE', 'w' => 200],
+        ['r' => 'RE', 'w' => 150],
+        ['r' => 'RM', 'w' => 30],
+    ];
+}
+
+function tcgPickPbHolo(array $pools, array &$progress, int $packsPerBox): ?string {
+    $progress['pplus_pity'] = intval($progress['pplus_pity']) + 1;
+    $progress['pe_pity'] = intval($progress['pe_pity']) + 1;
+    $progress['sec_pity'] = intval($progress['sec_pity']) + 1;
+    $progress['rm_pity'] = intval($progress['rm_pity']) + 1;
+
+    if ($progress['rm_pity'] >= $packsPerBox && !empty($pools['RM'])) {
+        $progress['rm_pity'] = 0;
+        return tcgPickFromPool($pools['RM']);
+    }
+    if ($progress['sec_pity'] >= $packsPerBox * 10) {
+        $secPool = array_merge(
+            $pools['SECE'] ?? [],
+            $pools['SEC'] ?? [],
+            $pools['SECL'] ?? [],
+            $pools['SEC+'] ?? []
+        );
+        if (!empty($secPool)) {
+            $progress['sec_pity'] = 0;
+            $picked = tcgPickFromPool($secPool);
+            if ($picked) {
+                tcgApplyFoilPityReset(tcgRarityForCardNo($picked, $pools) ?? 'SEC', $progress);
+            }
+            return $picked;
+        }
+    }
+    if ($progress['pe_pity'] >= $packsPerBox && !empty($pools['PE+'])) {
+        $progress['pe_pity'] = 0;
+        return tcgPickFromPool($pools['PE+']);
+    }
+    if ($progress['pplus_pity'] >= $packsPerBox * 4 && !empty($pools['P+'])) {
+        $progress['pplus_pity'] = 0;
+        return tcgPickFromPool($pools['P+']);
+    }
+
+    $picked = tcgPickWeightedRarity($pools, tcgPbHoloSlotRarityWeights());
+    if (!$picked) {
+        foreach (['SRE', 'P+', 'PE+', 'P', 'PE', 'L', 'LLE', 'SECL'] as $r) {
+            if (!empty($pools[$r])) {
+                return tcgPickFromPool($pools[$r]);
+            }
+        }
+        return null;
+    }
+
+    $rarity = tcgRarityForCardNo($picked, $pools);
+    if ($rarity) {
+        tcgApplyFoilPityReset($rarity, $progress);
+    }
+    return $picked;
+}
+
+/** Standard Premium Booster: 3 cards (1 common + 2 holo), matching official PB products. */
+function tcgRollPbPack(array $pools, array &$progress, int $packsPerBox, bool $allHoloPack): array {
+    $slots = [];
+    if ($allHoloPack) {
+        for ($i = 0; $i < TCG_PB_PACK_SIZE; $i++) {
+            $slots[] = tcgPickPbHolo($pools, $progress, $packsPerBox);
+        }
+        return array_values(array_filter($slots));
+    }
+    $slots[] = tcgPickWeightedRarity($pools, tcgPbDuoCommonSlotRarityWeights())
+        ?: tcgPickFromPool($pools['N']) ?: tcgPickFromPool($pools['R']);
+    $slots[] = tcgPickPbHolo($pools, $progress, $packsPerBox);
+    $slots[] = tcgPickPbHolo($pools, $progress, $packsPerBox);
     return array_values(array_filter($slots));
 }
 
@@ -516,6 +648,36 @@ function tcgComputeBoosterPackRates(array $box, array $cardsData): array {
             tcgBoxPacksPerBox($box)
         );
         $notes[] = 'Approximate rates without box pity counters.';
+    } elseif (($box['kind'] ?? '') === 'pb') {
+        $commonWeights = tcgPbDuoCommonSlotRarityWeights();
+        $holoWeights = tcgPbHoloSlotRarityWeights();
+        $slotDefs = [
+            ['weights' => $commonWeights],
+            ['weights' => $holoWeights],
+            ['weights' => $holoWeights],
+        ];
+        foreach ($slotDefs as $i => $def) {
+            $slotCardProbs[$i] = [];
+            $slotRarityProbs[$i] = [];
+            foreach (array_keys($allNos) as $no) {
+                $p = tcgCardProbWeightedSlot($pools, $def['weights'], $no);
+                if ($p > 0) {
+                    $slotCardProbs[$i][$no] = $p;
+                }
+            }
+            foreach ($def['weights'] as $entry) {
+                $rp = tcgRarityProbWeightedSlot($pools, $def['weights'], $entry['r']);
+                if ($rp > 0) {
+                    $slotRarityProbs[$i][$entry['r']] = $rp;
+                }
+            }
+        }
+        $notes[] = 'Premium pack: 3 cards. Slot 1 is N/R; slots 2–3 are guaranteed holo (SRE, P+, PE+, SEC, …).';
+        $notes[] = sprintf(
+            'Each %d-pack box also contains 2 all-holo packs (not reflected in per-pack percentages).',
+            tcgBoxPacksPerBox($box)
+        );
+        $notes[] = 'Approximate rates without box pity counters.';
     } else {
         $nPool = $pools['N'] ?? [];
         $rPool = $pools['R'] ?? [];
@@ -608,7 +770,14 @@ function tcgComputeBoosterPackRates(array $box, array $cardsData): array {
     });
 
     return [
-        'box' => ['id' => $box['id'], 'name_en' => $box['name_en'] ?? $box['id']],
+        'box' => [
+            'id' => $box['id'],
+            'name_en' => $box['name_en'] ?? $box['id'],
+            'pack_size' => $packSize,
+            'packs_per_box' => tcgBoxPacksPerBox($box),
+            'star_gems_pack_cost' => tcgStarGemsPackCost($box),
+            'star_gems_box_cost' => tcgStarGemsBoxCost($box),
+        ],
         'pack_size' => $packSize,
         'pool_size' => count($allNos),
         'rarity_rates' => $rarityRates,
@@ -623,7 +792,7 @@ function tcgBuildBoxPools(array $cardsData, array $box): array {
         'N' => [], 'R' => [], 'R+' => [], 'P' => [], 'P+' => [], 'PP' => [],
         'L' => [], 'L+' => [], 'LLE' => [], 'PE' => [], 'PE+' => [],
         'SEC' => [], 'SECL' => [], 'SEC+' => [], 'SECE' => [], 'SECS' => [],
-        'SRE' => [], 'SRL' => [], 'DUO' => [], 'AR' => [],
+        'SRE' => [], 'SRL' => [], 'DUO' => [], 'AR' => [], 'RM' => [],
         'PR' => [], 'PR+' => [],
     ];
     foreach ($cardsData['cards'] ?? [] as $c) {
@@ -756,7 +925,7 @@ function tcgRarityForCardNo(string $cardNo, array $pools): ?string {
 }
 
 /** Tier 3 standard pack foils + Tier 2 premium + Tier 1 master chases (slot 5). */
-function tcgPickGuaranteedFoil(array $pools, array &$progress): ?string {
+function tcgPickGuaranteedFoil(array $pools, array &$progress, int $packsPerBox = TCG_PACKS_PER_BOX): ?string {
     $forced = tcgMaybeForceLivePick($pools, $progress);
     if ($forced !== null) {
         return $forced;
@@ -766,11 +935,11 @@ function tcgPickGuaranteedFoil(array $pools, array &$progress): ?string {
     $progress['sec_pity'] = intval($progress['sec_pity']) + 1;
     $progress['rm_pity'] = intval($progress['rm_pity']) + 1;
 
-    if ($progress['rm_pity'] >= TCG_PACKS_PER_BOX && !empty($pools['RM'])) {
+    if ($progress['rm_pity'] >= $packsPerBox && !empty($pools['RM'])) {
         $progress['rm_pity'] = 0;
         return tcgPickFromPool($pools['RM']);
     }
-    if ($progress['sec_pity'] >= TCG_PACKS_PER_BOX * 12) {
+    if ($progress['sec_pity'] >= $packsPerBox * 12) {
         $secPool = array_merge(
             $pools['SECE'] ?? [],
             $pools['SEC'] ?? [],
@@ -786,11 +955,11 @@ function tcgPickGuaranteedFoil(array $pools, array &$progress): ?string {
             return $picked;
         }
     }
-    if ($progress['pe_pity'] >= TCG_PACKS_PER_BOX && !empty($pools['PE+'])) {
+    if ($progress['pe_pity'] >= $packsPerBox && !empty($pools['PE+'])) {
         $progress['pe_pity'] = 0;
         return tcgPickFromPool($pools['PE+']);
     }
-    if ($progress['pplus_pity'] >= TCG_PACKS_PER_BOX * 5 && !empty($pools['P+'])) {
+    if ($progress['pplus_pity'] >= $packsPerBox * 5 && !empty($pools['P+'])) {
         $progress['pplus_pity'] = 0;
         return tcgPickFromPool($pools['P+']);
     }
@@ -1008,12 +1177,14 @@ function tcgRollBoosterPack(string $discordId, string $boxId, array $cardsData):
 
     if (($box['kind'] ?? '') === 'pr') {
         $slots = tcgRollPrPack($pools);
-    } elseif (($box['kind'] ?? '') === 'pb_duo') {
+    } elseif (($box['kind'] ?? '') === 'pb_duo' || ($box['kind'] ?? '') === 'pb') {
         $packIndex = intval($progress['packs_in_box']) + 1;
         $boxNumber = intval($progress['boxes_opened']) + 1;
         [$holoA, $holoB] = tcgPbDuoAllHoloPackIndices($discordId, $boxId, $boxNumber, $packsPerBox);
         $allHoloPack = ($packIndex === $holoA || $packIndex === $holoB);
-        $slots = tcgRollPbDuoPack($pools, $progress, $packsPerBox, $allHoloPack);
+        $slots = (($box['kind'] ?? '') === 'pb_duo')
+            ? tcgRollPbDuoPack($pools, $progress, $packsPerBox, $allHoloPack)
+            : tcgRollPbPack($pools, $progress, $packsPerBox, $allHoloPack);
     } else {
         $godSlots = tcgRollGodPack($pools, $boxId);
         if ($godSlots !== null) {
@@ -1025,7 +1196,7 @@ function tcgRollBoosterPack(string $discordId, string $boxId, array $cardsData):
             }
             $slots[] = tcgPickFromPool($pools['R']) ?: tcgPickFromPool($pools['N']);
             $slots[] = tcgPickBaseSlot($pools, $progress);
-            $foil = tcgPickGuaranteedFoil($pools, $progress);
+            $foil = tcgPickGuaranteedFoil($pools, $progress, $packsPerBox);
             $slots[] = $foil ?: tcgPickFromPool($pools['P']) ?: tcgPickFromPool($pools['PE']);
         }
     }
@@ -1042,7 +1213,7 @@ function tcgRollBoosterPack(string $discordId, string $boxId, array $cardsData):
             $pulled[] = $no;
         }
     }
-    if (($box['kind'] ?? '') !== 'pr' && ($box['kind'] ?? '') !== 'pb_duo' && !$godPack) {
+    if (($box['kind'] ?? '') !== 'pr' && ($box['kind'] ?? '') !== 'pb_duo' && ($box['kind'] ?? '') !== 'pb' && !$godPack) {
         tcgNoteLivePullInPack($pulled, $pools, $progress);
     }
     tcgSaveBoxProgress($progress);
@@ -1093,8 +1264,9 @@ function tcgOpenBoosterPack(string $discordId, string $boxId, array $cardsData, 
     if ($payment === 'daily') {
         tcgRecordDailyOpen($discordId);
     } elseif ($payment === 'gems') {
-        tcgDeductStarGems($discordId, TCG_STAR_GEMS_PACK_COST);
-        $gemsSpent = TCG_STAR_GEMS_PACK_COST;
+        $packCost = tcgStarGemsPackCost($box);
+        tcgDeductStarGems($discordId, $packCost);
+        $gemsSpent = $packCost;
     } else {
         throw new Exception('Invalid booster payment mode', 400);
     }
@@ -1130,7 +1302,8 @@ function tcgOpenBoosterBoxWithGems(string $discordId, string $boxId, array $card
     if (($box['kind'] ?? '') === 'pr') {
         throw new Exception('PR Card Pack cannot be opened as a full booster box');
     }
-    tcgDeductStarGems($discordId, TCG_STAR_GEMS_BOX_COST);
+    $boxCost = tcgStarGemsBoxCost($box);
+    tcgDeductStarGems($discordId, $boxCost);
     $cardMap = tcgBuildCardMap($cardsData);
     $packsPerBox = tcgBoxPacksPerBox($box);
 
@@ -1175,7 +1348,7 @@ function tcgOpenBoosterBoxWithGems(string $discordId, string $boxId, array $card
         'god_pack' => $godPackCount > 0,
         'god_pack_count' => $godPackCount,
         'payment' => 'gems_box',
-        'star_gems_spent' => TCG_STAR_GEMS_BOX_COST,
+        'star_gems_spent' => $boxCost,
         'star_gems_earned' => $totalGemsEarned,
         'star_gems' => tcgGetStarGems($discordId),
         'daily' => tcgDailyOpenAllowance($discordId),

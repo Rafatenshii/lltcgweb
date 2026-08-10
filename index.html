@@ -2330,8 +2330,11 @@ const LOVECA_POINT_LIMIT = 9;
 const DECK_MAX_ENERGY_COPIES = 12;
 const STAR_GEM_ICON = 'assets/Star_Gem.png';
 const STAR_GEMS_PER_DUPE = 10;
+const STAR_GEMS_PER_CARD = 20;
 const STAR_GEMS_PACK_COST = 100;
-const STAR_GEMS_BOX_COST = 3000;
+const STAR_GEMS_BOX_COST = 1000;
+const DEFAULT_PACK_SIZE = 5;
+const DEFAULT_PACKS_PER_BOX = 10;
 const SEAL_ICONS = { N: 'assets/seals/N.png', R: 'assets/seals/R.png', P: 'assets/seals/P.png', SEC: 'assets/seals/SEC.png', PR: 'assets/seals/PR.png' };
 const SEAL_BUY_COSTS = { N: 20, R: 15, P: 10, SEC: 5, PR: 20 };
 const SEAL_TIER_RARITIES = {
@@ -2342,8 +2345,6 @@ const SEAL_TIER_RARITIES = {
   // Collection Clear Pocket (CL) rolls in PR packs — same seal tier as PR.
   PR: ['PR', 'PR+', 'CL'],
 };
-const DEFAULT_PACK_SIZE = 5;
-const DEFAULT_PACKS_PER_BOX = 30;
 
 const A = {
   token: null,
@@ -2429,15 +2430,29 @@ function boxPacksPerBox(boxId) {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_PACKS_PER_BOX;
 }
 
+function boxStarGemsPackCost(boxId) {
+  const box = boxById(boxId);
+  const fromApi = Number(box?.star_gems_pack_cost);
+  if (Number.isFinite(fromApi) && fromApi > 0) return fromApi;
+  return boxPackSize(boxId) * STAR_GEMS_PER_CARD;
+}
+
+function boxStarGemsBoxCost(boxId) {
+  const box = boxById(boxId);
+  const fromApi = Number(box?.star_gems_box_cost);
+  if (Number.isFinite(fromApi) && fromApi > 0) return fromApi;
+  return boxPacksPerBox(boxId) * boxStarGemsPackCost(boxId);
+}
+
 function openPackButtonLabel(boxId, withGems = false) {
   const base = t('booster.openPack', { n: boxPackSize(boxId) });
   if (!withGems) return base;
-  return base + ' · ' + starGemCostHtml(STAR_GEMS_PACK_COST);
+  return base + ' · ' + starGemCostHtml(boxStarGemsPackCost(boxId));
 }
 
 function openBoxButtonLabel(boxId) {
   const base = t('booster.openBox', { n: boxPacksPerBox(boxId) });
-  return base + ' · ' + starGemCostHtml(STAR_GEMS_BOX_COST);
+  return base + ' · ' + starGemCostHtml(boxStarGemsBoxCost(boxId));
 }
 
 function starGemIconHtml(sizePx = 18) {
@@ -2858,12 +2873,12 @@ function dailyRemainingFromProfile() {
   return Number(A.profile?.daily?.remaining ?? 0) || 0;
 }
 
-function canAffordPackWithGems() {
-  return A.starGems >= STAR_GEMS_PACK_COST;
+function canAffordPackWithGems(boxId = A.boxPick) {
+  return A.starGems >= boxStarGemsPackCost(boxId);
 }
 
-function canAffordBoxWithGems() {
-  return A.starGems >= STAR_GEMS_BOX_COST;
+function canAffordBoxWithGems(boxId = A.boxPick) {
+  return A.starGems >= boxStarGemsBoxCost(boxId);
 }
 
 function resolveNextOpenPayment(mode) {
@@ -2873,9 +2888,9 @@ function resolveNextOpenPayment(mode) {
 }
 
 function nextOpenCostLabel(mode) {
-  if (mode === 'box') return starGemCostHtml(STAR_GEMS_BOX_COST);
+  if (mode === 'box') return starGemCostHtml(boxStarGemsBoxCost(A.boxPick));
   if (dailyRemainingFromProfile() > 0) return t('booster.dailyPack');
-  return starGemCostHtml(STAR_GEMS_PACK_COST);
+  return starGemCostHtml(boxStarGemsPackCost(A.boxPick));
 }
 
 function showDupeMigrationDialog(migration) {
@@ -2907,14 +2922,14 @@ function showPaidBoosterConfirm() {
     const packBtn = el('btn-paid-open-pack');
     const boxBtn = el('btn-paid-open-box');
     if (packBtn) {
-      packBtn.innerHTML = t('booster.openOnePack') + ' · ' + starGemCostHtml(STAR_GEMS_PACK_COST);
+      packBtn.innerHTML = t('booster.openOnePack') + ' · ' + starGemCostHtml(boxStarGemsPackCost(A.boxPick));
       packBtn.disabled = !canAffordPackWithGems();
     }
     if (boxBtn) {
       boxBtn.hidden = false;
-      boxBtn.innerHTML = t('booster.openPaidBox', { n: boxPacksPerBox(A.boxPick) }) + ' · ' + starGemCostHtml(STAR_GEMS_BOX_COST);
+      boxBtn.innerHTML = t('booster.openPaidBox', { n: boxPacksPerBox(A.boxPick) }) + ' · ' + starGemCostHtml(boxStarGemsBoxCost(A.boxPick));
       boxBtn.disabled = !canAffordBoxWithGems();
-      boxBtn.title = canAffordBoxWithGems() ? '' : t('booster.needMoreGems', { n: STAR_GEMS_BOX_COST });
+      boxBtn.title = canAffordBoxWithGems() ? '' : t('booster.needMoreGems', { n: boxStarGemsBoxCost(A.boxPick) });
     }
     openM('modal-paid-booster');
   });
@@ -2972,7 +2987,7 @@ function updatePackAgainButton(mode) {
   btn.hidden = false;
   btn.disabled = false;
   const label = mode === 'box' ? 'Open same box again' : 'Open same pack again';
-  btn.innerHTML = label + ' · ' + (payment === 'daily' ? 'Daily pack' : starGemCostHtml(mode === 'box' ? STAR_GEMS_BOX_COST : STAR_GEMS_PACK_COST));
+  btn.innerHTML = label + ' · ' + (payment === 'daily' ? 'Daily pack' : starGemCostHtml(mode === 'box' ? boxStarGemsBoxCost(A.boxPick) : boxStarGemsPackCost(A.boxPick)));
 }
 
 function packImagesForBox(boxId) {
@@ -6076,7 +6091,7 @@ function syncBoosterOpenButton(remaining, hasBox) {
       : (t('booster.openBox', { n: DEFAULT_PACKS_PER_BOX }) + ' · ' + starGemCostHtml(STAR_GEMS_BOX_COST));
     boxBtn.title = !hasBox
       ? t('booster.selectBoxFirst')
-      : (canBox ? '' : t('booster.needMoreGems', { n: STAR_GEMS_BOX_COST }));
+      : (canBox ? '' : t('booster.needMoreGems', { n: boxStarGemsBoxCost(A.boxPick) }));
   }
 }
 
@@ -6188,7 +6203,7 @@ async function openBoosterBox() {
   }
   el('booster-err').textContent = '';
   if (!canAffordBoxWithGems()) {
-    el('booster-err').textContent = t('booster.needMoreGems', { n: STAR_GEMS_BOX_COST });
+    el('booster-err').textContent = t('booster.needMoreGems', { n: boxStarGemsBoxCost(A.boxPick) });
     syncBoosterOpenButton(dailyRemainingFromProfile(), true);
     return;
   }
@@ -6227,7 +6242,7 @@ async function openSamePackAgain() {
     return;
   }
   if (payment === 'gems' || payment === 'gems_box') {
-    const need = payment === 'gems_box' ? STAR_GEMS_BOX_COST : STAR_GEMS_PACK_COST;
+    const need = payment === 'gems_box' ? boxStarGemsBoxCost(A.boxPick) : boxStarGemsPackCost(A.boxPick);
     if (A.starGems < need) {
       el('pack-results-err').textContent = 'Not enough Star Gems.';
       updatePackAgainButton(mode);

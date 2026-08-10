@@ -146,6 +146,7 @@ function tcgApiMe(array $body): array {
         'daily' => $daily,
         'ranked_pr' => $rankedPr,
         'star_gems' => tcgGetStarGems($uid),
+        'star_gems_per_card' => TCG_STAR_GEMS_PER_CARD,
         'star_gems_pack_cost' => TCG_STAR_GEMS_PACK_COST,
         'star_gems_box_cost' => TCG_STAR_GEMS_BOX_COST,
         'star_gems_per_dupe' => TCG_STAR_GEMS_PER_DUPE,
@@ -212,7 +213,14 @@ function tcgApiCollection(array $body): array {
 }
 
 function tcgApiBoosterBoxes(): array {
-    return ['success' => true, 'boxes' => tcgBoosterBoxes()];
+    $boxes = array_map('tcgEnrichBoosterBoxPublic', tcgBoosterBoxes());
+    return [
+        'success' => true,
+        'boxes' => $boxes,
+        'star_gems_per_card' => TCG_STAR_GEMS_PER_CARD,
+        'star_gems_pack_cost' => TCG_STAR_GEMS_PACK_COST,
+        'star_gems_box_cost' => TCG_STAR_GEMS_BOX_COST,
+    ];
 }
 
 function tcgApiStickerShopCatalog(array $body): array {
@@ -349,6 +357,7 @@ function tcgApiDailyStatus(array $body): array {
         'daily' => tcgDailyOpenAllowance($uid),
         'ranked_pr' => tcgRankedPrDailyAllowance($uid),
         'star_gems' => tcgGetStarGems($uid),
+        'star_gems_per_card' => TCG_STAR_GEMS_PER_CARD,
         'star_gems_pack_cost' => TCG_STAR_GEMS_PACK_COST,
         'star_gems_box_cost' => TCG_STAR_GEMS_BOX_COST,
     ];

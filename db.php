@@ -13,8 +13,11 @@ define('TCG_DB_PATH', TCG_DATA_DIR . 'tcg.db');
 require_once __DIR__ . '/deck_validate.php';
 
 const TCG_STAR_GEMS_PER_DUPE = 10;
+/** Base gem rate: 20 Star Gems per card in a pack (5-card pack = 100, 3-card = 60). */
+const TCG_STAR_GEMS_PER_CARD = 20;
+/** Default reference costs for a standard 5-card / 10-pack booster box. */
 const TCG_STAR_GEMS_PACK_COST = 100;
-const TCG_STAR_GEMS_BOX_COST = 3000;
+const TCG_STAR_GEMS_BOX_COST = 1000;
 
 /** Star Gems awarded when a duplicate is converted (above deck copy limit). */
 function tcgStarGemsForDupe(?array $card, string $cardNo = ''): int {
