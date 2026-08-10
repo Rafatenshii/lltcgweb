@@ -727,13 +727,39 @@ function resolveOptionalDiscardPromptChoice(
             } elseif ($need > 0 && count($ids) !== $need) {
                 throw new Exception("Must select exactly $need card(s) to discard");
             }
+            $discardFilter = (string)($promptAbility['filter'] ?? '');
+            if ($discardFilter === 'live' || $discardFilter === 'member') {
+                foreach ($ids as $id) {
+                    $found = null;
+                    foreach ($ownerP['hand'] ?? [] as $hc) {
+                        if (($hc['instance_id'] ?? '') === $id) {
+                            $found = $hc;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        throw new Exception('Invalid discarded card');
+                    }
+                    if ($discardFilter === 'live' && !isLiveTypeCard($found)) {
+                        throw new Exception('Must discard a Live card');
+                    }
+                    if ($discardFilter === 'member' && !isMemberCard($found)) {
+                        throw new Exception('Must discard a Member card');
+                    }
+                }
+            }
             if (!empty($ids)) {
                 $discardedCards = takeDiscardedHandCards($ownerP, $ids, $state, $owner);
             } else {
                 $discardedCards = [];
             }
             $then = $promptAbility['then'] ?? [];
-            if (($then['type'] ?? '') === 'draw_equal_discarded') {
+            if (($then['type'] ?? '') === 'draw_cards') {
+                $drawn = drawCardsForPlayer($state, $owner, intval($then['count'] ?? $then['draw'] ?? 1));
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded " .
+                    count($discardedCards) . " and drew $drawn.");
+            } elseif (($then['type'] ?? '') === 'draw_equal_discarded') {
                 $drawn = drawCardsForPlayer($state, $owner, count($ids));
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded " . count($ids) .

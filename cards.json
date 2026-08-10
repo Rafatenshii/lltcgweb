@@ -56851,6 +56851,7 @@
           "trigger": "on_enter",
           "type": "optional_discard_prompt",
           "discard": 1,
+          "filter": "live",
           "prompt": "Put 1 Live card from your hand into the Waiting Room: draw 3 cards?",
           "then": {
             "type": "draw_cards",
@@ -56904,6 +56905,7 @@
           "trigger": "on_enter",
           "type": "optional_discard_prompt",
           "discard": 1,
+          "filter": "live",
           "prompt": "Put 1 Live card from your hand into the Waiting Room: draw 3 cards?",
           "then": {
             "type": "draw_cards",
@@ -56957,6 +56959,7 @@
           "trigger": "on_enter",
           "type": "optional_discard_prompt",
           "discard": 1,
+          "filter": "live",
           "prompt": "Put 1 Live card from your hand into the Waiting Room: draw 3 cards?",
           "then": {
             "type": "draw_cards",
@@ -57010,6 +57013,7 @@
           "trigger": "on_enter",
           "type": "optional_discard_prompt",
           "discard": 1,
+          "filter": "live",
           "prompt": "Put 1 Live card from your hand into the Waiting Room: draw 3 cards?",
           "then": {
             "type": "draw_cards",

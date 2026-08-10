@@ -364,6 +364,26 @@ function tryResolveAbilityEffectSwitchOptional(
                     ' — [' . $name . '] optional On Enter skipped (no cards left in deck).');
                 break;
             }
+            $discardFilter = (string)($ab['filter'] ?? '');
+            if ($discardFilter === 'live' || $discardFilter === 'member') {
+                $hasMatch = false;
+                foreach ($p['hand'] ?? [] as $hc) {
+                    if (!$hc) {
+                        continue;
+                    }
+                    if ($discardFilter === 'live' && isLiveTypeCard($hc)) {
+                        $hasMatch = true;
+                        break;
+                    }
+                    if ($discardFilter === 'member' && isMemberCard($hc)) {
+                        $hasMatch = true;
+                        break;
+                    }
+                }
+                if (!$hasMatch) {
+                    break;
+                }
+            }
             $energyCost = intval($ab['energy_cost'] ?? 0);
             $deferEnergyPay = (($ab['trigger'] ?? '') === 'activated')
                 || (($ctx['phase'] ?? '') === 'activated');

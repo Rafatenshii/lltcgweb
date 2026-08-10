@@ -1855,6 +1855,14 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
       ||pr.type==='optional_discard_subunit_draw_buff_cost'){
       pickHand=optionalLiveStartDiscardHand(pr,s,myId);
     }
+    if(pr.type==='optional_discard_prompt' && pr.ability?.filter==='live'){
+      pickHand=pickHand.filter(c=>c && (c.card_type==='ライブ' || c.card_type_en==='Live'));
+      if(!pickHand.length){ toast('No Live card in hand'); return; }
+    }
+    if(pr.type==='optional_discard_prompt' && pr.ability?.filter==='member'){
+      pickHand=pickHand.filter(c=>c && (c.card_type==='メンバー' || c.card_type_en==='Member'));
+      if(!pickHand.length){ toast('No Member card in hand'); return; }
+    }
     if(pr.type==='opp_may_discard_or_modifier'){
       pickHand=pickHand.filter(c=>c.card_type==='ライブ');
       if(!pickHand.length){ toast('No Live card in hand'); return; }
@@ -3260,6 +3268,29 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageMemberPickById({
       ...pr,
       prompt: pr.prompt||'Choose 1 Member to Position Change.',
+    });
+    return;
+  }
+  if((pr?.type==='sbp5_pick_stage_member_blade'||pr?.type==='sbp5_pick_saint_snow_position')&&pr.responder===myId){
+    ovl.classList.remove('open');
+    if(!(pr.candidates||[]).length){
+      sendAct('resolve_prompt',{choice:'skip'});
+      return;
+    }
+    openStageMemberPickById({
+      ...pr,
+      prompt: pr.prompt || (pr.type==='sbp5_pick_saint_snow_position'
+        ? 'Choose 1 Saint Snow Member to Position Change.'
+        : 'Choose 1 Aqours Member for +Blade until Live ends.'),
+    });
+    return;
+  }
+  if(pr?.type==='sbp5_position_change_slot'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    openStageSlotPick({
+      ...pr,
+      candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
+      prompt: pr.prompt||'Choose an area to Position Change into.',
     });
     return;
   }

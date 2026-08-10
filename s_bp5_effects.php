@@ -740,8 +740,23 @@ function sBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
     }
 
     if ($promptType === 'sbp5_pick_stage_member_blade') {
-        $slot = $data['slot'] ?? ($prompt['candidates'][0]['slot'] ?? null);
-        if ($slot && !empty($ownerP['stage'][$slot])) {
+        $slot = (string)($data['slot'] ?? '');
+        $cid = (string)($data['card_id'] ?? '');
+        if ($slot === '' && $cid !== '') {
+            foreach ($prompt['candidates'] ?? [] as $c) {
+                if (($c['instance_id'] ?? '') === $cid) {
+                    $slot = (string)($c['slot'] ?? '');
+                    break;
+                }
+            }
+            if ($slot === '') {
+                $slot = findMemberSlot($ownerP, $cid);
+            }
+        }
+        if ($slot === '') {
+            $slot = (string)($prompt['candidates'][0]['slot'] ?? '');
+        }
+        if ($slot !== '' && !empty($ownerP['stage'][$slot])) {
             $amt = intval($prompt['blade_amount'] ?? 1);
             $ownerP['stage'][$slot]['live_blade_bonus'] =
                 intval($ownerP['stage'][$slot]['live_blade_bonus'] ?? 0) + $amt;
@@ -924,7 +939,7 @@ function sBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
     }
 
     if ($promptType === 'sbp5_position_change_slot') {
-        $targetSlot = $data['target_slot'] ?? $choice;
+        $targetSlot = $data['target_slot'] ?? $data['slot'] ?? $choice;
         $fromSlot = sBp5FindMemberSlot($ownerP, $prompt['source_id'] ?? '');
         if ($fromSlot !== null && in_array($targetSlot, $prompt['target_slots'] ?? [], true)) {
             $state = sBp5MoveMemberToSlot($state, $owner, $fromSlot, $targetSlot);
