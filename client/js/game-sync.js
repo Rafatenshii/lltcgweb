@@ -753,18 +753,21 @@
   };
 
   /**
-   * Spectators: background tabs freeze rAF/setTimeout (Performance spectacle freezes).
+   * Background tabs freeze rAF/setTimeout (Performance spectacle freezes).
    * On return, abort the stuck show and snap to the latest server snapshot instead of
    * resuming mid-animation minutes behind the live match.
+   * Works for spectators and active players.
    */
-  global.catchUpSpectatorAfterTabVisible = async function catchUpSpectatorAfterTabVisible(opts = {}) {
-    if (!G.isSpectator || !G.polling || !G.roomId || !G.token) return false;
-    if (G._spectatorTabCatchUpBusy) return false;
-    G._spectatorTabCatchUpBusy = true;
+  global.catchUpMatchAfterTabVisible = async function catchUpMatchAfterTabVisible(opts = {}) {
+    if (!G.polling || !G.roomId || !G.token || G.isTutorial) return false;
+    if (G._tabCatchUpBusy) return false;
+    G._tabCatchUpBusy = true;
+    const isSpec = !!G.isSpectator;
     const pollEpoch = G._gameSessionEpoch;
     const pollRoomId = G.roomId;
     try {
-      TCG_DEBUG.warn('poll', 'spectator tab catch-up', {
+      TCG_DEBUG.warn('poll', 'tab catch-up', {
+        spectator: isSpec,
         hiddenMs: opts.hiddenMs || 0,
         wasBusy: !!opts.wasBusy,
         seq: G.lastSeq,
@@ -779,22 +782,14 @@
       G._pendingStateQueue = [];
       G._liveShowRunnerActive = false;
       if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
-        LiveRoundDirector.abort('spectator-tab-visible');
+        LiveRoundDirector.abort(isSpec ? 'spectator-tab-visible' : 'tab-visible');
       }
 
       global._tcgSyncStats.getState++;
       const r = await fetch(getStateUrl('&force=1'));
       let d = await parseGameApiResponse(r);
-      if (!pollResponseStillCurrent(pollEpoch, pollRoomId) || !G.isSpectator) return false;
-
-      if (d && d.error) {
-        if (typeof handleSpectatorPollError === 'function' && handleSpectatorPollError(d.error || d.message)) {
-          return false;
-        }
-        throw (typeof createApiError === 'function'
-          ? createApiError(String(d.error || d.message || 'state error'), d.httpStatus || 400)
-          : new Error(String(d.error || 'state error')));
-      }
+      if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
+      if (isSpec && !G.isSpectator) return false;
 
       // Unchanged seq + not mid-show: nothing to snap; resume polls.
       if (isUnchangedStatePayload(d) && !opts.wasBusy && G.gameState) {
@@ -820,16 +815,20 @@
         markLiveShowPerformancePresented(d.live_show.turn);
       }
 
-      if (typeof alignSpectatorStageBoard === 'function') {
+      if (isSpec && typeof alignSpectatorStageBoard === 'function') {
         d = alignSpectatorStageBoard(d) || d;
       }
 
       G.gameState = d;
       G.lastSeq = d.seq ?? G.lastSeq ?? 0;
       G._prevLogLen = (d.log || []).length;
-      G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
-        ? G.spectatorViewAs
-        : (d.view_as || G.playerId || 'p1');
+      if (isSpec) {
+        G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
+          ? G.spectatorViewAs
+          : (d.view_as || G.playerId || 'p1');
+      } else {
+        G.playerId = d.my_id || G.playerId;
+      }
 
       if (typeof showScr === 'function') showScr('game');
       if (typeof renderGame === 'function') renderGame(d, { skipLog: true });
@@ -838,20 +837,30 @@
       if (d.status === 'finished') {
         // Skip final-LIVE spectacle replay after a tab freeze — jump straight to results.
         if (typeof stopPoll === 'function') stopPoll();
-        if (typeof clearSpectatorSession === 'function') clearSpectatorSession();
+        if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();
         if (typeof showWin === 'function') showWin(d);
         return true;
+      }
+
+      if (!isSpec && d.pending_prompt?.responder === G.playerId
+          && typeof ensurePendingPromptSurfaced === 'function') {
+        if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
+        ensurePendingPromptSurfaced(d, G.playerId);
       }
 
       if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId) {
         updateOpponentSkillWaitBanner(d, G.playerId);
       }
-      if (typeof saveSpectatorSession === 'function') saveSpectatorSession();
+      if (typeof updatePhaseActionButton === 'function' && G.playerId) {
+        updatePhaseActionButton(d, G.playerId);
+      }
+      if (isSpec && typeof saveSpectatorSession === 'function') saveSpectatorSession();
+      else if (!isSpec && typeof saveActiveGameSession === 'function') saveActiveGameSession();
       resumePollingTick(150);
       return true;
     } catch (e) {
-      TCG_DEBUG.warn('poll', 'spectator tab catch-up failed', e);
-      if (e && e.httpStatus >= 400
+      TCG_DEBUG.warn('poll', 'tab catch-up failed', e);
+      if (isSpec && e && e.httpStatus >= 400
           && typeof handleSpectatorPollError === 'function'
           && handleSpectatorPollError(e.message)) {
         return false;
@@ -862,8 +871,13 @@
       } catch (_) { /* ignore */ }
       return false;
     } finally {
-      G._spectatorTabCatchUpBusy = false;
+      G._tabCatchUpBusy = false;
     }
+  };
+
+  /** @deprecated Use catchUpMatchAfterTabVisible */
+  global.catchUpSpectatorAfterTabVisible = function catchUpSpectatorAfterTabVisible(opts) {
+    return global.catchUpMatchAfterTabVisible(opts);
   };
 
 })(window);

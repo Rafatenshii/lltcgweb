@@ -2178,7 +2178,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/game-sync.js?v=42"></script>
+<script src="client/js/game-sync.js?v=43"></script>
 <script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -14672,14 +14672,17 @@ async function bootApp() {
       finishCoinFlipAnimation(s, myId);
     }
     if (G.polling && G.roomId && G.token && !G.isTutorial) {
-      // Spectating: background tabs freeze spectacle timers/rAF. Resync to live
-      // match state instead of resuming a frozen Performance mid-animation.
-      if (G.isSpectator && typeof catchUpSpectatorAfterTabVisible === 'function') {
+      // Background tabs freeze spectacle timers/rAF. Resync to live match state
+      // instead of resuming a frozen Performance mid-animation.
+      const catchUp = typeof catchUpMatchAfterTabVisible === 'function'
+        ? catchUpMatchAfterTabVisible
+        : (typeof catchUpSpectatorAfterTabVisible === 'function' ? catchUpSpectatorAfterTabVisible : null);
+      if (catchUp) {
         const presentationBusy = !!(G.animating || G._perfSpectacleActive || G._liveRoundPlaybackActive
           || G._liveSpectacleGateRunning || G._livePollHold || G._liveShowRunnerActive
           || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active));
         if (presentationBusy || hiddenMs >= 1200) {
-          void catchUpSpectatorAfterTabVisible({ wasBusy: presentationBusy, hiddenMs });
+          void catchUp({ wasBusy: presentationBusy, hiddenMs });
           return;
         }
       }
@@ -17756,7 +17759,21 @@ function staggerDelayForDrawMoves(moves, index) {
 }
 
 function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
+  // Wall-clock based: background tabs throttle setTimeout, so when the user returns
+  // overdue waits resolve immediately instead of stalling spectacle/animation chains.
+  const target = Date.now() + Math.max(0, Number(ms) || 0);
+  return new Promise((resolve) => {
+    const tick = () => {
+      const left = target - Date.now();
+      if (left <= 0) {
+        resolve();
+        return;
+      }
+      const hidden = typeof document !== 'undefined' && document.hidden;
+      setTimeout(tick, hidden ? Math.min(left, 1000) : Math.min(left, 50));
+    };
+    tick();
+  });
 }
 
 function deepCloneState(s) {
