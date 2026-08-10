@@ -45,6 +45,17 @@ function cardHasAbilities(array $card): bool {
     return !empty($card['abilities']) && is_array($card['abilities']);
 }
 
+/** ASCII / fullwidth ＋ variants for rarity suffixes (P+ vs P＋, R+ vs R＋). */
+function tcgCardNoLookupKeys(string $cardNo): array {
+    $cardNo = trim($cardNo);
+    if ($cardNo === '') {
+        return [];
+    }
+    $ascii = str_replace('＋', '+', $cardNo);
+    $fullwidth = str_replace('+', '＋', $ascii);
+    return array_values(array_unique([$cardNo, $ascii, $fullwidth]));
+}
+
 /** Lazy card catalog for hydrating runtime copies missing abilities / group / cost. */
 function tcgCardsCatalogMap(): array {
     static $map = null;
@@ -55,8 +66,12 @@ function tcgCardsCatalogMap(): array {
             $data = json_decode(file_get_contents($path), true);
             foreach ($data['cards'] ?? [] as $c) {
                 $no = $c['card_no'] ?? '';
-                if ($no !== '') {
-                    $map[$no] = $c;
+                if ($no === '') {
+                    continue;
+                }
+                // Index + and ＋ forms so deck/import ASCII suffixes still hydrate.
+                foreach (tcgCardNoLookupKeys($no) as $key) {
+                    $map[$key] = $c;
                 }
             }
         }
@@ -64,12 +79,22 @@ function tcgCardsCatalogMap(): array {
     return $map;
 }
 
+function tcgCatalogCardByNo(string $cardNo): ?array {
+    $map = tcgCardsCatalogMap();
+    foreach (tcgCardNoLookupKeys($cardNo) as $key) {
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+    }
+    return null;
+}
+
 function mergeCardCatalogFields(array &$card): void {
     $no = $card['card_no'] ?? '';
     if ($no === '') {
         return;
     }
-    $base = tcgCardsCatalogMap()[$no] ?? null;
+    $base = tcgCatalogCardByNo($no);
     if (!$base) {
         return;
     }
@@ -399,7 +424,7 @@ function liveCardPrintedScore(array $card): int {
     }
     $no = $card['card_no'] ?? '';
     if ($no !== '') {
-        $base = tcgCardsCatalogMap()[$no] ?? null;
+        $base = tcgCatalogCardByNo($no);
         if ($base !== null && array_key_exists('score', $base)) {
             return intval($base['score'] ?? 0);
         }
@@ -5640,6 +5665,34 @@ function logAbilityChain(array $state, string $pid, array $source, string $trigg
 
 function resolveOnEnterAbilities(array $state, string $pid, array $member, string $slot = ''): array {
     notifyMemberEnteredStage($state, $pid, $member);
+    // Stage copies often carry stale/stripped ability IR from older decks — sync from catalog
+    // before On Enter (Live Start already does this; skipping here left Kanan discard without draw).
+    mergeCardCatalogFields($member);
+    $oracleKeys = ['abilities', 'text', 'text_jp', 'text_es', 'text_ko', 'card_no'];
+    $iid = (string)($member['instance_id'] ?? '');
+    if ($slot !== '' && isset($state['players'][$pid]['stage'][$slot])) {
+        foreach ($oracleKeys as $k) {
+            if (array_key_exists($k, $member)) {
+                $state['players'][$pid]['stage'][$slot][$k] = $member[$k];
+            }
+        }
+        $member = $state['players'][$pid]['stage'][$slot];
+    } elseif ($iid !== '') {
+        foreach (['left', 'center', 'right'] as $s) {
+            $m = $state['players'][$pid]['stage'][$s] ?? null;
+            if (!$m || ($m['instance_id'] ?? '') !== $iid) {
+                continue;
+            }
+            foreach ($oracleKeys as $k) {
+                if (array_key_exists($k, $member)) {
+                    $state['players'][$pid]['stage'][$s][$k] = $member[$k];
+                }
+            }
+            $member = $state['players'][$pid]['stage'][$s];
+            $slot = $s;
+            break;
+        }
+    }
     $abilities = getAbilitiesByTrigger($member, 'on_enter');
     if (!empty($abilities)) {
         $state = logAbilityChain($state, $pid, $member, 'on_enter');

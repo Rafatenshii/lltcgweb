@@ -677,6 +677,50 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
 }
 
 /**
+ * If a pending optional_discard_prompt was opened with stale ability IR (no then),
+ * refill then/filter/discard from the current catalog copy of the source Member.
+ */
+function refreshOptionalDiscardAbilityFromCatalog(array $ability, array $state, string $owner, array $prompt): array {
+    $then = $ability['then'] ?? null;
+    if (is_array($then) && ($then['type'] ?? '') !== '') {
+        return $ability;
+    }
+    $src = findSourceCard($state, $owner, (string)($prompt['source_id'] ?? ''));
+    if (!$src) {
+        $no = (string)($ability['card_no'] ?? $prompt['source_card_no'] ?? '');
+        if ($no !== '') {
+            $src = tcgCatalogCardByNo($no);
+        }
+    } else {
+        mergeCardCatalogFields($src);
+    }
+    if (!$src) {
+        return $ability;
+    }
+    $wantFilter = (string)($ability['filter'] ?? '');
+    foreach ($src['abilities'] ?? [] as $ab) {
+        if (($ab['type'] ?? '') !== 'optional_discard_prompt') {
+            continue;
+        }
+        if ($wantFilter !== '' && ($ab['filter'] ?? '') !== '' && ($ab['filter'] ?? '') !== $wantFilter) {
+            continue;
+        }
+        if (empty($ab['then']['type'])) {
+            continue;
+        }
+        $ability['then'] = $ab['then'];
+        if ($wantFilter === '' && !empty($ab['filter'])) {
+            $ability['filter'] = $ab['filter'];
+        }
+        if (empty($ability['discard']) && !empty($ab['discard'])) {
+            $ability['discard'] = $ab['discard'];
+        }
+        break;
+    }
+    return $ability;
+}
+
+/**
  * Resolve optional_discard_prompt (yes/no + discard_ids). Shared by actionResolvePrompt,
  * optional_live_start, and resolveAbilityEffect confirm paths.
  * When $deferFinish is true, caller must run finishLiveStartEffects / finishPromptEffects.
@@ -689,7 +733,12 @@ function resolveOptionalDiscardPromptChoice(
     array $data,
     bool $deferFinish = false
 ): array {
-    $promptAbility = $prompt['ability'] ?? [];
+    $promptAbility = refreshOptionalDiscardAbilityFromCatalog(
+        $prompt['ability'] ?? [],
+        $state,
+        $owner,
+        $prompt
+    );
     $ownerP = &$state['players'][$owner];
 
         if ($choice === 'skip' || $choice === 'cancel') {
