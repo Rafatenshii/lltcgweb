@@ -2178,7 +2178,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/game-sync.js?v=41"></script>
+<script src="client/js/game-sync.js?v=42"></script>
 <script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -14300,8 +14300,10 @@ async function bootApp() {
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') return;
+    G._pageHiddenAt = Date.now();
     try {
       if (typeof saveActiveGameSession === 'function') saveActiveGameSession();
+      if (typeof saveSpectatorSession === 'function') saveSpectatorSession();
     } catch (e) { /* ignore */ }
   });
   initDeckBuilderPreviewPanel();
@@ -14662,12 +14664,25 @@ async function bootApp() {
   on('btn-surveil-ok','click', confirmSurveil);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
+    const hiddenMs = G._pageHiddenAt ? (Date.now() - G._pageHiddenAt) : 0;
+    G._pageHiddenAt = 0;
     const s = G.gameState;
     const myId = G.playerId;
     if (s?.phase === 'coin_flip' && s.coin_flip && !G._coinFlipAnimComplete) {
       finishCoinFlipAnimation(s, myId);
     }
     if (G.polling && G.roomId && G.token && !G.isTutorial) {
+      // Spectating: background tabs freeze spectacle timers/rAF. Resync to live
+      // match state instead of resuming a frozen Performance mid-animation.
+      if (G.isSpectator && typeof catchUpSpectatorAfterTabVisible === 'function') {
+        const presentationBusy = !!(G.animating || G._perfSpectacleActive || G._liveRoundPlaybackActive
+          || G._liveSpectacleGateRunning || G._livePollHold || G._liveShowRunnerActive
+          || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active));
+        if (presentationBusy || hiddenMs >= 1200) {
+          void catchUpSpectatorAfterTabVisible({ wasBusy: presentationBusy, hiddenMs });
+          return;
+        }
+      }
       const oppWait = el('opp-skill-wait')?.classList.contains('show');
       if (oppWait || (!G.animating && !G._perfSpectacleActive)) {
         void pullLatestState(!!oppWait);
