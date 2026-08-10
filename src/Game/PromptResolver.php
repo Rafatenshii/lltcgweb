@@ -2375,19 +2375,66 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
     }
 
     if ($promptType === 'optional_stage_reposition') {
-        if (!isset(['yes' => true, 'no' => true][$choice])) {
-            throw new Exception('Invalid choice');
-        }
-        if ($choice === 'yes') {
+        $step = (string)($prompt['step'] ?? '');
+        $srcName = $prompt['source_name'] ?? 'Member';
+        if ($step === '' && in_array($choice, ['no', 'skip'], true)) {
             $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . ($prompt['source_name'] ?? 'Member') . '] may reposition Stage Members.');
-        } else {
-            $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional reposition.');
+                ' — [' . $srcName . '] skipped optional Position Change.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return $state;
         }
-        unset($state['pending_prompt']);
-        $state['seq']++;
-        return $state;
+        $fromSlot = (string)($prompt['from_slot'] ?? '');
+        $pickedSlot = (string)($data['slot'] ?? '');
+        if ($pickedSlot === 'yes' || $pickedSlot === 'no' || $pickedSlot === 'skip') {
+            $pickedSlot = '';
+        }
+        $cid = (string)($data['card_id'] ?? '');
+        if ($pickedSlot === '' && $cid !== '') {
+            $pickedSlot = findMemberSlot($ownerP, $cid);
+        }
+        if ($step === 'pick_member' || ($step === '' && $choice === 'yes' && $fromSlot === '')) {
+            $cands = is_array($prompt['candidates'] ?? null) ? $prompt['candidates'] : [];
+            if ($pickedSlot === '' && count($cands) === 1) {
+                $pickedSlot = (string)($cands[0]['slot'] ?? '');
+            }
+            if ($pickedSlot === '' || empty($ownerP['stage'][$pickedSlot])) {
+                if ($step === 'pick_member') {
+                    throw new Exception('Choose a Member to Position Change');
+                }
+                $state['pending_prompt'] = array_merge($prompt, [
+                    'step'    => 'pick_member',
+                    'choices' => [],
+                    'prompt'  => 'Choose 1 Member to Position Change.',
+                ]);
+                $state['seq']++;
+                return $state;
+            }
+            $fromSlot = $pickedSlot;
+            $destSlots = array_values(array_filter(
+                ['left', 'center', 'right'],
+                static fn(string $s): bool => $s !== $fromSlot
+            ));
+            $state['pending_prompt'] = array_merge($prompt, [
+                'step'         => 'pick_dest',
+                'from_slot'    => $fromSlot,
+                'target_slots' => $destSlots,
+                'choices'      => [],
+                'prompt'       => 'Choose an area to Position Change into.',
+            ]);
+            $state['seq']++;
+            return $state;
+        }
+        if ($step === 'pick_dest') {
+            $dest = $pickedSlot !== '' ? $pickedSlot : $choice;
+            $state = applyStagePositionChange($state, $owner, $fromSlot, $dest);
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . $srcName . '] Position Changed a Member to ' . $dest . '.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return $state;
+        }
+        throw new Exception('Invalid Position Change choice');
     }
 
     if ($promptType === 'optional_position_change_all_muse') {

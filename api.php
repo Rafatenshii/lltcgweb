@@ -2087,6 +2087,9 @@ function revealAllLiveStorage(array $state): array {
 // (resolvePerformancePhase per player), live_success_effects prompts, then Live Judge.
 
 function beginPerformancePhase(array $state): array {
+    foreach (['p1', 'p2'] as $banPid) {
+        $state = discardCannotLiveStorageToWaitingRoom($state, $banPid);
+    }
     unset(
         $state['yell_reveal'],
         $state['live_perf_success'],
@@ -2182,12 +2185,56 @@ function performanceRoundHasLiveCards(array $state): bool {
 
 /** True when this player placed at least one Live card in Live storage this round. */
 function playerAttemptingLivePerformance(array $state, string $pid): bool {
+    if (!empty($state['live_modifiers'][$pid]['cannot_live'])) {
+        return false;
+    }
     foreach ($state['players'][$pid]['live_zone'] ?? [] as $c) {
         if (isLiveTypeCard($c)) {
             return true;
         }
     }
     return false;
+}
+
+/**
+ * Ruri bp2-014 etc.: ライブできない — Lives may be set, but they cannot start.
+ * Dump that player's Live cards from storage to WR before Performance.
+ */
+function discardCannotLiveStorageToWaitingRoom(array $state, string $pid): array {
+    if (empty($state['live_modifiers'][$pid]['cannot_live'])) {
+        return $state;
+    }
+    $p = &$state['players'][$pid];
+    $dump = [];
+    $keep = [];
+    $anims = [];
+    foreach ($p['live_zone'] ?? [] as $li => $c) {
+        if (!$c) {
+            continue;
+        }
+        if (!isLiveTypeCard($c)) {
+            $keep[] = $c;
+            continue;
+        }
+        $dump[] = $c;
+        $anims[] = animSpec($c['instance_id'] ?? '', 'live', 'waiting_room', $pid, [
+            'from_index' => liveZoneSlotOf($c, $li),
+        ]);
+    }
+    if ($dump === []) {
+        unset($p);
+        return $state;
+    }
+    $p['live_zone'] = $keep;
+    $p['waiting_room'] = array_merge($p['waiting_room'] ?? [], $dump);
+    unset($p);
+    return addLog(
+        $state,
+        ($state['players'][$pid]['name'] ?? 'Player') .
+        ' cannot attempt a Live; Live cards in storage went to the Waiting Room.',
+        null,
+        $anims
+    );
 }
 
 /** Yell blade hearts only apply during the current Performance round (not after judge). */

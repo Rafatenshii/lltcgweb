@@ -8369,6 +8369,18 @@ function effectiveCost(card, hand){
         base=Math.max(0,base-others*(ab.per_other_card||1));
     }
   }
+  // Hime bp6-006: −2 per matching subunit Member on Stage.
+  if (me?.stage && card.abilities?.length) {
+    for (const ab of card.abilities) {
+      if (ab.trigger !== 'continuous' || ab.type !== 'hand_cost_reduction_per_stage_subunit') continue;
+      const sub = ab.subunit || '';
+      let n = 0;
+      for (const m of Object.values(me.stage)) {
+        if (m && typeof cardMatchesSubunit === 'function' && cardMatchesSubunit(m, sub)) n++;
+      }
+      base = Math.max(0, base - n * (ab.per_member || 2));
+    }
+  }
   // Emma Verde PB1 etc.: −2 while a Wait Nijigasaki Member is on Stage.
   if (me?.stage && card.abilities?.length) {
     for (const ab of card.abilities) {

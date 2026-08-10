@@ -4330,6 +4330,34 @@ function countStageMembers(array $p): int {
     return count(array_filter($p['stage'] ?? [], fn($m) => (bool)$m));
 }
 
+/**
+ * Position Change 1 Member into another area (swap if occupied). Does not Activate.
+ */
+function applyStagePositionChange(array $state, string $pid, string $fromSlot, string $toSlot): array {
+    $slots = ['left', 'center', 'right'];
+    if (!in_array($fromSlot, $slots, true) || !in_array($toSlot, $slots, true) || $fromSlot === $toSlot) {
+        throw new Exception('Choose a different Stage area');
+    }
+    $p = &$state['players'][$pid];
+    $mover = $p['stage'][$fromSlot] ?? null;
+    if (!$mover) {
+        throw new Exception('Choose a Member to Position Change');
+    }
+    $other = $p['stage'][$toSlot] ?? null;
+    $mover['moved_this_turn'] = true;
+    $mover['moved_from_slot'] = $fromSlot;
+    $p['stage'][$toSlot] = $mover;
+    $p['stage'][$fromSlot] = $other;
+    if ($other) {
+        $other['moved_this_turn'] = true;
+        $other['moved_from_slot'] = $toSlot;
+        $p['stage'][$fromSlot] = $other;
+        $state = resolveAutoAreaMoveAbilities($state, $pid, $other['instance_id'] ?? '', $toSlot);
+    }
+    $state = resolveAutoAreaMoveAbilities($state, $pid, $mover['instance_id'] ?? '', $fromSlot);
+    return $state;
+}
+
 function cardMatchesGroup(array $card, string $group, string $filter = ''): bool {
     if ($group !== '' && ($card['group'] ?? '') !== $group) return false;
     if ($filter === 'member') return isMemberCard($card);

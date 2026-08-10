@@ -98,7 +98,7 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
             $subunit = $ab['subunit'] ?? '';
             $waitCandidates = [];
             foreach ($p['stage'] as $slot => $mbr) {
-                if (!$mbr || ($mbr['active'] ?? true)) continue;
+                if (!$mbr || !memberIsInWait($mbr)) continue;
                 if (!cardMatchesSubunit($mbr, $subunit)) continue;
                 $waitCandidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
             }
@@ -646,6 +646,33 @@ function hsResolveAutoOnOtherMemberEnter(array $state, string $pid, array $enter
     return $state;
 }
 
+function hsBp6ResolveWaitActivateSlot(array $ownerP, array $prompt, string $choice, array $data): string
+{
+    $slot = (string)($data['slot'] ?? '');
+    if ($slot === 'yes' || $slot === 'no' || $slot === 'skip') {
+        $slot = '';
+    }
+    $cid = (string)($data['card_id'] ?? '');
+    if ($slot === '' && $cid !== '') {
+        foreach ($prompt['candidates'] ?? [] as $c) {
+            if (!is_array($c)) {
+                continue;
+            }
+            if (($c['instance_id'] ?? '') === $cid) {
+                $slot = (string)($c['slot'] ?? '');
+                break;
+            }
+        }
+        if ($slot === '') {
+            $slot = findMemberSlot($ownerP, $cid);
+        }
+    }
+    if ($slot === '' && $choice !== '' && !in_array($choice, ['yes', 'no', 'skip'], true)) {
+        $slot = $choice;
+    }
+    return $slot;
+}
+
 function hsApplyHandCostPerStageSubunit(array $card, array $p): int {
     $base = intval($card['cost'] ?? 0);
     foreach ($card['abilities'] ?? [] as $ab) {
@@ -919,18 +946,44 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
     }
 
     if ($promptType === 'optional_activate_wait_subunit_add_live_wr') {
-        if ($choice !== 'yes') {
+        $step = (string)($prompt['step'] ?? '');
+        if ($step === '' && in_array($choice, ['no', 'skip'], true)) {
             unset($state['pending_prompt']);
             $state['seq']++;
             return $state;
         }
-        $slot = $data['slot'] ?? $choice;
+        $cands = is_array($prompt['candidates'] ?? null) ? $prompt['candidates'] : [];
+        $slot = hsBp6ResolveWaitActivateSlot($ownerP, $prompt, $choice, $data);
+        if ($step === '' && $choice === 'yes' && $slot === '') {
+            if (count($cands) === 1) {
+                $slot = (string)($cands[0]['slot'] ?? '');
+            } else {
+                $state['pending_prompt'] = array_merge($prompt, [
+                    'step'    => 'pick_wait_member',
+                    'choices' => [],
+                    'prompt'  => 'Choose 1 ' . ($prompt['subunit'] ?? '') .
+                        ' Member in Wait to activate.',
+                ]);
+                $state['seq']++;
+                return $state;
+            }
+        }
         if ($slot === '' || empty($ownerP['stage'][$slot])) {
             throw new Exception('Choose a Member in Wait to activate');
         }
-        $ownerP['stage'][$slot]['active'] = true;
+        if (!memberIsInWait($ownerP['stage'][$slot])) {
+            throw new Exception('That Member is not in Wait');
+        }
+        activateMemberFully($ownerP['stage'][$slot]);
         $sub = $prompt['subunit'] ?? '';
-        $added = addFromWaitingRoomFiltered($ownerP, $prompt['group'] ?? 'Hasunosora', 'live', 1, null, ['subunit' => $sub]);
+        $added = addFromWaitingRoomFiltered(
+            $ownerP,
+            $prompt['group'] ?? 'Hasunosora',
+            'live',
+            1,
+            null,
+            ['subunit' => $sub]
+        );
         $state = addLog($state, $state['players'][$owner]['name'] .
             " — [" . ($prompt['source_name'] ?? 'Member') . "] activated Wait Member; added $added Live.");
         unset($state['pending_prompt']);

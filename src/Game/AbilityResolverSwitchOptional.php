@@ -596,20 +596,28 @@ function tryResolveAbilityEffectSwitchOptional(
             break;
 
         case 'optional_stage_reposition':
-            if (countStageMembers($p) < 2) break;
+            if (countStageMembers($p) < 1) break;
             if (!empty($state['pending_prompt'])) break;
+            $repositionCands = [];
+            foreach ($p['stage'] as $slot => $mbr) {
+                if (!$mbr) {
+                    continue;
+                }
+                $repositionCands[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+            }
             $state['pending_prompt'] = [
                 'type'          => 'optional_stage_reposition',
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_name'   => $name,
-                'prompt'        => 'You may move Members on your Stage to any areas (confirm to keep current layout)?',
+                'prompt'        => 'You may Position Change 1 Member on your Stage?',
                 'choices'       => ['yes', 'no'],
-                'choice_labels' => ['Yes — Keep layout', 'No — Skip'],
+                'choice_labels' => ['Yes', 'No — Skip'],
+                'candidates'    => $repositionCands,
                 'ability'       => $ab,
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] optional Stage reposition (choose).');
+                ' — [' . $name . '] optional Position Change (choose).');
             break;
 
         case 'optional_return_member_energy':

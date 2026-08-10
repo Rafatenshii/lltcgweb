@@ -1081,7 +1081,8 @@ global.ensurePromptChoices = function ensurePromptChoices(pr){
   // Card-pick steps already cleared choices on the server — do not reinject Yes/No
   // (that softlocks Ginko / PB1 multi-step WR picks behind an empty choice dialog).
   if(/^pick_wr/.test(step) || step==='pick_live' || step==='pick_member'
-      || step==='pick_hand' || step==='pick_slot' || step==='pick'){
+      || step==='pick_hand' || step==='pick_slot' || step==='pick'
+      || step==='pick_wait_member' || step==='pick_dest'){
     return pr;
   }
   const optionalType=isSelfActivationPrompt(pr)
@@ -3235,6 +3236,39 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageSlotPick({
       ...pr,
       candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: slotLabel(slot)}))
+    });
+    return;
+  }
+  if(pr?.type==='optional_activate_wait_subunit_add_live_wr'&&pr.responder===myId&&pr.step==='pick_wait_member'){
+    ovl.classList.remove('open');
+    if(!(pr.candidates||[]).length){
+      sendAct('resolve_prompt',{choice:'no'});
+      return;
+    }
+    openStageMemberPickById({
+      ...pr,
+      prompt: pr.prompt||'Choose 1 Member in Wait to activate.',
+    });
+    return;
+  }
+  if(pr?.type==='optional_stage_reposition'&&pr.responder===myId&&pr.step==='pick_member'){
+    ovl.classList.remove('open');
+    if(!(pr.candidates||[]).length){
+      sendAct('resolve_prompt',{choice:'no'});
+      return;
+    }
+    openStageMemberPickById({
+      ...pr,
+      prompt: pr.prompt||'Choose 1 Member to Position Change.',
+    });
+    return;
+  }
+  if(pr?.type==='optional_stage_reposition'&&pr.responder===myId&&pr.step==='pick_dest'){
+    ovl.classList.remove('open');
+    openStageSlotPick({
+      ...pr,
+      candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
+      prompt: pr.prompt||'Choose an area to Position Change into.',
     });
     return;
   }

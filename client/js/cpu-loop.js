@@ -4825,6 +4825,35 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     }
     return true;
   }
+  if (pr.type === 'optional_activate_wait_subunit_add_live_wr' && pr.step === 'pick_wait_member') {
+    const c = (pr.candidates || []).find((x) => x && (x.slot || x.instance_id));
+    if (!c) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { card_id: c.instance_id, slot: c.slot || '' });
+    return true;
+  }
+  if (pr.type === 'optional_stage_reposition') {
+    if (pr.step === 'pick_member') {
+      const c = (pr.candidates || []).find((x) => x && (x.slot || x.instance_id));
+      if (!c) {
+        cpuAct('resolve_prompt', { choice: 'no' });
+        return true;
+      }
+      cpuAct('resolve_prompt', { card_id: c.instance_id, slot: c.slot || '' });
+      return true;
+    }
+    if (pr.step === 'pick_dest') {
+      const dest = (pr.target_slots || [])[0];
+      if (!dest) {
+        cpuAct('resolve_prompt', { choice: 'no' });
+        return true;
+      }
+      cpuAct('resolve_prompt', { slot: dest });
+      return true;
+    }
+  }
   if (pr.type === 'pick_surveil_heart_threshold') {
     const pool = stageHeartPool(cpu);
     const counts = {};

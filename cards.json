@@ -23275,7 +23275,7 @@
           "trigger": "live_start",
           "type": "optional_discard_prompt",
           "discard": 1,
-          "prompt": "Put 1 card from your hand into the Waiting Room: until this Live ends, 1 Mira-Cra Park! Member on your Stage gains 1 green ♡?",
+          "prompt": "Put 1 card from your hand into the Waiting Room: until this Live ends, 1 Mira-Cra Park! Member on your Stage gains 1 pink ♡?",
           "then": {
             "type": "pick_subunit_member_heart",
             "subunit": "みらくらぱーく!",
@@ -23332,7 +23332,7 @@
           "trigger": "live_start",
           "type": "optional_discard_prompt",
           "discard": 1,
-          "prompt": "Put 1 card from your hand into the Waiting Room: until this Live ends, 1 Mira-Cra Park! Member on your Stage gains 1 green ♡?",
+          "prompt": "Put 1 card from your hand into the Waiting Room: until this Live ends, 1 Mira-Cra Park! Member on your Stage gains 1 pink ♡?",
           "then": {
             "type": "pick_subunit_member_heart",
             "subunit": "みらくらぱーく!",

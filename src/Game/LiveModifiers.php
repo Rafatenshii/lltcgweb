@@ -24,6 +24,7 @@ function liveModifierDefaults(): array {
         'yell_reveal_reduction'    => 0,
         'blade_per_hand_divisor'   => 0,
         'blade_per_hand_amount'    => 0,
+        'cannot_live'              => false,
     ];
 }
 
