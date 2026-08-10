@@ -3448,12 +3448,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 $ownerP['hand'][] = $pickedCard;
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     " — [$srcName] added " . cardDisplayName($pickedCard) . ' to hand.');
-                if (!empty($rest)) {
-                    $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $rest);
-                }
-                unset($state['surveil_stash'], $state['pending_prompt']);
-                $state['seq']++;
-                return finishPromptEffects($state);
+                unset($state['pending_prompt']);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $rest);
+                return finishAfterDeckCardsToWaitingRoom($state);
             }
             if (!in_array($slotChoice, $prompt['slots'] ?? [], true)) {
                 throw new Exception('Choose an empty Stage area');
@@ -3464,11 +3461,17 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $pickedCard['active'] = true;
             $pickedCard['entered_turn'] = intval($state['turn'] ?? 1);
             $ownerP['stage'][$slotChoice] = $pickedCard;
-            if (!empty($rest)) {
-                $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $rest);
-            }
+            unset($state['pending_prompt']);
+            $state = appendDeckCardsToWaitingRoom($state, $owner, $rest);
+            $millPrompt = (($state['pending_prompt']['bp7_action'] ?? '') === 'self_milled_recover')
+                ? $state['pending_prompt'] : null;
             unset($state['surveil_stash'], $state['pending_prompt']);
             $state = resolveOnEnterAbilities($state, $owner, $pickedCard, $slotChoice);
+            if (empty($state['pending_prompt']) && $millPrompt) {
+                $state['pending_prompt'] = $millPrompt;
+            } elseif (!empty($state['pending_prompt']) && $millPrompt) {
+                $state['_bp7_chain_prompt'] = $millPrompt;
+            }
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . $srcName . '] played ' . cardDisplayName($pickedCard) .
                 ' from deck to ' . $slotChoice . '.');
@@ -3483,9 +3486,8 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (!$optional) {
                 throw new Exception('Must pick a card');
             }
-            if (!empty($looked)) {
-                $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $looked);
-            }
+            unset($state['pending_prompt']);
+            $state = appendDeckCardsToWaitingRoom($state, $owner, $looked);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] put all looked cards into the Waiting Room.");
         } else {
@@ -3504,9 +3506,8 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 throw new Exception("Must select exactly $pickCount card(s)");
             }
             if ($optional && empty($pickIds)) {
-                if (!empty($looked)) {
-                    $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $looked);
-                }
+                unset($state['pending_prompt']);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $looked);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     " — [$srcName] put all looked cards into the Waiting Room.");
             } else {
@@ -3550,7 +3551,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     return $state;
                 }
             }
-            applyLookPickHand($ownerP, $looked, $pickIds);
+            $restLooked = applyLookPickHand($ownerP, $looked, $pickIds);
+            unset($state['pending_prompt']);
+            $state = appendDeckCardsToWaitingRoom($state, $owner, $restLooked);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] added $pickedN card(s) from looked deck to hand.");
             $then = $ability['then'] ?? [];
@@ -3622,10 +3625,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             }
             }
         }
-        unset($state['surveil_stash'], $state['pending_prompt']);
-        $state['seq']++;
-        $state = finishPromptEffects($state);
-        return $state;
+        return finishAfterDeckCardsToWaitingRoom($state);
     }
 
     if ($promptType === 'live_success_pick_yell_live') {

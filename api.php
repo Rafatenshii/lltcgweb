@@ -1630,16 +1630,18 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     $batonOnLeavePending = [];
     if ($isOverplay) {
         $existing = $occupant;
+        $hostWrIdx = count($p['waiting_room'] ?? []);
         $state = appendCardsToWaitingRoom($state, $pid, [$existing]);
         $p = &$state['players'][$pid];
         $p['stage'][$targetSlot] = null;
         $anims[] = animSpec($existing['instance_id'], 'stage', 'waiting_room', $pid, [
             'slot' => $targetSlot,
         ]);
-        $state = resolveOnLeaveStageAbilities($state, $pid, $existing, []);
-        $wrIdx = count($p['waiting_room']) - 1;
-        if ($wrIdx >= 0) {
-            $p['waiting_room'][$wrIdx] = $existing;
+        $leaving = $p['waiting_room'][$hostWrIdx] ?? $existing;
+        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, []);
+        if (isset($p['waiting_room'][$hostWrIdx]) && is_array($leaving)) {
+            unset($leaving['stacked_members']);
+            $p['waiting_room'][$hostWrIdx] = $leaving;
         }
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' overplayed onto ' . ($existing['name_en'] ?? $existing['name'] ?? 'Member') . '.');
@@ -1653,6 +1655,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             $batonTransferredEnergyCards,
             detachStackedEnergyForBatonTransfer($existing, $p)
         );
+        $hostWrIdx = count($p['waiting_room'] ?? []);
         $state = appendCardsToWaitingRoom($state, $pid, [$existing]);
         $p = &$state['players'][$pid];
         $p['stage'][$targetSlot] = null;
@@ -1661,9 +1664,12 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         ]);
         // Keep a member snapshot: empty-deck WR refresh can shuffle the leaving
         // card into main_deck before on_leave resolves (Kaho SD energy activate).
+        // wr_idx is the HOST card (stacked Members are appended after it).
+        $batonSnap = $existing;
+        unset($batonSnap['stacked_members']);
         $batonOnLeavePending[] = [
-            'wr_idx' => count($p['waiting_room']) - 1,
-            'member' => $existing,
+            'wr_idx' => $hostWrIdx,
+            'member' => $batonSnap,
             'ctx' => ['baton_incoming' => $card],
         ];
         $card['baton_from_subunit'] = $existing['subunit'] ?? '';
@@ -1672,7 +1678,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         $card['baton_from_no_ability'] = !cardHasAbilities($existing);
         $card['baton_wr_member_id'] = $existing['instance_id'] ?? '';
         // Snapshot before WR append / possible immediate deck refresh so On Enter can still stack.
-        $card['baton_wr_member'] = $existing;
+        $card['baton_wr_member'] = $batonSnap;
         $card['entered_via_baton'] = true;
         $card['entered_turn'] = intval($state['turn'] ?? 1);
         $batonCount = 1;
@@ -1693,15 +1699,18 @@ function actionPlayMember(array $state, string $pid, array $data): array {
                 $batonTransferredEnergyCards,
                 detachStackedEnergyForBatonTransfer($existing2, $p)
             );
+            $hostWrIdx2 = count($p['waiting_room'] ?? []);
             $state = appendCardsToWaitingRoom($state, $pid, [$existing2]);
             $p = &$state['players'][$pid];
             $p['stage'][$slot] = null;
             $anims[] = animSpec($existing2['instance_id'], 'stage', 'waiting_room', $pid, [
                 'slot' => $slot,
             ]);
+            $batonSnap2 = $existing2;
+            unset($batonSnap2['stacked_members']);
             $batonOnLeavePending[] = [
-                'wr_idx' => count($p['waiting_room']) - 1,
-                'member' => $existing2,
+                'wr_idx' => $hostWrIdx2,
+                'member' => $batonSnap2,
                 'ctx' => ['baton_incoming' => $card],
             ];
             $batonCount++;

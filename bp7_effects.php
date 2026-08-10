@@ -173,9 +173,22 @@ function bp7FlushPendingAllyWaits(array $state): array {
     return $state;
 }
 
-/** Detach Member cards under a host (do not append — caller places them). */
+/** Detach Member cards under a host (do not append — caller places them). Nested stacks flatten. */
 function bp7TakeStackedMembersFromHost(array &$member): array {
-    $stacked = array_values(array_filter($member['stacked_members'] ?? [], 'is_array'));
+    $stacked = [];
+    foreach ($member['stacked_members'] ?? [] as $sm) {
+        if (!is_array($sm)) {
+            continue;
+        }
+        $nested = bp7TakeStackedMembersFromHost($sm);
+        unset($sm['stacked_members']);
+        $stacked[] = $sm;
+        foreach ($nested as $n) {
+            if (is_array($n)) {
+                $stacked[] = $n;
+            }
+        }
+    }
     unset($member['stacked_members']);
     return $stacked;
 }
@@ -1362,7 +1375,7 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             ));
             if (empty($cands)) {
                 unset($state['_bp7_look_stash']);
-                $state = appendCardsToWaitingRoom($state, $pid, $looked);
+                $state = appendDeckCardsToWaitingRoom($state, $pid, $looked);
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] looked at " . count($looked) .
                     ' card(s); no ' . ($ab['group'] ?? '') .
@@ -2933,8 +2946,10 @@ function bp7ResolvePrompt(array $state, string $owner, array $prompt, string $ch
             foreach ($kept as $c) {
                 $state['players'][$owner]['hand'][] = $c;
             }
+            unset($state['pending_prompt']);
             if (!empty($rest)) {
-                $state = appendCardsToWaitingRoom($state, $owner, $rest);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $rest);
+                $state = bp7QueueChain($state);
             }
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$name] added " . count($kept) . ' card(s) to hand and put ' . count($rest) .

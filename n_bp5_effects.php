@@ -832,22 +832,20 @@ function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
                 $ownerP['hand'][] = $pick;
                 $pickId = $pick['instance_id'] ?? '';
                 $rest = array_values(array_filter($top, fn($c) => ($c['instance_id'] ?? '') !== $pickId));
-                $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $rest);
+                unset($state['pending_prompt']);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $rest);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . $srcName . '] looked at top ' . count($top) .
                     '; revealed ' . cardDisplayName($pick) . ' to hand.');
-                unset($state['pending_prompt']);
-                $state['seq']++;
-                return finishPromptEffects($state);
+                return finishAfterDeckCardsToWaitingRoom($state);
             }
             if (count($matches) === 0) {
-                $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $top);
+                unset($state['pending_prompt']);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $top);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . $srcName . '] looked at top ' . count($top) .
                     '; no matching Member to reveal.');
-                unset($state['pending_prompt']);
-                $state['seq']++;
-                return finishPromptEffects($state);
+                return finishAfterDeckCardsToWaitingRoom($state);
             }
             $state['surveil_stash'] = $top;
             $state['pending_prompt'] = [
@@ -880,20 +878,19 @@ function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
             }
             $looked = $state['surveil_stash'] ?? [];
             $srcName = $prompt['source_name'] ?? 'Member';
+            unset($state['pending_prompt']);
             if ($cardId !== '') {
-                applyLookPickHand($ownerP, $looked, [$cardId]);
+                $rest = applyLookPickHand($ownerP, $looked, [$cardId]);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $rest);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . $srcName . '] revealed 1 matching Member to hand.');
             } else {
-                $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $looked);
+                $state = appendDeckCardsToWaitingRoom($state, $owner, $looked);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . $srcName . '] looked at top ' . count($looked) .
                     '; no Member revealed (all to Waiting Room).');
             }
-            unset($state['surveil_stash']);
-            unset($state['pending_prompt']);
-            $state['seq']++;
-            return finishPromptEffects($state);
+            return finishAfterDeckCardsToWaitingRoom($state);
         }
     }
 

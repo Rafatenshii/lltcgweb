@@ -1344,7 +1344,7 @@ function optionalDiscardThenViable(array $p, array $then): bool {
     return count($p['waiting_room'] ?? []) >= 1;
 }
 
-function applyLookPickHand(array &$p, array $looked, array $pickIds): void {
+function applyLookPickHand(array &$p, array $looked, array $pickIds): array {
     $pickSet = array_flip(array_values(array_filter($pickIds)));
     $rest = [];
     foreach ($looked as $c) {
@@ -1356,9 +1356,7 @@ function applyLookPickHand(array &$p, array $looked, array $pickIds): void {
             $rest[] = $c;
         }
     }
-    if (!empty($rest)) {
-        $p['waiting_room'] = array_merge($p['waiting_room'], $rest);
-    }
+    return $rest;
 }
 
 function beginLookRevealPick(array $state, string $pid, string $name, array &$p, array $cfg): array {
@@ -1379,7 +1377,8 @@ function beginLookRevealPick(array $state, string $pid, string $name, array &$p,
     $eligible = array_values(array_filter($top, fn($c) => cardMatchesLookPick($c, $cfg)));
 
     if (count($top) === 1 && !$optional && !empty($eligible)) {
-        applyLookPickHand($p, $top, [$top[0]['instance_id'] ?? '']);
+        $rest = applyLookPickHand($p, $top, [$top[0]['instance_id'] ?? '']);
+        $state = appendDeckCardsToWaitingRoom($state, $pid, $rest);
         return addLog($state, $state['players'][$pid]['name'] .
             " — [$name] looked at 1 card; added 1 to hand.");
     }

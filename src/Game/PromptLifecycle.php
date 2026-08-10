@@ -38,6 +38,18 @@ function promptTimerKey(?array $prompt): string {
     ]);
 }
 
+/** After deck→WR look/mill: keep Mia self-mill prompt if it just opened. */
+function finishAfterDeckCardsToWaitingRoom(array $state): array {
+    unset($state['surveil_stash']);
+    if (($state['pending_prompt']['bp7_action'] ?? '') === 'self_milled_recover') {
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        return $state;
+    }
+    unset($state['pending_prompt']);
+    $state['seq'] = intval($state['seq'] ?? 0) + 1;
+    return finishPromptEffects($state);
+}
+
 function finishPromptEffects(array $state): array {
     if (empty($state['pending_prompt']) && function_exists('bp7FlushPendingAllyWaits')) {
         $state = bp7FlushPendingAllyWaits($state);

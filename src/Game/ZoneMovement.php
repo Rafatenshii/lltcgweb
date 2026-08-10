@@ -88,6 +88,29 @@ function appendCardsToWaitingRoom(array &$state, string $pid, array $cards): arr
     return $state;
 }
 
+/** Deck → Waiting Room (look/mill rest). Fires Mia-style “milled from deck” autos. */
+function appendDeckCardsToWaitingRoom(array &$state, string $pid, array $cards): array {
+    if ($cards === []) {
+        return $state;
+    }
+    $p = &$state['players'][$pid];
+    if (!isset($p['waiting_room']) || !is_array($p['waiting_room'])) {
+        $p['waiting_room'] = [];
+    }
+    foreach ($cards as $c) {
+        if (is_array($c)) {
+            $p['waiting_room'][] = $c;
+        }
+    }
+    if (function_exists('spBp5NotifyCardsToWr')) {
+        $state = spBp5NotifyCardsToWr($state, $pid, $cards);
+    }
+    if (function_exists('bp7ResolveAutoSelfMilled')) {
+        $state = bp7ResolveAutoSelfMilled($state, $pid, $cards);
+    }
+    return $state;
+}
+
 /** Shuffle all Waiting Room cards into main deck when the deck is empty (deck refresh). */
 function refreshMainDeckFromWaitingRoom(array &$state, string $pid): int {
     $p = &$state['players'][$pid];
