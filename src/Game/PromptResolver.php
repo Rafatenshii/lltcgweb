@@ -3118,11 +3118,24 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             throw new Exception('Invalid choice');
         }
         if ($choice === 'yes') {
+            $before = [];
+            foreach ($ownerP['stage'] as $slot => $mbr) {
+                $iid = (string)($mbr['instance_id'] ?? '');
+                if ($mbr && $iid !== '') {
+                    $before[$iid] = (string)$slot;
+                }
+            }
+            $markSrc = ['group' => (string)(($prompt['ability'] ?? $ability)['group'] ?? '')];
+            if (function_exists('spBp2MarkEffectAreaMove')) {
+                spBp2MarkEffectAreaMove($state, $markSrc);
+            }
             $assign = $data['assignments'] ?? null;
             if (is_array($assign)) {
                 $members = [];
-                foreach ($ownerP['stage'] as $slot => $mbr) {
-                    if ($mbr) $members[$mbr['instance_id'] ?? ''] = $mbr;
+                foreach ($ownerP['stage'] as $mbr) {
+                    if ($mbr) {
+                        $members[$mbr['instance_id'] ?? ''] = $mbr;
+                    }
                 }
                 foreach (['left', 'center', 'right'] as $slot) {
                     $ownerP['stage'][$slot] = null;
@@ -3131,7 +3144,6 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     $id = $assign[$slot] ?? '';
                     if ($id !== '' && isset($members[$id])) {
                         $ownerP['stage'][$slot] = $members[$id];
-                        $ownerP['stage'][$slot]['moved_this_turn'] = true;
                     }
                 }
                 $state = addLog($state, $state['players'][$owner]['name'] .
@@ -3140,17 +3152,44 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 $left = $ownerP['stage']['left'];
                 $ownerP['stage']['left'] = $ownerP['stage']['right'];
                 $ownerP['stage']['right'] = $left;
-                if ($ownerP['stage']['left']) $ownerP['stage']['left']['moved_this_turn'] = true;
-                if ($ownerP['stage']['right']) $ownerP['stage']['right']['moved_this_turn'] = true;
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . ($prompt['source_name'] ?? 'Live') . '] formation-changed (Left ↔ Right).');
+            }
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            foreach (['left', 'center', 'right'] as $slot) {
+                $mbr = $state['players'][$owner]['stage'][$slot] ?? null;
+                if (!$mbr) {
+                    continue;
+                }
+                $iid = (string)($mbr['instance_id'] ?? '');
+                if ($iid === '') {
+                    continue;
+                }
+                $from = $before[$iid] ?? $slot;
+                if ($from === $slot) {
+                    continue;
+                }
+                $state = resolveAutoAreaMoveAbilities($state, $owner, $iid, $from);
+                if (!empty($state['pending_prompt'])) {
+                    if (function_exists('spBp2ClearEffectAreaMove')) {
+                        spBp2ClearEffectAreaMove($state);
+                    }
+                    if (($state['phase'] ?? '') === 'live_success_effects') {
+                        return finishLiveSuccessEffects($state);
+                    }
+                    return finishPromptEffects($state);
+                }
+            }
+            if (function_exists('spBp2ClearEffectAreaMove')) {
+                spBp2ClearEffectAreaMove($state);
             }
         } else {
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Live') . '] skipped formation change.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
         }
-        unset($state['pending_prompt']);
-        $state['seq']++;
         if (($state['phase'] ?? '') === 'live_success_effects') {
             return finishLiveSuccessEffects($state);
         }

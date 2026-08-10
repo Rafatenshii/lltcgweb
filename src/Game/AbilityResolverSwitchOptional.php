@@ -936,6 +936,7 @@ function tryResolveAbilityEffectSwitchOptional(
                 'type'          => 'optional_formation_change_group',
                 'owner'         => $pid,
                 'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
                 'source_name'   => $name,
                 'prompt'        => 'Formation-change your Stage Members (one per area)?',
                 'choices'       => ['yes', 'no'],
