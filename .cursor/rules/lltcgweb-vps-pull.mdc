@@ -1,0 +1,34 @@
+---
+description: After Hostinger/GitHub TCG engine deploys, git-pull /opt/lltcgweb on the VPS match host in the same turn
+alwaysApply: true
+---
+
+# lltcgweb — VPS match API auto-pull
+
+When a change is **deployed to Hostinger and pushed to GitHub** and it affects the **VPS match / overflow API** (PHP engine, ability IR, `cards.json` skills, match store, etc.), the agent must **`git pull` the VPS checkout in the same turn**. Do not stop at “please `!!pull`”.
+
+## When to pull
+
+**Pull** if any of these shipped: `api.php`, `effects.php`, `src/Game/**`, `*_effects.php`, `cards.json` (abilities / IR), match/store config, or other files the `lltcgweb-api` container serves from `/opt/lltcgweb`.
+
+**May skip** for pure Hostinger-static UI with no server engine impact (e.g. CSS-only). If unsure, pull.
+
+## How
+
+```bash
+# From lltcgweb repo (preferred)
+bash scripts/vps_lltcgweb_pull.sh
+
+# Equivalent
+ssh root@stream.loveliveradio.ca 'cd /opt/lltcgweb && git pull --ff-only origin main'
+```
+
+- Checkout path: **`/opt/lltcgweb`** (bind-mounted into Docker `lltcgweb-api` → `/var/www/html`).
+- Host: **`root@stream.loveliveradio.ca`** (never commit or echo the origin IP).
+- After pull: SSH loopback ping `http://127.0.0.1:5003/api.php?action=ping`.
+- Report **new HEAD** + ping outcome in **Deploy / reload**.
+- **No** `docker compose restart` / `systemctl` unless the user explicitly allows a restart in this thread.
+
+## Safety
+
+Read-only / `git pull --ff-only` only. If the pull fails (local edits, non-ff), report the error and the exact commands — do not `git reset --hard` or delete VPS files without explicit in-thread approval (`vps-ssh-safe`).

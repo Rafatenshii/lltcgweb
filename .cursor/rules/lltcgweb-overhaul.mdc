@@ -66,3 +66,4 @@ bash scripts/lint_php.sh
 - Flags: `TCG_GAME_STORE`, `TCG_MATCH_API_PRIMARY`, `TCG_REDIS_URL` — see `.env.example` / `docs/DEPLOY.md`
 - VPS Redis + overflow: `compose.overflow.yaml`
 - **Never** restart VPS units without explicit in-thread OK
+- After Hostinger+GitHub ship of match-engine code: **same-turn** `git pull --ff-only` on **`/opt/lltcgweb`** via `scripts/vps_lltcgweb_pull.sh` (see `lltcgweb-vps-pull.mdc`) — no Docker restart for routine pulls

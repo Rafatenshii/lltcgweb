@@ -9,7 +9,7 @@
 set -euo pipefail
 
 VPS_HOST="${VPS_HOST:-root@stream.loveliveradio.ca}"
-VPS_TCG_DIR="${VPS_TCG_DIR:-/home/discord/bots/lltcgweb}"
+VPS_TCG_DIR="${VPS_TCG_DIR:-/opt/lltcgweb}"
 LLTCGWEB_ROOT="${LLTCGWEB_ROOT:-$(cd "$(dirname "$0")/../../lltcgweb" 2>/dev/null && pwd || true)}"
 if [[ -z "${LLTCGWEB_ROOT}" || ! -d "${LLTCGWEB_ROOT}" ]]; then
   LLTCGWEB_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
