@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-randomized-decks",
+      "date": "2026-08-11",
+      "banner": "tcglogo.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "New game mode: Randomized Decks!",
+        "ja": "新ゲームモード：ランダムデッキ！",
+        "es": "¡Nuevo modo: Mazos aleatorios!",
+        "ko": "새 게임 모드: 랜덤 덱!",
+        "zh": "新对战模式：随机牌组！",
+        "th": "โหมดเกมใหม่: เด็คสุ่ม!"
+      },
+      "body": {
+        "en": "**Randomized Decks** is a new game mode for both **Ranked** and **Unranked** play.\n\n**How it works**\n- Pick **Randomized Decks** from the game mode menu before you search or create a room.\n- You don’t choose a deck — when the match starts, **each player** gets their own **random legal deck** built from the **full card pool** (you don’t need to own the cards).\n- Decks still follow normal legality rules (size, copies, Loveca budget).\n\n**Ranked**\n- Randomized Decks has its **own queue** and its **own leaderboard** — wins and losses here don’t move your Standard or Starters ELO.\n\n**Unranked**\n- Same mode in casual matchmaking and rooms — great for quick, surprise games.\n\nReady for a different kind of scramble? Queue up and see what the shuffle deals you!",
+        "ja": "**ランダムデッキ**は、**ランク**と**アンランク**の両方で遊べる新しいゲームモードです。\n\n**遊び方**\n- マッチ検索やルーム作成の前に、ゲームモードから **ランダムデッキ** を選びます。\n- デッキは自分で選びません。マッチ開始時に、**各プレイヤー**へ**全カードプール**から組まれた**合法なランダムデッキ**が配られます（所持は不要です）。\n- 枚数・同名制限・ラブライブポイントなど、通常の合法性ルールは守られます。\n\n**ランク**\n- ランダムデッキ専用の**キュー**と**リーダーボード**があります。ここでの勝敗はスタンダード／スターターのELOには影響しません。\n\n**アンランク**\n- カジュアルマッチやルームでも同じモードで遊べます。手軽にサプライズ対戦を楽しめます。\n\nどんなデッキが来るかわからない対戦、ぜひ試してみてください！",
+        "es": "**Mazos aleatorios** es un nuevo modo para **Clasificatoria** y **Unranked**.\n\n**Cómo funciona**\n- Elige **Mazos aleatorios** en el menú de modo antes de buscar partida o crear una sala.\n- No eliges mazo: al empezar, **cada jugador** recibe su propio **mazo legal aleatorio** del **catálogo completo** (no hace falta poseer las cartas).\n- Siguen las reglas normales de legalidad (tamaño, copias, presupuesto Loveca).\n\n**Clasificatoria**\n- Tiene su **propia cola** y su **propia clasificación** — las partidas aquí no mueven tu ELO de Estándar ni Solo iniciales.\n\n**Unranked**\n- Mismo modo en emparejamiento casual y salas — ideal para partidas rápidas e imprevisibles.\n\n¿Listo para otra clase de caos? ¡Encola y mira qué te toca!",
+        "ko": "**랜덤 덱**은 **랭크**와 **언랭크** 모두에서 즐길 수 있는 새 게임 모드입니다.\n\n**이용 방법**\n- 매칭 검색이나 방 만들기 전에 게임 모드에서 **랜덤 덱**을 고르세요.\n- 덱은 직접 고르지 않습니다. 매치가 시작되면 **각 플레이어**에게 **전체 카드 풀**에서 만든 **합법적인 랜덤 덱**이 따로 배정됩니다(소유 불필요).\n- 장수·매수 제한·러브카 포인트 등 일반 합법성 규칙은 그대로입니다.\n\n**랭크**\n- 랜덤 덱 전용 **대기열**과 **리더보드**가 있습니다. 여기 승패는 스탠다드·스타터 ELO에 영향을 주지 않습니다.\n\n**언랭크**\n- 캐주얼 매칭과 방에서도 같은 모드로 즐길 수 있습니다. 빠르고 예측 불가능한 대전에 좋아요.\n\n어떤 덱이 나올지 모르는 대전, 한번 도전해 보세요!",
+        "zh": "**随机牌组**是可用于**排名赛**与**非排名**的新对战模式。\n\n**玩法说明**\n- 在搜索对战或创建房间前，于游戏模式中选择 **随机牌组**。\n- 无需自选牌组——对局开始时，**双方各获得**一套来自**完整卡池**的**合法随机牌组**（无需持有卡牌）。\n- 仍遵守常规合法性规则（张数、同名上限、Loveca 点数等）。\n\n**排名赛**\n- 随机牌组拥有**独立匹配队列**与**独立排行榜**——此模式的胜负不会影响标准或仅初始牌组的 ELO。\n\n**非排名**\n- 休闲匹配与房间同样可选——适合轻松、充满惊喜的对局。\n\n准备好接受洗牌的考验了吗？排队开打，看看你会抽到什么！",
+        "th": "**เด็คสุ่ม** เป็นโหมดเกมใหม่สำหรับทั้ง**แรงก์**และ**อันแรงก์**\n\n**วิธีเล่น**\n- เลือก **เด็คสุ่ม** จากเมนูโหมดเกมก่อนค้นหาแมตช์หรือสร้างห้อง\n- ไม่ต้องเลือกเด็คเอง — เมื่อแมตช์เริ่ม **ผู้เล่นแต่ละคน**จะได้**เด็คสุ่มที่ถูกต้องตามกติกา**จาก**คลังการ์ดทั้งหมด**คนละชุด (ไม่ต้องมีในครอบครอง)\n- ยังใช้กฎความถูกต้องปกติ (จำนวนใบ สำเนา งบ Loveca)\n\n**แรงก์**\n- มี**คิว**และ**ลีดเดอร์บอร์ด**ของตัวเอง — ชนะ/แพ้ที่นี่ไม่ขยับ ELO โหมดมาตรฐานหรือเด็คเริ่มต้น\n\n**อันแรงก์**\n- ใช้โหมดเดียวกันในจับคู่แคชชวลและห้อง — เหมาะกับแมตช์เร็วที่ไม่คาดเดา\n\nพร้อมลุ้นเด็คแบบสุ่มหรือยัง? เข้าคิวแล้วดูว่าจะได้ชุดไหน!"
+      }
+    },
+    {
       "id": "2026-08-mellow-moment",
       "date": "2026-08-05",
       "banner": "news/bp07-mellow-moment.jpg",
