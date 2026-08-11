@@ -1023,6 +1023,48 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             );
             break;
 
+        case 'mandatory_discard_color_threshold_reveal5':
+            // Maki Nishikino (PL!-bp6-006): discard 1 → choose color → reveal 5 → threshold check.
+            if (!empty($state['pending_prompt'])) {
+                break;
+            }
+            $need = max(1, intval($ab['discard'] ?? 1));
+            if (count($p['hand'] ?? []) < $need) {
+                break;
+            }
+            $ids = normalizeDiscardIds($ctx['discard_ids'] ?? []);
+            if (count($ids) < $need) {
+                $state['pending_prompt'] = [
+                    'type'          => 'mandatory_discard_color_threshold_reveal5',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $source['instance_id'] ?? '',
+                    'source_slot'   => $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? ''),
+                    'source_name'   => $name,
+                    'ability_index' => $ctx['ability_index'] ?? null,
+                    'discard_count' => $need,
+                    'max_pick'      => $need,
+                    'min_pick'      => $need,
+                    'prompt'        => "Put $need card(s) from your hand into the Waiting Room, then choose a heart color.",
+                    'ability'       => $ab,
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] choose card(s) to discard.");
+                break;
+            }
+            discardFromHandByIds($p, array_slice($ids, 0, $need));
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] discarded $need; choose a heart color.");
+            $state = plMuseGapOpenColorThresholdReveal5ColorPrompt(
+                $state,
+                $pid,
+                $source,
+                $ab,
+                $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? ''),
+                $ctx['ability_index'] ?? null
+            );
+            break;
+
         case 'hearts_if_distinct_stage_names':
         case 'auto_yell_blade_if_no_blade_count':
         case 'auto_yell_mus_draw_discard':
@@ -1276,8 +1318,333 @@ function plMuseGapFinishReplaceSuccessJudge(array $state, string $owner): array 
     return advanceLiveJudgeWinners($state);
 }
 
+/** Live card whose required hearts include $color. */
+function plMuseGapLiveRequiresHeartColor(array $card, string $color): bool {
+    if (!isLiveTypeCard($card)) {
+        return false;
+    }
+    foreach ($card['required_hearts'] ?? $card['hearts'] ?? [] as $hg) {
+        $c = (string)($hg['color'] ?? '');
+        if ($c === $color || $c === 'any') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Member with that printed heart, or Live requiring that heart. */
+function plMuseGapCardMatchesColorThreshold(array $card, string $color): bool {
+    if (isMemberCard($card)) {
+        return memberHasHeartColor($card, $color);
+    }
+    if (isLiveTypeCard($card)) {
+        return plMuseGapLiveRequiresHeartColor($card, $color);
+    }
+    return false;
+}
+
+function plMuseGapOpenColorThresholdReveal5ColorPrompt(
+    array $state,
+    string $pid,
+    array $source,
+    array $ab,
+    $slot = '',
+    $abilityIndex = null
+): array {
+    $name = $source['name_en'] ?? $source['name'] ?? 'Member';
+    $choices = $ab['heart_choices'] ?? ['pink', 'yellow', 'purple', 'red', 'green', 'blue'];
+    $state['pending_prompt'] = [
+        'type'          => 'maki_reveal5_choose_color',
+        'owner'         => $pid,
+        'responder'     => $pid,
+        'source_id'     => $source['instance_id'] ?? '',
+        'source_slot'   => ($slot !== '' && $slot !== null)
+            ? $slot
+            : findMemberSlot($state['players'][$pid] ?? [], $source['instance_id'] ?? ''),
+        'source_name'   => $name,
+        'ability_index' => $abilityIndex,
+        'ability'       => $ab,
+        'choices'       => array_values($choices),
+        'choice_labels' => array_map(static fn($c) => ucfirst((string)$c) . ' ♡', $choices),
+        'prompt'        => 'Choose a heart color, then reveal the top '
+            . intval($ab['threshold'] ?? 5) . ' cards of your deck.',
+    ];
+    return $state;
+}
+
+/**
+ * Reveal deck top N; if all match the color threshold, pick a μ's card among them
+ * and grant Blade; otherwise mill all revealed to Waiting Room.
+ */
+function plMuseGapResolveColorThresholdReveal5(
+    array $state,
+    string $pid,
+    array $source,
+    array $ab,
+    string $color,
+    $slot = '',
+    $abilityIndex = null
+): array {
+    $p = &$state['players'][$pid];
+    $name = $source['name_en'] ?? $source['name'] ?? 'Member';
+    $look = max(1, intval($ab['threshold'] ?? 5));
+    $group = $ab['group'] ?? "μ's";
+    $bladeAmt = intval($ab['blade_amount'] ?? 3);
+
+    $revealed = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
+    foreach ($revealed as &$rc) {
+        mergeCardCatalogFields($rc);
+    }
+    unset($rc);
+
+    $matchCount = 0;
+    foreach ($revealed as $rc) {
+        if (plMuseGapCardMatchesColorThreshold($rc, $color)) {
+            $matchCount++;
+        }
+    }
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        " — [$name] revealed " . count($revealed) . " ($color ♡ matches: $matchCount/$look).");
+
+    if ($matchCount < $look || count($revealed) < $look) {
+        if (!empty($revealed)) {
+            $p['waiting_room'] = array_merge($p['waiting_room'] ?? [], $revealed);
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] put " . count($revealed)
+                . ' revealed card(s) into Waiting Room (threshold not met).');
+        }
+        unset($state['pending_prompt']);
+        return $state;
+    }
+
+    $musCands = array_values(array_filter(
+        $revealed,
+        static fn($c) => ($c['group'] ?? '') === $group
+    ));
+    if ($musCands === []) {
+        $p['waiting_room'] = array_merge($p['waiting_room'] ?? [], $revealed);
+        $state = applyModifierEffect($state, $pid, [
+            'type'   => 'blade_bonus',
+            'amount' => $bladeAmt,
+        ], $source);
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] threshold met but no $group card among revealed; +" . $bladeAmt
+            . ' Blade until Live ends. Revealed cards → Waiting Room.');
+        unset($state['pending_prompt']);
+        return $state;
+    }
+    if (count($musCands) === 1) {
+        return plMuseGapFinishColorThresholdReveal5Pick(
+            $state,
+            $pid,
+            $source,
+            $ab,
+            $revealed,
+            (string)($musCands[0]['instance_id'] ?? ''),
+            $slot,
+            $abilityIndex
+        );
+    }
+
+    $state['pending_prompt'] = [
+        'type'           => 'maki_reveal5_pick_mus',
+        'owner'          => $pid,
+        'responder'      => $pid,
+        'source_id'      => $source['instance_id'] ?? '',
+        'source_slot'    => $slot,
+        'source_name'    => $name,
+        'ability_index'  => $abilityIndex,
+        'ability'        => $ab,
+        'revealed_cards' => $revealed,
+        'candidates'     => array_map('cardPromptSummary', $musCands),
+        'prompt'         => 'Add 1 ' . groupPromptLabel($group)
+            . ' card among the revealed cards to your hand.',
+        'max_pick'       => 1,
+        'min_pick'       => 1,
+    ];
+    return $state;
+}
+
+function plMuseGapFinishColorThresholdReveal5Pick(
+    array $state,
+    string $pid,
+    array $source,
+    array $ab,
+    array $revealed,
+    string $pickId,
+    $slot = '',
+    $abilityIndex = null
+): array {
+    $p = &$state['players'][$pid];
+    $name = $source['name_en'] ?? $source['name'] ?? 'Member';
+    $group = $ab['group'] ?? "μ's";
+    $bladeAmt = intval($ab['blade_amount'] ?? 3);
+
+    $picked = null;
+    $rest = [];
+    foreach ($revealed as $rc) {
+        if ($picked === null && ($rc['instance_id'] ?? '') === $pickId
+            && ($rc['group'] ?? '') === $group) {
+            $picked = $rc;
+            continue;
+        }
+        $rest[] = $rc;
+    }
+    if ($picked === null) {
+        throw new Exception('Must choose a ' . groupPromptLabel($group)
+            . ' card from the revealed cards');
+    }
+    $p['hand'][] = $picked;
+    if (!empty($rest)) {
+        $p['waiting_room'] = array_merge($p['waiting_room'] ?? [], $rest);
+    }
+    $state = applyModifierEffect($state, $pid, [
+        'type'   => 'blade_bonus',
+        'amount' => $bladeAmt,
+    ], $source);
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        ' — [' . $name . '] added ' . cardDisplayName($picked) .
+        ' to hand and gained +' . $bladeAmt . ' Blade until Live ends.');
+    unset($state['pending_prompt']);
+    return $state;
+}
+
 function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $type = $prompt['type'] ?? '';
+
+    if ($type === 'mandatory_discard_color_threshold_reveal5') {
+        $ab = $prompt['ability'] ?? [];
+        $need = intval($prompt['discard_count'] ?? $ab['discard'] ?? 1);
+        $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+        if (count($ids) !== $need) {
+            throw new Exception("Must select exactly $need card(s) to discard");
+        }
+        $p = &$state['players'][$owner];
+        discardFromHandByIds($p, $ids);
+        $sourceId = (string)($prompt['source_id'] ?? '');
+        $slot = $prompt['source_slot'] ?? '';
+        $source = null;
+        if ($slot !== '' && !empty($p['stage'][$slot])
+            && (($p['stage'][$slot]['instance_id'] ?? '') === $sourceId || $sourceId === '')) {
+            $source = $p['stage'][$slot];
+        } elseif ($sourceId !== '') {
+            foreach ($p['stage'] as $s => $mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
+                    $source = $mbr;
+                    $slot = $s;
+                    break;
+                }
+            }
+        }
+        if (!$source) {
+            $source = [
+                'name_en' => $prompt['source_name'] ?? 'Member',
+                'instance_id' => $sourceId,
+            ];
+        }
+        unset($state['pending_prompt']);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded $need; choose a heart color.");
+        $state = plMuseGapOpenColorThresholdReveal5ColorPrompt(
+            $state,
+            $owner,
+            $source,
+            $ab,
+            $slot,
+            $prompt['ability_index'] ?? null
+        );
+        return $state;
+    }
+
+    if ($type === 'maki_reveal5_choose_color') {
+        $ab = $prompt['ability'] ?? [];
+        $choices = $ab['heart_choices'] ?? ['pink', 'yellow', 'purple', 'red', 'green', 'blue'];
+        if (!in_array($choice, $choices, true)) {
+            throw new Exception('Invalid heart color');
+        }
+        $ownerP = $state['players'][$owner] ?? [];
+        $sourceId = (string)($prompt['source_id'] ?? '');
+        $slot = $prompt['source_slot'] ?? '';
+        $source = null;
+        if ($slot !== '' && !empty($ownerP['stage'][$slot])) {
+            $source = $ownerP['stage'][$slot];
+        } elseif ($sourceId !== '') {
+            foreach ($ownerP['stage'] as $s => $mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
+                    $source = $mbr;
+                    $slot = $s;
+                    break;
+                }
+            }
+        }
+        if (!$source) {
+            $source = [
+                'name_en' => $prompt['source_name'] ?? 'Member',
+                'instance_id' => $sourceId,
+            ];
+        }
+        unset($state['pending_prompt']);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        $state = plMuseGapResolveColorThresholdReveal5(
+            $state,
+            $owner,
+            $source,
+            $ab,
+            $choice,
+            $slot,
+            $prompt['ability_index'] ?? null
+        );
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+        return finishPromptEffects($state);
+    }
+
+    if ($type === 'maki_reveal5_pick_mus') {
+        $ab = $prompt['ability'] ?? [];
+        $pickId = (string)($data['card_id'] ?? '');
+        if ($pickId === '' && !empty($data['card_ids']) && is_array($data['card_ids'])) {
+            $pickId = (string)($data['card_ids'][0] ?? '');
+        }
+        if ($pickId === '' && $choice !== '' && $choice !== 'yes' && $choice !== 'no') {
+            $pickId = $choice;
+        }
+        $revealed = is_array($prompt['revealed_cards'] ?? null) ? $prompt['revealed_cards'] : [];
+        $ownerP = $state['players'][$owner] ?? [];
+        $sourceId = (string)($prompt['source_id'] ?? '');
+        $slot = $prompt['source_slot'] ?? '';
+        $source = null;
+        if ($slot !== '' && !empty($ownerP['stage'][$slot])) {
+            $source = $ownerP['stage'][$slot];
+        } elseif ($sourceId !== '') {
+            foreach ($ownerP['stage'] as $s => $mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
+                    $source = $mbr;
+                    $slot = $s;
+                    break;
+                }
+            }
+        }
+        if (!$source) {
+            $source = [
+                'name_en' => $prompt['source_name'] ?? 'Member',
+                'instance_id' => $sourceId,
+            ];
+        }
+        $state = plMuseGapFinishColorThresholdReveal5Pick(
+            $state,
+            $owner,
+            $source,
+            $ab,
+            $revealed,
+            $pickId,
+            $slot,
+            $prompt['ability_index'] ?? null
+        );
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        return finishPromptEffects($state);
+    }
 
     if ($type === 'mandatory_discard_group_branch') {
         $ab = $prompt['ability'] ?? [];

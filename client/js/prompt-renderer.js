@@ -1080,6 +1080,7 @@ const HEART_COLOR_CHOICE_TYPES = new Set([
   'choose_replace_member_hearts',
   'wait_self_choose_heart',
   'pl_muse_stack_heart_choice',
+  'maki_reveal5_choose_color',
 ]);
 
 global.isHeartColorChoiceKey = function isHeartColorChoiceKey(key) {
@@ -2913,6 +2914,36 @@ global.renderPrompt = function renderPrompt(s, myId){
       msg: pr.prompt||`Choose ${need} card(s) to send to the Waiting Room.`,
       allowCancel: false,
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
+    });
+    return;
+  }
+  if(pr?.type==='mandatory_discard_color_threshold_reveal5'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const me=s.players?.[myId];
+    const need=pr.discard_count||pr.max_pick||1;
+    openHandPick({
+      hand: me?.hand||[],
+      count: need,
+      min: need,
+      title: pr.source_name||'Discard',
+      msg: pr.prompt||`Choose ${need} card(s) to send to the Waiting Room, then choose a heart color.`,
+      allowCancel: false,
+      onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
+    });
+    return;
+  }
+  if(pr?.type==='maki_reveal5_pick_mus'&&pr.responder===myId){
+    ovl.classList.remove('open');
+    const cards=pr.candidates||[];
+    if(!cards.length){
+      sendAct('resolve_prompt',{choice:'skip'});
+      return;
+    }
+    openLookedDeckPick({
+      ...pr,
+      candidates: cards,
+      pick_count: 1,
+      eligible_ids: cards.map(c=>c.instance_id).filter(Boolean),
     });
     return;
   }

@@ -297,11 +297,21 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             return ['discard_ids' => $ids];
 
         case 'mandatory_discard_look_reveal':
+        case 'mandatory_discard_group_branch':
+        case 'mandatory_discard_color_threshold_reveal5':
         case 'sbp5_draw_deck_bottom':
         case 'sbp6_discard_after_draw':
             $need = intval($prompt['count'] ?? $prompt['bottom_count'] ?? $prompt['discard_count'] ?? 1);
             $ids = array_slice(array_column($ownerP['hand'] ?? [], 'instance_id'), 0, $need);
             return ['discard_ids' => $ids];
+
+        case 'maki_reveal5_choose_color':
+            $choices = $prompt['choices'] ?? ['pink'];
+            return ['choice' => $choices[0] ?? 'pink'];
+
+        case 'maki_reveal5_pick_mus':
+            $id = $prompt['candidates'][0]['instance_id'] ?? '';
+            return $id !== '' ? ['card_id' => $id] : [];
 
         case 'optional_live_start':
             return ['choice' => 'no'];

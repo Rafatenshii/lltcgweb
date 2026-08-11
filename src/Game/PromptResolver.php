@@ -163,6 +163,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         'play_stacked_member_from_under',
         'pl_muse_stack_heart_choice',
         'mandatory_discard_group_branch',
+        'mandatory_discard_color_threshold_reveal5',
+        'maki_reveal5_choose_color',
+        'maki_reveal5_pick_mus',
     ], true)) {
         // Sayaka-style named stack (has names) is resolved by hs_pb1, not μ's Kotori path.
         $museStack = $promptType !== 'reveal_hand_named_stack_under'

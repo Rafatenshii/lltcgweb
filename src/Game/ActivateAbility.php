@@ -1130,7 +1130,48 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
         }
     } elseif (plMuseGapIsEffectType($ab['type'] ?? '')) {
-        if (($ab['type'] ?? '') === 'mandatory_discard_group_branch') {
+        if (($ab['type'] ?? '') === 'mandatory_discard_color_threshold_reveal5') {
+            $need = intval($ab['discard'] ?? 1);
+            if (count($p['hand'] ?? []) < $need) {
+                throw new Exception('Not enough cards in hand');
+            }
+            $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
+            if (count($ids) < $need) {
+                if (!empty($ab['once_per_turn'])) {
+                    markAbilityUsed($member, $abilityIdx);
+                    persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+                }
+                $state['pending_prompt'] = [
+                    'type'          => 'mandatory_discard_color_threshold_reveal5',
+                    'owner'         => $pid,
+                    'responder'     => $pid,
+                    'source_id'     => $member['instance_id'] ?? '',
+                    'source_slot'   => $slot ?? '',
+                    'ability_index' => $abilityIdx,
+                    'source_name'   => $member['name_en'] ?? $member['name'] ?? 'Member',
+                    'discard_count' => $need,
+                    'max_pick'      => $need,
+                    'min_pick'      => $need,
+                    'prompt'        => "Put $need card(s) from your hand into the Waiting Room, then choose a heart color.",
+                    'ability'       => $ab,
+                ];
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . ($member['name_en'] ?? $member['name'] ?? 'Member') .
+                    '] choose card(s) to discard.');
+                $state['seq']++;
+                return $state;
+            }
+            $state = plMuseGapResolveEffect($state, $pid, $member, $ab, [
+                'slot'          => $slot ?? '',
+                'phase'         => 'activated',
+                'ability_index' => $abilityIdx,
+                'discard_ids'   => $ids,
+            ]);
+            if (!empty($ab['once_per_turn'])) {
+                markAbilityUsed($member, $abilityIdx);
+                persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
+            }
+        } elseif (($ab['type'] ?? '') === 'mandatory_discard_group_branch') {
             $cost = intval($ab['cost'] ?? $ab['energy_cost'] ?? 0);
             if ($cost > 0 && !payEnergyCost($p, $cost)) {
                 throw new Exception("Need $cost active Energy");

@@ -804,6 +804,7 @@ function cpuSchedulePromptRetryIfStuck(s, cpu) {
 const CPU_NO_GENERIC_YESNO = new Set([
   'sbp5_draw_deck_bottom', 'sbp6_discard_after_draw', 'mandatory_discard_after_draw',
   'mandatory_discard_look_reveal', 'effect_discard_hand', 'mandatory_discard_group_branch',
+  'mandatory_discard_color_threshold_reveal5', 'maki_reveal5_choose_color', 'maki_reveal5_pick_mus',
   'surveil_arrange', 'surveil_pick_one', 'surveil_pick_one_hand_rest_wr',
   'surveil_pick_one_deck_top', 'surveil_pick_one_hand_rest_top',
   'live_success_pick_yell_deck_top', 'pick_named_member_blade', 'pick_named_members_grant_blade',
@@ -929,6 +930,35 @@ function cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read) {
     }
     cpuAct('anti_softlock_skip', {});
     return true;
+  }
+  // Maki Nishikino (PL!-bp6-006) discard step before color + reveal.
+  if (pr.type === 'mandatory_discard_color_threshold_reveal5') {
+    const need = pr.discard_count || pr.max_pick || pr.ability?.discard || 1;
+    const handNow = cpuLiveHand(cpu);
+    let ids = pick(need).filter(Boolean);
+    if (ids.length < need) ids = cpuHandDiscardFallback(handNow, need);
+    if (ids.length >= need) {
+      cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
+      return true;
+    }
+    if (presentationBusy || handNow.length < need) {
+      cpuSchedulePromptRetryIfStuck(G.gameState, cpu);
+      return true;
+    }
+    cpuAct('anti_softlock_skip', {});
+    return true;
+  }
+  if (pr.type === 'maki_reveal5_choose_color') {
+    cpuAct('resolve_prompt', { choice: cpuPickHeartColor(pr.choices, cpu) });
+    return true;
+  }
+  if (pr.type === 'maki_reveal5_pick_mus') {
+    const id = pr.candidates?.[0]?.instance_id;
+    if (id) {
+      cpuAct('resolve_prompt', { card_id: id });
+      return true;
+    }
+    return false;
   }
   return false;
 }
@@ -4431,7 +4461,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return;
   }
-  const heartTypes=['choose_heart_per_success','choose_heart_mus_member','choose_heart_modifier','waive_required_heart_color','choose_required_heart_pair_gray','choose_replace_member_hearts'];
+  const heartTypes=['choose_heart_per_success','choose_heart_mus_member','choose_heart_modifier','waive_required_heart_color','choose_required_heart_pair_gray','choose_replace_member_hearts','maki_reveal5_choose_color'];
   if(heartTypes.includes(pr.type)){
     cpuAct('resolve_prompt',{choice:cpuPickHeartColor(pr.choices, cpu)});
     return;
@@ -4909,7 +4939,7 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
       read ? { mustCatchUp: ctx.sit?.mustCatchUp, behind: ctx.sit?.behind } : null);
     if (cpuResolveScoredChoicePrompt(pr, cpu, tier, abCtx)) return true;
   }
-  const heartTypes = ['choose_heart_per_success', 'choose_heart_mus_member', 'choose_heart_modifier', 'waive_required_heart_color', 'choose_required_heart_pair_gray', 'choose_replace_member_hearts'];
+  const heartTypes = ['choose_heart_per_success', 'choose_heart_mus_member', 'choose_heart_modifier', 'waive_required_heart_color', 'choose_required_heart_pair_gray', 'choose_replace_member_hearts', 'maki_reveal5_choose_color'];
   if (heartTypes.includes(pr.type) && tier !== 'easy') {
     const pool = stageHeartPool(cpu);
     const counts = {};
