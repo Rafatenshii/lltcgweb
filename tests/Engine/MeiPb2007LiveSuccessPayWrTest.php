@@ -10,6 +10,16 @@ use PHPUnit\Framework\TestCase;
 
 final class MeiPb2007LiveSuccessPayWrTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
+    }
+
     private function energy(string $id): array
     {
         return [

@@ -160,6 +160,105 @@ global.mkPickCardEl = function mkPickCardEl(card, cls, onClick){
   return d;
 }
 
+/** Reorder Live Success sources (first → last). ↑/↓ rearrange; Confirm sends card_ids. */
+global.openLiveSuccessOrderPick = function openLiveSuccessOrderPick(pr) {
+  const cards = Array.isArray(pr.candidates) ? pr.candidates.slice() : [];
+  const byId = {};
+  cards.forEach((c) => {
+    if (c?.instance_id) byId[c.instance_id] = c;
+  });
+  let order = cards.map((c) => c.instance_id).filter(Boolean);
+
+  el('pick-ttl').textContent = pr.source_name || 'Live Success';
+  el('pick-msg').textContent = pr.prompt
+    || 'Choose the order to activate Live Success abilities (first → last).';
+  const g = el('pick-grid');
+  g.innerHTML = '';
+  g.classList.add('pick-grid-order');
+
+  const btnOk = el('btn-pick-ok');
+  const btnCancel = el('btn-pick-cancel');
+  if (btnOk) btnOk.style.display = 'inline-block';
+  if (btnCancel) btnCancel.style.display = 'none';
+
+  function syncMarkedFromOrder() {
+    if (!G.pickMarked || typeof G.pickMarked.clear !== 'function') {
+      G.pickMarked = new Set();
+    }
+    G.pickMarked.clear();
+    order.forEach((id) => G.pickMarked.add(id));
+  }
+
+  function paint() {
+    g.innerHTML = '';
+    order.forEach((id, idx) => {
+      const card = byId[id];
+      if (!card) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'pick-order-item';
+      wrap.dataset.id = id;
+
+      const badge = document.createElement('div');
+      badge.className = 'pick-order-badge';
+      badge.textContent = String(idx + 1);
+
+      const cardEl = mkPickCardEl(card, 'pickcard', null);
+      cardEl.classList.add('sel');
+
+      const controls = document.createElement('div');
+      controls.className = 'pick-order-controls';
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.className = 'btn-ghost pick-order-btn';
+      up.textContent = '↑';
+      up.disabled = idx === 0;
+      up.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (idx <= 0) return;
+        const tmp = order[idx - 1];
+        order[idx - 1] = order[idx];
+        order[idx] = tmp;
+        paint();
+      };
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.className = 'btn-ghost pick-order-btn';
+      down.textContent = '↓';
+      down.disabled = idx >= order.length - 1;
+      down.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (idx >= order.length - 1) return;
+        const tmp = order[idx + 1];
+        order[idx + 1] = order[idx];
+        order[idx] = tmp;
+        paint();
+      };
+      controls.appendChild(up);
+      controls.appendChild(down);
+
+      wrap.appendChild(badge);
+      wrap.appendChild(cardEl);
+      wrap.appendChild(controls);
+      g.appendChild(wrap);
+    });
+    syncMarkedFromOrder();
+    el('pick-count').textContent = order.length
+      ? `Activation order: 1 → ${order.length}`
+      : '';
+  }
+
+  G.pickCtx = {
+    count: Math.max(1, order.length),
+    min: Math.max(1, order.length),
+    onConfirm: (ids) => sendAct('resolve_prompt', { card_ids: ids }),
+  };
+  paint();
+  if (typeof syncPickOverlayButtons === 'function') syncPickOverlayButtons();
+  openM('overlay-pick');
+};
+
 
 global.openSurveilPickOne = function openSurveilPickOne(pr){
   const cards=pr.look_cards||pr.candidates||[];
@@ -216,6 +315,7 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
     ? 'No matching cards among these. Confirm to put them into the Waiting Room.'
     : 'Choose card(s) to add to your hand.');
   const g=el('pick-grid'); g.innerHTML='';
+  g.classList.remove('pick-grid-order');
   const btnOk=el('btn-pick-ok');
   const btnCancel=el('btn-pick-cancel');
   if(btnOk) btnOk.style.display=singleTap?'none':'inline-block';
@@ -2073,6 +2173,10 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='surveil_arrange'&&pr.responder===myId){
     renderPromptSurveilBranch(s, myId, pr);
+    return;
+  }
+  if (pr?.type === 'live_success_order_sources' && pr.responder === myId) {
+    openLiveSuccessOrderPick(pr);
     return;
   }
   closeM('overlay-surveil');

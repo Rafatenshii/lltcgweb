@@ -107,6 +107,19 @@ final class Issue71LiveSuccessResumeTest extends TestCase
         return \actionResolvePrompt($state, 'p1', ['discard_ids' => [$handId]]);
     }
 
+    /** When multiple Live Success sources fire, confirm default activation order. */
+    private function confirmLiveSuccessOrderIfNeeded(array $state, ?array $orderIds = null): array
+    {
+        if (($state['pending_prompt']['type'] ?? '') !== 'live_success_order_sources') {
+            return $state;
+        }
+        $ids = $orderIds;
+        if ($ids === null) {
+            $ids = array_column($state['pending_prompt']['candidates'] ?? [], 'instance_id');
+        }
+        return \actionResolvePrompt($state, 'p1', ['card_ids' => array_values($ids)]);
+    }
+
     public function testNatsumiFiresAfterKimiNoKokoroDiscard(): void
     {
         $kimi = $this->cardByNo('PL!S-bp2-024-L', 'kimi1');
@@ -114,6 +127,7 @@ final class Issue71LiveSuccessResumeTest extends TestCase
         $state = $this->baseState([$kimi], $natsumi);
 
         $state = \resolveLiveSuccessAbilities($state, 'p1', [$kimi], 0, [], []);
+        $state = $this->confirmLiveSuccessOrderIfNeeded($state);
         $this->assertSame('effect_discard_hand', $state['pending_prompt']['type'] ?? null);
         $this->assertNotEmpty($state['_live_success_ctx'] ?? null);
 
@@ -141,6 +155,7 @@ final class Issue71LiveSuccessResumeTest extends TestCase
         ]];
 
         $state = \resolveLiveSuccessAbilities($state, 'p1', [$mermaid], 0, [], []);
+        $state = $this->confirmLiveSuccessOrderIfNeeded($state);
         $this->assertSame('live_success_pick_energy_or_member', $state['pending_prompt']['type'] ?? null);
 
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'energy']);
@@ -160,6 +175,7 @@ final class Issue71LiveSuccessResumeTest extends TestCase
         $state['players']['p1']['main_deck'] = $this->deckFill(20);
 
         $state = \resolveLiveSuccessAbilities($state, 'p1', [$k1, $k2, $k3], 0, [], []);
+        $state = $this->confirmLiveSuccessOrderIfNeeded($state);
         $discards = 0;
         for ($i = 0; $i < 3; $i++) {
             $this->assertSame(
@@ -184,6 +200,7 @@ final class Issue71LiveSuccessResumeTest extends TestCase
         $state['players']['p1']['main_deck'] = $this->deckFill(20);
 
         $state = \resolveLiveSuccessAbilities($state, 'p1', [$kimi, $mermaid], 0, [], []);
+        $state = $this->confirmLiveSuccessOrderIfNeeded($state);
         $this->assertSame('effect_discard_hand', $state['pending_prompt']['type'] ?? null);
         $state = $this->discardOne($state);
 

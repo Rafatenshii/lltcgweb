@@ -9,6 +9,17 @@ use PHPUnit\Framework\TestCase;
 /** PL!-bp6-016-N Nozomi — Live Success rearrange all 3 on deck top (no WR mill). */
 final class NozomiBp6016LiveSuccessSurveilTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Keep assertions on deck order after surveil; do not advance Performance.
+        $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
+    }
+
     private function cardByNo(string $cardNo, string $instanceId): array
     {
         $data = json_decode((string) file_get_contents((string) constant('CARDS_FILE')), true);

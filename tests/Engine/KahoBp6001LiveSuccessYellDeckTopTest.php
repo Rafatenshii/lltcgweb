@@ -91,6 +91,12 @@ final class KahoBp6001LiveSuccessYellDeckTopTest extends TestCase
         ];
 
         $state = \resolveLiveSuccessAbilities($state, 'p1', [$live], 0, [], [$yell]);
+        if (($state['pending_prompt']['type'] ?? '') === 'live_success_order_sources') {
+            // Prefer Kaho before the successful Live's own Live Success.
+            $state = \actionResolvePrompt($state, 'p1', [
+                'card_ids' => ['kaho', 'live_ok'],
+            ]);
+        }
         $this->assertSame('live_success_pick_yell_deck_top', $state['pending_prompt']['type'] ?? null);
         $this->assertTrue(!empty($state['pending_prompt']['optional']));
         $this->assertContains('skip', $state['pending_prompt']['choices'] ?? []);

@@ -2737,6 +2737,79 @@ function liveSuccessCardsFromCtx(array $state, array $ctx): array {
 }
 
 /**
+ * Live / Stage sources that still have unresolved [Live Success] work.
+ *
+ * @param list<array> $successCards
+ * @return list<array> prompt candidate summaries with zone (+ slot for Members)
+ */
+function collectLiveSuccessOrderSources(array $state, string $pid, array $successCards): array {
+    $sources = [];
+    foreach ($successCards as $lc) {
+        if (!$lc) {
+            continue;
+        }
+        mergeCardCatalogFields($lc);
+        $iid = (string)($lc['instance_id'] ?? '');
+        if ($iid === '') {
+            continue;
+        }
+        $pending = false;
+        foreach ($lc['granted_live_success_effects'] ?? [] as $gIdx => $eff) {
+            if (($eff['type'] ?? '') !== 'draw_cards') {
+                continue;
+            }
+            if (!isLiveSuccessAbilityResolved($state, 'granted', $pid, $iid, intval($gIdx))) {
+                $pending = true;
+                break;
+            }
+        }
+        if (!$pending) {
+            foreach ($lc['abilities'] ?? [] as $abIdx => $ab) {
+                if (($ab['trigger'] ?? '') !== 'live_success') {
+                    continue;
+                }
+                if (!isLiveSuccessAbilityResolved($state, 'live', $pid, $iid, intval($abIdx))) {
+                    $pending = true;
+                    break;
+                }
+            }
+        }
+        if ($pending) {
+            $sources[] = array_merge(cardPromptSummary($lc), ['zone' => 'live']);
+        }
+    }
+    foreach (['left', 'center', 'right'] as $slot) {
+        $member = $state['players'][$pid]['stage'][$slot] ?? null;
+        if (!$member) {
+            continue;
+        }
+        mergeCardCatalogFields($member);
+        $iid = (string)($member['instance_id'] ?? '');
+        if ($iid === '') {
+            continue;
+        }
+        $abilities = spBp2MemberLiveSuccessAbilities($member);
+        if (empty($abilities)) {
+            continue;
+        }
+        $pending = false;
+        foreach ($abilities as $abIdx => $ab) {
+            if (!isLiveSuccessAbilityResolved($state, 'member', $pid, $iid, intval($abIdx))) {
+                $pending = true;
+                break;
+            }
+        }
+        if ($pending) {
+            $sources[] = array_merge(cardPromptSummary($member), [
+                'zone' => 'stage',
+                'slot' => $slot,
+            ]);
+        }
+    }
+    return $sources;
+}
+
+/**
  * After a Live Success prompt resolves, continue remaining Live / Stage Member
  * [Live Success] abilities for the same Performance (#71).
  */
@@ -2795,6 +2868,103 @@ function resolveLiveSuccessAbilities(
     );
 }
 
+/**
+ * Resolve one Live Success source (Live card or Stage Member) until done or a prompt opens.
+ *
+ * @return array{0: array, 1: bool} [state, paused_on_prompt]
+ */
+function resolveLiveSuccessSourceAbilities(
+    array $state,
+    string $pid,
+    array $source,
+    string $zone,
+    int $excessHearts,
+    array $excessColors,
+    array $yellCards
+): array {
+    mergeCardCatalogFields($source);
+    $iid = (string)($source['instance_id'] ?? '');
+    if ($iid === '') {
+        return [$state, false];
+    }
+    if ($zone === 'live') {
+        foreach ($source['granted_live_success_effects'] ?? [] as $gIdx => $eff) {
+            if (($eff['type'] ?? '') !== 'draw_cards') {
+                continue;
+            }
+            if (isLiveSuccessAbilityResolved($state, 'granted', $pid, $iid, intval($gIdx))) {
+                continue;
+            }
+            $state = markLiveSuccessAbilityResolved($state, 'granted', $pid, $iid, intval($gIdx));
+            $drawn = drawCardsForPlayer($state, $pid, intval($eff['draw'] ?? 1));
+            if ($drawn > 0) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . ($source['name_en'] ?? $source['name'] ?? 'Live') .
+                    "] drew $drawn (granted Live Success).");
+            }
+            if (!empty($state['pending_prompt'])) {
+                return [$state, true];
+            }
+        }
+        $pendingAbs = [];
+        foreach ($source['abilities'] ?? [] as $abIdx => $ab) {
+            if (($ab['trigger'] ?? '') !== 'live_success') {
+                continue;
+            }
+            if (isLiveSuccessAbilityResolved($state, 'live', $pid, $iid, intval($abIdx))) {
+                continue;
+            }
+            $pendingAbs[] = [intval($abIdx), $ab];
+        }
+        if (empty($pendingAbs)) {
+            return [$state, false];
+        }
+        $state = logAbilityChain($state, $pid, $source, 'live_success');
+        foreach ($pendingAbs as [$abIdx, $ab]) {
+            $state = markLiveSuccessAbilityResolved($state, 'live', $pid, $iid, $abIdx);
+            $state = resolveAbilityEffect($state, $pid, $source, $ab, [
+                'excess_hearts'       => $excessHearts,
+                'excess_heart_colors' => $excessColors,
+                'phase'               => 'live_success',
+                'yell_cards'          => $yellCards,
+                'ability_index'       => $abIdx,
+            ]);
+            if (!empty($state['pending_prompt'])) {
+                return [$state, true];
+            }
+        }
+        return [$state, false];
+    }
+
+    $abilities = spBp2MemberLiveSuccessAbilities($source);
+    $pendingAbs = [];
+    foreach ($abilities as $abIdx => $ab) {
+        if (isLiveSuccessAbilityResolved($state, 'member', $pid, $iid, intval($abIdx))) {
+            continue;
+        }
+        $pendingAbs[] = [intval($abIdx), $ab];
+    }
+    if (empty($pendingAbs)) {
+        return [$state, false];
+    }
+    $state = logAbilityChain($state, $pid, $source, 'live_success');
+    foreach ($pendingAbs as [$abIdx, $ab]) {
+        $state = markLiveSuccessAbilityResolved($state, 'member', $pid, $iid, $abIdx);
+        $state = resolveAbilityEffect($state, $pid, $source, $ab, [
+            'excess_hearts'       => $excessHearts,
+            'excess_heart_colors' => $excessColors,
+            'phase'               => 'live_success',
+            'yell_cards'          => $yellCards,
+            'ability_index'       => $abIdx,
+        ]);
+        $state = nBp5NotifyMemberAbilityResolved($state, $pid, $source, 'live_success');
+        if (!empty($state['pending_prompt'])) {
+            return [$state, true];
+        }
+    }
+    return [$state, false];
+}
+
 function resolveLiveSuccessAbilitiesBody(
     array $state,
     string $pid,
@@ -2806,98 +2976,96 @@ function resolveLiveSuccessAbilitiesBody(
     if (!empty($successCards)) {
         $state['players'][$pid]['succeeded_live_this_turn'] = true;
     }
+
+    $ctx = is_array($state['_live_success_ctx'] ?? null) ? $state['_live_success_ctx'] : [];
+    $orderIds = $ctx['order_ids'] ?? null;
+    if (!is_array($orderIds)) {
+        $sources = collectLiveSuccessOrderSources($state, $pid, $successCards);
+        if (count($sources) > 1) {
+            $state['pending_prompt'] = [
+                'type'          => 'live_success_order_sources',
+                'owner'         => $pid,
+                'responder'     => $pid,
+                'source_name'   => 'Live Success',
+                'prompt'        => 'Choose the order to activate Live Success abilities (first → last).',
+                'candidates'    => $sources,
+                'pick_count'    => count($sources),
+                'order_all'     => true,
+            ];
+            $state['_live_success_resume'] = true;
+            $state['phase'] = 'live_success_effects';
+            if (empty($state['_performance_continue'])) {
+                $state['_performance_continue'] = $pid;
+            }
+            $state['seq'] = intval($state['seq'] ?? 0) + 1;
+            return $state;
+        }
+        $orderIds = array_values(array_map(
+            static fn(array $s): string => (string)($s['instance_id'] ?? ''),
+            $sources
+        ));
+        $ctx['order_ids'] = $orderIds;
+        $state['_live_success_ctx'] = $ctx;
+    }
+
+    $byId = [];
     foreach ($successCards as $lc) {
         if (!$lc) {
             continue;
         }
         mergeCardCatalogFields($lc);
         $iid = (string)($lc['instance_id'] ?? '');
-        foreach ($lc['granted_live_success_effects'] ?? [] as $gIdx => $eff) {
-            if (($eff['type'] ?? '') !== 'draw_cards') {
-                continue;
-            }
-            if (isLiveSuccessAbilityResolved($state, 'granted', $pid, $iid, intval($gIdx))) {
-                continue;
-            }
-            $state = markLiveSuccessAbilityResolved($state, 'granted', $pid, $iid, intval($gIdx));
-            $drawn = drawCardsForPlayer($state, $pid, intval($eff['draw'] ?? 1));
-            if ($drawn > 0) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . ($lc['name_en'] ?? $lc['name'] ?? 'Live') .
-                    "] drew $drawn (granted Live Success).");
-            }
-            if (!empty($state['pending_prompt'])) {
-                $state['_live_success_resume'] = true;
-                return $state;
-            }
-        }
-        $pendingAbs = [];
-        foreach ($lc['abilities'] ?? [] as $abIdx => $ab) {
-            if (($ab['trigger'] ?? '') !== 'live_success') {
-                continue;
-            }
-            if (isLiveSuccessAbilityResolved($state, 'live', $pid, $iid, intval($abIdx))) {
-                continue;
-            }
-            $pendingAbs[] = [intval($abIdx), $ab];
-        }
-        if (empty($pendingAbs)) {
-            continue;
-        }
-        $state = logAbilityChain($state, $pid, $lc, 'live_success');
-        foreach ($pendingAbs as [$abIdx, $ab]) {
-            // Mark before resolve so a prompt-backed ability is not re-opened on resume.
-            $state = markLiveSuccessAbilityResolved($state, 'live', $pid, $iid, $abIdx);
-            $state = resolveAbilityEffect($state, $pid, $lc, $ab, [
-                'excess_hearts'       => $excessHearts,
-                'excess_heart_colors' => $excessColors,
-                'phase'               => 'live_success',
-                'yell_cards'          => $yellCards,
-                'ability_index'       => $abIdx,
-            ]);
-            if (!empty($state['pending_prompt'])) {
-                $state['_live_success_resume'] = true;
-                return $state;
-            }
+        if ($iid !== '') {
+            $byId[$iid] = ['card' => $lc, 'zone' => 'live'];
         }
     }
-    foreach ($state['players'][$pid]['stage'] as $member) {
+    foreach (['left', 'center', 'right'] as $slot) {
+        $member = $state['players'][$pid]['stage'][$slot] ?? null;
         if (!$member) {
             continue;
         }
         mergeCardCatalogFields($member);
         $iid = (string)($member['instance_id'] ?? '');
-        $abilities = spBp2MemberLiveSuccessAbilities($member);
-        if (empty($abilities)) {
-            continue;
-        }
-        $pendingAbs = [];
-        foreach ($abilities as $abIdx => $ab) {
-            if (isLiveSuccessAbilityResolved($state, 'member', $pid, $iid, intval($abIdx))) {
-                continue;
-            }
-            $pendingAbs[] = [intval($abIdx), $ab];
-        }
-        if (empty($pendingAbs)) {
-            continue;
-        }
-        $state = logAbilityChain($state, $pid, $member, 'live_success');
-        foreach ($pendingAbs as [$abIdx, $ab]) {
-            $state = markLiveSuccessAbilityResolved($state, 'member', $pid, $iid, $abIdx);
-            $state = resolveAbilityEffect($state, $pid, $member, $ab, [
-                'excess_hearts'       => $excessHearts,
-                'excess_heart_colors' => $excessColors,
-                'phase'               => 'live_success',
-                'yell_cards'          => $yellCards,
-                'ability_index'       => $abIdx,
-            ]);
-            $state = nBp5NotifyMemberAbilityResolved($state, $pid, $member, 'live_success');
-            if (!empty($state['pending_prompt'])) {
-                $state['_live_success_resume'] = true;
-                return $state;
-            }
+        if ($iid !== '') {
+            $byId[$iid] = ['card' => $member, 'zone' => 'stage', 'slot' => $slot];
         }
     }
+
+    foreach ($orderIds as $rawId) {
+        $iid = (string)$rawId;
+        if ($iid === '' || !isset($byId[$iid])) {
+            continue;
+        }
+        $entry = $byId[$iid];
+        // Refresh Stage Member from current state (prior abilities may have mutated it).
+        if (($entry['zone'] ?? '') === 'stage') {
+            $slot = (string)($entry['slot'] ?? '');
+            if ($slot !== '' && isset($state['players'][$pid]['stage'][$slot])) {
+                $entry['card'] = $state['players'][$pid]['stage'][$slot];
+            }
+        } else {
+            foreach ($state['players'][$pid]['live_zone'] ?? [] as $lc) {
+                if ($lc && ($lc['instance_id'] ?? '') === $iid) {
+                    $entry['card'] = $lc;
+                    break;
+                }
+            }
+        }
+        [$state, $paused] = resolveLiveSuccessSourceAbilities(
+            $state,
+            $pid,
+            $entry['card'],
+            (string)($entry['zone'] ?? 'live'),
+            $excessHearts,
+            $excessColors,
+            $yellCards
+        );
+        if ($paused) {
+            $state['_live_success_resume'] = true;
+            return $state;
+        }
+    }
+
     if (empty($state['live_success_spbp2_done'][$pid])) {
         $state = spBp2OnLiveSuccess($state, $pid);
         if (!empty($state['pending_prompt'])) {
@@ -2969,8 +3137,12 @@ function finishLiveSuccessEffects(array $state): array {
             return finishYellRetryAndHearts($state);
         }
         $state = continuePerformancePhase($state, $pid);
-    } elseif (($state['phase'] ?? '') === 'live_success_effects') {
+    } elseif (
+        empty($GLOBALS['TUT_PERF_MANUAL_PHASES'])
+        && ($state['phase'] ?? '') === 'live_success_effects'
+    ) {
         // Last-resort heal: no continue pid — go to judge rather than softlock.
+        // Skip under TUT_PERF_MANUAL_PHASES so unit tests / tutorial do not advance the turn.
         $state = clearLiveSuccessResumeState($state);
         unset($state['_performance_continue']);
         $state = queueLiveShowOutcomes($state);

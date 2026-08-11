@@ -3795,6 +3795,11 @@ function cpuResolvePromptBody(s, cpu, pr) {
     cpuAct('resolve_prompt', cpuSurveilConfirmPayload(pr, cpu, tier));
     return;
   }
+  if (pr.type === 'live_success_order_sources') {
+    const ids = (pr.candidates || []).map((c) => c.instance_id).filter(Boolean);
+    if (ids.length) cpuAct('resolve_prompt', { card_ids: ids });
+    return;
+  }
   if (cpuResolveHangRiskPrompts(pr, cpu, tier, read, s)) return;
   if (cpuResolveBranchPickPrompts(pr, cpu, tier, winPressure, read, s)) return;
   if(pr.type==='opponent_text_answer'){
@@ -4540,6 +4545,13 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
   if (pr.type === 'surveil_arrange') {
     cpuAct('resolve_prompt', cpuSurveilConfirmPayload(pr, cpu, tier));
     return true;
+  }
+  if (pr.type === 'live_success_order_sources') {
+    const ids = (pr.candidates || []).map((c) => c.instance_id).filter(Boolean);
+    if (ids.length) {
+      cpuAct('resolve_prompt', { card_ids: ids });
+      return true;
+    }
   }
   if (pr.type === 'optional_swap_area_on_enter') {
     return cpuResolveOptionalSwapAreaOnEnter(pr, cpu, tier, read);
