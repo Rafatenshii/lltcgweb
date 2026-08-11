@@ -3795,7 +3795,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
     cpuAct('resolve_prompt', cpuSurveilConfirmPayload(pr, cpu, tier));
     return;
   }
-  if (pr.type === 'live_success_order_sources') {
+  if (pr.type === 'live_success_order_sources' || pr.type === 'live_start_order_sources') {
     const ids = (pr.candidates || []).map((c) => c.instance_id).filter(Boolean);
     if (ids.length) cpuAct('resolve_prompt', { card_ids: ids });
     return;
@@ -4546,7 +4546,7 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     cpuAct('resolve_prompt', cpuSurveilConfirmPayload(pr, cpu, tier));
     return true;
   }
-  if (pr.type === 'live_success_order_sources') {
+  if (pr.type === 'live_success_order_sources' || pr.type === 'live_start_order_sources') {
     const ids = (pr.candidates || []).map((c) => c.instance_id).filter(Boolean);
     if (ids.length) {
       cpuAct('resolve_prompt', { card_ids: ids });

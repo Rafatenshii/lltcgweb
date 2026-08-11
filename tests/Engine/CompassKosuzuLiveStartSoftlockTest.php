@@ -76,12 +76,22 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
         ];
     }
 
+    private function resolveOrderIfNeeded(array $state): array
+    {
+        if (($state['pending_prompt']['type'] ?? '') === 'live_start_order_sources') {
+            $ids = array_column($state['pending_prompt']['candidates'] ?? [], 'instance_id');
+            $state = \actionResolvePrompt($state, 'p1', ['card_ids' => $ids]);
+        }
+        return $state;
+    }
+
     public function testKosuzuNumberPickResumesToCompassPrompt(): void
     {
         $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
         try {
             $state = $this->baseState();
             $state = \resolveLiveStartAbilities($state, 'p1');
+            $state = $this->resolveOrderIfNeeded($state);
             $this->assertSame('pick_number_reveal_deck_top', $state['pending_prompt']['type'] ?? null);
             $this->assertSame('live_start_effects', $state['phase'] ?? null);
 
@@ -110,6 +120,7 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
             $state['players']['p1']['main_deck'][1]['cost'] = 3;
 
             $state = \resolveLiveStartAbilities($state, 'p1');
+            $state = $this->resolveOrderIfNeeded($state);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '15']);
             $this->assertSame('resolve_reveal', $state['pending_prompt']['step'] ?? null);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
@@ -141,6 +152,7 @@ final class CompassKosuzuLiveStartSoftlockTest extends TestCase
         try {
             $state = $this->baseState();
             $state = \resolveLiveStartAbilities($state, 'p1');
+            $state = $this->resolveOrderIfNeeded($state);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => '15']);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => 'confirm']);
             $state = \actionResolvePrompt($state, 'p1', ['choice' => 'skip']);

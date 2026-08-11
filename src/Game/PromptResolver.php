@@ -294,6 +294,55 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         return finishLiveSuccessEffects($state);
     }
 
+    if ($promptType === 'live_start_order_sources') {
+        $cands = is_array($prompt['candidates'] ?? null) ? $prompt['candidates'] : [];
+        $expected = [];
+        foreach ($cands as $c) {
+            if (!is_array($c)) {
+                continue;
+            }
+            $id = (string)($c['instance_id'] ?? '');
+            if ($id !== '') {
+                $expected[] = $id;
+            }
+        }
+        $orderIds = [];
+        if (is_array($data['card_ids'] ?? null)) {
+            foreach ($data['card_ids'] as $id) {
+                $id = (string)$id;
+                if ($id !== '') {
+                    $orderIds[] = $id;
+                }
+            }
+        } elseif (is_array($data['order_ids'] ?? null)) {
+            foreach ($data['order_ids'] as $id) {
+                $id = (string)$id;
+                if ($id !== '') {
+                    $orderIds[] = $id;
+                }
+            }
+        }
+        if (count($orderIds) !== count($expected)) {
+            throw new Exception('Order every Live Start card');
+        }
+        $sortedExpected = $expected;
+        $sortedPicked = $orderIds;
+        sort($sortedExpected);
+        sort($sortedPicked);
+        if ($sortedPicked !== $sortedExpected) {
+            throw new Exception('Order must include each Live Start card exactly once');
+        }
+        $orderMap = is_array($state['_live_start_order'] ?? null) ? $state['_live_start_order'] : [];
+        $orderMap[$owner] = $orderIds;
+        $state['_live_start_order'] = $orderMap;
+        $state = addLog($state, $state['players'][$owner]['name'] .
+            ' — chose Live Start activation order.');
+        unset($state['pending_prompt']);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        $state['_live_start_resume_from'] = $owner;
+        return resumeLiveStartEffectPhase($state);
+    }
+
     if ($promptType === 'surveil_arrange') {
         $looked = $state['surveil_stash'] ?? [];
         if (empty($looked)) throw new Exception('No surveil cards');

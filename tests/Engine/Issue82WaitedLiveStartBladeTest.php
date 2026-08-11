@@ -117,12 +117,21 @@ final class Issue82WaitedLiveStartBladeTest extends TestCase
         \waitMember($state['players']['p1']['stage']['left'], $state);
         \waitMember($state['players']['p1']['stage']['right'], $state);
 
-        $state = \resolveLiveStartAbilities($state, 'p1');
+        $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
+        try {
+            $state = \resolveLiveStartAbilities($state, 'p1');
+            if (($state['pending_prompt']['type'] ?? '') === 'live_start_order_sources') {
+                $ids = array_column($state['pending_prompt']['candidates'] ?? [], 'instance_id');
+                $state = \actionResolvePrompt($state, 'p1', ['card_ids' => $ids]);
+            }
 
-        $this->assertSame(6, intval($state['players']['p1']['stage']['left']['live_blade_bonus'] ?? 0));
-        $this->assertSame(6, intval($state['players']['p1']['stage']['right']['live_blade_bonus'] ?? 0));
-        $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
-        $this->assertSame(0, \computeYellBladeTotal($state, 'p1'));
+            $this->assertSame(6, intval($state['players']['p1']['stage']['left']['live_blade_bonus'] ?? 0));
+            $this->assertSame(6, intval($state['players']['p1']['stage']['right']['live_blade_bonus'] ?? 0));
+            $this->assertSame(0, \getStageBladeBonus($state, 'p1'));
+            $this->assertSame(0, \computeYellBladeTotal($state, 'p1'));
+        } finally {
+            unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
+        }
     }
 
     public function testActiveNatsumiLiveStartStillCountsTowardYell(): void

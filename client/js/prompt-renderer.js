@@ -160,7 +160,7 @@ global.mkPickCardEl = function mkPickCardEl(card, cls, onClick){
   return d;
 }
 
-/** Reorder Live Success sources (first → last). ↑/↓ rearrange; Confirm sends card_ids. */
+/** Reorder Live Success / Live Start sources (first → last). ↑/↓ rearrange; Confirm sends card_ids. */
 global.openLiveSuccessOrderPick = function openLiveSuccessOrderPick(pr) {
   const cards = Array.isArray(pr.candidates) ? pr.candidates.slice() : [];
   const byId = {};
@@ -168,10 +168,13 @@ global.openLiveSuccessOrderPick = function openLiveSuccessOrderPick(pr) {
     if (c?.instance_id) byId[c.instance_id] = c;
   });
   let order = cards.map((c) => c.instance_id).filter(Boolean);
+  const isLiveStart = pr.type === 'live_start_order_sources';
 
-  el('pick-ttl').textContent = pr.source_name || 'Live Success';
+  el('pick-ttl').textContent = pr.source_name || (isLiveStart ? 'Live Start' : 'Live Success');
   el('pick-msg').textContent = pr.prompt
-    || 'Choose the order to activate Live Success abilities (first → last).';
+    || (isLiveStart
+      ? 'Choose the order to activate Live Start abilities (first → last).'
+      : 'Choose the order to activate Live Success abilities (first → last).');
   const g = el('pick-grid');
   g.innerHTML = '';
   g.classList.add('pick-grid-order');
@@ -2177,7 +2180,8 @@ global.renderPrompt = function renderPrompt(s, myId){
     renderPromptSurveilBranch(s, myId, pr);
     return;
   }
-  if (pr?.type === 'live_success_order_sources' && pr.responder === myId) {
+  if ((pr?.type === 'live_success_order_sources' || pr?.type === 'live_start_order_sources')
+      && pr.responder === myId) {
     openLiveSuccessOrderPick(pr);
     return;
   }

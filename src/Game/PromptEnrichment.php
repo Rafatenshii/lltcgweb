@@ -268,6 +268,15 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             }
             return ['choice' => 'confirm', 'top_ids' => $ids, 'wr_ids' => []];
 
+        case 'live_success_order_sources':
+        case 'live_start_order_sources':
+            return [
+                'card_ids' => array_values(array_filter(array_map(
+                    static fn($c) => is_array($c) ? (string)($c['instance_id'] ?? '') : '',
+                    $prompt['candidates'] ?? []
+                ))),
+            ];
+
         case 'look_top_optional_wr':
             return ['choice' => 'no'];
 
