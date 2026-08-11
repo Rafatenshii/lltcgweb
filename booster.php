@@ -173,7 +173,7 @@ function tcgStarterDecks(): array {
         ['id' => 'superstar_cheer', 'label' => 'Superstar!! cheer Start Deck',
          'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171518/LLC_SD04_BOX_image.png'],
         ['id' => 'nijigasaki_cheer', 'label' => 'Nijigasaki cheer Start Deck',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/07/25114024/06_SD%E8%99%B9%E3%83%B6%E5%92%B2c_2-1.png'],
+         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180821/LLC_SD05_BOX_image.png'],
     ];
 }
 
