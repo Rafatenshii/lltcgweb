@@ -2619,15 +2619,14 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 .wdim::before{
   content:'';position:absolute;inset:0;z-index:-1;
   background:rgba(0,0,0,.55);border-radius:3px;
+  transform-origin:center center;
 }
-/* Wait art rotates to landscape; size the dim to that AABB (not a rotated portrait inset). */
+/* Dim rotates with the face (same 90°) so the blackout tracks mid-flip — not an AABB morph. */
 .mslot.member-in-wait > .wdim::before{
-  inset:auto;left:50%;top:50%;
-  width:calc(100% * 88 / 63);height:calc(100% * 63 / 88);
-  transform:translate(-50%, -50%);transform-origin:center center;
+  transform:rotate(90deg);
 }
 .mslot.member-wait-flip-anim > .wdim::before{
-  transition:width .36s cubic-bezier(.4,.2,.2,1),height .36s cubic-bezier(.4,.2,.2,1),transform .36s cubic-bezier(.4,.2,.2,1);
+  transition:transform .36s cubic-bezier(.4,.2,.2,1);
 }
 .mslot.member-in-wait > img,
 .mslot.member-in-wait > .noimg,
