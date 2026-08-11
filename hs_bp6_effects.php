@@ -107,6 +107,8 @@ function hsResolveHasunosoraEffect(array $state, string $pid, array $source, arr
                 'type'          => 'optional_activate_wait_subunit_add_live_wr',
                 'owner'         => $pid,
                 'responder'     => $pid,
+                'source_id'     => $source['instance_id'] ?? '',
+                'source_slot'   => (string)($ctx['slot'] ?? ''),
                 'source_name'   => $name,
                 'subunit'       => $subunit,
                 'group'         => $ab['group'] ?? 'Hasunosora',
@@ -978,19 +980,39 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
         }
         activateMemberFully($ownerP['stage'][$slot]);
         $sub = $prompt['subunit'] ?? '';
-        $added = addFromWaitingRoomFiltered(
-            $ownerP,
-            $prompt['group'] ?? 'Hasunosora',
-            'live',
-            1,
-            null,
-            ['subunit' => $sub]
-        );
+        $srcName = $prompt['source_name'] ?? 'Member';
+        $cfg = [
+            'group'   => $prompt['group'] ?? 'Hasunosora',
+            'filter'  => 'live',
+            'subunit' => $sub,
+        ];
+        $wrCands = wrCandidatesMatching($ownerP, $cfg);
+        if (empty($wrCands)) {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$srcName] activated Wait Member; no matching Live in Waiting Room.");
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
+        // Always open pick_wr_to_hand — never auto-first-match (#101 / player choice).
+        $state['pending_prompt'] = [
+            'type'          => 'pick_wr_to_hand',
+            'owner'         => $owner,
+            'responder'     => $owner,
+            'source_id'     => $prompt['source_id'] ?? '',
+            'source_slot'   => $prompt['source_slot'] ?? '',
+            'source_name'   => $srcName,
+            'prompt'        => 'Choose 1 ' . ($sub !== '' ? $sub . ' ' : '') .
+                'Live from your Waiting Room to add to your hand.',
+            'candidates'    => array_map('cardPromptSummary', $wrCands),
+            'wr_pick_cfg'   => $cfg,
+            'pick_count'    => 1,
+            'up_to'         => false,
+        ];
         $state = addLog($state, $state['players'][$owner]['name'] .
-            " — [" . ($prompt['source_name'] ?? 'Member') . "] activated Wait Member; added $added Live.");
-        unset($state['pending_prompt']);
+            " — [$srcName] activated Wait Member; choose Live from Waiting Room.");
         $state['seq']++;
-        return finishPromptEffects($state);
+        return $state;
     }
 
     if ($promptType === 'optional_discard_subunit_draw_buff_cost') {

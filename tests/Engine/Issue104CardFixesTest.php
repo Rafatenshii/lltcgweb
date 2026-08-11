@@ -159,8 +159,11 @@ final class Issue104CardFixesTest extends TestCase
         );
 
         $state = \applyAction($state, 'p1', 'resolve_prompt', ['choice' => 'yes']);
-        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertSame('pick_wr_to_hand', $state['pending_prompt']['type'] ?? null);
         $this->assertFalse(\memberIsInWait($state['players']['p1']['stage']['left']));
+
+        $state = \applyAction($state, 'p1', 'resolve_prompt', ['card_id' => 'mira_live']);
+        $this->assertNull($state['pending_prompt'] ?? null);
         $this->assertSame('mira_live', $state['players']['p1']['hand'][0]['instance_id'] ?? null);
     }
 
