@@ -133,7 +133,10 @@ function tcgCasualQueueJoin(string $queueKey, array $body): array {
     }
 
     $discordId = tcgOptionalAuthUserId($body);
-    if ($gameMode === TCG_GAME_MODE_STARTERS) {
+    if ($gameMode === TCG_GAME_MODE_RANDOMIZED) {
+        $body['deck'] = 'random';
+        unset($body['deck_group'], $body['experiment_password'], $body['experiment_preset'], $body['main_deck'], $body['energy_deck']);
+    } elseif ($gameMode === TCG_GAME_MODE_STARTERS) {
         tcgValidateCasualStartersModeDeck($body, $discordId, $cards);
     } elseif ($gameMode === TCG_GAME_MODE_FREE) {
         tcgValidateCasualFreeModeDeck($body);

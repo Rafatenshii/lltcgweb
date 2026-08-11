@@ -65,6 +65,13 @@ function tcgAssertUnrankedDeckForGameMode(array $body): void {
     }
     $mode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $usesExp = tcgBodyUsesExperimentDeck($body);
+    if (tcgIsRandomizedGameMode($mode)) {
+        if ($usesExp) {
+            throw new Exception('Randomized Decks mode assigns a random legal deck automatically', 400);
+        }
+        // Empty or random is fine; callers rewrite other deck choices to random.
+        return;
+    }
     if (tcgIsFreeGameMode($mode)) {
         if (!$usesExp) {
             throw new Exception('Free requires a Deck Experiment deck (saved or password)', 400);

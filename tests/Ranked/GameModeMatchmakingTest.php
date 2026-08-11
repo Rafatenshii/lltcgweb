@@ -29,6 +29,12 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertSame(TCG_GAME_MODE_STARTERS, tcgNormalizeGameMode('starters'));
         $this->assertSame(TCG_GAME_MODE_STARTERS, tcgNormalizeGameMode('starter'));
         $this->assertSame(TCG_GAME_MODE_STARTERS, tcgNormalizeGameMode('starter_decks'));
+        $this->assertSame(TCG_GAME_MODE_RANDOMIZED, tcgNormalizeGameMode('randomized'));
+        $this->assertSame(TCG_GAME_MODE_RANDOMIZED, tcgNormalizeGameMode('random_decks'));
+        $this->assertSame(TCG_GAME_MODE_RANDOMIZED, tcgNormalizeGameMode('randomized_decks'));
+        $this->assertSame(TCG_GAME_MODE_RANDOMIZED, tcgNormalizeRankedGameMode('randomized'));
+        $this->assertTrue(tcgIsRandomizedGameMode('random-decks'));
+        $this->assertContains(TCG_GAME_MODE_RANDOMIZED, tcgRankedGameModeIds());
     }
 
     public function testRankedStatusStatsGameModeHonorsGetWhenIdle(): void
@@ -42,6 +48,10 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertSame(
             TCG_GAME_MODE_STANDARD,
             tcgRankedStatusStatsGameMode($idle, [], ['game_mode' => 'standard'])
+        );
+        $this->assertSame(
+            TCG_GAME_MODE_RANDOMIZED,
+            tcgRankedStatusStatsGameMode($idle, [], ['game_mode' => 'randomized'])
         );
         // Missing request → standard (previous buggy idle default).
         $this->assertSame(
@@ -61,9 +71,11 @@ final class GameModeMatchmakingTest extends TestCase
         $a = 'gm_rank_a_' . bin2hex(random_bytes(3));
         $b = 'gm_rank_b_' . bin2hex(random_bytes(3));
         $c = 'gm_rank_c_' . bin2hex(random_bytes(3));
+        $d = 'gm_rank_d_' . bin2hex(random_bytes(3));
         tcgEnsureUser($a, ['username' => 'A']);
         tcgEnsureUser($b, ['username' => 'B']);
         tcgEnsureUser($c, ['username' => 'C']);
+        tcgEnsureUser($d, ['username' => 'D']);
 
         tcgQueueJoin($a, TCG_GAME_MODE_STANDARD);
         tcgQueueJoin($b, TCG_GAME_MODE_STARTERS);
@@ -74,6 +86,14 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertNotNull($opp);
         $this->assertSame($c, $opp['discord_id']);
         $this->assertSame(TCG_GAME_MODE_STANDARD, tcgNormalizeGameMode($opp['game_mode'] ?? ''));
+
+        tcgQueueJoin($d, TCG_GAME_MODE_RANDOMIZED);
+        // Alone in randomized — no partner yet (standard queue must not match).
+        $this->assertNull(tcgFindQueueOpponent($d, 1000, TCG_GAME_MODE_RANDOMIZED));
+        tcgQueueJoin($b, TCG_GAME_MODE_RANDOMIZED);
+        $randOpp = tcgFindQueueOpponent($d, 1000, TCG_GAME_MODE_RANDOMIZED);
+        $this->assertNotNull($randOpp);
+        $this->assertSame($b, $randOpp['discord_id']);
     }
 
     public function testApplyRankResultUpdatesOnlyThatMode(): void
@@ -93,6 +113,12 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertSame(1, intval($starters['wins']));
         $this->assertSame(1, intval($starters['games']));
         $this->assertGreaterThan(1000, intval($starters['rating']));
+
+        tcgApplyRankResult($winner, $loser, false, TCG_GAME_MODE_RANDOMIZED);
+        $rand = tcgRankRow($winner, TCG_GAME_MODE_RANDOMIZED);
+        $stdAfterRand = tcgRankRow($winner, TCG_GAME_MODE_STANDARD);
+        $this->assertSame(1, intval($rand['wins']));
+        $this->assertSame(intval($stdAfter['rating']), intval($stdAfterRand['rating']));
     }
 
     public function testPublicLeaderboardFiltersByGameMode(): void
@@ -101,25 +127,36 @@ final class GameModeMatchmakingTest extends TestCase
         $stdB = 'gm_lb_sb_' . bin2hex(random_bytes(3));
         $stA = 'gm_lb_ta_' . bin2hex(random_bytes(3));
         $stB = 'gm_lb_tb_' . bin2hex(random_bytes(3));
+        $randA = 'gm_lb_ra_' . bin2hex(random_bytes(3));
+        $randB = 'gm_lb_rb_' . bin2hex(random_bytes(3));
         tcgEnsureUser($stdA, ['username' => 'StdA']);
         tcgEnsureUser($stdB, ['username' => 'StdB']);
         tcgEnsureUser($stA, ['username' => 'StA']);
         tcgEnsureUser($stB, ['username' => 'StB']);
+        tcgEnsureUser($randA, ['username' => 'RandA']);
+        tcgEnsureUser($randB, ['username' => 'RandB']);
 
         tcgApplyRankResult($stdA, $stdB, false, TCG_GAME_MODE_STANDARD);
         tcgApplyRankResult($stA, $stB, false, TCG_GAME_MODE_STARTERS);
+        tcgApplyRankResult($randA, $randB, false, TCG_GAME_MODE_RANDOMIZED);
 
         $stdBoard = tcgApiPublicLeaderboard(['game_mode' => 'standard']);
         $stBoard = tcgApiPublicLeaderboard(['game_mode' => 'starters']);
+        $randBoard = tcgApiPublicLeaderboard(['game_mode' => 'randomized']);
 
         $stdIds = array_column($stdBoard['leaderboard'], 'user_id');
         $stIds = array_column($stBoard['leaderboard'], 'user_id');
+        $randIds = array_column($randBoard['leaderboard'], 'user_id');
         $this->assertContains($stdA, $stdIds);
         $this->assertNotContains($stA, $stdIds);
+        $this->assertNotContains($randA, $stdIds);
         $this->assertContains($stA, $stIds);
         $this->assertNotContains($stdA, $stIds);
+        $this->assertContains($randA, $randIds);
+        $this->assertNotContains($stdA, $randIds);
         $this->assertSame(TCG_GAME_MODE_STANDARD, $stdBoard['game_mode']);
         $this->assertSame(TCG_GAME_MODE_STARTERS, $stBoard['game_mode']);
+        $this->assertSame(TCG_GAME_MODE_RANDOMIZED, $randBoard['game_mode']);
     }
 
     public function testCasualOpponentRequiresSameMode(): void
@@ -129,7 +166,10 @@ final class GameModeMatchmakingTest extends TestCase
         $k1 = 'cq_' . bin2hex(random_bytes(4));
         $k2 = 'cq_' . bin2hex(random_bytes(4));
         $k3 = 'cq_' . bin2hex(random_bytes(4));
+        $k4 = 'cq_' . bin2hex(random_bytes(4));
+        $k5 = 'cq_' . bin2hex(random_bytes(4));
         $body = json_encode(['name' => 'P', 'deck' => 'nijigasaki', 'game_mode' => 'standard'], JSON_UNESCAPED_UNICODE);
+        $randBody = json_encode(['name' => 'P', 'deck' => 'random', 'game_mode' => 'randomized'], JSON_UNESCAPED_UNICODE);
 
         $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at, game_mode)
             VALUES (?, NULL, ?, ?, ?, ?)')
@@ -146,6 +186,17 @@ final class GameModeMatchmakingTest extends TestCase
         $opp = tcgFindCasualOpponent($k1, TCG_GAME_MODE_STANDARD);
         $this->assertNotNull($opp);
         $this->assertSame($k3, $opp['queue_key']);
+
+        $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at, game_mode)
+            VALUES (?, NULL, ?, ?, ?, ?)')
+            ->execute([$k4, 'P4', $randBody, $now + 3, TCG_GAME_MODE_RANDOMIZED]);
+        $this->assertNull(tcgFindCasualOpponent($k4, TCG_GAME_MODE_RANDOMIZED));
+        $db->prepare('INSERT INTO tcg_casual_queue (queue_key, discord_id, player_name, join_body, joined_at, game_mode)
+            VALUES (?, NULL, ?, ?, ?, ?)')
+            ->execute([$k5, 'P5', $randBody, $now + 4, TCG_GAME_MODE_RANDOMIZED]);
+        $randOpp = tcgFindCasualOpponent($k4, TCG_GAME_MODE_RANDOMIZED);
+        $this->assertNotNull($randOpp);
+        $this->assertSame($k5, $randOpp['queue_key']);
     }
 
     public function testCasualStartersModeRejectsPresetDeck(): void

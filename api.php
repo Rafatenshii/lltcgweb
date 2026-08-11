@@ -378,6 +378,11 @@ function cacheCardImage(array $body): array {
 // Room Management
 // ─────────────────────────────────────────────
 function resolveRoomDeckLists(array $body, array $cards): array {
+    require_once __DIR__ . '/game_mode.php';
+    if (tcgIsRandomizedGameMode($body['game_mode'] ?? '')) {
+        $body['deck'] = 'random';
+        unset($body['deck_group'], $body['experiment_password'], $body['experiment_preset'], $body['main_deck'], $body['energy_deck']);
+    }
     $deckChoice = (string)($body['deck'] ?? 'nijigasaki');
     if ($deckChoice === 'cpu') {
         $diff = (string)($body['cpu_difficulty'] ?? 'easy');

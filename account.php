@@ -865,7 +865,9 @@ function tcgApiRankedJoin(array $body): array {
     }
     $gameMode = tcgNormalizeRankedGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $starterKey = trim((string)($body['starter'] ?? ''));
-    if ($gameMode === TCG_GAME_MODE_STARTERS) {
+    if ($gameMode === TCG_GAME_MODE_RANDOMIZED) {
+        // Decks are generated at room create — no equipped preset required.
+    } elseif ($gameMode === TCG_GAME_MODE_STARTERS) {
         if ($starterKey === '') {
             $equippedProbe = tcgGetEquippedDeck($uid);
             $starterKey = trim((string)($equippedProbe['starter_key'] ?? ''));
@@ -885,19 +887,21 @@ function tcgApiRankedJoin(array $body): array {
         tcgSetRankedStarterEquip($uid, $starterKey);
     }
 
-    $equipped = tcgGetEquippedDeck($uid);
-    if (!$equipped) {
-        throw new Exception('Equip a deck preset for ranked play', 400);
-    }
-    if ($gameMode === TCG_GAME_MODE_STARTERS && (($equipped['source'] ?? '') !== 'starter')) {
-        throw new Exception('Starter decks only mode requires a starter deck', 400);
-    }
-    $main = json_decode($equipped['main_deck'], true) ?: [];
-    $energy = json_decode($equipped['energy_deck'], true) ?: [];
-    $cards = tcgLoadCardsData();
-    $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), tcgGetCollectionMap($uid));
-    if (!$validation['valid']) {
-        throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
+    if ($gameMode !== TCG_GAME_MODE_RANDOMIZED) {
+        $equipped = tcgGetEquippedDeck($uid);
+        if (!$equipped) {
+            throw new Exception('Equip a deck preset for ranked play', 400);
+        }
+        if ($gameMode === TCG_GAME_MODE_STARTERS && (($equipped['source'] ?? '') !== 'starter')) {
+            throw new Exception('Starter decks only mode requires a starter deck', 400);
+        }
+        $main = json_decode($equipped['main_deck'], true) ?: [];
+        $energy = json_decode($equipped['energy_deck'], true) ?: [];
+        $cards = tcgLoadCardsData();
+        $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), tcgGetCollectionMap($uid));
+        if (!$validation['valid']) {
+            throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
+        }
     }
     if (tcgGetActiveRankedGame($uid)) {
         tcgAbandonActiveRankedGame($uid);

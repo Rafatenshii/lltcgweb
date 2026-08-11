@@ -36,6 +36,36 @@ function tcgGetUserDisplayName(string $discordId): string {
     return $row['username'] ?? 'Player';
 }
 
+/**
+ * Full-pool random legal deck for Randomized Decks mode (no collection ownership).
+ *
+ * @param list<array<string,mixed>> $allCards
+ * @param array<string,array<string,mixed>> $cardMap
+ * @return array{name:string,main_nos:list<string>,energy_nos:list<string>}|null
+ */
+function tcgGenerateValidatedRandomDeckLists(array $allCards, array $cardMap, int $maxAttempts = 8): ?array {
+    require_once __DIR__ . '/deckgen.php';
+    for ($i = 0; $i < $maxAttempts; $i++) {
+        try {
+            $gen = generateRandomDeckLists($allCards, null);
+        } catch (Throwable $e) {
+            continue;
+        }
+        $main = array_values(array_map('strval', $gen['main_deck'] ?? []));
+        $energy = array_values(array_map('strval', $gen['energy_deck'] ?? []));
+        $v = tcgValidateDeckLists($main, $energy, $cardMap, null);
+        if (!$v['valid']) {
+            continue;
+        }
+        return [
+            'name' => (string)($gen['name_en'] ?? $gen['name'] ?? 'Random Deck'),
+            'main_nos' => $main,
+            'energy_nos' => $energy,
+        ];
+    }
+    return null;
+}
+
 function tcgCreateRankedRoomPair(
     string $p1DiscordId,
     string $p2DiscordId,
@@ -43,39 +73,52 @@ function tcgCreateRankedRoomPair(
 ): ?array {
     require_once __DIR__ . '/game_mode.php';
     $gameMode = tcgNormalizeGameMode($gameMode);
-    $deck1 = tcgGetEquippedDeckLists($p1DiscordId);
-    $deck2 = tcgGetEquippedDeckLists($p2DiscordId);
-    if (!$deck1 || !$deck2) {
-        return null;
-    }
+    $randomized = tcgIsRandomizedGameMode($gameMode);
 
     $cards = tcgLoadCardsData();
     $allCards = $cards['cards'] ?? [];
     $cardMap = tcgBuildCardMap($cards);
 
-    foreach ([$p1DiscordId => $deck1, $p2DiscordId => $deck2] as $uid => $deck) {
-        if ($gameMode === TCG_GAME_MODE_STARTERS) {
-            $row = tcgGetEquippedDeckRow($uid);
-            if (!$row || ($row['source'] ?? '') !== 'starter') {
-                tcgQueueLeave($uid, $gameMode);
-                return null;
-            }
-            $starterKey = trim((string)($row['starter_key'] ?? ''));
-            if ($starterKey === '' || !in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
-                tcgQueueLeave($uid, $gameMode);
-                return null;
-            }
-        }
-        $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, tcgGetCollectionMap($uid));
-        if (!$v['valid']) {
-            tcgQueueLeave($uid, $gameMode);
+    if ($randomized) {
+        $deck1 = tcgGenerateValidatedRandomDeckLists($allCards, $cardMap);
+        $deck2 = tcgGenerateValidatedRandomDeckLists($allCards, $cardMap);
+        if (!$deck1 || !$deck2) {
+            tcgQueueLeave($p1DiscordId, $gameMode);
+            tcgQueueLeave($p2DiscordId, $gameMode);
             return null;
+        }
+    } else {
+        $deck1 = tcgGetEquippedDeckLists($p1DiscordId);
+        $deck2 = tcgGetEquippedDeckLists($p2DiscordId);
+        if (!$deck1 || !$deck2) {
+            return null;
+        }
+
+        foreach ([$p1DiscordId => $deck1, $p2DiscordId => $deck2] as $uid => $deck) {
+            if ($gameMode === TCG_GAME_MODE_STARTERS) {
+                $row = tcgGetEquippedDeckRow($uid);
+                if (!$row || ($row['source'] ?? '') !== 'starter') {
+                    tcgQueueLeave($uid, $gameMode);
+                    return null;
+                }
+                $starterKey = trim((string)($row['starter_key'] ?? ''));
+                if ($starterKey === '' || !in_array($starterKey, tcgOwnedStarterKeys($uid), true)) {
+                    tcgQueueLeave($uid, $gameMode);
+                    return null;
+                }
+            }
+            $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, tcgGetCollectionMap($uid));
+            if (!$v['valid']) {
+                tcgQueueLeave($uid, $gameMode);
+                return null;
+            }
         }
     }
 
     $roomId = strtoupper(substr(md5(uniqid((string)mt_rand(), true)), 0, 6));
     $p1Token = generateToken();
     $p2Token = generateToken();
+    $deckChoiceLabel = $randomized ? 'random' : 'ranked';
 
     $main1 = buildDeck($allCards, $deck1['main_nos']);
     $energy1 = buildDeck($allCards, $deck1['energy_nos']);
@@ -86,7 +129,7 @@ function tcgCreateRankedRoomPair(
         'id' => 'p1',
         'token' => $p1Token,
         'name' => tcgGetUserDisplayName($p1DiscordId),
-        'deck_choice' => 'ranked',
+        'deck_choice' => $deckChoiceLabel,
         'deck_label' => $deck1['name'],
         'main_deck' => $main1,
         'energy_deck' => $energy1,
@@ -94,6 +137,7 @@ function tcgCreateRankedRoomPair(
         'deck_snapshot' => ['main_nos' => $deck1['main_nos'], 'energy_nos' => $deck1['energy_nos']],
     ]);
     $state['mode'] = 'ranked';
+    $state['game_mode'] = $gameMode;
     $state['ranked'] = [
         'p1_discord_id' => $p1DiscordId,
         'p2_discord_id' => $p2DiscordId,
@@ -111,7 +155,7 @@ function tcgCreateRankedRoomPair(
         'id' => 'p2',
         'token' => $p2Token,
         'name' => tcgGetUserDisplayName($p2DiscordId),
-        'deck_choice' => 'ranked',
+        'deck_choice' => $deckChoiceLabel,
         'deck_label' => $deck2['name'],
         'main_deck' => $main2,
         'energy_deck' => $energy2,

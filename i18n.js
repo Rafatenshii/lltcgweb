@@ -491,9 +491,11 @@
       "standard": "Standard",
       "starters": "Starter decks only",
       "free": "Free",
+      "randomized": "Randomized Decks",
       "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
       "startersDesc": "This mode can only be played using starter decks.",
-      "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards."
+      "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards.",
+      "randomizedDesc": "Both players get a random legal deck from the full card pool (ownership not required). Ranked has its own leaderboard."
     },
     "ranked": {
       "title": "Ranked PvP",
@@ -1720,9 +1722,11 @@
       "standard": "スタンダード",
       "starters": "スターターデッキのみ",
       "free": "フリー",
+      "randomized": "ランダムデッキ",
       "standardDesc": "通常のTCGモードです。所持カードで組んだデッキで他のプレイヤーと対戦します。",
       "startersDesc": "このモードはスターターデッキのみでプレイできます。",
-      "freeDesc": "デッキ実験のデッキを使えます。ゲーム内のどのカードでもOK（所持不要）。このモードにリーダーボードはありません。"
+      "freeDesc": "デッキ実験のデッキを使えます。ゲーム内のどのカードでもOK（所持不要）。このモードにリーダーボードはありません。",
+      "randomizedDesc": "両プレイヤーにカードプール全体から合法なランダムデッキが配られます（所持不要）。ランクには専用リーダーボードがあります。"
     },
     "ranked": {
       "title": "ランクPvP",
@@ -2845,9 +2849,11 @@
       "standard": "Estándar",
       "starters": "Solo mazos iniciales",
       "free": "Libre",
+      "randomized": "Mazos aleatorios",
       "standardDesc": "El modo TCG estándar. Usa mazos construidos con cartas que posees contra otros jugadores.",
       "startersDesc": "Este modo solo se puede jugar con mazos iniciales.",
-      "freeDesc": "Usa mazos del experimento de mazos, ¡con cualquier carta del juego! (No hace falta poseerlas). Este modo no tiene tablas de clasificación."
+      "freeDesc": "Usa mazos del experimento de mazos, ¡con cualquier carta del juego! (No hace falta poseerlas). Este modo no tiene tablas de clasificación.",
+      "randomizedDesc": "Ambos jugadores reciben un mazo legal aleatorio del catálogo completo (sin necesidad de poseer las cartas). Ranked tiene su propia clasificación."
     },
     "ranked": {
       "title": "PvP clasificatorio",
@@ -4088,9 +4094,11 @@
       "standard": "스탠다드",
       "starters": "스타터 덱 전용",
       "free": "프리",
+      "randomized": "랜덤 덱",
       "standardDesc": "표준 TCG 모드입니다. 보유 카드로 만든 덱으로 다른 플레이어와 대전합니다.",
       "startersDesc": "이 모드는 스타터 덱으로만 플레이할 수 있습니다.",
-      "freeDesc": "덱 실험의 덱을 사용합니다. 게임의 어떤 카드든 가능합니다(소유 불필요). 이 모드에는 리더보드가 없습니다."
+      "freeDesc": "덱 실험의 덱을 사용합니다. 게임의 어떤 카드든 가능합니다(소유 불필요). 이 모드에는 리더보드가 없습니다.",
+      "randomizedDesc": "양 플레이어에게 전체 카드 풀에서 합법적인 랜덤 덱이 배정됩니다(소유 불필요). 랭크에는 전용 리더보드가 있습니다."
     },
     "ranked": {
       "title": "랭크 PvP",
@@ -5345,9 +5353,11 @@
       "standard": "标准",
       "starters": "仅限初始牌组",
       "free": "自由",
+      "randomized": "随机牌组",
       "standardDesc": "标准TCG模式。使用你用持有卡牌构筑的牌组与其他玩家对战。",
       "startersDesc": "此模式只能使用初始牌组进行对战。",
-      "freeDesc": "使用牌组实验中的牌组，可使用游戏中的任意卡牌（无需持有）。此模式没有排行榜。"
+      "freeDesc": "使用牌组实验中的牌组，可使用游戏中的任意卡牌（无需持有）。此模式没有排行榜。",
+      "randomizedDesc": "双方各获得一套来自全卡池的合法随机牌组（无需持有）。排位有独立排行榜。"
     },
     "ranked": {
       "title": "排名对战",
@@ -6593,9 +6603,11 @@
       "standard": "มาตรฐาน",
       "starters": "เฉพาะเด็คเริ่มต้น",
       "free": "ฟรี",
+      "randomized": "เด็คสุ่ม",
       "standardDesc": "โหมด TCG มาตรฐาน ใช้เด็คที่สร้างจากการ์ดที่คุณมีเพื่อแข่งกับผู้เล่นอื่น",
       "startersDesc": "โหมดนี้เล่นได้เฉพาะเด็คเริ่มต้นเท่านั้น",
-      "freeDesc": "ใช้เด็คจาก Deck Experiment ใช้การ์ดใดก็ได้ในเกม (ไม่ต้องมีในครอบครอง) โหมดนี้ไม่มีลีดเดอร์บอร์ด"
+      "freeDesc": "ใช้เด็คจาก Deck Experiment ใช้การ์ดใดก็ได้ในเกม (ไม่ต้องมีในครอบครอง) โหมดนี้ไม่มีลีดเดอร์บอร์ด",
+      "randomizedDesc": "ผู้เล่นทั้งสองได้เด็คสุ่มที่ถูกต้องตามกติกาจากคลังการ์ดทั้งหมด (ไม่ต้องมีในครอบครอง) แรงก์มีลีดเดอร์บอร์ดแยก"
     },
     "ranked": {
       "title": "แรงก์ PvP",

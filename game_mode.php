@@ -2,20 +2,31 @@
 /**
  * PvP game mode IDs (ranked + casual queues / ranked ELO boards).
  * Free Mode is unranked-only (Deck Experiment decks; no leaderboards).
+ * Randomized Decks: full-pool random legal decks; ranked + casual + own ELO board.
  */
 
 const TCG_GAME_MODE_STANDARD = 'standard';
 const TCG_GAME_MODE_STARTERS = 'starters';
 const TCG_GAME_MODE_FREE = 'free';
+const TCG_GAME_MODE_RANDOMIZED = 'randomized';
 
 /** @return list<string> */
 function tcgGameModeIds(): array {
-    return [TCG_GAME_MODE_STANDARD, TCG_GAME_MODE_STARTERS, TCG_GAME_MODE_FREE];
+    return [
+        TCG_GAME_MODE_STANDARD,
+        TCG_GAME_MODE_STARTERS,
+        TCG_GAME_MODE_FREE,
+        TCG_GAME_MODE_RANDOMIZED,
+    ];
 }
 
 /** Modes that appear on ranked / public leaderboards. */
 function tcgRankedGameModeIds(): array {
-    return [TCG_GAME_MODE_STANDARD, TCG_GAME_MODE_STARTERS];
+    return [
+        TCG_GAME_MODE_STANDARD,
+        TCG_GAME_MODE_STARTERS,
+        TCG_GAME_MODE_RANDOMIZED,
+    ];
 }
 
 function tcgNormalizeGameMode(mixed $raw): string {
@@ -26,6 +37,15 @@ function tcgNormalizeGameMode(mixed $raw): string {
     if ($m === 'free' || $m === 'free_mode' || $m === 'freemode' || $m === 'experiment') {
         return TCG_GAME_MODE_FREE;
     }
+    if (
+        $m === 'randomized'
+        || $m === 'random_decks'
+        || $m === 'randomized_decks'
+        || $m === 'randomdecks'
+        || $m === 'random-decks'
+    ) {
+        return TCG_GAME_MODE_RANDOMIZED;
+    }
     return TCG_GAME_MODE_STANDARD;
 }
 
@@ -35,6 +55,10 @@ function tcgIsStartersGameMode(mixed $raw): bool {
 
 function tcgIsFreeGameMode(mixed $raw): bool {
     return tcgNormalizeGameMode($raw) === TCG_GAME_MODE_FREE;
+}
+
+function tcgIsRandomizedGameMode(mixed $raw): bool {
+    return tcgNormalizeGameMode($raw) === TCG_GAME_MODE_RANDOMIZED;
 }
 
 /** Ranked queues must never accept Free Mode. */

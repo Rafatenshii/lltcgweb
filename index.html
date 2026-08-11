@@ -1115,11 +1115,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <select id="sel-ranked-game-mode">
             <option value="standard" data-i18n="gameMode.standard">Standard</option>
             <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+            <option value="randomized" data-i18n="gameMode.randomized">Randomized Decks</option>
           </select>
         </div>
         <p class="game-mode-desc" id="ranked-game-mode-desc"></p>
       </div>
-      <div class="field ranked-deck-field">
+      <div class="field ranked-deck-field" id="ranked-deck-pick-field">
         <label for="sel-ranked-deck" data-i18n="ranked.deckLabel">Ranked deck</label>
         <div class="llc-select-wrap">
           <select id="sel-ranked-deck"></select>
@@ -1162,6 +1163,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <select id="sel-leaderboard-game-mode">
             <option value="standard" data-i18n="gameMode.standard">Standard</option>
             <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+            <option value="randomized" data-i18n="gameMode.randomized">Randomized Decks</option>
           </select>
         </div>
         <p class="game-mode-desc" id="leaderboard-game-mode-desc"></p>
@@ -1206,12 +1208,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               <select id="sel-lobby-game-mode">
                 <option value="standard" data-i18n="gameMode.standard">Standard</option>
                 <option value="starters" data-i18n="gameMode.starters">Starter decks only</option>
+                <option value="randomized" data-i18n="gameMode.randomized">Randomized Decks</option>
                 <option value="free" data-i18n="gameMode.free">Free</option>
               </select>
             </div>
             <p class="game-mode-desc" id="lobby-game-mode-desc"></p>
           </div>
-          <div class="field">
+          <div class="field" id="lobby-deck-pick-field">
             <label data-i18n="lobby.deck">Deck</label>
             <div class="llc-select-wrap">
               <select id="sel-deck"></select>
@@ -5456,7 +5459,7 @@ async function refreshUnrankedLobbyInBackground() {
 }
 
 function syncLobbyExperimentField() {
-  const free = isFreeGameMode();
+  const free = isFreeGameMode() && !isRandomizedGameMode();
   const field = el('lobby-experiment-pwd-field');
   const expBtn = el('btn-lobby-deck-experiment');
   if (field) field.hidden = !free;
@@ -12120,8 +12123,8 @@ async function resumeRankedSearchIfQueued() {
 }
 
 const TCG_GAME_MODE_KEY = 'tcg_game_mode';
-const TCG_GAME_MODES = ['standard', 'starters', 'free'];
-const TCG_RANKED_GAME_MODES = ['standard', 'starters'];
+const TCG_GAME_MODES = ['standard', 'starters', 'randomized', 'free'];
+const TCG_RANKED_GAME_MODES = ['standard', 'starters', 'randomized'];
 const TCG_RANKED_DECK_BY_MODE_KEY = 'tcg_ranked_deck_by_mode';
 const TCG_LOBBY_DECK_BY_MODE_KEY = 'tcg_lobby_deck_by_mode';
 
@@ -12129,6 +12132,13 @@ function normalizeGameMode(raw) {
   const m = String(raw || '').toLowerCase().trim();
   if (m === 'starters' || m === 'starter' || m === 'starter_decks' || m === 'starter-decks') return 'starters';
   if (m === 'free' || m === 'free_mode' || m === 'freemode' || m === 'experiment') return 'free';
+  if (
+    m === 'randomized'
+    || m === 'random_decks'
+    || m === 'randomized_decks'
+    || m === 'randomdecks'
+    || m === 'random-decks'
+  ) return 'randomized';
   return 'standard';
 }
 
@@ -12169,15 +12179,29 @@ function isFreeGameMode(mode) {
   return normalizeGameMode(mode ?? currentGameMode()) === 'free';
 }
 
+function isRandomizedGameMode(mode) {
+  return normalizeGameMode(mode ?? currentGameMode()) === 'randomized';
+}
+
 function gameModeDescription(mode) {
   const m = normalizeGameMode(mode);
   if (m === 'starters') return t('gameMode.startersDesc');
   if (m === 'free') return t('gameMode.freeDesc');
+  if (m === 'randomized') return t('gameMode.randomizedDesc');
   return t('gameMode.standardDesc');
 }
 
 function emptyDeckByModeMap() {
-  return { standard: null, starters: null, free: null };
+  return { standard: null, starters: null, randomized: null, free: null };
+}
+
+function syncDeckPickVisibilityForMode(mode) {
+  const m = normalizeGameMode(mode ?? currentGameMode());
+  const rankedM = normalizeRankedGameMode(m);
+  const rankedPick = el('ranked-deck-pick-field');
+  if (rankedPick) rankedPick.hidden = isRandomizedGameMode(rankedM);
+  const lobbyPick = el('lobby-deck-pick-field');
+  if (lobbyPick) lobbyPick.hidden = isRandomizedGameMode(m);
 }
 
 function loadDeckByModePrefs(storageKey) {
@@ -12266,6 +12290,7 @@ function syncGameModeSelects(mode) {
   if (lobbyDesc) lobbyDesc.textContent = gameModeDescription(m);
   const lbDesc = el('leaderboard-game-mode-desc');
   if (lbDesc) lbDesc.textContent = gameModeDescription(rankedM);
+  syncDeckPickVisibilityForMode(m);
 }
 
 function ownedStarterKeysForUi() {
@@ -12413,9 +12438,15 @@ function renderRankedDeckOptions(opts = {}) {
   if (!sel) return;
   const prev = sel.value;
   sel.replaceChildren();
-  const mode = currentGameMode();
+  const mode = rankedGameMode();
   const startersOnly = isStartersGameMode(mode);
   const owned = ownedStarterKeysForUi();
+  syncDeckPickVisibilityForMode(mode);
+  if (isRandomizedGameMode(mode)) {
+    const prevEl = el('ranked-deck-prev');
+    if (prevEl) prevEl.textContent = t('gameMode.randomizedDesc');
+    return;
+  }
 
   if (!startersOnly) {
     const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
@@ -12611,17 +12642,20 @@ async function startRankedSearch() {
       );
       if (!ok) return;
     }
-    const deckKey = el('sel-ranked-deck')?.value || '';
-    if (isStartersGameMode(rankedGameMode()) && !(deckKey === 'starter' || deckKey.startsWith('starter:'))) {
-      throw new Error(t('gameMode.startersDesc'));
-    }
-    if (deckKey && deckKey !== rankedDeckSelectValue()) {
-      await applyRankedDeckChoice(deckKey, { silent: true });
-    }
-    const joinBody = { game_mode: rankedGameMode() };
-    if (deckKey.startsWith('starter:')) joinBody.starter = deckKey.slice(8);
-    else if (deckKey === 'starter' && A.profile?.user?.starter_deck) {
-      joinBody.starter = A.profile.user.starter_deck;
+    const mode = rankedGameMode();
+    const joinBody = { game_mode: mode };
+    if (!isRandomizedGameMode(mode)) {
+      const deckKey = el('sel-ranked-deck')?.value || '';
+      if (isStartersGameMode(mode) && !(deckKey === 'starter' || deckKey.startsWith('starter:'))) {
+        throw new Error(t('gameMode.startersDesc'));
+      }
+      if (deckKey && deckKey !== rankedDeckSelectValue()) {
+        await applyRankedDeckChoice(deckKey, { silent: true });
+      }
+      if (deckKey.startsWith('starter:')) joinBody.starter = deckKey.slice(8);
+      else if (deckKey === 'starter' && A.profile?.user?.starter_deck) {
+        joinBody.starter = A.profile.user.starter_deck;
+      }
     }
     const res = await accountPost('ranked_join', joinBody);
     if (res.match?.status === 'matched') {
@@ -15955,6 +15989,23 @@ function renderLobbyDeckOptions(opts = {}) {
   const mode = currentGameMode();
   const startersOnly = isStartersGameMode(mode);
   const freeMode = isFreeGameMode(mode);
+  const randomized = isRandomizedGameMode(mode);
+  syncDeckPickVisibilityForMode(mode);
+
+  if (randomized) {
+    const randomOpt = document.createElement('option');
+    randomOpt.value = 'random';
+    randomOpt.textContent = t('deck.randomDeck');
+    sel.appendChild(randomOpt);
+    sel.value = 'random';
+    rememberLobbyDeckForMode(mode, 'random');
+    syncLobbyExperimentField();
+    const prevEl = el('deck-prev');
+    if (prevEl) prevEl.textContent = t('gameMode.randomizedDesc');
+    const expBtn = el('btn-lobby-deck-experiment');
+    if (expBtn) expBtn.hidden = true;
+    return;
+  }
 
   if (freeMode) {
     const expGroup = document.createElement('optgroup');
@@ -16186,6 +16237,9 @@ async function ensureLobbyExperimentDeckReady() {
 
 function lobbyDeckPayload() {
   const mode = currentGameMode();
+  if (isRandomizedGameMode(mode)) {
+    return { game_mode: mode, deck: 'random' };
+  }
   const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
   let deckPart;
   if (isFreeGameMode(mode) && lobbyPwd) {
