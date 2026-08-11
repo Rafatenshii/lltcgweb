@@ -64,26 +64,57 @@ final class SequentialLiveShowTest extends TestCase
         $state = \beginPerformancePhase($this->state());
 
         $this->assertSame('reveal', $state['live_show']['stage'] ?? null);
+        $this->assertSame('p1', $state['live_show']['performer'] ?? null);
         $this->assertSame('live_start_effects', $state['phase'] ?? null);
+        $this->assertTrue(!empty($state['players']['p1']['live_zone'][0]['revealed']));
+        $this->assertFalse(!empty($state['players']['p2']['live_zone'][0]['revealed']));
         $this->assertStringNotContainsString(
             'Live Scores:',
+            implode("\n", array_column($state['log'], 'msg'))
+        );
+        $this->assertStringNotContainsString(
+            'simultaneously',
             implode("\n", array_column($state['log'], 'msg'))
         );
         // Live Start skills must not run until the reveal beat is acknowledged.
         $this->assertNull($state['pending_prompt'] ?? null);
     }
 
+    public function testSecondPerformerStaysFaceDownUntilAfterFirstYell(): void
+    {
+        $state = \beginPerformancePhase($this->state());
+        $this->assertFalse(!empty($state['players']['p2']['live_zone'][0]['revealed']));
+
+        $state = $this->ackBoth($state); // reveal → live_start
+        $this->assertSame('live_start', $state['live_show']['stage'] ?? null);
+        $this->assertFalse(!empty($state['players']['p2']['live_zone'][0]['revealed']));
+
+        $state = $this->ackBoth($state); // live_start → performance (p1 Yell) → may park on p2 reveal
+        // After p1 Yell, second reveal beat flips p2 before their Live Start.
+        if (($state['live_show']['stage'] ?? '') === 'performance'
+            && empty($state['_perf_yell_both_done'])) {
+            $state = \continuePerformanceYellPhase($state, 'p1');
+        }
+        $this->assertSame('reveal', $state['live_show']['stage'] ?? null);
+        $this->assertSame('p2', $state['live_show']['performer'] ?? null);
+        $this->assertTrue(!empty($state['players']['p2']['live_zone'][0]['revealed']));
+        $this->assertArrayHasKey('p1', $state['yell_reveal'] ?? []);
+    }
+
     public function testBothPlayersAdvanceEachPresentationBeat(): void
     {
         $state = \beginPerformancePhase($this->state());
         $this->assertSame('reveal', $state['live_show']['stage']);
+        $this->assertSame('p1', $state['live_show']['performer'] ?? null);
 
         $state = $this->ackBoth($state);
         $this->assertSame('live_start', $state['live_show']['stage']);
 
+        // First Yell resolves immediately, then parks on the second performer's reveal.
         $state = $this->ackBoth($state);
-        $this->assertSame('performance', $state['live_show']['stage']);
-        // Yell only — hearts / scores must not run yet.
+        $this->assertSame('reveal', $state['live_show']['stage']);
+        $this->assertSame('p2', $state['live_show']['performer'] ?? null);
+        $this->assertArrayHasKey('p1', $state['yell_reveal'] ?? []);
         $this->assertStringNotContainsString(
             'performed Live! Blades:',
             implode("\n", array_column($state['log'], 'msg'))
@@ -92,7 +123,13 @@ final class SequentialLiveShowTest extends TestCase
             'Live Scores:',
             implode("\n", array_column($state['log'], 'msg'))
         );
-        $this->assertNotEmpty($state['players']['p1']['live_zone']);
+
+        $state = $this->ackBoth($state);
+        $this->assertSame('live_start', $state['live_show']['stage']);
+
+        $state = $this->ackBoth($state);
+        $this->assertSame('performance', $state['live_show']['stage']);
+        $this->assertTrue(!empty($state['_perf_yell_both_done']));
 
         $state = $this->ackBoth($state);
         $this->assertSame('outcomes', $state['live_show']['stage']);

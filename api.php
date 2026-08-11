@@ -2090,19 +2090,74 @@ function actionEndLiveSet(array $state, string $pid): array {
 
 function revealAllLiveStorage(array $state): array {
     foreach (['p1', 'p2'] as $pid) {
-        foreach ($state['players'][$pid]['live_zone'] as &$c) {
-            $c['revealed'] = true;
-        }
-        unset($c);
+        $state = revealLiveStorageForPlayer($state, $pid);
     }
     return $state;
+}
+
+/** Flip one player's Live storage face-up (per-performer reveal order). */
+function revealLiveStorageForPlayer(array $state, string $pid): array {
+    $zone = $state['players'][$pid]['live_zone'] ?? [];
+    foreach ($zone as $i => $c) {
+        if (!$c) {
+            continue;
+        }
+        $zone[$i]['revealed'] = true;
+    }
+    $state['players'][$pid]['live_zone'] = $zone;
+    return $state;
+}
+
+/** Public log line naming the Lives this performer just revealed. */
+function logPerformerLiveReveal(array $state, string $pid): array {
+    $lives = array_values(array_filter(
+        $state['players'][$pid]['live_zone'] ?? [],
+        fn($c) => isLiveTypeCard($c)
+    ));
+    if ($lives === []) {
+        return $state;
+    }
+    $labels = array_map(
+        fn($c) => '"' . ($c['name_en'] ?? $c['name'] ?? 'Live') . '"',
+        $lives
+    );
+    return addLog(
+        $state,
+        ($state['players'][$pid]['name'] ?? $pid) .
+        ' reveals Live storage: ' . implode(' and ', $labels) . '.',
+        'action'
+    );
+}
+
+/**
+ * Reveal one performer's storage, then park on live_show reveal (or start Live Start
+ * immediately when there is no presentation cursor).
+ */
+function beginPerformerRevealThenLiveStart(array $state, string $pid): array {
+    $attempting = $state['live_attempt'] ?? [];
+    if (!in_array($pid, $attempting, true)) {
+        return resolvePerformancePhase($state, $pid);
+    }
+    $state = revealLiveStorageForPlayer($state, $pid);
+    $state = logPerformerLiveReveal($state, $pid);
+    $state['_live_start_perf_pid'] = $pid;
+    $state['phase'] = 'live_start_effects';
+    if (!empty($state['live_show']) && empty($state['tutorial_guide'])) {
+        if (!is_array($state['live_show'])) {
+            $state['live_show'] = [];
+        }
+        $state['live_show']['performer'] = $pid;
+        return setLiveShowStage($state, 'reveal');
+    }
+    return beginLiveStartForPerformer($state, $pid);
 }
 
 // ─────────────────────────────────────────────
 // Performance Phase — Yell, hearts, Live success
 // ─────────────────────────────────────────────
-// After simultaneous reveal: live_start_effects queue, then live_performance_first/second
-// (resolvePerformancePhase per player), live_success_effects prompts, then Live Judge.
+// Per-performer reveal → Live Start → Yell (official 8.3), then the next performer.
+// Do not flip both players' storage at once — second player must commit to Live Start
+// without seeing the opponent's Lives until after the first performer has yelled.
 
 function beginPerformancePhase(array $state): array {
     foreach (['p1', 'p2'] as $banPid) {
@@ -2120,26 +2175,8 @@ function beginPerformancePhase(array $state): array {
         $state['_deferred_mp_extra_hearts']
     );
     if (liveStorageHasAnyCards($state)) {
-        $state = revealAllLiveStorage($state);
-        foreach (['p1', 'p2'] as $pid) {
-            $lives = array_values(array_filter(
-                $state['players'][$pid]['live_zone'] ?? [],
-                fn($c) => isLiveTypeCard($c)
-            ));
-            if (!empty($lives)) {
-                $labels = array_map(
-                    fn($c) => '"' . ($c['name_en'] ?? $c['name'] ?? 'Live') . '"',
-                    $lives
-                );
-                $state = addLog(
-                    $state,
-                    ($state['players'][$pid]['name'] ?? $pid) .
-                    ' is performing Live with ' . implode(' and ', $labels) . '.',
-                    'action'
-                );
-            }
-        }
-        $state = addLog($state, 'Both players reveal Live storage simultaneously.');
+        // Bluff Members leave storage immediately; Live cards stay face-down until
+        // that performer's reveal beat.
         foreach (['p1', 'p2'] as $pid) {
             $state = discardLiveZoneMembersToWaitingRoom($state, $pid);
         }
@@ -2149,7 +2186,7 @@ function beginPerformancePhase(array $state): array {
     }
     $state = addLog($state, '=== Performance Phase ===');
     // Sequential live_show cursor: park on reveal first so clients/spectators can
-    // flip storage before Live Start skills and Yell math run.
+    // flip the current performer's storage before Live Start skills and Yell math run.
     if (empty($state['tutorial_guide'])) {
         $state['live_attempt'] = [];
         $first = $state['first_player'] ?? 'p1';
@@ -2167,15 +2204,23 @@ function beginPerformancePhase(array $state): array {
         }
         $state = initLiveModifiers($state);
         $state['phase'] = 'live_start_effects';
+        $revealPid = $state['live_attempt'][0] ?? null;
         $state['live_show'] = [
             'turn' => intval($state['turn'] ?? 1),
             'stage' => 'reveal',
+            'performer' => $revealPid,
             'started_at' => time(),
             'stage_seq' => 1,
             'acks' => [],
         ];
+        if ($revealPid) {
+            $state = revealLiveStorageForPlayer($state, $revealPid);
+            $state = logPerformerLiveReveal($state, $revealPid);
+        }
         return $state;
     }
+    // Tutorials: reveal both then run Live Start (no live_show presentation cursor).
+    $state = revealAllLiveStorage($state);
     return beginLiveStartEffectPhase(
         $state,
         playerAttemptingLivePerformance($state, 'p1'),
@@ -2351,8 +2396,16 @@ function queueLiveShowOutcomes(array $state): array {
 function advanceLiveShowStage(array $state): array {
     $stage = (string)($state['live_show']['stage'] ?? '');
     if ($stage === 'reveal') {
-        $state = setLiveShowStage($state, 'live_start');
+        $performer = (string)($state['live_show']['performer']
+            ?? ($state['live_attempt'][0] ?? ''));
         $attempting = $state['live_attempt'] ?? [];
+        $done = $state['_live_start_done'] ?? [];
+        $first = (string)($attempting[0] ?? '');
+        $state = setLiveShowStage($state, 'live_start');
+        // Second (or later) performer's reveal beat → their Live Start only.
+        if ($performer !== '' && $first !== '' && $performer !== $first && !empty($done[$first])) {
+            return beginLiveStartForPerformer($state, $performer);
+        }
         return beginLiveStartEffectPhase(
             $state,
             in_array('p1', $attempting, true),
@@ -2831,9 +2884,11 @@ function continuePerformanceYellPhase(array $state, string $justPlayed): array {
         if (in_array($second, $attempting, true)) {
             // Official 8.3: each performer does Live Start then Yell — not all Live
             // Starts before either Yell (fixes 2nd-player Wait before 1st Yell).
+            // Reveal the second performer's Lives first so the first player's score
+            // is known before they commit to Live Start costs.
             $done = $state['_live_start_done'] ?? [];
             if (empty($done[$second])) {
-                return beginLiveStartForPerformer($state, $second);
+                return beginPerformerRevealThenLiveStart($state, $second);
             }
             return resolvePerformancePhase($state, $second);
         }

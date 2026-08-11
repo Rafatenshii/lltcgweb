@@ -7573,7 +7573,9 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   }
   if (stage === 'reveal') {
     if (G._perfSpectacleActive) perfCloseSpectacle();
-    // Storage is already face-up from the server; give a short readable beat.
+    // Per-performer reveal: board-render flips newly revealed storage; short readable beat.
+    const who = next?.live_show?.performer;
+    TCG_DEBUG.log('live', 'live_show reveal beat', { performer: who || null });
     await perfSleep(700);
     return;
   }

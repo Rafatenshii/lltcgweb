@@ -129,7 +129,20 @@ final class PerformanceStallAfterYellPromptTest extends TestCase
             $after,
             'Resumed chain must consume the continue marker'
         );
-        $this->assertSame('live_performance_second', $after['phase'] ?? null);
+        // Second performer must reveal before Live Start / Yell.
+        $this->assertSame('live_start_effects', $after['phase'] ?? null);
+        $this->assertSame('reveal', $after['live_show']['stage'] ?? null);
+        $this->assertSame('p2', $after['live_show']['performer'] ?? null);
+
+        $seq = intval($after['live_show']['stage_seq'] ?? 0);
+        $after = \actionLiveShowAck($after, 'p1', ['stage_seq' => $seq]);
+        $after = \actionLiveShowAck($after, 'p2', ['stage_seq' => $seq]);
+        $this->assertSame('live_start', $after['live_show']['stage'] ?? null);
+
+        $seq = intval($after['live_show']['stage_seq'] ?? 0);
+        $after = \actionLiveShowAck($after, 'p1', ['stage_seq' => $seq]);
+        $after = \actionLiveShowAck($after, 'p2', ['stage_seq' => $seq]);
+        $this->assertSame('performance', $after['live_show']['stage'] ?? null);
         $this->assertTrue(
             !empty($after['_perf_yell_both_done']),
             'Second performer must Yell so the performance beat can be acked'
