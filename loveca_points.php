@@ -1,7 +1,7 @@
 <?php
 /**
  * Loveca Point System — deck construction budget for restricted cards.
- * Data: config/loveca_points.json (official list, April 2026).
+ * Data: config/loveca_points.json (official list; effective 2026-08-08).
  */
 
 function tcgLovecaPointsConfigPath(): string {
