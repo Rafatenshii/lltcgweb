@@ -394,7 +394,8 @@ function tcgRollPbDuoPack(array $pools, array &$progress, int $packsPerBox, bool
 
 /**
  * Standard Premium Booster holo slots (2 of 3 cards are kira).
- * Mirrors BP foil tiers with SRE as the common parallel (not DUO/SRL).
+ * Uses the same rarity curve as BP’s guaranteed foil slot: P/PE/RE are common,
+ * SRE stays scarce (not the bulk of every holo pull).
  */
 function tcgPbHoloSlotRarityWeights(): array {
     return [
@@ -402,17 +403,17 @@ function tcgPbHoloSlotRarityWeights(): array {
         ['r' => 'SEC', 'w' => 4],
         ['r' => 'SECL', 'w' => 4],
         ['r' => 'SEC+', 'w' => 2],
-        ['r' => 'LLE', 'w' => 8],
+        ['r' => 'LLE', 'w' => 2],
         ['r' => 'AR', 'w' => 8],
-        ['r' => 'L+', 'w' => 12],
-        ['r' => 'L', 'w' => 25],
-        ['r' => 'PE+', 'w' => 120],
-        ['r' => 'P+', 'w' => 350],
-        ['r' => 'SRE', 'w' => 3500],
-        ['r' => 'P', 'w' => 500],
-        ['r' => 'PE', 'w' => 200],
-        ['r' => 'RE', 'w' => 150],
-        ['r' => 'RM', 'w' => 30],
+        ['r' => 'PE+', 'w' => 25],
+        ['r' => 'P+', 'w' => 80],
+        ['r' => 'SRE', 'w' => 40],
+        ['r' => 'RM', 'w' => 33],
+        ['r' => 'P', 'w' => 5000],
+        ['r' => 'PE', 'w' => 2000],
+        ['r' => 'RE', 'w' => 1500],
+        ['r' => 'L+', 'w' => 70],
+        ['r' => 'L', 'w' => 40],
     ];
 }
 
@@ -672,7 +673,7 @@ function tcgComputeBoosterPackRates(array $box, array $cardsData): array {
                 }
             }
         }
-        $notes[] = 'Premium pack: 3 cards. Slot 1 is N/R; slots 2–3 are guaranteed holo (SRE, P+, PE+, SEC, …).';
+        $notes[] = 'Premium pack: 3 cards. Slot 1 is N/R; slots 2–3 are guaranteed holo (mostly P/PE/RE; SRE and higher are scarce).';
         $notes[] = sprintf(
             'Each %d-pack box also contains 2 all-holo packs (not reflected in per-pack percentages).',
             tcgBoxPacksPerBox($box)
