@@ -57,6 +57,9 @@ const ctx = {
   PERF_SPECTACLE_MID_PROMPTS,
   G: {},
   console,
+  isDeferredLiveSuccessPrompt: () => false,
+  isLiveSuccessDiscardPrompt: () => false,
+  isMidSpectacleYellRetryPrompt: () => false,
 };
 vm.createContext(ctx);
 vm.runInContext(chunks.join('\n'), ctx);
@@ -118,6 +121,17 @@ assert('complete round perf logs', liveRoundPerfLogsComplete(done));
 assert('complete round judge ready', liveRoundJudgeReady(done));
 assert('complete round allows spectacle', !pendingPromptBlocksPerfSpectacle(done));
 assert('live_judge performanceSpectacleReady', performanceSpectacleReady({}, done));
+
+// #105: Main→Main baton must not re-arm prior-turn Performance from leftover defer boards.
+const spectacleSrc = fs.readFileSync(path.join(root, 'client/js/spectacle.js'), 'utf8');
+assert(
+  '#105 Main→Main stillOwed returns false on staleMain',
+  /if \(staleMain\) return false;/.test(spectacleSrc)
+    && /#105/.test(spectacleSrc)
+    && /G\._deferPerfSpectaclePrev = null;/.test(
+      spectacleSrc.slice(spectacleSrc.indexOf('function sealLiveShowSpectacleTurn'))
+    )
+);
 
 if (failed) {
   process.exit(1);

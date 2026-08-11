@@ -208,19 +208,17 @@ function liveSpectacleStillOwedOnBoard(prev, next, showTurn = null) {
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return false;
 
   const staleMain = shouldIgnoreStaleLivePerfSignals(prev, next);
+  // Ordinary Main→Main (baton / play Member / energy): never re-arm Performance from
+  // leftover prior-round boards or historical log markers. That replayed last turn's
+  // show after baton and left the board looking "rewound" (#105 / #25).
+  // Missed-show recovery belongs on leaving-live-set / catch-up / tab-visible paths.
+  if (staleMain) return false;
+
   const deferredHasLives = !!(G._deferPerfSpectaclePrev
     && liveRoundHasLiveCardsForRound(G._deferPerfSpectaclePrev));
-  const heldHasStorage = !!(G._livePostRevealBoard && liveStorageHasCards(G._livePostRevealBoard));
   const boardHasLives = liveRoundBoardHasLiveCards(prev) || liveRoundBoardHasLiveCards(next);
-  const faceDownOpp = !!(next?.players && liveStorageHadFaceDownOppBluff(next, G.playerId));
 
-  if (staleMain) {
-    // Ordinary Main→Main (baton / play Member): only recover if local playback residue
-    // still holds the missed show — never from historical log lines alone.
-    if (!deferredHasLives && !heldHasStorage && !boardHasLives && !faceDownOpp) {
-      return false;
-    }
-  } else if (!logHasLivePerformanceForTurn(next, turn)
+  if (!logHasLivePerformanceForTurn(next, turn)
       && !boardHasLives
       && !deferredHasLives) {
     return false;
@@ -733,7 +731,8 @@ function spectacleRecoveryContext(prev, next) {
   if (logSliceHasLivePipelineSignals(slice) || newLogHasLivePerformance(prev, next)) return true;
   if (isLiveSpectaclePipelinePhase(prev.phase) && isMainOrActivePhase(next.phase)) return true;
   if (isLiveSpectaclePipelinePhase(next.phase) && !isLiveSetPhase(next.phase)) return true;
-  // Missed show still owed after Main catch-up (failed gate / abort / batched poll).
+  // Missed show still owed after leaving Live pipeline / catch-up — never from
+  // ordinary Main→Main baton/play (see liveSpectacleStillOwedOnBoard staleMain).
   if (isMainOrActivePhase(prev.phase) && isMainOrActivePhase(next.phase)) {
     const showTurn = inferLiveShowTurn(prev, next);
     if (liveSpectacleStillOwedOnBoard(prev, next, showTurn)) return true;
@@ -1613,6 +1612,8 @@ function clearLiveRoundTransientCaches() {
   G._yellPerfDeferredDrawIids = null;
   G._perfYellScoreAccum = null;
   G._perfYellDrawPending = null;
+  // Leftover defer boards re-armed ghost Performance on Main baton (#105).
+  G._deferPerfSpectaclePrev = null;
   // Abort any banner-/image-delayed storage flips from this round.
   G._liveFlipGen = (G._liveFlipGen || 0) + 1;
   G._liveRevealFlips = new Set();
@@ -7457,6 +7458,8 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
   markLiveShowPerformancePresented(turn);
   savePerfSpectacleDoneKey(prior || board, board, turn);
   G._liveRoundPostSpectacleReady = true;
+  // Drop prior-round Live boards so Main baton/play cannot re-arm ghost Performance (#105).
+  G._deferPerfSpectaclePrev = null;
 }
 
 async function fetchLiveShowStateNow(opts = {}) {
