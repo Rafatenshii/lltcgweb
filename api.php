@@ -1627,7 +1627,9 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     $batonCount = 0;
     $batonGroups = [];
     $batonTransferredEnergyCards = [];
-    $batonOnLeavePending = [];
+    // Defer on_leave until after the incoming Member is placed so Position Change
+    // (and similar) can see the post-replace Stage, then resume On Enter (#104).
+    $onLeavePending = [];
     if ($isOverplay) {
         $existing = $occupant;
         $hostWrIdx = count($p['waiting_room'] ?? []);
@@ -1637,12 +1639,13 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         $anims[] = animSpec($existing['instance_id'], 'stage', 'waiting_room', $pid, [
             'slot' => $targetSlot,
         ]);
-        $leaving = $p['waiting_room'][$hostWrIdx] ?? $existing;
-        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, []);
-        if (isset($p['waiting_room'][$hostWrIdx]) && is_array($leaving)) {
-            unset($leaving['stacked_members']);
-            $p['waiting_room'][$hostWrIdx] = $leaving;
-        }
+        $overplaySnap = $existing;
+        unset($overplaySnap['stacked_members']);
+        $onLeavePending[] = [
+            'wr_idx' => $hostWrIdx,
+            'member' => $overplaySnap,
+            'ctx' => [],
+        ];
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' overplayed onto ' . ($existing['name_en'] ?? $existing['name'] ?? 'Member') . '.');
     } elseif ($batonCardId && $occupant && ($occupant['instance_id'] ?? '') === $batonCardId) {
@@ -1667,7 +1670,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         // wr_idx is the HOST card (stacked Members are appended after it).
         $batonSnap = $existing;
         unset($batonSnap['stacked_members']);
-        $batonOnLeavePending[] = [
+        $onLeavePending[] = [
             'wr_idx' => $hostWrIdx,
             'member' => $batonSnap,
             'ctx' => ['baton_incoming' => $card],
@@ -1708,7 +1711,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             ]);
             $batonSnap2 = $existing2;
             unset($batonSnap2['stacked_members']);
-            $batonOnLeavePending[] = [
+            $onLeavePending[] = [
                 'wr_idx' => $hostWrIdx2,
                 'member' => $batonSnap2,
                 'ctx' => ['baton_incoming' => $card],
@@ -1736,26 +1739,6 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     if (count($paidIds) < $cost) {
         throw new Exception('Not enough active energy (need ' . $cost . ', have ' .
             countActiveEnergyInZone($p) . ')');
-    }
-    foreach ($batonOnLeavePending as $pending) {
-        $wrIdx = intval($pending['wr_idx'] ?? -1);
-        $leaving = null;
-        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
-            $leaving = $p['waiting_room'][$wrIdx];
-        } elseif (!empty($pending['member']) && is_array($pending['member'])) {
-            // Deck refresh may have already shuffled the leaving Member out of WR.
-            $leaving = $pending['member'];
-        }
-        if (!$leaving) {
-            continue;
-        }
-        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $pending['ctx'] ?? []);
-        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
-            $p['waiting_room'][$wrIdx] = $leaving;
-        }
-        if (!empty($state['pending_prompt'])) {
-            break;
-        }
     }
     if (!empty($batonTransferredEnergyCards)) {
         attachStackedEnergyCardsToMember($card, $batonTransferredEnergyCards);
@@ -1792,7 +1775,42 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         ]]));
     // BP07 [On Leave] stacks (self / Energy deck) wait for the incoming Member to land.
     $state = bp7ApplyPendingBatonStacks($state, $pid, $targetSlot);
-    $state = resolveOnEnterAbilities($state, $pid, $card, $targetSlot);
+
+    // On Leave after place: Stage includes the replacement for Position Change (#104).
+    $p = &$state['players'][$pid];
+    foreach ($onLeavePending as $pending) {
+        $wrIdx = intval($pending['wr_idx'] ?? -1);
+        $leaving = null;
+        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
+            $leaving = $p['waiting_room'][$wrIdx];
+        } elseif (!empty($pending['member']) && is_array($pending['member'])) {
+            // Deck refresh may have already shuffled the leaving Member out of WR.
+            $leaving = $pending['member'];
+        }
+        if (!$leaving) {
+            continue;
+        }
+        $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $pending['ctx'] ?? []);
+        $p = &$state['players'][$pid];
+        if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
+            $p['waiting_room'][$wrIdx] = $leaving;
+        }
+        if (!empty($state['pending_prompt'])) {
+            break;
+        }
+    }
+    // Refresh stage copy (leave may have mutated via references elsewhere).
+    $card = $state['players'][$pid]['stage'][$targetSlot] ?? $card;
+    if (!empty($state['pending_prompt'])) {
+        // Leave prompt owns the UI — finish On Enter after it resolves (#104).
+        $state['_resume_on_enter'] = [
+            'pid' => $pid,
+            'entered_id' => (string)($card['instance_id'] ?? $instanceId),
+            'slot' => $targetSlot,
+        ];
+    } else {
+        $state = resolveOnEnterAbilities($state, $pid, $card, $targetSlot);
+    }
     $state = nijiOnMemberEntered($state, $pid, $card);
     $state['seq']++;
     return $state;

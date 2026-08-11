@@ -73,6 +73,36 @@ function finishPromptEffects(array $state): array {
             return $state;
         }
     }
+    // Resume deferred On Enter after an On Leave prompt (Position Change, etc.) (#104).
+    if (empty($state['pending_prompt']) && !empty($state['_resume_on_enter'])) {
+        $r = $state['_resume_on_enter'];
+        unset($state['_resume_on_enter']);
+        $pid = (string)($r['pid'] ?? '');
+        $enteredId = (string)($r['entered_id'] ?? '');
+        $slot = (string)($r['slot'] ?? '');
+        $entered = null;
+        if ($pid !== '' && $enteredId !== '') {
+            if ($slot !== '' && isset($state['players'][$pid]['stage'][$slot])
+                && (($state['players'][$pid]['stage'][$slot]['instance_id'] ?? '') === $enteredId)) {
+                $entered = $state['players'][$pid]['stage'][$slot];
+            } else {
+                foreach (['left', 'center', 'right'] as $s) {
+                    $mbr = $state['players'][$pid]['stage'][$s] ?? null;
+                    if ($mbr && ($mbr['instance_id'] ?? '') === $enteredId) {
+                        $entered = $mbr;
+                        $slot = $s;
+                        break;
+                    }
+                }
+            }
+        }
+        if ($entered !== null) {
+            $state = resolveOnEnterAbilities($state, $pid, $entered, $slot);
+            if (!empty($state['pending_prompt'])) {
+                return $state;
+            }
+        }
+    }
     // Resume remaining Ceras (bp6-007) Auto waits after opponent picks (#78).
     if (empty($state['pending_prompt']) && !empty($state['_resume_hs_auto_on_other_enter'])) {
         $r = $state['_resume_hs_auto_on_other_enter'];

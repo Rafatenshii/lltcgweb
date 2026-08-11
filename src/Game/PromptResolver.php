@@ -2382,7 +2382,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 ' — [' . $srcName . '] skipped optional Position Change.');
             unset($state['pending_prompt']);
             $state['seq']++;
-            return $state;
+            return finishPromptEffects($state);
         }
         $fromSlot = (string)($prompt['from_slot'] ?? '');
         $pickedSlot = (string)($data['slot'] ?? '');
@@ -2432,7 +2432,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 ' — [' . $srcName . '] Position Changed a Member to ' . $dest . '.');
             unset($state['pending_prompt']);
             $state['seq']++;
-            return $state;
+            return finishPromptEffects($state);
         }
         throw new Exception('Invalid Position Change choice');
     }

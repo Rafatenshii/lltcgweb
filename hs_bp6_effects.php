@@ -588,9 +588,11 @@ function hsResolveAutoOnOtherMemberEnter(array $state, string $pid, array $enter
     $enteredId = (string)($entered['instance_id'] ?? '');
     $p = &$state['players'][$pid];
     // Left → center → right so multiple Cerases resolve in a stable stage order (#78).
+    // Include the entering Member herself: "When an Edel Note Member enters" covers
+    // Ceras's own Stage entry (#104), not only other Edel Notes.
     foreach (['left', 'center', 'right'] as $slot) {
         $member = $p['stage'][$slot] ?? null;
-        if (!$member || ($member['instance_id'] ?? '') === $enteredId) {
+        if (!$member) {
             continue;
         }
         foreach ($member['abilities'] ?? [] as $idx => $ab) {
@@ -950,7 +952,7 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
         if ($step === '' && in_array($choice, ['no', 'skip'], true)) {
             unset($state['pending_prompt']);
             $state['seq']++;
-            return $state;
+            return finishPromptEffects($state);
         }
         $cands = is_array($prompt['candidates'] ?? null) ? $prompt['candidates'] : [];
         $slot = hsBp6ResolveWaitActivateSlot($ownerP, $prompt, $choice, $data);
@@ -988,7 +990,7 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
             " — [" . ($prompt['source_name'] ?? 'Member') . "] activated Wait Member; added $added Live.");
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'optional_discard_subunit_draw_buff_cost') {
