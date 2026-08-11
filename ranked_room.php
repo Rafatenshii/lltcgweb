@@ -165,10 +165,15 @@ function tcgCreateRankedRoomPair(
 
     $state['phase_timer_cfg'] = ['enabled' => true, 'duration' => PHASE_TIMER_MAX];
 
+    // Claim both queue seats before the slow VPS seed so a concurrent ranked_join
+    // cannot pair the same player into a second room while seed is in flight.
+    if (!tcgClaimRankedQueuePair($p1DiscordId, $p2DiscordId, $gameMode)) {
+        return null;
+    }
+
     // Authoritative room lives on VPS Redis — do not leave a Hostinger-only playable copy.
     if (!tcgSeedRankedRoomToVps($state)) {
-        tcgQueueLeave($p1DiscordId, $gameMode);
-        tcgQueueLeave($p2DiscordId, $gameMode);
+        // Seats already claimed; do not re-queue (avoids racing another match).
         return null;
     }
 

@@ -671,6 +671,17 @@ function apiCasualJoin(array $body): array {
     tcgRateLimitForAction('casual_join', $body);
     $gameMode = tcgCasualGameModeFromBody($body);
     $body['game_mode'] = $gameMode;
+    $selfDiscordId = tcgOptionalAuthUserId($body);
+    if ($selfDiscordId) {
+        require_once __DIR__ . '/matchmaking.php';
+        // Sanitize finished/missing first, then block on a truly live ranked seat.
+        if (tcgGetActiveRankedGame($selfDiscordId) || tcgDiscordIdHasPendingRankedMatch($selfDiscordId)) {
+            throw new Exception(
+                'You still have an active ranked match. Finish or resign it before joining unranked queue.',
+                409
+            );
+        }
+    }
     $out = tcgWithCasualQueueLock(function () use ($body): array {
         $queueKey = (string)($body['queue_id'] ?? '');
         $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));

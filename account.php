@@ -903,8 +903,29 @@ function tcgApiRankedJoin(array $body): array {
             throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
         }
     }
-    if (tcgGetActiveRankedGame($uid)) {
-        tcgAbandonActiveRankedGame($uid);
+    $active = tcgGetActiveRankedGame($uid); // sanitizes finished/missing pending rows first
+    if ($active) {
+        $confirmResign = !empty($body['confirm_resign']) || !empty($body['force']);
+        if (!$confirmResign) {
+            throw new Exception(
+                'You still have an active ranked match. Finish or resign it before searching again.',
+                409
+            );
+        }
+        $left = tcgAbandonActiveRankedGame($uid, ['confirm_resign' => true]);
+        if (empty($left['left'])) {
+            throw new Exception(
+                'Could not leave your active ranked match (it may still be live). Open it from reconnect, or resign from Options.',
+                409
+            );
+        }
+    }
+    // Never queue while any pending ranked seat remains (including unsanitized duplicates).
+    if (tcgDiscordIdHasPendingRankedMatch($uid)) {
+        throw new Exception(
+            'You still have an active ranked match. Finish or resign it before searching again.',
+            409
+        );
     }
     $challengeId = trim((string)($body['challenge_discord_id'] ?? ''));
     if ($challengeId !== '' && $challengeId === $uid) {
@@ -1700,6 +1721,15 @@ function tcgTryMatchmakeWithChallenge(
 function tcgFinalizeRankedPair(string $discordId, string $oppId, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
     require_once __DIR__ . '/game_mode.php';
     $gameMode = tcgNormalizeGameMode($gameMode);
+    // Defense in depth: never create a second room for someone already seated.
+    if (tcgDiscordIdHasPendingRankedMatch($discordId)) {
+        tcgQueueLeave($discordId);
+        return null;
+    }
+    if (tcgDiscordIdHasPendingRankedMatch($oppId)) {
+        tcgQueueLeave($oppId);
+        return null;
+    }
     require_once __DIR__ . '/ranked_room.php';
     $pair = tcgCreateRankedRoomPair($discordId, $oppId, $gameMode);
     if (!$pair) {

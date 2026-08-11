@@ -4329,6 +4329,13 @@ async function consumeLovecaChallengeInvite() {
       return;
     }
     if (A.casualSearching) await cancelCasualSearch();
+    try {
+      const activeRes = await accountGet('active_game');
+      if (activeRes?.active?.room_id) {
+        toast('Finish or resign your active ranked match before accepting a challenge.', 4200);
+        return;
+      }
+    } catch (e) { /* ignore */ }
     const res = await accountPost('ranked_join', {
       challenge_discord_id: invite.challenge,
       game_mode: rankedGameMode(),
@@ -12017,9 +12024,15 @@ async function leaveSideGameForRankedMatch(incomingRoomId = null) {
   // Rejoining the same ranked room (reconnect / ranked_status matched) must never concede it.
   if (incomingRoomId && G.roomId === incomingRoomId) return;
   // gameState may still be null during auth reconnect — do not treat that as "not ranked".
-  if (G.gameState?.mode === 'ranked') return;
   const saved = (typeof readActiveGameSession === 'function') ? readActiveGameSession() : null;
-  if (saved?.mode === 'ranked') return;
+  if (G.gameState?.mode === 'ranked' || saved?.mode === 'ranked') {
+    // Never auto-resign a different live ranked seat — but stop polling so SFX/state
+    // from the real match cannot bleed into a wrongly paired second room.
+    if (incomingRoomId && G.roomId !== incomingRoomId) {
+      try { stopPoll(); } catch (e) { /* ignore */ }
+    }
+    return;
+  }
   if (saved?.roomId && saved.roomId === G.roomId
       && (saved.apiOrigin === 'overflow' || saved.match_api === 'overflow'
         || G.apiOrigin === 'overflow')) {
@@ -12054,6 +12067,14 @@ async function enterRankedMatch(st) {
     try { saveActiveGameSession(); } catch (e) { /* ignore */ }
     showScr('game');
     if (!G.polling) startPoll();
+    return;
+  }
+  // Refuse to yank the client into a second ranked room while one is live.
+  if (st?.room_id && G.roomId && G.roomId !== st.room_id
+      && (G.gameState?.mode === 'ranked' || readActiveGameSession()?.mode === 'ranked')
+      && G.gameState?.status !== 'finished') {
+    try { stopPoll(); } catch (e) { /* ignore */ }
+    toast(t('toast.alreadyInRanked') || 'Already in a ranked match — finish or resign before starting another.', 4200);
     return;
   }
   await leaveSideGameForRankedMatch(st?.room_id || null);
@@ -12641,6 +12662,7 @@ async function startRankedSearch() {
         + 'If that match is still in progress, this counts as a resign.'
       );
       if (!ok) return;
+      await accountPost('leave_active_game', { confirm_resign: 1 });
     }
     const mode = rankedGameMode();
     const joinBody = { game_mode: mode };

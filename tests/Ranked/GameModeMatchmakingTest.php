@@ -240,4 +240,75 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertSame($stdWaiting, $std['waiting']);
         $this->assertSame($stWaiting, $st['waiting']);
     }
+
+    public function testFindQueueOpponentSkipsPlayersWithPendingMatch(): void
+    {
+        $a = 'gm_pend_a_' . bin2hex(random_bytes(3));
+        $b = 'gm_pend_b_' . bin2hex(random_bytes(3));
+        $c = 'gm_pend_c_' . bin2hex(random_bytes(3));
+        tcgEnsureUser($a, ['username' => 'A']);
+        tcgEnsureUser($b, ['username' => 'B']);
+        tcgEnsureUser($c, ['username' => 'C']);
+
+        tcgQueueJoin($a, TCG_GAME_MODE_STANDARD);
+        tcgQueueJoin($b, TCG_GAME_MODE_STANDARD);
+        tcgQueueJoin($c, TCG_GAME_MODE_STANDARD);
+
+        $db = tcgDb();
+        $db->prepare(
+            'INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode)
+            VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?)'
+        )->execute([
+            'M' . bin2hex(random_bytes(4)),
+            'R' . bin2hex(random_bytes(2)),
+            $b,
+            'other_' . bin2hex(random_bytes(2)),
+            't1',
+            't2',
+            time(),
+            TCG_GAME_MODE_STANDARD,
+        ]);
+
+        $this->assertTrue(tcgDiscordIdHasPendingRankedMatch($b));
+        $opp = tcgFindQueueOpponent($a, 1000, TCG_GAME_MODE_STANDARD);
+        $this->assertNotNull($opp);
+        $this->assertNotSame($b, $opp['discord_id'], 'Must not pair a player who already has a pending match');
+        // Dirty seat kicked from queue so hub waiting count stays honest.
+        $stmt = $db->prepare('SELECT 1 FROM tcg_match_queue WHERE discord_id = ?');
+        $stmt->execute([$b]);
+        $this->assertFalse((bool)$stmt->fetchColumn());
+    }
+
+    public function testClaimRankedQueuePairRejectsPendingPlayer(): void
+    {
+        $a = 'gm_claim_a_' . bin2hex(random_bytes(3));
+        $b = 'gm_claim_b_' . bin2hex(random_bytes(3));
+        tcgEnsureUser($a, ['username' => 'A']);
+        tcgEnsureUser($b, ['username' => 'B']);
+        tcgQueueJoin($a, TCG_GAME_MODE_STANDARD);
+        tcgQueueJoin($b, TCG_GAME_MODE_STANDARD);
+        $db = tcgDb();
+        $db->prepare(
+            'INSERT INTO tcg_ranked_matches
+            (match_id, room_id, p1_id, p2_id, p1_token, p2_token, status, created_at, game_mode)
+            VALUES (?, ?, ?, ?, ?, ?, "pending", ?, ?)'
+        )->execute([
+            'M' . bin2hex(random_bytes(4)),
+            'R' . bin2hex(random_bytes(2)),
+            $a,
+            'other_' . bin2hex(random_bytes(2)),
+            't1',
+            't2',
+            time(),
+            TCG_GAME_MODE_STANDARD,
+        ]);
+        $this->assertFalse(tcgClaimRankedQueuePair($a, $b, TCG_GAME_MODE_STANDARD));
+        // Successful claim when neither has a pending seat.
+        $db->prepare('DELETE FROM tcg_ranked_matches WHERE p1_id = ? OR p2_id = ?')->execute([$a, $a]);
+        $this->assertTrue(tcgClaimRankedQueuePair($a, $b, TCG_GAME_MODE_STANDARD));
+        $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE discord_id IN (?, ?)');
+        $stmt->execute([$a, $b]);
+        $this->assertSame(0, (int)$stmt->fetchColumn());
+    }
 }

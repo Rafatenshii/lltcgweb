@@ -55,6 +55,75 @@ function tcgQueueJoin(string $discordId, string $gameMode = TCG_GAME_MODE_STANDA
     });
 }
 
+/** Raw pending ranked match row exists (no VPS probe). */
+function tcgDiscordIdHasPendingRankedMatch(string $discordId): bool {
+    $db = tcgDb();
+    $stmt = $db->prepare(
+        'SELECT 1 FROM tcg_ranked_matches WHERE status = "pending" AND (p1_id = ? OR p2_id = ?) LIMIT 1'
+    );
+    $stmt->execute([$discordId, $discordId]);
+    return (bool)$stmt->fetchColumn();
+}
+
+/** Drop queue rows for anyone who already has a pending ranked seat (stale after buggy joins). */
+function tcgPurgeQueuedPlayersWithPendingMatches(): void {
+    $db = tcgDb();
+    $ids = $db->query(
+        'SELECT p1_id AS id FROM tcg_ranked_matches WHERE status = "pending"
+         UNION
+         SELECT p2_id AS id FROM tcg_ranked_matches WHERE status = "pending"'
+    )->fetchAll(PDO::FETCH_COLUMN);
+    $ids = array_values(array_unique(array_filter(array_map('strval', $ids))));
+    if (!$ids) {
+        return;
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $db->prepare("DELETE FROM tcg_match_queue WHERE discord_id IN ($placeholders)")->execute($ids);
+}
+
+/**
+ * Atomically claim both players from the ranked queue before slow VPS seed.
+ * Returns false if either seat is gone (another worker paired them) or either
+ * already has a pending ranked match.
+ */
+function tcgClaimRankedQueuePair(string $p1Id, string $p2Id, string $gameMode): bool {
+    $gameMode = tcgNormalizeGameMode($gameMode);
+    if ($p1Id === '' || $p2Id === '' || $p1Id === $p2Id) {
+        return false;
+    }
+    return (bool)tcgDbRetry(function () use ($p1Id, $p2Id, $gameMode) {
+        $db = tcgDb();
+        $db->beginTransaction();
+        try {
+            if (tcgDiscordIdHasPendingRankedMatch($p1Id) || tcgDiscordIdHasPendingRankedMatch($p2Id)) {
+                $db->rollBack();
+                return false;
+            }
+            $stmt = $db->prepare(
+                'SELECT discord_id FROM tcg_match_queue WHERE discord_id = ? AND game_mode = ?'
+            );
+            $stmt->execute([$p1Id, $gameMode]);
+            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                $db->rollBack();
+                return false;
+            }
+            $stmt->execute([$p2Id, $gameMode]);
+            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                $db->rollBack();
+                return false;
+            }
+            $db->prepare('DELETE FROM tcg_match_queue WHERE discord_id IN (?, ?)')->execute([$p1Id, $p2Id]);
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    });
+}
+
 function tcgQueueLeave(string $discordId, ?string $gameMode = null): array {
     $db = tcgDb();
     if ($gameMode === null || $gameMode === '') {
@@ -108,6 +177,7 @@ function tcgQueueStatus(string $discordId): array {
 
 function tcgFindQueueOpponent(string $discordId, int $rating, string $gameMode = TCG_GAME_MODE_STANDARD): ?array {
     $gameMode = tcgNormalizeGameMode($gameMode);
+    tcgPurgeQueuedPlayersWithPendingMatches();
     $db = tcgDb();
     $stmt = $db->prepare('SELECT discord_id, rating, joined_at, game_mode FROM tcg_match_queue
         WHERE discord_id != ? AND game_mode = ?
@@ -118,12 +188,27 @@ function tcgFindQueueOpponent(string $discordId, int $rating, string $gameMode =
     if (empty($candidates)) {
         return null;
     }
+    $bandHit = null;
+    $fallback = null;
     foreach ($candidates as $c) {
+        $oppId = (string)($c['discord_id'] ?? '');
+        if ($oppId === '' || $oppId === $discordId) {
+            continue;
+        }
+        // Never pair someone who already has a live/pending ranked seat.
+        if (tcgDiscordIdHasPendingRankedMatch($oppId)) {
+            tcgQueueLeave($oppId);
+            continue;
+        }
+        if ($fallback === null) {
+            $fallback = $c;
+        }
         if (abs(intval($c['rating']) - $rating) <= TCG_RATING_BAND) {
-            return $c;
+            $bandHit = $c;
+            break;
         }
     }
-    return $candidates[0];
+    return $bandHit ?? $fallback;
 }
 
 function tcgCreateRankedMatchRecord(
@@ -569,7 +654,16 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
     // Queue size is a local COUNT(*) — always live. in_game needs the match host,
     // so it is cached longer: polling it every few seconds buried the 0.5 CPU VPS.
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT COUNT(*) FROM tcg_match_queue WHERE game_mode = ?');
+    tcgPurgeQueuedPlayersWithPendingMatches();
+    $stmt = $db->prepare(
+        'SELECT COUNT(*) FROM tcg_match_queue q
+         WHERE q.game_mode = ?
+           AND NOT EXISTS (
+             SELECT 1 FROM tcg_ranked_matches m
+             WHERE m.status = "pending"
+               AND (m.p1_id = q.discord_id OR m.p2_id = q.discord_id)
+           )'
+    );
     $stmt->execute([$gameMode]);
     $waiting = (int)$stmt->fetchColumn();
 
