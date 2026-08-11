@@ -325,6 +325,13 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             if (($prompt['step'] ?? '') === 'confirm') {
                 return ['choice' => 'no'];
             }
+            if (($prompt['step'] ?? '') === 'pick') {
+                $keys = array_keys($prompt['choice_map'] ?? ($prompt['choices'] ?? []));
+                if ($keys === [] && is_array($prompt['choices'] ?? null)) {
+                    $keys = array_values($prompt['choices']);
+                }
+                return ['choice' => (string)($keys[0] ?? 'no')];
+            }
             return ['choice' => 'no'];
 
         case 'blade_per_discarded_pick_member':

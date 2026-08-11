@@ -1226,6 +1226,8 @@ global.isBranchChoicePrompt = function isBranchChoicePrompt(pr){
   if(branchTypes.has(pr.type)){
     if(pr.type==='live_start_center_cost_choice'&&pr.step&&pr.step!=='pick_mode') return false;
     if(pr.type==='player_choice_wr_live_deck_bottom_draw'&&pr.step==='pick_wr_live') return false;
+    // Do! Do! Do! CL: confirm is Yes/No pay; only step=pick is the mode branch.
+    if(pr.type==='live_success_pay_choice_wr_add'&&pr.step!=='pick') return false;
     return true;
   }
   const labels=(pr.choice_labels||[]).map(l=>String(l).trim().toLowerCase());

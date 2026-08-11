@@ -258,16 +258,57 @@ function hsCl1ResolvePrompt(array $state, string $owner, array $prompt, string $
                 throw new Exception("Need $cost active Energy");
             }
             $group = $ability['group'] ?? 'Hasunosora';
-            $choices = ['member' => [
-                'label' => 'Add 1 Member card from your Waiting Room to your hand.',
-                'effect' => ['type' => 'add_from_wr', 'filter' => 'member', 'count' => 1],
-            ]];
+            $srcName = $prompt['source_name'] ?? 'Live';
+            $choices = [];
+            $memberCfg = ['group' => '', 'filter' => 'member'];
+            if (!empty(wrCandidatesMatching($ownerP, $memberCfg))) {
+                $choices['member'] = [
+                    'label' => 'Add 1 Member card from your Waiting Room to your hand.',
+                    'effect' => ['type' => 'add_from_wr', 'filter' => 'member', 'count' => 1],
+                ];
+            }
             $liveZoneCount = count(array_filter($ownerP['live_zone'] ?? []));
-            if ($liveZoneCount >= intval($ability['min_live_zone'] ?? 2)) {
+            $liveCfg = ['group' => $group, 'filter' => 'live'];
+            if ($liveZoneCount >= intval($ability['min_live_zone'] ?? 2)
+                && !empty(wrCandidatesMatching($ownerP, $liveCfg))) {
                 $choices['live'] = [
                     'label' => "Add 1 $group Live card from your Waiting Room to your hand.",
                     'effect' => ['type' => 'add_from_wr', 'group' => $group, 'filter' => 'live', 'count' => 1],
                 ];
+            }
+            if (empty($choices)) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — [$srcName] paid $cost Energy; no matching Waiting Room card.");
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                return finishLiveSuccessEffects($state);
+            }
+            // One viable mode → skip mode buttons and open WR pick immediately.
+            if (count($choices) === 1) {
+                $onlyKey = array_key_first($choices);
+                $effect = $choices[$onlyKey]['effect'] ?? [];
+                $cfg = [
+                    'group'  => (string)($effect['group'] ?? ''),
+                    'filter' => (string)($effect['filter'] ?? ''),
+                ];
+                $wrCands = wrCandidatesMatching($ownerP, $cfg);
+                $state['pending_prompt'] = [
+                    'type'          => 'pick_wr_to_hand',
+                    'owner'         => $owner,
+                    'responder'     => $owner,
+                    'source_id'     => $prompt['source_id'] ?? '',
+                    'source_name'   => $srcName,
+                    'prompt'        => 'Choose 1 ' . wrPickFilterLabel($cfg['filter']) .
+                        ' from your Waiting Room to add to your hand.',
+                    'candidates'    => array_map('cardPromptSummary', $wrCands),
+                    'wr_pick_cfg'   => $cfg,
+                    'pick_count'    => 1,
+                    'up_to'         => false,
+                ];
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — [$srcName] paid $cost Energy; choose a card from Waiting Room.");
+                $state['seq']++;
+                return $state;
             }
             $choiceFields = buildPlayerChoicePromptFields(['choices' => $choices]);
             $state['pending_prompt'] = [
@@ -275,7 +316,8 @@ function hsCl1ResolvePrompt(array $state, string $owner, array $prompt, string $
                 'step'          => 'pick',
                 'owner'         => $owner,
                 'responder'     => $owner,
-                'source_name'   => $prompt['source_name'] ?? 'Live',
+                'source_id'     => $prompt['source_id'] ?? '',
+                'source_name'   => $srcName,
                 'prompt'        => $choiceFields['prompt'],
                 'choices'       => array_keys($choices),
                 'choice_labels' => $choiceFields['choice_labels'],
@@ -289,18 +331,33 @@ function hsCl1ResolvePrompt(array $state, string $owner, array $prompt, string $
             $choices = $prompt['choice_map'] ?? ($ability['choices'] ?? []);
             if (!isset($choices[$choice])) throw new Exception('Invalid choice');
             $effect = $choices[$choice]['effect'] ?? [];
-            $added = addFromWaitingRoomFiltered(
-                $ownerP,
-                $effect['group'] ?? '',
-                $effect['filter'] ?? '',
-                intval($effect['count'] ?? 1)
-            );
-            if ($added < 1) throw new Exception('No matching card in Waiting Room');
+            $cfg = [
+                'group'  => (string)($effect['group'] ?? ''),
+                'filter' => (string)($effect['filter'] ?? ''),
+            ];
+            $wrCands = wrCandidatesMatching($ownerP, $cfg);
+            if (empty($wrCands)) {
+                throw new Exception('No matching card in Waiting Room');
+            }
+            $srcName = $prompt['source_name'] ?? 'Live';
+            // Always open pick_wr_to_hand — never auto-first-match (same class as bp6-003).
+            $state['pending_prompt'] = [
+                'type'          => 'pick_wr_to_hand',
+                'owner'         => $owner,
+                'responder'     => $owner,
+                'source_id'     => $prompt['source_id'] ?? '',
+                'source_name'   => $srcName,
+                'prompt'        => 'Choose 1 ' . wrPickFilterLabel($cfg['filter']) .
+                    ' from your Waiting Room to add to your hand.',
+                'candidates'    => array_map('cardPromptSummary', $wrCands),
+                'wr_pick_cfg'   => $cfg,
+                'pick_count'    => 1,
+                'up_to'         => false,
+            ];
             $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . ($prompt['source_name'] ?? 'Live') . "] added $added card(s) from Waiting Room.");
-            unset($state['pending_prompt']);
+                " — [$srcName] choose a card from Waiting Room.");
             $state['seq']++;
-            return finishLiveSuccessEffects($state);
+            return $state;
         }
     }
 
