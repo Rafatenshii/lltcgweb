@@ -276,13 +276,46 @@ function tcgTouchLoginDays(string $discordId): int {
 function tcgSleeveShopUnitForGroup(string $group): string {
     $g = strtolower(trim($group));
     return match ($g) {
-        'muse', "µ's", "μ's", 'mus' => "µ's",
+        'muse', "µ's", "μ's", 'mus', "mu's" => "µ's",
         'aqours', 'sunshine' => 'Aqours',
         'nijigasaki', 'niji' => 'Nijigasaki',
         'liella', 'liella!', 'superstar' => 'Liella!',
         'hasunosora', 'hasu' => 'Hasunosora',
         default => 'Other',
     };
+}
+
+/** Idol Story unit logo for sleeve-shop generation / group tiles. */
+function tcgSleeveShopUnitIconUrl(string $unit): string {
+    return match ($unit) {
+        "µ's" => 'https://i.idol.st/static/img/i_unit/%CE%BC-s.png',
+        'Aqours' => 'https://i.idol.st/static/img/i_unit/Aqours.png',
+        'Nijigasaki' => 'https://i.idol.st/static/img/i_unit/Nijigasaki-High-School.png',
+        'Liella!', 'Liella' => 'https://i.idol.st/static/img/i_unit/Liella.png',
+        'Hasunosora' => 'https://i.idol.st/static/img/i_unit/Hasunosora-Girls-High-School-Idol-Club.png',
+        default => 'https://i.idol.st/static/img/i_unit/Other.png',
+    };
+}
+
+/**
+ * True when catalog idol is a whole-group bucket (not a single character).
+ * e.g. Muse / Mu's / Group under a generation.
+ */
+function tcgSleeveShopIsGroupIdol(string $idol, string $unit): bool {
+    $i = strtolower(trim($idol));
+    if ($i === '' || $i === 'group' || $i === 'unit') {
+        return true;
+    }
+    $u = strtolower(trim($unit));
+    $aliases = match ($u) {
+        "µ's", "μ's", 'muse', 'mus' => ['muse', "mu's", "μ's", "µ's", 'mus'],
+        'aqours' => ['aqours', 'sunshine'],
+        'nijigasaki' => ['nijigasaki', 'niji'],
+        'liella!', 'liella' => ['liella', 'liella!', 'superstar'],
+        'hasunosora' => ['hasunosora', 'hasu'],
+        default => [],
+    };
+    return in_array($i, $aliases, true);
 }
 
 /** Generation display order. */

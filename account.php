@@ -2171,21 +2171,52 @@ function tcgApiSleeveShopCatalog(array $body): array {
             continue;
         }
         $chars = [];
+        $groupSleeves = [];
         foreach ($byUnit[$unit] as $idol => $sleeves) {
+            if (tcgSleeveShopIsGroupIdol((string)$idol, $unit)) {
+                foreach ($sleeves as $row) {
+                    $groupSleeves[] = $row;
+                }
+                continue;
+            }
             $key = strtolower($idol);
             $port = $portraitById[$key] ?? null;
             $chars[] = [
                 'id' => $idol,
                 'name' => $port['name'] ?? $idol,
                 'portrait' => $port['portrait'] ?? '',
+                'icon' => $port['portrait'] ?? '',
+                'is_group' => false,
                 'sleeve_count' => count($sleeves),
                 'sleeves' => $sleeves,
             ];
         }
-        usort($chars, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        if ($groupSleeves !== []) {
+            array_unshift($chars, [
+                'id' => $unit,
+                'name' => $unit,
+                'portrait' => '',
+                'icon' => tcgSleeveShopUnitIconUrl($unit),
+                'is_group' => true,
+                'sleeve_count' => count($groupSleeves),
+                'sleeves' => $groupSleeves,
+            ]);
+        }
+        $groupFirst = [];
+        $rest = [];
+        foreach ($chars as $c) {
+            if (!empty($c['is_group'])) {
+                $groupFirst[] = $c;
+            } else {
+                $rest[] = $c;
+            }
+        }
+        usort($rest, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        $chars = array_merge($groupFirst, $rest);
         $generations[] = [
             'id' => $unit,
             'name' => $unit,
+            'icon' => tcgSleeveShopUnitIconUrl($unit),
             'characters' => $chars,
         ];
     }

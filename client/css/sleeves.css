@@ -216,7 +216,6 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 }
 .sleeve-shop-gen__icon{
   width:28px;height:28px;object-fit:contain;flex:0 0 auto;display:block;
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
 }
 .sleeve-shop-gen__label{white-space:nowrap}
 .sleeve-shop-chars{
@@ -224,15 +223,24 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 }
 .sleeve-shop-char{
   appearance:none;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.2);
-  border-radius:12px;padding:8px 6px;color:#fff;cursor:pointer;display:flex;flex-direction:column;
-  align-items:center;gap:6px;min-height:0;
+  border-radius:12px;padding:8px 6px 6px;color:#fff;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;gap:4px;min-height:0;overflow:hidden;
+  aspect-ratio:1 / 1;box-sizing:border-box;
 }
 .sleeve-shop-char:hover{border-color:rgba(255,196,120,.55)}
-.sleeve-shop-char img{
-  width:64px;height:64px;object-fit:cover;border-radius:8px;background:rgba(0,0,0,.35);
+.sleeve-shop-char__name{
+  font-size:11px;font-weight:700;text-align:center;line-height:1.2;
+  flex:0 0 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sleeve-shop-char__name{font-size:11px;font-weight:700;text-align:center;line-height:1.25}
-.sleeve-shop-char__count{font-size:10px;opacity:.7}
+.sleeve-shop-char__icon{
+  width:auto;height:auto;max-width:68%;max-height:52%;
+  object-fit:cover;border-radius:6px;background:transparent;display:block;flex:1 1 auto;
+}
+.sleeve-shop-char__icon--unit,
+.sleeve-shop-char--group .sleeve-shop-char__icon{
+  object-fit:contain;max-width:72%;max-height:56%;border-radius:0;
+}
+.sleeve-shop-char__count{font-size:10px;opacity:.7;flex:0 0 auto}
 .sleeve-shop-grid{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:12px;
 }
