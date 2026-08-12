@@ -330,6 +330,27 @@
       global.TCGMissions.syncHubBadge(res.missions.claimable_count);
     }
     global.handleRankedPrReward(res);
+    global.handleCoinGrant(res);
+  };
+
+  global.handleCoinGrant = function handleCoinGrant(res) {
+    if (!res || typeof res !== 'object') return;
+    if (res.spectator || (global.G && global.G.isSpectator)) return;
+    const grant = res.coin_grant || null;
+    if (!grant || typeof grant !== 'object') return;
+    const amount = Number(grant.amount || grant.coins_earned || 0);
+    if (amount <= 0) return;
+    if (typeof global.toastCoinGrant === 'function') {
+      global.toastCoinGrant({
+        amount,
+        balance: grant.balance != null ? grant.balance : grant.coins,
+      });
+      return;
+    }
+    if (typeof global.toast === 'function') {
+      const tFn = typeof global.t === 'function' ? global.t : null;
+      global.toast((tFn && tFn('toast.coinsEarned', { n: amount })) || ('+' + amount + ' Coins'), 3200);
+    }
   };
 
   global.handleRankedPrReward = function handleRankedPrReward(res) {

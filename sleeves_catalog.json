@@ -1,0 +1,1411 @@
+{
+  "items": [
+    {
+      "id": "br-159502",
+      "name": "Bushiroad Sleeve Collection HG Vol.1079: Love Live! Sunshine!! - Chika Takami (60-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-159502.webp"
+    },
+    {
+      "id": "br-159538",
+      "name": "Bushiroad Sleeve Collection HG Vol.1112: Love Live! Sunshine!! - Chika Takami (60-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-159538.webp"
+    },
+    {
+      "id": "br-159576",
+      "name": "Bushiroad Sleeve Collection HG Vol.1149: Love Live! Sunshine!! - Chika Takami (60-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-159576.webp"
+    },
+    {
+      "id": "br-159749",
+      "name": "Bushiroad Sleeve Collection HG Vol.1306: Love Live! Sunshine!! - Chika Takami (60-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-159749.webp"
+    },
+    {
+      "id": "br-195433",
+      "name": "Bushiroad Sleeve Collection HG Vol.2081: Love Live! Sunshine!! - Chika Takami (60-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-195433.webp"
+    },
+    {
+      "id": "br-268294",
+      "name": "Bushiroad Sleeve Collection HG Vol.3170: Love Live! Sunshine!! - Chika Takami (75-Pack)",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-268294.webp"
+    },
+    {
+      "id": "br-br-1518",
+      "name": "Vol.1518 ラブライブ！サンシャイン!! 『高海 千歌』Part.5",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/br-br-1518.webp"
+    },
+    {
+      "id": "br-159506",
+      "name": "Bushiroad Sleeve Collection HG Vol.1082: Love Live! Sunshine!! - Dia Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-159506.webp"
+    },
+    {
+      "id": "br-159580",
+      "name": "Bushiroad Sleeve Collection HG Vol.1152: Love Live! Sunshine!! - Dia Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-159580.webp"
+    },
+    {
+      "id": "br-159752",
+      "name": "Bushiroad Sleeve Collection HG Vol.1309: Love Live! Sunshine!! - Dia Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-159752.webp"
+    },
+    {
+      "id": "br-195436",
+      "name": "Bushiroad Sleeve Collection HG Vol.2084: Love Live! Sunshine!! - Dia Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-195436.webp"
+    },
+    {
+      "id": "br-268297",
+      "name": "Bushiroad Sleeve Collection HG Vol.3173: Love Live! Sunshine!! - Dia Kurosawa (75-Pack)",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-268297.webp"
+    },
+    {
+      "id": "br-br-1115",
+      "name": "Vol.1115 ラブライブ！サンシャイン!! 『黒澤 ダイヤ』Part.2",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-br-1115.webp"
+    },
+    {
+      "id": "br-br-1521",
+      "name": "Vol.1521 ラブライブ！サンシャイン!! 『黒澤 ダイヤ』Part.5",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/br-br-1521.webp"
+    },
+    {
+      "id": "br-159509",
+      "name": "Bushiroad Sleeve Collection HG Vol.1085: Love Live! Sunshine!! - Hanamaru Kunikida (60-Pack)",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-159509.webp"
+    },
+    {
+      "id": "br-159544",
+      "name": "Bushiroad Sleeve Collection HG Vol.1118: Love Live! Sunshine!! - Hanamaru Kunikida (60-Pack)",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-159544.webp"
+    },
+    {
+      "id": "br-195439",
+      "name": "Bushiroad Sleeve Collection HG Vol.2087: Love Live! Sunshine!! - Hanamaru Kunikida (60-Pack)",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-195439.webp"
+    },
+    {
+      "id": "br-br-1155",
+      "name": "Vol.1155 ラブライブ！サンシャイン!! 『国木田 花丸』Part.3",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-br-1155.webp"
+    },
+    {
+      "id": "br-br-1312",
+      "name": "Vol.1312 ラブライブ！サンシャイン!! 『国木田 花丸』Part.4",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-br-1312.webp"
+    },
+    {
+      "id": "br-br-1524",
+      "name": "Vol.1524 ラブライブ！サンシャイン!! 『国木田 花丸』Part.5",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-br-1524.webp"
+    },
+    {
+      "id": "br-br-3176",
+      "name": "Vol.3176 ラブライブ！サンシャイン!! 『国木田花丸』 スクフェスシリーズ感謝祭2020ver",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/br-br-3176.webp"
+    },
+    {
+      "id": "br-159505",
+      "name": "Bushiroad Sleeve Collection HG Vol.1081: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-159505.webp"
+    },
+    {
+      "id": "br-159540",
+      "name": "Bushiroad Sleeve Collection HG Vol.1114: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-159540.webp"
+    },
+    {
+      "id": "br-159579",
+      "name": "Bushiroad Sleeve Collection HG Vol.1151: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-159579.webp"
+    },
+    {
+      "id": "br-159751",
+      "name": "Bushiroad Sleeve Collection HG Vol.1308: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-159751.webp"
+    },
+    {
+      "id": "br-166033",
+      "name": "Bushiroad Sleeve Collection HG Vol.1520: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-166033.webp"
+    },
+    {
+      "id": "br-195435",
+      "name": "Bushiroad Sleeve Collection HG Vol.2083: Love Live! Sunshine!! - Kanan Matsuura (60-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-195435.webp"
+    },
+    {
+      "id": "br-268296",
+      "name": "Bushiroad Sleeve Collection HG Vol.3172: Love Live! Sunshine!! - Kanan Matsuura (75-Pack)",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/br-268296.webp"
+    },
+    {
+      "id": "br-159510",
+      "name": "Bushiroad Sleeve Collection HG Vol.1086: Love Live! Sunshine!! - Mari Ohara (60-Pack)",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-159510.webp"
+    },
+    {
+      "id": "br-159545",
+      "name": "Bushiroad Sleeve Collection HG Vol.1119: Love Live! Sunshine!! - Mari Ohara (60-Pack)",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-159545.webp"
+    },
+    {
+      "id": "br-159584",
+      "name": "Bushiroad Sleeve Collection HG Vol.1156: Love Live! Sunshine!! - Mari Ohara (60-Pack)",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-159584.webp"
+    },
+    {
+      "id": "br-159756",
+      "name": "Bushiroad Sleeve Collection HG Vol.1313: Love Live! Sunshine!! - Mari Ohara (60-Pack)",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-159756.webp"
+    },
+    {
+      "id": "br-268301",
+      "name": "Bushiroad Sleeve Collection HG Vol.3177: Love Live! Sunshine!! - Mari Ohara (75-Pack)",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-268301.webp"
+    },
+    {
+      "id": "br-br-1525",
+      "name": "Vol.1525 ラブライブ！サンシャイン!! 『小原 鞠莉』Part.5",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-br-1525.webp"
+    },
+    {
+      "id": "br-br-2088",
+      "name": "Vol.2088 ラブライブ！サンシャイン!! 『小原 鞠莉』Part.6",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/br-br-2088.webp"
+    },
+    {
+      "id": "br-159504",
+      "name": "Bushiroad Sleeve Collection HG Vol.1080: Love Live! Sunshine!! - Riko Sakurauchi (60-Pack)",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-159504.webp"
+    },
+    {
+      "id": "br-159539",
+      "name": "Bushiroad Sleeve Collection HG Vol.1113: Love Live! Sunshine!! - Riko Sakurauchi (60-Pack)",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-159539.webp"
+    },
+    {
+      "id": "br-159578",
+      "name": "Bushiroad Sleeve Collection HG Vol.1150: Love Live! Sunshine!! - Riko Sakurauchi (60-Pack)",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-159578.webp"
+    },
+    {
+      "id": "br-159750",
+      "name": "Bushiroad Sleeve Collection HG Vol.1307: Love Live! Sunshine!! - Riko Sakurauchi (60-Pack)",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-159750.webp"
+    },
+    {
+      "id": "br-268295",
+      "name": "Bushiroad Sleeve Collection HG Vol.3171: Love Live! Sunshine!! - Riko Sakurauchi (75-Pack)",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-268295.webp"
+    },
+    {
+      "id": "br-br-1519",
+      "name": "Vol.1519 ラブライブ！サンシャイン!! 『桜内 梨子』Part.5",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-br-1519.webp"
+    },
+    {
+      "id": "br-br-2082",
+      "name": "Vol.2082 ラブライブ！サンシャイン!! 『桜内 梨子』Part.6",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/br-br-2082.webp"
+    },
+    {
+      "id": "br-159511",
+      "name": "Bushiroad Sleeve Collection HG Vol.1087: Love Live! Sunshine!! - Ruby Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-159511.webp"
+    },
+    {
+      "id": "br-159585",
+      "name": "Bushiroad Sleeve Collection HG Vol.1157: Love Live! Sunshine!! - Ruby Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-159585.webp"
+    },
+    {
+      "id": "br-159757",
+      "name": "Bushiroad Sleeve Collection HG Vol.1314: Love Live! Sunshine!! - Ruby Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-159757.webp"
+    },
+    {
+      "id": "br-195441",
+      "name": "Bushiroad Sleeve Collection HG Vol.2089: Love Live! Sunshine!! - Ruby Kurosawa (60-Pack)",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-195441.webp"
+    },
+    {
+      "id": "br-268302",
+      "name": "Bushiroad Sleeve Collection HG Vol.3178: Love Live! Sunshine!! - Ruby Kurosawa (75-Pack)",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-268302.webp"
+    },
+    {
+      "id": "br-br-1120",
+      "name": "Vol.1120 ラブライブ！サンシャイン!! 『黒澤 ルビィ』Part.2",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-br-1120.webp"
+    },
+    {
+      "id": "br-br-1526",
+      "name": "Vol.1526 ラブライブ！サンシャイン!! 『黒澤 ルビィ』Part.5",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/br-br-1526.webp"
+    },
+    {
+      "id": "br-159543",
+      "name": "Bushiroad Sleeve Collection HG Vol.1117: Love Live! Sunshine!! - Yoshiko Tsushima (60-Pack)",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-159543.webp"
+    },
+    {
+      "id": "br-159582",
+      "name": "Bushiroad Sleeve Collection HG Vol.1154: Love Live! Sunshine!! - Yoshiko Tsushima (60-Pack)",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-159582.webp"
+    },
+    {
+      "id": "br-159754",
+      "name": "Bushiroad Sleeve Collection HG Vol.1311: Love Live! Sunshine!! - Yoshiko Tsushima (60-Pack)",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-159754.webp"
+    },
+    {
+      "id": "br-195438",
+      "name": "Bushiroad Sleeve Collection HG Vol.2086: Love Live! Sunshine!! - Yoshiko Tsushima (60-Pack)",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-195438.webp"
+    },
+    {
+      "id": "br-268299",
+      "name": "Bushiroad Sleeve Collection HG Vol.3175: Love Live! Sunshine!! - Yoshiko Tsushima (75-Pack)",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-268299.webp"
+    },
+    {
+      "id": "br-br-1084",
+      "name": "Vol.1084 ラブライブ！サンシャイン!! 『津島 善子』",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-br-1084.webp"
+    },
+    {
+      "id": "br-br-1523",
+      "name": "Vol.1523 ラブライブ！サンシャイン!! 『津島 善子』Part.5",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/br-br-1523.webp"
+    },
+    {
+      "id": "br-159507",
+      "name": "Bushiroad Sleeve Collection HG Vol.1083: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-159507.webp"
+    },
+    {
+      "id": "br-159542",
+      "name": "Bushiroad Sleeve Collection HG Vol.1116: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-159542.webp"
+    },
+    {
+      "id": "br-159581",
+      "name": "Bushiroad Sleeve Collection HG Vol.1153: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-159581.webp"
+    },
+    {
+      "id": "br-159753",
+      "name": "Bushiroad Sleeve Collection HG Vol.1310: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-159753.webp"
+    },
+    {
+      "id": "br-166035",
+      "name": "Bushiroad Sleeve Collection HG Vol.1522: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-166035.webp"
+    },
+    {
+      "id": "br-195437",
+      "name": "Bushiroad Sleeve Collection HG Vol.2085: Love Live! Sunshine!! - You Watanabe (60-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-195437.webp"
+    },
+    {
+      "id": "br-268298",
+      "name": "Bushiroad Sleeve Collection HG Vol.3174: Love Live! Sunshine!! - You Watanabe (75-Pack)",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/br-268298.webp"
+    },
+    {
+      "id": "br-hs-2000201700158",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『百生 吟子』",
+      "group": "Hasunosora",
+      "idol": "Ginko",
+      "src": "assets/sleeves/br-hs-2000201700158.webp"
+    },
+    {
+      "id": "br-br-4605",
+      "name": "Vol.4605 『ラブライブ！蓮ノ空女学院スクールアイドルクラブ』",
+      "group": "Hasunosora",
+      "idol": "Group",
+      "src": "assets/sleeves/br-br-4605.webp"
+    },
+    {
+      "id": "br-hs-2000277715087",
+      "name": "ブシロード スリーブコレクション エクストラ Vol.562 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『蓮ノ空女学院』",
+      "group": "Hasunosora",
+      "idol": "Group",
+      "src": "assets/sleeves/br-hs-2000277715087.webp"
+    },
+    {
+      "id": "br-hs-2000229541269",
+      "name": "ブシロード スリーブコレクション エクストラ ラブライブ！シリーズ『澁谷かのん&上原歩夢&日野下花帆』",
+      "group": "Hasunosora",
+      "idol": "Group",
+      "src": "assets/sleeves/br-hs-2000229541269.webp"
+    },
+    {
+      "id": "br-hs-2000201700172",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『安養寺 姫芽』",
+      "group": "Hasunosora",
+      "idol": "Hime",
+      "src": "assets/sleeves/br-hs-2000201700172.webp"
+    },
+    {
+      "id": "br-hs-2000201700097",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『日野下 花帆』",
+      "group": "Hasunosora",
+      "idol": "Kaho",
+      "src": "assets/sleeves/br-hs-2000201700097.webp"
+    },
+    {
+      "id": "br-hs-2000210331336",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.456 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『日野下花帆』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Kaho",
+      "src": "assets/sleeves/br-hs-2000210331336.webp"
+    },
+    {
+      "id": "br-hs-2000201700165",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『徒町 小鈴』",
+      "group": "Hasunosora",
+      "idol": "Kosuzu",
+      "src": "assets/sleeves/br-hs-2000201700165.webp"
+    },
+    {
+      "id": "br-hs-2000201700110",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『乙宗 梢』",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "src": "assets/sleeves/br-hs-2000201700110.webp"
+    },
+    {
+      "id": "br-hs-2000210331350",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.458 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『乙宗 梢』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "src": "assets/sleeves/br-hs-2000210331350.webp"
+    },
+    {
+      "id": "br-hs-2000201700141",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『藤島 慈』",
+      "group": "Hasunosora",
+      "idol": "Megumi",
+      "src": "assets/sleeves/br-hs-2000201700141.webp"
+    },
+    {
+      "id": "br-hs-2000210331381",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.461 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『藤島 慈』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Megumi",
+      "src": "assets/sleeves/br-hs-2000210331381.webp"
+    },
+    {
+      "id": "br-hs-2000201700134",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『大沢 瑠璃乃』",
+      "group": "Hasunosora",
+      "idol": "Rurino",
+      "src": "assets/sleeves/br-hs-2000201700134.webp"
+    },
+    {
+      "id": "br-hs-2000210331374",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.460 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『大沢瑠璃乃』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Rurino",
+      "src": "assets/sleeves/br-hs-2000210331374.webp"
+    },
+    {
+      "id": "br-hs-2000201700103",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『村野 さやか』",
+      "group": "Hasunosora",
+      "idol": "Sayaka",
+      "src": "assets/sleeves/br-hs-2000201700103.webp"
+    },
+    {
+      "id": "br-hs-2000210331343",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.457 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『村野さやか』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Sayaka",
+      "src": "assets/sleeves/br-hs-2000210331343.webp"
+    },
+    {
+      "id": "br-hs-2000201700127",
+      "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『夕霧 綴理』",
+      "group": "Hasunosora",
+      "idol": "Tsuzuri",
+      "src": "assets/sleeves/br-hs-2000201700127.webp"
+    },
+    {
+      "id": "br-hs-2000210331367",
+      "name": "ブシロード スリーブコレクションエクストラ Vol.459 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『夕霧綴理』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Tsuzuri",
+      "src": "assets/sleeves/br-hs-2000210331367.webp"
+    },
+    {
+      "id": "br-257450",
+      "name": "Bushiroad Sleeve Collection HG Vol.3055: Love Live! Super Star!! - Chisato Arashi (75-Pack)",
+      "group": "Liella",
+      "idol": "Chisato",
+      "src": "assets/sleeves/br-257450.webp"
+    },
+    {
+      "id": "br-br-3507",
+      "name": "Vol.3507 ラブライブ！スーパースター!! 『嵐 千砂都』 夏服ver",
+      "group": "Liella",
+      "idol": "Chisato",
+      "src": "assets/sleeves/br-br-3507.webp"
+    },
+    {
+      "id": "br-257447",
+      "name": "Bushiroad Sleeve Collection HG Vol.3053: Love Live! Super Star!! - Kanon Shibuya (75-Pack)",
+      "group": "Liella",
+      "idol": "Kanon",
+      "src": "assets/sleeves/br-257447.webp"
+    },
+    {
+      "id": "br-br-3505",
+      "name": "Vol.3505 ラブライブ！スーパースター!! 『澁谷かのん』 夏服ver",
+      "group": "Liella",
+      "idol": "Kanon",
+      "src": "assets/sleeves/br-br-3505.webp"
+    },
+    {
+      "id": "br-257449",
+      "name": "Bushiroad Sleeve Collection HG Vol.3054: Love Live! Super Star!! - Keke Tang (75-Pack)",
+      "group": "Liella",
+      "idol": "Keke",
+      "src": "assets/sleeves/br-257449.webp"
+    },
+    {
+      "id": "br-br-3506",
+      "name": "Vol.3506 ラブライブ！スーパースター!! 『唐 可可』 夏服ver",
+      "group": "Liella",
+      "idol": "Keke",
+      "src": "assets/sleeves/br-br-3506.webp"
+    },
+    {
+      "id": "br-br-3510",
+      "name": "Vol.3510 ラブライブ！スーパースター!! 『桜小路きな子』 夏服ver",
+      "group": "Liella",
+      "idol": "Kinako",
+      "src": "assets/sleeves/br-br-3510.webp"
+    },
+    {
+      "id": "br-br-3511",
+      "name": "Vol.3511 ラブライブ！スーパースター!! 『米女メイ』 夏服ver",
+      "group": "Liella",
+      "idol": "Mei",
+      "src": "assets/sleeves/br-br-3511.webp"
+    },
+    {
+      "id": "br-br-3513",
+      "name": "Vol.3513 ラブライブ！スーパースター!! 『鬼塚夏美』 夏服ver",
+      "group": "Liella",
+      "idol": "Natsumi",
+      "src": "assets/sleeves/br-br-3513.webp"
+    },
+    {
+      "id": "br-257452",
+      "name": "Bushiroad Sleeve Collection HG Vol.3057: Love Live! Super Star!! - Ren Hazuki (75-Pack)",
+      "group": "Liella",
+      "idol": "Ren",
+      "src": "assets/sleeves/br-257452.webp"
+    },
+    {
+      "id": "br-br-3509",
+      "name": "Vol.3509 ラブライブ！スーパースター!! 『葉月 恋』 夏服ver",
+      "group": "Liella",
+      "idol": "Ren",
+      "src": "assets/sleeves/br-br-3509.webp"
+    },
+    {
+      "id": "br-br-3512",
+      "name": "Vol.3512 ラブライブ！スーパースター!! 『若菜四季』 夏服ver",
+      "group": "Liella",
+      "idol": "Shiki",
+      "src": "assets/sleeves/br-br-3512.webp"
+    },
+    {
+      "id": "br-257451",
+      "name": "Bushiroad Sleeve Collection HG Vol.3056: Love Live! Super Star!! - Sumire Heanna (75-Pack)",
+      "group": "Liella",
+      "idol": "Sumire",
+      "src": "assets/sleeves/br-257451.webp"
+    },
+    {
+      "id": "br-br-3508",
+      "name": "Vol.3508 ラブライブ！スーパースター!! 『平安名すみれ』 夏服ver",
+      "group": "Liella",
+      "idol": "Sumire",
+      "src": "assets/sleeves/br-br-3508.webp"
+    },
+    {
+      "id": "br-159482",
+      "name": "Bushiroad Sleeve Collection HG Vol.1060: Love Live! - Eli Ayase (60-Pack)",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-159482.webp"
+    },
+    {
+      "id": "br-251960",
+      "name": "Bushiroad Sleeve Collection HG Vol.2934: Love Live! - Eli Ayase Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-251960.webp"
+    },
+    {
+      "id": "br-160064",
+      "name": "Bushiroad Sleeve Collection HG Vol.480: Love Live! - Eli Ayase (60-Pack)",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-160064.webp"
+    },
+    {
+      "id": "br-160235",
+      "name": "Bushiroad Sleeve Collection HG Vol.685: Love Live! - Eli Ayase (60-Pack)",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-160235.webp"
+    },
+    {
+      "id": "br-br-2073",
+      "name": "Vol.2073 ラブライブ！ 『絢瀬 絵里』Part.6",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-br-2073.webp"
+    },
+    {
+      "id": "br-br-323",
+      "name": "Vol.323 ラブライブ！ 『絢瀬 絵里』",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-br-323.webp"
+    },
+    {
+      "id": "br-br-568",
+      "name": "Vol.568 ラブライブ！ 『絢瀬 絵里』Part.3",
+      "group": "Muse",
+      "idol": "Eli",
+      "src": "assets/sleeves/br-br-568.webp"
+    },
+    {
+      "id": "br-159488",
+      "name": "Bushiroad Sleeve Collection HG Vol.1066: Love Live! - Hanayo Koizumi (60-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-159488.webp"
+    },
+    {
+      "id": "br-195431",
+      "name": "Bushiroad Sleeve Collection HG Vol.2079: Love Live! - Hanayo Koizumi (60-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-195431.webp"
+    },
+    {
+      "id": "br-251991",
+      "name": "Bushiroad Sleeve Collection HG Vol.2940: Love Live! - Hanayo Koizumi Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-251991.webp"
+    },
+    {
+      "id": "br-160001",
+      "name": "Bushiroad Sleeve Collection HG Vol.302: Love Live! - Hanayo Koizumi (60-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-160001.webp"
+    },
+    {
+      "id": "br-160134",
+      "name": "Bushiroad Sleeve Collection HG Vol.565: Love Live! - Hanayo Koizumi (60-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-160134.webp"
+    },
+    {
+      "id": "br-160232",
+      "name": "Bushiroad Sleeve Collection HG Vol.682: Love Live! - Hanayo Koizumi (60-Pack)",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-160232.webp"
+    },
+    {
+      "id": "br-br-477",
+      "name": "Vol.477 ラブライブ！ 『小泉 花陽』Part.2",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/br-br-477.webp"
+    },
+    {
+      "id": "br-159480",
+      "name": "Bushiroad Sleeve Collection HG Vol.1059: Love Live! - Honoka Kosaka (60-Pack)",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-159480.webp"
+    },
+    {
+      "id": "br-251958",
+      "name": "Bushiroad Sleeve Collection HG Vol.2933: Love Live! - Honoka Kosaka Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-251958.webp"
+    },
+    {
+      "id": "br-160011",
+      "name": "Bushiroad Sleeve Collection HG Vol.320: Love Live! - Honoka Kosaka (60-Pack)",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-160011.webp"
+    },
+    {
+      "id": "br-160055",
+      "name": "Bushiroad Sleeve Collection HG Vol.472: Love Live! - Honoka Kosaka (60-Pack)",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-160055.webp"
+    },
+    {
+      "id": "br-160225",
+      "name": "Bushiroad Sleeve Collection HG Vol.677: Love Live! - Honoka Kosaka (60-Pack)",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-160225.webp"
+    },
+    {
+      "id": "br-br-2072",
+      "name": "Vol.2072 ラブライブ！ 『高坂 穂乃果』Part.6",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-br-2072.webp"
+    },
+    {
+      "id": "br-br-557",
+      "name": "Vol.557 ラブライブ！ 『高坂 穂乃果』Part.3",
+      "group": "Muse",
+      "idol": "Honoka",
+      "src": "assets/sleeves/br-br-557.webp"
+    },
+    {
+      "id": "br-159483",
+      "name": "Bushiroad Sleeve Collection HG Vol.1061: Love Live! - Kotori Minami (60-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-159483.webp"
+    },
+    {
+      "id": "br-195426",
+      "name": "Bushiroad Sleeve Collection HG Vol.2074: Love Live! - Kotori Minami (60-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-195426.webp"
+    },
+    {
+      "id": "br-251965",
+      "name": "Bushiroad Sleeve Collection HG Vol.2935: Love Live! - Kotori Minami Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-251965.webp"
+    },
+    {
+      "id": "br-160056",
+      "name": "Bushiroad Sleeve Collection HG Vol.473: Love Live! - Kotori Minami (60-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-160056.webp"
+    },
+    {
+      "id": "br-160128",
+      "name": "Bushiroad Sleeve Collection HG Vol.558: Love Live! - Kotori Minami (60-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-160128.webp"
+    },
+    {
+      "id": "br-160226",
+      "name": "Bushiroad Sleeve Collection HG Vol.678: Love Live! - Kotori Minami (60-Pack)",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-160226.webp"
+    },
+    {
+      "id": "br-br-299",
+      "name": "Vol.299 ラブライブ！ 『南 ことり』",
+      "group": "Muse",
+      "idol": "Kotori",
+      "src": "assets/sleeves/br-br-299.webp"
+    },
+    {
+      "id": "br-159486",
+      "name": "Bushiroad Sleeve Collection HG Vol.1064: Love Live! - Maki Nishikino (60-Pack)",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-159486.webp"
+    },
+    {
+      "id": "br-251974",
+      "name": "Bushiroad Sleeve Collection HG Vol.2938: Love Live! - Maki Nishikino Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-251974.webp"
+    },
+    {
+      "id": "br-160000",
+      "name": "Bushiroad Sleeve Collection HG Vol.301: Love Live! - Maki Nishikino (60-Pack)",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-160000.webp"
+    },
+    {
+      "id": "br-160132",
+      "name": "Bushiroad Sleeve Collection HG Vol.563: Love Live! - Maki Nishikino (60-Pack)",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-160132.webp"
+    },
+    {
+      "id": "br-160230",
+      "name": "Bushiroad Sleeve Collection HG Vol.680: Love Live! - Maki Nishikino (60-Pack)",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-160230.webp"
+    },
+    {
+      "id": "br-br-2077",
+      "name": "Vol.2077 ラブライブ！ 『西木野 真姫』Part.6",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-br-2077.webp"
+    },
+    {
+      "id": "br-br-475",
+      "name": "Vol.475 ラブライブ！ 『西木野 真姫』Part.2",
+      "group": "Muse",
+      "idol": "Maki",
+      "src": "assets/sleeves/br-br-475.webp"
+    },
+    {
+      "id": "br-159490",
+      "name": "Bushiroad Sleeve Collection HG Vol.1068: Love Live! - Mu's (60-Pack)",
+      "group": "Muse",
+      "idol": "Muse",
+      "src": "assets/sleeves/br-159490.webp"
+    },
+    {
+      "id": "br-159489",
+      "name": "Bushiroad Sleeve Collection HG Vol.1067: Love Live! - Nico Yazawa (60-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-159489.webp"
+    },
+    {
+      "id": "br-195432",
+      "name": "Bushiroad Sleeve Collection HG Vol.2080: Love Live! - Nico Yazawa (60-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-195432.webp"
+    },
+    {
+      "id": "br-251992",
+      "name": "Bushiroad Sleeve Collection HG Vol.2941: Love Live! - Niko Yazawa Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-251992.webp"
+    },
+    {
+      "id": "br-159999",
+      "name": "Bushiroad Sleeve Collection HG Vol.300: Love Live! - Nico Yazawa (60-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-159999.webp"
+    },
+    {
+      "id": "br-160061",
+      "name": "Bushiroad Sleeve Collection HG Vol.478: Love Live! - Nico Yazawa (60-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-160061.webp"
+    },
+    {
+      "id": "br-160135",
+      "name": "Bushiroad Sleeve Collection HG Vol.566: Love Live! - Nico Yazawa (60-Pack)",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-160135.webp"
+    },
+    {
+      "id": "br-br-683",
+      "name": "Vol.683 ラブライブ！ 『矢澤 にこ』Part.4",
+      "group": "Muse",
+      "idol": "Nico",
+      "src": "assets/sleeves/br-br-683.webp"
+    },
+    {
+      "id": "br-159487",
+      "name": "Bushiroad Sleeve Collection HG Vol.1065: Love Live! - Nozomi Tojo (60-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-159487.webp"
+    },
+    {
+      "id": "br-195430",
+      "name": "Bushiroad Sleeve Collection HG Vol.2078: Love Live! - Nozomi Tojo (60-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-195430.webp"
+    },
+    {
+      "id": "br-251990",
+      "name": "Bushiroad Sleeve Collection HG Vol.2939: Love Live! - Nozomi Tojo Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-251990.webp"
+    },
+    {
+      "id": "br-160062",
+      "name": "Bushiroad Sleeve Collection HG Vol.479: Love Live! - Nozomi Tojo (60-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-160062.webp"
+    },
+    {
+      "id": "br-160136",
+      "name": "Bushiroad Sleeve Collection HG Vol.567: Love Live! - Nozomi Tojo (60-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-160136.webp"
+    },
+    {
+      "id": "br-160234",
+      "name": "Bushiroad Sleeve Collection HG Vol.684: Love Live! - Nozomi Tojo (60-Pack)",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-160234.webp"
+    },
+    {
+      "id": "br-br-321",
+      "name": "Vol.321 ラブライブ！ 『東條 希』",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/br-br-321.webp"
+    },
+    {
+      "id": "br-159485",
+      "name": "Bushiroad Sleeve Collection HG Vol.1063: Love Live! - Rin Hoshizora (60-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-159485.webp"
+    },
+    {
+      "id": "br-195428",
+      "name": "Bushiroad Sleeve Collection HG Vol.2076: Love Live! - Rin Hoshizora (60-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-195428.webp"
+    },
+    {
+      "id": "br-251973",
+      "name": "Bushiroad Sleeve Collection HG Vol.2937: Love Live! - Rin Hoshizora Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-251973.webp"
+    },
+    {
+      "id": "br-160059",
+      "name": "Bushiroad Sleeve Collection HG Vol.476: Love Live! - Rin Hoshizora (60-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-160059.webp"
+    },
+    {
+      "id": "br-160133",
+      "name": "Bushiroad Sleeve Collection HG Vol.564: Love Live! - Rin Hoshizora (60-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-160133.webp"
+    },
+    {
+      "id": "br-160231",
+      "name": "Bushiroad Sleeve Collection HG Vol.681: Love Live! - Rin Hoshizora (60-Pack)",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-160231.webp"
+    },
+    {
+      "id": "br-br-322",
+      "name": "Vol.322 ラブライブ！ 『星空 凛』",
+      "group": "Muse",
+      "idol": "Rin",
+      "src": "assets/sleeves/br-br-322.webp"
+    },
+    {
+      "id": "br-159484",
+      "name": "Bushiroad Sleeve Collection HG Vol.1062: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-159484.webp"
+    },
+    {
+      "id": "br-195427",
+      "name": "Bushiroad Sleeve Collection HG Vol.2075: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-195427.webp"
+    },
+    {
+      "id": "br-251970",
+      "name": "Bushiroad Sleeve Collection HG Vol.2936: Love Live! - Umi Sonoda Sukufesu Series Thanksgiving (75-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-251970.webp"
+    },
+    {
+      "id": "br-160002",
+      "name": "Bushiroad Sleeve Collection HG Vol.303: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-160002.webp"
+    },
+    {
+      "id": "br-160057",
+      "name": "Bushiroad Sleeve Collection HG Vol.474: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-160057.webp"
+    },
+    {
+      "id": "br-160129",
+      "name": "Bushiroad Sleeve Collection HG Vol.559: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-160129.webp"
+    },
+    {
+      "id": "br-160227",
+      "name": "Bushiroad Sleeve Collection HG Vol.679: Love Live! - Umi Sonoda (60-Pack)",
+      "group": "Muse",
+      "idol": "Umi",
+      "src": "assets/sleeves/br-160227.webp"
+    },
+    {
+      "id": "br-218428",
+      "name": "Bushiroad Sleeve Collection HG Vol.2456: Love Live! Nijigasaki High School Idol Club - Ai Miyashita (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/br-218428.webp"
+    },
+    {
+      "id": "br-246006",
+      "name": "Bushiroad Sleeve Collection HG Vol.2823: Love Live! Nijigasaki High School Idol Club - Ai Miyashita (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/br-246006.webp"
+    },
+    {
+      "id": "br-276024",
+      "name": "Bushiroad Sleeve Collection HG Vol.3234 Love Live! Nijigasaki High School Idol Club - Ai Miyashita Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/br-276024.webp"
+    },
+    {
+      "id": "br-br-3686",
+      "name": "Vol.3686 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『宮下 愛』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/br-br-3686.webp"
+    },
+    {
+      "id": "br-218432",
+      "name": "Bushiroad Sleeve Collection HG Vol.2452: Love Live! Nijigasaki High School Idol Club - Ayumu Uehara (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/br-218432.webp"
+    },
+    {
+      "id": "br-246002",
+      "name": "Bushiroad Sleeve Collection HG Vol.2819: Love Live! Nijigasaki High School Idol Club - Ayumu Uehara (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/br-246002.webp"
+    },
+    {
+      "id": "br-276017",
+      "name": "Bushiroad Sleeve Collection HG Vol.3230 Love Live! Nijigasaki High School Idol Club - Ayumu Uehara (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/br-276017.webp"
+    },
+    {
+      "id": "br-br-3682",
+      "name": "Vol.3682 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『上原歩夢』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/br-br-3682.webp"
+    },
+    {
+      "id": "br-218425",
+      "name": "Bushiroad Sleeve Collection HG Vol.2459: Love Live! Nijigasaki High School Idol Club - Emma Verde (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "src": "assets/sleeves/br-218425.webp"
+    },
+    {
+      "id": "br-246009",
+      "name": "Bushiroad Sleeve Collection HG Vol.2826: Love Live! Nijigasaki High School Idol Club - Emma Verde (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "src": "assets/sleeves/br-246009.webp"
+    },
+    {
+      "id": "br-276029",
+      "name": "Bushiroad Sleeve Collection HG Vol.3237 Love Live! Nijigasaki High School Idol Club - Emma Verde Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "src": "assets/sleeves/br-276029.webp"
+    },
+    {
+      "id": "br-502970",
+      "name": "Bushiroad Sleeve Collection HG Vol.3689: Love Live! Nijigasaki High School Idol Club Emma Verde Solo Idol Costume (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "src": "assets/sleeves/br-502970.webp"
+    },
+    {
+      "id": "br-276014",
+      "name": "Bushiroad Sleeve Collection HG Vol.3228 Love Live! Nijigasaki High School Idol Club (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Group",
+      "src": "assets/sleeves/br-276014.webp"
+    },
+    {
+      "id": "br-218427",
+      "name": "Bushiroad Sleeve Collection HG Vol.2457: Love Live! Nijigasaki High School Idol Club - Kanata Konoe (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "src": "assets/sleeves/br-218427.webp"
+    },
+    {
+      "id": "br-246007",
+      "name": "Bushiroad Sleeve Collection HG Vol.2824: Love Live! Nijigasaki High School Idol Club - Kanata Konoe (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "src": "assets/sleeves/br-246007.webp"
+    },
+    {
+      "id": "br-276026",
+      "name": "Bushiroad Sleeve Collection HG Vol.3235 Love Live! Nijigasaki High School Idol Club - Kanata Konoe Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "src": "assets/sleeves/br-276026.webp"
+    },
+    {
+      "id": "br-br-3687",
+      "name": "Vol.3687 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『近江彼方』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "src": "assets/sleeves/br-br-3687.webp"
+    },
+    {
+      "id": "br-218431",
+      "name": "Bushiroad Sleeve Collection HG Vol.2455: Love Live! Nijigasaki High School Idol Club - Karin Asaka (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/br-218431.webp"
+    },
+    {
+      "id": "br-276022",
+      "name": "Bushiroad Sleeve Collection HG Vol.3233 Love Live! Nijigasaki High School Idol Club - Karin Asaka Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/br-276022.webp"
+    },
+    {
+      "id": "br-br-2822",
+      "name": "Vol.2822 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『朝香果林』 スクフェスシリーズ感謝祭2020ver",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/br-br-2822.webp"
+    },
+    {
+      "id": "br-br-3685",
+      "name": "Vol.3685 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『朝香果林』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/br-br-3685.webp"
+    },
+    {
+      "id": "br-218424",
+      "name": "Bushiroad Sleeve Collection HG Vol.2453: Love Live! Nijigasaki High School Idol Club - Kasumi Nakasu (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "src": "assets/sleeves/br-218424.webp"
+    },
+    {
+      "id": "br-276019",
+      "name": "Bushiroad Sleeve Collection HG Vol.3231 Love Live! Nijigasaki High School Idol Club - Kasumi Nakasu Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "src": "assets/sleeves/br-276019.webp"
+    },
+    {
+      "id": "br-br-2820",
+      "name": "Vol.2820 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』 スクフェスシリーズ感謝祭2020ver",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "src": "assets/sleeves/br-br-2820.webp"
+    },
+    {
+      "id": "br-br-3683",
+      "name": "Vol.3683 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "src": "assets/sleeves/br-br-3683.webp"
+    },
+    {
+      "id": "br-br-3693",
+      "name": "Vol.3693 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『鐘 嵐珠』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Lanzhu",
+      "src": "assets/sleeves/br-br-3693.webp"
+    },
+    {
+      "id": "br-br-3692",
+      "name": "Vol.3692 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『ミア・テイラー』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Mia",
+      "src": "assets/sleeves/br-br-3692.webp"
+    },
+    {
+      "id": "br-218426",
+      "name": "Bushiroad Sleeve Collection HG Vol.2460: Love Live! Nijigasaki High School Idol Club - Rina Tennouji (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "src": "assets/sleeves/br-218426.webp"
+    },
+    {
+      "id": "br-246010",
+      "name": "Bushiroad Sleeve Collection HG Vol.2827: Love Live! Nijigasaki High School Idol Club - Rina Tennouji (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "src": "assets/sleeves/br-246010.webp"
+    },
+    {
+      "id": "br-276031",
+      "name": "Bushiroad Sleeve Collection HG Vol.3238 Love Live! Nijigasaki High School Idol Club - Rina Tennouji Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "src": "assets/sleeves/br-276031.webp"
+    },
+    {
+      "id": "br-br-3690",
+      "name": "Vol.3690 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『天王寺璃奈』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "src": "assets/sleeves/br-br-3690.webp"
+    },
+    {
+      "id": "br-218430",
+      "name": "Bushiroad Sleeve Collection HG Vol.2458: Love Live! Nijigasaki High School Idol Club - Setsuna Yuuki (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/br-218430.webp"
+    },
+    {
+      "id": "br-276027",
+      "name": "Bushiroad Sleeve Collection HG Vol.3236 Love Live! Nijigasaki High School Idol Club - Setsuna Yuuki Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/br-276027.webp"
+    },
+    {
+      "id": "br-br-2825",
+      "name": "Vol.2825 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『優木せつ菜』 スクフェスシリーズ感謝祭2020ver",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/br-br-2825.webp"
+    },
+    {
+      "id": "br-br-3688",
+      "name": "Vol.3688 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『優木せつ菜』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/br-br-3688.webp"
+    },
+    {
+      "id": "br-246011",
+      "name": "Bushiroad Sleeve Collection HG Vol.2828: Love Live! Nijigasaki High School Idol Club - Shioriko Mifune (75-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Shioriko",
+      "src": "assets/sleeves/br-246011.webp"
+    },
+    {
+      "id": "br-br-3691",
+      "name": "Vol.3691 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『三船栞子』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Shioriko",
+      "src": "assets/sleeves/br-br-3691.webp"
+    },
+    {
+      "id": "br-218429",
+      "name": "Bushiroad Sleeve Collection HG Vol.2454: Love Live! Nijigasaki High School Idol Club - Shizuku Osaka (60-Pack)",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/br-218429.webp"
+    },
+    {
+      "id": "br-276021",
+      "name": "Bushiroad Sleeve Collection HG Vol.3232 Love Live! Nijigasaki High School Idol Club - Shizuku Osaka Part.2 (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/br-276021.webp"
+    },
+    {
+      "id": "br-br-2821",
+      "name": "Vol.2821 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』 スクフェスシリーズ感謝祭2020ver",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/br-br-2821.webp"
+    },
+    {
+      "id": "br-br-3684",
+      "name": "Vol.3684 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』 ソロアイドル衣装Vol.2ver",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/br-br-3684.webp"
+    },
+    {
+      "id": "br-276016",
+      "name": "Bushiroad Sleeve Collection HG Vol.3229 Love Live! Nijigasaki High School Idol Club - Yu Takasaki (75-pack)",
+      "group": "Nijigasaki",
+      "idol": "Yu",
+      "src": "assets/sleeves/br-276016.webp"
+    }
+  ]
+}

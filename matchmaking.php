@@ -431,6 +431,14 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         // Elo/PR already applied — missions are best-effort on Hostinger.
     }
 
+    $coinGrants = [];
+    try {
+        require_once __DIR__ . '/coins.php';
+        $coinGrants = tcgCoinsOnGameFinished($fakeState);
+    } catch (Throwable $e) {
+        // Coins are best-effort.
+    }
+
     $out = ['success' => true, 'room_id' => $roomId];
     if ($alreadyDone) {
         $out['already_applied'] = true;
@@ -441,6 +449,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     }
     if ($missionCompletions !== []) {
         $out['mission_completions'] = $missionCompletions;
+    }
+    if ($coinGrants !== []) {
+        $out['coin_grants'] = $coinGrants;
     }
     return $out;
 }

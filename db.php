@@ -246,6 +246,31 @@ function tcgDbMigrate(PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_experiment_presets', 'sleeve_id', "TEXT NOT NULL DEFAULT ''");
     });
 
+    tcgDbRunMigrationOnce($db, 'coins_sleeves_20260812', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_users', 'coins', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_users', 'login_days', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_users', 'login_days_last_date', 'TEXT');
+        tcgDbEnsureColumn($db, 'tcg_users', 'login_days_bootstrapped', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_users', 'free_sleeve_claims', 'INTEGER NOT NULL DEFAULT 0');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_owned_sleeves (
+            discord_id TEXT NOT NULL,
+            sleeve_id TEXT NOT NULL,
+            acquired_at INTEGER NOT NULL,
+            source TEXT NOT NULL DEFAULT "shop",
+            equip_intro_seen INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (discord_id, sleeve_id),
+            FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+        )');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_coin_grants (
+            room_id TEXT NOT NULL,
+            discord_id TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY (room_id, discord_id),
+            FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+        )');
+    });
+
     $done = true;
 }
 
@@ -462,6 +487,28 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_users', 'seal_p', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'seal_sec', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'seal_pr', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'coins', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'login_days', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'login_days_last_date', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_users', 'login_days_bootstrapped', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'free_sleeve_claims', 'INTEGER NOT NULL DEFAULT 0');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_owned_sleeves (
+        discord_id TEXT NOT NULL,
+        sleeve_id TEXT NOT NULL,
+        acquired_at INTEGER NOT NULL,
+        source TEXT NOT NULL DEFAULT "shop",
+        equip_intro_seen INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (discord_id, sleeve_id),
+        FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+    )');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_coin_grants (
+        room_id TEXT NOT NULL,
+        discord_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (room_id, discord_id),
+        FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+    )');
     tcgDbEnsureColumn($db, 'tcg_box_progress', 'rm_pity', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_box_progress', 'live_pity', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_collection', 'acquired_at', 'INTEGER');

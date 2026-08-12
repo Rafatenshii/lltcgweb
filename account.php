@@ -39,6 +39,8 @@ require_once __DIR__ . '/sleeves.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booster.php';
 require_once __DIR__ . '/seals.php';
+require_once __DIR__ . '/coins.php';
+require_once __DIR__ . '/sleeve_shop.php';
 require_once __DIR__ . '/stamps.php';
 require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/matchmaking.php';
@@ -104,6 +106,11 @@ try {
         case 'convert_to_seal':    echo json_encode(tcgApiConvertToSeal($body)); break;
         case 'convert_to_seals_batch': echo json_encode(tcgApiConvertToSealsBatch($body)); break;
         case 'sticker_buy':        echo json_encode(tcgApiStickerBuy($body)); break;
+        case 'sleeve_shop_catalog': echo json_encode(tcgApiSleeveShopCatalog($body)); break;
+        case 'sleeve_buy':         echo json_encode(tcgApiSleeveBuy($body)); break;
+        case 'sleeve_claim_free':  echo json_encode(tcgApiSleeveClaimFree($body)); break;
+        case 'sleeve_equip_intro_seen': echo json_encode(tcgApiSleeveEquipIntroSeen($body)); break;
+        case 'owned_sleeves':      echo json_encode(tcgApiOwnedSleeves($body)); break;
         default:
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Unknown action']);
@@ -122,6 +129,10 @@ function tcgApiMe(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $profile = tcgAuthUserProfile($uid);
     $user = tcgEnsureUser($uid, $profile);
+    require_once __DIR__ . '/sleeve_shop.php';
+    $loginDays = tcgTouchLoginDays($uid);
+    require_once __DIR__ . '/missions.php';
+    tcgMissionCheckLoginDays($uid);
     $cards = tcgLoadCardsData();
     $cardMap = tcgBuildCardMap($cards);
     $migration = tcgMigrateDuplicateToStarGems($uid, $cardMap);
@@ -147,6 +158,12 @@ function tcgApiMe(array $body): array {
         'daily' => $daily,
         'ranked_pr' => $rankedPr,
         'star_gems' => tcgGetStarGems($uid),
+        'coins' => tcgGetCoins($uid),
+        'login_days' => $loginDays,
+        'free_sleeve_claims' => tcgGetFreeSleeveClaims($uid),
+        'owned_sleeves' => tcgOwnedSleeveIds($uid),
+        'sleeves_need_intro' => tcgOwnedSleevesNeedingIntro($uid),
+        'sleeve_shop_price' => TCG_SLEEVE_SHOP_PRICE,
         'star_gems_per_card' => TCG_STAR_GEMS_PER_CARD,
         'star_gems_pack_cost' => TCG_STAR_GEMS_PACK_COST,
         'star_gems_box_cost' => TCG_STAR_GEMS_BOX_COST,
@@ -471,6 +488,9 @@ function tcgApiDeckSave(array $body): array {
     $now = time();
     $hasSleeve = array_key_exists('sleeve_id', $body);
     $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($hasSleeve && $sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve not owned', 400);
+    }
     $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, 0, ?)
         ON CONFLICT(discord_id, slot) DO UPDATE SET
@@ -546,6 +566,9 @@ function tcgApiExperimentPresetSave(array $body): array {
     $now = time();
     $hasSleeve = array_key_exists('sleeve_id', $body);
     $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($hasSleeve && $sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve not owned', 400);
+    }
     $db->prepare('INSERT INTO tcg_experiment_presets
         (discord_id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -1043,6 +1066,7 @@ function tcgApiMissionStampSent(array $body): array {
 function tcgApiMissionGameFinished(array $body): array {
     require_once __DIR__ . '/match_bridge.php';
     require_once __DIR__ . '/missions.php';
+    require_once __DIR__ . '/coins.php';
     tcgRequireInternalMatchSecret();
     $playersIn = is_array($body['players'] ?? null) ? $body['players'] : [];
     $p1 = tcgMissionPlayerSlim(is_array($playersIn['p1'] ?? null) ? $playersIn['p1'] : null);
@@ -1055,6 +1079,8 @@ function tcgApiMissionGameFinished(array $body): array {
         'end_reason' => $body['end_reason'] ?? null,
         'resigned_by' => $body['resigned_by'] ?? null,
         'disconnected_player' => $body['disconnected_player'] ?? null,
+        'cpu_solo' => !empty($body['cpu_solo']),
+        'cpu_difficulty' => (string)($body['cpu_difficulty'] ?? ''),
         'players' => [
             'p1' => $p1,
             'p2' => $p2,
@@ -1064,9 +1090,11 @@ function tcgApiMissionGameFinished(array $body): array {
         $state['ranked'] = $body['ranked'];
     }
     $completions = tcgMissionOnGameFinished($state);
+    $coinGrants = tcgCoinsOnGameFinished($state);
     return [
         'success' => true,
         'mission_completions' => $completions,
+        'coin_grants' => $coinGrants,
     ];
 }
 
@@ -2089,6 +2117,146 @@ function tcgPublicQueueStatus(string $discordId): array {
         return ['status' => 'searching', 'mode' => 'casual'];
     }
     return ['status' => 'idle'];
+}
+
+function tcgApiOwnedSleeves(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    return [
+        'success' => true,
+        'coins' => tcgGetCoins($uid),
+        'owned_sleeves' => tcgOwnedSleeveIds($uid),
+        'sleeves_need_intro' => tcgOwnedSleevesNeedingIntro($uid),
+        'free_sleeve_claims' => tcgGetFreeSleeveClaims($uid),
+        'sleeve_shop_price' => TCG_SLEEVE_SHOP_PRICE,
+    ];
+}
+
+function tcgApiSleeveShopCatalog(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    tcgTouchLoginDays($uid);
+    tcgMissionCheckLoginDays($uid);
+
+    $catalog = tcgLoadSleeveCatalog();
+    $owned = array_fill_keys(tcgOwnedSleeveIds($uid), true);
+    $portraits = tcgLoadIdolPortraits();
+    $portraitById = [];
+    foreach ($portraits as $p) {
+        $portraitById[strtolower($p['id'])] = $p;
+    }
+
+    $byUnit = [];
+    foreach ($catalog as $sleeve) {
+        $unit = tcgSleeveShopUnitForGroup($sleeve['group']);
+        $idol = trim((string)$sleeve['idol']) ?: 'Other';
+        if (!isset($byUnit[$unit])) {
+            $byUnit[$unit] = [];
+        }
+        if (!isset($byUnit[$unit][$idol])) {
+            $byUnit[$unit][$idol] = [];
+        }
+        $byUnit[$unit][$idol][] = [
+            'id' => $sleeve['id'],
+            'name' => $sleeve['name'],
+            'src' => $sleeve['src'],
+            'owned' => isset($owned[$sleeve['id']]),
+            'price' => TCG_SLEEVE_SHOP_PRICE,
+        ];
+    }
+
+    $generations = [];
+    foreach (tcgSleeveShopGenerationOrder() as $unit) {
+        if (empty($byUnit[$unit])) {
+            continue;
+        }
+        $chars = [];
+        foreach ($byUnit[$unit] as $idol => $sleeves) {
+            $key = strtolower($idol);
+            $port = $portraitById[$key] ?? null;
+            $chars[] = [
+                'id' => $idol,
+                'name' => $port['name'] ?? $idol,
+                'portrait' => $port['portrait'] ?? '',
+                'sleeve_count' => count($sleeves),
+                'sleeves' => $sleeves,
+            ];
+        }
+        usort($chars, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        $generations[] = [
+            'id' => $unit,
+            'name' => $unit,
+            'characters' => $chars,
+        ];
+    }
+
+    return [
+        'success' => true,
+        'coins' => tcgGetCoins($uid),
+        'free_sleeve_claims' => tcgGetFreeSleeveClaims($uid),
+        'sleeve_shop_price' => TCG_SLEEVE_SHOP_PRICE,
+        'owned_sleeves' => array_keys($owned),
+        'sleeves_need_intro' => tcgOwnedSleevesNeedingIntro($uid),
+        'generations' => $generations,
+        'default_back' => 'lltcg-back.png',
+    ];
+}
+
+function tcgApiSleeveBuy(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($sleeveId === '' || !tcgSleeveCatalogIdValid($sleeveId)) {
+        throw new Exception('Unknown sleeve', 400);
+    }
+    if (tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve already owned', 400);
+    }
+    tcgDeductCoins($uid, TCG_SLEEVE_SHOP_PRICE);
+    tcgGrantOwnedSleeve($uid, $sleeveId, 'shop');
+    return [
+        'success' => true,
+        'sleeve_id' => $sleeveId,
+        'coins' => tcgGetCoins($uid),
+        'owned_sleeves' => tcgOwnedSleeveIds($uid),
+        'free_sleeve_claims' => tcgGetFreeSleeveClaims($uid),
+    ];
+}
+
+function tcgApiSleeveClaimFree(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($sleeveId === '' || !tcgSleeveCatalogIdValid($sleeveId)) {
+        throw new Exception('Unknown sleeve', 400);
+    }
+    if (tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve already owned', 400);
+    }
+    $claims = tcgGetFreeSleeveClaims($uid);
+    if ($claims < 1) {
+        throw new Exception('No free sleeve claim available', 400);
+    }
+    tcgSetFreeSleeveClaims($uid, $claims - 1);
+    tcgGrantOwnedSleeve($uid, $sleeveId, 'free_milestone');
+    return [
+        'success' => true,
+        'sleeve_id' => $sleeveId,
+        'coins' => tcgGetCoins($uid),
+        'owned_sleeves' => tcgOwnedSleeveIds($uid),
+        'free_sleeve_claims' => tcgGetFreeSleeveClaims($uid),
+    ];
+}
+
+function tcgApiSleeveEquipIntroSeen(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($sleeveId === '' || !tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve not owned', 400);
+    }
+    tcgMarkSleeveEquipIntroSeen($uid, $sleeveId);
+    return ['success' => true, 'sleeve_id' => $sleeveId];
 }
 
 /**

@@ -161,6 +161,16 @@ function tcgPostMissionStampSentToHostinger(string $discordId): array {
  * @return list<array{id: string, i18n_key: string, reward: int}>
  */
 function tcgPostMissionGameFinishedToHostinger(array $state): array {
+    return tcgPostMissionGameFinishedBundleToHostinger($state)['missions'];
+}
+
+/**
+ * Post finish missions + coins to Hostinger.
+ *
+ * @param array<string,mixed> $state
+ * @return array{missions: list, coin_grants: list}
+ */
+function tcgPostMissionGameFinishedBundleToHostinger(array $state): array {
     $payload = [
         'room_id' => (string)($state['room_id'] ?? ''),
         'mode' => (string)($state['mode'] ?? ''),
@@ -169,6 +179,8 @@ function tcgPostMissionGameFinishedToHostinger(array $state): array {
         'end_reason' => $state['end_reason'] ?? null,
         'resigned_by' => $state['resigned_by'] ?? null,
         'disconnected_player' => $state['disconnected_player'] ?? null,
+        'cpu_solo' => !empty($state['cpu_solo']),
+        'cpu_difficulty' => (string)($state['cpu_difficulty'] ?? ''),
         'players' => [
             'p1' => tcgMissionPlayerSlim(is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : null),
             'p2' => tcgMissionPlayerSlim(is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : null),
@@ -189,10 +201,14 @@ function tcgPostMissionGameFinishedToHostinger(array $state): array {
         12
     );
     if (!is_array($res) || empty($res['success'])) {
-        return [];
+        return ['missions' => [], 'coin_grants' => []];
     }
-    $completions = $res['mission_completions'] ?? null;
-    return is_array($completions) ? $completions : [];
+    $missions = $res['mission_completions'] ?? [];
+    $coins = $res['coin_grants'] ?? [];
+    return [
+        'missions' => is_array($missions) ? $missions : [],
+        'coin_grants' => is_array($coins) ? $coins : [],
+    ];
 }
 
 function tcgInternalMatchSecretOk(?string $provided): bool {
@@ -343,6 +359,9 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
     }
     if (!empty($res['mission_completions']) && is_array($res['mission_completions'])) {
         $state['_hostinger_mission_completions'] = $res['mission_completions'];
+    }
+    if (!empty($res['coin_grants']) && is_array($res['coin_grants'])) {
+        $state['_coin_grants'] = $res['coin_grants'];
     }
     return true;
 }

@@ -1,0 +1,418 @@
+{
+  "items": [
+    {
+      "id": "Eli",
+      "name": "Eli",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/1Ayase-Eli-MqG2az.png"
+    },
+    {
+      "id": "Hanayo",
+      "name": "Hanayo",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/3Koizumi-Hanayo-kdVFUI.png"
+    },
+    {
+      "id": "Honoka",
+      "name": "Honoka",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/4Kousaka-Honoka-m1dEvp.png"
+    },
+    {
+      "id": "Kotori",
+      "name": "Kotori",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/9Minami-Kotori-06DzDA.png"
+    },
+    {
+      "id": "Maki",
+      "name": "Maki",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/10Nishikino-Maki-UFQB4E.png"
+    },
+    {
+      "id": "Nico",
+      "name": "Nico",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/18Yazawa-Nico-agidhY.png"
+    },
+    {
+      "id": "Nozomi",
+      "name": "Nozomi",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/15Toujou-Nozomi-ToXNZh.png"
+    },
+    {
+      "id": "Rin",
+      "name": "Rin",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/2Hoshizora-Rin-sgemWZ.png"
+    },
+    {
+      "id": "Umi",
+      "name": "Umi",
+      "unit": "µ's",
+      "portrait": "https://i.idol.st/u/idol/13Sonoda-Umi-RVB62t.png"
+    },
+    {
+      "id": "Chika",
+      "name": "Chika",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/14Takami-Chika-RUJSlZ.png"
+    },
+    {
+      "id": "Dia",
+      "name": "Dia",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/6Kurosawa-Dia-gjXWOR.png"
+    },
+    {
+      "id": "Hanamaru",
+      "name": "Hanamaru",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/5Kunikida-Hanamaru-nqbGF1.png"
+    },
+    {
+      "id": "Kanan",
+      "name": "Kanan",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/8Matsuura-Kanan-qlLtYT.png"
+    },
+    {
+      "id": "Mari",
+      "name": "Mari",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/11Ohara-Mari-npxzmE.png"
+    },
+    {
+      "id": "Riko",
+      "name": "Riko",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/12Sakurauchi-Riko-xHBC2K.png"
+    },
+    {
+      "id": "Ruby",
+      "name": "Ruby",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/7Kurosawa-Ruby-UbPDc8.png"
+    },
+    {
+      "id": "Yoshiko",
+      "name": "Yoshiko",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/16Tsushima-Yoshiko-VytOHY.png"
+    },
+    {
+      "id": "You",
+      "name": "You",
+      "unit": "Aqours",
+      "portrait": "https://i.idol.st/u/idol/17Watanabe-You-ohUDHk.png"
+    },
+    {
+      "id": "Ai",
+      "name": "Ai",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/62Miyashita-Ai-3rwYaJ.png"
+    },
+    {
+      "id": "Ayumu",
+      "name": "Ayumu",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/102Uehara-Ayumu-TgB2p1.png"
+    },
+    {
+      "id": "Emma",
+      "name": "Emma",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/28Emma-Verde-cn5mja.png"
+    },
+    {
+      "id": "Kanata",
+      "name": "Kanata",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/50Konoe-Kanata-xB16n7.png"
+    },
+    {
+      "id": "Karin",
+      "name": "Karin",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/24Asaka-Karin-fd7iBo.png"
+    },
+    {
+      "id": "Kasumi",
+      "name": "Kasumi",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/67Nakasu-Kasumi-M5ZCuB.png"
+    },
+    {
+      "id": "Lanzhu",
+      "name": "Lanzhu",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/124Lanzhu-ttDPY2.png"
+    },
+    {
+      "id": "Mia",
+      "name": "Mia",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/123Mia-Taylor-88B8V6.png"
+    },
+    {
+      "id": "Rina",
+      "name": "Rina",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/97Tennoji-Rina-tZo8rZ.png"
+    },
+    {
+      "id": "Setsuna",
+      "name": "Setsuna",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/110Yuki-Setsuna-44Ojdt.png"
+    },
+    {
+      "id": "Shioriko",
+      "name": "Shioriko",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/113Mifune-Shioriko-o5YINu.png"
+    },
+    {
+      "id": "Shizuku",
+      "name": "Shizuku",
+      "unit": "Nijigasaki",
+      "portrait": "https://i.idol.st/u/idol/70Osaka-Shizuku-4TmRNm.png"
+    },
+    {
+      "id": "Chisato",
+      "name": "Chisato",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/120Arashi-Chisato-NGhy5X.png"
+    },
+    {
+      "id": "Kanon",
+      "name": "Kanon",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/118Shibuya-Kanon-v7t9EL.png"
+    },
+    {
+      "id": "Keke",
+      "name": "Keke",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/119Tang-Keke-DsQVZW.png"
+    },
+    {
+      "id": "Kinako",
+      "name": "Kinako",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/172Sakurakoji-Kinako-dQVwkG.png"
+    },
+    {
+      "id": "Mei",
+      "name": "Mei",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/173Yoneme-Mei-tsct9m.png"
+    },
+    {
+      "id": "Natsumi",
+      "name": "Natsumi",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/175Onitsuka-Natsumi-pUUL81.png"
+    },
+    {
+      "id": "Ren",
+      "name": "Ren",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/122Hazuki-Ren-vhPCUT.png"
+    },
+    {
+      "id": "Shiki",
+      "name": "Shiki",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/174Wakana-Shiki-fxvbKO.png"
+    },
+    {
+      "id": "Sumire",
+      "name": "Sumire",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/121Heanna-Sumire-pZiy0V.png"
+    },
+    {
+      "id": "Tomari",
+      "name": "Tomari",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/209Onitsuka-Tomari-OoFGci.png"
+    },
+    {
+      "id": "Wien",
+      "name": "Wien",
+      "unit": "Liella!",
+      "portrait": "https://i.idol.st/u/idol/178Wien-Margarete-LmPpSw.png"
+    },
+    {
+      "id": "Ceras",
+      "name": "Ceras",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/230Ceras-Yanagida-Lilienfeld-PyBP4A.png"
+    },
+    {
+      "id": "Ginko",
+      "name": "Ginko",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/224Momose-Ginko-Hm4PD6.png"
+    },
+    {
+      "id": "Hime",
+      "name": "Hime",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/226Anyoji-Hime-17MyBC.png"
+    },
+    {
+      "id": "Izumi",
+      "name": "Izumi",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/229Izumi-Katsuragi-8RhvDG.png"
+    },
+    {
+      "id": "Kaho",
+      "name": "Kaho",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/203Hinoshita-Kaho-bnlm1L.png"
+    },
+    {
+      "id": "Kosuzu",
+      "name": "Kosuzu",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/225Kachimachi-Kosuzu-nJo81o.png"
+    },
+    {
+      "id": "Kozue",
+      "name": "Kozue",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/205Otomune-Kozue-6DRx95.png"
+    },
+    {
+      "id": "Megumi",
+      "name": "Megumi",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/208Fujishima-Megumi-Fuxbjx.png"
+    },
+    {
+      "id": "Rurino",
+      "name": "Rurino",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/207Osawa-Rurino-CPI7XV.png"
+    },
+    {
+      "id": "Sayaka",
+      "name": "Sayaka",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/204Murano-Sayaka-lDSNbX.png"
+    },
+    {
+      "id": "Tsuzuri",
+      "name": "Tsuzuri",
+      "unit": "Hasunosora",
+      "portrait": "https://i.idol.st/u/idol/206Yugiri-Tsuzuri-SYB1m0.png"
+    },
+    {
+      "id": "Akira",
+      "name": "Akira",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/Y4D5PpT.png"
+    },
+    {
+      "id": "Anju",
+      "name": "Anju",
+      "unit": "A-RISE",
+      "portrait": "https://i.idol.st/u/idol/111Yuki-Anju-N6q54P.png"
+    },
+    {
+      "id": "Aurora",
+      "name": "Aurora",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/UEDrsP1.png"
+    },
+    {
+      "id": "Erena",
+      "name": "Erena",
+      "unit": "A-RISE",
+      "portrait": "https://i.idol.st/u/idol/99Toudou-Erena-l39Dhy.png"
+    },
+    {
+      "id": "Hanabi",
+      "name": "Hanabi",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/YFGfcz9.png"
+    },
+    {
+      "id": "Leah",
+      "name": "Leah",
+      "unit": "Saint Snow",
+      "portrait": "https://i.idol.st/u/idol/42Kazuno-Leah-FUFPXq.png"
+    },
+    {
+      "id": "Mai",
+      "name": "Mai",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/610CeQD.png"
+    },
+    {
+      "id": "Mao",
+      "name": "Mao",
+      "unit": "Sunny Passion",
+      "portrait": "https://i.idol.st/u/idol/133Hiiragi-Mao-yuL7qs.png"
+    },
+    {
+      "id": "Midori",
+      "name": "Midori",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/WQlLfsP.png"
+    },
+    {
+      "id": "Miracle",
+      "name": "Miracle",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/KpUERnq.png"
+    },
+    {
+      "id": "Noriko",
+      "name": "Noriko",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/5XKgWuJ.png"
+    },
+    {
+      "id": "Polka",
+      "name": "Polka",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/HvRWjaF.png"
+    },
+    {
+      "id": "Sarah",
+      "name": "Sarah",
+      "unit": "Saint Snow",
+      "portrait": "https://i.idol.st/u/idol/43Kazuno-Sarah-J0mfHD.png"
+    },
+    {
+      "id": "Shion",
+      "name": "Shion",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/7rtNUzQ.png"
+    },
+    {
+      "id": "Tsubasa",
+      "name": "Tsubasa",
+      "unit": "A-RISE",
+      "portrait": "https://i.idol.st/u/idol/46Kira-Tsubasa-yMqjxx.png"
+    },
+    {
+      "id": "Yukuri",
+      "name": "Yukuri",
+      "unit": "Ikizurai-Bu!",
+      "portrait": "https://i.imgur.com/KMKGGEd.png"
+    },
+    {
+      "id": "Yuna",
+      "name": "Yuna",
+      "unit": "Sunny Passion",
+      "portrait": "https://i.idol.st/u/idol/134Hijirisawa-Yuna-B8Wlcu.png"
+    }
+  ]
+}

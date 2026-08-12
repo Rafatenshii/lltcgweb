@@ -49,6 +49,7 @@ function tcgMissionDefinitions(): array {
         ['id' => 'ms_win_liella', 'type' => 'milestone', 'reward' => 1000, 'sort' => 320, 'i18n_key' => 'missions.milestone.winLiella', 'group' => 'Superstar'],
         ['id' => 'ms_win_hasunosora', 'type' => 'milestone', 'reward' => 1000, 'sort' => 330, 'i18n_key' => 'missions.milestone.winHasunosora', 'group' => 'Hasunosora'],
         ['id' => 'ms_win_nijigasaki', 'type' => 'milestone', 'reward' => 1000, 'sort' => 340, 'i18n_key' => 'missions.milestone.winNijigasaki', 'group' => 'Nijigasaki'],
+        ['id' => 'ms_login_days_10', 'type' => 'milestone', 'reward' => 1, 'reward_type' => 'free_sleeve', 'sort' => 160, 'i18n_key' => 'missions.milestone.loginDays10', 'threshold' => 10],
     ];
 }
 
@@ -218,6 +219,11 @@ function tcgMissionListForUser(string $discordId): array {
             $entry['progress'] = min($totalCards, intval($def['threshold']));
         } elseif (str_starts_with($def['id'], 'ms_sticker_') && isset($def['threshold'])) {
             $entry['progress'] = min($stickerExchanges, intval($def['threshold']));
+        } elseif ($def['id'] === 'ms_login_days_10' && isset($def['threshold'])) {
+            require_once __DIR__ . '/sleeve_shop.php';
+            $loginDays = tcgGetLoginDays($discordId);
+            $entry['progress'] = min($loginDays, intval($def['threshold']));
+            $entry['login_days'] = $loginDays;
         }
         $missions[] = $entry;
     }
@@ -254,6 +260,26 @@ function tcgMissionClaim(string $discordId, string $missionId, ?string $starterK
     $rewardType = (string)($def['reward_type'] ?? 'star_gems');
     $now = time();
     $db = tcgDb();
+
+    if ($rewardType === 'free_sleeve') {
+        require_once __DIR__ . '/sleeve_shop.php';
+        $db->prepare('UPDATE tcg_mission_progress SET claimed_at = ? WHERE discord_id = ? AND mission_id = ? AND period_key = ?')
+            ->execute([$now, $discordId, $missionId, $periodKey]);
+        $have = tcgGetFreeSleeveClaims($discordId);
+        tcgSetFreeSleeveClaims($discordId, $have + max(1, intval($def['reward'] ?? 1)));
+        return [
+            'mission' => [
+                'id' => $missionId,
+                'i18n_key' => $def['i18n_key'],
+                'reward' => 1,
+                'reward_type' => 'free_sleeve',
+                'status' => 'claimed',
+            ],
+            'star_gems' => tcgGetStarGems($discordId),
+            'star_gems_gained' => 0,
+            'free_sleeve_claims' => tcgGetFreeSleeveClaims($discordId),
+        ];
+    }
 
     if ($rewardType === 'starter_choice') {
         if (!function_exists('tcgGrantAdditionalStarterDeck')) {
@@ -706,6 +732,20 @@ function tcgMissionBackfillRetroactive(string $discordId): void {
 
     tcgMissionBackfillGroupWinsFromReplays($discordId);
     tcgMissionBackfillDailyBoostersLaunchDay($discordId);
+
+    require_once __DIR__ . '/sleeve_shop.php';
+    tcgTouchLoginDays($discordId);
+    tcgMissionCheckLoginDays($discordId);
+}
+
+/** Mark login-days milestone when threshold met. */
+function tcgMissionCheckLoginDays(string $discordId): array {
+    require_once __DIR__ . '/sleeve_shop.php';
+    $days = tcgGetLoginDays($discordId);
+    if ($days < 10) {
+        return [];
+    }
+    return tcgMissionMarkCompleted($discordId, 'ms_login_days_10');
 }
 
 /**

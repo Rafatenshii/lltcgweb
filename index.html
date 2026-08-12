@@ -38,9 +38,9 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=28">
+<link rel="stylesheet" href="client/css/shell-all.css?v=29">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=1">
+<link rel="stylesheet" href="client/css/sleeves.css?v=2">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -562,6 +562,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <img src="assets/Star_Gem.png" alt="" aria-hidden="true">
           <span id="hub-star-gems-count">0</span>
         </div>
+        <div class="hub-coins-pill" id="hub-coins" hidden>
+          <img src="assets/ui/llsifas-gold-coin.webp" alt="" aria-hidden="true" width="18" height="18">
+          <span id="hub-coins-count">0</span>
+        </div>
         <div class="hub-ranked-pr-pill" id="hub-ranked-pr" hidden title="">
           <span class="hub-ranked-pr-badge" aria-hidden="true">PR</span>
           <span id="hub-ranked-pr-count">5 / 5</span>
@@ -590,10 +594,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-card-list" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-sleeve-shop" type="button">
             <span class="llc-menu-item-body">
-              <span class="llc-menu-item-title" data-i18n="hub.cardList.title">Card List</span>
-              <span class="llc-menu-item-sub" data-i18n="hub.cardList.sub">Browse every card</span>
+              <span class="llc-menu-item-title" data-i18n="hub.sleeveShop.title">Sleeve Shop</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.sleeveShop.sub">Spend Coins on card sleeves</span>
             </span>
           </button>
         </div>
@@ -628,6 +632,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.experiment.title">Deck Experiment</span>
               <span class="llc-menu-item-sub" data-i18n="hub.experiment.sub">Any card — Free only</span>
+            </span>
+          </button>
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--tiny" id="btn-hub-card-list" type="button">
+            <span class="llc-menu-item-body">
+              <span class="llc-menu-item-title" data-i18n="hub.cardList.title">Card List</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.cardList.sub">Browse every card</span>
             </span>
           </button>
         </div>
@@ -840,6 +850,39 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <div class="sticker-cards-grid" id="sticker-cards-grid"></div>
       </div>
       <p class="lerr" id="sticker-err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLEEVE SHOP ══ -->
+<div id="screen-sleeve-shop" class="screen llc-menu-screen" hidden aria-hidden="true">
+  <div class="account-shell wide">
+    <div class="logo">
+      <img class="logo-img" src="tcglogo.png" alt="">
+      <div class="logo-foot">
+        <span class="logo-version">v0.1.4</span>
+        <p class="logo-tagline" data-i18n="tagline">The Unofficial Web Player</p>
+      </div>
+    </div>
+    <div class="panel account-panel">
+      <div class="account-screen-head">
+        <button class="btn-ghost" id="btn-sleeve-shop-back" type="button" data-i18n="sleeveShop.backHub">← Hub</button>
+        <h2 data-i18n="sleeveShop.title">Sleeve Shop</h2>
+      </div>
+      <div class="hub-coins-pill sticker-seals-bar" id="sleeve-shop-coins-bar" data-i18n-aria-label="sleeveShop.coinsAria" aria-label="Coins">
+        <img src="assets/ui/llsifas-gold-coin.webp" alt="" width="22" height="22" aria-hidden="true">
+        <b id="sleeve-shop-coins">0</b>
+        <span class="sleeve-shop-free" id="sleeve-shop-free" hidden></span>
+      </div>
+      <p class="hub-stat" id="sleeve-shop-hint" data-i18n="sleeveShop.hint">Earn Coins by finishing matches. Pick a generation, then a character.</p>
+      <div id="sleeve-shop-gens" class="sleeve-shop-gens" role="tablist"></div>
+      <div id="sleeve-shop-chars" class="sleeve-shop-chars"></div>
+      <div id="sleeve-shop-sleeves-view" hidden>
+        <button class="btn-ghost" id="btn-sleeve-shop-chars-back" type="button" data-i18n="sleeveShop.backChars">← Characters</button>
+        <p class="hub-stat" id="sleeve-shop-char-name"></p>
+        <div class="sleeve-shop-grid" id="sleeve-shop-grid"></div>
+      </div>
+      <p class="lerr" id="sleeve-shop-err"></p>
     </div>
   </div>
 </div>
@@ -2183,13 +2226,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=107"></script>
+<script src="i18n.js?v=108"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=23"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=31"></script>
-<script src="client/js/sleeves.js?v=1"></script>
+<script src="client/js/api-client.js?v=32"></script>
+<script src="client/js/sleeves.js?v=2"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -2366,6 +2409,11 @@ const A = {
   user: null,
   profile: null,
   starGems: 0,
+  coins: 0,
+  freeSleeveClaims: 0,
+  sleeveShopPrice: 100,
+  ownedSleeves: [],
+  sleevesNeedIntro: [],
   seals: { n: 0, r: 0, p: 0, sec: 0, pr: 0 },
   ownedStarters: [],
   gameMode: 'standard',
@@ -2488,7 +2536,57 @@ function syncStarGemsFromProfile(me) {
   A.starGems = Number(me.star_gems ?? A.profile?.star_gems ?? 0) || 0;
   if (A.profile) A.profile.star_gems = A.starGems;
   syncSealsFromProfile(me);
+  syncCoinsFromProfile(me);
 }
+
+function syncCoinsFromProfile(me) {
+  if (!me) return;
+  A.coins = Number(me.coins ?? A.coins ?? 0) || 0;
+  A.freeSleeveClaims = Number(me.free_sleeve_claims ?? A.freeSleeveClaims ?? 0) || 0;
+  A.sleeveShopPrice = Number(me.sleeve_shop_price ?? A.sleeveShopPrice ?? 100) || 100;
+  if (Array.isArray(me.owned_sleeves)) A.ownedSleeves = me.owned_sleeves.slice();
+  else if (!Array.isArray(A.ownedSleeves)) A.ownedSleeves = [];
+  if (Array.isArray(me.sleeves_need_intro)) A.sleevesNeedIntro = me.sleeves_need_intro.slice();
+  else if (!Array.isArray(A.sleevesNeedIntro)) A.sleevesNeedIntro = [];
+  if (A.profile) {
+    A.profile.coins = A.coins;
+    A.profile.free_sleeve_claims = A.freeSleeveClaims;
+    A.profile.owned_sleeves = A.ownedSleeves.slice();
+    A.profile.sleeves_need_intro = A.sleevesNeedIntro.slice();
+  }
+  updateCoinsUI();
+}
+
+function updateCoinsUI() {
+  const count = Number(A.coins || 0).toLocaleString();
+  const hubPill = el('hub-coins');
+  const hubCount = el('hub-coins-count');
+  if (hubPill && hubCount) {
+    hubCount.textContent = count;
+    hubPill.hidden = !isSignedInAccount();
+  }
+  const shopCoins = el('sleeve-shop-coins');
+  if (shopCoins) shopCoins.textContent = count;
+  const freeEl = el('sleeve-shop-free');
+  if (freeEl) {
+    const n = Number(A.freeSleeveClaims || 0);
+    freeEl.hidden = n < 1;
+    freeEl.textContent = n > 0
+      ? (t('sleeveShop.freeClaims', { n }) || (`Free picks: ${n}`))
+      : '';
+  }
+}
+
+function toastCoinGrant(grant) {
+  const amount = Number(grant?.amount || 0);
+  if (amount <= 0) return;
+  if (grant.balance != null) {
+    A.coins = Number(grant.balance) || A.coins;
+    updateCoinsUI();
+  }
+  toast(t('toast.coinsEarned', { n: amount }) || (`+${amount} Coins`), 3200);
+}
+window.toastCoinGrant = toastCoinGrant;
 
 function syncSealsFromProfile(me) {
   const src = me?.seals || A.profile?.seals || A.seals || {};
@@ -5716,6 +5814,182 @@ async function loadStickerShopScreen() {
   }
 }
 
+let _sleeveShopData = null;
+let _sleeveShopGenId = null;
+let _sleeveShopChar = null;
+
+function showSleeveShopCharsView() {
+  const sleevesView = el('sleeve-shop-sleeves-view');
+  const chars = el('sleeve-shop-chars');
+  if (sleevesView) sleevesView.hidden = true;
+  if (chars) chars.hidden = false;
+  _sleeveShopChar = null;
+}
+
+async function loadSleeveShopScreen() {
+  if (!isSignedInAccount()) {
+    toast(t('toast.signInSleeveShop') || t('toast.signInDeckBuilder') || 'Sign in required', 2800);
+    return;
+  }
+  const err = el('sleeve-shop-err');
+  if (err) err.textContent = '';
+  showSleeveShopCharsView();
+  showScr('sleeve-shop');
+  try {
+    await window.LLTCG_SLEEVES?.loadCatalog?.();
+    const res = await accountGet('sleeve_shop_catalog');
+    syncCoinsFromProfile(res);
+    _sleeveShopData = res;
+    const gens = res.generations || [];
+    _sleeveShopGenId = gens[0]?.id || null;
+    renderSleeveShopGens(gens);
+    renderSleeveShopChars();
+  } catch (e) {
+    if (err) err.textContent = e.message || t('toast.sleeveShopLoadFailed') || 'Failed to load sleeve shop';
+  }
+}
+
+function renderSleeveShopGens(gens) {
+  const host = el('sleeve-shop-gens');
+  if (!host) return;
+  host.replaceChildren();
+  (gens || []).forEach((g) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sleeve-shop-gen' + (g.id === _sleeveShopGenId ? ' is-active' : '');
+    b.textContent = g.name || g.id;
+    b.onclick = () => {
+      _sleeveShopGenId = g.id;
+      showSleeveShopCharsView();
+      renderSleeveShopGens(gens);
+      renderSleeveShopChars();
+    };
+    host.appendChild(b);
+  });
+}
+
+function renderSleeveShopChars() {
+  const host = el('sleeve-shop-chars');
+  if (!host) return;
+  host.replaceChildren();
+  host.hidden = false;
+  const gen = (_sleeveShopData?.generations || []).find((g) => g.id === _sleeveShopGenId);
+  (gen?.characters || []).forEach((c) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sleeve-shop-char';
+    const img = document.createElement('img');
+    img.src = c.portrait || '';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.display = 'none'; };
+    const name = document.createElement('span');
+    name.className = 'sleeve-shop-char__name';
+    name.textContent = c.name || c.id;
+    const count = document.createElement('span');
+    count.className = 'sleeve-shop-char__count';
+    count.textContent = String(c.sleeve_count || (c.sleeves || []).length || 0);
+    b.appendChild(img);
+    b.appendChild(name);
+    b.appendChild(count);
+    b.onclick = () => openSleeveShopCharacter(c);
+    host.appendChild(b);
+  });
+}
+
+function openSleeveShopCharacter(character) {
+  _sleeveShopChar = character;
+  const chars = el('sleeve-shop-chars');
+  const view = el('sleeve-shop-sleeves-view');
+  const nameEl = el('sleeve-shop-char-name');
+  if (chars) chars.hidden = true;
+  if (view) view.hidden = false;
+  if (nameEl) nameEl.textContent = character?.name || character?.id || '';
+  renderSleeveShopGrid(character?.sleeves || []);
+}
+
+function renderSleeveShopGrid(sleeves) {
+  const grid = el('sleeve-shop-grid');
+  if (!grid) return;
+  grid.replaceChildren();
+  const price = Number(A.sleeveShopPrice || 100);
+  const free = Number(A.freeSleeveClaims || 0);
+  (sleeves || []).forEach((s) => {
+    const tile = document.createElement('div');
+    tile.className = 'sleeve-shop-tile' + (s.owned ? ' is-owned' : '');
+    const art = document.createElement('div');
+    art.className = 'sleeve-shop-tile__art';
+    art.style.backgroundImage = 'url("' + String(s.src || '').replace(/"/g, '\\"') + '")';
+    const label = document.createElement('div');
+    label.className = 'sleeve-shop-tile__name';
+    label.textContent = s.name || s.id;
+    const actions = document.createElement('div');
+    actions.className = 'sleeve-shop-tile__actions';
+    if (s.owned) {
+      const owned = document.createElement('span');
+      owned.className = 'sleeve-shop-owned';
+      owned.textContent = t('sleeveShop.owned') || 'Owned';
+      actions.appendChild(owned);
+    } else {
+      const buy = document.createElement('button');
+      buy.type = 'button';
+      buy.className = 'btn-smol';
+      buy.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> ' + price;
+      buy.disabled = Number(A.coins || 0) < price;
+      buy.onclick = () => void buySleeveFromShop(s.id);
+      actions.appendChild(buy);
+      if (free > 0) {
+        const claim = document.createElement('button');
+        claim.type = 'button';
+        claim.className = 'btn-ghost btn-smol';
+        claim.textContent = t('sleeveShop.claimFree') || 'Claim free';
+        claim.onclick = () => void claimFreeSleeveFromShop(s.id);
+        actions.appendChild(claim);
+      }
+    }
+    tile.appendChild(art);
+    tile.appendChild(label);
+    tile.appendChild(actions);
+    grid.appendChild(tile);
+  });
+}
+
+async function buySleeveFromShop(sleeveId) {
+  const err = el('sleeve-shop-err');
+  if (err) err.textContent = '';
+  try {
+    const res = await accountPost('sleeve_buy', { sleeve_id: sleeveId });
+    syncCoinsFromProfile(res);
+    toast(t('toast.sleeveBought') || 'Sleeve unlocked!', 2400);
+    await loadSleeveShopScreen();
+    if (_sleeveShopChar) {
+      const gen = (_sleeveShopData?.generations || []).find((g) => g.id === _sleeveShopGenId);
+      const fresh = (gen?.characters || []).find((c) => c.id === _sleeveShopChar.id);
+      if (fresh) openSleeveShopCharacter(fresh);
+    }
+  } catch (e) {
+    if (err) err.textContent = e.message || 'Buy failed';
+  }
+}
+
+async function claimFreeSleeveFromShop(sleeveId) {
+  const err = el('sleeve-shop-err');
+  if (err) err.textContent = '';
+  try {
+    const res = await accountPost('sleeve_claim_free', { sleeve_id: sleeveId });
+    syncCoinsFromProfile(res);
+    toast(t('toast.sleeveClaimedFree') || 'Free sleeve claimed!', 2400);
+    await loadSleeveShopScreen();
+    if (_sleeveShopChar) {
+      const gen = (_sleeveShopData?.generations || []).find((g) => g.id === _sleeveShopGenId);
+      const fresh = (gen?.characters || []).find((c) => c.id === _sleeveShopChar.id);
+      if (fresh) openSleeveShopCharacter(fresh);
+    }
+  } catch (e) {
+    if (err) err.textContent = e.message || 'Claim failed';
+  }
+}
+
 function renderStickerProductGrid(products) {
   const grid = el('sticker-product-grid');
   if (!grid) return;
@@ -8446,9 +8720,23 @@ function normalizeDeckSleeveId(raw) {
 
 function renderDeckSleevePickerUi() {
   if (!window.LLTCG_SLEEVES?.renderPicker) return;
-  window.LLTCG_SLEEVES.renderPicker(A.deckSleeveId, (next) => {
-    A.deckSleeveId = normalizeDeckSleeveId(next);
+  void window.LLTCG_SLEEVES.loadCatalog?.();
+  window.LLTCG_SLEEVES.renderPicker(A.deckSleeveId, async (next) => {
+    const id = normalizeDeckSleeveId(next);
+    const prev = normalizeDeckSleeveId(A.deckSleeveId);
+    A.deckSleeveId = id;
     renderDeckSleevePickerUi();
+    if (!id || id === prev) return;
+    const owned = Array.isArray(A.ownedSleeves) && A.ownedSleeves.includes(id);
+    if (!owned) return;
+    const needsIntro = Array.isArray(A.sleevesNeedIntro) && A.sleevesNeedIntro.includes(id);
+    if (!needsIntro) return;
+    try {
+      await window.LLTCG_SLEEVES.playEquipIntro?.(id);
+      await accountPost('sleeve_equip_intro_seen', { sleeve_id: id });
+      A.sleevesNeedIntro = (A.sleevesNeedIntro || []).filter((x) => x !== id);
+      if (A.profile) A.profile.sleeves_need_intro = A.sleevesNeedIntro.slice();
+    } catch (e) { /* best effort */ }
   });
 }
 
@@ -14411,6 +14699,9 @@ async function bootApp() {
   on('btn-starter-confirm', 'click', confirmStarter);
   on('btn-hub-booster', 'click', loadBoosterScreen);
   on('btn-hub-sticker', 'click', loadStickerShopScreen);
+  on('btn-hub-sleeve-shop', 'click', () => { void loadSleeveShopScreen(); });
+  on('btn-sleeve-shop-back', 'click', () => enterHub(A.profile));
+  on('btn-sleeve-shop-chars-back', 'click', showSleeveShopCharsView);
   on('btn-hub-card-list', 'click', () => { void openCardListScreen(); });
   on('btn-card-list-back', 'click', () => enterHub(A.profile));
   on('btn-hub-deck', 'click', openDeckBuilder);

@@ -1013,9 +1013,18 @@ function handleAction(array $body): array {
                         unset($state['_hostinger_mission_completions']);
                     } elseif ($hostingerMissionWrites) {
                         // Casual/CPU on match-primary: credit hub missions on Hostinger.
-                        $missionCompletions = tcgPostMissionGameFinishedToHostinger($state);
+                        $bundle = tcgPostMissionGameFinishedBundleToHostinger($state);
+                        $missionCompletions = $bundle['missions'];
+                        if (!empty($bundle['coin_grants'])) {
+                            $state['_coin_grants'] = $bundle['coin_grants'];
+                        }
                     } else {
                         $missionCompletions = tcgMissionOnGameFinished($state);
+                        require_once __DIR__ . '/coins.php';
+                        $coinGrants = tcgCoinsOnGameFinished($state);
+                        if ($coinGrants !== []) {
+                            $state['_coin_grants'] = $coinGrants;
+                        }
                     }
                     $state['_missions_applied'] = true;
                 }
@@ -1034,10 +1043,22 @@ function handleAction(array $body): array {
                         ? $state['_hostinger_mission_completions']
                         : [];
                     unset($state['_hostinger_mission_completions']);
+                    if (!empty($state['_coin_grants']) && is_array($state['_coin_grants'])) {
+                        // already stashed by ranked webhook
+                    }
                 } elseif ($hostingerMissionWrites) {
-                    $missionCompletions = tcgPostMissionGameFinishedToHostinger($state);
+                    $bundle = tcgPostMissionGameFinishedBundleToHostinger($state);
+                    $missionCompletions = $bundle['missions'];
+                    if (!empty($bundle['coin_grants'])) {
+                        $state['_coin_grants'] = $bundle['coin_grants'];
+                    }
                 } else {
                     $missionCompletions = tcgMissionOnGameFinished($state);
+                    require_once __DIR__ . '/coins.php';
+                    $coinGrants = tcgCoinsOnGameFinished($state);
+                    if ($coinGrants !== []) {
+                        $state['_coin_grants'] = $coinGrants;
+                    }
                 }
                 $state['_missions_applied'] = true;
             }
@@ -1066,6 +1087,17 @@ function handleAction(array $body): array {
         $out = ['ok' => true, 'seq' => $state['seq']];
         if (!empty($missionCompletions)) {
             $out['mission_completions'] = $missionCompletions;
+        }
+        if (!empty($state['_coin_grants']) && is_array($state['_coin_grants'])) {
+            foreach ($state['_coin_grants'] as $g) {
+                if (($g['pid'] ?? '') === $playerId) {
+                    $out['coin_grant'] = [
+                        'amount' => intval($g['amount'] ?? 0),
+                        'balance' => intval($g['balance'] ?? 0),
+                    ];
+                    break;
+                }
+            }
         }
         if (($state['mode'] ?? '') === 'ranked' && ($state['status'] ?? '') === 'finished') {
             require_once __DIR__ . '/ranked_pr_rewards.php';
@@ -5552,10 +5584,13 @@ function maybeCreditCasualFinishMissions(array &$state): void {
     if (!tcgMissionShouldWriteOnHostinger()) {
         return;
     }
-    $completions = tcgPostMissionGameFinishedToHostinger($state);
+    $bundle = tcgPostMissionGameFinishedBundleToHostinger($state);
     $state['_missions_applied'] = true;
-    if ($completions !== []) {
-        $state['_hostinger_mission_completions'] = $completions;
+    if ($bundle['missions'] !== []) {
+        $state['_hostinger_mission_completions'] = $bundle['missions'];
+    }
+    if (!empty($bundle['coin_grants'])) {
+        $state['_coin_grants'] = $bundle['coin_grants'];
     }
 }
 

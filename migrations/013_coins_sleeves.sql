@@ -1,0 +1,11 @@
+-- Coins currency + owned sleeves + login-day free sleeve (docs / fingerprint).
+-- Production applies columns via db.php tcgDbRunMigrationOnce('coins_sleeves_20260812').
+-- Do not put failing ALTERs here.
+
+-- tcg_users.coins
+-- tcg_users.login_days
+-- tcg_users.login_days_last_date
+-- tcg_users.login_days_bootstrapped
+-- tcg_users.free_sleeve_claims
+-- tcg_owned_sleeves
+-- tcg_coin_grants

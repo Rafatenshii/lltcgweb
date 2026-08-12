@@ -5,12 +5,9 @@
   const DEFAULT_BACK = 'lltcg-back.png';
   const CONFORM_KEY = 'tcg_sleeve_conform';
 
-  /**
-   * Equippable sleeves. Leave empty until assets are wired in.
-   * Each entry: { id, name, src } — src is a site-relative image path.
-   * @type {{ id: string, name: string, src: string }[]}
-   */
-  const SLEEVE_CATALOG = [];
+  /** @type {{ id: string, name: string, src: string, group?: string, idol?: string }[]} */
+  let SLEEVE_CATALOG = [];
+  let catalogLoadPromise = null;
 
   function normalizeSleeveId(raw) {
     const id = String(raw == null ? '' : raw).trim().toLowerCase();
@@ -121,17 +118,30 @@
     return btn;
   }
 
+  function ownedSet() {
+    const list = (global.A && Array.isArray(global.A.ownedSleeves)) ? global.A.ownedSleeves : [];
+    return new Set(list.map(normalizeSleeveId).filter(Boolean));
+  }
+
   function renderDeckSleevePicker(selectedId, onPick) {
     const host = document.getElementById('deck-sleeve-picker');
     if (!host) return;
     const selected = normalizeSleeveId(selectedId);
+    const owned = ownedSet();
+    const visible = SLEEVE_CATALOG.filter((s) => owned.has(s.id));
     host.replaceChildren();
     host.appendChild(makeSleeveTile('', selected === '', null));
-    SLEEVE_CATALOG.forEach((s) => {
+    visible.forEach((s) => {
       host.appendChild(makeSleeveTile(s.id, s.id === selected, s));
     });
     const hint = document.getElementById('deck-sleeve-empty-hint');
-    if (hint) hint.hidden = SLEEVE_CATALOG.length > 0;
+    if (hint) {
+      hint.hidden = false;
+      const tFn = typeof global.t === 'function' ? global.t : null;
+      hint.textContent = visible.length
+        ? ((tFn && tFn('deck.sleeveOwnedHint')) || 'Owned sleeves from the Sleeve Shop.')
+        : ((tFn && tFn('deck.sleeveEmptyHint')) || 'Buy sleeves in the Sleeve Shop.');
+    }
     host.querySelectorAll('.deck-sleeve-tile').forEach((btn) => {
       btn.addEventListener('click', () => {
         const next = normalizeSleeveId(btn.dataset.sleeveId);
@@ -140,8 +150,82 @@
     });
   }
 
+  async function loadCatalog() {
+    if (SLEEVE_CATALOG.length) return SLEEVE_CATALOG;
+    if (catalogLoadPromise) return catalogLoadPromise;
+    catalogLoadPromise = (async () => {
+      try {
+        const r = await fetch('sleeves_catalog.json', { cache: 'no-cache' });
+        if (!r.ok) return SLEEVE_CATALOG;
+        const data = await r.json();
+        const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        SLEEVE_CATALOG = items
+          .map((row) => ({
+            id: normalizeSleeveId(row.id),
+            name: String(row.name || row.id || ''),
+            src: String(row.src || ''),
+            group: String(row.group || ''),
+            idol: String(row.idol || ''),
+          }))
+          .filter((s) => s.id && s.src);
+        global.LLTCG_SLEEVES.catalog = SLEEVE_CATALOG;
+      } catch (e) {
+        /* keep empty */
+      }
+      return SLEEVE_CATALOG;
+    })();
+    return catalogLoadPromise;
+  }
+
+  /**
+   * Slide sleeve art over default card back, then shine.
+   * @param {string} sleeveId
+   * @param {{ force?: boolean }} [opts]
+   */
+  function playEquipIntro(sleeveId, opts) {
+    const id = normalizeSleeveId(sleeveId);
+    const sleeve = getSleeve(id);
+    if (!id || !sleeve?.src) return Promise.resolve();
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      let overlay = document.getElementById('sleeve-equip-intro');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'sleeve-equip-intro';
+        overlay.className = 'sleeve-equip-intro';
+        overlay.innerHTML = '<div class="sleeve-equip-intro__stage">'
+          + '<div class="sleeve-equip-intro__back"></div>'
+          + '<div class="sleeve-equip-intro__sleeve"></div>'
+          + '<div class="sleeve-equip-intro__shine"></div>'
+          + '</div>';
+        document.body.appendChild(overlay);
+      }
+      const back = overlay.querySelector('.sleeve-equip-intro__back');
+      const sleeveEl = overlay.querySelector('.sleeve-equip-intro__sleeve');
+      if (back) back.style.backgroundImage = cssImageUrl(DEFAULT_BACK);
+      if (sleeveEl) {
+        sleeveEl.style.backgroundImage = cssImageUrl(sleeve.src);
+        sleeveEl.classList.remove('is-in');
+      }
+      overlay.classList.add('is-open');
+      requestAnimationFrame(() => {
+        sleeveEl?.classList.add('is-in');
+        overlay.classList.add('is-shine');
+      });
+      const done = () => {
+        overlay.classList.remove('is-open', 'is-shine');
+        sleeveEl?.classList.remove('is-in');
+        resolve();
+      };
+      setTimeout(done, 1400);
+    });
+  }
+
   global.LLTCG_SLEEVES = {
-    catalog: SLEEVE_CATALOG,
+    get catalog() { return SLEEVE_CATALOG; },
+    set catalog(v) { SLEEVE_CATALOG = Array.isArray(v) ? v : []; },
     defaultBack: DEFAULT_BACK,
     normalize: normalizeSleeveId,
     get: getSleeve,
@@ -149,8 +233,12 @@
     applyMatchSleeves,
     clearMatchSleeves,
     renderPicker: renderDeckSleevePicker,
+    loadCatalog,
+    playEquipIntro,
     conformEnabled: sleeveConformEnabled,
     syncConform: syncSleeveConformSetting,
     initConform: initSleeveConformSetting,
   };
+
+  void loadCatalog();
 })(window);
