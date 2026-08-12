@@ -106,6 +106,16 @@ html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-
   background-position:center;
   background-size:cover;
   background-repeat:no-repeat;
+  box-sizing:border-box;
+  padding:var(--sleeve-peek);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite:exclude;
 }
 
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard::after{
@@ -113,6 +123,20 @@ html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard::afte
 }
 html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card::after{
   background-image:var(--opp-sleeve-image);
+}
+
+/* Draw-flip / stage-flip rotate an inner 3D node only — peek on the outer
+   wrapper would stay put (looks like a translucent sleeve shard mid-flip). */
+html:not(.sleeve-conform) #screen-game .my-hand-strip .hcard.hand-draw-flip::after,
+html:not(.sleeve-conform) #screen-game .opp-hand-strip .opp-hand-card.hand-draw-flip::after,
+html:not(.sleeve-conform) #screen-game .my-hand-strip .hcard.hand-draw-flip::before,
+html:not(.sleeve-conform) #screen-game .opp-hand-strip .opp-hand-card.hand-draw-flip::before,
+html:not(.sleeve-conform) #screen-game .my-mat .mslot.stage-flip::before,
+html:not(.sleeve-conform) #screen-game .opp-mat .mslot.stage-flip::before,
+html:not(.sleeve-conform) #screen-game .my-mat .lcard.live-storage-flip::before,
+html:not(.sleeve-conform) #screen-game .opp-mat .lcard.live-storage-flip::before{
+  content:none !important;
+  display:none !important;
 }
 
 /* Stage / live: rim-only peek around the slot.
