@@ -305,6 +305,24 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 .sleeve-shop-tile__actions .btn-smol{
   display:inline-flex;align-items:center;gap:4px;padding:4px 8px;font-size:12px;
 }
+/* Affordable buys should not look like an error (default .btn-smol is pink). */
+.sleeve-shop-tile__actions .sleeve-shop-buy.is-affordable{
+  background:rgba(255,210,120,.16);
+  border-color:rgba(255,210,120,.42);
+  color:#ffe7a8;
+}
+.sleeve-shop-tile__actions .sleeve-shop-buy.is-affordable:hover:not(:disabled){
+  background:rgba(255,210,120,.28);
+  border-color:rgba(255,220,150,.65);
+  color:#fff0c8;
+}
+.sleeve-shop-tile__actions .sleeve-shop-buy.is-unaffordable{
+  background:rgba(229,62,62,.12);
+  border-color:rgba(229,62,62,.32);
+  color:#fc8181;
+  opacity:.72;
+  cursor:not-allowed;
+}
 @media (max-width:720px){
   .sleeve-shop-browse{flex-direction:column}
   .sleeve-shop-hover-panel{display:none}
