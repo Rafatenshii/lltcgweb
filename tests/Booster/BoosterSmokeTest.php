@@ -93,4 +93,59 @@ final class BoosterSmokeTest extends TestCase
         $this->assertCount(5, $out['card_nos'] ?? []);
         $this->assertSame(100, $out['star_gems_spent'] ?? 0);
     }
+
+    /** Dual-holo PB packs must advance pe_pity once per pack, not once per holo. */
+    public function testPremiumBoosterPityAdvancesOncePerPack(): void
+    {
+        $this->loadBooster();
+        $cardsData = json_decode((string) file_get_contents(CARDS_FILE), true);
+        $box = tcgBoosterBoxById('pb_niji');
+        $this->assertNotNull($box);
+        $pools = tcgBuildBoxPools($cardsData, $box);
+        $progress = [
+            'pe_pity' => 5,
+            'pplus_pity' => 5,
+            'sec_pity' => 5,
+            'rm_pity' => 5,
+            'live_pity' => 0,
+            'packs_in_box' => 0,
+            'boxes_opened' => 0,
+        ];
+
+        tcgPickPbHolo($pools, $progress, 20, true);
+        $afterFirst = intval($progress['pe_pity']);
+        tcgPickPbHolo($pools, $progress, 20, false);
+        $this->assertSame(
+            $afterFirst,
+            intval($progress['pe_pity']),
+            'Second holo slot must not advance pe_pity'
+        );
+
+        $progress['rm_pity'] = 3;
+        tcgPickPbHolo($pools, $progress, 20, true);
+        $rmAfterFirst = intval($progress['rm_pity']);
+        tcgPickPbHolo($pools, $progress, 20, false);
+        $this->assertSame($rmAfterFirst, intval($progress['rm_pity']));
+    }
+
+    public function testDuoPePlusWeightMatchesStandardPbScarcity(): void
+    {
+        $this->loadBooster();
+        $duo = null;
+        foreach (tcgPbDuoHoloSlotRarityWeights() as $row) {
+            if (($row['r'] ?? '') === 'PE+') {
+                $duo = intval($row['w']);
+                break;
+            }
+        }
+        $pb = null;
+        foreach (tcgPbHoloSlotRarityWeights() as $row) {
+            if (($row['r'] ?? '') === 'PE+') {
+                $pb = intval($row['w']);
+                break;
+            }
+        }
+        $this->assertSame(25, $duo);
+        $this->assertSame(25, $pb);
+    }
 }
