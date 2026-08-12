@@ -1298,6 +1298,9 @@
       "sessionEnded": "Spectator session ended.",
       "count": "Spectators: {n}",
       "switchPerspective": "Switch perspective",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsTitle": "Hidden hands (tournament view)",
+      "hiddenHandsOnTitle": "Hidden hands on — tap to show hands",
       "waitingJudgePick": "Live Win/Loss — waiting for {name} to choose a Success Live…",
       "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…"
     },
@@ -2580,6 +2583,9 @@
       "sessionEnded": "観戦セッションが終了しました。",
       "count": "観戦者: {n}",
       "switchPerspective": "視点を切り替え",
+      "hiddenHands": "手札非公開",
+      "hiddenHandsTitle": "手札非公開（大会観戦）",
+      "hiddenHandsOnTitle": "手札非公開中 — タップで表示",
       "waitingJudgePick": "ライブ勝敗判定 — {name} の成功ライブ選択を待っています…",
       "waitingJudgeResolve": "ライブ勝敗判定 — {name} の操作待ち…"
     },
@@ -3725,6 +3731,9 @@
       "matchEnded": "La partida terminó — volviendo al lobby.",
       "sessionEnded": "La sesión de espectador terminó.",
       "switchPerspective": "Cambiar perspectiva",
+      "hiddenHands": "Manos ocultas",
+      "hiddenHandsTitle": "Manos ocultas (vista de torneo)",
+      "hiddenHandsOnTitle": "Manos ocultas activadas — toca para mostrar",
       "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
       "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…"
     },
@@ -5041,6 +5050,9 @@
       "matchEnded": "매치가 종료되어 로비로 돌아갑니다.",
       "sessionEnded": "관전 세션이 종료되었습니다.",
       "switchPerspective": "시점 전환",
+      "hiddenHands": "손패 비공개",
+      "hiddenHandsTitle": "손패 비공개 (토너먼트 관전)",
+      "hiddenHandsOnTitle": "손패 비공개 중 — 탭하여 표시",
       "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
       "waitingJudgeResolve": "Live 승패 — {name} 대기 중…"
     },
@@ -6358,6 +6370,9 @@
       "matchEnded": "对战已结束 — 返回大厅。",
       "sessionEnded": "观战已结束。",
       "switchPerspective": "切换视角",
+      "hiddenHands": "隐藏手牌",
+      "hiddenHandsTitle": "隐藏手牌（锦标赛观战）",
+      "hiddenHandsOnTitle": "隐藏手牌已开启 — 点按显示",
       "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
       "waitingJudgeResolve": "Live 胜负 — 等待 {name}…"
     },
@@ -7651,6 +7666,9 @@
       "matchEnded": "แมตช์จบแล้ว — กลับล็อบบี้",
       "sessionEnded": "เซสชันผู้ชมจบแล้ว",
       "switchPerspective": "สลับมุมมอง",
+      "hiddenHands": "ซ่อนมือถือ",
+      "hiddenHandsTitle": "ซ่อนมือถือ (มุมมองทัวร์นาเมนต์)",
+      "hiddenHandsOnTitle": "กำลังซ่อนมือถือ — แตะเพื่อแสดง",
       "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
       "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…"
     },

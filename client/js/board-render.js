@@ -133,7 +133,11 @@ function renderGame(s, opts = {}) {
     if (el('hand-n')) el('hand-n').textContent = '0';
   } else if (!opts.skipHand) {
     const visibleHand = handCardsForDisplay(me.hand || [], myId);
-    renderHand(visibleHand, s, myId);
+    if (typeof spectatorHandsHidden === 'function' && spectatorHandsHidden()) {
+      renderHandFaceDownTracked(visibleHand, s, myId);
+    } else {
+      renderHand(visibleHand, s, myId);
+    }
   } else if (el('hand-n')) {
     el('hand-n').textContent = handCardsForDisplay(me.hand || [], myId).length;
   }
@@ -145,8 +149,14 @@ function renderGame(s, opts = {}) {
     const zone = el('opp-hand-zone');
     if (zone) zone.innerHTML = '';
   } else if (!opts.skipOppHand) {
-    if ((G.isSpectator || G.isTutorial) && opp.hand?.length) renderOpponentHandVisible(opp.hand, s, oppId);
-    else if (opponentHandUsesTrackedSlots(s, myId) && opp.hand?.length) {
+    if (G.isTutorial && opp.hand?.length) renderOpponentHandVisible(opp.hand, s, oppId);
+    else if (G.isSpectator && opp.hand?.length) {
+      if (typeof spectatorHandsHidden === 'function' && spectatorHandsHidden()) {
+        renderOpponentHandTracked(opp.hand, s, oppId);
+      } else {
+        renderOpponentHandVisible(opp.hand, s, oppId);
+      }
+    } else if (opponentHandUsesTrackedSlots(s, myId) && opp.hand?.length) {
       renderOpponentHandTracked(opp.hand, s, oppId);
     } else renderOpponentHand(opponentHandDisplayCount(s, oppId));
   }
@@ -1584,11 +1594,61 @@ function buildHandFlipStructure(d, card) {
 /** Add flip structure to one hand card without re-rendering the whole fan. */
 function upgradeHandCardForDrawFlip(d, card) {
   if (!d || d.querySelector('.hand-flip-inner')) return;
-  d.querySelectorAll(':scope > img, :scope > .card-art, :scope > .noimg').forEach(n => n.remove());
+  d.querySelectorAll(':scope > img, :scope > .card-art, :scope > .noimg, :scope > .back').forEach(n => n.remove());
+  d.classList.remove('hand-facedown-spec');
   buildHandFlipStructure(d, card);
   ensureHandTypeBadge(d, card);
   d.classList.add('hand-draw-flip');
   d.classList.remove('revealed');
+}
+
+/** Face-down tracked hand for tournament spectate (bottom seat). */
+function renderHandFaceDownTracked(hand, s, myId, opts = {}) {
+  if (handsHiddenOnMat(s)) { clearMatHands(); return; }
+  const wrap = el('hand-row');
+  if (!wrap) return;
+  const cards = hand || [];
+  if (el('hand-n')) el('hand-n').textContent = String(cards.length);
+  const beforeByKey = opts.beforeByKey;
+  const beforeRects = beforeByKey?.size ? null : captureShiftRectsByEl(
+    [...wrap.querySelectorAll('.hcard')],
+    c => c.classList.contains('card-arriving'),
+  );
+  const existing = new Map([...wrap.querySelectorAll('.hcard')].map(n => [n.dataset.iid, n]));
+  const keep = new Set(cards.map(c => c.instance_id).filter(Boolean));
+  existing.forEach((node, iid) => { if (!keep.has(iid)) node.remove(); });
+
+  cards.forEach((card, idx) => {
+    const iid = card?.instance_id;
+    if (!iid) return;
+    let d = existing.get(iid);
+    const skillReveal = !!(d && (d.classList.contains('hand-skill-revealed') || d.classList.contains('revealed')));
+    if (!d) {
+      d = document.createElement('div');
+      d.className = 'hcard hand-facedown-spec';
+      d.dataset.iid = iid;
+      d.title = 'Face-down card';
+      const back = document.createElement('div');
+      back.className = 'back live-back card-back-fill';
+      d.appendChild(back);
+    } else if (!skillReveal) {
+      d.className = 'hcard hand-facedown-spec';
+      d.title = 'Face-down card';
+      clearCardFoilFx(d);
+      if (!d.querySelector(':scope > .back.live-back, :scope > .card-back-fill')) {
+        d.replaceChildren();
+        const back = document.createElement('div');
+        back.className = 'back live-back card-back-fill';
+        d.appendChild(back);
+      }
+    }
+    d.classList.toggle('card-arriving', !!(G._animHideIids?.has(iid)));
+    d.classList.toggle('card-live-hand', isLiveCard(card));
+    const at = wrap.children[idx];
+    if (at !== d) wrap.insertBefore(d, at || null);
+  });
+
+  layoutHandFan(wrap, { beforeRects, beforeByKey, animate: opts.animate });
 }
 
 function renderHand(hand,s,myId, opts = {}){

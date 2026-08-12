@@ -573,6 +573,29 @@ body.tcg-spectator-mode .btn-spectate-pov{display:inline-flex}
 .btn-spectate-pov:focus-visible{
   outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
 }
+.btn-spectate-hidden-hands{
+  flex:0 0 auto;width:28px;height:28px;padding:0;border-radius:8px;
+  border:1px solid rgba(186,228,255,.38);background:rgba(100,160,220,.16);
+  color:#d7f0ff;font-size:14px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+}
+body.tcg-spectator-mode .btn-spectate-hidden-hands{display:inline-flex}
+.btn-spectate-hidden-hands:hover{
+  background:rgba(100,160,220,.3);border-color:rgba(186,228,255,.6);color:#fff;
+}
+.btn-spectate-hidden-hands.is-active{
+  border-color:rgba(255,190,120,.7);background:rgba(255,160,60,.22);color:#ffe7a8;
+}
+.btn-spectate-hidden-hands:focus-visible{
+  outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
+}
+#screen-game .my-hand-strip .hcard.hand-facedown-spec{
+  cursor:default;
+}
+#screen-game .my-hand-strip .hcard.hand-facedown-spec > .back.live-back{
+  width:100%;height:100%;border-radius:inherit;
+  background:var(--my-sleeve-image,var(--card-back-default)) center/cover no-repeat;
+}
 .spectator-count{
   font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
   color:rgba(186,228,255,.78);margin-bottom:3px;white-space:nowrap;

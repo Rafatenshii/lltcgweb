@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=38">
+<link rel="stylesheet" href="client/css/shell-all.css?v=39">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 
@@ -1393,6 +1393,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <div class="phase-badge-row">
               <button type="button" class="btn-spectate-pov" id="btn-spectate-pov"
                 data-i18n-title="spectate.switchPerspective" title="Switch perspective" aria-label="Switch perspective">⇄</button>
+              <button type="button" class="btn-spectate-hidden-hands" id="btn-spectate-hidden-hands"
+                aria-pressed="false"
+                data-i18n-title="spectate.hiddenHandsTitle" title="Hidden hands (tournament view)"
+                data-i18n-aria-label="spectate.hiddenHands" aria-label="Hidden hands">🙈</button>
               <div class="pbadge" id="pbadge">Setup</div>
             </div>
           </div>
@@ -2245,7 +2249,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=114"></script>
+<script src="i18n.js?v=115"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=26"></script>
@@ -2398,6 +2402,7 @@ const CASUAL_QUEUE_ID_KEY = 'tcg_casual_queue_id';
 const CASUAL_SEARCH_ACTIVE_KEY = 'tcg_casual_search_active';
 const ACTIVE_GAME_KEY = 'tcg_active_game';
 const ACTIVE_SPECTATOR_KEY = 'tcg_active_spectator';
+const SPECTATE_HIDDEN_HANDS_KEY = 'tcg_spectate_hidden_hands';
 const PERF_SPECTACLE_DONE_STORAGE_KEY = 'tcg_perf_spectacle_done';
 const LIVE_PERF_PRESENTED_STORAGE_KEY = 'tcg_live_perf_presented';
 const EXPERIMENT_PASSWORDS_KEY = 'tcg_experiment_passwords';
@@ -3222,7 +3227,13 @@ function isEnergyStorageEl(el) {
 
 /** Face-down opponent/CPU hand slot — generic back only until revealed (tutorial uses .hcard). */
 function isHiddenOpponentHandCardEl(el) {
-  return !!el?.closest?.('#opp-hand-zone')
+  if (!el) return false;
+  if (el.classList.contains('hand-facedown-spec')
+      && !el.classList.contains('revealed')
+      && !el.classList.contains('hand-skill-revealed')) {
+    return true;
+  }
+  return !!el.closest?.('#opp-hand-zone')
     && el.classList.contains('opp-hand-card')
     && !el.classList.contains('hcard');
 }
@@ -5042,13 +5053,14 @@ async function reconnectToSpectator(saved, opts = {}) {
     G.isCPU = false;
     G.cpuToken = null;
     G.cpuPlayerId = null;
-    document.body.classList.add('tcg-spectator-mode');
-    const bar = el('spectate-bar');
-    const barLabel = el('spectate-bar-label');
-    if (bar) bar.hidden = false;
-    if (barLabel) {
+  document.body.classList.add('tcg-spectator-mode');
+  syncSpectateHiddenHandsUi();
+  const bar = el('spectate-bar');
+  const barLabel = el('spectate-bar-label');
+  if (bar) bar.hidden = false;
+  if (barLabel) {
       barLabel.textContent = t('spectate.barNames', { p1: saved.p1Name || 'P1', p2: saved.p2Name || 'P2' });
-    }
+  }
     prepareClientReconnectState(s);
     G.gameState = s;
     showScr('game');
@@ -10629,6 +10641,7 @@ function resetMatchTransientState() {
   G._spectateP2Name = null;
   clearSpectatorSession();
   document.body.classList.remove('tcg-spectator-mode');
+  document.body.classList.remove('tcg-spectator-hidden-hands');
   document.body.classList.remove('tcg-replay-view-mode');
   const spectateBar = el('spectate-bar');
   if (spectateBar) spectateBar.hidden = true;
@@ -14790,7 +14803,7 @@ let G = {
   roomId:null, token:null, cpuToken:null, playerId:null, isCPU:false, cpuDifficulty:'easy',
   replayMode:false, replayHandoff:false, replayStep:0, replayTotal:0, replayPlaying:false, replayPlayTimer:null,
   replayTimeline:null, replayLoadedMeta:null, _replaySeekWasScrub:false, _replayForwardApply:false, _replayLastAppliedStep:0,
-  isSpectator:false, spectatorViewAs:'p1', _spectateReturnScreen:'lobby', _spectateP1Name:null, _spectateP2Name:null,
+  isSpectator:false, spectatorViewAs:'p1', spectateHiddenHands:false, _spectateReturnScreen:'lobby', _spectateP1Name:null, _spectateP2Name:null,
   cpuPlayerId:null,
   _pendingReplayFile:null,
   gameState:null, allCards:{}, starterDecks:{},
@@ -15163,6 +15176,8 @@ async function bootApp() {
   on('btn-spectate-list-close', 'click', () => closeM('overlay-spectate-list'));
   on('btn-spectate-leave', 'click', () => { void leaveSpectatorMode(); });
   on('btn-spectate-pov', 'click', () => { toggleSpectatorPerspective(); });
+  on('btn-spectate-hidden-hands', 'click', () => { toggleSpectateHiddenHands(); });
+  initSpectateHiddenHandsPreference();
   on('btn-anti-softlock', 'click', () => { void antiSoftlockSkipPrompt(); });
   document.addEventListener('keydown', onForceOwnTimeoutHotkey);
   on('sel-ranked-deck', 'change', onRankedDeckChange);
@@ -17678,7 +17693,11 @@ function noteOppHandDepartEnd(fromLoc, myId) {
   const s = G.gameState;
   if (!s?.players?.[oppId]) return;
   if (G.isSpectator) {
-    renderOpponentHandVisible(s.players[oppId].hand || [], s, oppId, { animate: true });
+    if (spectatorHandsHidden()) {
+      renderOpponentHandTracked(s.players[oppId].hand || [], s, oppId, { animate: true });
+    } else {
+      renderOpponentHandVisible(s.players[oppId].hand || [], s, oppId, { animate: true });
+    }
   } else if (opponentHandUsesTrackedSlots(s, myId)) {
     renderOpponentHandTracked(s.players[oppId].hand || [], s, oppId, { animate: true });
   } else {
@@ -18062,6 +18081,10 @@ function projectMyHandSlotRects(state, myId) {
 
 /** Light hand sync after deferred flights — avoid full renderHand (prevents post-shift fade). */
 function syncHandDomAfterDeferredLayout(state, myId, { animateFan = false } = {}) {
+  if (spectatorHandsHidden()) {
+    renderHandFaceDownTracked(state.players?.[myId]?.hand || [], state, myId, { animate: animateFan });
+    return;
+  }
   const wrap = el('hand-row');
   if (!wrap) return;
   wrap.querySelectorAll('.hcard').forEach(n => n.classList.remove('card-arriving'));
@@ -18091,7 +18114,8 @@ function syncOppHandDomAfterDeferredLayout(state, oppId, { animateFan = false } 
   if (!zone) return;
   const hand = state.players?.[oppId]?.hand || [];
   if (G.isSpectator) {
-    renderOpponentHandVisible(hand, state, oppId, { animate: animateFan });
+    if (spectatorHandsHidden()) renderOpponentHandTracked(hand, state, oppId, { animate: animateFan });
+    else renderOpponentHandVisible(hand, state, oppId, { animate: animateFan });
     return;
   }
   zone.querySelectorAll('.opp-hand-card').forEach(n => n.classList.remove('card-arriving'));
@@ -18180,9 +18204,15 @@ function primeHandLayoutFromBaseline(stateAfter, pid, myId, { animate = true } =
   G._handDepartPrimed.add(pid);
   const hand = stateAfter.players[pid].hand || [];
   const layoutOpts = beforeByKey?.size ? { beforeByKey, animate } : { animate };
-  if (mine) renderHand(hand, stateAfter, myId, layoutOpts);
-  else if (G.isTutorial || G.isSpectator) renderOpponentHandVisible(hand, stateAfter, pid, layoutOpts);
-  else if (opponentHandUsesTrackedSlots(stateAfter, myId)) {
+  if (mine) {
+    if (spectatorHandsHidden()) renderHandFaceDownTracked(hand, stateAfter, myId, layoutOpts);
+    else renderHand(hand, stateAfter, myId, layoutOpts);
+  } else if (G.isTutorial) {
+    renderOpponentHandVisible(hand, stateAfter, pid, layoutOpts);
+  } else if (G.isSpectator) {
+    if (spectatorHandsHidden()) renderOpponentHandTracked(hand, stateAfter, pid, layoutOpts);
+    else renderOpponentHandVisible(hand, stateAfter, pid, layoutOpts);
+  } else if (opponentHandUsesTrackedSlots(stateAfter, myId)) {
     renderOpponentHandTracked(hand, stateAfter, pid, layoutOpts);
   }
   return true;
@@ -18263,7 +18293,9 @@ function ensureHandDrawRevealCard(iid, state, myId) {
   }
   let cardEl = prepareHandDrawRevealCard(iid, state, myId);
   if (!cardEl) {
-    renderHand(state.players?.[myId]?.hand || [], state, myId, { animate: false });
+    const hand = state.players?.[myId]?.hand || [];
+    if (spectatorHandsHidden()) renderHandFaceDownTracked(hand, state, myId, { animate: false });
+    else renderHand(hand, state, myId, { animate: false });
     cardEl = prepareHandDrawRevealCard(iid, state, myId);
   }
   return cardEl;
@@ -18294,6 +18326,7 @@ function isStaggeredPileMove(m) {
 }
 
 function isPlayerHandRevealMove(m, myId) {
+  if (spectatorHandsHidden()) return false;
   const pid = m.to?.pid || m.from?.pid;
   return pid === myId && isHiddenSourceToHand(m);
 }
@@ -18306,6 +18339,15 @@ function shouldFlyFaceDownForMove(m, myId, state) {
   const to = m.to?.zone || null;
   const card = m.card || findCardInState(state, m.iid, pid);
   if (isEnergyCard(card) || from === 'energy' || to === 'energy' || from === 'energy_deck') return false;
+  if (spectatorHandsHidden()) {
+    // Tournament spectate: both hands stay secret; live storage still follows POV.
+    if (to === 'live' && from !== 'live') return pid !== myId;
+    if (from === 'hand' || to === 'hand') return true;
+    if (from === 'main_deck') return true;
+    if (to === 'stage' && ['hand', 'main_deck', 'waiting_room'].includes(from)) return true;
+    if (from === 'live' && !(m.card?.revealed)) return true;
+    return false;
+  }
   // Own live storage: face-up to the owner; opponent stays hidden until reveal.
   if (to === 'live' && from !== 'live') return pid !== myId;
   if (pid === myId && isHiddenSourceToHand(m)) return true;
@@ -21708,6 +21750,11 @@ function stageOpeningHandForDeal(finalState, myId) {
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   const mineHand = openingHandSlice(finalState.players?.[myId]?.hand);
   const oppHand = openingHandSlice(finalState.players?.[oppId]?.hand);
+  if (G.isSpectator && spectatorHandsHidden()) {
+    renderHandFaceDownTracked(mineHand, finalState, myId, { animate: false });
+    renderOpponentHandTracked(oppHand, finalState, oppId, { animate: false });
+    return;
+  }
   renderHand(mineHand, finalState, myId, { animate: false });
   if (G.isTutorial) renderOpponentHandVisible(oppHand, finalState, oppId, { animate: false });
   else if (opponentHandUsesTrackedSlots(finalState, myId)) {
@@ -21720,15 +21767,26 @@ function finishOpeningHandDealRender(finalState, myId) {
   G._animHideIids = null;
   G._handDepartPrimed = null;
   clearHandArrivingFlags();
-  openingHandSlice(finalState.players?.[myId]?.hand).forEach(card => {
+  const mineHand = openingHandSlice(finalState.players?.[myId]?.hand);
+  const oppHand = openingHandSlice(finalState.players?.[oppId]?.hand);
+  if (G.isSpectator && spectatorHandsHidden()) {
+    mineHand.forEach(card => {
+      if (!card?.instance_id) return;
+      G._handRevealFlips?.delete(card.instance_id);
+      G._handDrawRevealScheduled?.delete(card.instance_id);
+    });
+    renderHandFaceDownTracked(mineHand, finalState, myId, { animate: true });
+    if (oppHand.length) renderOpponentHandTracked(oppHand, finalState, oppId, { animate: true });
+    return;
+  }
+  mineHand.forEach(card => {
     if (!card?.instance_id) return;
     G._handRevealFlips?.delete(card.instance_id);
     G._handDrawRevealScheduled?.delete(card.instance_id);
     const cardEl = el('hand-row')?.querySelector(`.hcard[data-iid="${CSS.escape(card.instance_id)}"]`);
     if (cardEl) resolveStuckHandDrawFlip(cardEl, card, myId);
   });
-  renderHand(openingHandSlice(finalState.players?.[myId]?.hand), finalState, myId, { animate: true });
-  const oppHand = openingHandSlice(finalState.players?.[oppId]?.hand);
+  renderHand(mineHand, finalState, myId, { animate: true });
   if (G.isTutorial && oppHand.length) {
     renderOpponentHandVisible(oppHand, finalState, oppId, { animate: true });
   } else if (opponentHandUsesTrackedSlots(finalState, myId) && oppHand.length) {
@@ -28506,6 +28564,7 @@ function abortSpectatorBootUi() {
   try { stopPoll(); } catch (e) { /* ignore */ }
   clearSpectatorSession();
   document.body.classList.remove('tcg-spectator-mode');
+  document.body.classList.remove('tcg-spectator-hidden-hands');
   const bar = el('spectate-bar');
   if (bar) bar.hidden = true;
   G.isSpectator = false;
@@ -28561,6 +28620,7 @@ async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
     tcgLockApiOrigin(apiOrigin === 'overflow' ? 'overflow' : 'hostinger');
   }
   document.body.classList.add('tcg-spectator-mode');
+  syncSpectateHiddenHandsUi();
   const bar = el('spectate-bar');
   const barLabel = el('spectate-bar-label');
   if (bar) bar.hidden = false;
@@ -28587,6 +28647,51 @@ function spectatorBoardPid(fallback = 'p1') {
   if (v === 'p1' || v === 'p2') return v;
   if (G.playerId === 'p1' || G.playerId === 'p2') return G.playerId;
   return fallback === 'p2' ? 'p2' : 'p1';
+}
+
+function readSpectateHiddenHandsPref() {
+  try { return localStorage.getItem(SPECTATE_HIDDEN_HANDS_KEY) === '1'; }
+  catch (e) { return false; }
+}
+
+function initSpectateHiddenHandsPreference() {
+  G.spectateHiddenHands = readSpectateHiddenHandsPref();
+  syncSpectateHiddenHandsUi();
+}
+
+/** Tournament-style: both hands face-down for spectators. */
+function spectatorHandsHidden() {
+  return !!(G.isSpectator && G.spectateHiddenHands);
+}
+
+function syncSpectateHiddenHandsUi() {
+  const on = spectatorHandsHidden();
+  document.body.classList.toggle('tcg-spectator-hidden-hands', on);
+  const btn = el('btn-spectate-hidden-hands');
+  if (!btn) return;
+  btn.classList.toggle('is-active', !!G.spectateHiddenHands);
+  btn.setAttribute('aria-pressed', G.spectateHiddenHands ? 'true' : 'false');
+  const title = G.spectateHiddenHands
+    ? (typeof t === 'function' ? t('spectate.hiddenHandsOnTitle') : 'Hidden hands on — tap to show hands')
+    : (typeof t === 'function' ? t('spectate.hiddenHandsTitle') : 'Hidden hands (tournament view)');
+  btn.title = title;
+  btn.setAttribute('aria-label', typeof t === 'function' ? t('spectate.hiddenHands') : 'Hidden hands');
+}
+
+function setSpectateHiddenHands(on, { rerender = true } = {}) {
+  G.spectateHiddenHands = !!on;
+  try { localStorage.setItem(SPECTATE_HIDDEN_HANDS_KEY, G.spectateHiddenHands ? '1' : '0'); }
+  catch (e) { /* ignore */ }
+  syncSpectateHiddenHandsUi();
+  if (rerender && G.isSpectator && G.gameState) {
+    try { clearMatHands(); } catch (e) { /* ignore */ }
+    renderGame(G.gameState);
+  }
+}
+
+function toggleSpectateHiddenHands() {
+  if (!G.isSpectator) return;
+  setSpectateHiddenHands(!G.spectateHiddenHands);
 }
 
 /**
@@ -28634,6 +28739,7 @@ async function leaveSpectatorMode(opts = {}) {
   stopPoll();
   el('overlay-win')?.classList.remove('open');
   document.body.classList.remove('tcg-spectator-mode');
+  document.body.classList.remove('tcg-spectator-hidden-hands');
   const bar = el('spectate-bar');
   if (bar) bar.hidden = true;
   G.isSpectator = false;
@@ -29133,7 +29239,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=68"></script>
-<script src="client/js/board-render.js?v=16"></script>
+<script src="client/js/board-render.js?v=17"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
