@@ -2944,9 +2944,41 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   display:flex;
   flex-wrap:wrap;
   align-items:flex-start;
-  gap:10px 18px;
-  flex:1 1 min(520px,100%);
-  min-width:min(280px,100%);
+  gap:8px 12px;
+  flex:0 0 auto;
+  width:100%;
+  min-width:0;
+}
+#screen-deck .deck-builder-meta__sleeve-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:10px 16px;
+  flex:1 1 100%;
+  width:100%;
+  min-width:0;
+}
+#screen-deck .deck-builder-meta__sleeve{
+  flex:1 1 260px;
+  min-width:min(220px,100%);
+  max-width:100%;
+}
+#screen-deck .deck-builder-meta__side-tools{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1 1 300px;
+  min-width:min(260px,100%);
+  max-width:100%;
+}
+#screen-deck .deck-builder-meta__side-tools .deck-pool-tools{
+  margin-bottom:0;
+}
+#screen-deck .deck-builder-meta__side-tools .deck-filter-panel:not(.show-advanced){
+  max-height:none;
+}
+#screen-deck .deck-builder-meta__side-tools .deck-filter-panel.show-advanced{
+  max-height:min(42vh,320px);
 }
 #screen-deck .deck-builder-meta__search{
   flex:1 1 220px;
@@ -2973,13 +3005,14 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   flex:0 0 auto;width:auto;min-width:0;padding:10px 12px;font-size:12px;white-space:nowrap;
 }
 #screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__import-search{
-  flex:1 1 100%;
+  flex:0 0 auto;
+  width:100%;
 }
 #screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__experiment{
-  flex:1 1 min(520px,100%);min-width:min(280px,100%);
+  flex:1 1 100%;min-width:0;
 }
 #screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__search{
-  flex:0 1 220px;min-width:min(180px,100%);
+  flex:1 1 100%;min-width:0;
 }
 #screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-hint--compact{
   margin-top:6px;margin-bottom:0;
@@ -3897,7 +3930,7 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   background:rgba(186,228,255,.18);
   color:#fff;
 }
-#screen-deck .deck-builder-meta__search{flex:1 1 200px;min-width:min(100%,180px)}
+#screen-deck .deck-builder-meta__search{flex:1 1 100%;min-width:0}
 #screen-deck .deck-builder-lists{
   gap:8px;
   flex:1 1 auto;

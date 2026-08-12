@@ -139,8 +139,14 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 
 /* ── Deck builder picker ── */
 #screen-deck .deck-builder-meta__sleeve{
-  flex:1 1 100%;
-  min-width:0;
+  flex:1 1 260px;
+  min-width:min(220px,100%);
+}
+#screen-deck .deck-builder-meta__sleeve .deck-builder-hint--compact{
+  display:none;
+}
+#screen-deck .deck-builder-meta__sleeve #deck-sleeve-empty-hint:not([hidden]){
+  display:block;
 }
 .deck-sleeve-picker{
   display:flex;
