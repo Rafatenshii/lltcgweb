@@ -40,7 +40,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=36">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=16">
+<link rel="stylesheet" href="client/css/sleeves.css?v=17">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -977,7 +977,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <div class="deck-builder-meta__sleeve-row" id="deck-builder-sleeve-row">
           <div class="field deck-builder-meta__sleeve" id="deck-builder-sleeve-wrap">
             <label data-i18n="deck.sleeve">Sleeve</label>
-            <div class="deck-sleeve-picker" id="deck-sleeve-picker" role="listbox" data-i18n-aria-label="deck.sleeve"></div>
+            <div class="deck-sleeve-picker" id="deck-sleeve-picker" data-i18n-aria-label="deck.sleeve"></div>
             <p class="deck-builder-hint deck-builder-hint--compact" id="deck-sleeve-empty-hint" data-i18n="deck.sleeveEmpty">No sleeves available yet.</p>
             <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.sleeveHint">Equipped sleeve replaces your card back in matches. Default: none.</p>
           </div>
@@ -1099,6 +1099,17 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     <p style="font-size:13px;color:rgba(255,255,255,.65);margin-bottom:12px" data-i18n="deck.experimentStarterLead">Load an official starter list as your base — edit freely from the full card pool.</p>
     <div class="pickgrid" id="experiment-starter-grid"></div>
     <button class="btn-ghost" id="btn-experiment-starter-cancel" type="button" style="width:auto;padding:8px 18px;margin-top:8px" data-i18n="common.cancel">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay deck-sleeve-overlay" id="overlay-deck-sleeve" aria-modal="true" aria-labelledby="deck-sleeve-overlay-title" aria-hidden="true">
+  <div class="deck-sleeve-overlay__shell" role="dialog" aria-modal="true" aria-labelledby="deck-sleeve-overlay-title">
+    <div class="account-screen-head deck-sleeve-overlay__head">
+      <h2 id="deck-sleeve-overlay-title" data-i18n="deck.sleevePickTitle">Choose sleeve</h2>
+      <button class="btn-ghost deck-sleeve-overlay__close" type="button" id="btn-deck-sleeve-overlay-close" data-i18n-aria-label="deck.sleevePickClose" aria-label="Close">✕</button>
+    </div>
+    <p class="deck-sleeve-overlay__lead" data-i18n="deck.sleevePickLead">Tap a sleeve you own to equip it on this deck.</p>
+    <div class="deck-sleeve-overlay__grid" id="deck-sleeve-overlay-grid" role="listbox" data-i18n-aria-label="deck.sleeve"></div>
   </div>
 </div>
 
@@ -2240,7 +2251,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/news.js?v=26"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=33"></script>
-<script src="client/js/sleeves.js?v=10"></script>
+<script src="client/js/sleeves.js?v=11"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -28771,7 +28782,10 @@ function showScr(n){
   if (n === 'game') {
     G._presentationAborted = false;
   }
-  if (prevActive === 'screen-deck' && n !== 'deck') clearDeckBuilderCardPreview(true);
+  if (prevActive === 'screen-deck' && n !== 'deck') {
+    clearDeckBuilderCardPreview(true);
+    try { window.LLTCG_SLEEVES?.closePickerOverlay?.(); } catch (e) { /* ignore */ }
+  }
   if (n !== 'lobby') stopCasualLobbyStatsPoll();
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active');

@@ -138,7 +138,7 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
   display:none;
 }
 
-/* ── Deck builder picker ── */
+/* ── Deck builder picker (single current + overlay) ── */
 #screen-deck .deck-builder-meta__sleeve{
   flex:0 0 auto;
   min-width:0;
@@ -154,6 +154,66 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
   flex-wrap:wrap;
   gap:8px;
   align-items:stretch;
+}
+.deck-sleeve-current{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  max-width:100%;
+  padding:8px 12px 8px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(0,0,0,.22);
+  color:#fff;
+  cursor:pointer;
+  font:inherit;
+  text-align:left;
+}
+.deck-sleeve-current:hover{
+  border-color:rgba(255,107,168,.55);
+  background:rgba(0,0,0,.3);
+}
+.deck-sleeve-current__art{
+  width:48px;
+  height:48px;
+  flex:0 0 auto;
+  border-radius:3px;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.deck-sleeve-current__art--none{
+  border-radius:4px;
+  width:34px;
+  height:auto;
+  aspect-ratio:63/88;
+}
+.deck-sleeve-current__art.is-landscape{
+  background-size:contain;
+  background-color:rgba(0,0,0,.35);
+}
+.deck-sleeve-current__meta{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.deck-sleeve-current__name{
+  font-size:13px;
+  font-weight:700;
+  line-height:1.25;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:min(220px,46vw);
+}
+.deck-sleeve-current__hint{
+  font-size:11px;
+  font-weight:600;
+  color:rgba(255,255,255,.72);
+  letter-spacing:.02em;
 }
 .deck-sleeve-tile{
   display:flex;
@@ -185,6 +245,10 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
   background-repeat:no-repeat;
   box-shadow:0 2px 6px rgba(0,0,0,.4);
 }
+.deck-sleeve-tile__art.is-landscape{
+  background-size:contain;
+  background-color:rgba(0,0,0,.35);
+}
 .deck-sleeve-tile__art--none{
   border-radius:4px;
   aspect-ratio:63/88;
@@ -202,6 +266,76 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
   white-space:nowrap;
 }
 #deck-sleeve-empty-hint{margin-top:4px}
+
+.overlay.deck-sleeve-overlay{
+  z-index:920;
+  padding:clamp(12px,3vw,24px) 16px;
+  align-items:center;
+  justify-content:center;
+  overflow:auto;
+  font-family:'Zen Kaku Gothic New','Nunito',sans-serif;
+}
+.deck-sleeve-overlay__shell{
+  max-width:min(720px,96vw);
+  width:100%;
+  margin-block:auto;
+  padding:clamp(14px,2.4vw,22px);
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.44);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(38,132,210,.92);
+  box-shadow:0 18px 52px rgba(0,0,0,.45),0 0 32px rgba(52,163,243,.24),inset 0 1px 0 rgba(255,255,255,.16);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  color:#fff;
+  max-height:min(86vh,820px);
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.deck-sleeve-overlay__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6px;
+  flex:0 0 auto;
+}
+.deck-sleeve-overlay__head h2{
+  margin:0;
+  font-size:clamp(18px,3.2vw,24px);
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.deck-sleeve-overlay__close{
+  flex:0 0 auto;
+}
+.deck-sleeve-overlay__lead{
+  margin:0 0 12px;
+  font-size:13px;
+  line-height:1.45;
+  color:rgba(255,255,255,.82);
+  flex:0 0 auto;
+}
+.deck-sleeve-overlay__grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-content:flex-start;
+  overflow:auto;
+  min-height:0;
+  flex:1 1 auto;
+  padding:2px 2px 8px;
+  -webkit-overflow-scrolling:touch;
+}
+.deck-sleeve-overlay__grid::-webkit-scrollbar{width:6px}
+.deck-sleeve-overlay__grid::-webkit-scrollbar-track{
+  background:rgba(0,0,0,.15);
+  border-radius:999px;
+}
+.deck-sleeve-overlay__grid::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.35);
+  border-radius:999px;
+}
 
 /* Sleeve Shop */
 .sleeve-shop-gens{

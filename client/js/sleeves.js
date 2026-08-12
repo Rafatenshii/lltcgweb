@@ -384,6 +384,8 @@
     btn.type = 'button';
     btn.className = 'deck-sleeve-tile' + (selected ? ' is-selected' : '');
     btn.dataset.sleeveId = id;
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', selected ? 'true' : 'false');
     const thumb = document.createElement('span');
     thumb.className = 'deck-sleeve-tile__art';
     if (sleeve && sleeve.src) {
@@ -406,22 +408,120 @@
     return btn;
   }
 
+  function makeCurrentSleeveButton(selectedId, sleeve) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'deck-sleeve-current';
+    btn.id = 'btn-deck-sleeve-current';
+    const art = document.createElement('span');
+    art.className = 'deck-sleeve-current__art';
+    if (sleeve && sleeve.src) {
+      art.style.backgroundImage = cssImageUrl(sleeve.src);
+      if (isLandscapeSleeve(sleeve)) art.classList.add('is-landscape');
+    } else {
+      art.classList.add('deck-sleeve-current__art--none');
+      art.style.backgroundImage = cssImageUrl(DEFAULT_BACK);
+    }
+    const meta = document.createElement('span');
+    meta.className = 'deck-sleeve-current__meta';
+    const name = document.createElement('span');
+    name.className = 'deck-sleeve-current__name';
+    const tFn = typeof global.t === 'function' ? global.t : null;
+    name.textContent = sleeve
+      ? formatSleeveDisplayName(sleeve)
+      : ((tFn && tFn('deck.sleeveNone')) || 'None');
+    const hint = document.createElement('span');
+    hint.className = 'deck-sleeve-current__hint';
+    hint.textContent = (tFn && tFn('deck.sleeveChange')) || 'Change';
+    meta.appendChild(name);
+    meta.appendChild(hint);
+    btn.appendChild(art);
+    btn.appendChild(meta);
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.setAttribute('aria-controls', 'overlay-deck-sleeve');
+    btn.title = name.textContent;
+    btn.dataset.sleeveId = selectedId || '';
+    return btn;
+  }
+
   function ownedSet() {
     const list = (global.A && Array.isArray(global.A.ownedSleeves)) ? global.A.ownedSleeves : [];
     return new Set(list.map(normalizeSleeveId).filter(Boolean));
   }
 
-  function renderDeckSleevePicker(selectedId, onPick) {
-    const host = document.getElementById('deck-sleeve-picker');
-    if (!host) return;
+  let deckSleevePickHandler = null;
+  let deckSleeveOverlayBound = false;
+
+  function closeDeckSleeveOverlay() {
+    const overlay = document.getElementById('overlay-deck-sleeve');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function fillDeckSleeveOverlayGrid(selectedId) {
+    const grid = document.getElementById('deck-sleeve-overlay-grid');
+    if (!grid) return;
     const selected = normalizeSleeveId(selectedId);
     const owned = ownedSet();
     const visible = SLEEVE_CATALOG.filter((s) => owned.has(s.id));
-    host.replaceChildren();
-    host.appendChild(makeSleeveTile('', selected === '', null));
+    grid.replaceChildren();
+    grid.appendChild(makeSleeveTile('', selected === '', null));
     visible.forEach((s) => {
-      host.appendChild(makeSleeveTile(s.id, s.id === selected, s));
+      grid.appendChild(makeSleeveTile(s.id, s.id === selected, s));
     });
+    grid.querySelectorAll('.deck-sleeve-tile').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const next = normalizeSleeveId(btn.dataset.sleeveId);
+        closeDeckSleeveOverlay();
+        if (typeof deckSleevePickHandler === 'function') deckSleevePickHandler(next);
+      });
+    });
+  }
+
+  function openDeckSleeveOverlay(selectedId) {
+    const overlay = document.getElementById('overlay-deck-sleeve');
+    if (!overlay) return;
+    fillDeckSleeveOverlayGrid(selectedId);
+    if (typeof global.applyI18n === 'function') global.applyI18n(overlay);
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    const closeBtn = document.getElementById('btn-deck-sleeve-overlay-close');
+    closeBtn?.focus?.();
+  }
+
+  function bindDeckSleeveOverlayOnce() {
+    if (deckSleeveOverlayBound) return;
+    const overlay = document.getElementById('overlay-deck-sleeve');
+    if (!overlay) return;
+    deckSleeveOverlayBound = true;
+    document.getElementById('btn-deck-sleeve-overlay-close')?.addEventListener('click', () => {
+      closeDeckSleeveOverlay();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDeckSleeveOverlay();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!overlay.classList.contains('open')) return;
+      closeDeckSleeveOverlay();
+    });
+  }
+
+  function renderDeckSleevePicker(selectedId, onPick) {
+    const host = document.getElementById('deck-sleeve-picker');
+    if (!host) return;
+    bindDeckSleeveOverlayOnce();
+    deckSleevePickHandler = typeof onPick === 'function' ? onPick : null;
+    const selected = normalizeSleeveId(selectedId);
+    const owned = ownedSet();
+    const visible = SLEEVE_CATALOG.filter((s) => owned.has(s.id));
+    const sleeve = selected ? getSleeve(selected) : null;
+    host.replaceChildren();
+    const current = makeCurrentSleeveButton(selected, sleeve);
+    current.addEventListener('click', () => openDeckSleeveOverlay(selected));
+    host.appendChild(current);
+
     const hint = document.getElementById('deck-sleeve-empty-hint');
     if (hint) {
       hint.hidden = false;
@@ -430,12 +530,10 @@
         ? ((tFn && tFn('deck.sleeveOwnedHint')) || 'Owned sleeves from the Sleeve Shop.')
         : ((tFn && tFn('deck.sleeveEmptyHint')) || 'Buy sleeves in the Sleeve Shop.');
     }
-    host.querySelectorAll('.deck-sleeve-tile').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const next = normalizeSleeveId(btn.dataset.sleeveId);
-        if (typeof onPick === 'function') onPick(next);
-      });
-    });
+
+    // Keep overlay selection in sync if it is already open.
+    const overlay = document.getElementById('overlay-deck-sleeve');
+    if (overlay?.classList.contains('open')) fillDeckSleeveOverlayGrid(selected);
   }
 
   async function loadCatalog() {
@@ -530,6 +628,7 @@
     applyMatchSleeves,
     clearMatchSleeves,
     renderPicker: renderDeckSleevePicker,
+    closePickerOverlay: closeDeckSleeveOverlay,
     loadCatalog,
     playEquipIntro,
     conformEnabled: sleeveConformEnabled,
