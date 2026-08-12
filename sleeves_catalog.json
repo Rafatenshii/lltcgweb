@@ -43,6 +43,20 @@
       "src": "assets/sleeves/br-268294.webp"
     },
     {
+      "id": "bday-chika-2025",
+      "name": "Chika Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/bday-chika-2025.webp"
+    },
+    {
+      "id": "bday-chika-2026",
+      "name": "Chika Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Chika",
+      "src": "assets/sleeves/bday-chika-2026.webp"
+    },
+    {
       "id": "br-br-1518",
       "name": "Vol.1518 ラブライブ！サンシャイン!! 『高海 千歌』Part.5",
       "group": "Aqours",
@@ -85,6 +99,13 @@
       "src": "assets/sleeves/br-268297.webp"
     },
     {
+      "id": "bday-dia-2026",
+      "name": "Dia Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Dia",
+      "src": "assets/sleeves/bday-dia-2026.webp"
+    },
+    {
       "id": "br-br-1115",
       "name": "Vol.1115 ラブライブ！サンシャイン!! 『黒澤 ダイヤ』Part.2",
       "group": "Aqours",
@@ -118,6 +139,20 @@
       "group": "Aqours",
       "idol": "Hanamaru",
       "src": "assets/sleeves/br-195439.webp"
+    },
+    {
+      "id": "bday-hanamaru-2025",
+      "name": "Hanamaru Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/bday-hanamaru-2025.webp"
+    },
+    {
+      "id": "bday-hanamaru-2026",
+      "name": "Hanamaru Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "src": "assets/sleeves/bday-hanamaru-2026.webp"
     },
     {
       "id": "br-br-1155",
@@ -197,6 +232,20 @@
       "src": "assets/sleeves/br-268296.webp"
     },
     {
+      "id": "bday-kanan-2025",
+      "name": "Kanan Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/bday-kanan-2025.webp"
+    },
+    {
+      "id": "bday-kanan-2026",
+      "name": "Kanan Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "src": "assets/sleeves/bday-kanan-2026.webp"
+    },
+    {
       "id": "br-159510",
       "name": "Bushiroad Sleeve Collection HG Vol.1086: Love Live! Sunshine!! - Mari Ohara (60-Pack)",
       "group": "Aqours",
@@ -230,6 +279,20 @@
       "group": "Aqours",
       "idol": "Mari",
       "src": "assets/sleeves/br-268301.webp"
+    },
+    {
+      "id": "bday-mari-2025",
+      "name": "Mari Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/bday-mari-2025.webp"
+    },
+    {
+      "id": "bday-mari-2026",
+      "name": "Mari Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Mari",
+      "src": "assets/sleeves/bday-mari-2026.webp"
     },
     {
       "id": "br-br-1525",
@@ -281,6 +344,13 @@
       "src": "assets/sleeves/br-268295.webp"
     },
     {
+      "id": "bday-riko-2025",
+      "name": "Riko Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Riko",
+      "src": "assets/sleeves/bday-riko-2025.webp"
+    },
+    {
       "id": "br-br-1519",
       "name": "Vol.1519 ラブライブ！サンシャイン!! 『桜内 梨子』Part.5",
       "group": "Aqours",
@@ -328,6 +398,13 @@
       "group": "Aqours",
       "idol": "Ruby",
       "src": "assets/sleeves/br-268302.webp"
+    },
+    {
+      "id": "bday-ruby-2025",
+      "name": "Ruby Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "src": "assets/sleeves/bday-ruby-2025.webp"
     },
     {
       "id": "br-br-1120",
@@ -393,6 +470,20 @@
       "src": "assets/sleeves/br-br-1523.webp"
     },
     {
+      "id": "bday-yoshiko-2025",
+      "name": "Yoshiko Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/bday-yoshiko-2025.webp"
+    },
+    {
+      "id": "bday-yoshiko-2026",
+      "name": "Yoshiko Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "src": "assets/sleeves/bday-yoshiko-2026.webp"
+    },
+    {
       "id": "br-159507",
       "name": "Bushiroad Sleeve Collection HG Vol.1083: Love Live! Sunshine!! - You Watanabe (60-Pack)",
       "group": "Aqours",
@@ -442,6 +533,41 @@
       "src": "assets/sleeves/br-268298.webp"
     },
     {
+      "id": "bday-you-2025",
+      "name": "You Birthday Visual 2025",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/bday-you-2025.webp"
+    },
+    {
+      "id": "bday-you-2026",
+      "name": "You Birthday Visual 2026",
+      "group": "Aqours",
+      "idol": "You",
+      "src": "assets/sleeves/bday-you-2026.webp"
+    },
+    {
+      "id": "bday-ceras-2025",
+      "name": "Ceras Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Ceras",
+      "src": "assets/sleeves/bday-ceras-2025.webp"
+    },
+    {
+      "id": "bday-ceras-2026",
+      "name": "Ceras Birthday Visual 2026",
+      "group": "Hasunosora",
+      "idol": "Ceras",
+      "src": "assets/sleeves/bday-ceras-2026.webp"
+    },
+    {
+      "id": "bday-ginko-2025",
+      "name": "Ginko Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Ginko",
+      "src": "assets/sleeves/bday-ginko-2025.webp"
+    },
+    {
       "id": "br-hs-2000201700158",
       "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『百生 吟子』",
       "group": "Hasunosora",
@@ -470,11 +596,32 @@
       "src": "assets/sleeves/br-hs-2000229541269.webp"
     },
     {
+      "id": "bday-hime-2025",
+      "name": "Hime Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Hime",
+      "src": "assets/sleeves/bday-hime-2025.webp"
+    },
+    {
       "id": "br-hs-2000201700172",
       "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『安養寺 姫芽』",
       "group": "Hasunosora",
       "idol": "Hime",
       "src": "assets/sleeves/br-hs-2000201700172.webp"
+    },
+    {
+      "id": "bday-izumi-2025",
+      "name": "Izumi Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Izumi",
+      "src": "assets/sleeves/bday-izumi-2025.webp"
+    },
+    {
+      "id": "bday-kaho-2026",
+      "name": "Kaho Birthday Visual 2026",
+      "group": "Hasunosora",
+      "idol": "Kaho",
+      "src": "assets/sleeves/bday-kaho-2026.webp"
     },
     {
       "id": "br-hs-2000201700097",
@@ -491,11 +638,39 @@
       "src": "assets/sleeves/br-hs-2000210331336.webp"
     },
     {
+      "id": "bday-kosuzu-2025",
+      "name": "Kosuzu Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Kosuzu",
+      "src": "assets/sleeves/bday-kosuzu-2025.webp"
+    },
+    {
+      "id": "bday-kosuzu-2026",
+      "name": "Kosuzu Birthday Visual 2026",
+      "group": "Hasunosora",
+      "idol": "Kosuzu",
+      "src": "assets/sleeves/bday-kosuzu-2026.webp"
+    },
+    {
       "id": "br-hs-2000201700165",
       "name": "Reバース for you スリーブ&カード デラックスセット ラブライブ！蓮ノ空女学院スクールアイドルクラブ『徒町 小鈴』",
       "group": "Hasunosora",
       "idol": "Kosuzu",
       "src": "assets/sleeves/br-hs-2000201700165.webp"
+    },
+    {
+      "id": "bday-kozue-2025",
+      "name": "Kozue Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "src": "assets/sleeves/bday-kozue-2025.webp"
+    },
+    {
+      "id": "bday-kozue-2026",
+      "name": "Kozue Birthday Visual 2026",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "src": "assets/sleeves/bday-kozue-2026.webp"
     },
     {
       "id": "br-hs-2000201700110",
@@ -510,6 +685,13 @@
       "group": "Hasunosora",
       "idol": "Kozue",
       "src": "assets/sleeves/br-hs-2000210331350.webp"
+    },
+    {
+      "id": "bday-megumi-2025",
+      "name": "Megumi Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Megumi",
+      "src": "assets/sleeves/bday-megumi-2025.webp"
     },
     {
       "id": "br-hs-2000201700141",
@@ -533,6 +715,13 @@
       "src": "assets/sleeves/br-hs-2000201700134.webp"
     },
     {
+      "id": "bday-rurino-2025",
+      "name": "Rurino Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Rurino",
+      "src": "assets/sleeves/bday-rurino-2025.webp"
+    },
+    {
       "id": "br-hs-2000210331374",
       "name": "ブシロード スリーブコレクションエクストラ Vol.460 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『大沢瑠璃乃』Reバースver.",
       "group": "Hasunosora",
@@ -547,6 +736,13 @@
       "src": "assets/sleeves/br-hs-2000201700103.webp"
     },
     {
+      "id": "bday-sayaka-2026",
+      "name": "Sayaka Birthday Visual 2026",
+      "group": "Hasunosora",
+      "idol": "Sayaka",
+      "src": "assets/sleeves/bday-sayaka-2026.webp"
+    },
+    {
       "id": "br-hs-2000210331343",
       "name": "ブシロード スリーブコレクションエクストラ Vol.457 ラブライブ！蓮ノ空女学院スクールアイドルクラブ『村野さやか』Reバースver.",
       "group": "Hasunosora",
@@ -559,6 +755,13 @@
       "group": "Hasunosora",
       "idol": "Tsuzuri",
       "src": "assets/sleeves/br-hs-2000201700127.webp"
+    },
+    {
+      "id": "bday-tsuzuri-2025",
+      "name": "Tsuzuri Birthday Visual 2025",
+      "group": "Hasunosora",
+      "idol": "Tsuzuri",
+      "src": "assets/sleeves/bday-tsuzuri-2025.webp"
     },
     {
       "id": "br-hs-2000210331367",
@@ -664,6 +867,125 @@
       "group": "Liella",
       "idol": "Sumire",
       "src": "assets/sleeves/br-br-3508.webp"
+    },
+    {
+      "id": "bday-chisato-2025",
+      "name": "Chisato Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Chisato",
+      "src": "assets/sleeves/bday-chisato-2025.webp"
+    },
+    {
+      "id": "bday-chisato-2026",
+      "name": "Chisato Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Chisato",
+      "src": "assets/sleeves/bday-chisato-2026.webp"
+    },
+    {
+      "id": "bday-kanon-2025",
+      "name": "Kanon Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Kanon",
+      "src": "assets/sleeves/bday-kanon-2025.webp"
+    },
+    {
+      "id": "bday-kanon-2026",
+      "name": "Kanon Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Kanon",
+      "src": "assets/sleeves/bday-kanon-2026.webp"
+    },
+    {
+      "id": "bday-keke-2025",
+      "name": "Keke Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Keke",
+      "src": "assets/sleeves/bday-keke-2025.webp"
+    },
+    {
+      "id": "bday-keke-2026",
+      "name": "Keke Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Keke",
+      "src": "assets/sleeves/bday-keke-2026.webp"
+    },
+    {
+      "id": "bday-kinako-2025",
+      "name": "Kinako Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Kinako",
+      "src": "assets/sleeves/bday-kinako-2025.webp"
+    },
+    {
+      "id": "bday-kinako-2026",
+      "name": "Kinako Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Kinako",
+      "src": "assets/sleeves/bday-kinako-2026.webp"
+    },
+    {
+      "id": "bday-mei-2025",
+      "name": "Mei Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Mei",
+      "src": "assets/sleeves/bday-mei-2025.webp"
+    },
+    {
+      "id": "bday-natsumi-2025",
+      "name": "Natsumi Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Natsumi",
+      "src": "assets/sleeves/bday-natsumi-2025.webp"
+    },
+    {
+      "id": "bday-natsumi-2026",
+      "name": "Natsumi Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Natsumi",
+      "src": "assets/sleeves/bday-natsumi-2026.webp"
+    },
+    {
+      "id": "bday-ren-2025",
+      "name": "Ren Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Ren",
+      "src": "assets/sleeves/bday-ren-2025.webp"
+    },
+    {
+      "id": "bday-shiki-2025",
+      "name": "Shiki Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Shiki",
+      "src": "assets/sleeves/bday-shiki-2025.webp"
+    },
+    {
+      "id": "bday-shiki-2026",
+      "name": "Shiki Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Shiki",
+      "src": "assets/sleeves/bday-shiki-2026.webp"
+    },
+    {
+      "id": "bday-sumire-2025",
+      "name": "Sumire Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Sumire",
+      "src": "assets/sleeves/bday-sumire-2025.webp"
+    },
+    {
+      "id": "bday-tomari-2025",
+      "name": "Tomari Birthday Visual 2025",
+      "group": "Liella!",
+      "idol": "Tomari",
+      "src": "assets/sleeves/bday-tomari-2025.webp"
+    },
+    {
+      "id": "bday-wien-2026",
+      "name": "Wien Birthday Visual 2026",
+      "group": "Liella!",
+      "idol": "Wien",
+      "src": "assets/sleeves/bday-wien-2026.webp"
     },
     {
       "id": "br-159482",
@@ -1114,6 +1436,20 @@
       "src": "assets/sleeves/br-160227.webp"
     },
     {
+      "id": "bday-ai-2025",
+      "name": "Ai Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/bday-ai-2025.webp"
+    },
+    {
+      "id": "bday-ai-2026",
+      "name": "Ai Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "src": "assets/sleeves/bday-ai-2026.webp"
+    },
+    {
       "id": "br-218428",
       "name": "Bushiroad Sleeve Collection HG Vol.2456: Love Live! Nijigasaki High School Idol Club - Ai Miyashita (60-Pack)",
       "group": "Nijigasaki",
@@ -1140,6 +1476,20 @@
       "group": "Nijigasaki",
       "idol": "Ai",
       "src": "assets/sleeves/br-br-3686.webp"
+    },
+    {
+      "id": "bday-ayumu-2025",
+      "name": "Ayumu Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/bday-ayumu-2025.webp"
+    },
+    {
+      "id": "bday-ayumu-2026",
+      "name": "Ayumu Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "src": "assets/sleeves/bday-ayumu-2026.webp"
     },
     {
       "id": "br-218432",
@@ -1198,6 +1548,13 @@
       "src": "assets/sleeves/br-502970.webp"
     },
     {
+      "id": "bday-emma-2026",
+      "name": "Emma Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "src": "assets/sleeves/bday-emma-2026.webp"
+    },
+    {
       "id": "br-276014",
       "name": "Bushiroad Sleeve Collection HG Vol.3228 Love Live! Nijigasaki High School Idol Club (75-pack)",
       "group": "Nijigasaki",
@@ -1226,6 +1583,13 @@
       "src": "assets/sleeves/br-276026.webp"
     },
     {
+      "id": "bday-kanata-2025",
+      "name": "Kanata Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "src": "assets/sleeves/bday-kanata-2025.webp"
+    },
+    {
       "id": "br-br-3687",
       "name": "Vol.3687 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『近江彼方』 ソロアイドル衣装Vol.2ver",
       "group": "Nijigasaki",
@@ -1245,6 +1609,20 @@
       "group": "Nijigasaki",
       "idol": "Karin",
       "src": "assets/sleeves/br-276022.webp"
+    },
+    {
+      "id": "bday-karin-2025",
+      "name": "Karin Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/bday-karin-2025.webp"
+    },
+    {
+      "id": "bday-karin-2026",
+      "name": "Karin Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "src": "assets/sleeves/bday-karin-2026.webp"
     },
     {
       "id": "br-br-2822",
@@ -1275,6 +1653,13 @@
       "src": "assets/sleeves/br-276019.webp"
     },
     {
+      "id": "bday-kasumi-2026",
+      "name": "Kasumi Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "src": "assets/sleeves/bday-kasumi-2026.webp"
+    },
+    {
       "id": "br-br-2820",
       "name": "Vol.2820 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』 スクフェスシリーズ感謝祭2020ver",
       "group": "Nijigasaki",
@@ -1289,11 +1674,32 @@
       "src": "assets/sleeves/br-br-3683.webp"
     },
     {
+      "id": "bday-lanzhu-2025",
+      "name": "Lanzhu Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Lanzhu",
+      "src": "assets/sleeves/bday-lanzhu-2025.webp"
+    },
+    {
+      "id": "bday-lanzhu-2026",
+      "name": "Lanzhu Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Lanzhu",
+      "src": "assets/sleeves/bday-lanzhu-2026.webp"
+    },
+    {
       "id": "br-br-3693",
       "name": "Vol.3693 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『鐘 嵐珠』 ソロアイドル衣装Vol.2ver",
       "group": "Nijigasaki",
       "idol": "Lanzhu",
       "src": "assets/sleeves/br-br-3693.webp"
+    },
+    {
+      "id": "bday-mia-2025",
+      "name": "Mia Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Mia",
+      "src": "assets/sleeves/bday-mia-2025.webp"
     },
     {
       "id": "br-br-3692",
@@ -1324,6 +1730,13 @@
       "src": "assets/sleeves/br-276031.webp"
     },
     {
+      "id": "bday-rina-2025",
+      "name": "Rina Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "src": "assets/sleeves/bday-rina-2025.webp"
+    },
+    {
       "id": "br-br-3690",
       "name": "Vol.3690 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『天王寺璃奈』 ソロアイドル衣装Vol.2ver",
       "group": "Nijigasaki",
@@ -1343,6 +1756,20 @@
       "group": "Nijigasaki",
       "idol": "Setsuna",
       "src": "assets/sleeves/br-276027.webp"
+    },
+    {
+      "id": "bday-setsuna-2025",
+      "name": "Setsuna Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/bday-setsuna-2025.webp"
+    },
+    {
+      "id": "bday-setsuna-2026",
+      "name": "Setsuna Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "src": "assets/sleeves/bday-setsuna-2026.webp"
     },
     {
       "id": "br-br-2825",
@@ -1366,6 +1793,13 @@
       "src": "assets/sleeves/br-246011.webp"
     },
     {
+      "id": "bday-shioriko-2025",
+      "name": "Shioriko Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Shioriko",
+      "src": "assets/sleeves/bday-shioriko-2025.webp"
+    },
+    {
       "id": "br-br-3691",
       "name": "Vol.3691 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『三船栞子』 ソロアイドル衣装Vol.2ver",
       "group": "Nijigasaki",
@@ -1387,6 +1821,20 @@
       "src": "assets/sleeves/br-276021.webp"
     },
     {
+      "id": "bday-shizuku-2025",
+      "name": "Shizuku Birthday Visual 2025",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/bday-shizuku-2025.webp"
+    },
+    {
+      "id": "bday-shizuku-2026",
+      "name": "Shizuku Birthday Visual 2026",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "src": "assets/sleeves/bday-shizuku-2026.webp"
+    },
+    {
       "id": "br-br-2821",
       "name": "Vol.2821 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』 スクフェスシリーズ感謝祭2020ver",
       "group": "Nijigasaki",
@@ -1406,6 +1854,104 @@
       "group": "Nijigasaki",
       "idol": "Yu",
       "src": "assets/sleeves/br-276016.webp"
+    },
+    {
+      "id": "bday-eli-2025",
+      "name": "Eli Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Eli",
+      "src": "assets/sleeves/bday-eli-2025.webp"
+    },
+    {
+      "id": "bday-hanayo-2026",
+      "name": "Hanayo Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Hanayo",
+      "src": "assets/sleeves/bday-hanayo-2026.webp"
+    },
+    {
+      "id": "bday-honoka-2025",
+      "name": "Honoka Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Honoka",
+      "src": "assets/sleeves/bday-honoka-2025.webp"
+    },
+    {
+      "id": "bday-honoka-2026",
+      "name": "Honoka Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Honoka",
+      "src": "assets/sleeves/bday-honoka-2026.webp"
+    },
+    {
+      "id": "bday-kotori-2025",
+      "name": "Kotori Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Kotori",
+      "src": "assets/sleeves/bday-kotori-2025.webp"
+    },
+    {
+      "id": "bday-maki-2025",
+      "name": "Maki Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Maki",
+      "src": "assets/sleeves/bday-maki-2025.webp"
+    },
+    {
+      "id": "bday-maki-2026",
+      "name": "Maki Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Maki",
+      "src": "assets/sleeves/bday-maki-2026.webp"
+    },
+    {
+      "id": "bday-nico-2025",
+      "name": "Nico Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Nico",
+      "src": "assets/sleeves/bday-nico-2025.webp"
+    },
+    {
+      "id": "bday-nico-2026",
+      "name": "Nico Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Nico",
+      "src": "assets/sleeves/bday-nico-2026.webp"
+    },
+    {
+      "id": "bday-nozomi-2025",
+      "name": "Nozomi Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/bday-nozomi-2025.webp"
+    },
+    {
+      "id": "bday-nozomi-2026",
+      "name": "Nozomi Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Nozomi",
+      "src": "assets/sleeves/bday-nozomi-2026.webp"
+    },
+    {
+      "id": "bday-rin-2025",
+      "name": "Rin Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Rin",
+      "src": "assets/sleeves/bday-rin-2025.webp"
+    },
+    {
+      "id": "bday-umi-2025",
+      "name": "Umi Birthday Visual 2025",
+      "group": "µ's",
+      "idol": "Umi",
+      "src": "assets/sleeves/bday-umi-2025.webp"
+    },
+    {
+      "id": "bday-umi-2026",
+      "name": "Umi Birthday Visual 2026",
+      "group": "µ's",
+      "idol": "Umi",
+      "src": "assets/sleeves/bday-umi-2026.webp"
     }
   ]
 }
