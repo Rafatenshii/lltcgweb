@@ -84,4 +84,18 @@ final class DeckValidateTest extends TestCase
         $this->assertFalse($result['valid']);
         $this->assertNotEmpty($result['errors']);
     }
+
+    /** Claimed starters stay legal when collection check is skipped (exchanged cards). */
+    public function testStarterListsValidWithoutCollectionOwnership(): void
+    {
+        $data = json_decode((string) file_get_contents(CARDS_FILE), true);
+        $main = $data['starter_decks']['nijigasaki']['main_deck'] ?? [];
+        $energy = $data['starter_decks']['nijigasaki']['energy_deck'] ?? [];
+        $this->assertNotEmpty($main);
+        $emptyCollection = [];
+        $withOwned = tcgValidateDeckLists($main, $energy, $this->cardMap, $emptyCollection);
+        $this->assertFalse($withOwned['valid'], 'Empty collection must fail ownership checks');
+        $catalogOnly = tcgValidateDeckLists($main, $energy, $this->cardMap, null);
+        $this->assertTrue($catalogOnly['valid'], implode('; ', $catalogOnly['errors']));
+    }
 }

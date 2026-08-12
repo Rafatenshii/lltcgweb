@@ -692,11 +692,12 @@ function tcgApiDeckEquipStarter(array $body): array {
     }
     $cards = tcgLoadCardsData();
     $lists = tcgGetStarterDeckLists($starterKey, $cards);
+    // Unlocked starters always use the official catalog list — no collection ownership gate.
     $validation = tcgValidateDeckLists(
         $lists['main_deck'],
         $lists['energy_deck'],
         tcgBuildCardMap($cards),
-        tcgGetCollectionMap($uid)
+        null
     );
     if (!$validation['valid']) {
         throw new Exception('Starter deck is invalid: ' . implode('; ', $validation['errors']));
@@ -718,8 +719,8 @@ function tcgApiDeckResetStarter(array $body): array {
     $cards = tcgLoadCardsData();
     $lists = tcgGetStarterDeckLists($user['starter_deck'], $cards);
     $cardMap = tcgBuildCardMap($cards);
-    $owned = tcgGetCollectionMap($uid);
-    $validation = tcgValidateDeckLists($lists['main_deck'], $lists['energy_deck'], $cardMap, $owned);
+    // Official starter list — always writable; collection ownership is not required.
+    $validation = tcgValidateDeckLists($lists['main_deck'], $lists['energy_deck'], $cardMap, null);
     if (!$validation['valid']) {
         throw new Exception(implode('; ', $validation['errors']), 400);
     }
@@ -936,7 +937,11 @@ function tcgApiRankedJoin(array $body): array {
         $main = json_decode($equipped['main_deck'], true) ?: [];
         $energy = json_decode($equipped['energy_deck'], true) ?: [];
         $cards = tcgLoadCardsData();
-        $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), tcgGetCollectionMap($uid));
+        // Catalog starter loadouts skip collection checks (exchanged starter cards still playable).
+        $ownedCheck = (($equipped['source'] ?? '') === 'starter')
+            ? null
+            : tcgGetCollectionMap($uid);
+        $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), $ownedCheck);
         if (!$validation['valid']) {
             throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
         }

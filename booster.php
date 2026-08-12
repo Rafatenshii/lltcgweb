@@ -1621,8 +1621,8 @@ function tcgWriteDeckPreset(string $discordId, int $slot, string $name, array $m
 function tcgSaveStarterPreset(string $discordId, string $starterKey, array $cardsData, int $slot = 1, bool $equip = true): void {
     $lists = tcgGetStarterDeckLists($starterKey, $cardsData);
     $cardMap = tcgBuildCardMap($cardsData);
-    $owned = tcgGetCollectionMap($discordId);
-    $validation = tcgValidateDeckLists($lists['main_deck'], $lists['energy_deck'], $cardMap, $owned);
+    // Official starter catalog lists — do not require current collection ownership.
+    $validation = tcgValidateDeckLists($lists['main_deck'], $lists['energy_deck'], $cardMap, null);
     if (!$validation['valid']) {
         throw new Exception('Starter deck validation failed: ' . implode('; ', $validation['errors']));
     }

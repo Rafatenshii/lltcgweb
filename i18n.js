@@ -540,7 +540,7 @@
       "free": "Free",
       "randomized": "Randomized Decks",
       "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
-      "startersDesc": "This mode can only be played using starter decks.",
+      "startersDesc": "Only starter decks you've unlocked. Official starter lists stay playable even if you exchanged those cards away.",
       "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards.",
       "randomizedDesc": "Both players get a random legal deck from the full card pool (ownership not required). Ranked has its own leaderboard."
     },
@@ -1824,7 +1824,7 @@
       "free": "フリー",
       "randomized": "ランダムデッキ",
       "standardDesc": "通常のTCGモードです。所持カードで組んだデッキで他のプレイヤーと対戦します。",
-      "startersDesc": "このモードはスターターデッキのみでプレイできます。",
+      "startersDesc": "アンロック済みスターターデッキのみ。カードを交換しても公式スターターリストはそのまま使えます。",
       "freeDesc": "デッキ実験のデッキを使えます。ゲーム内のどのカードでもOK（所持不要）。このモードにリーダーボードはありません。",
       "randomizedDesc": "両プレイヤーにカードプール全体から合法なランダムデッキが配られます（所持不要）。ランクには専用リーダーボードがあります。"
     },

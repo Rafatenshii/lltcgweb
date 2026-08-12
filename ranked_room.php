@@ -96,8 +96,8 @@ function tcgCreateRankedRoomPair(
         }
 
         foreach ([$p1DiscordId => $deck1, $p2DiscordId => $deck2] as $uid => $deck) {
+            $row = tcgGetEquippedDeckRow($uid);
             if ($gameMode === TCG_GAME_MODE_STARTERS) {
-                $row = tcgGetEquippedDeckRow($uid);
                 if (!$row || ($row['source'] ?? '') !== 'starter') {
                     tcgQueueLeave($uid, $gameMode);
                     return null;
@@ -108,7 +108,11 @@ function tcgCreateRankedRoomPair(
                     return null;
                 }
             }
-            $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, tcgGetCollectionMap($uid));
+            // Official starter lists skip collection ownership (claimed starters stay playable).
+            $ownedCheck = (($row['source'] ?? '') === 'starter')
+                ? null
+                : tcgGetCollectionMap($uid);
+            $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, $ownedCheck);
             if (!$v['valid']) {
                 tcgQueueLeave($uid, $gameMode);
                 return null;
