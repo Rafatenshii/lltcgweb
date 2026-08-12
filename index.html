@@ -2260,7 +2260,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=44"></script>
-<script src="client/js/state-apply.js?v=51"></script>
+<script src="client/js/state-apply.js?v=52"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=81"></script>
@@ -21269,6 +21269,9 @@ async function cpuAutoSkipHungPrompt() {
 function scheduleCpuResolvePrompt(s, cpu) {
   const key = cpuPromptKey(s);
   if (!key) return;
+  // Always keep hang-watch armed — busy/scheduled early returns used to skip
+  // re-arm after clearCpuPromptTracking mid-flight, softlocking Live Start picks.
+  armCpuPromptHangWatch(s);
   if (G._cpuResolveBusy === key) {
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return;
@@ -21294,7 +21297,6 @@ function scheduleCpuResolvePrompt(s, cpu) {
     G._cpuPromptScheduled = null;
     cpuResolvePrompt(live, c);
   }, delay);
-  armCpuPromptHangWatch(s);
 }
 
 // ── CPU ───────────────────────────────────────────────
@@ -29238,13 +29240,13 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=68"></script>
+<script src="client/js/spectacle.js?v=69"></script>
 <script src="client/js/board-render.js?v=17"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=21"></script>
+<script src="client/js/cpu-loop.js?v=22"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script>void bootApp();</script>
 </body>

@@ -373,7 +373,8 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
         ensurePendingPromptSurfaced(cur, myId);
       }
     }
-    if (G.isCPU && pr?.responder === 'p2') {
+    const cpuId = (typeof cpuOpponentId === 'function') ? cpuOpponentId() : 'p2';
+    if (G.isCPU && pr?.responder === cpuId) {
       doCPU(cur);
       // cpuAct's normal pullLatestState is blocked while live presentation holds polls;
       // without a direct skill pull the client keeps the stale optional_live_start and softlocks.

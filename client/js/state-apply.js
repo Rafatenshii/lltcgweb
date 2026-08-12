@@ -928,9 +928,11 @@
     if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
       doCPU(G.gameState || s);
       armWatchdog(G.gameState || s);
-    } else if (!replayForward && G.isCPU && (G.gameState || s)?.pending_prompt?.responder === 'p2'
+    } else if (!replayForward && G.isCPU
+        && (G.gameState || s)?.pending_prompt?.responder === (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2')
         && !(G.tutorialLive && G.tutorialHoldCpu)) {
-      scheduleCpuResolvePrompt(G.gameState || s, (G.gameState || s).players?.p2);
+      const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
+      scheduleCpuResolvePrompt(G.gameState || s, (G.gameState || s).players?.[cpuId]);
       armCpuPromptHangWatch(G.gameState || s);
     } else if (!replayForward && !G.isCPU && !G.isSpectator) {
       armPvPWatchdog(G.gameState || s);

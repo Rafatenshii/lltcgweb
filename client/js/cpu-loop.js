@@ -830,6 +830,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'sbp5_aqours_blade_or_position', 'sbp6_live_wr_deck_position', 'sbp6_hand_deck_position',
   'choice_energy_or_wr_lives_deck_top', 'activated_swap_area_pick',
   'optional_success_wr_live_swap',
+  'pick_live_match_success_heart',
   'optional_discard_prompt', 'pick_looked_deck_hand',
   'spbp2_stack_wr_member', 'spbp2_wait_self_opp_heart_gap',
   'spbp2_center_move_choose', 'spbp2_center_move_position',
@@ -1737,6 +1738,7 @@ function cpuResolveHangRiskPrompts(pr, cpu, tier, read, s) {
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return true;
   }
+  if (cpuResolvePickLiveMatchSuccessHeart(pr, cpu, s)) return true;
   return false;
 }
 
@@ -3515,6 +3517,40 @@ function cpuOptionalSuccessWrLiveSwapCfg(pr) {
   return { group: pr.group || 'Nijigasaki', filter: pr.filter || 'live' };
 }
 
+/**
+ * Shioriko PL!N-bp4-010 Live Start — pick a Live in Live storage.
+ * Prefer a name that matches Success Live (heart grant); never silent-return.
+ */
+function cpuResolvePickLiveMatchSuccessHeart(pr, cpu, s) {
+  if (pr?.type !== 'pick_live_match_success_heart') return false;
+  const cands = pr.candidates || [];
+  let id = cands.map((c) => c?.instance_id).find(Boolean) || null;
+  if (!id) {
+    const lives = (cpu.live_zone || []).filter((c) => c && isCpuLiveCard(c) && c.instance_id);
+    const successNames = new Set(
+      (cpu.success_lives || []).map((c) => String(c?.name_en || c?.name || ''))
+    );
+    const matched = lives.find((c) => successNames.has(String(c.name_en || c.name || '')));
+    id = (matched || lives[0])?.instance_id || null;
+  } else {
+    // Among prompt candidates, prefer a Success Live name match when Expert/Hard.
+    const successNames = new Set(
+      (cpu.success_lives || []).map((c) => String(c?.name_en || c?.name || ''))
+    );
+    if (successNames.size && cpuTierHardPlus(cpuDiff())) {
+      const matched = cands.find((c) => c?.instance_id
+        && successNames.has(String(c.name_en || c.name || '')));
+      if (matched?.instance_id) id = matched.instance_id;
+    }
+  }
+  if (id) {
+    cpuAct('resolve_prompt', { card_id: id });
+    return true;
+  }
+  cpuSchedulePromptRetryIfStuck(s, cpu);
+  return true;
+}
+
 /** Shioriko PL!N-bp4-010-SEC — Success Live ↔ WR Live swap (confirm + two card picks). */
 function cpuResolveOptionalSuccessWrLiveSwap(pr, cpu, tier) {
   const cfg = cpuOptionalSuccessWrLiveSwapCfg(pr);
@@ -3904,11 +3940,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
     if(ids.length) cpuAct('resolve_prompt',{card_ids:ids});
     return;
   }
-  if(pr.type==='pick_live_match_success_heart'){
-    const id=pr.candidates?.[0]?.instance_id;
-    if(id) cpuAct('resolve_prompt',{card_id:id});
-    return;
-  }
+  if(cpuResolvePickLiveMatchSuccessHeart(pr, cpu, s)) return;
   if(pr.type==='live_success_pick_energy_or_member'){
     cpuAct('resolve_prompt',{choice:pr.can_both?'both':'energy'});
     return;
@@ -5181,13 +5213,11 @@ async function cpuAct(type,data) {
       clearCpuPromptTracking();
       cpuResetPromptRetry();
       if (typeof d.seq === 'number' && G.gameState && d.seq >= (G.gameState.seq ?? 0)) {
-        if (type === 'anti_softlock_skip') {
+        // Clear local pending_prompt immediately so Live Start wait / hang UI does not
+        // spin on a stale choose-Live prompt while pullSkillResolutionState catches up.
         G.gameState = { ...G.gameState, seq: d.seq, pending_prompt: null };
         if (G.gameState.surveil_stash) delete G.gameState.surveil_stash;
         purgeStalePendingStatesAfterCpuResolve(d.seq);
-        } else {
-          G.gameState = { ...G.gameState, seq: d.seq };
-        }
       } else {
         cpuClearLocalCpuPromptIfResolved(G.gameState);
       }

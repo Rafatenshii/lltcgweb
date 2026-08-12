@@ -364,6 +364,20 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             return $id ? ['card_id' => $id] : [];
         }
 
+        case 'pick_live_match_success_heart': {
+            // Shioriko Live Start — mandatory Live pick; never leave CPU/timer with no payload.
+            $id = (string)($prompt['candidates'][0]['instance_id'] ?? '');
+            if ($id === '') {
+                foreach ($ownerP['live_zone'] ?? [] as $lc) {
+                    if ($lc && ($lc['instance_id'] ?? '') !== '') {
+                        $id = (string)$lc['instance_id'];
+                        break;
+                    }
+                }
+            }
+            return $id !== '' ? ['card_id' => $id] : [];
+        }
+
         case 'pick_looked_deck_hand':
             if (!empty($prompt['optional'])) {
                 return ['choice' => 'skip'];
@@ -615,7 +629,11 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
         } catch (Throwable $ignored) {
         }
     }
-    if (in_array($prompt['type'] ?? '', ['pick_wr_to_hand', 'pick_wr_leave_stage_add'], true)
+    if (in_array($prompt['type'] ?? '', [
+            'pick_wr_to_hand',
+            'pick_wr_leave_stage_add',
+            'pick_live_match_success_heart',
+        ], true)
         || in_array($prompt['step'] ?? '', ['pick_wr_live', 'pick_wr_member', 'pick_wr'], true)) {
         foreach ($prompt['candidates'] ?? [] as $cand) {
             $id = $cand['instance_id'] ?? '';
@@ -624,6 +642,15 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
             }
             try {
                 return actionResolvePrompt($state, $pid, ['card_id' => $id]);
+            } catch (Throwable $ignored) {
+            }
+        }
+        if (($prompt['type'] ?? '') === 'pick_live_match_success_heart') {
+            try {
+                $data = buildTimeoutPromptResolution($state, $pid, $prompt);
+                if (!empty($data['card_id'])) {
+                    return actionResolvePrompt($state, $pid, $data);
+                }
             } catch (Throwable $ignored) {
             }
         }

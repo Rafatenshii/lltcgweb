@@ -140,4 +140,37 @@ final class ShiorikoBp4010SwapTest extends TestCase
             $renderer
         );
     }
+
+    public function testCpuNeverSilentReturnsOnPickLiveMatchSuccessHeart(): void
+    {
+        $cpu = (string)file_get_contents(dirname(__DIR__, 2) . '/client/js/cpu-loop.js');
+        $this->assertStringContainsString('function cpuResolvePickLiveMatchSuccessHeart', $cpu);
+        $this->assertStringContainsString("cpuResolvePickLiveMatchSuccessHeart(pr, cpu, s)", $cpu);
+        // Must schedule retry / softlock escape — never bare `return` after a missing id.
+        $this->assertMatchesRegularExpression(
+            '/function cpuResolvePickLiveMatchSuccessHeart[\\s\\S]*cpuSchedulePromptRetryIfStuck/',
+            $cpu
+        );
+        $this->assertStringContainsString("'pick_live_match_success_heart'", $cpu);
+    }
+
+    public function testAntiSoftlockTimeoutResolvesPickLiveMatchSuccessHeart(): void
+    {
+        $shioriko = $this->cardByNo('PL!N-bp4-010-P', 'shioriko_cpu_live_start');
+        $live = $this->live('current_live', 'Matching Live');
+        $state = $this->baseState($shioriko);
+        $state['phase'] = 'live_start_effects';
+        $state['players']['p1']['name'] = 'CPU (Expert)';
+        $state['players']['p1']['live_zone'] = [$live];
+        $state['players']['p1']['success_lives'] = [$this->live('matched_success', 'Matching Live')];
+        $state = \resolveLiveStartAbilities($state, 'p1');
+        $this->assertSame('pick_live_match_success_heart', $state['pending_prompt']['type'] ?? null);
+
+        $data = \buildTimeoutPromptResolution($state, 'p1', $state['pending_prompt']);
+        $this->assertSame('current_live', $data['card_id'] ?? null);
+
+        $state = \actionAntiSoftlockSkipPrompt($state, 'p1');
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertSame(['purple', 'purple', 'purple', 'purple'], \getBonusHeartsFlat($state, 'p1'));
+    }
 }
