@@ -96,6 +96,15 @@
       }
       return rewardBit + progressBit + ' · ' + missionStatusLabel(m.status);
     }
+    if (m.reward_type === 'free_sleeve') {
+      let progressBit = '';
+      if (m.threshold != null && m.status !== 'claimed') {
+        const cur = Number(m.progress != null ? m.progress : 0);
+        progressBit = ' · ' + cur.toLocaleString() + ' / ' + Number(m.threshold).toLocaleString();
+      }
+      return (t('missions.rewardFreeSleeve') || 'Free sleeve claim')
+        + progressBit + ' · ' + missionStatusLabel(m.status);
+    }
     return '+' + Number(m.reward || 0).toLocaleString()
       + ' <span class="star-gem-inline">' + starGemIconHtml(16) + '</span>'
       + ' · ' + missionStatusLabel(m.status);
@@ -233,6 +242,13 @@
       global.syncStarGemsFromProfile(global.A.profile);
       if (typeof global.updateStarGemsUI === 'function') global.updateStarGemsUI();
     }
+    if (res.free_sleeve_claims != null && typeof global.syncCoinsFromProfile === 'function') {
+      global.syncCoinsFromProfile({
+        ...(global.A && global.A.profile ? global.A.profile : {}),
+        free_sleeve_claims: res.free_sleeve_claims,
+        coins: res.coins != null ? res.coins : (global.A && global.A.coins),
+      });
+    }
     syncHubBadge(res.claimable_count ?? 0);
     await loadMissions();
     if (typeof global.toastSuccess === 'function') {
@@ -242,6 +258,9 @@
           title,
           deck: res.starter_granted.label,
         }), 3200);
+      } else if ((res.mission?.reward_type || res.reward_type) === 'free_sleeve') {
+        global.toastSuccess(t('missions.claimedFreeSleeveToast', { title })
+          || ('Claimed ' + title + ' — free sleeve unlocked'), 3200);
       } else {
         global.toastSuccess(t('missions.claimedToast', {
           title,

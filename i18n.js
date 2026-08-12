@@ -143,7 +143,9 @@
       },
       "rewardStarter": "Choose a starter deck",
       "rewardStarterOwned": "Already owned",
+      "rewardFreeSleeve": "Free sleeve claim",
       "claimedStarterToast": "Claimed {title} — unlocked {deck}",
+      "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
       "starterPickTitle": "Choose a starter deck",
       "starterPickConfirm": "Unlock starter",
       "starterPickCancel": "Cancel"
@@ -1394,7 +1396,9 @@
       },
       "rewardStarter": "スターターデッキを選ぶ",
       "rewardStarterOwned": "所持済み",
+      "rewardFreeSleeve": "無料スリーブ受取",
       "claimedStarterToast": "{title} を受け取りました — {deck} を解放",
+      "claimedFreeSleeveToast": "{title} を受け取りました — スリーブショップで無料受取が可能です",
       "starterPickTitle": "スターターデッキを選ぶ",
       "starterPickConfirm": "スターターを解放",
       "starterPickCancel": "キャンセル"
@@ -2580,7 +2584,7 @@
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "Recompensas de packs PR clasificatorias restantes hoy: {remaining} / {limit} (JST · 3 cartas c/u)",
       "stickerShop": "Tienda de stickers",
-      "stickerShopSub": "Canjea sellos por cartas de tus sobres"
+      "stickerShopSub": "Canjea sellos por cartas de tus sobres",
       "sleeveShop": { "title": "Tienda de fundas", "sub": "Gasta monedas en fundas" },
     },
     "loginBonus": {
@@ -3682,6 +3686,8 @@
       },
       "rewardStarter": "Elige un mazo inicial",
       "rewardStarterOwned": "Ya lo tienes",
+      "rewardFreeSleeve": "Funda gratis",
+      "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
       "starterPickCancel": "Cancelar",
       "starterPickConfirm": "Desbloquear mazo",
       "starterPickTitle": "Elige un mazo inicial",
@@ -3829,7 +3835,7 @@
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "오늘 남은 랭크 PR 팩: {remaining} / {limit} (JST · 각 3장)",
       "stickerShop": "스티커 샵",
-      "stickerShopSub": "실을 팩 카드로 교환"
+      "stickerShopSub": "실을 팩 카드로 교환",
       "sleeveShop": { "title": "슬리브 샵", "sub": "코인으로 슬리브 구매" },
     },
     "loginBonus": {
@@ -4955,6 +4961,8 @@
       },
       "rewardStarter": "스타터 덱 선택",
       "rewardStarterOwned": "이미 보유 중",
+      "rewardFreeSleeve": "무료 슬리브",
+      "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
       "starterPickCancel": "취소",
       "starterPickConfirm": "스타터 해금",
       "starterPickTitle": "스타터 덱 선택",
@@ -5102,7 +5110,7 @@
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "今日剩余排名 PR 包：{remaining} / {limit}（JST · 每包 3 张）",
       "stickerShop": "贴纸商店",
-      "stickerShopSub": "用印章兑换你补充包中的卡牌"
+      "stickerShopSub": "用印章兑换你补充包中的卡牌",
       "sleeveShop": { "title": "卡套商店", "sub": "用金币购买卡套" },
     },
     "loginBonus": {
@@ -6229,6 +6237,8 @@
       },
       "rewardStarter": "选择入门牌组",
       "rewardStarterOwned": "已拥有",
+      "rewardFreeSleeve": "免费卡套领取",
+      "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
       "starterPickCancel": "取消",
       "starterPickConfirm": "解锁入门牌组",
       "starterPickTitle": "选择入门牌组",
@@ -7479,6 +7489,8 @@
       },
       "rewardStarter": "เลือกเด็คสตาร์ทเตอร์",
       "rewardStarterOwned": "มีอยู่แล้ว",
+      "rewardFreeSleeve": "รับซองฟรี",
+      "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
       "starterPickCancel": "ยกเลิก",
       "starterPickConfirm": "ปลดล็อกสตาร์ทเตอร์",
       "starterPickTitle": "เลือกเด็คสตาร์ทเตอร์",
