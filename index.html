@@ -2239,8 +2239,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=24"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=32"></script>
-<script src="client/js/sleeves.js?v=7"></script>
+<script src="client/js/api-client.js?v=33"></script>
+<script src="client/js/sleeves.js?v=8"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -8842,17 +8842,54 @@ function normalizeDeckSleeveId(raw) {
   return window.LLTCG_SLEEVES?.normalize ? window.LLTCG_SLEEVES.normalize(raw) : String(raw || '').trim().toLowerCase();
 }
 
+function patchLocalDeckSleeve(slot, sleeveId, { experiment = false } = {}) {
+  const id = normalizeDeckSleeveId(sleeveId);
+  const list = experiment ? (A.experimentDecks || []) : (A.decks || []);
+  const idx = list.findIndex(d => d.slot === slot);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], sleeve_id: id };
+  }
+  if (experiment) A.experimentDecks = list;
+  else A.decks = list;
+}
+
+async function persistSelectedDeckSleeve(sleeveId) {
+  const id = normalizeDeckSleeveId(sleeveId);
+  if (A.deckBuilderMode === 'experiment') {
+    if (!isSignedInAccount()) return;
+    const slot = A.experimentSlot || 1;
+    try {
+      await accountPost('experiment_preset_set_sleeve', { slot, sleeve_id: id });
+      patchLocalDeckSleeve(slot, id, { experiment: true });
+      markExperimentListDirty();
+    } catch (e) {
+      // Preset may not exist yet — full Save still sends sleeve_id.
+    }
+    return;
+  }
+  if (!isSignedInAccount()) return;
+  const slot = A.deckSlot || 1;
+  try {
+    await accountPost('deck_set_sleeve', { slot, sleeve_id: id });
+    patchLocalDeckSleeve(slot, id);
+    markDeckListDirty();
+  } catch (e) {
+    // Preset may not exist yet — full Save still sends sleeve_id.
+  }
+}
+
 function renderDeckSleevePickerUi() {
   if (!window.LLTCG_SLEEVES?.renderPicker) return;
-  void window.LLTCG_SLEEVES.loadCatalog?.();
-  window.LLTCG_SLEEVES.renderPicker(A.deckSleeveId, async (next) => {
+  const onPick = async (next) => {
     const id = normalizeDeckSleeveId(next);
     const prev = normalizeDeckSleeveId(A.deckSleeveId);
     A.deckSleeveId = id;
     renderDeckSleevePickerUi();
-    if (!id || id === prev) return;
-    const owned = Array.isArray(A.ownedSleeves) && A.ownedSleeves.includes(id);
-    if (!owned) return;
+    if (id === prev) return;
+    void persistSelectedDeckSleeve(id);
+    const ownedList = Array.isArray(A.ownedSleeves) ? A.ownedSleeves : [];
+    const owned = ownedList.some((x) => normalizeDeckSleeveId(x) === id);
+    if (!id || !owned) return;
     const needsIntro = Array.isArray(A.sleevesNeedIntro) && A.sleevesNeedIntro.includes(id);
     if (!needsIntro) return;
     try {
@@ -8861,7 +8898,15 @@ function renderDeckSleevePickerUi() {
       A.sleevesNeedIntro = (A.sleevesNeedIntro || []).filter((x) => x !== id);
       if (A.profile) A.profile.sleeves_need_intro = A.sleevesNeedIntro.slice();
     } catch (e) { /* best effort */ }
-  });
+  };
+  const paint = () => window.LLTCG_SLEEVES.renderPicker(A.deckSleeveId, onPick);
+  paint();
+  const load = window.LLTCG_SLEEVES.loadCatalog;
+  if (typeof load === 'function') {
+    void load().then(() => {
+      if (el('screen-deck') && !el('screen-deck').hidden) paint();
+    }).catch(() => {});
+  }
 }
 
 function renderDeckBuilder(opts = {}) {
@@ -11506,9 +11551,13 @@ async function saveExperimentPresetToAccount() {
       sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
     };
     if (A.experimentPassword) body.share_password = A.experimentPassword;
+    const sleeveId = body.sleeve_id;
     await accountPost('experiment_preset_save', body);
+    patchLocalDeckSleeve(A.experimentSlot || 1, sleeveId, { experiment: true });
     markExperimentListDirty();
     await ensureExperimentDeckList({ force: true });
+    const saved = (A.experimentDecks || []).find(d => d.slot === (A.experimentSlot || 1));
+    A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id ?? sleeveId);
     renderExperimentSlots();
     renderDeckBuilder();
     el('deck-err').textContent = t('deck.experimentSaved') || 'Experiment deck saved to your account.';
@@ -11526,15 +11575,19 @@ async function saveDeckPreset() {
     return saveExperimentDeckPassword();
   }
   try {
+    const sleeveId = normalizeDeckSleeveId(A.deckSleeveId);
     await accountPost('deck_save', {
       slot: A.deckSlot,
       name: el('inp-deck-name').value.trim() || 'My Deck',
       main_deck: A.deckMain,
       energy_deck: A.deckEnergy,
-      sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
+      sleeve_id: sleeveId,
     });
+    patchLocalDeckSleeve(A.deckSlot, sleeveId);
     markDeckListDirty();
     await ensureDeckList({ force: true });
+    const saved = (A.decks || []).find(d => d.slot === A.deckSlot);
+    A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id ?? sleeveId);
     renderDeckBuilder();
     el('deck-err').textContent = 'Saved!';
   } catch (e) { el('deck-err').textContent = e.message; }
@@ -11651,6 +11704,22 @@ async function autoBuildDeckFromCollection() {
 
 async function equipDeck() {
   try {
+    const sleeveId = normalizeDeckSleeveId(A.deckSleeveId);
+    if (deckListsAreLegal(A.deckMain, A.deckEnergy)) {
+      await accountPost('deck_save', {
+        slot: A.deckSlot,
+        name: el('inp-deck-name')?.value.trim() || 'My Deck',
+        main_deck: A.deckMain,
+        energy_deck: A.deckEnergy,
+        sleeve_id: sleeveId,
+      });
+      patchLocalDeckSleeve(A.deckSlot, sleeveId);
+    } else {
+      try {
+        await accountPost('deck_set_sleeve', { slot: A.deckSlot, sleeve_id: sleeveId });
+        patchLocalDeckSleeve(A.deckSlot, sleeveId);
+      } catch (e) { /* deck row may not exist yet */ }
+    }
     const res = await accountPost('deck_equip', { slot: A.deckSlot });
     markDeckListDirty();
     await ensureDeckList({ force: true });
@@ -14834,7 +14903,7 @@ async function bootApp() {
       try {
         const picker = el('deck-sleeve-picker');
         if (picker && !el('screen-deck')?.hidden) {
-          window.LLTCG_SLEEVES?.renderPicker?.(A.deckSleeveId || '', null);
+          renderDeckSleevePickerUi();
         }
       } catch (e) { /* ignore */ }
     });

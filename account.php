@@ -8,7 +8,7 @@
  *
  * Endpoints (action=):
  *   me, pick_starter, collection, booster_boxes, booster_rates, daily_status, open_booster,
- *   deck_list, deck_save, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
+ *   deck_list, deck_save, deck_set_sleeve, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
  *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, mission_game_finished, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
@@ -67,8 +67,10 @@ try {
         case 'open_booster':       echo json_encode(tcgApiOpenBooster($body)); break;
         case 'deck_list':          echo json_encode(tcgApiDeckList($body)); break;
         case 'deck_save':          echo json_encode(tcgApiDeckSave($body)); break;
+        case 'deck_set_sleeve':    echo json_encode(tcgApiDeckSetSleeve($body)); break;
         case 'experiment_preset_list':   echo json_encode(tcgApiExperimentPresetList($body)); break;
         case 'experiment_preset_save':   echo json_encode(tcgApiExperimentPresetSave($body)); break;
+        case 'experiment_preset_set_sleeve': echo json_encode(tcgApiExperimentPresetSetSleeve($body)); break;
         case 'experiment_preset_delete': echo json_encode(tcgApiExperimentPresetDelete($body)); break;
         case 'experiment_preset_get':    echo json_encode(tcgApiExperimentPresetGet($body)); break;
         case 'deck_delete':        echo json_encode(tcgApiDeckDelete($body)); break;
@@ -491,23 +493,64 @@ function tcgApiDeckSave(array $body): array {
     if ($hasSleeve && $sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
         throw new Exception('Sleeve not owned', 400);
     }
-    $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, 0, ?)
-        ON CONFLICT(discord_id, slot) DO UPDATE SET
-            name = excluded.name,
-            main_deck = excluded.main_deck,
-            energy_deck = excluded.energy_deck,
-            sleeve_id = CASE WHEN ? = 1 THEN excluded.sleeve_id ELSE tcg_deck_presets.sleeve_id END,
-            updated_at = excluded.updated_at')
-        ->execute([
-            $uid, $slot, $name,
-            json_encode(array_values($main)),
-            json_encode(array_values($energy)),
-            $sleeveId,
-            $now,
-            $hasSleeve ? 1 : 0,
-        ]);
+    // Always write sleeve_id when the client sends it (including clearing to '').
+    // Older clients that omit the key keep the previous sleeve_id.
+    if ($hasSleeve) {
+        $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+            ON CONFLICT(discord_id, slot) DO UPDATE SET
+                name = excluded.name,
+                main_deck = excluded.main_deck,
+                energy_deck = excluded.energy_deck,
+                sleeve_id = excluded.sleeve_id,
+                updated_at = excluded.updated_at')
+            ->execute([
+                $uid, $slot, $name,
+                json_encode(array_values($main)),
+                json_encode(array_values($energy)),
+                $sleeveId,
+                $now,
+            ]);
+    } else {
+        $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+            ON CONFLICT(discord_id, slot) DO UPDATE SET
+                name = excluded.name,
+                main_deck = excluded.main_deck,
+                energy_deck = excluded.energy_deck,
+                updated_at = excluded.updated_at')
+            ->execute([
+                $uid, $slot, $name,
+                json_encode(array_values($main)),
+                json_encode(array_values($energy)),
+                '',
+                $now,
+            ]);
+    }
     return ['success' => true, 'slot' => $slot, 'name' => $name, 'sleeve_id' => $sleeveId, 'validation' => $validation];
+}
+
+/** Persist sleeve on an existing account preset without re-validating the full deck. */
+function tcgApiDeckSetSleeve(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_DECK_PRESETS) {
+        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS);
+    }
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve not owned', 400);
+    }
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT slot FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        throw new Exception('Save the deck once before setting a sleeve', 400);
+    }
+    $db->prepare('UPDATE tcg_deck_presets SET sleeve_id = ?, updated_at = ? WHERE discord_id = ? AND slot = ?')
+        ->execute([$sleeveId, time(), $uid, $slot]);
+    return ['success' => true, 'slot' => $slot, 'sleeve_id' => $sleeveId];
 }
 
 function tcgApiExperimentPresetList(array $body): array {
@@ -569,31 +612,56 @@ function tcgApiExperimentPresetSave(array $body): array {
     if ($hasSleeve && $sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
         throw new Exception('Sleeve not owned', 400);
     }
-    $db->prepare('INSERT INTO tcg_experiment_presets
-        (discord_id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(discord_id, slot) DO UPDATE SET
-            name = excluded.name,
-            main_deck = excluded.main_deck,
-            energy_deck = excluded.energy_deck,
-            sleeve_id = CASE WHEN ? = 1 THEN excluded.sleeve_id ELSE tcg_experiment_presets.sleeve_id END,
-            share_password = CASE
-                WHEN excluded.share_password IS NOT NULL AND excluded.share_password != \'\'
-                THEN excluded.share_password
-                ELSE tcg_experiment_presets.share_password
-            END,
-            updated_at = excluded.updated_at')
-        ->execute([
-            $uid,
-            $slot,
-            $name,
-            json_encode($validated['main'], JSON_UNESCAPED_UNICODE),
-            json_encode($validated['energy'], JSON_UNESCAPED_UNICODE),
-            $sleeveId,
-            $share !== '' ? $share : null,
-            $now,
-            $hasSleeve ? 1 : 0,
-        ]);
+    if ($hasSleeve) {
+        $db->prepare('INSERT INTO tcg_experiment_presets
+            (discord_id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(discord_id, slot) DO UPDATE SET
+                name = excluded.name,
+                main_deck = excluded.main_deck,
+                energy_deck = excluded.energy_deck,
+                sleeve_id = excluded.sleeve_id,
+                share_password = CASE
+                    WHEN excluded.share_password IS NOT NULL AND excluded.share_password != \'\'
+                    THEN excluded.share_password
+                    ELSE tcg_experiment_presets.share_password
+                END,
+                updated_at = excluded.updated_at')
+            ->execute([
+                $uid,
+                $slot,
+                $name,
+                json_encode($validated['main'], JSON_UNESCAPED_UNICODE),
+                json_encode($validated['energy'], JSON_UNESCAPED_UNICODE),
+                $sleeveId,
+                $share !== '' ? $share : null,
+                $now,
+            ]);
+    } else {
+        $db->prepare('INSERT INTO tcg_experiment_presets
+            (discord_id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(discord_id, slot) DO UPDATE SET
+                name = excluded.name,
+                main_deck = excluded.main_deck,
+                energy_deck = excluded.energy_deck,
+                share_password = CASE
+                    WHEN excluded.share_password IS NOT NULL AND excluded.share_password != \'\'
+                    THEN excluded.share_password
+                    ELSE tcg_experiment_presets.share_password
+                END,
+                updated_at = excluded.updated_at')
+            ->execute([
+                $uid,
+                $slot,
+                $name,
+                json_encode($validated['main'], JSON_UNESCAPED_UNICODE),
+                json_encode($validated['energy'], JSON_UNESCAPED_UNICODE),
+                '',
+                $share !== '' ? $share : null,
+                $now,
+            ]);
+    }
     return [
         'success' => true,
         'slot' => $slot,
@@ -602,6 +670,30 @@ function tcgApiExperimentPresetSave(array $body): array {
         'main_count' => count($validated['main']),
         'energy_count' => count($validated['energy']),
     ];
+}
+
+/** Persist sleeve on an existing experiment preset without re-validating the full deck. */
+function tcgApiExperimentPresetSetSleeve(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    require_once __DIR__ . '/experiment_decks.php';
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Experiment deck slot must be 1–' . TCG_MAX_EXPERIMENT_PRESETS, 400);
+    }
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    if ($sleeveId !== '' && !tcgOwnsSleeve($uid, $sleeveId)) {
+        throw new Exception('Sleeve not owned', 400);
+    }
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT slot FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        throw new Exception('Save the experiment deck once before setting a sleeve', 400);
+    }
+    $db->prepare('UPDATE tcg_experiment_presets SET sleeve_id = ?, updated_at = ? WHERE discord_id = ? AND slot = ?')
+        ->execute([$sleeveId, time(), $uid, $slot]);
+    return ['success' => true, 'slot' => $slot, 'sleeve_id' => $sleeveId];
 }
 
 function tcgApiExperimentPresetDelete(array $body): array {
