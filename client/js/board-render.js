@@ -1320,6 +1320,23 @@ function bindWaitingRoomFaceHover(node, card, s, viewerId) {
   });
 }
 
+/** Left-panel card info when hovering Success Live Storage (yours or opponent). */
+function bindSuccessLiveHover(node, card, s, viewerId) {
+  if (!node || !card || G.isTutorial || node.dataset.sliveHoverBound) return;
+  if (typeof tcgMobileViewportActive === 'function' && tcgMobileViewportActive()) return;
+  node.dataset.sliveHoverBound = '1';
+  const enriched = enrichCard(card);
+  node.addEventListener('pointerenter', () => {
+    if (G.drag || G.animating) return;
+    if (G.isSpectator) showSpectatorCardPreview(enriched, s || G.gameState);
+    else showHoverCardPreview(enriched, s || G.gameState, viewerId || G.playerId);
+  });
+  node.addEventListener('pointerleave', () => {
+    if (G.isSpectator) clearSpectatorCardPreview();
+    else if (!pinnedHandPreviewIid()) clearHoverCardPreview();
+  });
+}
+
 function renderWaitingRoomPile(pileId, cards, s, viewerId, preferSrcByIdx = {}) {
   const pile = el(pileId);
   if (!pile) return;
@@ -1933,6 +1950,7 @@ function renderSuccessLives(id, succs) {
     wrap.appendChild(d);
     wrap.title = sc.name_en || sc.name || 'Live Success';
     wrap.onclick = () => showCard(sc, null, G.gameState, G.playerId);
+    bindSuccessLiveHover(wrap, sc, G.gameState, G.playerId);
     stack.appendChild(wrap);
   });
   e.appendChild(stack);
