@@ -5,16 +5,17 @@
   --sleeve-peek:5%;
   --sleeve-peek-opacity:.42;
   --sleeve-square-radius:1px;
-}
-
-#screen-game{
   --my-sleeve-image:var(--card-back-default);
   --opp-sleeve-image:var(--card-back-default);
 }
 
+/* Do not redefine --*-sleeve-image on #screen-game — that shadows :root / inline
+   inheritance and can leave deck stacks on the default back. */
+
 /* ── Face-down: sleeve art replaces the official back ──
    Use full `background` + !important so shorthand `background:url(lltcg-back…)`
-   rules in shell-all cannot win on deck stacks / flip backs. */
+   rules in shell-all cannot win on deck stacks / flip backs.
+   Hand strips sit outside .my-mat / .opp-mat — match them without that ancestor. */
 html.has-my-sleeve #screen-game .my-mat .card-back-fill,
 html.has-my-sleeve #screen-game .my-mat .back.live-back,
 html.has-my-sleeve #screen-game .my-mat .live-flip-back,

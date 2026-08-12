@@ -216,15 +216,27 @@
     return SLEEVE_CATALOG.find((s) => s.id === key) || null;
   }
 
-  /** Prefer catalog src; fall back while catalog is still loading. */
+  /** Prefer catalog src; fall back to assets path if missing from catalog. */
   function resolveSleeveSrc(id) {
     const key = normalizeSleeveId(id);
     if (!key) return '';
     const s = getSleeve(key);
     if (s && s.src) return String(s.src);
-    // Catalog not ready yet — optimistic path so deck backs aren't stuck on default.
-    if (!SLEEVE_CATALOG.length) return 'assets/sleeves/' + key + '.webp';
-    return '';
+    return 'assets/sleeves/' + key + '.webp';
+  }
+
+  function absoluteAssetUrl(path) {
+    const p = String(path || '').trim();
+    if (!p) return '';
+    if (/^(https?:|data:|blob:)/i.test(p)) return p;
+    // Custom properties used from sleeves.css resolve url() against that stylesheet
+    // (…/client/css/), so relative "assets/sleeves/…" becomes client/css/assets/…
+    // and 404s. Always expand to a document-absolute URL before setting CSS vars.
+    try {
+      return new URL(p, document.baseURI || location.href).href;
+    } catch (e) {
+      return p;
+    }
   }
 
   function sleeveImageUrl(id) {
@@ -232,8 +244,9 @@
   }
 
   function cssImageUrl(path) {
-    if (!path) return '';
-    return 'url("' + String(path).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '")';
+    const abs = absoluteAssetUrl(path);
+    if (!abs) return '';
+    return 'url("' + abs.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '")';
   }
 
   function sleeveConformEnabled() {
