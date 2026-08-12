@@ -4997,7 +4997,7 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
   background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(52,163,243,.82);
   color:#fff;text-align:left;cursor:pointer;transform:none}
 .llc-menu-item:hover:not(:disabled){transform:none}
-/* Soft accent rims — same fill as default menu items; light 1px tinted borders. */
+/* Soft accent fills + light 1px tinted borders (All Stars-style color cues). */
 .llc-menu-item.llc-menu-accent-pink,
 .llc-menu-item.llc-menu-accent-green,
 .llc-menu-item.llc-menu-accent-blue,
@@ -5005,37 +5005,46 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-item.llc-menu-accent-purple{
   border-width:1px;
   box-shadow:none;
-  background:url("../../bg/ptn.png") top center/200px 200px repeat, rgba(52,163,243,.82);
 }
 .llc-menu-item.llc-menu-accent-pink{
-  border-color:rgba(255,170,210,.45);
+  border-color:rgba(255,170,210,.55);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(232,72,153,.38);
 }
 .llc-menu-item.llc-menu-accent-pink:hover:not(:disabled){
-  border-color:rgba(255,190,220,.65);
+  border-color:rgba(255,190,220,.75);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(244,114,182,.50);
 }
 .llc-menu-item.llc-menu-accent-green{
-  border-color:rgba(150,230,180,.45);
+  border-color:rgba(150,230,180,.55);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(34,160,90,.38);
 }
 .llc-menu-item.llc-menu-accent-green:hover:not(:disabled){
-  border-color:rgba(170,240,200,.65);
+  border-color:rgba(170,240,200,.75);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(46,190,110,.50);
 }
 .llc-menu-item.llc-menu-accent-blue{
-  border-color:rgba(150,195,255,.45);
+  border-color:rgba(150,195,255,.55);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(37,99,200,.38);
 }
 .llc-menu-item.llc-menu-accent-blue:hover:not(:disabled){
-  border-color:rgba(175,210,255,.65);
+  border-color:rgba(175,210,255,.75);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(59,130,246,.50);
 }
 .llc-menu-item.llc-menu-accent-sky{
-  border-color:rgba(150,220,240,.45);
+  border-color:rgba(150,220,240,.55);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(14,140,180,.36);
 }
 .llc-menu-item.llc-menu-accent-sky:hover:not(:disabled){
-  border-color:rgba(175,230,250,.65);
+  border-color:rgba(175,230,250,.75);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(34,170,210,.48);
 }
 .llc-menu-item.llc-menu-accent-purple{
-  border-color:rgba(190,175,245,.45);
+  border-color:rgba(190,175,245,.55);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(109,70,196,.38);
 }
 .llc-menu-item.llc-menu-accent-purple:hover:not(:disabled){
-  border-color:rgba(210,200,255,.65);
+  border-color:rgba(210,200,255,.75);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(139,92,246,.50);
 }
 .llc-menu-item-body{display:flex;flex-direction:column;justify-content:center;min-width:0;position:relative;z-index:1}
 .llc-menu-item-title{
