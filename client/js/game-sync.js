@@ -786,15 +786,34 @@
       }
 
       global._tcgSyncStats.getState++;
+      // Hung presentation can advance lastSeq before committing gameState.
+      // Rewind since_seq so a same-seq unchanged reply cannot hide a stale board.
+      const boardSeq = G.gameState?.seq ?? 0;
+      const last = G.lastSeq ?? 0;
+      if (boardSeq < last) {
+        TCG_DEBUG.warn('poll', 'tab catch-up: rewind since_seq to board', { boardSeq, last });
+        G.lastSeq = boardSeq;
+      }
       const r = await fetch(getStateUrl('&force=1'));
       let d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
       if (isSpec && !G.isSpectator) return false;
 
-      // Unchanged seq + not mid-show: nothing to snap; resume polls.
-      if (isUnchangedStatePayload(d) && !opts.wasBusy && G.gameState) {
-        resumePollingTick(200);
-        return true;
+      // Same seq: presentation already aborted above — keep the local board.
+      // (Do not assign the tiny unchanged payload to gameState.)
+      if (isUnchangedStatePayload(d)) {
+        if (G.gameState) {
+          resumePollingTick(200);
+          return true;
+        }
+        G.lastSeq = 0;
+        const r2 = await fetch(getStateUrl('&force=1'));
+        d = await parseGameApiResponse(r2);
+        if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
+        if (isUnchangedStatePayload(d)) {
+          resumePollingTick(200);
+          return false;
+        }
       }
 
       // Soft reconnect: seal historical spectacles so apply does not replay the gap.

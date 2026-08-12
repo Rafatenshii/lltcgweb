@@ -2193,7 +2193,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/game-sync.js?v=43"></script>
+<script src="client/js/game-sync.js?v=44"></script>
 <script src="client/js/state-apply.js?v=51"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -20546,10 +20546,11 @@ function armPvPWatchdog(s) {
     G._pvpWatchStuckCount = 0;
     G._pvpWatchSig = sig;
   }
-  const staleMs = Date.now() - (G._lastAppliedAt || 0);
-  const delay = waitingOnOpp
-    ? Math.max(800, PVP_OPP_PROMPT_NUDGE_MS - Math.min(staleMs, PVP_OPP_PROMPT_NUDGE_MS))
-    : Math.max(1200, PVP_STUCK_PRESENTATION_MS - Math.min(staleMs, PVP_STUCK_PRESENTATION_MS));
+  // Fixed intervals — do not collapse to ~800ms. Combined with force=1 that
+  // used to dump ~200KB get_state every second while waiting on the opponent.
+  const delay = presentationBlocked
+    ? PVP_STUCK_PRESENTATION_MS
+    : PVP_OPP_PROMPT_NUDGE_MS;
   G._pvpWatchdogTimer = setTimeout(() => { void pvpWatchdogTick(live, myId, oppId, sig); }, delay);
 }
 
@@ -20572,14 +20573,17 @@ async function pvpWatchdogTick(s, myId, oppId, sig) {
   const seqBefore = G.lastSeq ?? 0;
   const activeBefore = live.active_player;
   const phaseBefore = live.phase;
-  TCG_DEBUG.warn('pvp', 'watchdog force pull', {
+  // Waiting on opponent: cheap poll (unchanged ~400B). Force full state only when
+  // local presentation is actually stuck — tab catch-up still uses force=1.
+  const forceFull = presentationBlocked;
+  TCG_DEBUG.warn('pvp', forceFull ? 'watchdog force pull' : 'watchdog nudge', {
     sig,
     staleMs: Date.now() - (G._lastAppliedAt || 0),
     waitingOnOpp,
     presentationBlocked,
     stuckCount: G._pvpWatchStuckCount || 0,
   });
-  await pullLatestState(true);
+  await pullLatestState(forceFull);
   await sleep(120);
   const after = G.gameState || live;
   const progressed = (G.lastSeq ?? 0) > seqBefore
@@ -20588,11 +20592,11 @@ async function pvpWatchdogTick(s, myId, oppId, sig) {
     || after?.phase !== phaseBefore;
   if (!progressed && (G._pvpWatchStuckCount || 0) >= 1 && presentationBlocked) {
     releaseStuckPresentation();
-    await pullLatestState(true);
+    await pullLatestState(false);
   } else if (!progressed && waitingOnOpp && (G._pvpWatchStuckCount || 0) >= 2) {
     clearDeferredPromptState();
     if (G.playerId && G.gameState) updateOpponentSkillWaitBanner(G.gameState, G.playerId);
-    await pullLatestState(true);
+    await pullLatestState(false);
   }
   armPvPWatchdog(G.gameState || live);
 }

@@ -813,7 +813,9 @@ function getStatePolling(): void {
         }
 
         // Client already has this seq and nothing mutated — skip filter/encode.
-        if (!$forceFull && !$mutated && $lastSeq > 0 && $lastSeq === $curSeq) {
+        // force=1 still runs side effects above; if seq did not move, do not
+        // re-encode the full ~200KB snapshot (watchdog / duplicate catch-up).
+        if (!$mutated && $lastSeq > 0 && $lastSeq === $curSeq) {
             echo json_encode(['ok' => true, 'unchanged' => true, 'seq' => $curSeq]);
             return;
         }
