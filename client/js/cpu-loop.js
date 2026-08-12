@@ -3930,8 +3930,10 @@ function cpuResolvePromptBody(s, cpu, pr) {
     return;
   }
   if(pr.type==='pick_wr_members_deck_top'){
-    const ids=(pr.candidates||[]).slice(0,pr.pick_count||2).map(c=>c.instance_id);
-    if(ids.length) cpuAct('resolve_prompt',{card_ids:ids});
+    // Always card_ids[] — server rejects lone card_id when pick_count is 1 (Karin LS).
+    const need = pr.pick_count || 2;
+    const ids = (pr.candidates || []).slice(0, need).map(c => c.instance_id).filter(Boolean);
+    cpuAct('resolve_prompt', { card_ids: ids });
     return;
   }
   if(pr.type==='shuffle_named_from_waiting_pick'){
@@ -4632,9 +4634,20 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
       ? (c.score || 0) + (cpuCheckHearts(stageHeartPool(cpu), cpuLiveRequiredHearts(c)) ? 2 : 0)
       : cpuScoreMember(c, cpu, hand, cpuStageColors(cpu), tier, read);
     const sorted = [...cands].sort((a, b) => scoreCard(b) - scoreCard(a));
-    const ids = sorted.slice(0, pickN).map(c => c.instance_id);
+    const ids = sorted.slice(0, pickN).map(c => c.instance_id).filter(Boolean);
     if (ids.length) {
+      // pick_wr_members_deck_top always expects card_ids[] (even when pick_count=1).
+      // Sending { card_id } softlocks Karin Live Start on Hard/Expert (#Karin WR top).
+      if (pr.type === 'pick_wr_members_deck_top') {
+        cpuAct('resolve_prompt', { card_ids: ids });
+        return true;
+      }
       cpuAct('resolve_prompt', pickN > 1 ? { card_ids: ids } : { card_id: ids[0] });
+      return true;
+    }
+    if (pr.type === 'pick_wr_members_deck_top') {
+      // "Up to N" — empty selection is legal when no usable candidates.
+      cpuAct('resolve_prompt', { card_ids: [] });
       return true;
     }
   }

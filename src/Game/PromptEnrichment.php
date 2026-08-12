@@ -497,6 +497,17 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             $slot = $cands[0]['slot'] ?? '';
             return $slot !== '' ? ['slot' => $slot] : ['choice' => 'skip'];
 
+        case 'pick_wr_members_deck_top':
+            $need = intval($prompt['pick_count'] ?? 2);
+            $ids = [];
+            foreach (array_slice($prompt['candidates'] ?? [], 0, $need) as $cand) {
+                $id = (string)($cand['instance_id'] ?? '');
+                if ($id !== '') {
+                    $ids[] = $id;
+                }
+            }
+            return ['card_ids' => $ids];
+
         case 'live_start_edel_play_wr':
             $id = $prompt['candidates'][0]['instance_id'] ?? null;
             return $id ? ['card_id' => $id] : ['choice' => 'skip'];

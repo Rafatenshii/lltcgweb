@@ -1972,9 +1972,22 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
     }
 
     if ($promptType === 'pick_wr_members_deck_top') {
-        $pickIds = $data['card_ids'] ?? [];
+        // Accept card_ids[] (preferred) or a single card_id (CPU Hard/Expert used to send this).
+        $pickIds = $data['card_ids'] ?? null;
+        if (!is_array($pickIds)) {
+            $pickIds = [];
+            if (($data['card_id'] ?? '') !== '') {
+                $pickIds = [$data['card_id']];
+            }
+        }
+        $pickIds = array_values(array_filter(array_map('strval', $pickIds), static fn($id) => $id !== ''));
         $need = intval($prompt['pick_count'] ?? 2);
-        if (count($pickIds) !== $need) {
+        $upTo = !empty($prompt['up_to']) || stripos((string)($prompt['prompt'] ?? ''), 'up to') !== false;
+        if ($upTo) {
+            if (count($pickIds) > $need) {
+                throw new Exception("Select at most $need Member card(s)");
+            }
+        } elseif (count($pickIds) !== $need) {
             throw new Exception("Choose exactly $need Member card(s)");
         }
         $picked = [];
@@ -1990,10 +2003,16 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             }
             if (!$found) throw new Exception('Invalid Waiting Room Member');
         }
-        $picked = array_reverse($picked);
-        $ownerP['main_deck'] = array_merge($picked, $ownerP['main_deck']);
-        $state = addLog($state, $state['players'][$owner]['name'] .
-            ' — [' . ($prompt['source_name'] ?? 'Member') . "] put $need Member card(s) from Waiting Room on deck top.");
+        $n = count($picked);
+        if ($n > 0) {
+            $picked = array_reverse($picked);
+            $ownerP['main_deck'] = array_merge($picked, $ownerP['main_deck']);
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Member') . "] put $n Member card(s) from Waiting Room on deck top.");
+        } else {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Member') . '] chose no Waiting Room Members for deck top.');
+        }
         unset($state['pending_prompt']);
         $state['seq']++;
         if (($state['phase'] ?? '') === 'live_start_effects') {

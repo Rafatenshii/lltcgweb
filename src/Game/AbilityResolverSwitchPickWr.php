@@ -37,6 +37,7 @@ function tryResolveAbilityEffectSwitchPickWr(
                     'prompt'        => "Choose up to $pick Nijigasaki Member(s) from Waiting Room for deck top.",
                     'candidates'    => array_map('cardPromptSummary', $candidates),
                     'pick_count'    => $pick,
+                    'up_to'         => true,
                     'ability'       => $ab,
                 ];
                 $state = addLog($state, $state['players'][$pid]['name'] .
