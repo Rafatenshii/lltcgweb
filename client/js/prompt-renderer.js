@@ -1186,7 +1186,7 @@ global.ensurePromptChoices = function ensurePromptChoices(pr){
   // (that softlocks Ginko / PB1 multi-step WR picks behind an empty choice dialog).
   if(/^pick_wr/.test(step) || step==='pick_live' || step==='pick_member'
       || step==='pick_hand' || step==='pick_slot' || step==='pick'
-      || step==='pick_wait_member' || step==='pick_dest'){
+      || step==='pick_wait_member' || step==='pick_dest' || step==='assign'){
     return pr;
   }
   const optionalType=isSelfActivationPrompt(pr)
@@ -3441,6 +3441,20 @@ global.renderPrompt = function renderPrompt(s, myId){
       ...pr,
       candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
       prompt: pr.prompt||'Choose an area to Position Change into.',
+    });
+    return;
+  }
+  if(pr?.type==='optional_formation_change_group'&&pr.responder===myId&&pr.step==='assign'){
+    ovl.classList.remove('open');
+    const slots=pr.target_slots||['left','center','right'];
+    if(!slots.length){
+      sendAct('resolve_prompt',{choice:'no'});
+      return;
+    }
+    openStageSlotPick({
+      ...pr,
+      candidates: slots.map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
+      prompt: pr.prompt||'Choose an area for this Member.',
     });
     return;
   }

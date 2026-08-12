@@ -133,7 +133,7 @@ final class Issue100SumireFormationDrawTest extends TestCase
         $this->assertStringContainsString('[Sumire Heanna] drew 1 and gained 1 red heart(s) (area move).', $log);
     }
 
-    public function testLeftRightSwapAlsoTriggersSumire(): void
+    public function testInteractiveAssignAlsoTriggersSumire(): void
     {
         $sumire = $this->cardByNo('PL!SP-bp5-004-P', 'sumire_left');
         $k = $this->stubLiella('kanan_r', 'Kanon');
@@ -143,10 +143,16 @@ final class Issue100SumireFormationDrawTest extends TestCase
             'right' => $k,
         ]);
 
+        // Issue #108: Yes opens per-Member area picks (no auto Left ↔ Right).
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'yes']);
+        $this->assertSame('assign', $state['pending_prompt']['step'] ?? null);
+        $state = \actionResolvePrompt($state, 'p1', ['slot' => 'right']); // Sumire → Right
+        $this->assertSame('assign', $state['pending_prompt']['step'] ?? null);
+        $state = \actionResolvePrompt($state, 'p1', ['slot' => 'left']); // Kanon → Left
 
         $this->assertSame('sumire_left', $state['players']['p1']['stage']['right']['instance_id'] ?? null);
         $this->assertSame('kanan_r', $state['players']['p1']['stage']['left']['instance_id'] ?? null);
+        $this->assertNull($state['players']['p1']['stage']['center'] ?? null);
         $this->assertStringContainsString('[Sumire Heanna] drew 1 and gained 1 red heart(s) (area move).', $this->logText($state));
     }
 

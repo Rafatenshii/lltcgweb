@@ -117,6 +117,98 @@ function applyAutoOnAllyWaitActivateBlade(array $state, string $owner, array $pr
     return $state;
 }
 
+/**
+ * Apply a full Stage formation map (slot → instance_id) for optional_formation_change_group.
+ * Empty slots stay empty; every Stage Member must appear exactly once.
+ */
+function applyOptionalFormationChangeGroup(
+    array $state,
+    string $owner,
+    array $prompt,
+    array $assignments
+): array {
+    $ownerP = &$state['players'][$owner];
+    $before = [];
+    $members = [];
+    foreach ($ownerP['stage'] as $slot => $mbr) {
+        if (!$mbr) {
+            continue;
+        }
+        $iid = (string)($mbr['instance_id'] ?? '');
+        if ($iid === '') {
+            continue;
+        }
+        $before[$iid] = (string)$slot;
+        $members[$iid] = $mbr;
+    }
+    $used = [];
+    foreach (['left', 'center', 'right'] as $slot) {
+        $id = (string)($assignments[$slot] ?? '');
+        if ($id === '') {
+            continue;
+        }
+        if (!isset($members[$id])) {
+            throw new Exception('Invalid formation assignment');
+        }
+        if (isset($used[$id])) {
+            throw new Exception('Cannot place the same Member in two areas');
+        }
+        $used[$id] = true;
+    }
+    foreach ($members as $id => $_) {
+        if (!isset($used[$id])) {
+            throw new Exception('Every Stage Member must be assigned to an area');
+        }
+    }
+
+    $markSrc = ['group' => (string)(($prompt['ability'] ?? [])['group'] ?? '')];
+    if (function_exists('spBp2MarkEffectAreaMove')) {
+        spBp2MarkEffectAreaMove($state, $markSrc);
+    }
+
+    foreach (['left', 'center', 'right'] as $slot) {
+        $ownerP['stage'][$slot] = null;
+    }
+    foreach (['left', 'center', 'right'] as $slot) {
+        $id = (string)($assignments[$slot] ?? '');
+        if ($id !== '' && isset($members[$id])) {
+            $ownerP['stage'][$slot] = $members[$id];
+        }
+    }
+
+    // Drop the formation prompt before Auto area-move skills open their own.
+    unset($state['pending_prompt']);
+
+    $state = addLog($state, $state['players'][$owner]['name'] .
+        ' — [' . ($prompt['source_name'] ?? 'Live') . '] formation-changed Stage Members.');
+
+    foreach (['left', 'center', 'right'] as $slot) {
+        $mbr = $state['players'][$owner]['stage'][$slot] ?? null;
+        if (!$mbr) {
+            continue;
+        }
+        $iid = (string)($mbr['instance_id'] ?? '');
+        if ($iid === '') {
+            continue;
+        }
+        $from = $before[$iid] ?? $slot;
+        if ($from === $slot) {
+            continue;
+        }
+        $state = resolveAutoAreaMoveAbilities($state, $owner, $iid, $from);
+        if (!empty($state['pending_prompt'])) {
+            if (function_exists('spBp2ClearEffectAreaMove')) {
+                spBp2ClearEffectAreaMove($state);
+            }
+            return $state;
+        }
+    }
+    if (function_exists('spBp2ClearEffectAreaMove')) {
+        spBp2ClearEffectAreaMove($state);
+    }
+    return $state;
+}
+
 // actionResolvePrompt — completes pending_prompt from client resolve_prompt actions
 
 function actionResolvePrompt(array $state, string $pid, array $data): array {
@@ -3262,86 +3354,144 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
     }
 
     if ($promptType === 'optional_formation_change_group') {
-        if (!isset(['yes' => true, 'no' => true][$choice])) {
-            throw new Exception('Invalid choice');
-        }
-        if ($choice === 'yes') {
-            $before = [];
-            foreach ($ownerP['stage'] as $slot => $mbr) {
-                $iid = (string)($mbr['instance_id'] ?? '');
-                if ($mbr && $iid !== '') {
-                    $before[$iid] = (string)$slot;
-                }
-            }
-            $markSrc = ['group' => (string)(($prompt['ability'] ?? $ability)['group'] ?? '')];
-            if (function_exists('spBp2MarkEffectAreaMove')) {
-                spBp2MarkEffectAreaMove($state, $markSrc);
-            }
-            $assign = $data['assignments'] ?? null;
-            if (is_array($assign)) {
-                $members = [];
-                foreach ($ownerP['stage'] as $mbr) {
-                    if ($mbr) {
-                        $members[$mbr['instance_id'] ?? ''] = $mbr;
-                    }
-                }
-                foreach (['left', 'center', 'right'] as $slot) {
-                    $ownerP['stage'][$slot] = null;
-                }
-                foreach (['left', 'center', 'right'] as $slot) {
-                    $id = $assign[$slot] ?? '';
-                    if ($id !== '' && isset($members[$id])) {
-                        $ownerP['stage'][$slot] = $members[$id];
-                    }
-                }
-                $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Live') . '] formation-changed Stage Members.');
-            } else {
-                $left = $ownerP['stage']['left'];
-                $ownerP['stage']['left'] = $ownerP['stage']['right'];
-                $ownerP['stage']['right'] = $left;
-                $state = addLog($state, $state['players'][$owner]['name'] .
-                    ' — [' . ($prompt['source_name'] ?? 'Live') . '] formation-changed (Left ↔ Right).');
-            }
+        $step = (string)($prompt['step'] ?? '');
+        $srcName = (string)($prompt['source_name'] ?? 'Live');
+
+        if ($step === '' && in_array($choice, ['no', 'skip'], true)) {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . $srcName . '] skipped formation change.');
             unset($state['pending_prompt']);
             $state['seq']++;
+            if (($state['phase'] ?? '') === 'live_success_effects') {
+                return finishLiveSuccessEffects($state);
+            }
+            return finishLiveStartEffects($state);
+        }
+
+        // One-shot API / tests may send full slot→id map with yes.
+        if ($step === '' && $choice === 'yes' && is_array($data['assignments'] ?? null)) {
+            $state = applyOptionalFormationChangeGroup($state, $owner, $prompt, $data['assignments']);
+            $state['seq'] = intval($state['seq'] ?? 0) + 1;
+            if (!empty($state['pending_prompt'])) {
+                if (($state['phase'] ?? '') === 'live_success_effects') {
+                    return finishLiveSuccessEffects($state);
+                }
+                return finishPromptEffects($state);
+            }
+            if (($state['phase'] ?? '') === 'live_success_effects') {
+                return finishLiveSuccessEffects($state);
+            }
+            return finishLiveStartEffects($state);
+        }
+
+        // Yes without assignments → interactive per-Member area picks (issue #108).
+        if ($step === '' && $choice === 'yes') {
+            $queue = [];
             foreach (['left', 'center', 'right'] as $slot) {
-                $mbr = $state['players'][$owner]['stage'][$slot] ?? null;
+                $mbr = $ownerP['stage'][$slot] ?? null;
                 if (!$mbr) {
                     continue;
                 }
-                $iid = (string)($mbr['instance_id'] ?? '');
-                if ($iid === '') {
-                    continue;
+                $queue[] = array_merge(cardPromptSummary($mbr), [
+                    'from_slot' => $slot,
+                    'slot' => $slot,
+                ]);
+            }
+            if ($queue === []) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . $srcName . '] no Stage Members to formation-change.');
+                unset($state['pending_prompt']);
+                $state['seq']++;
+                if (($state['phase'] ?? '') === 'live_success_effects') {
+                    return finishLiveSuccessEffects($state);
                 }
-                $from = $before[$iid] ?? $slot;
-                if ($from === $slot) {
-                    continue;
+                return finishLiveStartEffects($state);
+            }
+            $first = $queue[0];
+            $state['pending_prompt'] = array_merge($prompt, [
+                'step' => 'assign',
+                'assign_queue' => $queue,
+                'assign_index' => 0,
+                'assignments' => [],
+                'target_slots' => ['left', 'center', 'right'],
+                'choices' => [],
+                'choice_labels' => [],
+                'current_member_id' => (string)($first['instance_id'] ?? ''),
+                'prompt' => 'Choose an area for '
+                    . (string)($first['name_en'] ?? $first['name'] ?? 'Member') . '.',
+            ]);
+            $state['seq']++;
+            return $state;
+        }
+
+        if ($step === 'assign') {
+            $dest = (string)($data['slot'] ?? '');
+            if ($dest === '' || $dest === 'yes' || $dest === 'no' || $dest === 'skip') {
+                $dest = (string)$choice;
+            }
+            $remaining = array_values(array_filter(
+                is_array($prompt['target_slots'] ?? null) ? $prompt['target_slots'] : ['left', 'center', 'right'],
+                static fn($s): bool => is_string($s) && $s !== ''
+            ));
+            if (!in_array($dest, $remaining, true)) {
+                throw new Exception('Choose a valid Stage area');
+            }
+            $queue = is_array($prompt['assign_queue'] ?? null) ? $prompt['assign_queue'] : [];
+            $idx = intval($prompt['assign_index'] ?? 0);
+            $member = $queue[$idx] ?? null;
+            $memberId = (string)($member['instance_id'] ?? '');
+            if ($memberId === '') {
+                throw new Exception('No Member to place');
+            }
+            $assignments = is_array($prompt['assignments'] ?? null) ? $prompt['assignments'] : [];
+            $assignments[$dest] = $memberId;
+            $remaining = array_values(array_filter($remaining, static fn($s): bool => $s !== $dest));
+            $idx++;
+
+            // Last Member auto-fills the last open area.
+            while ($idx < count($queue) && count($remaining) === 1) {
+                $autoId = (string)($queue[$idx]['instance_id'] ?? '');
+                if ($autoId === '') {
+                    break;
                 }
-                $state = resolveAutoAreaMoveAbilities($state, $owner, $iid, $from);
+                $assignments[$remaining[0]] = $autoId;
+                $remaining = [];
+                $idx++;
+            }
+
+            if ($idx >= count($queue)) {
+                $state = applyOptionalFormationChangeGroup($state, $owner, $prompt, $assignments);
+                $state['seq'] = intval($state['seq'] ?? 0) + 1;
                 if (!empty($state['pending_prompt'])) {
-                    if (function_exists('spBp2ClearEffectAreaMove')) {
-                        spBp2ClearEffectAreaMove($state);
-                    }
                     if (($state['phase'] ?? '') === 'live_success_effects') {
                         return finishLiveSuccessEffects($state);
                     }
                     return finishPromptEffects($state);
                 }
+                if (($state['phase'] ?? '') === 'live_success_effects') {
+                    return finishLiveSuccessEffects($state);
+                }
+                return finishLiveStartEffects($state);
             }
-            if (function_exists('spBp2ClearEffectAreaMove')) {
-                spBp2ClearEffectAreaMove($state);
-            }
-        } else {
-            $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . ($prompt['source_name'] ?? 'Live') . '] skipped formation change.');
-            unset($state['pending_prompt']);
+
+            $next = $queue[$idx];
+            $state['pending_prompt'] = array_merge($prompt, [
+                'step' => 'assign',
+                'assign_queue' => $queue,
+                'assign_index' => $idx,
+                'assignments' => $assignments,
+                'target_slots' => $remaining,
+                'choices' => [],
+                'choice_labels' => [],
+                'current_member_id' => (string)($next['instance_id'] ?? ''),
+                'prompt' => 'Choose an area for '
+                    . (string)($next['name_en'] ?? $next['name'] ?? 'Member') . '.',
+            ]);
             $state['seq']++;
+            return $state;
         }
-        if (($state['phase'] ?? '') === 'live_success_effects') {
-            return finishLiveSuccessEffects($state);
-        }
-        return finishLiveStartEffects($state);
+
+        throw new Exception('Invalid formation change choice');
     }
 
     if ($promptType === 'wait_pick_member_grant_live_score') {

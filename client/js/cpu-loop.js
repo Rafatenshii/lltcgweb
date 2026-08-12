@@ -4928,6 +4928,18 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
       return true;
     }
   }
+  if (pr.type === 'optional_formation_change_group' && pr.step === 'assign') {
+    const slots = pr.target_slots || [];
+    const cur = (pr.assign_queue || [])[pr.assign_index || 0] || {};
+    const from = cur.from_slot || cur.slot || '';
+    const dest = slots.find((s) => s && s !== from) || slots[0];
+    if (!dest) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { slot: dest });
+    return true;
+  }
   if (pr.type === 'pick_surveil_heart_threshold') {
     const pool = stageHeartPool(cpu);
     const counts = {};
