@@ -115,7 +115,9 @@ html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-
   background-image:var(--opp-sleeve-image);
 }
 
-/* Stage / live: peek layer on the slot so face-up art stays clipped to the card. */
+/* Stage / live: rim-only peek around the slot.
+   Stage art uses object-fit:contain — a full-bleed ::behind the img showed the
+   sleeve through letterbox gaps (looked like a translucent sleeve over the front). */
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before,
 html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot::before,
@@ -130,6 +132,16 @@ html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard::before{
   background-position:center;
   background-size:cover;
   background-repeat:no-repeat;
+  box-sizing:border-box;
+  padding:var(--sleeve-peek);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite:exclude;
 }
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before{
