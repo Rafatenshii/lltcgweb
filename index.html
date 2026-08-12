@@ -40,7 +40,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=31">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=8">
+<link rel="stylesheet" href="client/css/sleeves.css?v=9">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -876,16 +876,18 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       </div>
       <p class="hub-stat" id="sleeve-shop-hint" data-i18n="sleeveShop.hint">Earn Coins by finishing matches. Pick a generation, then a character.</p>
       <div id="sleeve-shop-gens" class="sleeve-shop-gens" role="tablist"></div>
-      <div id="sleeve-shop-chars" class="sleeve-shop-chars"></div>
-      <div id="sleeve-shop-sleeves-view" hidden>
-        <button class="btn-ghost" id="btn-sleeve-shop-chars-back" type="button" data-i18n="sleeveShop.backChars">← Characters</button>
-        <p class="hub-stat" id="sleeve-shop-char-name"></p>
-        <div class="sleeve-shop-browse">
-          <aside class="sleeve-shop-hover-panel card-hover-panel" id="sleeve-shop-hover-panel" aria-live="polite">
-            <p class="hc-empty" id="ssh-empty" data-i18n="sleeveShop.hoverEmpty">Hover a sleeve to preview</p>
-            <img class="hc-img" id="ssh-img" src="" alt="" onerror="this.classList.remove('show')">
-          </aside>
-          <div class="sleeve-shop-grid" id="sleeve-shop-grid"></div>
+      <div class="sleeve-shop-browse">
+        <aside class="sleeve-shop-hover-panel card-hover-panel" id="sleeve-shop-hover-panel" aria-live="polite">
+          <p class="hc-empty" id="ssh-empty" data-i18n="sleeveShop.hoverEmpty">Hover a sleeve to preview</p>
+          <img class="hc-img" id="ssh-img" src="" alt="" onerror="this.classList.remove('show')">
+        </aside>
+        <div class="sleeve-shop-main">
+          <div id="sleeve-shop-chars" class="sleeve-shop-chars"></div>
+          <div id="sleeve-shop-sleeves-view" hidden>
+            <button class="btn-ghost" id="btn-sleeve-shop-chars-back" type="button" data-i18n="sleeveShop.backChars">← Characters</button>
+            <p class="hub-stat" id="sleeve-shop-char-name"></p>
+            <div class="sleeve-shop-grid" id="sleeve-shop-grid"></div>
+          </div>
         </div>
       </div>
       <p class="lerr" id="sleeve-shop-err"></p>
@@ -5849,17 +5851,18 @@ function clearSleeveShopHover() {
   if (panel) panel.classList.remove('has-preview');
   if (img) {
     img.removeAttribute('src');
-    img.classList.remove('show');
+    img.classList.remove('show', 'is-unit');
   }
 }
 
-function showSleeveShopHover(src) {
+function showSleeveShopHover(src, opts) {
   const panel = el('sleeve-shop-hover-panel');
   const img = el('ssh-img');
   if (!panel || !img || !src) {
     clearSleeveShopHover();
     return;
   }
+  img.classList.toggle('is-unit', !!(opts && opts.unit));
   img.src = src;
   img.classList.add('show');
   panel.classList.add('has-preview');
@@ -5971,6 +5974,13 @@ function renderSleeveShopChars() {
     b.appendChild(name);
     b.appendChild(count);
     b.appendChild(img);
+    const previewSrc = img.src || '';
+    if (previewSrc) {
+      b.addEventListener('mouseenter', () => showSleeveShopHover(previewSrc, { unit: isGroup }));
+      b.addEventListener('mouseleave', () => clearSleeveShopHover());
+      b.addEventListener('focus', () => showSleeveShopHover(previewSrc, { unit: isGroup }));
+      b.addEventListener('blur', () => clearSleeveShopHover());
+    }
     b.onclick = () => openSleeveShopCharacter(c);
     host.appendChild(b);
   });
