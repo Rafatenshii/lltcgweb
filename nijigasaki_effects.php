@@ -615,6 +615,41 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
                     " — [$name] $n Member(s) gained +" . intval($ab['blade'] ?? 1) . ' Blade.');
             }
             break;
+
+        case 'reduce_hearts_if_same_name_duplicate':
+            // Eternalize Love!! (PL!N-pb1-042-L) — was wrongly only in
+            // nijiApplyContinuousLiveScore, so Live Start never applied (#110).
+            $group = $ab['group'] ?? 'Nijigasaki';
+            $names = [];
+            foreach ($p['stage'] as $mbr) {
+                if (!$mbr || ($mbr['group'] ?? '') !== $group) {
+                    continue;
+                }
+                $k = cardNameKey($mbr);
+                if ($k === '') {
+                    continue;
+                }
+                $names[$k] = ($names[$k] ?? 0) + 1;
+            }
+            $maxDup = $names === [] ? 0 : max(array_values($names));
+            if ($maxDup >= intval($ab['min_duplicates'] ?? 2)) {
+                $reduce = intval($ab['reduce'] ?? 3);
+                $reduceColorRaw = (string)($ab['reduce_color'] ?? 'gray');
+                $reduceColor = ($reduceColorRaw === 'gray') ? 'any' : $reduceColorRaw;
+                bumpLiveCardColorReduction(
+                    $state,
+                    $pid,
+                    (string)($source['instance_id'] ?? ''),
+                    $reduceColor,
+                    $reduce
+                );
+                $label = ($reduceColorRaw === 'gray')
+                    ? "$reduce Gray heart(s)"
+                    : "$reduce heart(s)";
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] required $label reduced (same-name $group Members).");
+            }
+            break;
     }
     return $state;
 }
@@ -964,30 +999,7 @@ function nijiApplyContinuousLiveScore(array $state, string $pid, array $source, 
                 intval($state['live_modifiers'][$pid]['live_score_bonus'] ?? 0) + intval($ab['amount'] ?? 1);
         }
     }
-    if ($type === 'reduce_hearts_if_same_name_duplicate') {
-        $group = $ab['group'] ?? 'Nijigasaki';
-        $names = [];
-        foreach ($state['players'][$pid]['stage'] as $mbr) {
-            if (!$mbr || ($mbr['group'] ?? '') !== $group) continue;
-            $k = cardNameKey($mbr);
-            $names[$k] = ($names[$k] ?? 0) + 1;
-        }
-        $dup = max(0, ...array_values($names)) >= intval($ab['min_duplicates'] ?? 2);
-        if ($dup) {
-            $reduce = intval($ab['reduce'] ?? 1);
-            $reduceColor = $ab['reduce_color'] ?? '';
-            foreach ($state['players'][$pid]['live_zone'] as &$lc) {
-                if ($lc && ($lc['instance_id'] ?? '') === ($source['instance_id'] ?? '')) {
-                    if ($reduceColor === 'gray') {
-                        $lc['hearts_reduction_gray'] = intval($lc['hearts_reduction_gray'] ?? 0) + $reduce;
-                    } else {
-                        $lc['hearts_reduction'] = intval($lc['hearts_reduction'] ?? 0) + $reduce;
-                    }
-                }
-            }
-            unset($lc);
-        }
-    }
+    // reduce_hearts_if_same_name_duplicate belongs in nijiResolveNijigasakiEffect (Live Start).
     return $state;
 }
 
