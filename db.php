@@ -239,6 +239,13 @@ function tcgDbMigrate(PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_daily_state', 'login_bonus_last_date', 'TEXT');
     });
 
+    // Per-preset sleeves. 012_deck_sleeves.sql is docs-only; production already has bootstrap_v2
+    // so tcgDbMigrateBootstrap (and its ensureColumn calls) never run.
+    tcgDbRunMigrationOnce($db, 'deck_sleeves_20260812', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_deck_presets', 'sleeve_id', "TEXT NOT NULL DEFAULT ''");
+        tcgDbEnsureColumn($db, 'tcg_experiment_presets', 'sleeve_id', "TEXT NOT NULL DEFAULT ''");
+    });
+
     $done = true;
 }
 

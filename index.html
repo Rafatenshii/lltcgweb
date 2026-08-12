@@ -8661,12 +8661,17 @@ async function openDeckBuilder() {
     toast(t('toast.cardsLoadFailed'), 4000);
     return;
   }
-  if (!A.profile?.user?.starter_deck) {
-    const me = await accountGet('me');
-    if (me.success) A.profile = me;
+  try {
+    if (!A.profile?.user?.starter_deck) {
+      const me = await accountGet('me');
+      if (me.success) A.profile = me;
+    }
+    await refreshCollection();
+    await ensureDeckList({ force: true });
+  } catch (e) {
+    toast(e?.message || t('toast.signInDeckBuilder') || 'Could not load decks', 4000);
+    return;
   }
-  await refreshCollection();
-  await ensureDeckList({ force: true });
   const hint = el('deck-starter-hint');
   if (hint) hint.hidden = false;
   syncDeckStarterHint();
