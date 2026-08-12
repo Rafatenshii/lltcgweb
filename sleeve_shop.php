@@ -10,6 +10,23 @@ function tcgSleeveCatalogPath(): string {
     return __DIR__ . '/sleeves_catalog.json';
 }
 
+/**
+ * Display title for sleeves: strip vendor branding and pack-count suffixes.
+ * Applied on load so future catalog imports stay clean even if source names are raw.
+ */
+function tcgSleeveDisplayName(string $name): string {
+    $s = trim($name);
+    if ($s === '') {
+        return '';
+    }
+    $s = preg_replace('/\bbushiroad\b\s*/iu', '', $s) ?? $s;
+    $s = preg_replace('/\(\s*\d+\s*[- ]?\s*packs?\s*\)/iu', '', $s) ?? $s;
+    $s = preg_replace('/\s{2,}/u', ' ', $s) ?? $s;
+    $s = preg_replace('/\s+([:,])/u', '$1', $s) ?? $s;
+    $s = preg_replace('/([:,])\s*/u', '$1 ', $s) ?? $s;
+    return trim($s, " \t-:");
+}
+
 function tcgIdolPortraitsPath(): string {
     return __DIR__ . '/idol_portraits.json';
 }
@@ -42,7 +59,7 @@ function tcgLoadSleeveCatalog(): array {
         }
         $out[] = [
             'id' => $id,
-            'name' => (string)($row['name'] ?? $id),
+            'name' => tcgSleeveDisplayName((string)($row['name'] ?? $id)),
             'group' => (string)($row['group'] ?? 'Other'),
             'idol' => (string)($row['idol'] ?? 'Other'),
             'src' => (string)($row['src'] ?? ('assets/sleeves/' . $id . '.webp')),

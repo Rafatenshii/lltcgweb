@@ -16,6 +16,18 @@
     return id;
   }
 
+  /** Strip vendor branding + pack-count suffixes from catalog titles. */
+  function cleanSleeveDisplayName(name) {
+    let s = String(name == null ? '' : name).trim();
+    if (!s) return '';
+    s = s.replace(/\bbushiroad\b\s*/gi, '');
+    s = s.replace(/\(\s*\d+\s*[- ]?\s*packs?\s*\)/gi, '');
+    s = s.replace(/\s{2,}/g, ' ');
+    s = s.replace(/\s+([:,])/g, '$1');
+    s = s.replace(/([:,])\s*/g, '$1 ');
+    return s.replace(/^[\s\-:]+|[\s\-:]+$/g, '');
+  }
+
   function getSleeve(id) {
     const key = normalizeSleeveId(id);
     if (!key) return null;
@@ -162,7 +174,7 @@
         SLEEVE_CATALOG = items
           .map((row) => ({
             id: normalizeSleeveId(row.id),
-            name: String(row.name || row.id || ''),
+            name: cleanSleeveDisplayName(row.name || row.id || ''),
             src: String(row.src || ''),
             group: String(row.group || ''),
             idol: String(row.idol || ''),
