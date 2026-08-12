@@ -21,8 +21,10 @@ function renderGame(s, opts = {}) {
   if (isReplayViewing()) opts = { ...opts, skipPrompt: true };
   maybePlayPhaseSfx(s);
   const myId=G.playerId, oppId=myId==='p1'?'p2':'p1';
-  // Apply before seat early-return so sleeves stick even if opp seat is briefly missing.
-  if (window.LLTCG_SLEEVES?.applyMatchSleeves) window.LLTCG_SLEEVES.applyMatchSleeves(s);
+  // Same myId as board seats — never let sleeves resolve from a different POV.
+  if (window.LLTCG_SLEEVES?.applyMatchSleeves) {
+    window.LLTCG_SLEEVES.applyMatchSleeves(s, { myId });
+  }
   const me=s.players[myId], opp=s.players[oppId];
   if(!me||!opp) return;
   syncPrepHandsChrome(s);

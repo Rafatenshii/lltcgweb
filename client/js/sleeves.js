@@ -312,17 +312,37 @@
       el.style.removeProperty('--my-sleeve-image');
       el.style.removeProperty('--opp-sleeve-image');
     });
+    document.querySelectorAll('[data-sleeve-seat]').forEach((node) => {
+      node.style.removeProperty('--my-sleeve-image');
+      node.style.removeProperty('--opp-sleeve-image');
+      delete node.dataset.sleeveSeat;
+    });
   }
 
-  function applyMatchSleeves(state) {
+  function applyMatchSleeves(state, opts) {
     const root = document.getElementById('screen-game');
     const targets = [document.documentElement, root].filter(Boolean);
     if (!targets.length) return;
-    const myId = global.G && global.G.playerId;
+    // Prefer the seat used for this board paint, then server my_id (token seat), then G.
+    // Never derive "my" from a stale G.playerId when state.my_id disagrees — that would
+    // put the opponent's sleeve on the bottom mat (and vice versa).
+    let myId = opts && (opts.myId === 'p1' || opts.myId === 'p2') ? opts.myId : null;
+    if (!myId && state && (state.my_id === 'p1' || state.my_id === 'p2')) {
+      myId = state.my_id;
+    }
+    if (!myId && global.G && (global.G.playerId === 'p1' || global.G.playerId === 'p2')) {
+      myId = global.G.playerId;
+    }
     if (!state || !state.players || !myId) {
       clearMatchSleeves(root);
       lastMatchSleeveState = null;
       return;
+    }
+    if (global.G && !global.G.isSpectator
+        && (state.my_id === 'p1' || state.my_id === 'p2')
+        && global.G.playerId !== state.my_id) {
+      global.G.playerId = state.my_id;
+      myId = state.my_id;
     }
     lastMatchSleeveState = state;
     const oppId = myId === 'p1' ? 'p2' : 'p1';
@@ -330,6 +350,19 @@
     const oppSleeve = state.players[oppId] && state.players[oppId].sleeve_id;
     applySeatSleeve(targets, 'my', mySleeve);
     applySeatSleeve(targets, 'opp', oppSleeve);
+    // Bind vars onto seat roots so mat/hand CSS cannot pick up a swapped html var.
+    const myUrl = mySleeve ? cssImageUrl(resolveSleeveSrc(mySleeve)) : '';
+    const oppUrl = oppSleeve ? cssImageUrl(resolveSleeveSrc(oppSleeve)) : '';
+    const bindSeat = (sel, seat, url) => {
+      document.querySelectorAll(sel).forEach((node) => {
+        if (!node || !node.style) return;
+        node.dataset.sleeveSeat = seat;
+        if (url) node.style.setProperty('--' + seat + '-sleeve-image', url);
+        else node.style.removeProperty('--' + seat + '-sleeve-image');
+      });
+    };
+    bindSeat('.my-mat, .my-hand-strip, #perf-col-mine', 'my', myUrl);
+    bindSeat('.opp-mat, .opp-hand-strip, #perf-col-opp', 'opp', oppUrl);
     // Catalog may still be loading on first paint — re-apply when items arrive.
     const needsCatalog = [mySleeve, oppSleeve].some((raw) => {
       const id = normalizeSleeveId(raw);
@@ -339,7 +372,9 @@
       pendingCatalogReapply = true;
       void loadCatalog().then(() => {
         pendingCatalogReapply = false;
-        if (lastMatchSleeveState) applyMatchSleeves(lastMatchSleeveState);
+        if (lastMatchSleeveState) {
+          applyMatchSleeves(lastMatchSleeveState, { myId: global.G && global.G.playerId });
+        }
       });
     }
   }
