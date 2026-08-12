@@ -485,6 +485,16 @@
       "infoRarities": "Rarities",
       "infoCost": "Exchange cost"
     },
+    "sleeveShop": {
+      "title": "Sleeve Shop",
+      "backHub": "← Hub",
+      "backChars": "← Characters",
+      "hint": "Earn Coins by finishing matches. Pick a generation, then a character.",
+      "coinsAria": "Coins",
+      "freeClaims": "Free picks: {n}",
+      "owned": "Owned",
+      "claimFree": "Claim free"
+    },
     "cardList": {
       "title": "Card List",
       "hubSub": "Browse every card",
@@ -1731,6 +1741,16 @@
       "infoLead": "余ったブースター／PRカード、または所持スターターのカード1枚を、同じレアリティ帯のシール1枚に変換できます。下のコストでシールとカードを交換できます（PRシールはNと同じ20）。",
       "infoRarities": "レアリティ",
       "infoCost": "交換コスト"
+    },
+    "sleeveShop": {
+      "title": "スリーブショップ",
+      "backHub": "← ハブ",
+      "backChars": "← キャラクター",
+      "hint": "マッチを完了してコインを獲得。世代を選んでからキャラクターを選んでください。",
+      "coinsAria": "コイン",
+      "freeClaims": "無料選択: {n}",
+      "owned": "所持済み",
+      "claimFree": "無料で獲得"
     },
     "cardList": {
       "title": "カードリスト",
@@ -3754,6 +3774,16 @@
       "infoRarities": "Rarezas",
       "infoCost": "Coste de canje"
     },
+    "sleeveShop": {
+      "title": "Tienda de fundas",
+      "backHub": "← Hub",
+      "backChars": "← Personajes",
+      "hint": "Gana monedas al terminar partidas. Elige una generación y luego un personaje.",
+      "coinsAria": "Monedas",
+      "freeClaims": "Elecciones gratis: {n}",
+      "owned": "En posesión",
+      "claimFree": "Canjear gratis"
+    },
     "cardList": {
       "title": "Lista de cartas",
       "hubSub": "Ver todas las cartas",
@@ -5028,6 +5058,16 @@
       "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
       "infoRarities": "희귀도",
       "infoCost": "교환 비용"
+    },
+    "sleeveShop": {
+      "title": "슬리브 샵",
+      "backHub": "← 허브",
+      "backChars": "← 캐릭터",
+      "hint": "매치를 끝내면 코인을 얻습니다. 세대를 고른 뒤 캐릭터를 선택하세요.",
+      "coinsAria": "코인",
+      "freeClaims": "무료 선택: {n}",
+      "owned": "보유 중",
+      "claimFree": "무료 받기"
     },
     "cardList": {
       "title": "카드 목록",
@@ -6305,6 +6345,16 @@
       "infoRarities": "稀有度",
       "infoCost": "兑换费用"
     },
+    "sleeveShop": {
+      "title": "卡套商店",
+      "backHub": "← 主页",
+      "backChars": "← 角色",
+      "hint": "完成对战可获得金币。先选世代，再选角色。",
+      "coinsAria": "金币",
+      "freeClaims": "免费次数：{n}",
+      "owned": "已拥有",
+      "claimFree": "免费领取"
+    },
     "cardList": {
       "title": "卡牌一览",
       "hubSub": "浏览全部卡牌",
@@ -7557,6 +7607,16 @@
       "infoRarities": "ความหายาก",
       "infoCost": "ราคาแลก"
     },
+    "sleeveShop": {
+      "title": "ร้านซองการ์ด",
+      "backHub": "← ฮับ",
+      "backChars": "← ตัวละคร",
+      "hint": "ได้เหรียญเมื่อจบแมตช์ เลือกเจเนอเรชันแล้วค่อยเลือกตัวละคร",
+      "coinsAria": "เหรียญ",
+      "freeClaims": "เลือกฟรี: {n}",
+      "owned": "มีแล้ว",
+      "claimFree": "รับฟรี"
+    },
     "cardList": {
       "title": "รายการการ์ด",
       "hubSub": "ดูการ์ดทั้งหมด",
@@ -7594,8 +7654,18 @@
     loc.hub.sticker.title = loc.hub.stickerShop || 'Sticker Shop';
     loc.hub.sticker.sub = loc.hub.stickerShopSub || 'Trade seals for cards from your packs';
     loc.hub.sleeveShop = loc.hub.sleeveShop || {};
-    loc.hub.sleeveShop.title = loc.hub.sleeveShop.title || 'Sleeve Shop';
+    loc.hub.sleeveShop.title = loc.hub.sleeveShop.title || (loc.sleeveShop && loc.sleeveShop.title) || 'Sleeve Shop';
     loc.hub.sleeveShop.sub = loc.hub.sleeveShop.sub || 'Spend Coins on card sleeves';
+    loc.sleeveShop = loc.sleeveShop || {};
+    loc.sleeveShop.title = loc.sleeveShop.title || loc.hub.sleeveShop.title || 'Sleeve Shop';
+    loc.sleeveShop.backHub = loc.sleeveShop.backHub || loc.hub.backHub || '← Hub';
+    loc.sleeveShop.backChars = loc.sleeveShop.backChars || '← Characters';
+    loc.sleeveShop.hint = loc.sleeveShop.hint
+      || 'Earn Coins by finishing matches. Pick a generation, then a character.';
+    loc.sleeveShop.coinsAria = loc.sleeveShop.coinsAria || 'Coins';
+    loc.sleeveShop.freeClaims = loc.sleeveShop.freeClaims || 'Free picks: {n}';
+    loc.sleeveShop.owned = loc.sleeveShop.owned || 'Owned';
+    loc.sleeveShop.claimFree = loc.sleeveShop.claimFree || 'Claim free';
     loc.hub.cardList = loc.hub.cardList || {};
     loc.hub.cardList.title = loc.hub.cardList.title || (loc.cardList && loc.cardList.title) || 'Card List';
     loc.hub.cardList.sub = loc.hub.cardList.sub || (loc.cardList && loc.cardList.hubSub) || 'Browse every card';
@@ -7748,28 +7818,58 @@
       var key = node.getAttribute('data-i18n');
       if (!key) return;
       var text = t(key);
+      // Missing keys resolve to the key itself — keep HTML/source fallback so UI
+      // never flashes raw paths like "sleeveShop.backHub".
+      if (text === key) {
+        var existing = (node.textContent || '').trim();
+        if (existing && existing !== key) return;
+      }
       if (node.getAttribute('data-i18n-html') === '1') node.innerHTML = text;
       else node.textContent = text;
     });
 
     el.querySelectorAll('[data-i18n-placeholder]').forEach(function (node) {
       var key = node.getAttribute('data-i18n-placeholder');
-      if (key) node.placeholder = t(key);
+      if (!key) return;
+      var text = t(key);
+      if (text === key) {
+        var existing = (node.getAttribute('placeholder') || '').trim();
+        if (existing && existing !== key) return;
+      }
+      node.placeholder = text;
     });
 
     el.querySelectorAll('[data-i18n-title]').forEach(function (node) {
       var key = node.getAttribute('data-i18n-title');
-      if (key) node.title = t(key);
+      if (!key) return;
+      var text = t(key);
+      if (text === key) {
+        var existing = (node.getAttribute('title') || '').trim();
+        if (existing && existing !== key) return;
+      }
+      node.title = text;
     });
 
     el.querySelectorAll('[data-i18n-aria-label]').forEach(function (node) {
       var key = node.getAttribute('data-i18n-aria-label');
-      if (key) node.setAttribute('aria-label', t(key));
+      if (!key) return;
+      var text = t(key);
+      if (text === key) {
+        var existing = (node.getAttribute('aria-label') || '').trim();
+        if (existing && existing !== key) return;
+      }
+      node.setAttribute('aria-label', text);
     });
 
     el.querySelectorAll('select option[data-i18n]').forEach(function (node) {
       var key = node.getAttribute('data-i18n');
-      if (key) node.textContent = t(key);
+      if (!key) return;
+      var text = t(key);
+      if (text === key) {
+        var existing = (node.textContent || '').trim();
+        if (existing && existing !== key) return;
+      }
+      node.textContent = text;
     });
 
     // Keep language picker closed-state flag + label aligned with active locale
