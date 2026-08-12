@@ -172,7 +172,8 @@ function tryResolveAbilityEffectSwitchReduceHearts(
             }
             break;
         case 'reduce_hearts_per_entered_moved_subunit':
-            $n = countEnteredMovedSubunitThisTurn($p, $ab['subunit'] ?? '')
+            $turn = intval($state['turn'] ?? 1);
+            $n = countEnteredMovedSubunitThisTurn($p, $ab['subunit'] ?? '', $turn)
                 * intval($ab['per_member'] ?? 1);
             if ($n > 0) {
                 $color = $ab['reduce_heart_color'] ?? '';

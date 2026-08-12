@@ -334,12 +334,14 @@ function countDistinctGroupStageWr(array $p, string $group, string $filter = 'me
     return count($names);
 }
 
-function countEnteredMovedSubunitThisTurn(array $p, string $subunit): int {
+function countEnteredMovedSubunitThisTurn(array $p, string $subunit, int $turn = 0): int {
     $n = 0;
     foreach ($p['stage'] as $mbr) {
         if (!$mbr) continue;
-        if (($mbr['subunit'] ?? '') !== $subunit) continue;
-        if (!empty($mbr['entered_this_turn']) || !empty($mbr['moved_this_turn'])) {
+        if (!cardMatchesSubunit($mbr, $subunit)) continue;
+        $entered = !empty($mbr['entered_this_turn'])
+            || ($turn > 0 && intval($mbr['entered_turn'] ?? 0) === $turn);
+        if ($entered || !empty($mbr['moved_this_turn'])) {
             $n++;
         }
     }
