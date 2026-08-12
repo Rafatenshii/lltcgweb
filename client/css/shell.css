@@ -1753,6 +1753,55 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
   background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(52,163,243,.82);
   color:#fff;text-align:left;cursor:pointer;transform:none}
 .llc-menu-item:hover:not(:disabled){transform:none}
+/* All Stars–inspired accent borders (Gacha pink / Live green / Training blue / Story sky / Episode purple). */
+.llc-menu-item.llc-menu-accent-pink,
+.llc-menu-item.llc-menu-accent-green,
+.llc-menu-item.llc-menu-accent-blue,
+.llc-menu-item.llc-menu-accent-sky,
+.llc-menu-item.llc-menu-accent-purple{
+  border-width:3px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
+}
+.llc-menu-item.llc-menu-accent-pink{
+  border-color:#ff5ea8;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(232,72,153,.78);
+}
+.llc-menu-item.llc-menu-accent-pink:hover:not(:disabled){
+  border-color:#ff8ec4;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(244,114,182,.88);
+}
+.llc-menu-item.llc-menu-accent-green{
+  border-color:#3ecf6a;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(34,160,90,.78);
+}
+.llc-menu-item.llc-menu-accent-green:hover:not(:disabled){
+  border-color:#6ee7a0;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(46,190,110,.88);
+}
+.llc-menu-item.llc-menu-accent-blue{
+  border-color:#3b8fff;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(37,99,200,.78);
+}
+.llc-menu-item.llc-menu-accent-blue:hover:not(:disabled){
+  border-color:#7eb6ff;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(59,130,246,.88);
+}
+.llc-menu-item.llc-menu-accent-sky{
+  border-color:#4ec4e8;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(14,140,180,.76);
+}
+.llc-menu-item.llc-menu-accent-sky:hover:not(:disabled){
+  border-color:#8adcf5;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(34,170,210,.86);
+}
+.llc-menu-item.llc-menu-accent-purple{
+  border-color:#a78bfa;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(109,70,196,.78);
+}
+.llc-menu-item.llc-menu-accent-purple:hover:not(:disabled){
+  border-color:#c4b5fd;
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(139,92,246,.88);
+}
 .llc-menu-item-body{display:flex;flex-direction:column;justify-content:center;min-width:0;position:relative;z-index:1}
 .llc-menu-item-title{
   position:relative;padding-left:18px;font-weight:500;font-size:16px;line-height:1.55;letter-spacing:.06em;color:#fff}

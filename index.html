@@ -38,7 +38,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=33">
+<link rel="stylesheet" href="client/css/shell-all.css?v=34">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=16">
 
@@ -123,7 +123,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <button class="btn-out" id="btn-auth-skip-reconnect" type="button" hidden data-i18n="auth.skipReconnect">Leave match &amp; continue</button>
       </div>
       <div class="llc-menu-list auth-guest-menu" id="auth-guest-menu" hidden>
-        <button class="llc-menu-item llc-menu-hover" id="btn-auth-unranked" type="button">
+        <button class="llc-menu-item llc-menu-hover llc-menu-accent-green" id="btn-auth-unranked" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="auth.unranked.title">Unranked Play</span>
             <span class="llc-menu-item-sub" data-i18n="auth.unranked.sub">Rooms, friends, or practice vs CPU</span>
@@ -135,7 +135,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <span class="llc-menu-item-sub" data-i18n="auth.tournament.sub">Coming Soon</span>
           </span>
         </button>
-        <button class="llc-menu-item llc-menu-hover" id="btn-auth-deck-experiment" type="button">
+        <button class="llc-menu-item llc-menu-hover llc-menu-accent-blue" id="btn-auth-deck-experiment" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="auth.deckExperiment.title">Deck Experiment</span>
             <span class="llc-menu-item-sub" data-i18n="auth.deckExperiment.sub">Build with every card — Free only, unranked</span>
@@ -148,13 +148,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </span>
         </button>
         <div class="llc-menu-row">
-          <button class="llc-menu-item llc-menu-hover" id="btn-auth-debug-replay" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-purple" id="btn-auth-debug-replay" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="auth.replay.title">Replay Viewer</span>
               <span class="llc-menu-item-sub" data-i18n="auth.replay.sub">Load a saved match replay and watch it in realtime</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover" id="btn-auth-tutorial" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-purple" id="btn-auth-tutorial" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="auth.tutorial.title">How to Play</span>
               <span class="llc-menu-item-sub" data-i18n="auth.tutorial.sub">Interactive rules walkthrough</span>
@@ -582,19 +582,19 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       <div class="hub-stat" id="hub-rank"></div>
       <div class="llc-menu-list">
         <div class="llc-menu-row llc-menu-row--collect">
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide" id="btn-hub-booster" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide llc-menu-accent-pink" id="btn-hub-booster" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.booster.title">Open Boosters</span>
               <span class="llc-menu-item-sub" data-i18n="hub.booster.sub">Open card booster packs</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-sticker" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-pink" id="btn-hub-sticker" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Shop</span>
               <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-sleeve-shop" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-pink" id="btn-hub-sleeve-shop" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.sleeveShop.title">Sleeve Shop</span>
               <span class="llc-menu-item-sub" data-i18n="hub.sleeveShop.sub">Spend Coins on card sleeves</span>
@@ -602,39 +602,39 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </button>
         </div>
         <div class="llc-menu-row">
-          <button class="llc-menu-item llc-menu-hover" id="btn-hub-ranked" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-green" id="btn-hub-ranked" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.ranked.title">Ranked PvP</span>
               <span class="llc-menu-item-sub" data-i18n="hub.ranked.sub">Climb ELO in matchmade games</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover" id="btn-hub-unranked" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-green" id="btn-hub-unranked" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.unranked.title">Unranked Play</span>
               <span class="llc-menu-item-sub" data-i18n="hub.unranked.sub">Rooms, friends, or practice vs CPU</span>
             </span>
           </button>
         </div>
-        <button class="llc-menu-item llc-menu-hover" id="btn-hub-leaderboard" type="button">
+        <button class="llc-menu-item llc-menu-hover llc-menu-accent-sky" id="btn-hub-leaderboard" type="button">
           <span class="llc-menu-item-body">
             <span class="llc-menu-item-title" data-i18n="hub.leaderboard.title">Leaderboard</span>
             <span class="llc-menu-item-sub" data-i18n="hub.leaderboard.sub">View the online rankings</span>
           </span>
         </button>
         <div class="llc-menu-row llc-menu-row--deck">
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide" id="btn-hub-deck" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--wide llc-menu-accent-blue" id="btn-hub-deck" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.deck.title">Deck Builder</span>
               <span class="llc-menu-item-sub" data-i18n="hub.deck.sub">Edit presets and ranked loadout</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow" id="btn-hub-deck-experiment" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-blue" id="btn-hub-deck-experiment" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.experiment.title">Deck Experiment</span>
               <span class="llc-menu-item-sub" data-i18n="hub.experiment.sub">Any card — Free only</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--tiny" id="btn-hub-card-list" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--tiny llc-menu-accent-blue" id="btn-hub-card-list" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.cardList.title">Card List</span>
               <span class="llc-menu-item-sub" data-i18n="hub.cardList.sub">Browse every card</span>
@@ -648,13 +648,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </span>
         </button>
         <div class="llc-menu-row">
-          <button class="llc-menu-item llc-menu-hover" id="btn-hub-replay" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-purple" id="btn-hub-replay" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.replay.title">Replay Viewer</span>
               <span class="llc-menu-item-sub" data-i18n="hub.replay.sub">Watch saved match replays from your library</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover" id="btn-hub-tutorial" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-accent-purple" id="btn-hub-tutorial" type="button">
             <span class="llc-menu-item-body">
               <span class="llc-menu-item-title" data-i18n="hub.tutorial.title">How to Play</span>
               <span class="llc-menu-item-sub" data-i18n="hub.tutorial.sub">Interactive rules walkthrough</span>
