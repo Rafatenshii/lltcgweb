@@ -5,7 +5,7 @@
   const DEFAULT_BACK = 'lltcg-back.png';
   const CONFORM_KEY = 'tcg_sleeve_conform';
 
-  /** @type {{ id: string, name: string, src: string, group?: string, idol?: string }[]} */
+  /** @type {{ id: string, name: string, src: string, group?: string, idol?: string, orientation?: string }[]} */
   let SLEEVE_CATALOG = [];
   let catalogLoadPromise = null;
 
@@ -150,10 +150,18 @@
     }
   }
 
+  function isLandscapeSleeve(sleeveOrId) {
+    const s = typeof sleeveOrId === 'string' ? getSleeve(sleeveOrId) : sleeveOrId;
+    return !!(s && String(s.orientation || '').toLowerCase() === 'landscape');
+  }
+
   function applySeatSleeve(root, seat, sleeveId) {
-    const url = sleeveImageUrl(sleeveId);
+    const sleeve = getSleeve(sleeveId);
+    const url = sleeve && sleeve.src ? String(sleeve.src) : '';
     const has = !!url;
+    const landscape = has && isLandscapeSleeve(sleeve);
     root.classList.toggle('has-' + seat + '-sleeve', has);
+    root.classList.toggle('has-' + seat + '-sleeve-landscape', landscape);
     if (has) {
       root.style.setProperty('--' + seat + '-sleeve-image', cssImageUrl(url));
     } else {
@@ -163,7 +171,7 @@
 
   function clearMatchSleeves(root) {
     if (!root) return;
-    root.classList.remove('has-my-sleeve', 'has-opp-sleeve');
+    root.classList.remove('has-my-sleeve', 'has-opp-sleeve', 'has-my-sleeve-landscape', 'has-opp-sleeve-landscape');
     root.style.removeProperty('--my-sleeve-image');
     root.style.removeProperty('--opp-sleeve-image');
   }
@@ -190,6 +198,7 @@
     thumb.className = 'deck-sleeve-tile__art';
     if (sleeve && sleeve.src) {
       thumb.style.backgroundImage = cssImageUrl(sleeve.src);
+      if (isLandscapeSleeve(sleeve)) thumb.classList.add('is-landscape');
     } else {
       thumb.classList.add('deck-sleeve-tile__art--none');
       thumb.style.backgroundImage = cssImageUrl(DEFAULT_BACK);
@@ -255,6 +264,9 @@
             src: String(row.src || ''),
             group: String(row.group || ''),
             idol: String(row.idol || ''),
+            orientation: String(row.orientation || 'portrait').toLowerCase() === 'landscape'
+              ? 'landscape'
+              : 'portrait',
           }))
           .filter((s) => s.id && s.src);
         global.LLTCG_SLEEVES.catalog = SLEEVE_CATALOG;
@@ -296,6 +308,7 @@
       if (back) back.style.backgroundImage = cssImageUrl(DEFAULT_BACK);
       if (sleeveEl) {
         sleeveEl.style.backgroundImage = cssImageUrl(sleeve.src);
+        sleeveEl.classList.toggle('is-landscape', isLandscapeSleeve(sleeve));
         sleeveEl.classList.remove('is-in');
       }
       overlay.classList.add('is-open');
@@ -319,6 +332,7 @@
     normalize: normalizeSleeveId,
     get: getSleeve,
     imageUrl: sleeveImageUrl,
+    isLandscape: isLandscapeSleeve,
     displayName: formatSleeveDisplayName,
     applyMatchSleeves,
     clearMatchSleeves,

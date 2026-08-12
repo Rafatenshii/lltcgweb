@@ -57,11 +57,16 @@ function tcgLoadSleeveCatalog(): array {
         if ($id === '') {
             continue;
         }
+        $orient = strtolower(trim((string)($row['orientation'] ?? 'portrait')));
+        if ($orient !== 'landscape') {
+            $orient = 'portrait';
+        }
         $out[] = [
             'id' => $id,
             'name' => tcgSleeveDisplayName((string)($row['name'] ?? $id)),
             'group' => (string)($row['group'] ?? 'Other'),
             'idol' => (string)($row['idol'] ?? 'Other'),
+            'orientation' => $orient,
             'src' => (string)($row['src'] ?? ('assets/sleeves/' . $id . '.webp')),
         ];
     }

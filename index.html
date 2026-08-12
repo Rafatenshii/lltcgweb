@@ -2244,7 +2244,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/news.js?v=23"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=32"></script>
-<script src="client/js/sleeves.js?v=4"></script>
+<script src="client/js/sleeves.js?v=5"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -5851,7 +5851,7 @@ function clearSleeveShopHover() {
   if (panel) panel.classList.remove('has-preview');
   if (img) {
     img.removeAttribute('src');
-    img.classList.remove('show', 'is-unit');
+    img.classList.remove('show', 'is-unit', 'is-landscape');
   }
 }
 
@@ -5863,6 +5863,7 @@ function showSleeveShopHover(src, opts) {
     return;
   }
   img.classList.toggle('is-unit', !!(opts && opts.unit));
+  img.classList.toggle('is-landscape', !!(opts && opts.landscape));
   img.src = src;
   img.classList.add('show');
   panel.classList.add('has-preview');
@@ -6010,13 +6011,16 @@ function renderSleeveShopGrid(sleeves) {
     const art = document.createElement('div');
     art.className = 'sleeve-shop-tile__art';
     const src = String(s.src || '');
+    const landscape = String(s.orientation || '').toLowerCase() === 'landscape'
+      || !!(window.LLTCG_SLEEVES && LLTCG_SLEEVES.isLandscape && LLTCG_SLEEVES.isLandscape(s.id));
+    if (landscape) art.classList.add('is-landscape');
     art.style.backgroundImage = 'url("' + src.replace(/"/g, '\\"') + '")';
     art.tabIndex = 0;
     art.setAttribute('role', 'img');
     art.setAttribute('aria-label', sleeveShopDisplayName(s));
-    art.addEventListener('mouseenter', () => showSleeveShopHover(src));
+    art.addEventListener('mouseenter', () => showSleeveShopHover(src, { landscape }));
     art.addEventListener('mouseleave', () => clearSleeveShopHover());
-    art.addEventListener('focus', () => showSleeveShopHover(src));
+    art.addEventListener('focus', () => showSleeveShopHover(src, { landscape }));
     art.addEventListener('blur', () => clearSleeveShopHover());
     const label = document.createElement('div');
     label.className = 'sleeve-shop-tile__name';

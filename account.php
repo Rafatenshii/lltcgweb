@@ -2160,6 +2160,7 @@ function tcgApiSleeveShopCatalog(array $body): array {
             'id' => $sleeve['id'],
             'name' => $sleeve['name'],
             'src' => $sleeve['src'],
+            'orientation' => ($sleeve['orientation'] ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait',
             'owned' => isset($owned[$sleeve['id']]),
             'price' => TCG_SLEEVE_SHOP_PRICE,
         ];
