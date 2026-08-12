@@ -6230,22 +6230,39 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 .experiment-pwd-row .btn-out{
   flex:0 0 auto;width:auto;min-width:0;padding:10px 12px;font-size:12px;white-space:nowrap;
 }
-#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__import-search{
-  flex:1 1 100%;
+#screen-deck .deck-builder-meta__experiment-pwd{
+  flex:0 1 148px;
+  width:148px;
+  max-width:168px;
+  min-width:120px;
+}
+#screen-deck .deck-builder-meta__experiment-pwd .experiment-pwd-row input{
   width:100%;
+  max-width:100%;
+}
+#screen-deck .deck-builder-meta__experiment-pwd .experiment-pwd-row .btn-out{
+  padding:8px 10px;
+}
+#screen-deck .deck-builder-meta__experiment-pwd .experiment-pwd-active{
+  margin-top:6px;
+}
+#screen-deck .deck-builder-meta__experiment-decklog{
+  flex:0 1 200px;
+  width:200px;
+  max-width:220px;
+  min-width:150px;
+}
+#screen-deck .deck-builder-meta__experiment-decklog .experiment-pwd-row input{
+  width:100%;
+  max-width:100%;
+}
+#screen-deck .deck-builder-meta__experiment-decklog .deck-builder-hint--compact{
+  display:none;
+}
+#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__import-search{
+  flex:1 1 auto;
   flex-wrap:wrap;
-}
-#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__experiment{
-  flex:1 1 100%;min-width:0;
-}
-#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-meta__search{
-  flex:0 1 180px;
-  width:180px;
-  max-width:200px;
-  min-width:140px;
-}
-#screen-deck .deck-builder-meta.deck-experiment-meta .deck-builder-hint--compact{
-  margin-top:6px;margin-bottom:0;
+  min-width:min(300px,100%);
 }
 .experiment-pwd-active{margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.85)}
 .experiment-pwd-active code{font-size:12px;letter-spacing:.1em;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.35);color:#bae4ff}
@@ -6254,10 +6271,6 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 #screen-deck .deck-builder-meta__slots{
   flex:1 1 280px;
   min-width:min(280px,100%);
-}
-#screen-deck .deck-builder-meta__experiment{
-  flex:1 1 280px;
-  min-width:min(240px,100%);
 }
 #screen-deck .deck-builder-meta__account-decklog{
   flex:0 1 200px;
