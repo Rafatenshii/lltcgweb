@@ -493,7 +493,20 @@
       "coinsAria": "Coins",
       "freeClaims": "Free picks: {n}",
       "owned": "Owned",
-      "claimFree": "Claim free"
+      "claimFree": "Claim free",
+      "hoverEmpty": "Hover a sleeve to preview",
+      "bdayName": "{name} Birthday Visual {year}",
+      "hgVolName": "Sleeve Collection HG Vol.{vol}: {title}",
+      "series": {
+        "lovelive": "Love Live!",
+        "sunshine": "Love Live! Sunshine!!",
+        "nijigasaki": "Love Live! Nijigasaki High School Idol Club",
+        "superstar": "Love Live! Superstar!!",
+        "hasunosora": "Love Live! Hasunosora Girls' High School Idol Club",
+        "hasunosoraShort": "Hasunosora Girls' High School Idol Club",
+        "muse": "µ's",
+        "sukufesuThanks": "Sukufesu Series Thanksgiving"
+      }
     },
     "cardList": {
       "title": "Card List",
@@ -1750,7 +1763,20 @@
       "coinsAria": "コイン",
       "freeClaims": "無料選択: {n}",
       "owned": "所持済み",
-      "claimFree": "無料で獲得"
+      "claimFree": "無料で獲得",
+      "hoverEmpty": "スリーブにカーソルを合わせてプレビュー",
+      "bdayName": "{name} バースデービジュアル {year}",
+      "hgVolName": "スリーブコレクション HG Vol.{vol}: {title}",
+      "series": {
+        "lovelive": "ラブライブ！",
+        "sunshine": "ラブライブ！サンシャイン!!",
+        "nijigasaki": "ラブライブ！虹ヶ咲学園スクールアイドル同好会",
+        "superstar": "ラブライブ！スーパースター!!",
+        "hasunosora": "ラブライブ！蓮ノ空女学院スクールアイドルクラブ",
+        "hasunosoraShort": "蓮ノ空女学院スクールアイドルクラブ",
+        "muse": "μ's",
+        "sukufesuThanks": "スクフェスシリーズ感謝祭"
+      }
     },
     "cardList": {
       "title": "カードリスト",
@@ -3782,7 +3808,20 @@
       "coinsAria": "Monedas",
       "freeClaims": "Elecciones gratis: {n}",
       "owned": "En posesión",
-      "claimFree": "Canjear gratis"
+      "claimFree": "Canjear gratis",
+      "hoverEmpty": "Pasa el cursor sobre una funda para previsualizar",
+      "bdayName": "Visual de cumpleaños de {name} {year}",
+      "hgVolName": "Colección de fundas HG Vol.{vol}: {title}",
+      "series": {
+        "lovelive": "Love Live!",
+        "sunshine": "Love Live! Sunshine!!",
+        "nijigasaki": "Love Live! Nijigasaki High School Idol Club",
+        "superstar": "Love Live! Superstar!!",
+        "hasunosora": "Love Live! Hasunosora Girls' High School Idol Club",
+        "hasunosoraShort": "Hasunosora Girls' High School Idol Club",
+        "muse": "µ's",
+        "sukufesuThanks": "Agradecimiento serie Sukufesu"
+      }
     },
     "cardList": {
       "title": "Lista de cartas",
@@ -5067,7 +5106,20 @@
       "coinsAria": "코인",
       "freeClaims": "무료 선택: {n}",
       "owned": "보유 중",
-      "claimFree": "무료 받기"
+      "claimFree": "무료 받기",
+      "hoverEmpty": "슬리브에 마우스를 올리면 미리보기",
+      "bdayName": "{name} 버스데이 비주얼 {year}",
+      "hgVolName": "슬리브 컬렉션 HG Vol.{vol}: {title}",
+      "series": {
+        "lovelive": "러브라이브!",
+        "sunshine": "러브라이브! 선샤인!!",
+        "nijigasaki": "러브라이브! 니지가사키 학원 스쿨 아이돌 동호회",
+        "superstar": "러브라이브! 슈퍼스타!!",
+        "hasunosora": "러브라이브! 하스노소라 여학원 스쿨 아이돌 클럽",
+        "hasunosoraShort": "하스노소라 여학원 스쿨 아이돌 클럽",
+        "muse": "μ's",
+        "sukufesuThanks": "스쿠페스 시리즈 감사제"
+      }
     },
     "cardList": {
       "title": "카드 목록",
@@ -6353,7 +6405,20 @@
       "coinsAria": "金币",
       "freeClaims": "免费次数：{n}",
       "owned": "已拥有",
-      "claimFree": "免费领取"
+      "claimFree": "免费领取",
+      "hoverEmpty": "将鼠标移到卡套上预览",
+      "bdayName": "{name} 生日视觉 {year}",
+      "hgVolName": "卡套收藏 HG Vol.{vol}：{title}",
+      "series": {
+        "lovelive": "Love Live!",
+        "sunshine": "Love Live! Sunshine!!",
+        "nijigasaki": "Love Live! 虹咲学园学园偶像同好会",
+        "superstar": "Love Live! Superstar!!",
+        "hasunosora": "Love Live! 莲之空女学院学园偶像俱乐部",
+        "hasunosoraShort": "莲之空女学院学园偶像俱乐部",
+        "muse": "μ's",
+        "sukufesuThanks": "学园偶像祭系列感谢祭"
+      }
     },
     "cardList": {
       "title": "卡牌一览",
@@ -7615,7 +7680,20 @@
       "coinsAria": "เหรียญ",
       "freeClaims": "เลือกฟรี: {n}",
       "owned": "มีแล้ว",
-      "claimFree": "รับฟรี"
+      "claimFree": "รับฟรี",
+      "hoverEmpty": "ชี้ที่ซองเพื่อดูตัวอย่าง",
+      "bdayName": "วิชวลวันเกิด {name} {year}",
+      "hgVolName": "คอลเลกชันซอง HG Vol.{vol}: {title}",
+      "series": {
+        "lovelive": "Love Live!",
+        "sunshine": "Love Live! Sunshine!!",
+        "nijigasaki": "Love Live! Nijigasaki High School Idol Club",
+        "superstar": "Love Live! Superstar!!",
+        "hasunosora": "Love Live! Hasunosora Girls' High School Idol Club",
+        "hasunosoraShort": "Hasunosora Girls' High School Idol Club",
+        "muse": "µ's",
+        "sukufesuThanks": "Sukufesu Series Thanksgiving"
+      }
     },
     "cardList": {
       "title": "รายการการ์ด",
@@ -7666,6 +7744,18 @@
     loc.sleeveShop.freeClaims = loc.sleeveShop.freeClaims || 'Free picks: {n}';
     loc.sleeveShop.owned = loc.sleeveShop.owned || 'Owned';
     loc.sleeveShop.claimFree = loc.sleeveShop.claimFree || 'Claim free';
+    loc.sleeveShop.hoverEmpty = loc.sleeveShop.hoverEmpty || 'Hover a sleeve to preview';
+    loc.sleeveShop.bdayName = loc.sleeveShop.bdayName || '{name} Birthday Visual {year}';
+    loc.sleeveShop.hgVolName = loc.sleeveShop.hgVolName || 'Sleeve Collection HG Vol.{vol}: {title}';
+    loc.sleeveShop.series = loc.sleeveShop.series || {};
+    loc.sleeveShop.series.lovelive = loc.sleeveShop.series.lovelive || 'Love Live!';
+    loc.sleeveShop.series.sunshine = loc.sleeveShop.series.sunshine || 'Love Live! Sunshine!!';
+    loc.sleeveShop.series.nijigasaki = loc.sleeveShop.series.nijigasaki || 'Love Live! Nijigasaki High School Idol Club';
+    loc.sleeveShop.series.superstar = loc.sleeveShop.series.superstar || 'Love Live! Superstar!!';
+    loc.sleeveShop.series.hasunosora = loc.sleeveShop.series.hasunosora || "Love Live! Hasunosora Girls' High School Idol Club";
+    loc.sleeveShop.series.hasunosoraShort = loc.sleeveShop.series.hasunosoraShort || "Hasunosora Girls' High School Idol Club";
+    loc.sleeveShop.series.muse = loc.sleeveShop.series.muse || "µ's";
+    loc.sleeveShop.series.sukufesuThanks = loc.sleeveShop.series.sukufesuThanks || 'Sukufesu Series Thanksgiving';
     loc.hub.cardList = loc.hub.cardList || {};
     loc.hub.cardList.title = loc.hub.cardList.title || (loc.cardList && loc.cardList.title) || 'Card List';
     loc.hub.cardList.sub = loc.hub.cardList.sub || (loc.cardList && loc.cardList.hubSub) || 'Browse every card';

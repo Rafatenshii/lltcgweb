@@ -28,6 +28,83 @@
     return s.replace(/^[\s\-:]+|[\s\-:]+$/g, '');
   }
 
+  function tSleeve(key, fallback, vars) {
+    const tFn = typeof global.t === 'function' ? global.t : null;
+    if (!tFn) return fallback;
+    const v = tFn(key, vars);
+    return (v && v !== key) ? v : fallback;
+  }
+
+  function localizeSleevePersonName(enName) {
+    const raw = String(enName || '').trim();
+    if (!raw) return raw;
+    const I18N = global.LLTCG_I18N;
+    if (I18N && typeof I18N.cardLocaleName === 'function') {
+      const loc = I18N.cardLocaleName({ name_en: raw, name: raw });
+      if (loc) return loc;
+    }
+    return raw;
+  }
+
+  function localizeSleeveSeriesTitle(title) {
+    let s = String(title || '');
+    const pairs = [
+      ['Love Live! Nijigasaki High School Idol Club', 'sleeveShop.series.nijigasaki'],
+      ['Love Live! Super Star!!', 'sleeveShop.series.superstar'],
+      ['Love Live! Superstar!!', 'sleeveShop.series.superstar'],
+      ['Love Live! Sunshine!!', 'sleeveShop.series.sunshine'],
+      ['Love Live! Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosora'],
+      ['Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosoraShort'],
+      ['Love Live!', 'sleeveShop.series.lovelive'],
+      ['Sukufesu Series Thanksgiving', 'sleeveShop.series.sukufesuThanks'],
+      ["Mu's", 'sleeveShop.series.muse'],
+      ["µ's", 'sleeveShop.series.muse'],
+      ["μ's", 'sleeveShop.series.muse'],
+    ];
+    pairs.forEach(([en, key]) => {
+      if (!s.includes(en)) return;
+      const rep = tSleeve(key, en);
+      s = s.split(en).join(rep);
+    });
+    s = s.replace(/(\s-\s)([A-Za-z][A-Za-z .''-]+?)(?=(\s+Part\.\d+)?(\s*\([^)]*\))?$)/, (_, dash, person) => {
+      return dash + localizeSleevePersonName(person.trim());
+    });
+    return s;
+  }
+
+  /** Localized sleeve catalog title for shop / deck picker. */
+  function formatSleeveDisplayName(sleeveOrName) {
+    const rawIn = typeof sleeveOrName === 'string'
+      ? sleeveOrName
+      : (sleeveOrName && (sleeveOrName.name || sleeveOrName.id)) || '';
+    const raw = cleanSleeveDisplayName(rawIn);
+    if (!raw) return '';
+
+    const bday = raw.match(/^(.+?)\s+Birthday Visual\s+(\d{4})$/i);
+    if (bday) {
+      const person = localizeSleevePersonName(bday[1].trim());
+      const year = bday[2];
+      return tSleeve(
+        'sleeveShop.bdayName',
+        person + ' Birthday Visual ' + year,
+        { name: person, year }
+      );
+    }
+
+    const hg = raw.match(/^Sleeve Collection HG Vol\.?\s*(\d+)\s*:?\s*(.+)$/i);
+    if (hg) {
+      const vol = hg[1];
+      const title = localizeSleeveSeriesTitle(hg[2].trim());
+      return tSleeve(
+        'sleeveShop.hgVolName',
+        'Sleeve Collection HG Vol.' + vol + ': ' + title,
+        { vol, title }
+      );
+    }
+
+    return localizeSleeveSeriesTitle(raw);
+  }
+
   function getSleeve(id) {
     const key = normalizeSleeveId(id);
     if (!key) return null;
@@ -121,7 +198,7 @@
     label.className = 'deck-sleeve-tile__label';
     const tFn = typeof global.t === 'function' ? global.t : null;
     label.textContent = sleeve
-      ? sleeve.name
+      ? formatSleeveDisplayName(sleeve)
       : ((tFn && tFn('deck.sleeveNone')) || 'None');
     btn.appendChild(thumb);
     btn.appendChild(label);
@@ -242,6 +319,7 @@
     normalize: normalizeSleeveId,
     get: getSleeve,
     imageUrl: sleeveImageUrl,
+    displayName: formatSleeveDisplayName,
     applyMatchSleeves,
     clearMatchSleeves,
     renderPicker: renderDeckSleevePicker,

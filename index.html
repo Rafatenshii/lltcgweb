@@ -40,7 +40,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=31">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=6">
+<link rel="stylesheet" href="client/css/sleeves.css?v=7">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -880,7 +880,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       <div id="sleeve-shop-sleeves-view" hidden>
         <button class="btn-ghost" id="btn-sleeve-shop-chars-back" type="button" data-i18n="sleeveShop.backChars">← Characters</button>
         <p class="hub-stat" id="sleeve-shop-char-name"></p>
-        <div class="sleeve-shop-grid" id="sleeve-shop-grid"></div>
+        <div class="sleeve-shop-browse">
+          <aside class="sleeve-shop-hover-panel card-hover-panel" id="sleeve-shop-hover-panel" aria-live="polite">
+            <p class="hc-empty" id="ssh-empty" data-i18n="sleeveShop.hoverEmpty">Hover a sleeve to preview</p>
+            <img class="hc-img" id="ssh-img" src="" alt="" onerror="this.classList.remove('show')">
+          </aside>
+          <div class="sleeve-shop-grid" id="sleeve-shop-grid"></div>
+        </div>
       </div>
       <p class="lerr" id="sleeve-shop-err"></p>
     </div>
@@ -2230,13 +2236,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=110"></script>
+<script src="i18n.js?v=111"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=23"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=32"></script>
-<script src="client/js/sleeves.js?v=3"></script>
+<script src="client/js/sleeves.js?v=4"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -5828,6 +5834,35 @@ function showSleeveShopCharsView() {
   if (sleevesView) sleevesView.hidden = true;
   if (chars) chars.hidden = false;
   _sleeveShopChar = null;
+  clearSleeveShopHover();
+}
+
+function sleeveShopDisplayName(sleeve) {
+  const fn = window.LLTCG_SLEEVES?.displayName;
+  if (typeof fn === 'function') return fn(sleeve);
+  return sleeve?.name || sleeve?.id || '';
+}
+
+function clearSleeveShopHover() {
+  const panel = el('sleeve-shop-hover-panel');
+  const img = el('ssh-img');
+  if (panel) panel.classList.remove('has-preview');
+  if (img) {
+    img.removeAttribute('src');
+    img.classList.remove('show');
+  }
+}
+
+function showSleeveShopHover(src) {
+  const panel = el('sleeve-shop-hover-panel');
+  const img = el('ssh-img');
+  if (!panel || !img || !src) {
+    clearSleeveShopHover();
+    return;
+  }
+  img.src = src;
+  img.classList.add('show');
+  panel.classList.add('has-preview');
 }
 
 async function loadSleeveShopScreen() {
@@ -5956,6 +5991,7 @@ function renderSleeveShopGrid(sleeves) {
   const grid = el('sleeve-shop-grid');
   if (!grid) return;
   grid.replaceChildren();
+  clearSleeveShopHover();
   const price = Number(A.sleeveShopPrice || 1000);
   const free = Number(A.freeSleeveClaims || 0);
   (sleeves || []).forEach((s) => {
@@ -5963,10 +5999,18 @@ function renderSleeveShopGrid(sleeves) {
     tile.className = 'sleeve-shop-tile' + (s.owned ? ' is-owned' : '');
     const art = document.createElement('div');
     art.className = 'sleeve-shop-tile__art';
-    art.style.backgroundImage = 'url("' + String(s.src || '').replace(/"/g, '\\"') + '")';
+    const src = String(s.src || '');
+    art.style.backgroundImage = 'url("' + src.replace(/"/g, '\\"') + '")';
+    art.tabIndex = 0;
+    art.setAttribute('role', 'img');
+    art.setAttribute('aria-label', sleeveShopDisplayName(s));
+    art.addEventListener('mouseenter', () => showSleeveShopHover(src));
+    art.addEventListener('mouseleave', () => clearSleeveShopHover());
+    art.addEventListener('focus', () => showSleeveShopHover(src));
+    art.addEventListener('blur', () => clearSleeveShopHover());
     const label = document.createElement('div');
     label.className = 'sleeve-shop-tile__name';
-    label.textContent = s.name || s.id;
+    label.textContent = sleeveShopDisplayName(s);
     const actions = document.createElement('div');
     actions.className = 'sleeve-shop-tile__actions';
     if (s.owned) {
@@ -14744,8 +14788,21 @@ async function bootApp() {
   on('btn-hub-booster', 'click', loadBoosterScreen);
   on('btn-hub-sticker', 'click', loadStickerShopScreen);
   on('btn-hub-sleeve-shop', 'click', () => { void loadSleeveShopScreen(); });
-  on('btn-sleeve-shop-back', 'click', () => enterHub(A.profile));
+  on('btn-sleeve-shop-back', 'click', () => { clearSleeveShopHover(); enterHub(A.profile); });
   on('btn-sleeve-shop-chars-back', 'click', showSleeveShopCharsView);
+  if (window.LLTCG_I18N && typeof window.LLTCG_I18N.onLocaleChange === 'function') {
+    window.LLTCG_I18N.onLocaleChange(() => {
+      if (_sleeveShopChar && el('sleeve-shop-sleeves-view') && !el('sleeve-shop-sleeves-view').hidden) {
+        renderSleeveShopGrid(_sleeveShopChar.sleeves || []);
+      }
+      try {
+        const picker = el('deck-sleeve-picker');
+        if (picker && !el('screen-deck')?.hidden) {
+          window.LLTCG_SLEEVES?.renderPicker?.(A.deckSleeveId || '', null);
+        }
+      } catch (e) { /* ignore */ }
+    });
+  }
   on('btn-hub-card-list', 'click', () => { void openCardListScreen(); });
   on('btn-card-list-back', 'click', () => enterHub(A.profile));
   on('btn-hub-deck', 'click', openDeckBuilder);
