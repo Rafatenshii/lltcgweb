@@ -4,17 +4,17 @@
  */
 require_once __DIR__ . '/db.php';
 
-const TCG_SLEEVE_SHOP_PRICE = 100;
+const TCG_SLEEVE_SHOP_PRICE = 1000;
 
 /** @var array{win: int, loss: int} */
-const TCG_COIN_PVP = ['win' => 20, 'loss' => 10];
+const TCG_COIN_PVP = ['win' => 200, 'loss' => 100];
 
 /** @var array<string, array{win: int, loss: int}> */
 const TCG_COIN_CPU = [
-    'easy' => ['win' => 8, 'loss' => 4],
-    'normal' => ['win' => 10, 'loss' => 5],
-    'hard' => ['win' => 12, 'loss' => 6],
-    'expert' => ['win' => 14, 'loss' => 7],
+    'easy' => ['win' => 80, 'loss' => 40],
+    'normal' => ['win' => 100, 'loss' => 50],
+    'hard' => ['win' => 120, 'loss' => 60],
+    'expert' => ['win' => 140, 'loss' => 70],
 ];
 
 function tcgGetCoins(string $discordId): int {

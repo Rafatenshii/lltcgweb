@@ -2415,7 +2415,7 @@ const A = {
   starGems: 0,
   coins: 0,
   freeSleeveClaims: 0,
-  sleeveShopPrice: 100,
+  sleeveShopPrice: 1000,
   ownedSleeves: [],
   sleevesNeedIntro: [],
   seals: { n: 0, r: 0, p: 0, sec: 0, pr: 0 },
@@ -2547,7 +2547,7 @@ function syncCoinsFromProfile(me) {
   if (!me) return;
   A.coins = Number(me.coins ?? A.coins ?? 0) || 0;
   A.freeSleeveClaims = Number(me.free_sleeve_claims ?? A.freeSleeveClaims ?? 0) || 0;
-  A.sleeveShopPrice = Number(me.sleeve_shop_price ?? A.sleeveShopPrice ?? 100) || 100;
+  A.sleeveShopPrice = Number(me.sleeve_shop_price ?? A.sleeveShopPrice ?? 1000) || 1000;
   if (Array.isArray(me.owned_sleeves)) A.ownedSleeves = me.owned_sleeves.slice();
   else if (!Array.isArray(A.ownedSleeves)) A.ownedSleeves = [];
   if (Array.isArray(me.sleeves_need_intro)) A.sleevesNeedIntro = me.sleeves_need_intro.slice();
@@ -5916,7 +5916,7 @@ function renderSleeveShopGrid(sleeves) {
   const grid = el('sleeve-shop-grid');
   if (!grid) return;
   grid.replaceChildren();
-  const price = Number(A.sleeveShopPrice || 100);
+  const price = Number(A.sleeveShopPrice || 1000);
   const free = Number(A.freeSleeveClaims || 0);
   (sleeves || []).forEach((s) => {
     const tile = document.createElement('div');
