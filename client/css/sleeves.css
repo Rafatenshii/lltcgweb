@@ -85,12 +85,10 @@ html.sleeve-conform #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card{
   border-radius:inherit;
 }
 
-/* ── Face-up peek: semi-transparent square sleeve border around the card ── */
+/* ── Face-up peek: hand only (rim). Stage/live stay plain face-up —
+   peek ::before + child z-index overrides broke slot sizing / visibility. */
 html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard,
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot,
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard{
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card{
   overflow:visible;
 }
 
@@ -125,77 +123,17 @@ html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-
   background-image:var(--opp-sleeve-image);
 }
 
-/* Draw-flip / stage-flip rotate an inner 3D node only — peek on the outer
-   wrapper would stay put (looks like a translucent sleeve shard mid-flip). */
+/* Draw-flip rotates .hand-flip-inner only — peek on .hcard would stay put. */
 html:not(.sleeve-conform) #screen-game .my-hand-strip .hcard.hand-draw-flip::after,
 html:not(.sleeve-conform) #screen-game .opp-hand-strip .opp-hand-card.hand-draw-flip::after,
 html:not(.sleeve-conform) #screen-game .my-hand-strip .hcard.hand-draw-flip::before,
-html:not(.sleeve-conform) #screen-game .opp-hand-strip .opp-hand-card.hand-draw-flip::before,
-html:not(.sleeve-conform) #screen-game .my-mat .mslot.stage-flip::before,
-html:not(.sleeve-conform) #screen-game .opp-mat .mslot.stage-flip::before,
-html:not(.sleeve-conform) #screen-game .my-mat .lcard.live-storage-flip::before,
-html:not(.sleeve-conform) #screen-game .opp-mat .lcard.live-storage-flip::before{
+html:not(.sleeve-conform) #screen-game .opp-hand-strip .opp-hand-card.hand-draw-flip::before{
   content:none !important;
   display:none !important;
 }
 
-/* Stage / live: rim-only peek around the slot.
-   Stage art uses object-fit:contain — a full-bleed ::behind the img showed the
-   sleeve through letterbox gaps (looked like a translucent sleeve over the front). */
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot::before,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard::before{
-  content:'';
-  position:absolute;
-  inset:calc(var(--sleeve-peek) * -1);
-  border-radius:var(--sleeve-square-radius);
-  z-index:0;
-  pointer-events:none;
-  opacity:var(--sleeve-peek-opacity);
-  background-position:center;
-  background-size:cover;
-  background-repeat:no-repeat;
-  box-sizing:border-box;
-  padding:var(--sleeve-peek);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite:exclude;
-}
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before{
-  background-image:var(--my-sleeve-image);
-}
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot::before,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard::before{
-  background-image:var(--opp-sleeve-image);
-}
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot > *,
-html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard > *,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot > *,
-html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard > *{
-  position:relative;
-  z-index:1;
-}
-
-html.sleeve-conform #screen-game .mslot::before,
-html.sleeve-conform #screen-game .lcard::before,
 html.sleeve-conform #screen-game .hcard::after,
 html.sleeve-conform #screen-game .opp-hand-card::after{
-  content:none;
-  display:none;
-}
-
-/* Empty / face-down slots should not show a floating peek square. */
-#screen-game.has-my-sleeve .my-mat .mslot:empty::before,
-#screen-game.has-opp-sleeve .opp-mat .mslot:empty::before,
-#screen-game.has-my-sleeve .my-mat .lcard:empty::before,
-#screen-game.has-opp-sleeve .opp-mat .lcard:empty::before{
   content:none;
   display:none;
 }
