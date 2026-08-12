@@ -12,33 +12,59 @@
   --opp-sleeve-image:var(--card-back-default);
 }
 
-/* ── Face-down: sleeve art replaces the official back ── */
+/* ── Face-down: sleeve art replaces the official back ──
+   Use full `background` + !important so shorthand `background:url(lltcg-back…)`
+   rules in shell-all cannot win on deck stacks / flip backs. */
+html.has-my-sleeve #screen-game .my-mat .card-back-fill,
+html.has-my-sleeve #screen-game .my-mat .back.live-back,
+html.has-my-sleeve #screen-game .my-mat .live-flip-back,
+html.has-my-sleeve #screen-game .my-mat .deck-pile:not(.wr-pile) .deck-stack,
+html.has-my-sleeve #screen-game .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
+html.has-my-sleeve #screen-game .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
+html.has-my-sleeve #screen-game .my-hand-strip .hand-flip-back,
+html.has-my-sleeve #screen-game .my-hand-strip .hand-flip-back .card-back-fill,
+html.has-my-sleeve #screen-game .my-hand-strip .back.live-back,
+html.has-my-sleeve #perf-col-mine .perf-deck-pile,
+html.has-my-sleeve #perf-col-mine .perf-card .back,
+html.has-my-sleeve #perf-col-mine .perf-card .back.live-back,
+html.has-my-sleeve #card-flight-layer .card-flight.flight-seat-my .card-back-fill,
+html.has-my-sleeve #card-flight-layer .card-flight.flight-seat-my .back.live-back,
 #screen-game.has-my-sleeve .my-mat .card-back-fill,
 #screen-game.has-my-sleeve .my-mat .back.live-back,
+#screen-game.has-my-sleeve .my-mat .live-flip-back,
 #screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack,
 #screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
 #screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
 #screen-game.has-my-sleeve .my-hand-strip .hand-flip-back,
 #screen-game.has-my-sleeve .my-hand-strip .hand-flip-back .card-back-fill,
 #screen-game.has-my-sleeve .my-hand-strip .back.live-back{
-  background-image:var(--my-sleeve-image);
-  background-position:center;
-  background-size:cover;
-  background-repeat:no-repeat;
+  background:var(--my-sleeve-image) center/cover no-repeat !important;
 }
 
+html.has-opp-sleeve #screen-game .opp-mat .card-back-fill,
+html.has-opp-sleeve #screen-game .opp-mat .back.live-back,
+html.has-opp-sleeve #screen-game .opp-mat .live-flip-back,
+html.has-opp-sleeve #screen-game .opp-mat .deck-pile:not(.wr-pile) .deck-stack,
+html.has-opp-sleeve #screen-game .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
+html.has-opp-sleeve #screen-game .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
+html.has-opp-sleeve #screen-game .opp-hand-strip .opp-hand-card,
+html.has-opp-sleeve #screen-game .opp-hand-strip .card-back-fill,
+html.has-opp-sleeve #screen-game .opp-hand-strip .back.live-back,
+html.has-opp-sleeve #perf-col-opp .perf-deck-pile,
+html.has-opp-sleeve #perf-col-opp .perf-card .back,
+html.has-opp-sleeve #perf-col-opp .perf-card .back.live-back,
+html.has-opp-sleeve #card-flight-layer .card-flight.flight-seat-opp .card-back-fill,
+html.has-opp-sleeve #card-flight-layer .card-flight.flight-seat-opp .back.live-back,
 #screen-game.has-opp-sleeve .opp-mat .card-back-fill,
 #screen-game.has-opp-sleeve .opp-mat .back.live-back,
+#screen-game.has-opp-sleeve .opp-mat .live-flip-back,
 #screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack,
 #screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
 #screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
 #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card,
 #screen-game.has-opp-sleeve .opp-hand-strip .card-back-fill,
 #screen-game.has-opp-sleeve .opp-hand-strip .back.live-back{
-  background-image:var(--opp-sleeve-image);
-  background-position:center;
-  background-size:cover;
-  background-repeat:no-repeat;
+  background:var(--opp-sleeve-image) center/cover no-repeat !important;
 }
 
 /* Square sleeve corners (default). Conform toggle restores card rounding. */

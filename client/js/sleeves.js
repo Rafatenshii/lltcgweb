@@ -216,9 +216,19 @@
     return SLEEVE_CATALOG.find((s) => s.id === key) || null;
   }
 
+  /** Prefer catalog src; fall back while catalog is still loading. */
+  function resolveSleeveSrc(id) {
+    const key = normalizeSleeveId(id);
+    if (!key) return '';
+    const s = getSleeve(key);
+    if (s && s.src) return String(s.src);
+    // Catalog not ready yet — optimistic path so deck backs aren't stuck on default.
+    if (!SLEEVE_CATALOG.length) return 'assets/sleeves/' + key + '.webp';
+    return '';
+  }
+
   function sleeveImageUrl(id) {
-    const s = getSleeve(id);
-    return s && s.src ? String(s.src) : '';
+    return resolveSleeveSrc(id);
   }
 
   function cssImageUrl(path) {
@@ -260,38 +270,65 @@
     return !!(s && String(s.orientation || '').toLowerCase() === 'landscape');
   }
 
-  function applySeatSleeve(root, seat, sleeveId) {
-    const sleeve = getSleeve(sleeveId);
-    const url = sleeve && sleeve.src ? String(sleeve.src) : '';
+  let lastMatchSleeveState = null;
+  let pendingCatalogReapply = false;
+
+  function applySeatSleeve(targets, seat, sleeveId) {
+    const id = normalizeSleeveId(sleeveId);
+    const sleeve = getSleeve(id);
+    const url = id ? resolveSleeveSrc(id) : '';
     const has = !!url;
-    const landscape = has && isLandscapeSleeve(sleeve);
-    root.classList.toggle('has-' + seat + '-sleeve', has);
-    root.classList.toggle('has-' + seat + '-sleeve-landscape', landscape);
-    if (has) {
-      root.style.setProperty('--' + seat + '-sleeve-image', cssImageUrl(url));
-    } else {
-      root.style.removeProperty('--' + seat + '-sleeve-image');
-    }
+    const landscape = has && isLandscapeSleeve(sleeve || id);
+    const list = Array.isArray(targets) ? targets : [targets];
+    list.forEach((root) => {
+      if (!root || !root.classList) return;
+      root.classList.toggle('has-' + seat + '-sleeve', has);
+      root.classList.toggle('has-' + seat + '-sleeve-landscape', landscape);
+      if (has) {
+        root.style.setProperty('--' + seat + '-sleeve-image', cssImageUrl(url));
+      } else {
+        root.style.removeProperty('--' + seat + '-sleeve-image');
+      }
+    });
   }
 
   function clearMatchSleeves(root) {
-    if (!root) return;
-    root.classList.remove('has-my-sleeve', 'has-opp-sleeve', 'has-my-sleeve-landscape', 'has-opp-sleeve-landscape');
-    root.style.removeProperty('--my-sleeve-image');
-    root.style.removeProperty('--opp-sleeve-image');
+    const targets = [document.documentElement, root].filter(Boolean);
+    targets.forEach((el) => {
+      el.classList.remove('has-my-sleeve', 'has-opp-sleeve', 'has-my-sleeve-landscape', 'has-opp-sleeve-landscape');
+      el.style.removeProperty('--my-sleeve-image');
+      el.style.removeProperty('--opp-sleeve-image');
+    });
   }
 
   function applyMatchSleeves(state) {
     const root = document.getElementById('screen-game');
-    if (!root) return;
+    const targets = [document.documentElement, root].filter(Boolean);
+    if (!targets.length) return;
     const myId = global.G && global.G.playerId;
     if (!state || !state.players || !myId) {
       clearMatchSleeves(root);
+      lastMatchSleeveState = null;
       return;
     }
+    lastMatchSleeveState = state;
     const oppId = myId === 'p1' ? 'p2' : 'p1';
-    applySeatSleeve(root, 'my', state.players[myId] && state.players[myId].sleeve_id);
-    applySeatSleeve(root, 'opp', state.players[oppId] && state.players[oppId].sleeve_id);
+    const mySleeve = state.players[myId] && state.players[myId].sleeve_id;
+    const oppSleeve = state.players[oppId] && state.players[oppId].sleeve_id;
+    applySeatSleeve(targets, 'my', mySleeve);
+    applySeatSleeve(targets, 'opp', oppSleeve);
+    // Catalog may still be loading on first paint — re-apply when items arrive.
+    const needsCatalog = [mySleeve, oppSleeve].some((raw) => {
+      const id = normalizeSleeveId(raw);
+      return id && !getSleeve(id);
+    });
+    if (needsCatalog && !pendingCatalogReapply) {
+      pendingCatalogReapply = true;
+      void loadCatalog().then(() => {
+        pendingCatalogReapply = false;
+        if (lastMatchSleeveState) applyMatchSleeves(lastMatchSleeveState);
+      });
+    }
   }
 
   function makeSleeveTile(id, selected, sleeve) {
@@ -375,6 +412,7 @@
           }))
           .filter((s) => s.id && s.src);
         global.LLTCG_SLEEVES.catalog = SLEEVE_CATALOG;
+        if (lastMatchSleeveState) applyMatchSleeves(lastMatchSleeveState);
       } catch (e) {
         /* keep empty */
       }
