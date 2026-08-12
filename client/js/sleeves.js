@@ -35,54 +35,118 @@
     return (v && v !== key) ? v : fallback;
   }
 
-  function localizeSleevePersonName(enName) {
-    const raw = String(enName || '').trim();
-    if (!raw) return raw;
+  function localizeIdolLabel(raw, form) {
+    const s = String(raw || '').trim();
+    if (!s) return s;
     const I18N = global.LLTCG_I18N;
-    if (I18N && typeof I18N.cardLocaleName === 'function') {
-      const loc = I18N.cardLocaleName({ name_en: raw, name: raw });
+    if (I18N && typeof I18N.idolLocaleName === 'function') {
+      const loc = I18N.idolLocaleName(s, { form: form === 'full' ? 'full' : 'given' });
       if (loc) return loc;
     }
-    return raw;
+    return s;
+  }
+
+  function localizeUnitLabel(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return s;
+    const I18N = global.LLTCG_I18N;
+    if (I18N && typeof I18N.unitLocaleName === 'function') {
+      const loc = I18N.unitLocaleName(s);
+      if (loc) return loc;
+    }
+    return s;
+  }
+
+  /** Localize one person / unit fragment (may contain &). Prefer full names in titles. */
+  function localizeSleevePersonName(raw, form) {
+    const s = String(raw || '').trim();
+    if (!s) return s;
+    const prefer = form === 'given' ? 'given' : 'full';
+    const parts = s.split(/\s*[&＆]\s*/);
+    if (parts.length > 1) {
+      return parts.map((p) => localizeIdolLabel(p.trim(), prefer) || p.trim()).filter(Boolean).join(' & ');
+    }
+    // Group / school labels inside 『』
+    const unitish = localizeUnitLabel(s);
+    if (unitish && unitish !== s) return unitish;
+    const seriesKey = ({
+      '蓮ノ空女学院': 'sleeveShop.series.hasunosoraSchool',
+      'ラブライブ！蓮ノ空女学院スクールアイドルクラブ': 'sleeveShop.series.hasunosora',
+      'ラブライブ！シリーズ': 'sleeveShop.series.loveliveSeries',
+    })[s];
+    if (seriesKey) return tSleeve(seriesKey, s);
+    return localizeIdolLabel(s, prefer) || s;
   }
 
   function localizeSleeveSeriesTitle(title) {
     let s = String(title || '');
     const pairs = [
       ['Love Live! Nijigasaki High School Idol Club', 'sleeveShop.series.nijigasaki'],
+      ['Love Live! Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosora'],
+      ['Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosoraShort'],
       ['Love Live! Super Star!!', 'sleeveShop.series.superstar'],
       ['Love Live! Superstar!!', 'sleeveShop.series.superstar'],
       ['Love Live! Sunshine!!', 'sleeveShop.series.sunshine'],
-      ['Love Live! Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosora'],
-      ['Hasunosora Girls\' High School Idol Club', 'sleeveShop.series.hasunosoraShort'],
+      ['ラブライブ！虹ヶ咲学園スクールアイドル同好会', 'sleeveShop.series.nijigasaki'],
+      ['ラブライブ！蓮ノ空女学院スクールアイドルクラブ', 'sleeveShop.series.hasunosora'],
+      ['蓮ノ空女学院スクールアイドルクラブ', 'sleeveShop.series.hasunosoraShort'],
+      ['ラブライブ！スーパースター!!', 'sleeveShop.series.superstar'],
+      ['ラブライブ！サンシャイン!!', 'sleeveShop.series.sunshine'],
+      ['ラブライブ！シリーズ', 'sleeveShop.series.loveliveSeries'],
+      ['Love Live! Series', 'sleeveShop.series.loveliveSeries'],
+      ['蓮ノ空女学院', 'sleeveShop.series.hasunosoraSchool'],
+      ['Hasunosora Girls\' High School', 'sleeveShop.series.hasunosoraSchool'],
       ['Love Live!', 'sleeveShop.series.lovelive'],
+      ['ラブライブ！', 'sleeveShop.series.lovelive'],
       ['Sukufesu Series Thanksgiving', 'sleeveShop.series.sukufesuThanks'],
+      ['スクフェスシリーズ感謝祭', 'sleeveShop.series.sukufesuThanks'],
       ["Mu's", 'sleeveShop.series.muse'],
       ["µ's", 'sleeveShop.series.muse'],
       ["μ's", 'sleeveShop.series.muse'],
     ];
+    pairs.sort((a, b) => b[0].length - a[0].length);
     pairs.forEach(([en, key]) => {
       if (!s.includes(en)) return;
       const rep = tSleeve(key, en);
       s = s.split(en).join(rep);
     });
+    // EN "Series - Person" / Part / pack notes
     s = s.replace(/(\s-\s)([A-Za-z][A-Za-z .''-]+?)(?=(\s+Part\.\d+)?(\s*\([^)]*\))?$)/, (_, dash, person) => {
-      return dash + localizeSleevePersonName(person.trim());
+      return dash + localizeSleevePersonName(person.trim(), 'full');
+    });
+    // JP 『name』 or 『a&b』 — keep corner brackets only for Japanese UI.
+    s = s.replace(/『([^』]+)』/g, (_, inner) => {
+      const person = localizeSleevePersonName(inner.trim(), 'full');
+      const loc = (global.LLTCG_I18N && typeof global.LLTCG_I18N.getLocale === 'function')
+        ? global.LLTCG_I18N.getLocale()
+        : 'en';
+      return loc === 'ja' ? ('『' + person + '』') : person;
     });
     return s;
   }
 
-  /** Localized sleeve catalog title for shop / deck picker. */
+  function stripRebirthVer(s) {
+    return String(s || '')
+      .replace(/\s*Reバース\s*ver\.?\s*$/i, '')
+      .replace(/\s*ReBirth\s*ver\.?\s*$/i, '')
+      .trim();
+  }
+
+  /** Localized sleeve catalog title for shop / deck picker. Future titles keep working via patterns. */
   function formatSleeveDisplayName(sleeveOrName) {
     const rawIn = typeof sleeveOrName === 'string'
       ? sleeveOrName
       : (sleeveOrName && (sleeveOrName.name || sleeveOrName.id)) || '';
-    const raw = cleanSleeveDisplayName(rawIn);
+    let raw = cleanSleeveDisplayName(rawIn);
     if (!raw) return '';
+
+    // Vendor prefixes (JP catalog leftovers)
+    raw = raw.replace(/^ブシロード\s*/u, '');
+    raw = raw.replace(/^Bushiroad\s*/i, '');
 
     const bday = raw.match(/^(.+?)\s+Birthday Visual\s+(\d{4})$/i);
     if (bday) {
-      const person = localizeSleevePersonName(bday[1].trim());
+      const person = localizeSleevePersonName(bday[1].trim(), 'full');
       const year = bday[2];
       return tSleeve(
         'sleeveShop.bdayName',
@@ -102,7 +166,48 @@
       );
     }
 
-    return localizeSleeveSeriesTitle(raw);
+    let rebirthSuffix = '';
+    const stripped = stripRebirthVer(raw);
+    if (stripped !== raw) {
+      rebirthSuffix = ' (' + tSleeve('sleeveShop.rebirthVer', 'ReBirth ver.') + ')';
+      raw = stripped;
+    }
+
+    const extraVol = raw.match(/^スリーブコレクション\s*エクストラ\s*Vol\.?\s*(\d+)\s*(.+)$/u)
+      || raw.match(/^Sleeve Collection Extra Vol\.?\s*(\d+)\s*:?\s*(.+)$/i);
+    if (extraVol) {
+      const vol = extraVol[1];
+      const title = localizeSleeveSeriesTitle(extraVol[2].trim());
+      return tSleeve(
+        'sleeveShop.extraVolName',
+        'Sleeve Collection Extra Vol.' + vol + ': ' + title,
+        { vol, title }
+      ) + rebirthSuffix;
+    }
+
+    const extra = raw.match(/^スリーブコレクション\s*エクストラ\s*(.+)$/u)
+      || raw.match(/^Sleeve Collection Extra\s*:?\s*(.+)$/i);
+    if (extra) {
+      const title = localizeSleeveSeriesTitle(extra[1].trim());
+      return tSleeve(
+        'sleeveShop.extraName',
+        'Sleeve Collection Extra: ' + title,
+        { title }
+      ) + rebirthSuffix;
+    }
+
+    const deluxe = raw.match(/^Reバース\s*for\s*you\s*スリーブ\s*&\s*カード\s*デラックスセット\s*(.+)$/u)
+      || raw.match(/^ReBirth\s*for\s*you\s*Sleeve\s*&\s*Card\s*Deluxe Set\s*:?\s*(.+)$/i);
+    if (deluxe) {
+      const title = localizeSleeveSeriesTitle(deluxe[1].trim());
+      return tSleeve(
+        'sleeveShop.rebirthDeluxeName',
+        'ReBirth for you Sleeve & Card Deluxe Set: ' + title,
+        { title }
+      ) + rebirthSuffix;
+    }
+
+    return localizeSleeveSeriesTitle(raw) + rebirthSuffix;
   }
 
   function getSleeve(id) {
@@ -334,6 +439,8 @@
     imageUrl: sleeveImageUrl,
     isLandscape: isLandscapeSleeve,
     displayName: formatSleeveDisplayName,
+    idolName: localizeIdolLabel,
+    unitName: localizeUnitLabel,
     applyMatchSleeves,
     clearMatchSleeves,
     renderPicker: renderDeckSleevePicker,

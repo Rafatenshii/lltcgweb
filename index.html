@@ -2238,13 +2238,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=111"></script>
+<script src="i18n.js?v=112"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=23"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=32"></script>
-<script src="client/js/sleeves.js?v=5"></script>
+<script src="client/js/sleeves.js?v=6"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -3331,6 +3331,12 @@ function localizeNameInputDefault() {
 function onLocaleChanged() {
   refreshDynamicI18n();
   if (typeof renderDeckSleevePickerUi === 'function') renderDeckSleevePickerUi();
+  if (el('screen-sleeve-shop')?.classList.contains('active') && _sleeveShopData) {
+    const gens = _sleeveShopData.generations || [];
+    renderSleeveShopGens(gens);
+    if (_sleeveShopChar) openSleeveShopCharacter(_sleeveShopChar);
+    else renderSleeveShopChars();
+  }
   localizeNameInputDefault();
   // Reload catalog trimmed to the active locale so card rules text stays in sync.
   void loadCards().then(() => {
@@ -5845,6 +5851,25 @@ function sleeveShopDisplayName(sleeve) {
   return sleeve?.name || sleeve?.id || '';
 }
 
+function sleeveShopIdolLabel(raw, form) {
+  if (typeof window.LLTCG_SLEEVES?.idolName === 'function') {
+    return window.LLTCG_SLEEVES.idolName(raw, form || 'given') || raw || '';
+  }
+  if (typeof window.LLTCG_I18N?.idolLocaleName === 'function') {
+    return window.LLTCG_I18N.idolLocaleName(raw, { form: form || 'given' }) || raw || '';
+  }
+  return raw || '';
+}
+
+function sleeveShopUnitLabel(raw) {
+  const fn = window.LLTCG_SLEEVES?.unitName || window.LLTCG_I18N?.unitLocaleName;
+  if (typeof fn === 'function') {
+    const v = fn(raw);
+    if (v) return v;
+  }
+  return raw || '';
+}
+
 function clearSleeveShopHover() {
   const panel = el('sleeve-shop-hover-panel');
   const img = el('ssh-img');
@@ -5934,7 +5959,7 @@ function renderSleeveShopGens(gens) {
     }
     const label = document.createElement('span');
     label.className = 'sleeve-shop-gen__label';
-    label.textContent = g.name || g.id;
+    label.textContent = sleeveShopUnitLabel(g.name || g.id);
     b.appendChild(label);
     b.onclick = () => {
       _sleeveShopGenId = g.id;
@@ -5959,7 +5984,9 @@ function renderSleeveShopChars() {
     b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '');
     const name = document.createElement('span');
     name.className = 'sleeve-shop-char__name';
-    name.textContent = isGroup ? (gen?.name || c.name || c.id) : (c.name || c.id);
+    name.textContent = isGroup
+      ? sleeveShopUnitLabel(gen?.name || c.name || c.id)
+      : sleeveShopIdolLabel(c.id || c.name, 'given');
     const img = document.createElement('img');
     img.className = 'sleeve-shop-char__icon' + (isGroup ? ' sleeve-shop-char__icon--unit' : '');
     img.src = isGroup
@@ -5994,7 +6021,11 @@ function openSleeveShopCharacter(character) {
   const nameEl = el('sleeve-shop-char-name');
   if (chars) chars.hidden = true;
   if (view) view.hidden = false;
-  if (nameEl) nameEl.textContent = character?.name || character?.id || '';
+  if (nameEl) {
+    nameEl.textContent = character?.is_group
+      ? sleeveShopUnitLabel(character?.name || character?.id)
+      : sleeveShopIdolLabel(character?.id || character?.name, 'given');
+  }
   renderSleeveShopGrid(character?.sleeves || []);
 }
 
