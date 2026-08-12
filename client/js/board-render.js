@@ -23,6 +23,7 @@ function renderGame(s, opts = {}) {
   const myId=G.playerId, oppId=myId==='p1'?'p2':'p1';
   const me=s.players[myId], opp=s.players[oppId];
   if(!me||!opp) return;
+  if (window.LLTCG_SLEEVES?.applyMatchSleeves) window.LLTCG_SLEEVES.applyMatchSleeves(s);
   syncPrepHandsChrome(s);
 
   // Names — spectators never see "You" for the bottom seat (perspective player).

@@ -4,6 +4,7 @@
  * Playable only in Free Mode (unranked). Password load stays open for sharing.
  */
 require_once __DIR__ . '/config/paths.php';
+require_once __DIR__ . '/sleeves.php';
 require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/game_mode.php';
 require_once __DIR__ . '/decklog_import.php';
@@ -140,17 +141,19 @@ function readExperimentDeckFile(string $password): ?array {
         'name'         => normalizeExperimentDeckName((string)($data['name'] ?? '')),
         'main_deck'    => array_values(array_map('strval', $main)),
         'energy_deck'  => array_values(array_map('strval', $energy)),
+        'sleeve_id'    => tcgNormalizeSleeveId($data['sleeve_id'] ?? ''),
         'saved_at'     => $savedAt,
     ];
 }
 
-function writeExperimentDeckFile(string $password, string $name, array $main, array $energy): void {
+function writeExperimentDeckFile(string $password, string $name, array $main, array $energy, string $sleeveId = ''): void {
     ensureExperimentDecksDir();
     $payload = [
         'password'     => $password,
         'name'         => normalizeExperimentDeckName($name),
         'main_deck'    => $main,
         'energy_deck'  => $energy,
+        'sleeve_id'    => tcgNormalizeSleeveId($sleeveId),
         'saved_at'     => time(),
     ];
     $path = experimentDeckPath($password);
@@ -185,12 +188,17 @@ function apiExperimentDeckSave(array $body): array {
         }
     }
 
-    writeExperimentDeckFile($password, $name, $validated['main'], $validated['energy']);
+    $existing = ($password !== '' && is_file(experimentDeckPath($password)))
+        ? readExperimentDeckFile($password)
+        : null;
+    $sleeveId = tcgSleeveIdFromBodyOrRow($body, $existing);
+    writeExperimentDeckFile($password, $name, $validated['main'], $validated['energy'], $sleeveId);
 
     return [
         'success'  => true,
         'password' => $password,
         'name'     => $name,
+        'sleeve_id' => $sleeveId,
         'main_count' => count($validated['main']),
         'energy_count' => count($validated['energy']),
     ];
@@ -215,6 +223,7 @@ function apiExperimentDeckLoad(array $body): array {
         'name'        => $stored['name'],
         'main_deck'   => $stored['main_deck'],
         'energy_deck' => $stored['energy_deck'],
+        'sleeve_id'   => tcgNormalizeSleeveId($stored['sleeve_id'] ?? ''),
     ];
 }
 
@@ -295,6 +304,7 @@ function resolveExperimentDeckFromPassword(string $password, array $cardsData): 
         'deck_label'  => $stored['name'],
         'main_nos'    => $stored['main_deck'],
         'energy_nos'  => $stored['energy_deck'],
+        'sleeve_id'   => tcgNormalizeSleeveId($stored['sleeve_id'] ?? ''),
     ];
 }
 
@@ -306,7 +316,7 @@ function resolveExperimentPresetDeckLists(array $body, array $cardsData, int $sl
     require_once __DIR__ . '/db.php';
     $uid = tcgRequireAuthUser($body);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT name, main_deck, energy_deck FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+    $stmt = $db->prepare('SELECT name, main_deck, energy_deck, sleeve_id FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
     $stmt->execute([$uid, $slot]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
@@ -320,5 +330,6 @@ function resolveExperimentPresetDeckLists(array $body, array $cardsData, int $sl
         'deck_label'  => normalizeExperimentDeckName((string)($row['name'] ?? ('Experiment ' . $slot))),
         'main_nos'    => $validated['main'],
         'energy_nos'  => $validated['energy'],
+        'sleeve_id'   => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
     ];
 }

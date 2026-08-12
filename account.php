@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 define('TCG_MAX_DECK_PRESETS', 10);
 
 require_once __DIR__ . '/llr_auth_load.php';
+require_once __DIR__ . '/sleeves.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booster.php';
 require_once __DIR__ . '/seals.php';
@@ -409,7 +410,7 @@ function tcgApiDeckList(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, equipped, updated_at
+    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at
         FROM tcg_deck_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
@@ -422,6 +423,7 @@ function tcgApiDeckList(array $body): array {
             'name' => tcgNormalizeDeckPresetName($row['name']),
             'main_deck' => $main,
             'energy_deck' => $energy,
+            'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
             'equipped' => intval($row['equipped']) === 1,
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
@@ -467,20 +469,25 @@ function tcgApiDeckSave(array $body): array {
     }
     $db = tcgDb();
     $now = time();
-    $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, equipped, updated_at)
-        VALUES (?, ?, ?, ?, ?, 0, ?)
+    $hasSleeve = array_key_exists('sleeve_id', $body);
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
+    $db->prepare('INSERT INTO tcg_deck_presets (discord_id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?)
         ON CONFLICT(discord_id, slot) DO UPDATE SET
             name = excluded.name,
             main_deck = excluded.main_deck,
             energy_deck = excluded.energy_deck,
+            sleeve_id = CASE WHEN ? = 1 THEN excluded.sleeve_id ELSE tcg_deck_presets.sleeve_id END,
             updated_at = excluded.updated_at')
         ->execute([
             $uid, $slot, $name,
             json_encode(array_values($main)),
             json_encode(array_values($energy)),
+            $sleeveId,
             $now,
+            $hasSleeve ? 1 : 0,
         ]);
-    return ['success' => true, 'slot' => $slot, 'name' => $name, 'validation' => $validation];
+    return ['success' => true, 'slot' => $slot, 'name' => $name, 'sleeve_id' => $sleeveId, 'validation' => $validation];
 }
 
 function tcgApiExperimentPresetList(array $body): array {
@@ -488,7 +495,7 @@ function tcgApiExperimentPresetList(array $body): array {
     tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     require_once __DIR__ . '/experiment_decks.php';
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, share_password, updated_at
+    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at
         FROM tcg_experiment_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
@@ -501,6 +508,7 @@ function tcgApiExperimentPresetList(array $body): array {
             'name' => normalizeExperimentDeckName((string)$row['name']),
             'main_deck' => $main,
             'energy_deck' => $energy,
+            'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
             'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
@@ -536,13 +544,16 @@ function tcgApiExperimentPresetSave(array $body): array {
     }
     $db = tcgDb();
     $now = time();
+    $hasSleeve = array_key_exists('sleeve_id', $body);
+    $sleeveId = tcgNormalizeSleeveId($body['sleeve_id'] ?? '');
     $db->prepare('INSERT INTO tcg_experiment_presets
-        (discord_id, slot, name, main_deck, energy_deck, share_password, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (discord_id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(discord_id, slot) DO UPDATE SET
             name = excluded.name,
             main_deck = excluded.main_deck,
             energy_deck = excluded.energy_deck,
+            sleeve_id = CASE WHEN ? = 1 THEN excluded.sleeve_id ELSE tcg_experiment_presets.sleeve_id END,
             share_password = CASE
                 WHEN excluded.share_password IS NOT NULL AND excluded.share_password != \'\'
                 THEN excluded.share_password
@@ -555,13 +566,16 @@ function tcgApiExperimentPresetSave(array $body): array {
             $name,
             json_encode($validated['main'], JSON_UNESCAPED_UNICODE),
             json_encode($validated['energy'], JSON_UNESCAPED_UNICODE),
+            $sleeveId,
             $share !== '' ? $share : null,
             $now,
+            $hasSleeve ? 1 : 0,
         ]);
     return [
         'success' => true,
         'slot' => $slot,
         'name' => $name,
+        'sleeve_id' => $sleeveId,
         'main_count' => count($validated['main']),
         'energy_count' => count($validated['energy']),
     ];
@@ -586,7 +600,7 @@ function tcgApiExperimentPresetGet(array $body): array {
     if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
         throw new Exception('Invalid experiment deck slot', 400);
     }
-    $stmt = tcgDb()->prepare('SELECT slot, name, main_deck, energy_deck, share_password, updated_at
+    $stmt = tcgDb()->prepare('SELECT slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at
         FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
     $stmt->execute([$uid, $slot]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -602,6 +616,7 @@ function tcgApiExperimentPresetGet(array $body): array {
             'name' => normalizeExperimentDeckName((string)$row['name']),
             'main_deck' => $main,
             'energy_deck' => $energy,
+            'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
             'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
             'updated_at' => intval($row['updated_at']),
         ],

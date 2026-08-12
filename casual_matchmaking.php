@@ -424,6 +424,7 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
         'deck_label' => $resolved1['deck_label'],
         'main_deck' => $main1,
         'energy_deck' => $energy1,
+        'sleeve_id' => tcgNormalizeSleeveId($resolved1['sleeve_id'] ?? ($body1['sleeve_id'] ?? '')),
         'discord_id' => (string)($p1Row['discord_id'] ?? '') ?: null,
     ]);
     $state['phase_timer_cfg'] = parsePhaseTimerConfigFromBody($body1);
@@ -441,6 +442,7 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
         'deck_label' => $resolved2['deck_label'],
         'main_deck' => $main2,
         'energy_deck' => $energy2,
+        'sleeve_id' => tcgNormalizeSleeveId($resolved2['sleeve_id'] ?? ($body2['sleeve_id'] ?? '')),
         'discord_id' => (string)($p2Row['discord_id'] ?? '') ?: null,
     ], null);
 

@@ -25,6 +25,7 @@ function tcgGetEquippedDeckLists(string $discordId): ?array {
         'name' => tcgNormalizeDeckPresetName($row['name'] ?? 'Ranked Deck'),
         'main_nos' => json_decode($row['main_deck'], true) ?: [],
         'energy_nos' => json_decode($row['energy_deck'], true) ?: [],
+        'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
     ];
 }
 
@@ -134,6 +135,7 @@ function tcgCreateRankedRoomPair(
         'main_deck' => $main1,
         'energy_deck' => $energy1,
         'discord_id' => $p1DiscordId,
+        'sleeve_id' => tcgNormalizeSleeveId($deck1['sleeve_id'] ?? ''),
         'deck_snapshot' => ['main_nos' => $deck1['main_nos'], 'energy_nos' => $deck1['energy_nos']],
     ]);
     $state['mode'] = 'ranked';
@@ -160,6 +162,7 @@ function tcgCreateRankedRoomPair(
         'main_deck' => $main2,
         'energy_deck' => $energy2,
         'discord_id' => $p2DiscordId,
+        'sleeve_id' => tcgNormalizeSleeveId($deck2['sleeve_id'] ?? ''),
         'deck_snapshot' => ['main_nos' => $deck2['main_nos'], 'energy_nos' => $deck2['energy_nos']],
     ], null);
 

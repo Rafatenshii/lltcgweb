@@ -40,6 +40,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=28">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
+<link rel="stylesheet" href="client/css/sleeves.css?v=1">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -720,6 +721,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <span data-i18n="options.foil">Enhanced textures on high rarity cards</span>
         </label>
         <label class="options-toggle">
+          <input type="checkbox" id="chk-sleeve-conform">
+          <span data-i18n="options.sleeveConform">Fit sleeves to card shape (rounded backs, no square peek)</span>
+        </label>
+        <label class="options-toggle">
           <input type="checkbox" id="chk-sfx" checked>
           <span data-i18n="options.soundEffects">Sound effects</span>
         </label>
@@ -917,6 +922,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <div class="field deck-builder-meta__slots" id="deck-builder-slots-wrap">
           <label data-i18n="deck.presetSlot">Preset slot (max 10)</label>
           <div class="deck-slot-row" id="deck-slots"></div>
+        </div>
+        <div class="field deck-builder-meta__sleeve" id="deck-builder-sleeve-wrap">
+          <label data-i18n="deck.sleeve">Sleeve</label>
+          <div class="deck-sleeve-picker" id="deck-sleeve-picker" role="listbox" data-i18n-aria-label="deck.sleeve"></div>
+          <p class="deck-builder-hint deck-builder-hint--compact" id="deck-sleeve-empty-hint" data-i18n="deck.sleeveEmpty">No sleeves available yet.</p>
+          <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.sleeveHint">Equipped sleeve replaces your card back in matches. Default: none.</p>
         </div>
         <div class="deck-builder-meta__import-search" id="deck-builder-import-search">
           <div class="field deck-builder-meta__account-decklog" id="deck-account-decklog-wrap" hidden>
@@ -2172,12 +2183,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=106"></script>
+<script src="i18n.js?v=107"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=23"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=31"></script>
+<script src="client/js/sleeves.js?v=1"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=5"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -2378,6 +2390,7 @@ const A = {
   experimentSlot: 1,
   deckMain: [],
   deckEnergy: [],
+  deckSleeveId: '',
   deckBuilderMode: 'account',
   deckBuilderReturn: null,
   experimentSearch: '',
@@ -3207,6 +3220,7 @@ function localizeNameInputDefault() {
 
 function onLocaleChanged() {
   refreshDynamicI18n();
+  if (typeof renderDeckSleevePickerUi === 'function') renderDeckSleevePickerUi();
   localizeNameInputDefault();
   // Reload catalog trimmed to the active locale so card rules text stays in sync.
   void loadCards().then(() => {
@@ -6941,6 +6955,9 @@ async function apiExperimentCall(action, body = {}) {
 function applyExperimentDeckToBuilder(data) {
   A.deckMain = [...(data.main_deck || [])];
   A.deckEnergy = [...(data.energy_deck || [])];
+  if (data && Object.prototype.hasOwnProperty.call(data, 'sleeve_id')) {
+    A.deckSleeveId = normalizeDeckSleeveId(data.sleeve_id);
+  }
   A.experimentPassword = data.password || '';
   if (A.experimentPassword) {
     A.experimentDeckCache[A.experimentPassword] = data;
@@ -8423,11 +8440,24 @@ function renderDeckCurrentList(experiment) {
   });
 }
 
+function normalizeDeckSleeveId(raw) {
+  return window.LLTCG_SLEEVES?.normalize ? window.LLTCG_SLEEVES.normalize(raw) : String(raw || '').trim().toLowerCase();
+}
+
+function renderDeckSleevePickerUi() {
+  if (!window.LLTCG_SLEEVES?.renderPicker) return;
+  window.LLTCG_SLEEVES.renderPicker(A.deckSleeveId, (next) => {
+    A.deckSleeveId = normalizeDeckSleeveId(next);
+    renderDeckSleevePickerUi();
+  });
+}
+
 function renderDeckBuilder(opts = {}) {
   const deferPool = !!opts.deferPool;
   const preservePoolScroll = !!opts.preservePoolScroll;
   const savedScroll = preservePoolScroll ? captureDeckBuilderScroll() : null;
   syncDeckBuilderChrome();
+  renderDeckSleevePickerUi();
   const experiment = A.deckBuilderMode === 'experiment';
   const slots = el('deck-slots');
   if (slots && !experiment) {
@@ -8562,6 +8592,7 @@ function selectDeckSlot(slot) {
   const saved = A.decks.find(d => d.slot === slot);
   A.deckMain = saved ? [...(saved.main_deck || [])] : [];
   A.deckEnergy = saved ? [...(saved.energy_deck || [])] : [];
+  A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id);
   el('inp-deck-name').value = saved?.name || ('Deck ' + slot);
   renderDeckBuilder();
 }
@@ -8663,6 +8694,7 @@ async function openDeckExperiment(opts) {
   A.experimentPassword = '';
   A.deckMain = [];
   A.deckEnergy = [];
+  A.deckSleeveId = '';
   const searchInp = el('inp-experiment-load-pwd');
   const cardSearch = el('inp-deck-card-search');
   if (searchInp) searchInp.value = '';
@@ -8706,6 +8738,7 @@ function selectExperimentSlot(slot) {
   A.experimentSlot = slot;
   const saved = (A.experimentDecks || []).find(d => d.slot === slot);
   el('inp-deck-name').value = saved?.name || ('Experiment ' + slot);
+  A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id);
   if (saved?.main_deck?.length) {
     A.deckMain = [...saved.main_deck];
     A.deckEnergy = [...(saved.energy_deck || [])];
@@ -10996,6 +11029,7 @@ async function saveExperimentDeckPassword() {
       name,
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
+      sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
     };
     if (A.experimentPassword) body.password = A.experimentPassword;
     const res = await apiExperimentCall('experiment_deck_save', body);
@@ -11006,6 +11040,7 @@ async function saveExperimentDeckPassword() {
       name: res.name || name,
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
+      sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
     });
     if (isSignedInAccount()) {
       try {
@@ -11014,6 +11049,7 @@ async function saveExperimentDeckPassword() {
           name: el('inp-deck-name')?.value.trim() || ('Experiment ' + (A.experimentSlot || 1)),
           main_deck: [...A.deckMain],
           energy_deck: [...A.deckEnergy],
+          sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
           share_password: res.password,
         });
         markExperimentListDirty();
@@ -11050,6 +11086,7 @@ async function saveExperimentPresetToAccount() {
       name: el('inp-deck-name')?.value.trim() || ('Experiment ' + (A.experimentSlot || 1)),
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
+      sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
     };
     if (A.experimentPassword) body.share_password = A.experimentPassword;
     await accountPost('experiment_preset_save', body);
@@ -11077,6 +11114,7 @@ async function saveDeckPreset() {
       name: el('inp-deck-name').value.trim() || 'My Deck',
       main_deck: A.deckMain,
       energy_deck: A.deckEnergy,
+      sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
     });
     markDeckListDirty();
     await ensureDeckList({ force: true });
@@ -14793,6 +14831,7 @@ async function bootApp() {
     ]);
   }
   initFoilFxSetting();
+  if (window.LLTCG_SLEEVES?.initConform) window.LLTCG_SLEEVES.initConform();
   initUiTextScaleSetting();
   initSfxSetting();
   bindMenuSfx();
@@ -16122,7 +16161,7 @@ function renderLobbyDeckOptions(opts = {}) {
 }
 
 /** Inline account presets so VPS match-primary can validate without Hostinger SQLite. */
-function presetInlineDeckPayload(main, energy, label, slot) {
+function presetInlineDeckPayload(main, energy, label, slot, sleeveId) {
   const mainDeck = Array.isArray(main) ? main.map(String) : [];
   const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
   if (mainDeck.length < 60 || energyDeck.length < 12) {
@@ -16134,11 +16173,12 @@ function presetInlineDeckPayload(main, energy, label, slot) {
     deck_label: label || ('Deck ' + slot),
     main_deck: mainDeck,
     energy_deck: energyDeck,
+    sleeve_id: normalizeDeckSleeveId(sleeveId),
   };
 }
 
 /** Inline Free-mode experiment lists so VPS match-primary can validate without Hostinger SQLite/files. */
-function experimentInlineDeckPayload(main, energy, label) {
+function experimentInlineDeckPayload(main, energy, label, sleeveId) {
   const mainDeck = Array.isArray(main) ? main.map(String) : [];
   const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
   if (mainDeck.length < 60 || energyDeck.length < 12) {
@@ -16149,6 +16189,7 @@ function experimentInlineDeckPayload(main, energy, label) {
     deck_label: label || 'Deck Experiment',
     main_deck: mainDeck,
     energy_deck: energyDeck,
+    sleeve_id: normalizeDeckSleeveId(sleeveId),
   };
 }
 
@@ -16173,6 +16214,7 @@ function deckPayloadFromChoice(deckSel) {
         saved.main_deck,
         saved.energy_deck,
         saved.name || ('Experiment ' + slot),
+        saved.sleeve_id,
       ),
       experiment_slot: slot,
       token,
@@ -16192,6 +16234,7 @@ function deckPayloadFromChoice(deckSel) {
         cached.main_deck,
         cached.energy_deck,
         cached.name || 'Deck Experiment',
+        cached.sleeve_id,
       );
     }
     // Fallback when cache is cold (Hostinger-only match path).
@@ -16220,6 +16263,7 @@ function deckPayloadFromChoice(deckSel) {
         saved.energy_deck,
         saved.name || ('Deck ' + slot),
         slot,
+        saved.sleeve_id,
       ),
       token,
     };
@@ -28559,7 +28603,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=68"></script>
-<script src="client/js/board-render.js?v=12"></script>
+<script src="client/js/board-render.js?v=13"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>

@@ -1,0 +1,197 @@
+/* Card sleeves — per-player backs + square peek on face-up cards. */
+
+:root{
+  --card-back-default:url('../../lltcg-back.png');
+  --sleeve-peek:5%;
+  --sleeve-peek-opacity:.42;
+  --sleeve-square-radius:1px;
+}
+
+#screen-game{
+  --my-sleeve-image:var(--card-back-default);
+  --opp-sleeve-image:var(--card-back-default);
+}
+
+/* ── Face-down: sleeve art replaces the official back ── */
+#screen-game.has-my-sleeve .my-mat .card-back-fill,
+#screen-game.has-my-sleeve .my-mat .back.live-back,
+#screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack,
+#screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
+#screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
+#screen-game.has-my-sleeve .my-hand-strip .hand-flip-back,
+#screen-game.has-my-sleeve .my-hand-strip .hand-flip-back .card-back-fill,
+#screen-game.has-my-sleeve .my-hand-strip .back.live-back{
+  background-image:var(--my-sleeve-image);
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+
+#screen-game.has-opp-sleeve .opp-mat .card-back-fill,
+#screen-game.has-opp-sleeve .opp-mat .back.live-back,
+#screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack,
+#screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::before,
+#screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack.thick::after,
+#screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card,
+#screen-game.has-opp-sleeve .opp-hand-strip .card-back-fill,
+#screen-game.has-opp-sleeve .opp-hand-strip .back.live-back{
+  background-image:var(--opp-sleeve-image);
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+
+/* Square sleeve corners (default). Conform toggle restores card rounding. */
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .card-back-fill,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hand-flip-back,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .card-back-fill,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card{
+  border-radius:var(--sleeve-square-radius);
+}
+html.sleeve-conform #screen-game.has-my-sleeve .my-mat .card-back-fill,
+html.sleeve-conform #screen-game.has-my-sleeve .my-mat .deck-pile:not(.wr-pile) .deck-stack,
+html.sleeve-conform #screen-game.has-opp-sleeve .opp-mat .card-back-fill,
+html.sleeve-conform #screen-game.has-opp-sleeve .opp-mat .deck-pile:not(.wr-pile) .deck-stack,
+html.sleeve-conform #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card{
+  border-radius:inherit;
+}
+
+/* ── Face-up peek: semi-transparent square sleeve border around the card ── */
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard{
+  overflow:visible;
+}
+
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard::after,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card::after{
+  content:'';
+  position:absolute;
+  inset:calc(var(--sleeve-peek) * -1);
+  border-radius:var(--sleeve-square-radius);
+  z-index:-1;
+  pointer-events:none;
+  opacity:var(--sleeve-peek-opacity);
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-hand-strip .hcard::after{
+  background-image:var(--my-sleeve-image);
+}
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-hand-strip .opp-hand-card::after{
+  background-image:var(--opp-sleeve-image);
+}
+
+/* Stage / live: peek layer on the slot so face-up art stays clipped to the card. */
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot::before,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard::before{
+  content:'';
+  position:absolute;
+  inset:calc(var(--sleeve-peek) * -1);
+  border-radius:var(--sleeve-square-radius);
+  z-index:0;
+  pointer-events:none;
+  opacity:var(--sleeve-peek-opacity);
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot::before,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard::before{
+  background-image:var(--my-sleeve-image);
+}
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot::before,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard::before{
+  background-image:var(--opp-sleeve-image);
+}
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .mslot > *,
+html:not(.sleeve-conform) #screen-game.has-my-sleeve .my-mat .lcard > *,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .mslot > *,
+html:not(.sleeve-conform) #screen-game.has-opp-sleeve .opp-mat .lcard > *{
+  position:relative;
+  z-index:1;
+}
+
+html.sleeve-conform #screen-game .mslot::before,
+html.sleeve-conform #screen-game .lcard::before,
+html.sleeve-conform #screen-game .hcard::after,
+html.sleeve-conform #screen-game .opp-hand-card::after{
+  content:none;
+  display:none;
+}
+
+/* Empty / face-down slots should not show a floating peek square. */
+#screen-game.has-my-sleeve .my-mat .mslot:empty::before,
+#screen-game.has-opp-sleeve .opp-mat .mslot:empty::before,
+#screen-game.has-my-sleeve .my-mat .lcard:empty::before,
+#screen-game.has-opp-sleeve .opp-mat .lcard:empty::before{
+  content:none;
+  display:none;
+}
+
+/* ── Deck builder picker ── */
+#screen-deck .deck-builder-meta__sleeve{
+  flex:1 1 100%;
+  min-width:0;
+}
+.deck-sleeve-picker{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:stretch;
+}
+.deck-sleeve-tile{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  width:72px;
+  padding:6px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.22);
+  background:rgba(0,0,0,.22);
+  color:#fff;
+  cursor:pointer;
+  font:inherit;
+}
+.deck-sleeve-tile:hover{
+  border-color:rgba(255,107,168,.55);
+}
+.deck-sleeve-tile.is-selected{
+  border-color:var(--pink,#FF6BA8);
+  box-shadow:0 0 0 1px var(--pink,#FF6BA8);
+}
+.deck-sleeve-tile__art{
+  width:52px;
+  height:52px;
+  border-radius:2px;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.deck-sleeve-tile__art--none{
+  border-radius:4px;
+  aspect-ratio:63/88;
+  width:38px;
+  height:auto;
+}
+.deck-sleeve-tile__label{
+  font-size:10px;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#deck-sleeve-empty-hint{margin-top:4px}

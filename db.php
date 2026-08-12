@@ -438,6 +438,8 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_casual_queue_discord
         ON tcg_casual_queue(discord_id) WHERE discord_id IS NOT NULL');
 
+    tcgDbEnsureColumn($db, 'tcg_deck_presets', 'sleeve_id', "TEXT NOT NULL DEFAULT ''");
+    tcgDbEnsureColumn($db, 'tcg_experiment_presets', 'sleeve_id', "TEXT NOT NULL DEFAULT ''");
     tcgDbEnsureColumn($db, 'tcg_users', 'banner_card_no', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'banner_crop', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'equipped_flag', 'TEXT');
