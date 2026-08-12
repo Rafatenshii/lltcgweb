@@ -367,20 +367,31 @@ function spBp2RefreshLiveZoneScores(array &$state, string $pid): void {
             continue;
         }
         mergeCardCatalogFields($lc);
-        if (!isset($lc['_printed_score'])) {
-            $lc['_printed_score'] = intval($lc['score'] ?? 0);
-        }
-        $bonus = 0;
+        $printed = isset($lc['_printed_score'])
+            ? intval($lc['_printed_score'])
+            : liveCardPrintedScore($lc);
+        $lc['_printed_score'] = $printed;
+        $continuous = 0;
         foreach ($lc['abilities'] ?? [] as $ab) {
             if (($ab['trigger'] ?? '') !== 'continuous') {
                 continue;
             }
             if (($ab['type'] ?? '') === 'live_score_if_stage_has_ability_members'
                 && spBp2StageHasAbilityMember($p)) {
-                $bonus += intval($ab['amount'] ?? 1);
+                $continuous += intval($ab['amount'] ?? 1);
             }
         }
-        $lc['score'] = intval($lc['_printed_score']) + $bonus;
+        // Preserve Live Start / Yell / other one-shot score bumps (issue #107).
+        $effect = intval($lc['_effect_score_bonus'] ?? 0);
+        if (!array_key_exists('_effect_score_bonus', $lc)) {
+            $current = intval($lc['score'] ?? 0);
+            $withoutEffect = $printed + $continuous;
+            if ($current > $withoutEffect) {
+                $effect = $current - $withoutEffect;
+            }
+        }
+        $lc['_effect_score_bonus'] = $effect;
+        $lc['score'] = $printed + $effect + $continuous;
     }
     unset($lc);
 }

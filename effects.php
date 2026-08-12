@@ -1156,7 +1156,12 @@ function applyLiveScoreIfYellHasHeartsInZone(array &$zone, array $yellCards): vo
             if (($ab['type'] ?? '') !== 'live_score_if_yell_has_hearts') {
                 continue;
             }
-            $lc['score'] = intval($lc['score'] ?? 0) + intval($ab['amount'] ?? 1);
+            $amt = intval($ab['amount'] ?? 1);
+            if (!isset($lc['_printed_score'])) {
+                $lc['_printed_score'] = liveCardPrintedScore($lc);
+            }
+            $lc['_effect_score_bonus'] = intval($lc['_effect_score_bonus'] ?? 0) + $amt;
+            $lc['score'] = intval($lc['score'] ?? 0) + $amt;
         }
     }
     unset($lc);
@@ -1821,6 +1826,9 @@ function bumpLiveCardScore(array &$state, string $pid, string $instanceId, int $
             if (!isset($lc['_printed_score'])) {
                 $lc['_printed_score'] = liveCardPrintedScore($lc);
             }
+            // Track non-continuous bumps so spBp2RefreshLiveZoneScores cannot wipe them
+            // (issue #107 Distortion / other Live Start +score skills).
+            $lc['_effect_score_bonus'] = intval($lc['_effect_score_bonus'] ?? 0) + $amount;
             $lc['score'] = intval($lc['score'] ?? 0) + $amount;
             unset($lc);
             return true;
