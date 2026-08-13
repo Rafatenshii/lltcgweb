@@ -390,15 +390,43 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
 
 global.openStageMemberPickById = function openStageMemberPickById(pr){
   const cards=pr.candidates||[];
+  // Clear multi-pick leftovers (Live Start order Confirm/Cancel) so this click-to-pick
+  // UI does not send empty / wrong payloads (#Honoka PL!-bp3-001 activate_members_pick).
+  G.pickCtx=null;
+  if(G.pickMarked&&typeof G.pickMarked.clear==='function') G.pickMarked.clear();
+  const btnOk=el('btn-pick-ok');
+  const btnCancel=el('btn-pick-cancel');
+  if(btnOk) btnOk.style.display='none';
+  if(btnCancel) btnCancel.style.display='none';
   el('pick-ttl').textContent=pr.source_name||'Choose Member';
   el('pick-msg').textContent=pr.prompt||'Choose 1 Member on your Stage.';
   const g=el('pick-grid'); g.innerHTML='';
+  g.classList.remove('pick-grid-order');
   cards.forEach(card=>{
     g.appendChild(mkPickCardEl(card,'pickcard',()=>{
       closeM('overlay-pick');
-      sendAct('resolve_prompt',{card_id:card.instance_id});
+      // Server activate_members_pick prefers member_id; keep card_id for older prompt types
+      // that still read card_id (blade_per_discarded_pick_member, etc.).
+      sendAct('resolve_prompt',{
+        member_id:card.instance_id,
+        card_id:card.instance_id,
+        slot:card.slot||undefined,
+      });
     }));
   });
+  // "Up to N" activate picks (Honoka Live Start) — allow decline.
+  if(pr.type==='activate_members_pick' || pr.optional || (Array.isArray(pr.choices)&&pr.choices.includes('skip'))){
+    const skipBtn=document.createElement('button');
+    skipBtn.className='btn-ghost';
+    skipBtn.style.width='100%';
+    skipBtn.style.marginTop='10px';
+    skipBtn.textContent=(typeof t==='function' ? (t('prompt.skip') || 'Skip') : 'Skip');
+    skipBtn.onclick=()=>{
+      closeM('overlay-pick');
+      sendAct('resolve_prompt',{choice:'skip'});
+    };
+    g.appendChild(skipBtn);
+  }
   el('pick-count').textContent='';
   openM('overlay-pick');
 }

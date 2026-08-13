@@ -1210,7 +1210,22 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
     }
 
     if ($promptType === 'activate_members_pick') {
+        // "Up to N" (Honoka PL!-bp3-001-R Live Start, etc.) — allow decline.
+        if ($choice === 'skip' || $choice === 'cancel' || $choice === 'no') {
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                ' — [' . ($prompt['source_name'] ?? 'Card') . '] skipped activating a Member.');
+            unset($state['pending_prompt']);
+            $state['seq']++;
+            return finishAfterBranchChoicePrompt($state, $prompt);
+        }
+        // Clients historically send card_id (openStageMemberPickById); CPU sends member_id.
         $memberId = trim((string)($data['member_id'] ?? ''));
+        if ($memberId === '' && !empty($data['member_ids'][0])) {
+            $memberId = trim((string)$data['member_ids'][0]);
+        }
+        if ($memberId === '') {
+            $memberId = trim((string)($data['card_id'] ?? ''));
+        }
         if ($memberId === '' && !empty($data['slot'])) {
             $memberId = trim((string)($ownerP['stage'][$data['slot']]['instance_id'] ?? ''));
         }
@@ -1251,10 +1266,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        if (!empty($prompt['live_start']) || ($state['phase'] ?? '') === 'live_start_effects') {
-            return finishLiveStartEffects($state);
-        }
-        return finishPromptEffects($state);
+        return finishAfterBranchChoicePrompt($state, $prompt);
     }
 
     if ($promptType === 'auto_on_ally_wait_activate_blade') {
