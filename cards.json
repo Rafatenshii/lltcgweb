@@ -37869,7 +37869,7 @@
             ],
             "blade_hearts": [],
             "rarity": "P",
-            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 4 Purple hearts until this Live ends.",
+            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 1 Green Heart until this Live ends.",
             "text_jp": "[登場時] 自分の成功ライブカード置き場にある『虹ヶ咲』のライブカードを1枚控え室に置いてもよい。そうした場合、自分の控え室にある『虹ヶ咲』のライブカードを1枚成功ライブカード置き場に置く。\n\n[ライブ開始時] 自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、緑ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!N-bp4-010-P.png",
             "abilities": [
@@ -37885,17 +37885,17 @@
                     "group": "Nijigasaki",
                     "hearts": [
                         {
-                            "color": "purple",
-                            "count": 4
+                            "color": "green",
+                            "count": 1
                         }
                     ]
                 }
             ],
             "subunit": "R3BIRTH",
-            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 4 corazones morados hasta que termine este Live.",
-            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 보라 하트 4개를 얻는다 이 Live가 끝날 때까지.",
-            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 4 颗紫心形，直至此直播结束。",
-            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีม่วง 4 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
+            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 1 corazón verde hasta que termine este Live.",
+            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 초록 하트 1개를 얻는다 이 Live가 끝날 때까지.",
+            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 1 颗绿心，直至此直播结束。",
+            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีเขียว 1 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
         },
         {
             "card_no": "PL!N-bp4-010-P＋",
@@ -37919,7 +37919,7 @@
             ],
             "blade_hearts": [],
             "rarity": "P+",
-            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 4 Purple hearts until this Live ends.",
+            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 1 Green Heart until this Live ends.",
             "text_jp": "[登場時] 自分の成功ライブカード置き場にある『虹ヶ咲』のライブカードを1枚控え室に置いてもよい。そうした場合、自分の控え室にある『虹ヶ咲』のライブカードを1枚成功ライブカード置き場に置く。\n\n[ライブ開始時] 自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、緑ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!N-bp4-010-P2.png",
             "abilities": [
@@ -37935,17 +37935,17 @@
                     "group": "Nijigasaki",
                     "hearts": [
                         {
-                            "color": "purple",
-                            "count": 4
+                            "color": "green",
+                            "count": 1
                         }
                     ]
                 }
             ],
             "subunit": "R3BIRTH",
-            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 4 corazones morados hasta que termine este Live.",
-            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 보라 하트 4개를 얻는다 이 Live가 끝날 때까지.",
-            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 4 颗紫心形，直至此直播结束。",
-            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีม่วง 4 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
+            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 1 corazón verde hasta que termine este Live.",
+            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 초록 하트 1개를 얻는다 이 Live가 끝날 때까지.",
+            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 1 颗绿心，直至此直播结束。",
+            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีเขียว 1 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
         },
         {
             "card_no": "PL!N-bp4-010-R＋",
@@ -37969,7 +37969,7 @@
             ],
             "blade_hearts": [],
             "rarity": "R+",
-            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 4 Purple hearts until this Live ends.",
+            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 1 Green Heart until this Live ends.",
             "text_jp": "[登場時] 自分の成功ライブカード置き場にある『虹ヶ咲』のライブカードを1枚控え室に置いてもよい。そうした場合、自分の控え室にある『虹ヶ咲』のライブカードを1枚成功ライブカード置き場に置く。\n\n[ライブ開始時] 自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、緑ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!N-bp4-010-R2.png",
             "abilities": [
@@ -37985,17 +37985,17 @@
                     "group": "Nijigasaki",
                     "hearts": [
                         {
-                            "color": "purple",
-                            "count": 4
+                            "color": "green",
+                            "count": 1
                         }
                     ]
                 }
             ],
             "subunit": "R3BIRTH",
-            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 4 corazones morados hasta que termine este Live.",
-            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 보라 하트 4개를 얻는다 이 Live가 끝날 때까지.",
-            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 4 颗紫心形，直至此直播结束。",
-            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีม่วง 4 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
+            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 1 corazón verde hasta que termine este Live.",
+            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 초록 하트 1개를 얻는다 이 Live가 끝날 때까지.",
+            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 1 颗绿心，直至此直播结束。",
+            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีเขียว 1 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
         },
         {
             "card_no": "PL!N-bp4-010-SEC",
@@ -38019,7 +38019,7 @@
             ],
             "blade_hearts": [],
             "rarity": "SEC",
-            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 4 Purple hearts until this Live ends.",
+            "text": "[On Enter] You may put 1 Nijigasaki Live card from your Success Live area into the Waiting Room. If you do, put 1 Nijigasaki Live card from your Waiting Room into your Success Live area.\n[Live Start] Choose 1 Nijigasaki Live card in your Live. If a card with the same name is in your Success Live area, gain 1 Green Heart until this Live ends.",
             "text_jp": "[登場時] 自分の成功ライブカード置き場にある『虹ヶ咲』のライブカードを1枚控え室に置いてもよい。そうした場合、自分の控え室にある『虹ヶ咲』のライブカードを1枚成功ライブカード置き場に置く。\n\n[ライブ開始時] 自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、緑ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!N-bp4-010-SEC.png",
             "abilities": [
@@ -38035,17 +38035,17 @@
                     "group": "Nijigasaki",
                     "hearts": [
                         {
-                            "color": "purple",
-                            "count": 4
+                            "color": "green",
+                            "count": 1
                         }
                     ]
                 }
             ],
             "subunit": "R3BIRTH",
-            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 4 corazones morados hasta que termine este Live.",
-            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 보라 하트 4개를 얻는다 이 Live가 끝날 때까지.",
-            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 4 颗紫心形，直至此直播结束。",
-            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีม่วง 4 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
+            "text_es": "[Al entrar] Puedes colocar 1 carta Live de Nijigasaki de tu área de Live exitoso en la Sala de espera. Si lo haces, coloca 1 carta Live de Nijigasaki de tu Sala de espera en tu área de Live exitoso.\n[Inicio de Live] Elige 1 carta Live de Nijigasaki en tu Live. Si hay una carta con el mismo nombre en tu área de Live exitoso, obtienes 1 corazón verde hasta que termine este Live.",
+            "text_ko": "[등장 시] 해도 좋다 놓는다 1 Nijigasaki Live 카드 에서 자신의 성공 Live 더미 대기실에. 그렇게 한다면, 놓는다 1 Nijigasaki Live 카드 자신의 대기실에서 에 자신의 성공 Live 더미.\n[라이브 개시] 고른다 1 Nijigasaki Live 카드 에 자신의 Live. 만약 카드 와 함께 같은 이름 이다 에 자신의 성공 Live 더미, 초록 하트 1개를 얻는다 이 Live가 끝날 때까지.",
+            "text_zh": "[入场时] 您可以将 1 张虹咲 Live 卡从您的成功 Live 区域放入等候室。如果这样做，请将 1 张 Nijigasaki Live 卡从你的等候室放入你的 成功Live 区域。\n[Live开始] 在您的Live中选择1张Nijigasaki Live卡。如果你的成功Live区中有一张同名卡牌，则获得 1 颗绿心，直至此直播结束。",
+            "text_th": "[เมื่อเข้าสนาม] คุณสามารถนำการ์ด Nijigasaki Live 1 ใบจากพื้นที่ สำเร็จ Live ของคุณไปที่ห้องรอได้ หากคุณทำเช่นนั้น ให้นำการ์ด Nijigasaki Live 1 ใบจากห้องรอของคุณไปยังพื้นที่ สำเร็จ Live ของคุณ\n[เริ่ม Live] เลือกการ์ด Nijigasaki Live 1 ใบในการถ่ายทอดสดของคุณ หากการ์ดที่มีชื่อเดียวกันอยู่ในพื้นที่ สำเร็จ Live ของคุณ รับหัวใจสีเขียว 1 ดวงจนกว่า Live นี้จะสิ้นสุดลง"
         },
         {
             "card_no": "PL!N-bp4-011-P",

@@ -125,7 +125,7 @@ final class ShiorikoBp4010SwapTest extends TestCase
         $this->assertSame(['current_live'], array_column($state['pending_prompt']['candidates'] ?? [], 'instance_id'));
         $state = \actionResolvePrompt($state, 'p1', ['card_id' => 'current_live']);
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(['purple', 'purple', 'purple', 'purple'], \getBonusHeartsFlat($state, 'p1'));
+        $this->assertSame(['green'], \getBonusHeartsFlat($state, 'p1'));
     }
 
     public function testClientRoutesEachShiorikoStepToCorrectZonePicker(): void
@@ -171,6 +171,6 @@ final class ShiorikoBp4010SwapTest extends TestCase
 
         $state = \actionAntiSoftlockSkipPrompt($state, 'p1');
         $this->assertNull($state['pending_prompt'] ?? null);
-        $this->assertSame(['purple', 'purple', 'purple', 'purple'], \getBonusHeartsFlat($state, 'p1'));
+        $this->assertSame(['green'], \getBonusHeartsFlat($state, 'p1'));
     }
 }
