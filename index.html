@@ -2254,7 +2254,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=26"></script>
 <script src="client/js/runtime-flags.js?v=2"></script>
-<script src="client/js/api-client.js?v=33"></script>
+<script src="client/js/api-client.js?v=34"></script>
 <script src="client/js/sleeves.js?v=11"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
@@ -12257,19 +12257,40 @@ async function saveBannerCrop() {
   el('banner-crop-err').textContent = '';
   const cardNo = bannerCropState.cardNo;
   if (!cardNo) { el('banner-crop-err').textContent = t('leaderboard.selectCardFirst'); return; }
+  const btn = el('btn-banner-save');
+  if (btn) btn.disabled = true;
   try {
     const crop = bannerCropFromWindow();
-    const res = await accountPost('rank_banner_set', { card_no: cardNo, crop });
+    // Prefer base64 wire form so Hostinger WAF is less likely to trip on "!" in PL!… card nos.
+    let cardNoB64 = '';
+    try {
+      cardNoB64 = btoa(unescape(encodeURIComponent(cardNo)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (_) {}
+    const res = await accountPost('rank_banner_set', {
+      card_no_b64: cardNoB64,
+      crop,
+    });
     A.profile = A.profile || {};
     A.profile.banner = res.banner || null;
-    if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
-      A.leaderboard = stats;
-      A.lastLeaderboardData = stats;
-      renderLeaderboardRows(stats);
+    closeM('modal-banner-crop');
+    if (typeof toast === 'function') {
+      toast(t('leaderboard.bannerSaved') || 'Banner saved', 2600);
+    }
+    try {
+      if (el('screen-leaderboard').classList.contains('active')) {
+        const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
+        A.leaderboard = stats;
+        A.lastLeaderboardData = stats;
+        renderLeaderboardRows(stats);
+      }
+    } catch (_) {
+      // Banner already saved — leaderboard refresh is best-effort.
     }
   } catch (e) {
     el('banner-crop-err').textContent = e.message;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

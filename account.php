@@ -1687,11 +1687,38 @@ function tcgApiStampFavoritesSet(array $body): array {
     ], $completions);
 }
 
+/**
+ * Decode banner/card wire forms. Prefer card_no_b64 so Hostinger WAF is less
+ * likely to trip on "!" inside JSON bodies (PL!SP-… / PL!HS-…).
+ */
+function tcgDecodeCardNoFromBody(array $body): string {
+    $b64 = trim((string)($body['card_no_b64'] ?? ''));
+    if ($b64 !== '') {
+        $pad = strlen($b64) % 4;
+        if ($pad > 0) {
+            $b64 .= str_repeat('=', 4 - $pad);
+        }
+        $raw = base64_decode(strtr($b64, '-_', '+/'), true);
+        if (is_string($raw) && $raw !== '') {
+            return trim($raw);
+        }
+    }
+    $plain = trim((string)($body['card_no'] ?? ''));
+    if ($plain !== '' && class_exists('Normalizer')) {
+        $norm = \Normalizer::normalize($plain, \Normalizer::FORM_KC);
+        if (is_string($norm) && $norm !== '') {
+            $plain = $norm;
+        }
+    }
+    // Fullwidth exclamation (！) → ASCII ! for catalog / collection keys.
+    return str_replace("\u{FF01}", '!', $plain);
+}
+
 function tcgApiRankBannerSet(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $profile = tcgAuthUserProfile($uid);
     $user = tcgEnsureUser($uid, $profile);
-    $cardNo = trim((string)($body['card_no'] ?? ''));
+    $cardNo = tcgDecodeCardNoFromBody($body);
     if ($cardNo === '') {
         throw new Exception('card_no required');
     }
@@ -1709,6 +1736,9 @@ function tcgApiRankBannerSet(array $body): array {
         throw new Exception('Invalid crop — use normalized x,y,w,h (0–1)');
     }
     $crop = tcgParseBannerCrop(json_encode($cropRaw));
+    if ($crop === null) {
+        throw new Exception('Invalid crop — use normalized x,y,w,h (0–1)');
+    }
     $db = tcgDb();
     $now = time();
     $db->prepare('UPDATE tcg_users SET banner_card_no = ?, banner_crop = ?, updated_at = ? WHERE discord_id = ?')

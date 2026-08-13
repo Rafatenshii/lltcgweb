@@ -580,6 +580,7 @@
       "bannerNoMatch": "No cards match your search.",
       "bannerPreview": "Preview",
       "saveBanner": "Save banner",
+      "bannerSaved": "Banner saved",
       "profileFlag": "Profile flag",
       "flagLead": "Choose a flag to show next to your name on the leaderboard.",
       "flagSearchPlaceholder": "Search flags…",

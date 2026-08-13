@@ -393,8 +393,16 @@
     try {
       d = await r.json();
     } catch (e) {
-      const err = new Error(r.ok ? 'Invalid account response' : ('Account error (' + r.status + ')'));
-      err.httpStatus = r.status || (r.ok ? 500 : r.status);
+      const status = r.status || 0;
+      let msg = r.ok ? 'Invalid account response' : ('Account error (' + status + ')');
+      // Non-JSON 403 is almost always Hostinger/Imunify HTML, not our PHP JSON errors.
+      if (status === 403) {
+        msg = 'Request blocked (403). Try again in a moment, or re-sign in with Discord.';
+      } else if (status === 401) {
+        msg = 'Authentication required';
+      }
+      const err = new Error(msg);
+      err.httpStatus = status || (r.ok ? 500 : status);
       throw err;
     }
     return d;
