@@ -87492,7 +87492,7 @@
                     "trigger": "on_enter_or_live_start",
                     "type": "optional_wait_self_opp_heart_gap",
                     "group": "Superstar",
-                    "heart_gap": 2
+                    "blade_gap": 2
                 }
             ],
             "text_es": "[Al entrar] / [Inicio de Live] Puedes colocar 1 Miembro de Liella! en tu Escenario en Wait: coloca 1 Miembro del oponente con al menos 2 Blade impresos menos que ese Miembro en Wait. (El Blade en un Miembro en Wait no aumenta el conteo de revelación de Yell.)",
@@ -87531,7 +87531,7 @@
                     "trigger": "on_enter_or_live_start",
                     "type": "optional_wait_self_opp_heart_gap",
                     "group": "Superstar",
-                    "heart_gap": 2
+                    "blade_gap": 2
                 }
             ],
             "text_es": "[Al entrar] / [Inicio de Live] Puedes colocar 1 Miembro de Liella! en tu Escenario en Wait: coloca 1 Miembro del oponente con al menos 2 Blade impresos menos que ese Miembro en Wait. (El Blade en un Miembro en Wait no aumenta el conteo de revelación de Yell.)",

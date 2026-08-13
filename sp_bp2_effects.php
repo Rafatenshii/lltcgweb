@@ -90,6 +90,18 @@ function spBp2IsHandlerType(string $type): bool {
     return in_array($type, spBp2HandlerTypes(), true);
 }
 
+/** Printed Blade (元々持つブレード) — not hearts, not live/aura modifiers. */
+function spBp2PrintedBlade(array $member): int {
+    return isset($member['printed_blade_override'])
+        ? intval($member['printed_blade_override'])
+        : intval($member['blade'] ?? 0);
+}
+
+/** Natsumi pb2-009: at least this many fewer printed Blade on the opponent Member. */
+function spBp2WaitSelfOppGap(array $abOrPrompt): int {
+    return intval($abOrPrompt['blade_gap'] ?? $abOrPrompt['heart_gap'] ?? 2);
+}
+
 /** Opponent continuous aura: +N Gray heart on each Live card in performing player's live_zone. */
 function spBp2ApplyContinuousOppLiveGrayHeart(array $state, string $pid): array {
     $opp = ($pid === 'p1') ? 'p2' : 'p1';
@@ -785,9 +797,14 @@ function spBp2ResolveEffect(array $state, string $pid, array $source, array $ab,
                 break;
             }
             $group = $ab['group'] ?? 'Superstar';
+            $gap = spBp2WaitSelfOppGap($ab);
+            $gLabel = groupPromptLabel($group);
             $selfCandidates = [];
             foreach ($p['stage'] as $slot => $mbr) {
                 if (!$mbr) {
+                    continue;
+                }
+                if (memberIsInWait($mbr)) {
                     continue;
                 }
                 if (!cardMatchesGroup($mbr, $group, 'member')) {
@@ -805,10 +822,11 @@ function spBp2ResolveEffect(array $state, string $pid, array $source, array $ab,
                 'responder'       => $pid,
                 'source_name'     => $name,
                 'self_candidates' => $selfCandidates,
-                'heart_gap'       => intval($ab['heart_gap'] ?? 2),
+                'blade_gap'       => $gap,
+                'heart_gap'       => $gap,
                 'group'           => $group,
                 'ability'         => $ab,
-                'prompt'          => "Put 1 $group Member on your Stage into Wait to Wait an opponent Member with fewer printed hearts?",
+                'prompt'          => "Put 1 $gLabel Member on your Stage into Wait to Wait an opponent Member with at least $gap fewer printed Blade?",
                 'choices'         => ['yes', 'no'],
                 'choice_labels'   => ['Yes — choose Members', 'No — Skip'],
             ];
@@ -1075,16 +1093,19 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             if (!$mbr) {
                 throw new Exception('Choose a Member on your Stage');
             }
-            $selfHearts = memberHeartCount($mbr);
-            $gap = intval($prompt['heart_gap'] ?? 2);
-            $maxOppHearts = max(0, $selfHearts - $gap);
+            $selfBlade = spBp2PrintedBlade($mbr);
+            $gap = spBp2WaitSelfOppGap($prompt);
+            $maxOppBlade = max(0, $selfBlade - $gap);
             $opp = ($owner === 'p1') ? 'p2' : 'p1';
             $oppCandidates = [];
             foreach ($state['players'][$opp]['stage'] as $oSlot => $om) {
                 if (!$om) {
                     continue;
                 }
-                if (memberHeartCount($om) > $maxOppHearts) {
+                if (memberIsInWait($om)) {
+                    continue;
+                }
+                if (spBp2PrintedBlade($om) > $maxOppBlade) {
                     continue;
                 }
                 $oppCandidates[] = array_merge(cardPromptSummary($om), ['slot' => $oSlot]);
@@ -1105,9 +1126,11 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
                 'owner'       => $owner,
                 'responder'   => $owner,
                 'source_name' => $prompt['source_name'] ?? 'Member',
-                'self_hearts' => $selfHearts,
+                'self_blade'  => $selfBlade,
+                'blade_gap'   => $gap,
+                'heart_gap'   => $gap,
                 'candidates'  => $oppCandidates,
-                'prompt'      => "Choose 1 opponent Member with ≤$maxOppHearts printed hearts to put into Wait.",
+                'prompt'      => "Choose 1 opponent Member with at least $gap fewer printed Blade (≤$maxOppBlade) to put into Wait.",
             ];
             $state['seq']++;
             return $state;
@@ -1119,13 +1142,27 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             if (!$om) {
                 throw new Exception('Choose an opponent Member');
             }
+            $candSlots = [];
+            foreach ($prompt['candidates'] ?? [] as $cand) {
+                if (isset($cand['slot'])) {
+                    $candSlots[] = (string)$cand['slot'];
+                }
+            }
+            if (!empty($candSlots) && !in_array((string)$slot, $candSlots, true)) {
+                throw new Exception('Choose an eligible opponent Member');
+            }
+            $gap = spBp2WaitSelfOppGap($prompt);
+            $selfBlade = intval($prompt['self_blade'] ?? 0);
+            if ($selfBlade > 0 && spBp2PrintedBlade($om) > max(0, $selfBlade - $gap)) {
+                throw new Exception('Choose an opponent Member with at least ' . $gap . ' fewer printed Blade');
+            }
             waitMember($om, $state);
             $state['players'][$opp]['stage'][$slot] = $om;
             unset($state['pending_prompt']);
             $state['seq']++;
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Member') . '] Waited ' .
-                ($om['name_en'] ?? $om['name']) . ' (heart gap).');
+                ($om['name_en'] ?? $om['name']) . ' (printed Blade gap).');
             return finishPromptEffects($state);
         }
         return null;
