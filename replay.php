@@ -288,7 +288,19 @@ function replayEnsureCardInHand(array &$state, string $pid, string $cardId): voi
     if (findInHand($p['hand'], $cardId) !== false) {
         return;
     }
-    foreach (['main_deck', 'waiting_room', 'live_zone', 'success_lives', 'energy_deck'] as $zone) {
+    // Do not yank cards that are already correctly on Stage or in Live storage —
+    // live_start_order_sources (and similar) list those instance ids in card_ids (#111).
+    foreach ($p['stage'] ?? [] as $mbr) {
+        if ($mbr && ($mbr['instance_id'] ?? '') === $cardId) {
+            return;
+        }
+    }
+    foreach ($p['live_zone'] ?? [] as $c) {
+        if (($c['instance_id'] ?? '') === $cardId) {
+            return;
+        }
+    }
+    foreach (['main_deck', 'waiting_room', 'success_lives', 'energy_deck'] as $zone) {
         foreach ($p[$zone] ?? [] as $i => $c) {
             if (($c['instance_id'] ?? '') === $cardId) {
                 $p['hand'][] = $c;

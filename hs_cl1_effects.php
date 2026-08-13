@@ -35,8 +35,14 @@ function hsCl1StageMemberBladeCandidates(
         if ($group !== '' && ($mbr['group'] ?? '') !== $group) continue;
         if ($subunit !== '' && !cardMatchesSubunit($mbr, $subunit)) continue;
         // Issue #94: AWOKE / wait-pick Blade need Live-temp cost (bonus/override), not printed.
-        if ($minCost > 0 && getEffectiveStageMemberCost($state, $pid, $mbr) < $minCost) continue;
-        $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+        $effCost = getEffectiveStageMemberCost($state, $pid, $mbr);
+        if ($minCost > 0 && $effCost < $minCost) continue;
+        $candidates[] = array_merge(cardPromptSummary($mbr), [
+            'slot' => $slot,
+            // UI / CPU: show Live-temporary cost so cost-10 picks are obvious (#111).
+            'cost' => $effCost,
+            'printed_cost' => intval($mbr['cost'] ?? 0),
+        ]);
     }
     return $candidates;
 }
@@ -105,8 +111,11 @@ function hsResolveHasunosoraCl1Effect(array $state, string $pid, array $source, 
                 'owner'         => $pid,
                 'responder'     => $pid,
                 'source_name'   => $name,
+                'source_id'     => $source['instance_id'] ?? '',
                 'candidates'    => $candidates,
                 'blade_amount'  => $amt,
+                'live_start'    => ($ctx['phase'] ?? '') === 'live_start'
+                    || ($state['phase'] ?? '') === 'live_start_effects',
                 'prompt'        => 'Choose 1 Stage Member to gain +' . $amt . ' Blade until this Live ends.',
                 'ability'       => $ab,
             ];
@@ -238,7 +247,9 @@ function hsCl1ResolvePrompt(array $state, string $owner, array $prompt, string $
             ' — [' . ($prompt['source_name'] ?? 'Member') . "] +$amt Blade on Stage Member until Live ends.");
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        // AWOKE Live Start (#111): must resume Live Start / advance performance —
+        // returning raw state left live_start_effects with no prompt and re-fired the pick.
+        return finishAfterBranchChoicePrompt($state, $prompt);
     }
 
     if ($promptType === 'live_success_pay_choice_wr_add') {
