@@ -12436,6 +12436,39 @@ function stopRankedPoll() {
   if (A.rankedSecTimer) { clearTimeout(A.rankedSecTimer); A.rankedSecTimer = null; }
 }
 
+function isRankedSearchUiActive() {
+  return !!(A.rankedSearching
+    || (typeof isRankedSearchActiveLocally === 'function' && isRankedSearchActiveLocally())
+    || (el('ranked-search-float') && !el('ranked-search-float').hidden)
+    || (el('btn-ranked-cancel') && !el('btn-ranked-cancel').hidden));
+}
+
+function isCasualSearchUiActive() {
+  return !!(A.casualSearching
+    || (typeof isCasualSearchActiveLocally === 'function' && isCasualSearchActiveLocally())
+    || (el('casual-search-float') && !el('casual-search-float').hidden)
+    || (el('btn-casual-cancel') && !el('btn-casual-cancel').hidden));
+}
+
+/**
+ * Background tabs freeze setTimeout (~minutes) and pagehide used to leave the queue
+ * + kill poll — match-found SFX never played until refresh. Wake the poll immediately.
+ */
+function resumeQueueAfterForeground() {
+  if (G.roomId && el('screen-game')?.classList.contains('active')
+      && G.gameState?.status && G.gameState.status !== 'finished') {
+    return;
+  }
+  if (isRankedSearchUiActive() && typeof pollRankedStatus === 'function') {
+    if (!A.rankedPollScheduled) startRankedPoll();
+    void pollRankedStatus();
+  }
+  if (isCasualSearchUiActive() && typeof pollCasualStatus === 'function') {
+    if (!A.casualPollScheduled) startCasualPoll();
+    void pollCasualStatus();
+  }
+}
+
 function isGameBusyForRankedSide() {
   if (!G.roomId || G.gameState?.mode === 'ranked') return false;
   if (!el('screen-game')?.classList.contains('active')) return false;
@@ -13125,7 +13158,13 @@ async function onRankedDeckChange() {
 
 async function pollRankedStatus() {
   try {
-    const res = await accountGet('ranked_status', { game_mode: rankedGameMode() });
+    // Never attach queue_stats on the match-found hot path — VPS in_game probes
+    // pushed ranked_status past the 12s client budget, so a match sat on the
+    // server until refresh (which uses include_stats=0).
+    const res = await accountGet('ranked_status', {
+      game_mode: rankedGameMode(),
+      include_stats: '0',
+    });
     A.rankedPollFails = 0;
     if (A.rankedPollErrShown && el('ranked-err')) {
       el('ranked-err').textContent = '';
@@ -13142,28 +13181,31 @@ async function pollRankedStatus() {
         stopRankedPoll();
         return;
       }
-      // New ranked rooms live on VPS Redis — never Hostinger-only probe (that stranded
-      // the second player on the queue screen until refresh).
-      const matchApi = (st.match_api || 'overflow') === 'hostinger' ? 'hostinger' : 'overflow';
-      const check = await fetchGameStateForReconnectWithFallback({
-        roomId: st.room_id,
-        token: st.player_token,
-        apiOrigin: matchApi,
-        match_api: matchApi,
-      }, {
-        hostingerOnly: matchApi === 'hostinger',
-      });
-      const s = check.state || {};
-      const gone = s.status === 'finished'
-        || !!check.roomMissingBoth
-        || (matchApi === 'overflow' && !!check.overflowMissing);
+      // Confirm the room is not already finished. A slow/failed overflow probe
+      // must not block enter — refresh already entered without this gate.
+      let gone = false;
+      try {
+        const matchApi = (st.match_api || 'overflow') === 'hostinger' ? 'hostinger' : 'overflow';
+        const check = await fetchGameStateForReconnectWithFallback({
+          roomId: st.room_id,
+          token: st.player_token,
+          apiOrigin: matchApi,
+          match_api: matchApi,
+        }, {
+          hostingerOnly: matchApi === 'hostinger',
+        });
+        const s = check.state || {};
+        gone = s.status === 'finished'
+          || !!check.roomMissingBoth
+          || (matchApi === 'overflow' && !!check.overflowMissing);
+      } catch (probeErr) {
+        gone = false;
+      }
       if (gone) {
         await accountPost('leave_active_game', {}).catch(() => {});
         setRankedSearchingUI(false);
         return;
       }
-      // Transient / soft error: keep polling — do not clear search or abandon.
-      if (!s.my_id) return;
       await enterRankedMatch(st);
     }
   } catch (e) {
@@ -15189,10 +15231,22 @@ async function bootApp() {
   syncGameModeSelects();
   window.addEventListener('pagehide', (ev) => {
     if (ev.persisted) return;
+    // Closing the tab / navigating away: leave the queue.
+    // Backgrounding (phone lock, other tab) also fires pagehide with
+    // visibilityState=hidden — do NOT leave or kill search flags there, or a
+    // match found after a long wait never plays SFX until refresh.
+    if (document.visibilityState === 'hidden') return;
     sendRankedLeaveBeacon();
     sendCasualLeaveBeacon();
     stopRankedPoll();
     stopCasualPoll();
+  });
+  window.addEventListener('beforeunload', () => {
+    sendRankedLeaveBeacon();
+    sendCasualLeaveBeacon();
+  });
+  window.addEventListener('pageshow', () => {
+    void resumeQueueAfterForeground();
   });
   on('btn-hub-logout', 'click', () => {
     clearAuthToken();
@@ -15288,6 +15342,7 @@ async function bootApp() {
   on('btn-surveil-ok','click', confirmSurveil);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
+    void resumeQueueAfterForeground();
     const hiddenMs = G._pageHiddenAt ? (Date.now() - G._pageHiddenAt) : 0;
     G._pageHiddenAt = 0;
     const s = G.gameState;
