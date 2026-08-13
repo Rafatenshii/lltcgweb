@@ -53,6 +53,28 @@ python import_from_db.py --refresh "C:/Users/super/OneDrive/Documents/GitHub/Chi
 
 Ability routing: `sp_bp2_abilities.py` → `abilities_for_sp_bp2()` (English in `_SP_BP2_TRANSLATIONS`).
 
+### Ability bracket audit (2026-07-01)
+
+EN skill lines must use **official bracket labels only** (`[Activated]`, `[On Enter]`, `[Always]`, `[Automatic]`/`[Auto]`, `[Live Start]`, `[Live Success]`, slot tags like `[Left Side]`, etc.). Invalid engine-style labels (`[On Play]`, `[Continuous]`) were removed.
+
+Verified all 46 ability-bearing `PL!SP-pb2-*` bases (+ `PL!SP-bp2-023`–`025` SRL) against official JP texticon HTML from the PBSP02 scrape. Key fixes:
+
+| Card | Was | Now |
+|------|-----|-----|
+| `pb2-000` | `[Activated]` / `[On Play]` (legacy) | `[Always]` + `[On Enter]` |
+| `pb2-002` | `[On Enter]` | `[Activated] [Once per turn]` |
+| `pb2-004`, `007`, `008` | wrong trigger bracket | `[Live Success]` |
+| `pb2-005` | missing inherit line | `[On Enter]` + `[Always]` |
+| `pb2-009`, `029` | single bracket | `[On Enter] / [Live Start]` |
+| `pb2-010` | `[On Enter]` | `[Live Start]` + `[Live Success]` |
+| `pb2-011` | `[Auto]` only | `[Automatic] [Once per turn]` + `[Live Start]` |
+| `pb2-018`, `025` | `[Activated]` or `[On Enter]` wrong | `[Live Start]` / `[On Enter]` per official |
+| `pb2-046` | two `[Always]` | `[Always]` (negates Live Start) + `[Live Success]` |
+
+Audit helpers: `tools/audit_pb2_brackets.py`, `tools/audit_pb2_official_icons.py`. Defensive legacy aliases: `index.html` (`[On Play]`→`[Always]`, `[Continuous]`→`[Always]`), `tcg_cards_en_bridge.py` (`SKILL_BRACKET_RE`).
+
+After `_SP_BP2_TRANSLATIONS` edits: `import_from_db.py --refresh`, `sync_discord_card_skills.py --write-only --prefix PL!SP-pb2-`, deploy `tcg/cards.json` + `tcg/index.html`, then VPS `!!tcgimport_app_dual`.
+
 ## Import status (2026-07-01)
 
 | Scope | Count | Notes |
@@ -94,13 +116,41 @@ Images use **`PBSP02/`** CDN paths; `booster_pack` set to DUO so `tcgBuildBoxPoo
 | `pb2-005` | `stack_baton_wr_member_under`, `inherit_stacked_group_abilities` |
 | `pb2-006` | `cost_per_stacked_group_member`, `auto_stack_wr_group_member_under` |
 | `pb2-008` | `score_per_yell_group_no_blade` (deferred after Yell reveal) |
-| `pb2-009` | `optional_wait_self_opp_heart_gap` |
+| `pb2-009` | `optional_wait_self_opp_heart_gap` (printed Blade gap, not hearts) |
 | `pb2-011` | `auto_on_center_move_choose` (+ optional position change) |
 | `pb2-022` | `auto_on_move_to_center_subunit_heart` |
 | `pb2-026` | `hearts_if_active_energy` |
 | `pb2-046` | `continuous_negate_stage_member_abilities`, `live_score_if_stage_has_ability_members` |
 
-## Booster UI
+## Booster simulation (`pb_superstar_duo`)
+
+Box id: **`pb_superstar_duo`** · kind: **`pb_duo`**
+
+| | DUO (PBSP02) | Vol.1 (`pb_superstar`) |
+|--|--|--|
+| Cards / pack | **3** | 5 |
+| Packs / box | **20** | 30 |
+| Structure | Slot 1: N/R · Slots 2–3: guaranteed holo | 2×N, 1×R, 1× base, 1× foil |
+| Box bonus | 2 all-holo packs per box | God pack (~1/480) if LLE in pool |
+| Pool (2026-07-01) | **122 / 122** official PBSP02 | 84 |
+
+### Pool completeness
+
+All **122** official `cardsearch_ex?expansion=PBSP02` cards are in the pull pool via `booster_pack` = `プレミアムブースター ラブライブ！スーパースター!! DUO`.
+
+Previously missing reprint SRL/SECL rows (`PL!SP-bp4-*-SRL`, `PL!SP-pb1-*-SRL`, `PL!SP-bp4-024-SECL`) are imported from Chiichan DB / scrape.
+
+`tcgBuildBoxPools()` normalizes rarities for DUO-specific keys:
+
+- `P＋` / `-P2` suffix → **`P+`**
+- `-PE2` suffix → **`PE+`**
+- `-SECL` / `-SRL` / `-DUO` / `-PP` / `-SECS` suffixes → matching pool band
+
+### Holo weights (slots 2–3)
+
+Tiered like `pb_superstar` foil slot but with DUO rarities: **SRL** (bulk holo, replaces vol.1 **SRE**), **PP**, **P+**, **PE+**, **SECL**, **LLE**, chase **DUO** / **SECS** / **SECE**. Pity counters scale to **20 packs/box** (not 30).
+
+### UI
 
 - **Box picker** (`booster.php` `image`): Official 3D box render from cardlist (`LLC_-PB06_box_image.png` on llofficial-cardgame.com).
 - **Pack open** (`pack_images`): Amazon pack wrapper `pb_superstar_duo-a.jpg` (unchanged).
