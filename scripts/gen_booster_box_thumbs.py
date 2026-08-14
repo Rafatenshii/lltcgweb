@@ -12,7 +12,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "assets" / "packs" / "boxes"
 MAX_EDGE = 420  # matches ~210 CSS max-height @2x
-JPEG_QUALITY = 78
+WEBP_QUALITY = 80
 
 # id -> official box render URL (from booster.php)
 BOXES = {
@@ -40,19 +40,16 @@ def fetch(url: str) -> bytes:
 
 
 def make_thumb(data: bytes, dest: Path) -> None:
-    im = Image.open(io.BytesIO(data))
-    im = im.convert("RGBA")
-    # Flatten onto light gray so JPEG has no checkerboard
-    bg = Image.new("RGB", im.size, (24, 32, 48))
-    bg.paste(im, mask=im.split()[-1] if im.mode == "RGBA" else None)
-    w, h = bg.size
+    im = Image.open(io.BytesIO(data)).convert("RGBA")
+    w, h = im.size
     scale = min(1.0, MAX_EDGE / max(w, h))
     if scale < 1.0:
         nw = max(1, int(round(w * scale)))
         nh = max(1, int(round(h * scale)))
-        bg = bg.resize((nw, nh), Image.Resampling.LANCZOS)
+        im = im.resize((nw, nh), Image.Resampling.LANCZOS)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    bg.save(dest, format="JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True)
+    # WebP retains the transparent background around the rendered box.
+    im.save(dest, format="WEBP", quality=WEBP_QUALITY, method=6)
 
 
 def main() -> None:
@@ -60,7 +57,7 @@ def main() -> None:
     total_src = 0
     total_out = 0
     for box_id, url in BOXES.items():
-        dest = OUT / f"{box_id}.jpg"
+        dest = OUT / f"{box_id}.webp"
         print(f"fetch {box_id} …", flush=True)
         raw = fetch(url)
         total_src += len(raw)
