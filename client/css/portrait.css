@@ -902,6 +902,13 @@ html.tcg-portrait-play .pb-opp-hand{
 }
 html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:visible; display:flex; z-index:4; }
 html.tcg-portrait-play .pb-hud{ grid-area: hud; flex:0 0 auto; z-index:8; max-height:26vh; overflow-x:hidden; overflow-y:auto; }
+/* Burger Log/Resign pop opens upward — lift the HUD so overflow does not clip it
+   under the center info rectangle / adjacent playmat layers. */
+html.tcg-portrait-play .pb-hud.pb-menu-open,
+html.tcg-portrait-play .pb-hud:has(.pb-menu-pop:not([hidden])){
+  overflow:visible!important;
+  z-index:60;
+}
 html.tcg-portrait-play .pb-my-field{ grid-area: my-field; min-height:0; overflow:visible; display:flex; z-index:4; }
 html.tcg-portrait-play .pb-my-hand{
   grid-area: my-hand;
@@ -1563,6 +1570,10 @@ html.tcg-portrait-play .pb-phase-row{
   position:relative;
   z-index:12;
 }
+html.tcg-portrait-play .pb-hud.pb-menu-open .pb-phase-row,
+html.tcg-portrait-play .pb-hud:has(.pb-menu-pop:not([hidden])) .pb-phase-row{
+  z-index:62;
+}
 html.tcg-portrait-play .pb-phase-actions{
   display:flex;
   align-items:center;
@@ -1598,6 +1609,7 @@ html.tcg-portrait-play .pb-hud .btn-phase-primary{
 html.tcg-portrait-play .pb-menu-wrap{
   position:relative;
   flex:0 0 auto;
+  z-index:62;
 }
 html.tcg-portrait-play .pb-menu-btn{
   width:34px;
@@ -1615,6 +1627,8 @@ html.tcg-portrait-play .pb-menu-btn{
   justify-content:center;
   cursor:pointer;
   touch-action:manipulation;
+  position:relative;
+  z-index:1;
 }
 html.tcg-portrait-play .pb-menu-pop{
   position:absolute;
@@ -1629,7 +1643,7 @@ html.tcg-portrait-play .pb-menu-pop{
   display:flex;
   flex-direction:column;
   gap:4px;
-  z-index:40;
+  z-index:70;
 }
 html.tcg-portrait-play .pb-menu-pop[hidden]{ display:none!important; }
 html.tcg-portrait-play .pb-menu-item{

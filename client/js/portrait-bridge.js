@@ -133,21 +133,25 @@
   function closePortraitMenu() {
     const pop = global.document.getElementById('portrait-menu-pop');
     const btn = global.document.getElementById('btn-portrait-menu');
+    const hud = global.document.querySelector('.pb-hud');
     if (pop) {
       pop.hidden = true;
       pop.classList.remove('open');
     }
     if (btn) btn.setAttribute('aria-expanded', 'false');
+    hud?.classList.remove('pb-menu-open');
   }
 
   function togglePortraitMenu() {
     const pop = global.document.getElementById('portrait-menu-pop');
     const btn = global.document.getElementById('btn-portrait-menu');
+    const hud = global.document.querySelector('.pb-hud');
     if (!pop || !btn) return;
     const open = pop.hidden;
     pop.hidden = !open;
     pop.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    hud?.classList.toggle('pb-menu-open', open);
   }
 
   function ensurePlayPanelHost() {
