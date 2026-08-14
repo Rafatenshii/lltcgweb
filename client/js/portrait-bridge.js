@@ -85,9 +85,188 @@
     }
   }
 
+  /* ── Hold-to-preview: Energy zone + Success Lives ── */
+  let zonePreviewPtrId = null;
+  let zonePreviewBound = false;
+
+  function ensureZonePreview() {
+    const game = global.document.getElementById('screen-game');
+    if (!game) return null;
+    let root = global.document.getElementById('portrait-zone-preview');
+    if (root) return root;
+    root = global.document.createElement('div');
+    root.id = 'portrait-zone-preview';
+    root.className = 'pb-zone-preview';
+    root.hidden = true;
+    root.setAttribute('aria-hidden', 'true');
+    root.innerHTML = '<div class="pb-zone-preview-rail" id="portrait-zone-preview-rail"></div>';
+    game.appendChild(root);
+    return root;
+  }
+
+  function hideZonePreview() {
+    const root = global.document.getElementById('portrait-zone-preview');
+    const rail = global.document.getElementById('portrait-zone-preview-rail');
+    if (root) {
+      root.hidden = true;
+      root.classList.remove('show', 'mine', 'opp', 'kind-energy', 'kind-success');
+      root.setAttribute('aria-hidden', 'true');
+      root.style.removeProperty('--pb-prev-left');
+      root.style.removeProperty('--pb-prev-top');
+      root.style.removeProperty('--pb-prev-width');
+      root.style.removeProperty('--pb-prev-height');
+    }
+    if (rail) rail.innerHTML = '';
+    zonePreviewPtrId = null;
+  }
+
+  function resolvePreviewPid(side) {
+    const myId = global.G?.playerId || 'p1';
+    if (side === 'mine') return myId;
+    return myId === 'p1' ? 'p2' : 'p1';
+  }
+
+  function positionZonePreview(side) {
+    const root = ensureZonePreview();
+    if (!root) return false;
+    const board = global.document.getElementById('portrait-board');
+    const field = board?.querySelector(side === 'mine' ? '.pb-my-field' : '.pb-opp-field');
+    const hud = board?.querySelector('.pb-hud');
+    if (!field) return false;
+    const fr = field.getBoundingClientRect();
+    const hr = hud?.getBoundingClientRect();
+    const pad = 8;
+    let top = fr.top + pad;
+    let bottom = fr.bottom - pad;
+    // Keep clear of the HUD controls the player is holding.
+    if (hr) {
+      if (side === 'mine' && hr.bottom > top) top = Math.min(fr.bottom - 48, hr.bottom + 6);
+      if (side === 'opp' && hr.top < bottom) bottom = Math.max(fr.top + 48, hr.top - 6);
+    }
+    const height = Math.max(56, bottom - top);
+    root.style.setProperty('--pb-prev-left', Math.round(fr.left + pad) + 'px');
+    root.style.setProperty('--pb-prev-top', Math.round(top) + 'px');
+    root.style.setProperty('--pb-prev-width', Math.round(Math.max(40, fr.width - pad * 2)) + 'px');
+    root.style.setProperty('--pb-prev-height', Math.round(height) + 'px');
+    return height >= 48;
+  }
+
+  function fillEnergyPreview(rail, zone) {
+    zone.forEach(function (ec) {
+      const used = typeof global.energyChipActive === 'function'
+        ? !global.energyChipActive(ec)
+        : ec?.active === false;
+      const wrap = global.document.createElement('div');
+      wrap.className = 'pb-zone-preview-card energy' + (used ? ' used' : '');
+      const chip = global.document.createElement('div');
+      chip.className = 'echip pb-zone-preview-echip';
+      if (typeof global.syncEnergyChipFace === 'function') {
+        global.syncEnergyChipFace(chip, ec, used);
+      } else if (typeof global.appendEnergyChipFace === 'function') {
+        global.appendEnergyChipFace(chip, ec, used);
+      } else if (typeof global.appendCardFace === 'function') {
+        global.appendCardFace(chip, ec, { sideways: used });
+      }
+      wrap.appendChild(chip);
+      rail.appendChild(wrap);
+    });
+  }
+
+  function fillSuccessPreview(rail, lives) {
+    lives.forEach(function (card) {
+      const wrap = global.document.createElement('div');
+      wrap.className = 'pb-zone-preview-card success';
+      const live = global.document.createElement('div');
+      live.className = 'lcard live-card';
+      const sideways = typeof global.liveStorageUseArtSpin === 'function'
+        ? !!global.liveStorageUseArtSpin(card)
+        : true;
+      if (typeof global.appendCardFace === 'function') {
+        global.appendCardFace(live, card, { sideways: sideways });
+      }
+      wrap.appendChild(live);
+      rail.appendChild(wrap);
+    });
+  }
+
+  function showZonePreview(side, kind) {
+    if (!portraitActive()) return;
+    const root = ensureZonePreview();
+    const rail = global.document.getElementById('portrait-zone-preview-rail');
+    if (!root || !rail) return;
+    const pid = resolvePreviewPid(side);
+    const p = global.G?.gameState?.players?.[pid];
+    if (!p) return;
+    const cards = kind === 'energy'
+      ? (p.energy_zone || [])
+      : (p.success_lives || []);
+    if (!cards.length) return;
+    if (!positionZonePreview(side)) return;
+    rail.innerHTML = '';
+    rail.className = 'pb-zone-preview-rail kind-' + kind;
+    if (kind === 'energy') fillEnergyPreview(rail, cards);
+    else fillSuccessPreview(rail, cards);
+    root.classList.remove('mine', 'opp', 'kind-energy', 'kind-success');
+    root.classList.add('show', side === 'mine' ? 'mine' : 'opp', 'kind-' + kind);
+    root.hidden = false;
+    root.setAttribute('aria-hidden', 'false');
+  }
+
+  function onZonePreviewDown(e, side, kind) {
+    if (!portraitActive() || e.button != null && e.button !== 0) return;
+    if (zonePreviewPtrId != null && e.pointerId !== zonePreviewPtrId) return;
+    const pid = resolvePreviewPid(side);
+    const p = global.G?.gameState?.players?.[pid];
+    const cards = kind === 'energy' ? (p?.energy_zone || []) : (p?.success_lives || []);
+    if (!cards.length) return;
+    zonePreviewPtrId = e.pointerId;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    showZonePreview(side, kind);
+  }
+
+  function onZonePreviewUp(e) {
+    if (zonePreviewPtrId != null && e.pointerId !== zonePreviewPtrId) return;
+    try {
+      if (e.currentTarget && e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch (_) { /* ignore */ }
+    hideZonePreview();
+  }
+
+  function bindZonePreviewTarget(node, side, kind) {
+    if (!node || node.dataset.pbZonePreviewBound === '1') return;
+    node.dataset.pbZonePreviewBound = '1';
+    node.classList.add('pb-hold-preview-target');
+    node.addEventListener('pointerdown', function (e) { onZonePreviewDown(e, side, kind); });
+    node.addEventListener('pointerup', onZonePreviewUp);
+    node.addEventListener('pointercancel', onZonePreviewUp);
+    node.addEventListener('lostpointercapture', onZonePreviewUp);
+    node.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+
+  function bindZonePreviewTargets() {
+    if (!portraitActive()) return;
+    ensureZonePreview();
+    bindZonePreviewTarget(global.document.getElementById('portrait-my-nrg-host'), 'mine', 'energy');
+    bindZonePreviewTarget(global.document.getElementById('portrait-opp-nrg-host'), 'opp', 'energy');
+    bindZonePreviewTarget(global.document.getElementById('portrait-my-wins'), 'mine', 'success');
+    bindZonePreviewTarget(global.document.getElementById('portrait-opp-wins'), 'opp', 'success');
+    if (!zonePreviewBound) {
+      zonePreviewBound = true;
+      global.addEventListener('blur', hideZonePreview);
+      global.document.addEventListener('visibilitychange', function () {
+        if (global.document.visibilityState !== 'visible') hideZonePreview();
+      });
+      global.addEventListener('resize', hideZonePreview, { passive: true });
+    }
+  }
+
   /** Burger menu beside End Main Phase — holds Log + Resign. */
   function ensurePhaseMenu() {
     if (!global.document.getElementById('portrait-board')) return;
+    bindZonePreviewTargets();
     if (global.document.getElementById('portrait-phase-row')) return;
 
     const hud = global.document.querySelector('#portrait-board .pb-hud');
@@ -271,6 +450,10 @@
 
   function handleBack() {
     if (!portraitActive()) return false;
+    if (global.document.getElementById('portrait-zone-preview')?.classList.contains('show')) {
+      hideZonePreview();
+      return true;
+    }
     if (global.document.getElementById('screen-game')?.classList.contains('portrait-play-selecting')) {
       if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
       return true;
@@ -395,7 +578,9 @@
 
     // Phase menu may mount after board reparent — retry briefly
     ensurePhaseMenu();
+    bindZonePreviewTargets();
     setTimeout(ensurePhaseMenu, 400);
+    setTimeout(bindZonePreviewTargets, 400);
     // Long-press / select on stage cards often fills #card-hover-panel — surface as sheet once painted.
     try {
       const hover = global.document.getElementById('card-hover-panel');
@@ -450,6 +635,8 @@
   global.tcgPortraitOpenInspect = openInspectFromHover;
   global.tcgPortraitSyncPlaySheet = syncPlaySheet;
   global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
+  global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;
+  global.tcgPortraitHideZonePreview = hideZonePreview;
 
   if (global.document.readyState === 'loading') {
     global.document.addEventListener('DOMContentLoaded', boot);

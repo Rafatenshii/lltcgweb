@@ -62,6 +62,9 @@
         if (typeof global.tcgPortraitEnsurePhaseMenu === 'function') {
           global.tcgPortraitEnsurePhaseMenu();
         }
+        if (typeof global.tcgPortraitBindZonePreviews === 'function') {
+          global.tcgPortraitBindZonePreviews();
+        }
       } catch (_) { /* ignore */ }
       return true;
     }
@@ -181,6 +184,9 @@
       if (typeof global.tcgPortraitEnsurePhaseMenu === 'function') {
         global.tcgPortraitEnsurePhaseMenu();
       }
+      if (typeof global.tcgPortraitBindZonePreviews === 'function') {
+        global.tcgPortraitBindZonePreviews();
+      }
     } catch (_) { /* ignore */ }
     // Relayout hands after reparent so strip width / centering settle (avoids start-of-match jumps).
     try {
@@ -220,6 +226,11 @@
     mount();
     ensureFieldHosts();
     syncHandVars();
+    try {
+      if (typeof global.tcgPortraitBindZonePreviews === 'function') {
+        global.tcgPortraitBindZonePreviews();
+      }
+    } catch (_) { /* ignore */ }
     const me = s.players[myId];
     const oppId = myId === 'p1' ? 'p2' : 'p1';
     const opp = s.players[oppId];
