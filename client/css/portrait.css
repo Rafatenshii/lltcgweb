@@ -610,10 +610,135 @@ html.tcg-portrait-play #screen-ranked .account-shell,
 html.tcg-portrait-play #screen-options .account-shell,
 html.tcg-portrait-play #screen-booster-shop .account-shell,
 html.tcg-portrait-play #screen-sticker-shop .account-shell,
-html.tcg-portrait-play #screen-sleeve-shop .account-shell{
+html.tcg-portrait-play #screen-sleeve-shop .account-shell,
+html.tcg-portrait-play #screen-leaderboard .account-shell{
   max-width:100%;
   width:100%;
 }
+
+/* Leaderboard — compact rows; keep banner to the right of the name */
+html.tcg-portrait-play #screen-leaderboard .account-panel{
+  padding-left:10px;
+  padding-right:10px;
+}
+html.tcg-portrait-play #screen-leaderboard .account-screen-head{
+  margin-bottom:6px;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-leaderboard .account-screen-head h2{
+  font-size:16px;
+  margin:0;
+}
+html.tcg-portrait-play #screen-leaderboard .account-lead{
+  font-size:12px;
+  line-height:1.35;
+  margin:0 0 8px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-mode-field{
+  margin:6px 0 6px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-mode-field label{
+  font-size:11px;
+  margin-bottom:2px;
+}
+html.tcg-portrait-play #screen-leaderboard .game-mode-desc{
+  font-size:11px;
+  margin:4px 0 0;
+  line-height:1.3;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-actions{
+  margin:6px 0 8px;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-actions .btn-out{
+  min-height:36px;
+  padding:6px 12px;
+  font-size:12px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-your-rank{
+  margin:0 0 8px;
+  padding:8px 10px;
+  gap:6px 10px;
+  border-radius:10px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-your-rank-line{
+  font-size:13px;
+}
+html.tcg-portrait-play #screen-leaderboard #btn-leaderboard-jump-you{
+  min-height:34px;
+  padding:5px 10px;
+  font-size:12px;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-list{
+  gap:6px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-card{
+  border-radius:10px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-card-body{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) min(132px,34vw);
+  align-items:center;
+  gap:6px 8px;
+  padding:6px 8px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-card .rank-banner-wrap{
+  grid-column:3;
+  grid-row:1;
+  align-self:center;
+  justify-self:stretch;
+  width:100%;
+  max-width:132px;
+  aspect-ratio:3.5 / 1;
+  margin-top:0;
+  border-radius:6px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-avatar,
+html.tcg-portrait-play #screen-leaderboard .rank-avatar-fallback{
+  width:30px;
+  height:30px;
+  border-width:1.5px;
+  font-size:12px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-pos{
+  font-size:11px;
+  min-width:1.9em;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-line{
+  flex-wrap:nowrap;
+  gap:5px;
+  align-items:center;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-name-wrap{
+  gap:4px;
+  min-width:0;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-flag{
+  width:14px;
+  height:10px;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-name{
+  font-size:12px;
+  line-height:1.15;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-elo{
+  font-size:12px;
+  margin-top:0;
+}
+html.tcg-portrait-play #screen-leaderboard .rank-record{
+  font-size:10px;
+  margin-top:0;
+  line-height:1.2;
+  opacity:.85;
+}
+html.tcg-portrait-play #screen-leaderboard .leaderboard-empty{
+  padding:16px 8px;
+  font-size:13px;
+}
+
 html.tcg-portrait-play .overlay.open .mbox,
 html.tcg-portrait-play .overlay.open .account-shell{
   max-width:min(520px,96vw);
