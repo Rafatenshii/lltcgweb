@@ -1,6 +1,10 @@
 # Production auth (operator-only; contributors use llr_auth_offline.php via llr_auth_load.php)
 llr_auth.php
 tcg_sync.local.php
+# Hostinger marker that flips API traffic to VPS — never commit an enabled marker by accident
+USE_VPS_API
+# Hostinger marker: disable live match writes (VPS match-primary cutover)
+MATCH_WRITES_DISABLED
 
 # Secrets & local config
 .env
@@ -28,10 +32,17 @@ exports/*
 # Sticker-shop seal currency icons (LLR-made) — keep in git
 !/assets/seals/
 !/assets/seals/**
+# Coins + sleeve shop UI / built sleeve thumbs
+!/assets/ui/
+!/assets/ui/**
+!/assets/sleeves/
+!/assets/sleeves/**
 /bg/**
 /icons/**
 /cardimg/**
 /titles/**
+# Local TCGPlayer sleeve art dumps (not for deploy/git)
+/Sleeves/
 
 # Root-level art (playmat, card back, logo, calibration scratch)
 /*.png
@@ -92,5 +103,14 @@ playmat_zones_debug.png
 Thumbs.db
 .idea/
 .vscode/
+
+# Android / Capacitor shell (private — keep off public GitHub)
+/android/
+/lltcg-android/
+capacitor.config.*
+*.apk
+*.aab
+*.keystore
+*.jks
 
 ACCOUNT_README.md
