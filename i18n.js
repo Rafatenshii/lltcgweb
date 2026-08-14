@@ -511,6 +511,7 @@
         "nijigasaki": "Nijigasaki",
         "liella": "Liella!",
         "hasunosora": "Hasunosora",
+        "mixed": "Mixed",
         "other": "Other"
       },
       "series": {
@@ -1803,6 +1804,7 @@
         "nijigasaki": "虹ヶ咲",
         "liella": "Liella!",
         "hasunosora": "蓮ノ空",
+        "mixed": "混成",
         "other": "その他"
       },
       "series": {
@@ -3872,6 +3874,7 @@
         "nijigasaki": "Nijigasaki",
         "liella": "Liella!",
         "hasunosora": "Hasunosora",
+        "mixed": "Mixtas",
         "other": "Otros"
       },
       "series": {
@@ -5191,6 +5194,7 @@
         "nijigasaki": "니지가를",
         "liella": "Liella!",
         "hasunosora": "하스노소라",
+        "mixed": "믹스",
         "other": "기타"
       },
       "series": {
@@ -6511,6 +6515,7 @@
         "nijigasaki": "虹咲",
         "liella": "Liella!",
         "hasunosora": "莲之空",
+        "mixed": "混合",
         "other": "其他"
       },
       "series": {
@@ -7807,6 +7812,7 @@
         "nijigasaki": "Nijigasaki",
         "liella": "Liella!",
         "hasunosora": "Hasunosora",
+        "mixed": "ผสม",
         "other": "อื่นๆ"
       },
       "series": {
@@ -7884,6 +7890,7 @@
     loc.sleeveShop.units.nijigasaki = loc.sleeveShop.units.nijigasaki || 'Nijigasaki';
     loc.sleeveShop.units.liella = loc.sleeveShop.units.liella || 'Liella!';
     loc.sleeveShop.units.hasunosora = loc.sleeveShop.units.hasunosora || 'Hasunosora';
+    loc.sleeveShop.units.mixed = loc.sleeveShop.units.mixed || 'Mixed';
     loc.sleeveShop.units.other = loc.sleeveShop.units.other || 'Other';
     loc.sleeveShop.series = loc.sleeveShop.series || {};
     loc.sleeveShop.series.lovelive = loc.sleeveShop.series.lovelive || 'Love Live!';
@@ -9468,6 +9475,7 @@
     else if (low.indexOf('niji') === 0) key = 'nijigasaki';
     else if (low.indexOf('liella') === 0) key = 'liella';
     else if (low.indexOf('hasu') === 0) key = 'hasunosora';
+    else if (low === 'mixed' || low === 'crossover' || low === 'collab' || low === 'multi') key = 'mixed';
     else if (low === 'other') key = 'other';
     if (!key) return s;
     var v = t('sleeveShop.units.' + key);

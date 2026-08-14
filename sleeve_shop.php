@@ -286,6 +286,7 @@ function tcgSleeveShopUnitForGroup(string $group): string {
         'nijigasaki', 'niji' => 'Nijigasaki',
         'liella', 'liella!', 'superstar' => 'Liella!',
         'hasunosora', 'hasu' => 'Hasunosora',
+        'mixed', 'crossover', 'collab', 'multi' => 'Mixed',
         default => 'Other',
     };
 }
@@ -298,6 +299,8 @@ function tcgSleeveShopUnitIconUrl(string $unit): string {
         'Nijigasaki' => 'https://i.idol.st/static/img/i_unit/Nijigasaki-High-School.png',
         'Liella!', 'Liella' => 'https://i.idol.st/static/img/i_unit/Liella.png',
         'Hasunosora' => 'https://i.idol.st/static/img/i_unit/Hasunosora-Girls-High-School-Idol-Club.png',
+        // Mixed / crossover sleeves — no dedicated series mark on idol.st; reuse Other.
+        'Mixed' => 'https://i.idol.st/static/img/i_unit/Other.png',
         default => 'https://i.idol.st/static/img/i_unit/Other.png',
     };
 }
@@ -308,7 +311,7 @@ function tcgSleeveShopUnitIconUrl(string $unit): string {
  */
 function tcgSleeveShopIsGroupIdol(string $idol, string $unit): bool {
     $i = strtolower(trim($idol));
-    if ($i === '' || $i === 'group' || $i === 'unit') {
+    if ($i === '' || $i === 'group' || $i === 'unit' || $i === 'mixed' || $i === 'crossover') {
         return true;
     }
     $u = strtolower(trim($unit));
@@ -318,6 +321,7 @@ function tcgSleeveShopIsGroupIdol(string $idol, string $unit): bool {
         'nijigasaki' => ['nijigasaki', 'niji'],
         'liella!', 'liella' => ['liella', 'liella!', 'superstar'],
         'hasunosora' => ['hasunosora', 'hasu'],
+        'mixed' => ['mixed', 'crossover', 'collab', 'multi', 'group'],
         default => [],
     };
     return in_array($i, $aliases, true);
@@ -325,5 +329,5 @@ function tcgSleeveShopIsGroupIdol(string $idol, string $unit): bool {
 
 /** Generation display order. */
 function tcgSleeveShopGenerationOrder(): array {
-    return ["µ's", 'Aqours', 'Nijigasaki', 'Liella!', 'Hasunosora', 'Other'];
+    return ["µ's", 'Aqours', 'Nijigasaki', 'Liella!', 'Hasunosora', 'Mixed', 'Other'];
 }
