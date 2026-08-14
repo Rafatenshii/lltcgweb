@@ -58,6 +58,11 @@
     if (el('portrait-board')) {
       ensureFieldHosts();
       syncHandVars();
+      try {
+        if (typeof global.tcgPortraitEnsurePhaseMenu === 'function') {
+          global.tcgPortraitEnsurePhaseMenu();
+        }
+      } catch (_) { /* ignore */ }
       return true;
     }
 
@@ -172,6 +177,11 @@
 
     document.documentElement.classList.add('tcg-portrait-board-mounted');
     syncHandVars();
+    try {
+      if (typeof global.tcgPortraitEnsurePhaseMenu === 'function') {
+        global.tcgPortraitEnsurePhaseMenu();
+      }
+    } catch (_) { /* ignore */ }
     try {
       global.addEventListener('resize', syncHandVars, { passive: true });
     } catch (_) { /* ignore */ }

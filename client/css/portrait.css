@@ -753,41 +753,146 @@ html.tcg-portrait-play .pb-hud .stage-board-grid{
   gap:6px;
 }
 html.tcg-portrait-play .pb-hud .stage-board-side-lbl{ display:none; }
+html.tcg-portrait-play .pb-hud .stage-board-side.mine{
+  align-items:flex-start;
+}
+html.tcg-portrait-play .pb-hud .stage-board-side.opp{
+  align-items:flex-end;
+}
 html.tcg-portrait-play .pb-hud .stage-board-hearts{
   min-height:14px;
   display:flex;
   flex-wrap:wrap;
-  gap:2px;
+  gap:2px 6px;
+  width:100%;
+}
+html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-hearts,
+html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-yell{
+  justify-content:flex-start;
+  text-align:left;
+}
+html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-hearts,
+html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-yell{
+  justify-content:flex-end;
+  text-align:right;
 }
 html.tcg-portrait-play .pb-hud .stage-board-hearts img,
-html.tcg-portrait-play .pb-hud .stage-board-hearts .ticon{
+html.tcg-portrait-play .pb-hud .stage-board-hearts .ticon,
+html.tcg-portrait-play .pb-hud .stage-board-hearts .hicon{
   width:13px!important;
   height:13px!important;
 }
 html.tcg-portrait-play .pb-hud .stage-board-yell{
+  display:flex;
+  align-items:center;
+  gap:4px;
   font-size:10px;
   opacity:.85;
+  width:100%;
 }
 html.tcg-portrait-play .pb-hud .stage-board-active,
 html.tcg-portrait-play .pb-hud .stage-board-abilities{ display:none!important; }
 
+/* End Main Phase + burger menu row */
+html.tcg-portrait-play .pb-phase-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:2px 0 0;
+  position:relative;
+  z-index:12;
+}
+html.tcg-portrait-play .pb-phase-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  max-width:320px;
+}
 html.tcg-portrait-play .pb-hud .phase-action-bar{
   display:flex!important;
-  justify-content:center;
-  padding:2px 0 0;
+  flex:1 1 auto;
+  justify-content:stretch;
+  padding:0;
   margin:0;
   background:transparent;
   border:none;
+  min-width:0;
 }
-html.tcg-portrait-play .pb-hud .phase-action-bar[hidden]{ display:none!important; }
+html.tcg-portrait-play .pb-hud .phase-action-bar[hidden]{
+  display:none!important;
+}
+html.tcg-portrait-play .pb-phase-actions:has(.phase-action-bar[hidden]){
+  justify-content:flex-end;
+}
 html.tcg-portrait-play .pb-hud .btn-phase-primary{
-  min-height:30px;
+  min-height:34px;
   width:100%;
-  max-width:240px;
-  font-size:12px;
+  max-width:none;
+  font-size:13px;
   border-radius:10px;
-  padding:4px 10px;
+  padding:6px 12px;
 }
+html.tcg-portrait-play .pb-menu-wrap{
+  position:relative;
+  flex:0 0 auto;
+}
+html.tcg-portrait-play .pb-menu-btn{
+  width:34px;
+  height:34px;
+  min-width:34px;
+  padding:0;
+  border-radius:10px;
+  border:1px solid rgba(186,228,255,.35);
+  background:rgba(8,14,28,.92);
+  color:#fff;
+  font-size:18px;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+html.tcg-portrait-play .pb-menu-pop{
+  position:absolute;
+  right:0;
+  bottom:calc(100% + 6px);
+  min-width:140px;
+  padding:6px;
+  border-radius:12px;
+  background:rgba(8,12,24,.97);
+  border:1px solid rgba(186,228,255,.28);
+  box-shadow:0 10px 28px rgba(0,0,0,.45);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  z-index:40;
+}
+html.tcg-portrait-play .pb-menu-pop[hidden]{ display:none!important; }
+html.tcg-portrait-play .pb-menu-item{
+  min-height:40px;
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  text-align:left;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+html.tcg-portrait-play .pb-menu-item:active,
+html.tcg-portrait-play .pb-menu-item:hover{
+  background:rgba(186,228,255,.12);
+}
+html.tcg-portrait-play .pb-menu-item.pb-menu-danger{
+  color:#ff8a9a;
+}
+
 html.tcg-portrait-play .pb-hud .play-cost-hud,
 html.tcg-portrait-play .pb-hud .live-score-hud{
   position:relative;
@@ -796,6 +901,11 @@ html.tcg-portrait-play .pb-hud .live-score-hud{
   align-self:center;
   margin:2px auto 0;
   font-size:11px;
+}
+
+/* Floating Log/Resign chrome replaced by burger menu */
+html.tcg-portrait-play .pb-chrome{
+  display:none!important;
 }
 
 html.tcg-portrait-play .pb-chrome .sbfoot{

@@ -71,6 +71,8 @@
       foot.insertBefore(btn, foot.firstChild);
     }
 
+    ensurePhaseMenu();
+
     const game = global.document.getElementById('screen-game');
     if (game && !global.document.getElementById('portrait-play-scrim')) {
       const scrim = global.document.createElement('div');
@@ -81,6 +83,71 @@
         if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
       });
     }
+  }
+
+  /** Burger menu beside End Main Phase — holds Log + Resign. */
+  function ensurePhaseMenu() {
+    if (!global.document.getElementById('portrait-board')) return;
+    if (global.document.getElementById('portrait-phase-row')) return;
+
+    const hud = global.document.querySelector('#portrait-board .pb-hud');
+    const bar = global.document.getElementById('phase-action-bar');
+    if (!hud) return;
+
+    const row = global.document.createElement('div');
+    row.id = 'portrait-phase-row';
+    row.className = 'pb-phase-row';
+
+    const actions = global.document.createElement('div');
+    actions.className = 'pb-phase-actions';
+
+    if (bar) {
+      const parent = bar.parentElement;
+      if (parent) parent.insertBefore(row, bar);
+      else hud.appendChild(row);
+      actions.appendChild(bar);
+    } else {
+      hud.appendChild(row);
+    }
+
+    const menuWrap = global.document.createElement('div');
+    menuWrap.className = 'pb-menu-wrap';
+    menuWrap.innerHTML =
+      '<button type="button" class="pb-menu-btn" id="btn-portrait-menu" aria-label="Menu" aria-expanded="false" aria-controls="portrait-menu-pop">☰</button>' +
+      '<div class="pb-menu-pop" id="portrait-menu-pop" hidden role="menu">' +
+        '<button type="button" class="pb-menu-item" id="btn-portrait-menu-log" role="menuitem"></button>' +
+        '<button type="button" class="pb-menu-item pb-menu-danger" id="btn-portrait-menu-resign" role="menuitem"></button>' +
+      '</div>';
+    actions.appendChild(menuWrap);
+    row.appendChild(actions);
+
+    const logItem = menuWrap.querySelector('#btn-portrait-menu-log');
+    const resignItem = menuWrap.querySelector('#btn-portrait-menu-resign');
+    if (logItem) logItem.textContent = t('mobile.openLog', 'Log');
+    if (resignItem) {
+      const realResign = global.document.getElementById('btn-resign');
+      resignItem.textContent = (realResign && realResign.textContent.trim()) || t('game.resign', 'Resign');
+    }
+  }
+
+  function closePortraitMenu() {
+    const pop = global.document.getElementById('portrait-menu-pop');
+    const btn = global.document.getElementById('btn-portrait-menu');
+    if (pop) {
+      pop.hidden = true;
+      pop.classList.remove('open');
+    }
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function togglePortraitMenu() {
+    const pop = global.document.getElementById('portrait-menu-pop');
+    const btn = global.document.getElementById('btn-portrait-menu');
+    if (!pop || !btn) return;
+    const open = pop.hidden;
+    pop.hidden = !open;
+    pop.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
   function ensurePlayPanelHost() {
@@ -206,6 +273,11 @@
     }
     if (closeLogSheet()) return true;
     if (closeSheet('portrait-inspect-sheet')) return true;
+    const menuPop = global.document.getElementById('portrait-menu-pop');
+    if (menuPop && !menuPop.hidden) {
+      closePortraitMenu();
+      return true;
+    }
     const stamp = global.document.getElementById('stamp-picker');
     if (stamp && !stamp.hidden) {
       stamp.hidden = true;
@@ -287,6 +359,38 @@
       if (e.target && e.target.id === 'portrait-inspect-sheet') closeSheet('portrait-inspect-sheet');
     });
 
+    // Burger menu (Log / Resign) — bind once via delegation on screen-game
+    const game = global.document.getElementById('screen-game');
+    if (game && !game._portraitMenuBound) {
+      game._portraitMenuBound = true;
+      game.addEventListener('click', function (e) {
+        const t = e.target;
+        if (!t || !t.closest) return;
+        if (t.closest('#btn-portrait-menu')) {
+          e.preventDefault();
+          togglePortraitMenu();
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-log')) {
+          e.preventDefault();
+          closePortraitMenu();
+          openLogSheet();
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-resign')) {
+          e.preventDefault();
+          closePortraitMenu();
+          const resign = global.document.getElementById('btn-resign');
+          if (resign) resign.click();
+          return;
+        }
+        if (!t.closest('.pb-menu-wrap')) closePortraitMenu();
+      });
+    }
+
+    // Phase menu may mount after board reparent — retry briefly
+    ensurePhaseMenu();
+    setTimeout(ensurePhaseMenu, 400);
     // Long-press / select on stage cards often fills #card-hover-panel — surface as sheet once painted.
     try {
       const hover = global.document.getElementById('card-hover-panel');
@@ -340,6 +444,7 @@
   global.tcgPortraitOpenLog = openLogSheet;
   global.tcgPortraitOpenInspect = openInspectFromHover;
   global.tcgPortraitSyncPlaySheet = syncPlaySheet;
+  global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
 
   if (global.document.readyState === 'loading') {
     global.document.addEventListener('DOMContentLoaded', boot);
