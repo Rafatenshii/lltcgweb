@@ -799,6 +799,9 @@ html.tcg-portrait-play #portrait-board{
   height:100%;
   min-height:0;
   display:grid;
+  /* Without an explicit column the implicit auto track sizes to the widest
+     item's min-content, which pushes the HUD/field past the right edge. */
+  grid-template-columns: minmax(0, 1fr);
   /* Equal fields; hand rows are short so cards overhang into the stage */
   grid-template-rows:
     var(--p-hand-opp)
@@ -1040,7 +1043,9 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
   width:100%!important;
   height:100%!important;
   display:grid!important;
-  gap:0 1px;
+  /* Row gap is the only separation between a stage and its live storage:
+     both are pinned to the shared row edge, so this is the literal margin. */
+  gap:18px 1px;
   /* Use more of the field width while retaining a small safe edge. */
   padding:0 4%;
   box-sizing:border-box;
@@ -1051,14 +1056,16 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
    Stage row taller (portrait members); live row shorter (landscape lives) */
 html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.78fr);
+  /* Live row is sized to the live card so its slack cannot become a gap;
+     all spare height collects in the stage row, on the hand side. */
+  grid-template-rows: minmax(0, 1fr) minmax(0, 18.5vw);
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 0.78fr) minmax(0, 1.15fr);
+  grid-template-rows: minmax(0, 18.5vw) minmax(0, 1fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
@@ -1105,10 +1112,10 @@ html.tcg-portrait-play #screen-game .z-my-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   aspect-ratio: 63 / 88;
-  height: min(calc(100% / 1.32), calc(100cqw / 3 * 88 / 63 / 1.32));
+  height: min(calc(100% / 1.23), calc(100cqw / 3 * 88 / 63 / 1.23));
   width: auto;
-  max-width: calc(100% / 1.32);
-  max-height: calc(100% / 1.32);
+  max-width: calc(100% / 1.23);
+  max-height: 100%;
   justify-self: center;
 }
 /* Opp stages sit above lives — pin to bottom of stage row (toward lives, away from opp hand) */
@@ -1116,14 +1123,12 @@ html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-opp-stage-center,
 html.tcg-portrait-play #screen-game .z-opp-stage-right{
   align-self: end;
-  transform:translateY(4px);
 }
 /* My stages sit below lives — pin to top of stage row (toward lives, away from my hand) */
 html.tcg-portrait-play #screen-game .z-my-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   align-self: start;
-  transform:translateY(-4px);
 }
 /* Live storage — landscape (88×63), ~1.2× prior size, packed toward HUD */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
@@ -1136,20 +1141,20 @@ html.tcg-portrait-play #screen-game .z-my-live-2{
   width: min(82%, calc(100cqh * 88 / 63 * 0.86));
   height: auto;
   max-width: 82%;
-  max-height: 96%;
+  max-height: 100%;
   background: var(--p-live-bg);
   justify-self: center;
 }
-/* Opp lives: toward HUD below; my lives: toward HUD above */
+/* Lives hug the stage row edge so the only separation is the grid row gap. */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
 html.tcg-portrait-play #screen-game .z-opp-live-1,
 html.tcg-portrait-play #screen-game .z-opp-live-2{
-  align-self: end;
+  align-self: start;
 }
 html.tcg-portrait-play #screen-game .z-my-live-0,
 html.tcg-portrait-play #screen-game .z-my-live-1,
 html.tcg-portrait-play #screen-game .z-my-live-2{
-  align-self: start;
+  align-self: end;
 }
 html.tcg-portrait-play #screen-game .mslot,
 html.tcg-portrait-play #screen-game .lcard,
@@ -1231,15 +1236,17 @@ html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
   padding:0!important;
   overflow:visible!important;
 }
+/* Blades hang toward the hands, so the larger badge sits mostly over the card
+   edge — otherwise it reaches into the hand overhang. */
 html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-blade{
   top:auto!important;
   bottom:0!important;
-  transform: translate(-50%, 48%)!important;
+  transform: translate(-50%, 30%)!important;
 }
 html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-blade{
   top:0!important;
   bottom:auto!important;
-  transform: translate(-50%, -48%)!important;
+  transform: translate(-50%, -30%)!important;
 }
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade img,
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .ticon,
