@@ -116,6 +116,73 @@ html.tcg-portrait-play .wait-box{
   max-width:100%;
 }
 
+/* Login bonus — larger reward icons, vertically centered panel */
+html.tcg-portrait-play #overlay-login-bonus.llc-menu-screen,
+html.tcg-portrait-play #overlay-login-bonus.open{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding:max(12px,env(safe-area-inset-top,0px)) 14px max(16px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+}
+html.tcg-portrait-play #overlay-login-bonus:not(.open){
+  display:none!important;
+}
+html.tcg-portrait-play #overlay-login-bonus .login-bonus-shell{
+  width:100%;
+  max-width:min(520px,96vw);
+  margin-block:auto;
+  flex:0 1 auto;
+  max-height:min(88dvh,760px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+html.tcg-portrait-play #overlay-login-bonus .login-bonus-lead{
+  font-size:14px;
+  line-height:1.45;
+  margin:0 0 16px;
+  text-align:center;
+}
+html.tcg-portrait-play #overlay-login-bonus .login-bonus-kanon{
+  width:52px;
+  height:56px;
+}
+html.tcg-portrait-play #overlay-login-bonus .login-bonus-title-text{
+  font-size:clamp(20px,5.5vw,26px);
+}
+html.tcg-portrait-play #login-bonus-grid{
+  gap:10px;
+}
+html.tcg-portrait-play .login-bonus-cell{
+  min-height:120px;
+  padding:10px 4px 12px;
+  gap:6px;
+  justify-content:center;
+}
+html.tcg-portrait-play .login-bonus-day{
+  font-size:11px;
+}
+html.tcg-portrait-play .login-bonus-icon-wrap{
+  min-height:52px;
+  margin:4px 0;
+}
+html.tcg-portrait-play .login-bonus-icon{
+  width:48px;
+  height:48px;
+}
+html.tcg-portrait-play .login-bonus-pr-badge{
+  min-width:48px;
+  height:32px;
+  font-size:14px;
+  border-radius:10px;
+  padding:0 10px;
+}
+html.tcg-portrait-play .login-bonus-reward{
+  font-size:12px;
+  line-height:1.3;
+}
+
 /* Deck builder — single column, inspect as sheet */
 html.tcg-portrait-play #screen-deck.active{
   overflow-y:auto;
