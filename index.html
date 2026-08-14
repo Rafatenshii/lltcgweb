@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=40">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=23">
+<link rel="stylesheet" href="client/css/portrait.css?v=24">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -16662,7 +16662,14 @@ function layoutHandFan(fanEl, opts = {}) {
   }
 
   const strip = fanEl.closest('.hand-strip');
-  let avail = (strip ? strip.clientWidth : fanEl.clientWidth) - 24;
+  const portraitBoard = portrait ? el('portrait-board') : null;
+  // The portrait info sheet can transiently change the hand strip's measured
+  // width. Anchor fan spacing to the board so raising a card never re-packs
+  // the rest of the hand.
+  const layoutWidth = portrait
+    ? (portraitBoard?.clientWidth || window.innerWidth || strip?.clientWidth || fanEl.clientWidth)
+    : (strip ? strip.clientWidth : fanEl.clientWidth);
+  let avail = layoutWidth - 24;
   // Portrait board can mount before the strip has a real width — retry once.
   if (portrait && avail < 40 && !opts._portraitRetry) {
     requestAnimationFrame(() => layoutHandFan(fanEl, { ...opts, animate: false, _portraitRetry: true }));

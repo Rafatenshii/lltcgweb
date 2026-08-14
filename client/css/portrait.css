@@ -1684,6 +1684,18 @@ html.tcg-portrait-play #perf-spectacle{
   max-height:100dvh;
   overflow:hidden;
 }
+/* The portrait board is mounted outside the landscape wrappers hidden by the
+   base spectacle rules. Hide it too so Performance plays over the sky only. */
+html.tcg-portrait-play body.perf-spectacle-active #portrait-board{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  user-select:none;
+  transition:opacity .45s ease,visibility .45s ease;
+}
+html.tcg-portrait-play body.perf-spectacle-active #screen-game.active{
+  background:transparent!important;
+}
 
 html.tcg-portrait-play #portrait-log-sheet{
   display:none;
