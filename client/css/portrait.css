@@ -984,37 +984,58 @@ html.tcg-portrait-play #screen-game #card-hover-panel{
   display:none!important;
   position:fixed!important;
   left:50%!important;
-  /* Keep sheet toward the top so the hand stays visible underneath */
-  top: max(6px, env(safe-area-inset-top, 0px))!important;
-  bottom:auto!important;
+  /* Sit in the clear board band — below opp hand, above raised my-hand (not flush to clipped top) */
+  top: calc(var(--p-hand-opp, 72px) + 10px)!important;
+  bottom: calc(var(--p-hand-mine, 90px) + 36px)!important;
   transform:translateX(-50%)!important;
-  width:min(94vw,380px)!important;
-  max-height:min(48dvh,420px)!important;
+  width:min(94vw,400px)!important;
+  height:auto!important;
+  max-height:none!important;
   z-index:93000!important;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding:10px 12px 12px!important;
+  overflow:visible!important;
+  overflow-y:visible!important;
+  -webkit-overflow-scrolling:auto;
+  padding:12px 14px 14px!important;
   border-radius:14px!important;
   background:rgba(8,12,24,.97)!important;
   border:1px solid rgba(186,228,255,.28)!important;
   box-shadow:0 12px 36px rgba(0,0,0,.55)!important;
   pointer-events:auto!important;
+  box-sizing:border-box!important;
+  flex-direction:column;
+  gap:6px;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel.visible,
 html.tcg-portrait-play #screen-game.portrait-play-selecting #card-hover-panel,
 html.tcg-portrait-play #screen-game.portrait-play-selecting .card-hover-panel{
-  display:block!important;
+  display:flex!important;
   visibility:visible!important;
   opacity:1!important;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-img{
   display:block;
-  max-width:min(160px,42vw);
-  max-height:22vh;
-  margin:0 auto 6px;
+  max-width:min(140px,36vw);
+  max-height:18vh;
+  margin:0 auto 4px;
+  flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-name{
   font-size:14px; font-weight:800; text-align:center;
+  flex:0 0 auto;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-sub{
+  flex:0 0 auto;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-stats{
+  flex:0 0 auto;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
+  flex:1 1 auto;
+  overflow:visible!important;
+  max-height:none!important;
+  font-size:12px;
+  line-height:1.35;
+  white-space:pre-wrap;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow,
@@ -1022,7 +1043,8 @@ html.tcg-portrait-play #screen-game #hc-actions{
   display:grid!important;
   grid-template-columns:1fr 1fr 1fr;
   gap:8px;
-  margin-top:8px;
+  margin-top:auto;
+  flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow .btn-smol,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow button,
@@ -1032,17 +1054,15 @@ html.tcg-portrait-play #screen-game #hc-actions button{
   font-weight:800;
   border-radius:10px;
 }
+/* No dim overlay while picking a hand card — info box alone is enough */
 html.tcg-portrait-play #portrait-play-scrim{
-  display:none;
-  position:fixed;
-  left:0; right:0;
-  top:0;
-  /* Leave the hand strip clear so raised cards stay visible */
-  bottom: var(--p-hand-mine, 120px);
-  z-index:91000;
-  background:rgba(0,0,0,.4);
+  display:none!important;
+  pointer-events:none!important;
+  background:transparent!important;
 }
-html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim{ display:block; }
+html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim{
+  display:none!important;
+}
 
 html.tcg-portrait-play #screen-game .card-flight,
 html.tcg-portrait-play #screen-game .flight-card,
