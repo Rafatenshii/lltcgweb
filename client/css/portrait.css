@@ -854,32 +854,125 @@ html.tcg-portrait-play #portrait-log-sheet .portrait-log-host{
 html.tcg-portrait-play #portrait-inspect-sheet{display:none!important}
 
 /* ═══════════════════════════════════════════
-   PROMPTS / OVERLAYS — thumb-friendly
+   PROMPTS / OVERLAYS — vertically centered, buttons centered
+   (skill menus, coin flip, mulligan, picks, etc.)
    ═══════════════════════════════════════════ */
-html.tcg-portrait-play .overlay.open{
-  align-items:flex-end;
-  justify-content:center;
-  padding:0;
+html.tcg-portrait-play .overlay.open,
+html.tcg-portrait-play .overlay.open.skill-hand-preserve,
+html.tcg-portrait-play .overlay.open.hand-pick-overlay{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))!important;
+  box-sizing:border-box;
+}
+html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open,
+html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open{
+  align-items:center!important;
+  justify-content:center!important;
 }
 html.tcg-portrait-play .overlay.open .mbox,
 html.tcg-portrait-play .overlay.open .hand-pick-shell,
-html.tcg-portrait-play .overlay.open .prompt-branch-box{
-  width:100%;
-  max-width:100%;
-  max-height:min(88dvh,920px);
-  margin:0;
-  border-radius:18px 18px 0 0;
-  padding:14px 14px max(18px,env(safe-area-inset-bottom,0px));
+html.tcg-portrait-play .overlay.open .prompt-branch-box,
+html.tcg-portrait-play .overlay.open .coin-mbox{
+  width:min(92vw,420px);
+  max-width:min(92vw,420px);
+  max-height:min(82dvh,720px);
+  margin:0 auto!important;
+  border-radius:16px!important;
+  padding:16px 16px max(16px,env(safe-area-inset-bottom,0px));
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
+  box-sizing:border-box;
+  text-align:center;
+}
+/* Wider pick / surveil panels still centered */
+html.tcg-portrait-play #overlay-pick.open .mbox,
+html.tcg-portrait-play #overlay-surveil.open .mbox,
+html.tcg-portrait-play #overlay-mull.open .mbox,
+html.tcg-portrait-play .overlay.open .hand-pick-shell{
+  width:min(96vw,520px);
+  max-width:min(96vw,520px);
+}
+html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox,
+html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell{
+  max-height:min(78dvh,680px);
+  margin:0 auto!important;
+}
+
+/* Headings + copy centered */
+html.tcg-portrait-play .overlay.open .mbox > h2,
+html.tcg-portrait-play .overlay.open .mbox > p,
+html.tcg-portrait-play .overlay.open #prompt-ttl,
+html.tcg-portrait-play .overlay.open #prompt-msg,
+html.tcg-portrait-play .overlay.open #coin-msg,
+html.tcg-portrait-play .overlay.open #coin-result{
+  text-align:center;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Button rows / choice lists — centered horizontally */
+html.tcg-portrait-play .overlay.open #prompt-btns,
+html.tcg-portrait-play .overlay.open .prompt-choice-list,
+html.tcg-portrait-play .overlay.open .coin-choice-btns,
+html.tcg-portrait-play .overlay.open .pbtns,
+html.tcg-portrait-play .overlay.open .slotrow,
+html.tcg-portrait-play .overlay.open .hc-slotrow{
+  display:flex!important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  margin-left:auto;
+  margin-right:auto;
+}
+html.tcg-portrait-play .overlay.open .prompt-choice-btn,
+html.tcg-portrait-play .overlay.open .coin-choice-btns .btn-grad,
+html.tcg-portrait-play .overlay.open #prompt-btns > button,
+html.tcg-portrait-play .overlay.open #prompt-btns .btn-grad,
+html.tcg-portrait-play .overlay.open .mbox > .btn-grad,
+html.tcg-portrait-play .overlay.open .mbox > button.btn-grad,
+html.tcg-portrait-play .overlay.open #btn-mull{
+  width:100%;
+  max-width:320px;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  align-self:center;
+  min-height:44px;
+  font-size:15px;
+  text-align:center;
+  justify-content:center;
+}
+/* Horizontal button groups (e.g. yes/no side-by-side) stay centered as a row */
+html.tcg-portrait-play .overlay.open #prompt-btns:has(> button:nth-child(2)):not(:has(> button:nth-child(4))){
+  flex-direction:row;
+  flex-wrap:wrap;
+}
+html.tcg-portrait-play .overlay.open #prompt-btns:has(> button:nth-child(2)):not(:has(> button:nth-child(4))) > button{
+  flex:1 1 140px;
+  max-width:200px;
+  width:auto;
 }
 html.tcg-portrait-play .overlay.open button,
 html.tcg-portrait-play .overlay.open .btn,
 html.tcg-portrait-play .overlay.open .btn-grad,
-html.tcg-portrait-play .overlay.open .btn-out{
+html.tcg-portrait-play .overlay.open .btn-out,
+html.tcg-portrait-play .overlay.open .btn-smol{
   min-height:44px;
   font-size:15px;
 }
+html.tcg-portrait-play .overlay.open .coin-stage{
+  display:flex;
+  justify-content:center;
+  margin:12px auto;
+}
+html.tcg-portrait-play .overlay.open .coin-choice-btns{
+  max-width:320px;
+}
+
+/* Stamp picker stays bottom sheet (thumb reach); other prompts center */
 html.tcg-portrait-play .stamp-picker{
   max-width:100%;
   width:100%;
@@ -890,10 +983,6 @@ html.tcg-portrait-play .stamp-picker{
 html.tcg-portrait-play .stamp-picker-grid{
   max-height:48dvh;
   overflow-y:auto;
-}
-html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox,
-html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell{
-  max-height:min(70dvh,640px);
 }
 
 /* Offline / network banner */
