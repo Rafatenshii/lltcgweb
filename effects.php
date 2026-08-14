@@ -5723,7 +5723,7 @@ function beginWaitOpponentStagePick(
         : listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
     $thresholdLabel = $byBlade ? "original Blade ≤$maxBlade" : "cost ≤$maxCost";
     if (empty($members)) {
-        return logOpponentMembersWaitedOutcome(
+        $state = logOpponentMembersWaitedOutcome(
             $state,
             $owner,
             $srcName,
@@ -5731,13 +5731,18 @@ function beginWaitOpponentStagePick(
             $byBlade ? $maxBlade : $maxCost,
             $byBlade ? 'blade' : 'cost'
         );
+        return finishAfterBranchChoicePrompt($state, [
+            'live_start' => $liveStart,
+            'source_id' => $sourceId,
+            'source_name' => $srcName,
+        ]);
     }
     // No pick_count = wait all matching (legacy / "put all … into Wait").
     if ($pickCount === null) {
         $waited = $byBlade
             ? waitOpponentStageByOriginalBlades($state, $opp, $maxBlade, null, $owner, $activeOnly)
             : waitOpponentStageByCost($state, $opp, $maxCost, null, $owner, $activeOnly);
-        return logOpponentMembersWaitedOutcome(
+        $state = logOpponentMembersWaitedOutcome(
             $state,
             $owner,
             $srcName,
@@ -5745,12 +5750,17 @@ function beginWaitOpponentStagePick(
             $byBlade ? $maxBlade : $maxCost,
             $byBlade ? 'blade' : 'cost'
         );
+        return finishAfterBranchChoicePrompt($state, [
+            'live_start' => $liveStart,
+            'source_id' => $sourceId,
+            'source_name' => $srcName,
+        ]);
     }
     $pickCount = max(1, $pickCount);
     // Exactly one legal target and pick 1 → auto-resolve.
     if ($pickCount === 1 && count($members) === 1) {
         waitOpponentMemberAtSlot($state, $opp, $members[0]['slot'], $owner);
-        return logOpponentMembersWaitedOutcome(
+        $state = logOpponentMembersWaitedOutcome(
             $state,
             $owner,
             $srcName,
@@ -5758,6 +5768,11 @@ function beginWaitOpponentStagePick(
             $byBlade ? $maxBlade : $maxCost,
             $byBlade ? 'blade' : 'cost'
         );
+        return finishAfterBranchChoicePrompt($state, [
+            'live_start' => $liveStart,
+            'source_id' => $sourceId,
+            'source_name' => $srcName,
+        ]);
     }
     if ($oppChooses) {
         if ($pickCount > 1) {

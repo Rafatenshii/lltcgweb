@@ -188,6 +188,8 @@ function tryResolveAbilityEffectSwitchOptional(
                 'choices'       => ['yes', 'no'],
                 'choice_labels' => ['Yes — Wait self', 'No — Skip'],
                 'ability'       => $ab,
+                // So skip / auto-wait resume Live Start instead of softlocking.
+                'live_start'    => (($ctx['phase'] ?? '') === 'live_start'),
             ];
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ' — [' . $name . '] optional Wait effect (choose).');

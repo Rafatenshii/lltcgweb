@@ -1395,7 +1395,8 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $sourceId = $prompt['source_id'] ?? '';
             $srcName = $prompt['source_name'] ?? 'Member';
             $pickCount = isset($ability['pick_count']) ? intval($ability['pick_count']) : null;
-            $liveStart = !empty($prompt['live_start']);
+            $liveStart = !empty($prompt['live_start'])
+                || (($state['phase'] ?? '') === 'live_start_effects');
             foreach ($ownerP['stage'] as &$mbr) {
                 if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
                     waitMember($mbr, $state);
@@ -1410,7 +1411,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     ' — [' . $srcName . '] Waited self (stage not all ' . $subunitOnly . ').');
                 unset($state['pending_prompt']);
                 $state['seq']++;
-                return $state;
+                return finishAfterBranchChoicePrompt($state, $prompt);
             }
             // Targeted Wait (pick_count set): let the controller choose opponent Members.
             // Special original-blade/heart filters still auto-resolve via those helpers.
@@ -1457,7 +1458,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        // PL!-PR-007-PR Live Start: skip / non-pick resolve must resume the phase
+        // (otherwise live_start_effects softlocks with no pending_prompt).
+        return finishAfterBranchChoicePrompt($state, $prompt);
     }
 
     if ($promptType === 'optional_discard_look_reveal_subunit') {
