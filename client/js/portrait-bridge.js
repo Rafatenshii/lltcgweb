@@ -83,14 +83,29 @@
     }
   }
 
+  function ensurePlayPanelHost() {
+    const panel = global.document.getElementById('card-hover-panel');
+    const game = global.document.getElementById('screen-game');
+    if (panel && game && panel.parentElement !== game) {
+      game.appendChild(panel);
+    }
+    return panel;
+  }
+
   function syncPlaySheet(card, s, myId) {
     if (!portraitActive()) return;
     ensureChrome();
     const game = global.document.getElementById('screen-game');
-    const panel = global.document.getElementById('card-hover-panel');
+    const panel = ensurePlayPanelHost();
     if (!card) {
       game?.classList.remove('portrait-play-selecting');
-      panel?.classList.remove('visible');
+      if (panel) {
+        panel.classList.remove('visible');
+        panel.style.removeProperty('display');
+        panel.style.removeProperty('visibility');
+        panel.style.removeProperty('opacity');
+        panel.style.removeProperty('z-index');
+      }
       return;
     }
     game?.classList.add('portrait-play-selecting');
@@ -100,7 +115,6 @@
       } else if (typeof global.refreshHandPreviewPanel === 'function') {
         global.refreshHandPreviewPanel(card, s || global.G?.gameState, myId || global.G?.playerId);
       }
-      // Ensure L/C/R buttons are interactive for the raised card.
       if (typeof global.fillMemberPlayActions === 'function' && global.el) {
         global.fillMemberPlayActions(global.el('hc-actions'), card, s || global.G?.gameState, myId || global.G?.playerId, {
           interactive: true,
@@ -110,7 +124,16 @@
         });
       }
     } catch (_) { /* ignore */ }
-    panel?.classList.add('visible');
+    if (panel) {
+      panel.classList.add('visible');
+      // Force paint above scrim even if other CSS fights us
+      panel.style.setProperty('display', 'block', 'important');
+      panel.style.setProperty('visibility', 'visible', 'important');
+      panel.style.setProperty('opacity', '1', 'important');
+      panel.style.setProperty('z-index', '93000', 'important');
+    }
+    const empty = global.document.getElementById('hc-empty');
+    if (empty) empty.style.display = 'none';
   }
 
   function closeSheet(id) {

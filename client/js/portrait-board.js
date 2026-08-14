@@ -46,6 +46,10 @@
     if (myField && myMat && myMat.parentElement !== myField) myField.appendChild(myMat);
     if (oppField && oppMat && oppMat.parentElement !== oppField) oppField.appendChild(oppMat);
     if (myHand && handStrip && handStrip.parentElement !== myHand) myHand.appendChild(handStrip);
+    // Info sheet must leave the hidden landscape wrap or the scrim shows with no panel.
+    const cardHover = el('card-hover-panel');
+    const game = el('screen-game');
+    if (cardHover && game && cardHover.parentElement !== game) game.appendChild(cardHover);
     return true;
   }
 
