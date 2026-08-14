@@ -1285,12 +1285,20 @@ html.tcg-portrait-play #screen-game .stage-slot .stage-hearts{
   z-index:12!important;
   pointer-events:none;
 }
+/* Keep larger hearts tucked slightly onto the member edge so they retain
+   clearance from the adjacent Live storage row. */
+html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .stage-hearts{
+  transform:translate(-50%,-62%)!important;
+}
+html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .stage-hearts{
+  transform:translate(-50%,62%)!important;
+}
 html.tcg-portrait-play #screen-game .mslot .stage-hearts .hicon.fld,
 html.tcg-portrait-play #screen-game .stage-slot .stage-hearts .hicon.fld{
-  width:14px!important;
-  height:14px!important;
-  max-width:14px!important;
-  max-height:14px!important;
+  width:21px!important;
+  height:21px!important;
+  max-width:21px!important;
+  max-height:21px!important;
 }
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade,
 html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
@@ -1306,29 +1314,29 @@ html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
   padding:0!important;
   overflow:visible!important;
 }
-/* Blades hang toward the hands, so the larger badge sits mostly over the card
-   edge — otherwise it reaches into the hand overhang. */
+/* Blades face the hands. Tuck the enlarged badges onto the card edge:
+   higher for us and lower for the opponent, away from both hand fans. */
 html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-blade{
   top:auto!important;
   bottom:0!important;
-  transform: translate(-50%, 30%)!important;
+  transform: translate(-50%, -8%)!important;
 }
 html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-blade{
   top:0!important;
   bottom:auto!important;
-  transform: translate(-50%, -30%)!important;
+  transform: translate(-50%, 8%)!important;
 }
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade img,
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .ticon,
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .hicon{
-  width:17px!important;
-  height:17px!important;
-  max-width:17px!important;
-  max-height:17px!important;
+  width:26px!important;
+  height:26px!important;
+  max-width:26px!important;
+  max-height:26px!important;
   object-fit:contain!important;
 }
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .badge-val{
-  font-size:18px!important;
+  font-size:24px!important;
   line-height:1!important;
 }
 
@@ -1783,10 +1791,18 @@ html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim
 }
 
 html.tcg-portrait-play #screen-game .card-flight,
-html.tcg-portrait-play #screen-game .flight-card,
-html.tcg-portrait-play .card-flight-layer{
+html.tcg-portrait-play #screen-game .flight-card{
   max-width:min(42vw,160px);
   max-height:min(28vh,220px);
+}
+/* The fixed layer must cover the whole phone. Capping the layer itself to the
+   ghost size clipped every player-side flight below y=220 while opponent
+   flights near the top remained visible. */
+html.tcg-portrait-play .card-flight-layer{
+  width:100vw;
+  height:100dvh;
+  max-width:none;
+  max-height:none;
 }
 html.tcg-portrait-play #perf-spectacle{
   max-height:100dvh;
