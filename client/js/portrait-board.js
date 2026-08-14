@@ -140,12 +140,32 @@
     oppMat.querySelector('.playmat-img')?.classList.remove('playmat-img-flipped');
 
     document.documentElement.classList.add('tcg-portrait-board-mounted');
+    syncHandVars();
+    try {
+      global.addEventListener('resize', syncHandVars, { passive: true });
+    } catch (_) { /* ignore */ }
     return true;
+  }
+
+  function syncHandVars() {
+    const board = el('portrait-board');
+    if (!board) return;
+    const w = board.clientWidth || global.innerWidth || 360;
+    const pad = 16;
+    const cardW = Math.max(40, (w - pad) / 6);
+    const cardH = cardW * (88 / 63);
+    const root = document.documentElement;
+    root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
+    root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-mine', (cardH + 10).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-opp', (cardH * 0.82 + 6).toFixed(2) + 'px');
+    root.style.setProperty('--p-card-w-opp', (cardW * 0.82).toFixed(2) + 'px');
   }
 
   function onRender(s, myId) {
     if (!portraitActive() || !s?.players) return;
     mount();
+    syncHandVars();
     const me = s.players[myId];
     const oppId = myId === 'p1' ? 'p2' : 'p1';
     const opp = s.players[oppId];
