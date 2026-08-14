@@ -182,6 +182,16 @@
         global.tcgPortraitEnsurePhaseMenu();
       }
     } catch (_) { /* ignore */ }
+    // Relayout hands after reparent so strip width / centering settle (avoids start-of-match jumps).
+    try {
+      requestAnimationFrame(function () {
+        syncHandVars();
+        if (typeof global.layoutHandFan === 'function') {
+          global.layoutHandFan(el('hand-row'), { animate: false });
+          global.layoutHandFan(el('opp-hand-zone'), { animate: false });
+        }
+      });
+    } catch (_) { /* ignore */ }
     try {
       global.addEventListener('resize', syncHandVars, { passive: true });
     } catch (_) { /* ignore */ }

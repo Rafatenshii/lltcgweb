@@ -370,10 +370,15 @@ html.tcg-portrait-play ll-stage-board > #game-stage{
   min-height:0!important;
 }
 html.tcg-portrait-play ll-hand-zone{
-  display:block!important;
-  width:max-content;
-  min-width:100%;
+  display:flex!important;
+  flex-direction:row;
+  align-items:flex-end;
+  justify-content:center;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%;
   height:100%;
+  margin:0;
 }
 html.tcg-portrait-play .pb-chrome{
   position:absolute;
@@ -427,17 +432,16 @@ html.tcg-portrait-play #hand-row{
   flex-direction:row;
   flex-wrap:nowrap;
   align-items:flex-end;
-  justify-content:flex-start;
+  justify-content:center;
   width:max-content!important;
-  min-width:100%!important;
+  min-width:0!important;
   max-width:none!important;
-  height:100%!important;
+  height:auto!important;
   min-height:0!important;
-  margin:0;
+  margin:0 auto;
   padding:0 4px;
   box-sizing:border-box;
   overflow:visible!important;
-  transform:none!important;
 }
 html.tcg-portrait-play .pb-opp-hand .hand-fan,
 html.tcg-portrait-play #opp-hand-zone{
@@ -984,17 +988,18 @@ html.tcg-portrait-play #screen-game #card-hover-panel{
   display:none!important;
   position:fixed!important;
   left:50%!important;
-  /* Sit in the clear board band — below opp hand, above raised my-hand (not flush to clipped top) */
-  top: calc(var(--p-hand-opp, 72px) + 10px)!important;
-  bottom: calc(var(--p-hand-mine, 90px) + 36px)!important;
+  /* Below opp hand; grow with content — do not stretch to the floor */
+  top: calc(var(--p-hand-opp, 72px) + 12px)!important;
+  bottom:auto!important;
   transform:translateX(-50%)!important;
   width:min(94vw,400px)!important;
   height:auto!important;
-  max-height:none!important;
+  /* Cap just above the hand; scroll only if skill text would cover it */
+  max-height: calc(100dvh - var(--p-hand-opp, 72px) - var(--p-hand-mine, 90px) - 52px)!important;
   z-index:93000!important;
-  overflow:visible!important;
-  overflow-y:visible!important;
-  -webkit-overflow-scrolling:auto;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
   padding:12px 14px 14px!important;
   border-radius:14px!important;
   background:rgba(8,12,24,.97)!important;
@@ -1014,13 +1019,14 @@ html.tcg-portrait-play #screen-game.portrait-play-selecting .card-hover-panel{
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-img{
   display:block;
-  max-width:min(140px,36vw);
-  max-height:18vh;
-  margin:0 auto 4px;
+  max-width:min(200px,52vw);
+  max-height:min(30vh,260px);
+  width:auto;
+  margin:0 auto 6px;
   flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-name{
-  font-size:14px; font-weight:800; text-align:center;
+  font-size:15px; font-weight:800; text-align:center;
   flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-sub{
@@ -1030,7 +1036,7 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-stats{
   flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
-  flex:1 1 auto;
+  flex:0 1 auto;
   overflow:visible!important;
   max-height:none!important;
   font-size:12px;
@@ -1043,7 +1049,7 @@ html.tcg-portrait-play #screen-game #hc-actions{
   display:grid!important;
   grid-template-columns:1fr 1fr 1fr;
   gap:8px;
-  margin-top:auto;
+  margin-top:8px;
   flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow .btn-smol,
@@ -1067,8 +1073,8 @@ html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim
 html.tcg-portrait-play #screen-game .card-flight,
 html.tcg-portrait-play #screen-game .flight-card,
 html.tcg-portrait-play .card-flight-layer{
-  max-width:28vw;
-  max-height:18vh;
+  max-width:min(42vw,160px);
+  max-height:min(28vh,220px);
 }
 html.tcg-portrait-play #perf-spectacle{
   max-height:100dvh;
