@@ -1321,12 +1321,12 @@ html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
   padding:0!important;
   overflow:visible!important;
 }
-/* Player blade stays on the bottom edge (away from the hand). Opponent blade
-   sits on the lower half of the card, directly above the hearts row. */
+/* Player blade sits higher on the card so the hand fan does not cover it.
+   Opponent blade stays on the lower half, directly above the hearts row. */
 html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-blade{
   top:auto!important;
   bottom:0!important;
-  transform: translate(-50%, -8%)!important;
+  transform: translate(-50%, -36%)!important;
 }
 html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-blade{
   top:auto!important;
