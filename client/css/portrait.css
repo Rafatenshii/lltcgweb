@@ -528,7 +528,7 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
   width:100%!important;
   height:100%!important;
   display:grid!important;
-  gap:4px 6px;
+  gap:2px 6px;
   padding:2px 4px;
   box-sizing:border-box;
   /* Size stage/live outlines from cell height/width */
@@ -538,14 +538,14 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
    Stage row taller (portrait members); live row shorter (landscape lives) */
 html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.65fr) minmax(0, 0.58fr);
+  grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.72fr);
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 0.58fr) minmax(0, 1.65fr);
+  grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.2fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
@@ -595,6 +595,19 @@ html.tcg-portrait-play #screen-game .z-my-stage-right{
   width: auto;
   max-width: calc(100% / 1.5);
   max-height: calc(100% / 1.5);
+  justify-self: center;
+}
+/* Opp stages sit above lives — pin to bottom of stage row (toward lives, away from opp hand) */
+html.tcg-portrait-play #screen-game .z-opp-stage-left,
+html.tcg-portrait-play #screen-game .z-opp-stage-center,
+html.tcg-portrait-play #screen-game .z-opp-stage-right{
+  align-self: end;
+}
+/* My stages sit below lives — pin to top of stage row (toward lives, away from my hand) */
+html.tcg-portrait-play #screen-game .z-my-stage-left,
+html.tcg-portrait-play #screen-game .z-my-stage-center,
+html.tcg-portrait-play #screen-game .z-my-stage-right{
+  align-self: start;
 }
 /* Live storage — landscape (88×63), tighter width so border matches the card */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
@@ -609,6 +622,18 @@ html.tcg-portrait-play #screen-game .z-my-live-2{
   max-width: 68%;
   max-height: 92%;
   background: var(--p-live-bg);
+  justify-self: center;
+}
+/* Opp lives: toward stages above; my lives: toward stages below */
+html.tcg-portrait-play #screen-game .z-opp-live-0,
+html.tcg-portrait-play #screen-game .z-opp-live-1,
+html.tcg-portrait-play #screen-game .z-opp-live-2{
+  align-self: start;
+}
+html.tcg-portrait-play #screen-game .z-my-live-0,
+html.tcg-portrait-play #screen-game .z-my-live-1,
+html.tcg-portrait-play #screen-game .z-my-live-2{
+  align-self: end;
 }
 html.tcg-portrait-play #screen-game .mslot,
 html.tcg-portrait-play #screen-game .lcard,
