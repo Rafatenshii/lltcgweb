@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=40">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=8">
+<link rel="stylesheet" href="client/css/portrait.css?v=9">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -16600,18 +16600,19 @@ function layoutHandFan(fanEl, opts = {}) {
   const n = cards.filter(c => !skip(c)).length || cards.length;
   let step;
   if (portrait) {
-    // Mockup: 6 cards just barely fill the strip width; >6 scrolls with overlap.
-    const fitW = Math.max(28, avail / 6);
-    cardW = isMyHand ? fitW : fitW * 0.82;
-    if (n <= 1) {
-      step = cardW;
-    } else if (n <= 6) {
-      step = (avail - cardW) / (n - 1);
-    } else {
-      step = cardW * (isMyHand ? 0.58 : 0.52);
+    // 1.5× of 6-across (~4 visible). Tight overlap for both hands (opp was spreading).
+    const fitW = Math.max(36, (avail / 6) * 1.5);
+    cardW = isMyHand ? fitW : fitW * 0.92;
+    const overlap = 0.55; // step as fraction of card width — clustered like mockup
+    step = cardW * overlap;
+    const span = cardW + Math.max(0, n - 1) * step;
+    fanEl.style.justifyContent = span > avail + 2 ? 'flex-start' : 'center';
+    fanEl.style.width = 'max-content';
+    if (isMyHand) {
+      // Ensure strip can scroll when hand wider than viewport
+      const stripEl = fanEl.closest('.my-hand-strip');
+      if (stripEl) stripEl.style.touchAction = 'pan-x';
     }
-    fanEl.style.justifyContent = n <= 6 ? 'center' : 'flex-start';
-    if (isMyHand) fanEl.style.width = n <= 6 ? '100%' : 'max-content';
   } else {
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
@@ -29482,7 +29483,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script src="client/js/portrait-bridge.js?v=4"></script>
-<script src="client/js/portrait-board.js?v=4"></script>
+<script src="client/js/portrait-board.js?v=5"></script>
 <script>void bootApp();</script>
 </body>
 </html>

@@ -110,6 +110,13 @@
       live.parentNode.insertBefore(host, live);
       host.appendChild(live);
     }
+    // Portrait board may already be mounted — keep mat host inside the grid cell.
+    try {
+      if (typeof global.tcgPortraitMountBoard === 'function'
+        && doc.documentElement?.classList?.contains('tcg-portrait-play')) {
+        global.tcgPortraitMountBoard();
+      }
+    } catch (_) { /* ignore */ }
   };
 
   global.llApplyBoardViewModel = function llApplyBoardViewModel(vm) {

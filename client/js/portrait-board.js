@@ -25,9 +25,37 @@
     node.dataset.portraitLabel = text;
   }
 
+  function matMountNode(id) {
+    const node = el(id);
+    if (!node) return null;
+    // Overhaul wraps #game-stage in <ll-stage-board> (display:inline by default) —
+    // move the host so the field fills the grid cell.
+    return node.closest('ll-stage-board') || node;
+  }
+
+  function ensureFieldHosts() {
+    const board = el('portrait-board');
+    if (!board) return false;
+    const myField = board.querySelector('.pb-my-field');
+    const oppField = board.querySelector('.pb-opp-field');
+    const myHand = board.querySelector('.pb-my-hand');
+    const myMat = matMountNode('game-stage');
+    const oppMat = el('opp-stage');
+    const handStrip = document.querySelector('#portrait-board .my-hand-strip')
+      || document.querySelector('.my-hand-strip');
+    if (myField && myMat && myMat.parentElement !== myField) myField.appendChild(myMat);
+    if (oppField && oppMat && oppMat.parentElement !== oppField) oppField.appendChild(oppMat);
+    if (myHand && handStrip && handStrip.parentElement !== myHand) myHand.appendChild(handStrip);
+    return true;
+  }
+
   function mount() {
     if (!portraitActive()) return false;
-    if (el('portrait-board')) return true;
+    if (el('portrait-board')) {
+      ensureFieldHosts();
+      syncHandVars();
+      return true;
+    }
 
     const viewport = el('game-viewport-frame');
     const wide = viewport?.querySelector?.('.game-wide-wrap');
@@ -35,7 +63,7 @@
 
     const oppHand = wide.querySelector('.opp-hand-strip');
     const oppMat = el('opp-stage');
-    const myMat = el('game-stage');
+    const myMat = matMountNode('game-stage');
     const myHand = wide.querySelector('.my-hand-strip');
     const phase = wide.querySelector('.phase-panel');
     const stats = wide.querySelector('.players-stats-panel');
@@ -94,7 +122,6 @@
     if (oppName) wins.querySelector('#portrait-opp-name-host')?.appendChild(oppName);
 
     if (phase) wins.querySelector('#portrait-hud-center')?.appendChild(phase);
-    // Keep stats panel only as a hidden host for remaining pills; hearts come from stage-board
     if (stats) {
       stats.classList.add('portrait-stats-shell');
       hudSec.appendChild(stats);
@@ -152,19 +179,21 @@
     if (!board) return;
     const w = board.clientWidth || global.innerWidth || 360;
     const pad = 16;
-    const cardW = Math.max(40, (w - pad) / 6);
+    // 1.5× “6 across” → ~4 cards visible; hold-drag scrolls the rest
+    const cardW = Math.max(48, ((w - pad) / 6) * 1.5);
     const cardH = cardW * (88 / 63);
     const root = document.documentElement;
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');
-    root.style.setProperty('--p-hand-mine', (cardH + 10).toFixed(2) + 'px');
-    root.style.setProperty('--p-hand-opp', (cardH * 0.82 + 6).toFixed(2) + 'px');
-    root.style.setProperty('--p-card-w-opp', (cardW * 0.82).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-mine', (cardH + 12).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-opp', (cardH * 0.92 + 6).toFixed(2) + 'px');
+    root.style.setProperty('--p-card-w-opp', (cardW * 0.92).toFixed(2) + 'px');
   }
 
   function onRender(s, myId) {
     if (!portraitActive() || !s?.players) return;
     mount();
+    ensureFieldHosts();
     syncHandVars();
     const me = s.players[myId];
     const oppId = myId === 'p1' ? 'p2' : 'p1';
