@@ -1805,8 +1805,80 @@ html.tcg-portrait-play .card-flight-layer{
   max-height:none;
 }
 html.tcg-portrait-play #perf-spectacle{
+  --perf-member-w:54px;
+  --perf-col-side-inset:0px;
+  --perf-yell-rail-gap:8px;
+  --perf-rail-slot-w:116px;
+  width:100vw;
+  height:100dvh;
   max-height:100dvh;
+  padding:max(10px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px))
+    max(10px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));
+  box-sizing:border-box;
   overflow:hidden;
+}
+/* Portrait performance keeps the Live/member/hearts column on the true screen
+   center. The Yell deck is an independent right rail, inset enough for its
+   count badge and stacked-card peek to remain inside the viewport. */
+html.tcg-portrait-play #perf-spectacle .perf-stage{
+  width:100%;
+  max-width:100%;
+  margin-inline:auto;
+}
+html.tcg-portrait-play #perf-spectacle .perf-col-row,
+html.tcg-portrait-play #perf-spectacle .perf-col-body{
+  width:100%;
+  min-width:0;
+}
+html.tcg-portrait-play #perf-spectacle .perf-col-body{
+  padding-inline:0;
+  justify-content:center;
+}
+html.tcg-portrait-play #perf-spectacle .perf-card-stack{
+  flex:0 1 min(58vw,230px);
+  width:min(58vw,230px);
+  max-width:min(58vw,230px);
+  margin-inline:auto;
+}
+html.tcg-portrait-play #perf-spectacle .perf-yell-rail{
+  position:absolute;
+  right:max(8px,env(safe-area-inset-right,0px));
+  left:auto;
+  width:var(--perf-rail-slot-w);
+  min-width:var(--perf-rail-slot-w);
+  max-width:var(--perf-rail-slot-w);
+  gap:8px;
+}
+html.tcg-portrait-play #perf-spectacle .perf-card.member,
+html.tcg-portrait-play #perf-spectacle .perf-deck-pile,
+html.tcg-portrait-play #perf-spectacle .perf-yell-row{
+  width:var(--perf-member-w);
+}
+html.tcg-portrait-play #perf-spectacle .perf-card.live{
+  width:min(30vw,120px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-live-row.perf-live-multi .perf-card.live{
+  width:min(24vw,96px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member{
+  width:min(12vw,48px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-col-side{
+  left:4px;
+  width:min(20vw,76px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-col-lbl{
+  font-size:clamp(15px,4.5vw,19px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-hearts-band,
+html.tcg-portrait-play #perf-spectacle .perf-live-row,
+html.tcg-portrait-play #perf-spectacle .perf-stage-row{
+  margin-inline:auto;
+  justify-content:center;
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-center{
+  margin-left:0;
+  margin-right:0;
 }
 /* The portrait board is mounted outside the landscape wrappers hidden by the
    base spectacle rules. Hide it too so Performance plays over the sky only. */
