@@ -263,10 +263,226 @@
     }
   }
 
+  /* ── Right-edge Deck / Waiting Room drawers ── */
+  let deckDrawersBound = false;
+
+  function deckDrawerLabel(kind) {
+    if (kind === 'deck') return t('game.mainDeck', 'Deck');
+    return t('game.waitingRoom', 'WR');
+  }
+
+  function ensureDeckDrawers() {
+    if (!portraitActive()) return null;
+    const board = global.document.getElementById('portrait-board');
+    const game = global.document.getElementById('screen-game');
+    if (!board || !game) return null;
+    let root = global.document.getElementById('portrait-deck-drawers');
+    if (root) return root;
+
+    root = global.document.createElement('div');
+    root.id = 'portrait-deck-drawers';
+    root.className = 'pb-deck-drawers';
+    root.setAttribute('aria-hidden', 'false');
+
+    function buildDrawer(side) {
+      const who = side === 'mine' ? 'my' : 'opp';
+      const d = global.document.createElement('div');
+      d.className = 'pb-deck-drawer ' + side;
+      d.dataset.side = side;
+      d.innerHTML =
+        '<button type="button" class="pb-deck-drawer-handle" aria-expanded="false" aria-controls="portrait-deck-tray-' + side + '" title="' +
+          (side === 'mine' ? t('game.yourPiles', 'Your piles') : t('game.oppPiles', 'Opponent piles')) +
+        '"><span class="pb-deck-drawer-chevron" aria-hidden="true"></span></button>' +
+        '<div class="pb-deck-drawer-tray" id="portrait-deck-tray-' + side + '">' +
+          '<div class="pb-deck-drawer-item deck" role="img" aria-label="' + deckDrawerLabel('deck') + '">' +
+            '<div class="pb-deck-drawer-face deck-face"></div>' +
+            '<span class="pb-deck-drawer-count" id="portrait-' + who + '-dn">0</span>' +
+            '<span class="pb-deck-drawer-lbl">' + deckDrawerLabel('deck') + '</span>' +
+          '</div>' +
+          '<button type="button" class="pb-deck-drawer-item wr" data-who="' + who + '" aria-label="' + deckDrawerLabel('wr') + '">' +
+            '<div class="pb-deck-drawer-face wr-face"></div>' +
+            '<span class="pb-deck-drawer-count" id="portrait-' + who + '-wn">0</span>' +
+            '<span class="pb-deck-drawer-lbl">' + deckDrawerLabel('wr') + '</span>' +
+          '</button>' +
+        '</div>';
+      return d;
+    }
+
+    root.appendChild(buildDrawer('opp'));
+    root.appendChild(buildDrawer('mine'));
+    game.appendChild(root);
+    bindDeckDrawerUi(root);
+    positionDeckDrawers();
+    syncDeckDrawerCounts(global.G?.gameState, global.G?.playerId);
+    return root;
+  }
+
+  function closeDeckDrawer(side) {
+    const root = global.document.getElementById('portrait-deck-drawers');
+    if (!root) return false;
+    const drawers = side
+      ? [root.querySelector('.pb-deck-drawer.' + side)]
+      : [...root.querySelectorAll('.pb-deck-drawer.open')];
+    let closed = false;
+    drawers.forEach(function (d) {
+      if (!d || !d.classList.contains('open')) return;
+      d.classList.remove('open');
+      const handle = d.querySelector('.pb-deck-drawer-handle');
+      if (handle) handle.setAttribute('aria-expanded', 'false');
+      closed = true;
+    });
+    return closed;
+  }
+
+  function closeAllDeckDrawers() {
+    return closeDeckDrawer(null);
+  }
+
+  function openDeckDrawer(side) {
+    const root = ensureDeckDrawers();
+    if (!root) return;
+    // Only one open at a time so the board stays readable.
+    closeAllDeckDrawers();
+    const d = root.querySelector('.pb-deck-drawer.' + side);
+    if (!d) return;
+    positionDeckDrawers();
+    d.classList.add('open');
+    const handle = d.querySelector('.pb-deck-drawer-handle');
+    if (handle) handle.setAttribute('aria-expanded', 'true');
+  }
+
+  function toggleDeckDrawer(side) {
+    const d = global.document.querySelector('#portrait-deck-drawers .pb-deck-drawer.' + side);
+    if (!d) {
+      ensureDeckDrawers();
+      openDeckDrawer(side);
+      return;
+    }
+    if (d.classList.contains('open')) closeDeckDrawer(side);
+    else openDeckDrawer(side);
+  }
+
+  function positionDeckDrawers() {
+    const root = global.document.getElementById('portrait-deck-drawers');
+    const board = global.document.getElementById('portrait-board');
+    if (!root || !board) return;
+    const safeRight = Math.max(0, Number.parseFloat(
+      (global.getComputedStyle(global.document.documentElement).getPropertyValue('env(safe-area-inset-right)') || '0')
+    ) || 0);
+    // Prefer CSS env via padding on root.
+    root.style.paddingRight = 'max(0px, env(safe-area-inset-right, 0px))';
+
+    [['mine', '.pb-my-field'], ['opp', '.pb-opp-field']].forEach(function (pair) {
+      const side = pair[0];
+      const sel = pair[1];
+      const field = board.querySelector(sel);
+      const drawer = root.querySelector('.pb-deck-drawer.' + side);
+      if (!field || !drawer) return;
+      const fr = field.getBoundingClientRect();
+      const top = Math.round(fr.top + Math.max(8, fr.height * 0.12));
+      const height = Math.round(Math.max(96, Math.min(fr.height * 0.76, 220)));
+      drawer.style.top = top + 'px';
+      drawer.style.height = height + 'px';
+      drawer.style.right = '0px';
+      void safeRight;
+    });
+  }
+
+  function readZoneCount(player, zoneKey) {
+    if (typeof global.zoneCardCount === 'function') {
+      return global.zoneCardCount(player, zoneKey);
+    }
+    const arr = player?.[zoneKey];
+    const countKey = zoneKey + '_count';
+    if (Array.isArray(arr) && arr.length > 0) return arr.length;
+    if (player?.[countKey] != null) return Number(player[countKey]) || 0;
+    if (Array.isArray(arr)) return arr.length;
+    return 0;
+  }
+
+  function syncDeckDrawerCounts(s, myId) {
+    if (!portraitActive()) return;
+    const root = ensureDeckDrawers();
+    if (!root || !s?.players) return;
+    const pid = myId || global.G?.playerId || 'p1';
+    const oppId = pid === 'p1' ? 'p2' : 'p1';
+    const me = s.players[pid];
+    const opp = s.players[oppId];
+    const myDn = global.document.getElementById('portrait-my-dn');
+    const myWn = global.document.getElementById('portrait-my-wn');
+    const oppDn = global.document.getElementById('portrait-opp-dn');
+    const oppWn = global.document.getElementById('portrait-opp-wn');
+    if (myDn) myDn.textContent = String(readZoneCount(me, 'main_deck'));
+    if (myWn) myWn.textContent = String((me?.waiting_room || []).length);
+    if (oppDn) oppDn.textContent = String(readZoneCount(opp, 'main_deck'));
+    if (oppWn) oppWn.textContent = String((opp?.waiting_room || []).length);
+
+    // Hide drawers during Performance spectacle.
+    const spectacle = !!global.document.body.classList.contains('perf-spectacle-active');
+    root.classList.toggle('pb-deck-drawers-hidden', spectacle);
+    if (spectacle) closeAllDeckDrawers();
+    else positionDeckDrawers();
+  }
+
+  function openWaitingRoomFromDrawer(who) {
+    if (typeof global.viewZone === 'function') {
+      global.viewZone(who, 'waiting_room');
+    }
+  }
+
+  function bindDeckDrawerUi(root) {
+    if (!root || root._pbDeckDrawerBound) return;
+    root._pbDeckDrawerBound = true;
+    root.addEventListener('click', function (e) {
+      const t = e.target;
+      if (!t || !t.closest) return;
+      const handle = t.closest('.pb-deck-drawer-handle');
+      if (handle) {
+        e.preventDefault();
+        e.stopPropagation();
+        const side = handle.closest('.pb-deck-drawer')?.dataset?.side;
+        if (side) toggleDeckDrawer(side);
+        return;
+      }
+      const wr = t.closest('.pb-deck-drawer-item.wr');
+      if (wr) {
+        e.preventDefault();
+        e.stopPropagation();
+        const who = wr.getAttribute('data-who') || 'my';
+        openWaitingRoomFromDrawer(who);
+      }
+    });
+  }
+
+  function bindDeckDrawerLifecycle() {
+    if (deckDrawersBound) return;
+    deckDrawersBound = true;
+    global.addEventListener('resize', function () {
+      positionDeckDrawers();
+    }, { passive: true });
+    // Close when spectacle toggles
+    try {
+      const mo = new MutationObserver(function () {
+        if (global.document.body.classList.contains('perf-spectacle-active')) {
+          closeAllDeckDrawers();
+          const root = global.document.getElementById('portrait-deck-drawers');
+          root?.classList.add('pb-deck-drawers-hidden');
+        } else {
+          global.document.getElementById('portrait-deck-drawers')
+            ?.classList.remove('pb-deck-drawers-hidden');
+          positionDeckDrawers();
+        }
+      });
+      mo.observe(global.document.body, { attributes: true, attributeFilter: ['class'] });
+    } catch (_) { /* ignore */ }
+  }
+
   /** Burger menu beside End Main Phase — holds Log + Resign. */
   function ensurePhaseMenu() {
     if (!global.document.getElementById('portrait-board')) return;
     bindZonePreviewTargets();
+    ensureDeckDrawers();
+    bindDeckDrawerLifecycle();
     if (global.document.getElementById('portrait-phase-row')) return;
 
     const hud = global.document.querySelector('#portrait-board .pb-hud');
@@ -454,6 +670,7 @@
       hideZonePreview();
       return true;
     }
+    if (closeAllDeckDrawers()) return true;
     if (global.document.getElementById('screen-game')?.classList.contains('portrait-play-selecting')) {
       if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
       return true;
@@ -579,8 +796,10 @@
     // Phase menu may mount after board reparent — retry briefly
     ensurePhaseMenu();
     bindZonePreviewTargets();
+    ensureDeckDrawers();
     setTimeout(ensurePhaseMenu, 400);
     setTimeout(bindZonePreviewTargets, 400);
+    setTimeout(ensureDeckDrawers, 400);
     // Long-press / select on stage cards often fills #card-hover-panel — surface as sheet once painted.
     try {
       const hover = global.document.getElementById('card-hover-panel');
@@ -637,6 +856,9 @@
   global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
   global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;
   global.tcgPortraitHideZonePreview = hideZonePreview;
+  global.tcgPortraitEnsureDeckDrawers = ensureDeckDrawers;
+  global.tcgPortraitSyncDeckDrawers = syncDeckDrawerCounts;
+  global.tcgPortraitCloseDeckDrawers = closeAllDeckDrawers;
 
   if (global.document.readyState === 'loading') {
     global.document.addEventListener('DOMContentLoaded', boot);

@@ -65,6 +65,9 @@
         if (typeof global.tcgPortraitBindZonePreviews === 'function') {
           global.tcgPortraitBindZonePreviews();
         }
+        if (typeof global.tcgPortraitEnsureDeckDrawers === 'function') {
+          global.tcgPortraitEnsureDeckDrawers();
+        }
       } catch (_) { /* ignore */ }
       return true;
     }
@@ -187,6 +190,9 @@
       if (typeof global.tcgPortraitBindZonePreviews === 'function') {
         global.tcgPortraitBindZonePreviews();
       }
+      if (typeof global.tcgPortraitEnsureDeckDrawers === 'function') {
+        global.tcgPortraitEnsureDeckDrawers();
+      }
     } catch (_) { /* ignore */ }
     // Relayout hands after reparent so strip width / centering settle (avoids start-of-match jumps).
     try {
@@ -229,6 +235,12 @@
     try {
       if (typeof global.tcgPortraitBindZonePreviews === 'function') {
         global.tcgPortraitBindZonePreviews();
+      }
+      if (typeof global.tcgPortraitEnsureDeckDrawers === 'function') {
+        global.tcgPortraitEnsureDeckDrawers();
+      }
+      if (typeof global.tcgPortraitSyncDeckDrawers === 'function') {
+        global.tcgPortraitSyncDeckDrawers(s, myId);
       }
     } catch (_) { /* ignore */ }
     const me = s.players[myId];
