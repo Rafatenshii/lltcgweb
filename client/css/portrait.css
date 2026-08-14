@@ -2233,10 +2233,17 @@ html.tcg-portrait-play .pb-zone-preview-card{
   box-shadow:0 4px 12px rgba(0,0,0,.4);
   background:rgba(0,0,0,.25);
 }
-/* Energy: portrait chips, close but non-overlapping; used faces rotate in-place */
+/* Energy: active = portrait; used = landscape frame (PC energy stack) so sideways art fits */
 html.tcg-portrait-play .pb-zone-preview-card.energy{
   width:min(18vw,68px);
   aspect-ratio:63/88;
+  height:auto;
+  flex:0 1 auto;
+  min-width:0;
+}
+html.tcg-portrait-play .pb-zone-preview-card.energy.used{
+  width:min(24vw,92px);
+  aspect-ratio:88/63;
   height:auto;
 }
 html.tcg-portrait-play .pb-zone-preview-echip,
@@ -2257,11 +2264,14 @@ html.tcg-portrait-play .pb-zone-preview-card.energy .card-art.energy-chip-face{
   height:100%;
   border-radius:inherit;
   overflow:hidden;
+  transform:rotate(0deg);
+  transform-origin:center center;
 }
 html.tcg-portrait-play .pb-zone-preview-card.energy .card-art.energy-chip-face.energy-sideways{
   width:calc(100% * 63 / 88);
   height:calc(100% * 88 / 63);
   transform:rotate(90deg);
+  transform-origin:center center;
 }
 html.tcg-portrait-play .pb-zone-preview-card.energy .card-art.energy-chip-face > img,
 html.tcg-portrait-play .pb-zone-preview-card.energy .card-art.energy-chip-face > .noimg{
