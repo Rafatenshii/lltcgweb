@@ -16632,19 +16632,26 @@ function layoutHandFan(fanEl, opts = {}) {
   const n = cards.filter(c => !skip(c)).length || cards.length;
   let step;
   if (portrait) {
-    // 1.5× of 6-across (~4 visible). Tight overlap for both hands (opp was spreading).
+    // Card size stays ~1.5× of 6-across (~4 visible when packed).
     const fitW = Math.max(36, (avail / 6) * 1.5);
     cardW = isMyHand ? fitW : fitW * 0.92;
-    const overlap = 0.55; // step as fraction of card width — clustered like mockup
-    step = cardW * overlap;
-    const span = cardW + Math.max(0, n - 1) * step;
-    const overflows = span > avail + 2;
-    fanEl.style.justifyContent = overflows ? 'flex-start' : 'center';
-    fanEl.style.width = 'max-content';
-    fanEl.style.marginLeft = overflows ? '0' : 'auto';
-    fanEl.style.marginRight = overflows ? '0' : 'auto';
+    if (n <= 6) {
+      // Spread across the full strip — no horizontal scroll needed
+      step = n > 1 ? (avail - cardW) / (n - 1) : cardW;
+      fanEl.style.justifyContent = 'flex-start';
+      fanEl.style.width = Math.max(0, avail) + 'px';
+      fanEl.style.marginLeft = '0';
+      fanEl.style.marginRight = '0';
+    } else {
+      // 7+ cards: tight overlap + scroll
+      const overlap = 0.55;
+      step = cardW * overlap;
+      fanEl.style.justifyContent = 'flex-start';
+      fanEl.style.width = 'max-content';
+      fanEl.style.marginLeft = '0';
+      fanEl.style.marginRight = '0';
+    }
     if (isMyHand) {
-      // Ensure strip can scroll when hand wider than viewport
       const stripEl = fanEl.closest('.my-hand-strip');
       if (stripEl) stripEl.style.touchAction = 'pan-x';
     }
