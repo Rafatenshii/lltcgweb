@@ -6324,7 +6324,7 @@ async function loadBoosterScreen(opts = {}) {
   el('booster-daily-info').textContent = (info.remaining ?? 0) + ' pack(s) left today (JST)';
   updateStarGemsUI();
   syncBoosterOpenButton(info.remaining ?? 0, !!prevPick || !!A.boxPick);
-  if (!A.boxes.length) {
+  if (!A.boxes.length || A.boxes.some(b => /^https?:\/\//i.test(String(b.image || '')))) {
     const bx = await accountGet('booster_boxes');
     A.boxes = bx.boxes || [];
   }
@@ -6349,6 +6349,10 @@ async function loadBoosterScreen(opts = {}) {
       const img = document.createElement('img');
       img.src = b.image;
       img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.width = 420;
+      img.height = 300;
       img.onerror = () => {
         const ph = document.createElement('div');
         ph.className = 'box-tile-ph';

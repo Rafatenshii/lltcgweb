@@ -24,16 +24,18 @@ const TCG_STARTER_PARALLEL_PROMO_COUNT = 2;
 
 /**
  * Booster box catalog.
- * - image: official 3D box render (llofficial-cardgame.com) — box picker grid ONLY.
- * - pack_images / pack_image: flat pack wrapper art from Amazon listings (see pack_listings.json).
- *   Never use image for pack-open animation.
+ * - image: small local JPEG thumb for the box picker grid (assets/packs/boxes/).
+ *   Never point `image` at the multi‑MB official WordPress PNGs.
+ * - image_full: optional original official URL (reference only; picker must not load it).
+ * - pack_images / pack_image: flat pack wrapper art for open animation.
+ *   Never use image/image_full for pack-open animation.
  */
 function tcgBoosterBoxes(): array {
     return [
         ['id' => 'bp_vol1', 'name_en' => 'Booster Pack vol.1', 'name_jp' => 'ブースターパック vol.1',
          'filter' => 'ブースターパック vol.1', 'kind' => 'bp',
-         // Box picker: official 3D box art
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2024/12/28162156/L_TCG_-BP_vol1_box_image_250220.png',
+         'image' => 'assets/packs/boxes/bp_vol1.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2024/12/28162156/L_TCG_-BP_vol1_box_image_250220.png',
          'pack_style' => 'photo',
          'pack_images' => [
              'assets/packs/bp_vol1-a.jpg',
@@ -42,17 +44,20 @@ function tcgBoosterBoxes(): array {
          ]],
         ['id' => 'bp_next', 'name_en' => 'Booster Pack NEXT STEP', 'name_jp' => 'ブースターパック NEXT STEP',
          'filter' => 'ブースターパック NEXT STEP', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/01/28114813/L_TCG_-BP_vol2_box_image.png',
+         'image' => 'assets/packs/boxes/bp_next.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/01/28114813/L_TCG_-BP_vol2_box_image.png',
          'pack_style' => 'promo',
          'pack_images' => ['assets/packs/bp_next-promo.png']],
         ['id' => 'bp_summer', 'name_en' => 'Booster Pack: Summer, Beginning', 'name_jp' => 'ブースターパック　夏、はじまる。',
          'filter' => 'ブースターパック　夏、はじまる。', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/07/02143841/L_TCG_-BP_vol3_box_image.png',
+         'image' => 'assets/packs/boxes/bp_summer.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/07/02143841/L_TCG_-BP_vol3_box_image.png',
          'pack_style' => 'promo',
          'pack_images' => ['assets/packs/bp_summer-promo.png']],
         ['id' => 'bp_sapphire', 'name_en' => 'Booster Pack SAPPHIRE MOON', 'name_jp' => 'ブースターパック SAPPHIRE MOON',
          'filter' => 'ブースターパック SAPPHIRE MOON', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/07/26224902/L_TCG_-BP_vol4_box_image.png',
+         'image' => 'assets/packs/boxes/bp_sapphire.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/07/26224902/L_TCG_-BP_vol4_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => [
              'assets/packs/bp_sapphire-a.jpg',
@@ -61,7 +66,8 @@ function tcgBoosterBoxes(): array {
          ]],
         ['id' => 'bp_royal', 'name_en' => 'Booster Pack Royal Holiday', 'name_jp' => 'ブースターパック Royal Holiday',
          'filter' => 'ブースターパック Royal Holiday', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171602/LLC_-BP06_box_image.png',
+         'image' => 'assets/packs/boxes/bp_royal.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171602/LLC_-BP06_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => [
              'assets/packs/bp_royal-a.png',
@@ -70,7 +76,8 @@ function tcgBoosterBoxes(): array {
          ]],
         ['id' => 'bp_mellow', 'name_en' => 'Booster Pack MELLOW MOMENT', 'name_jp' => 'ブースターパック MELLOW MOMENT',
          'filter' => 'ブースターパック MELLOW MOMENT', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png',
+         'image' => 'assets/packs/boxes/bp_mellow.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/19180756/LLC_-BP07_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => [
              'assets/packs/bp_mellow-a.png',
@@ -79,49 +86,56 @@ function tcgBoosterBoxes(): array {
          ]],
         ['id' => 'bp_anniv', 'name_en' => 'Booster Pack Anniversary 2026', 'name_jp' => 'ブースターパック Anniversary 2026',
          'filter' => 'ブースターパック Anniversary 2026', 'kind' => 'bp',
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/10/05190851/L_TCG_-BP_vol4_box_image-1.png',
+         'image' => 'assets/packs/boxes/bp_anniv.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/10/05190851/L_TCG_-BP_vol4_box_image-1.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/bp_anniv-a.jpg']],
         ['id' => 'pb_muse', 'name_en' => "Premium Booster μ's", 'name_jp' => 'プレミアムブースター ラブライブ！',
          'filter' => 'プレミアムブースター ラブライブ！', 'kind' => 'pb',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/05/26224815/L_TCG_-PBP_03_box_image.png',
+         'image' => 'assets/packs/boxes/pb_muse.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/05/26224815/L_TCG_-PBP_03_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_muse-a.jpg']],
         ['id' => 'pb_niji', 'name_en' => 'Premium Booster Nijigasaki', 'name_jp' => 'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会',
          'filter' => 'プレミアムブースター ラブライブ！虹ヶ咲学園スクールアイドル同好会', 'kind' => 'pb',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/08/01160806/L_TCG_-PBP_04_box_image.png',
+         'image' => 'assets/packs/boxes/pb_niji.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/08/01160806/L_TCG_-PBP_04_box_image.png',
          'pack_style' => 'promo',
          'pack_images' => ['assets/packs/pb_niji-promo.png']],
         ['id' => 'pb_sunshine', 'name_en' => 'Premium Booster Sunshine!!', 'name_jp' => 'プレミアムブースター ラブライブ！サンシャイン!!',
          'filter' => 'プレミアムブースター ラブライブ！サンシャイン!!', 'kind' => 'pb',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/02/28161326/L_TCG_-PBP_02_box_image.png',
+         'image' => 'assets/packs/boxes/pb_sunshine.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/02/28161326/L_TCG_-PBP_02_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_sunshine-a.jpg']],
         ['id' => 'pb_superstar', 'name_en' => 'Premium Booster Superstar!!', 'name_jp' => 'プレミアムブースター ラブライブ！スーパースター!!',
          'filter' => 'プレミアムブースター ラブライブ！スーパースター!!', 'kind' => 'pb',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/01/28114915/L_TCG_-PBP_01_box_image.png',
+         'image' => 'assets/packs/boxes/pb_superstar.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/01/28114915/L_TCG_-PBP_01_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_superstar-a.jpg']],
         ['id' => 'pb_superstar_duo', 'name_en' => 'Premium Booster Superstar!! DUO', 'name_jp' => 'プレミアムブースター ラブライブ！スーパースター!! DUO',
          'filter' => 'プレミアムブースター ラブライブ！スーパースター!! DUO', 'kind' => 'pb_duo',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171531/LLC_-PB06_box_image.png',
+         'image' => 'assets/packs/boxes/pb_superstar_duo.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/02/27171531/LLC_-PB06_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_superstar_duo-a.jpg']],
         ['id' => 'pb_hasunosora', 'name_en' => 'Premium Booster Hasunosora', 'name_jp' => 'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ',
          'filter' => 'プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ', 'kind' => 'pb',
          'pack_size' => TCG_PB_PACK_SIZE,
          'packs_per_box' => TCG_PB_PACKS_PER_BOX,
-         'image' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/11/17105656/L_TCG_-PBP_06_box_image.png',
+         'image' => 'assets/packs/boxes/pb_hasunosora.jpg',
+         'image_full' => 'https://llofficial-cardgame.com/wordpress/wp-content/uploads/2025/11/17105656/L_TCG_-PBP_06_box_image.png',
          'pack_style' => 'photo',
          'pack_images' => ['assets/packs/pb_hasunosora-a.jpg']],
     ];
@@ -269,6 +283,8 @@ function tcgEnrichBoosterBoxPublic(array $box): array {
     $box['packs_per_box'] = tcgBoxPacksPerBox($box);
     $box['star_gems_pack_cost'] = tcgStarGemsPackCost($box);
     $box['star_gems_box_cost'] = tcgStarGemsBoxCost($box);
+    // Do not expose multi‑MB official URLs to the client picker.
+    unset($box['image_full']);
     return $box;
 }
 
