@@ -68,6 +68,47 @@
       btn.textContent = t('mobile.openLog', 'Log');
       foot.insertBefore(btn, foot.firstChild);
     }
+
+    const game = global.document.getElementById('screen-game');
+    if (game && !global.document.getElementById('portrait-play-scrim')) {
+      const scrim = global.document.createElement('div');
+      scrim.id = 'portrait-play-scrim';
+      scrim.setAttribute('aria-hidden', 'true');
+      game.appendChild(scrim);
+      scrim.addEventListener('click', function () {
+        if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
+      });
+    }
+  }
+
+  function syncPlaySheet(card, s, myId) {
+    if (!portraitActive()) return;
+    ensureChrome();
+    const game = global.document.getElementById('screen-game');
+    const panel = global.document.getElementById('card-hover-panel');
+    if (!card) {
+      game?.classList.remove('portrait-play-selecting');
+      panel?.classList.remove('visible');
+      return;
+    }
+    game?.classList.add('portrait-play-selecting');
+    try {
+      if (typeof global.showHoverCardPreview === 'function') {
+        global.showHoverCardPreview(card, s || global.G?.gameState, myId || global.G?.playerId);
+      } else if (typeof global.refreshHandPreviewPanel === 'function') {
+        global.refreshHandPreviewPanel(card, s || global.G?.gameState, myId || global.G?.playerId);
+      }
+      // Ensure L/C/R buttons are interactive for the raised card.
+      if (typeof global.fillMemberPlayActions === 'function' && global.el) {
+        global.fillMemberPlayActions(global.el('hc-actions'), card, s || global.G?.gameState, myId || global.G?.playerId, {
+          interactive: true,
+          onPlay: function () {
+            if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
+          },
+        });
+      }
+    } catch (_) { /* ignore */ }
+    panel?.classList.add('visible');
   }
 
   function closeSheet(id) {
@@ -134,6 +175,10 @@
 
   function handleBack() {
     if (!portraitActive()) return false;
+    if (global.document.getElementById('screen-game')?.classList.contains('portrait-play-selecting')) {
+      if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
+      return true;
+    }
     if (closeLogSheet()) return true;
     if (closeSheet('portrait-inspect-sheet')) return true;
     const stamp = global.document.getElementById('stamp-picker');
@@ -269,6 +314,7 @@
   global.tcgPortraitHandleBack = handleBack;
   global.tcgPortraitOpenLog = openLogSheet;
   global.tcgPortraitOpenInspect = openInspectFromHover;
+  global.tcgPortraitSyncPlaySheet = syncPlaySheet;
 
   if (global.document.readyState === 'loading') {
     global.document.addEventListener('DOMContentLoaded', boot);
