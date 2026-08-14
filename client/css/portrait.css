@@ -864,13 +864,19 @@ html.tcg-portrait-play .pb-hud .stage-board-hearts{
 }
 html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-hearts,
 html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-yell{
-  justify-content:flex-start;
+  justify-content:flex-start!important;
   text-align:left;
 }
 html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-hearts,
 html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-yell{
-  justify-content:flex-end;
+  /* One heart on the far right; more hearts grow toward center (DOM order preserved) */
+  justify-content:flex-end!important;
   text-align:right;
+  flex-direction:row;
+}
+html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-hearts.empty{
+  text-align:right;
+  justify-content:flex-end!important;
 }
 html.tcg-portrait-play .pb-hud .stage-board-hearts img,
 html.tcg-portrait-play .pb-hud .stage-board-hearts .ticon,
