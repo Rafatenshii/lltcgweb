@@ -1227,7 +1227,11 @@
     },
     "mobile": {
       "rotateTitle": "This game is played in landscape",
-      "rotateSub": "Rotate your device to continue."
+      "rotateSub": "Rotate your device to continue.",
+      "openLog": "Log",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "portraitHint": "Portrait mode for phones",
+      "deckInspectHint": "Tap a card to preview"
     },
     "common": {
       "loading": "Loading…",
@@ -2520,7 +2524,11 @@
     },
     "mobile": {
       "rotateTitle": "このゲームは横向きでプレイします",
-      "rotateSub": "デバイスを回転して続行してください。"
+      "rotateSub": "デバイスを回転して続行してください。",
+      "openLog": "ログ",
+      "offlineNeedNetwork": "ネットワークがありません — 再接続してプレイしてください。",
+      "portraitHint": "スマホ向け縦画面モード",
+      "deckInspectHint": "カードをタップしてプレビュー"
     },
     "common": {
       "loading": "読み込み中…",
@@ -3661,7 +3669,11 @@
     },
     "mobile": {
       "rotateTitle": "Este juego se juega en horizontal",
-      "rotateSub": "Gira tu dispositivo para continuar."
+      "rotateSub": "Gira tu dispositivo para continuar.",
+      "openLog": "Registro",
+      "offlineNeedNetwork": "Sin red — vuelve a conectar para jugar.",
+      "portraitHint": "Modo vertical para móviles",
+      "deckInspectHint": "Toca una carta para verla"
     },
     "common": {
       "loading": "Cargando…",
@@ -4981,7 +4993,11 @@
     },
     "mobile": {
       "rotateTitle": "이 게임은 가로 화면으로 플레이합니다",
-      "rotateSub": "계속하려면 기기를 회전하세요."
+      "rotateSub": "계속하려면 기기를 회전하세요.",
+      "openLog": "로그",
+      "offlineNeedNetwork": "네트워크 없음 — 다시 연결한 뒤 플레이하세요.",
+      "portraitHint": "휴대폰용 세로 모드",
+      "deckInspectHint": "카드를 탭하여 미리보기"
     },
     "common": {
       "loading": "불러오는 중…",
@@ -6302,7 +6318,11 @@
     },
     "mobile": {
       "rotateTitle": "这个游戏是横屏玩的",
-      "rotateSub": "旋转您的设备以继续。"
+      "rotateSub": "旋转您的设备以继续。",
+      "openLog": "日志",
+      "offlineNeedNetwork": "无网络 — 请重新连接后再游玩。",
+      "portraitHint": "手机竖屏模式",
+      "deckInspectHint": "点按卡牌预览"
     },
     "common": {
       "loading": "加载中…",
@@ -7599,7 +7619,11 @@
     },
     "mobile": {
       "rotateTitle": "เกมนี้เล่นในแนวนอน",
-      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ"
+      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ",
+      "openLog": "บันทึก",
+      "offlineNeedNetwork": "ไม่มีเครือข่าย — เชื่อมต่อใหม่เพื่อเล่น",
+      "portraitHint": "โหมดแนวตั้งสำหรับมือถือ",
+      "deckInspectHint": "แตะการ์ดเพื่อดูตัวอย่าง"
     },
     "common": {
       "loading": "กำลังโหลด…",

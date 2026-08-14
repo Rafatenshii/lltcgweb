@@ -1,0 +1,810 @@
+/**
+ * Portrait play layout — gated by html.tcg-portrait-play
+ * (Android Capacitor UA / ?play=portrait). Landscape defaults unchanged.
+ */
+
+/* ── Safe areas & base shell ── */
+html.tcg-portrait-play,
+html.tcg-portrait-play body{
+  width:100%;
+  height:100%;
+  min-height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+  overscroll-behavior:none;
+  -webkit-text-size-adjust:100%;
+  touch-action:manipulation;
+}
+html.tcg-portrait-play body.tcg-portrait-play-body{
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  box-sizing:border-box;
+}
+html.tcg-portrait-play #tcg-mobile-rotate-hint,
+html.tcg-portrait-play #tcg-mobile-rotate-hint.show{
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+html.tcg-portrait-play.tcg-mobile-portrait .screen,
+html.tcg-portrait-play.tcg-mobile-portrait .overlay,
+html.tcg-portrait-play.tcg-mobile-portrait #toast,
+html.tcg-portrait-play.tcg-mobile-portrait #center-banner,
+html.tcg-portrait-play.tcg-mobile-portrait #perf-spectacle,
+html.tcg-portrait-play.tcg-mobile-portrait #live-judge-overlay,
+html.tcg-portrait-play.tcg-mobile-portrait #rule-kw-tip,
+html.tcg-portrait-play.tcg-mobile-portrait #opp-skill-wait-banner{
+  display:revert!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+html.tcg-portrait-play #tcg-phone-fs-btn{display:none!important}
+html.tcg-portrait-play #llc-sky-bg{opacity:.55}
+
+/* ═══════════════════════════════════════════
+   MENUS — large touch targets, single column
+   ═══════════════════════════════════════════ */
+html.tcg-portrait-play .llc-menu-screen.active,
+html.tcg-portrait-play .screen.llc-menu-screen.active{
+  display:flex!important;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  width:100%;
+  height:100%;
+  max-height:100dvh;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:max(8px,env(safe-area-inset-top,0px)) 12px max(16px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+}
+html.tcg-portrait-play .llc-menu-screen .account-shell,
+html.tcg-portrait-play .llc-menu-screen .account-shell.wide{
+  width:100%;
+  max-width:100%;
+  margin:0 auto;
+  flex:1 1 auto;
+}
+html.tcg-portrait-play .logo-img{
+  max-width:min(280px,70vw);
+}
+html.tcg-portrait-play .llc-menu-item,
+html.tcg-portrait-play .llc-menu-screen .btn-grad,
+html.tcg-portrait-play .llc-menu-screen .btn-out{
+  min-height:56px;
+  font-size:16px;
+  padding:14px 16px;
+  touch-action:manipulation;
+}
+html.tcg-portrait-play .llc-menu-item-title{font-size:16px}
+html.tcg-portrait-play .llc-menu-item-sub{font-size:12px;line-height:1.35}
+html.tcg-portrait-play .llc-menu-row{
+  flex-direction:column;
+  gap:10px;
+}
+html.tcg-portrait-play .llc-menu-row > .llc-menu-item{
+  flex:1 1 auto;
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+html.tcg-portrait-play .llc-menu-row--deck > .llc-menu-item--tiny .llc-menu-item-sub,
+html.tcg-portrait-play .llc-menu-row--deck > .llc-menu-item--narrow .llc-menu-item-sub{
+  display:block;
+}
+html.tcg-portrait-play .lobby-cols{
+  flex-direction:column;
+  align-items:stretch;
+  max-width:100%;
+  gap:14px;
+}
+html.tcg-portrait-play .lobby-col,
+html.tcg-portrait-play .lobby-setup{
+  width:100%;
+  max-width:100%;
+}
+html.tcg-portrait-play input,
+html.tcg-portrait-play select,
+html.tcg-portrait-play textarea,
+html.tcg-portrait-play button{
+  font-size:16px; /* avoid iOS zoom */
+}
+html.tcg-portrait-play .auth-box,
+html.tcg-portrait-play .wait-box{
+  width:100%;
+  max-width:100%;
+}
+
+/* Deck builder — single column, inspect as sheet */
+html.tcg-portrait-play #screen-deck.active{
+  overflow-y:auto;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-shell{
+  max-width:100%;
+  width:100%;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-lists{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  max-height:none;
+  grid-template-columns:1fr;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-section{
+  max-height:none;
+  min-height:0;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-section--deck{
+  order:-1; /* deck list first for thumbs */
+}
+html.tcg-portrait-play #screen-deck .deck-builder-pool-layout{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+html.tcg-portrait-play #screen-deck #deck-card-hover-panel{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:9000;
+  max-height:min(62dvh,520px);
+  margin:0;
+  border-radius:18px 18px 0 0;
+  padding:14px 14px max(18px,env(safe-area-inset-bottom,0px));
+  background:rgba(8,12,24,.96);
+  box-shadow:0 -8px 32px rgba(0,0,0,.55);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  transform:translateY(110%);
+  transition:transform .22s ease;
+  pointer-events:none;
+}
+html.tcg-portrait-play #screen-deck #deck-card-hover-panel.portrait-sheet-open,
+html.tcg-portrait-play #screen-deck #deck-card-hover-panel:has(.hc-img.show){
+  transform:translateY(0);
+  pointer-events:auto;
+}
+html.tcg-portrait-play #screen-deck .deck-card-tile,
+html.tcg-portrait-play #screen-deck .menu-card{
+  min-width:72px;
+  min-height:100px;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-hint--compact{
+  font-size:12px;
+}
+
+/* Shops / ranked / options */
+html.tcg-portrait-play #screen-ranked .account-shell,
+html.tcg-portrait-play #screen-options .account-shell,
+html.tcg-portrait-play #screen-booster-shop .account-shell,
+html.tcg-portrait-play #screen-sticker-shop .account-shell,
+html.tcg-portrait-play #screen-sleeve-shop .account-shell{
+  max-width:100%;
+  width:100%;
+}
+html.tcg-portrait-play .overlay.open .mbox,
+html.tcg-portrait-play .overlay.open .account-shell{
+  max-width:min(520px,96vw);
+  max-height:min(88dvh,900px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ═══════════════════════════════════════════
+   GAME — mockup vertical stack
+   ═══════════════════════════════════════════ */
+html.tcg-portrait-play #screen-game.active{
+  display:flex!important;
+  flex-direction:column;
+  width:100%;
+  height:100%;
+  max-height:100dvh;
+  overflow:hidden;
+  padding:0;
+  box-sizing:border-box;
+}
+html.tcg-portrait-play #screen-game .game-viewport-frame{
+  flex:1 1 auto;
+  width:100%;
+  min-height:0;
+  height:100%;
+  max-height:100%;
+  display:flex;
+  align-items:stretch;
+  justify-content:stretch;
+}
+html.tcg-portrait-play #screen-game .game-wide-wrap{
+  width:100%;
+  height:100%;
+  max-height:100%;
+  display:flex;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  gap:4px;
+  padding:4px 6px max(4px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+  border:none;
+  box-shadow:none;
+  background:linear-gradient(180deg,#0a1020 0%,#0c1528 45%,#0a1020 100%);
+  align-items:stretch;
+  justify-content:flex-start;
+}
+
+/* Flatten wrappers so children can occupy named areas */
+html.tcg-portrait-play #screen-game .side-panel.side-left,
+html.tcg-portrait-play #screen-game .side-panel.side-right,
+html.tcg-portrait-play #screen-game .playmat-column,
+html.tcg-portrait-play #screen-game .playmat-mat-viewport,
+html.tcg-portrait-play #screen-game .playmat-mat-stack,
+html.tcg-portrait-play #screen-game .side-log.sidebar{
+  display:contents;
+}
+
+/* Hide landscape chrome pieces */
+html.tcg-portrait-play #screen-game .mat-seam,
+html.tcg-portrait-play #screen-game .playmat-img,
+html.tcg-portrait-play #screen-game .mat-owner-label,
+html.tcg-portrait-play #screen-game .hand-strip-label,
+html.tcg-portrait-play #screen-game .turn-block,
+html.tcg-portrait-play #screen-game .card-hover-panel,
+html.tcg-portrait-play #screen-game .side-left-actions-host,
+html.tcg-portrait-play #screen-game .tcg-radio-bar,
+html.tcg-portrait-play #screen-game .tcg-radio-stack,
+html.tcg-portrait-play #screen-game .tcg-debug-only,
+html.tcg-portrait-play #screen-game .btn-spectate-pov,
+html.tcg-portrait-play #screen-game .btn-spectate-hidden-hands{
+  display:none!important;
+}
+
+/* Hands */
+html.tcg-portrait-play #screen-game .opp-hand-strip{
+  order:1;
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  min-height:72px;
+  max-height:96px;
+  height:auto;
+  padding:2px 0 0;
+  overflow:visible;
+  z-index:5;
+}
+html.tcg-portrait-play #screen-game .my-hand-strip{
+  order:90;
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-end;
+  min-height:110px;
+  max-height:148px;
+  height:auto;
+  padding:0 0 2px;
+  overflow:visible;
+  z-index:6;
+  gap:4px;
+}
+html.tcg-portrait-play #screen-game .hand-fan{
+  width:100%;
+  min-height:64px;
+}
+html.tcg-portrait-play #screen-game .hcard,
+html.tcg-portrait-play #screen-game .opp-hand-card{
+  min-width:54px;
+  min-height:76px;
+  touch-action:manipulation;
+}
+
+/* Fields — no printed playmat */
+html.tcg-portrait-play #screen-game .playmat-frame.opp-mat{
+  order:2;
+  flex:1 1 0;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:100%;
+  min-height:0;
+  aspect-ratio:auto;
+  max-height:none;
+  overflow:hidden;
+  box-shadow:none;
+  background:transparent;
+  position:relative;
+}
+html.tcg-portrait-play #screen-game .playmat-frame.my-mat{
+  order:80;
+  flex:1 1 0;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:100%;
+  min-height:0;
+  aspect-ratio:auto;
+  max-height:none;
+  overflow:hidden;
+  box-shadow:none;
+  background:transparent;
+  position:relative;
+}
+html.tcg-portrait-play #screen-game .playmat-overlay{
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:100%;
+  display:grid;
+  gap:6px;
+  padding:4px 2px;
+  box-sizing:border-box;
+}
+/* Opp: stages near their hand (top), lives toward HUD (bottom) */
+html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:minmax(0,1.15fr) minmax(0,.85fr) auto;
+  grid-template-areas:
+    "sl sc sr"
+    "l0 l1 l2"
+    "md wr ed";
+}
+/* You: lives toward HUD (top), stages near hand (bottom) */
+html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:minmax(0,.85fr) minmax(0,1.15fr) auto;
+  grid-template-areas:
+    "l0 l1 l2"
+    "sl sc sr"
+    "md wr ed";
+}
+
+html.tcg-portrait-play #screen-game .mat-zone{
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0;
+  border-radius:10px;
+  border:1.5px solid rgba(255,140,190,.55);
+  background:rgba(40,18,48,.42);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-game .z-opp-stage-left,
+html.tcg-portrait-play #screen-game .z-my-stage-left{grid-area:sl}
+html.tcg-portrait-play #screen-game .z-opp-stage-center,
+html.tcg-portrait-play #screen-game .z-my-stage-center{grid-area:sc}
+html.tcg-portrait-play #screen-game .z-opp-stage-right,
+html.tcg-portrait-play #screen-game .z-my-stage-right{grid-area:sr}
+html.tcg-portrait-play #screen-game .z-opp-live-0,
+html.tcg-portrait-play #screen-game .z-my-live-0{grid-area:l0}
+html.tcg-portrait-play #screen-game .z-opp-live-1,
+html.tcg-portrait-play #screen-game .z-my-live-1{grid-area:l1}
+html.tcg-portrait-play #screen-game .z-opp-live-2,
+html.tcg-portrait-play #screen-game .z-my-live-2{grid-area:l2}
+
+/* Energy track → HUD counts only */
+html.tcg-portrait-play #screen-game .z-my-energy,
+html.tcg-portrait-play #screen-game .z-opp-energy,
+html.tcg-portrait-play #screen-game .z-baton-toggle{
+  display:none!important;
+}
+
+/* Compact pile row under each field */
+html.tcg-portrait-play #screen-game .z-main-deck,
+html.tcg-portrait-play #screen-game .z-waiting-room,
+html.tcg-portrait-play #screen-game .z-energy-deck,
+html.tcg-portrait-play #screen-game .z-opp-main-deck,
+html.tcg-portrait-play #screen-game .z-opp-waiting-room,
+html.tcg-portrait-play #screen-game .z-opp-energy-deck{
+  position:relative!important;
+  min-height:36px;
+  max-height:44px;
+  border-style:dashed;
+  border-color:rgba(186,228,255,.35);
+  background:rgba(8,16,32,.5);
+}
+html.tcg-portrait-play #screen-game .z-main-deck,
+html.tcg-portrait-play #screen-game .z-opp-main-deck{grid-area:md}
+html.tcg-portrait-play #screen-game .z-waiting-room,
+html.tcg-portrait-play #screen-game .z-opp-waiting-room{grid-area:wr}
+html.tcg-portrait-play #screen-game .z-energy-deck,
+html.tcg-portrait-play #screen-game .z-opp-energy-deck{grid-area:ed}
+html.tcg-portrait-play #screen-game .z-my-success,
+html.tcg-portrait-play #screen-game .z-opp-success{
+  display:none!important; /* lives shown in HUD hearts */
+}
+html.tcg-portrait-play #screen-game .deck-pile .deck-stack{
+  transform:none;
+  min-height:28px;
+}
+html.tcg-portrait-play #screen-game .deck-count{
+  font-size:13px;
+  font-weight:800;
+}
+
+/* Stage / live cards fill slots */
+html.tcg-portrait-play #screen-game .mslot,
+html.tcg-portrait-play #screen-game .lcard{
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+}
+
+/* ── Center HUD (mockup YOU | OPP bar) ── */
+html.tcg-portrait-play #screen-game .phase-panel{
+  order:10;
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-rows:auto auto;
+  gap:4px 8px;
+  align-items:center;
+  padding:6px 8px 2px;
+  margin:0;
+  background:rgba(10,16,30,.88);
+  border:1px solid rgba(186,228,255,.18);
+  border-radius:12px 12px 0 0;
+  border-bottom:none;
+  z-index:8;
+  min-height:0;
+}
+html.tcg-portrait-play #screen-game .phase-panel-head{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-game .pbadge{
+  font-size:13px;
+  padding:4px 10px;
+  min-height:28px;
+}
+html.tcg-portrait-play #screen-game .pmsg{
+  font-size:11px;
+  line-height:1.25;
+  max-height:2.6em;
+  overflow:hidden;
+  margin:0;
+}
+html.tcg-portrait-play #screen-game .pbtns{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-end;
+}
+html.tcg-portrait-play #screen-game .pbtns .btn,
+html.tcg-portrait-play #screen-game .pbtns button{
+  min-height:40px;
+  min-width:44px;
+  font-size:13px;
+  padding:8px 12px;
+}
+
+html.tcg-portrait-play #screen-game .players-stats-panel{
+  order:11;
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:6px 8px;
+  margin:0;
+  background:rgba(10,16,30,.92);
+  border-left:1px solid rgba(186,228,255,.18);
+  border-right:1px solid rgba(186,228,255,.18);
+  z-index:8;
+}
+html.tcg-portrait-play #screen-game .player-stat-strip{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:4px 6px;
+  border-radius:10px;
+  background:rgba(255,255,255,.04);
+}
+html.tcg-portrait-play #screen-game .player-stat-strip.mine{order:0}
+html.tcg-portrait-play #screen-game .player-stat-strip.opp{order:1}
+html.tcg-portrait-play #screen-game .player-stat-strip h3{
+  margin:0;
+  font-size:12px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  opacity:.9;
+}
+html.tcg-portrait-play #screen-game .cpills-inline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+}
+html.tcg-portrait-play #screen-game .cpill{
+  font-size:11px;
+  padding:3px 6px;
+  min-height:24px;
+  border-radius:8px;
+}
+html.tcg-portrait-play #screen-game .cpill.nrg b{
+  font-size:13px;
+  color:#ffe08a;
+}
+
+html.tcg-portrait-play #screen-game .stage-board-panel{
+  order:12;
+  flex:0 0 auto;
+  display:block;
+  padding:4px 8px 8px;
+  margin:0;
+  background:rgba(10,16,30,.92);
+  border:1px solid rgba(186,228,255,.18);
+  border-top:none;
+  border-radius:0 0 12px 12px;
+  z-index:8;
+}
+html.tcg-portrait-play #screen-game .stage-board-panel > h4{display:none}
+html.tcg-portrait-play #screen-game .stage-board-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-game .stage-board-side-lbl{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+html.tcg-portrait-play #screen-game .stage-board-hearts{
+  min-height:22px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:3px;
+}
+html.tcg-portrait-play #screen-game .stage-board-yell{
+  font-size:11px;
+  opacity:.85;
+}
+html.tcg-portrait-play #screen-game .stage-board-active,
+html.tcg-portrait-play #screen-game .stage-board-abilities{
+  margin-top:6px;
+  max-height:72px;
+  overflow-y:auto;
+  font-size:11px;
+  -webkit-overflow-scrolling:touch;
+}
+html.tcg-portrait-play #screen-game .stage-board-abilities button,
+html.tcg-portrait-play #screen-game #sb-activatable button{
+  min-height:40px;
+  font-size:12px;
+  padding:8px 10px;
+  margin:3px 0;
+  width:100%;
+}
+
+/* Right panel pieces → sticky chrome under HUD / above hand */
+html.tcg-portrait-play #screen-game .logscroll{
+  display:none; /* opened via sheet */
+}
+html.tcg-portrait-play #screen-game .side-log > .sbs{display:none}
+html.tcg-portrait-play #screen-game .sbfoot{
+  order:91;
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  padding:0 2px 2px;
+  margin:0;
+  z-index:7;
+  pointer-events:none;
+}
+html.tcg-portrait-play #screen-game .sbfoot > *{
+  pointer-events:auto;
+}
+html.tcg-portrait-play #screen-game .phase-action-bar{
+  order:13;
+  flex:0 0 auto;
+  display:flex!important;
+  justify-content:center;
+  padding:0 8px 6px;
+  margin:0;
+  background:rgba(10,16,30,.92);
+  border-left:1px solid rgba(186,228,255,.18);
+  border-right:1px solid rgba(186,228,255,.18);
+  z-index:9;
+}
+html.tcg-portrait-play #screen-game .phase-action-bar[hidden]{
+  display:none!important;
+}
+html.tcg-portrait-play #screen-game .btn-phase-primary{
+  min-height:44px;
+  width:100%;
+  max-width:420px;
+  font-size:15px;
+  font-weight:800;
+  border-radius:12px;
+}
+html.tcg-portrait-play #screen-game #btn-stamp,
+html.tcg-portrait-play #screen-game #btn-resign,
+html.tcg-portrait-play #screen-game #btn-portrait-log{
+  min-height:40px;
+  min-width:44px;
+  font-size:13px;
+  padding:8px 12px;
+  border-radius:10px;
+}
+
+/* Cost / live score HUDs */
+html.tcg-portrait-play #screen-game .play-cost-hud,
+html.tcg-portrait-play #screen-game .live-score-hud{
+  order:14;
+  flex:0 0 auto;
+  left:auto;
+  bottom:auto;
+  top:auto;
+  transform:none;
+  z-index:20;
+  align-self:center;
+  position:relative;
+  margin:0 auto 4px;
+}
+
+/* Portrait log sheet */
+html.tcg-portrait-play #portrait-log-sheet{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:95000;
+  background:rgba(0,0,0,.55);
+  align-items:flex-end;
+  justify-content:center;
+}
+html.tcg-portrait-play #portrait-log-sheet.open{
+  display:flex;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-panel{
+  width:100%;
+  max-height:70dvh;
+  background:rgba(8,12,24,.97);
+  border-radius:18px 18px 0 0;
+  padding:12px 12px max(16px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-head h3{
+  margin:0;
+  font-size:16px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-close{
+  min-width:44px;
+  min-height:44px;
+  font-size:18px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-log-host{
+  flex:1 1 auto;
+  min-height:180px;
+  max-height:55dvh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid rgba(186,228,255,.15);
+  border-radius:12px;
+  padding:8px;
+  font-size:13px;
+}
+
+/* Card inspect sheet (in-match hover panel) */
+html.tcg-portrait-play #portrait-inspect-sheet{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:94000;
+  background:rgba(0,0,0,.5);
+  align-items:flex-end;
+  justify-content:center;
+}
+html.tcg-portrait-play #portrait-inspect-sheet.open{display:flex}
+html.tcg-portrait-play #portrait-inspect-sheet .portrait-sheet-panel{
+  width:100%;
+  max-height:75dvh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  background:rgba(8,12,24,.97);
+  border-radius:18px 18px 0 0;
+  padding:12px 14px max(16px,env(safe-area-inset-bottom,0px));
+}
+html.tcg-portrait-play #portrait-inspect-sheet .hc-img{
+  max-width:min(220px,56vw);
+  margin:0 auto 8px;
+  display:block;
+}
+
+/* ═══════════════════════════════════════════
+   PROMPTS / OVERLAYS — thumb-friendly
+   ═══════════════════════════════════════════ */
+html.tcg-portrait-play .overlay.open{
+  align-items:flex-end;
+  justify-content:center;
+  padding:0;
+}
+html.tcg-portrait-play .overlay.open .mbox,
+html.tcg-portrait-play .overlay.open .hand-pick-shell,
+html.tcg-portrait-play .overlay.open .prompt-branch-box{
+  width:100%;
+  max-width:100%;
+  max-height:min(88dvh,920px);
+  margin:0;
+  border-radius:18px 18px 0 0;
+  padding:14px 14px max(18px,env(safe-area-inset-bottom,0px));
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+html.tcg-portrait-play .overlay.open button,
+html.tcg-portrait-play .overlay.open .btn,
+html.tcg-portrait-play .overlay.open .btn-grad,
+html.tcg-portrait-play .overlay.open .btn-out{
+  min-height:44px;
+  font-size:15px;
+}
+html.tcg-portrait-play .stamp-picker{
+  max-width:100%;
+  width:100%;
+  left:0;right:0;bottom:0;
+  border-radius:16px 16px 0 0;
+  max-height:70dvh;
+}
+html.tcg-portrait-play .stamp-picker-grid{
+  max-height:48dvh;
+  overflow-y:auto;
+}
+html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox,
+html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell{
+  max-height:min(70dvh,640px);
+}
+
+/* Offline / network banner */
+html.tcg-portrait-play #portrait-offline-banner{
+  display:none;
+  position:fixed;
+  left:0;right:0;top:0;
+  z-index:100001;
+  padding:max(10px,env(safe-area-inset-top,0px)) 14px 12px;
+  background:rgba(120,20,40,.95);
+  color:#fff;
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+}
+html.tcg-portrait-play #portrait-offline-banner.show{display:block}
+
+/* Low-end / reduced motion helpers */
+html.tcg-portrait-play.tcg-low-end #perf-spectacle,
+html.tcg-portrait-play.tcg-low-end #llc-sky-bg .llc-sky-cloud,
+html.tcg-portrait-play.tcg-low-end #llc-sky-bg .llc-sky-wing{
+  display:none!important;
+}
+@media (prefers-reduced-motion: reduce){
+  html.tcg-portrait-play #screen-game .mat-zone,
+  html.tcg-portrait-play #screen-game .hcard{
+    transition:none!important;
+  }
+}
+
+/* Contain off-screen sheets for mid-range GPUs */
+html.tcg-portrait-play #portrait-log-sheet:not(.open),
+html.tcg-portrait-play #portrait-inspect-sheet:not(.open),
+html.tcg-portrait-play .overlay:not(.open){
+  content-visibility:hidden;
+  contain:strict;
+}
+html.tcg-portrait-play #screen-game .playmat-frame{
+  contain:layout paint;
+}

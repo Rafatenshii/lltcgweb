@@ -166,7 +166,13 @@ function renderGame(s, opts = {}) {
     G._prevLogLen = (s.log || []).length;
   }
 
-  if (!opts.skipMobileMat) syncMobileMatLayout(s);
+  if (!opts.skipMobileMat) {
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+      /* portrait layout: no mat pan */
+    } else {
+      syncMobileMatLayout(s);
+    }
+  }
 
   if (G.isSpectator) bindSpectatorInspectOnRenderedCards(s);
 

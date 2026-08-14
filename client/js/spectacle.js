@@ -5,6 +5,16 @@
  */
 'use strict';
 
+/** Portrait mid-range / reduced-motion: skip heavy spectacle paths. */
+function tcgSpectacleReduced() {
+  try {
+    if (window.TCG_LOW_END) return true;
+    if (document.documentElement.classList.contains('tcg-low-end')) return true;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+  } catch (_) { /* ignore */ }
+  return false;
+}
+
 /** Slideshow tutorial (state snapshots) — never run the real Performance show. */
 function isSlideshowTutorial() {
   return !!(G.isTutorial && !G.tutorialLive);
@@ -3879,6 +3889,15 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     G._postSpectacleSplashPause = true;
     return true;
   }
+  // Mid-range portrait / reduced motion: skip heavy LIVE show, keep judge flow.
+  if (tcgSpectacleReduced() && !opts.forceFullSpectacle) {
+    TCG_DEBUG.log('live', 'spectacle skip: reduced / low-end');
+    savePerfSpectacleDoneKey(perfPrev, next, showTurn);
+    markLiveShowPerformancePresented(showTurn);
+    G._liveRoundPostSpectacleReady = true;
+    G._postSpectacleSplashPause = true;
+    return true;
+  }
   const spectacleNext = pickSpectacleStateForPerf(next);
   // Defense-in-depth: never open the spectacle while pre-performance Live Start
   // effects are still resolving this round (owner must clear their prompt first).
@@ -5034,7 +5053,7 @@ function perfYellBladeHeartOrigin(fromEl, chip) {
 
 async function perfRevealYellCardFromDeck(chip, deckEl, isMine, pace = 1) {
   if (!chip || G._perfSpectacleAborted) return;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = tcgSpectacleReduced();
   if (reduced || !deckEl) {
     chip.classList.add('show');
     return;

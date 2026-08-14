@@ -23,6 +23,27 @@
     document.documentElement.dataset.uiTextScale = '100';
   }
 })();
+/* Portrait play gate (Android Capacitor / ?play=portrait) — before first paint. */
+(function () {
+  try {
+    var root = document.documentElement;
+    var q = new URLSearchParams(location.search || '');
+    var playQ = (q.get('play') || '').toLowerCase();
+    var ua = String(navigator.userAgent || '');
+    var fromQuery = playQ === 'portrait' || playQ === '1' || q.get('portrait') === '1';
+    var fromUa = /LoveCaAndroid/i.test(ua);
+    var fromCap = !!(window.Capacitor && (window.Capacitor.isNativePlatform
+      ? window.Capacitor.isNativePlatform()
+      : window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android'));
+    var fromLs = false;
+    try { fromLs = localStorage.getItem('tcg_portrait_play') === '1'; } catch (e) {}
+    if (fromQuery || fromUa || fromCap || fromLs) {
+      root.classList.add('tcg-portrait-play');
+      root.dataset.tcgPortraitPlay = '1';
+      try { localStorage.setItem('tcg_portrait_play', '1'); } catch (e) {}
+    }
+  } catch (e) { /* ignore */ }
+})();
 </script>
 <style id="tcg-shell-guard">
   /* Hide debug/article-like screens before JS — keeps Firefox Reader View from surfacing them on refresh. */
@@ -41,6 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=40">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
+<link rel="stylesheet" href="client/css/portrait.css?v=1">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -14766,6 +14788,14 @@ function applyCardImageToImg(img, card, onFail, opts = {}) {
   const official = isOfficialCardImageUrl(remote) ? remote : '';
   if (!official && !remote && !cached && !preferSrc) return false;
 
+  // Portrait / mid-range: decode off the main thread; prefer Hostinger cardimg cache.
+  try {
+    if (!img.getAttribute('decoding')) img.decoding = 'async';
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+      if (!img.getAttribute('loading') && opts.lazy) img.loading = 'lazy';
+    }
+  } catch (_) { /* ignore */ }
+
   img.onload = () => {
     if (img.dataset.imgSrc === 'remote' && official) queuePersistCardImage(card);
   };
@@ -14790,6 +14820,13 @@ function applyCardImageToImg(img, card, onFail, opts = {}) {
   if (preferSrc) {
     img.dataset.imgSrc = preferSrc === cached ? 'cached' : 'remote';
     img.src = preferSrc;
+    return true;
+  }
+  // Portrait: try Hostinger cardimg.php first (HTTP cacheable in WebView).
+  const preferCacheFirst = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive() && cached;
+  if (preferCacheFirst) {
+    img.dataset.imgSrc = 'cached';
+    img.src = cached;
     return true;
   }
   if (official) {
@@ -15847,11 +15884,20 @@ async function applyPlaymatZones() {
     energy_deck: ['.z-energy-deck', '.z-opp-energy-deck'],
   };
 
+  function clearBox(node) {
+    if (!node) return;
+    node.style.removeProperty('left');
+    node.style.removeProperty('top');
+    node.style.removeProperty('width');
+    node.style.removeProperty('height');
+  }
+
   function mirrorBox(box) {
     return { x: 1 - box.x - box.w, y: 1 - box.y - box.h, w: box.w, h: box.h };
   }
 
   function applyBox(node, box) {
+    if (!node || !box) return;
     node.style.left = (box.x * 100) + '%';
     node.style.top = (box.y * 100) + '%';
     node.style.width = (box.w * 100) + '%';
@@ -15873,6 +15919,19 @@ async function applyPlaymatZones() {
         applyBox(oppNode, oppBox);
       }
     }
+  }
+
+  function clearAllZoneBoxes() {
+    for (const sels of Object.values(zoneMap)) {
+      clearBox(document.querySelector(sels[0]));
+      clearBox(document.querySelector(sels[1]));
+    }
+  }
+
+  // Portrait play uses CSS grid for zones — do not stamp landscape % boxes.
+  if (typeof tcgPortraitPlayActive === 'function' ? tcgPortraitPlayActive() : document.documentElement.classList.contains('tcg-portrait-play')) {
+    clearAllZoneBoxes();
+    return;
   }
 
   try {
@@ -15948,40 +16007,53 @@ function bindMobileViewport() {
   const hint = el('tcg-mobile-rotate-hint');
   const sync = () => {
     const root = document.documentElement;
+    const portraitPlay = tcgPortraitPlayActive();
     const w = window.innerWidth;
     const h = window.innerHeight;
     const landscape = w > h;
     const coarseTouch = window.matchMedia('(pointer: coarse) and (hover: none)').matches;
     const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const mobile = mobileUa || coarseTouch;
+    const mobile = mobileUa || coarseTouch || portraitPlay;
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);
     const phone = mobile && shortSide <= 520 && longSide <= 980;
     const tablet = mobile && !phone && shortSide <= 920;
-    const useFixedFrame = mobile && landscape && (phone || tablet);
-    const portraitBlock = mobile && (phone || tablet) && !landscape;
+    // Portrait-play (Android APK / ?play=portrait): never letterbox to 20:9 or block portrait.
+    const useFixedFrame = !portraitPlay && mobile && landscape && (phone || tablet);
+    const portraitBlock = !portraitPlay && mobile && (phone || tablet) && !landscape;
     // Compact only on clearly sub-1080p viewports — never on typical 1080p+ desktops
     // (wide + tall enough keeps the full log / card preview / three-column layout).
-    const fullDesktopLayout = w >= 1600 && h >= 880;
-    const compactDesktop = !useFixedFrame && !portraitBlock && !fullDesktopLayout
+    const fullDesktopLayout = !portraitPlay && w >= 1600 && h >= 880;
+    const compactDesktop = !portraitPlay && !useFixedFrame && !portraitBlock && !fullDesktopLayout
       && (w < 1600 || h < 880);
     root.classList.toggle('tcg-mobile-viewport', useFixedFrame);
     root.classList.toggle('tcg-compact-desktop', compactDesktop);
-    root.classList.toggle('tcg-phone-device', phone);
-    root.classList.toggle('tcg-phone-landscape', phone && landscape);
-    root.classList.toggle('tcg-tablet-landscape', tablet && landscape);
+    root.classList.toggle('tcg-phone-device', phone || (portraitPlay && shortSide <= 520));
+    root.classList.toggle('tcg-phone-landscape', !portraitPlay && phone && landscape);
+    root.classList.toggle('tcg-tablet-landscape', !portraitPlay && tablet && landscape);
     root.classList.toggle('tcg-mobile-portrait', portraitBlock);
+    root.classList.toggle('tcg-portrait-play', portraitPlay);
     document.body.classList.toggle('tcg-portrait-blocked', portraitBlock);
+    document.body.classList.toggle('tcg-portrait-play-body', portraitPlay);
     if (hint) {
       hint.classList.toggle('show', portraitBlock);
       hint.hidden = !portraitBlock;
       hint.setAttribute('aria-hidden', portraitBlock ? 'false' : 'true');
     }
-    syncDesktopUniformScale(w, h, useFixedFrame, portraitBlock, compactDesktop);
+    syncDesktopUniformScale(w, h, useFixedFrame, portraitBlock || portraitPlay, compactDesktop);
     if (portraitBlock) return;
     tcgUpdatePhoneFsUI();
     syncCompactDesktopLayout();
-    syncMobileMatLayout(G.gameState);
+    if (!portraitPlay) syncMobileMatLayout(G.gameState);
+    else {
+      const col = el('playmat-column');
+      const stack = el('playmat-mat-stack');
+      if (col) col.classList.remove('mat-focus-mine', 'mat-focus-opp', 'mat-focus-live', 'mobile-live-hand-mode');
+      if (stack) {
+        stack.style.removeProperty('--mobile-mat-pan');
+        stack.style.transform = '';
+      }
+    }
     syncMobilePhaseDock();
     syncAllMobileHandHuds();
   };
@@ -15991,6 +16063,11 @@ function bindMobileViewport() {
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', sync, { passive: true });
   }
+}
+
+function tcgPortraitPlayActive() {
+  return document.documentElement.classList.contains('tcg-portrait-play')
+    || document.documentElement.dataset.tcgPortraitPlay === '1';
 }
 
 function tcgIsSmallPhone() {
@@ -16203,6 +16280,12 @@ function syncMobileMatLayout(s) {
   const stack = el('playmat-mat-stack');
   const viewport = el('playmat-mat-viewport');
   if (!col || !stack) return;
+  if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+    col.classList.remove('mat-focus-mine', 'mat-focus-opp', 'mat-focus-live', 'mobile-live-hand-mode');
+    stack.style.removeProperty('--mobile-mat-pan');
+    stack.style.transform = '';
+    return;
+  }
   if (!tcgMobileViewportActive()) {
     col.classList.remove('mat-focus-mine', 'mat-focus-opp', 'mat-focus-live', 'mobile-live-hand-mode');
     stack.style.removeProperty('--mobile-mat-pan');
@@ -29318,13 +29401,14 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=69"></script>
-<script src="client/js/board-render.js?v=17"></script>
+<script src="client/js/board-render.js?v=18"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
+<script src="client/js/portrait-bridge.js?v=1"></script>
 <script>void bootApp();</script>
 </body>
 </html>
