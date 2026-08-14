@@ -42,6 +42,9 @@ final class Issue79DollcheFixesTest extends TestCase
     public function testSummerSayakaOptionalShowsYesNoThenDraws(): void
     {
         $sayaka = $this->cardByNo('PL!HS-bp6-010-R', 'summer');
+        // Fantasy Sayaka can already have +4 per Member stacked beneath her
+        // when Blue Moment Sayaka chooses her for its separate +5 bonus.
+        $sayaka['live_cost_bonus'] = 4;
         $handDoll = $this->cardByNo('PL!HS-bp5-008-R', 'hand_doll');
         $handDoll['subunit'] = 'DOLLCHESTRA';
 
@@ -78,9 +81,9 @@ final class Issue79DollcheFixesTest extends TestCase
 
             $state = \actionResolvePrompt($state, 'p1', ['slot' => 'center']);
             $this->assertNull($state['pending_prompt'] ?? null);
-            $this->assertSame(5, intval($state['players']['p1']['stage']['center']['live_cost_bonus'] ?? 0));
+            $this->assertSame(9, intval($state['players']['p1']['stage']['center']['live_cost_bonus'] ?? 0));
             $this->assertSame(
-                intval($sayaka['cost'] ?? 0) + 5,
+                intval($sayaka['cost'] ?? 0) + 4 + 5,
                 \getEffectiveStageMemberCost($state, 'p1', $state['players']['p1']['stage']['center'])
             );
 

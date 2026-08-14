@@ -1058,7 +1058,12 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
     if ($promptType === 'pick_member_cost_bonus') {
         $slot = $data['slot'] ?? $choice;
         if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
-        $ownerP['stage'][$slot]['live_cost_bonus'] = intval($prompt['cost_bonus'] ?? 5);
+        // This can target a Member with an existing Live Start cost modifier
+        // (for example, Fantasy Sayaka's +4 per stacked Member). Bonuses from
+        // distinct abilities stack until the Live ends; never overwrite one here.
+        $ownerP['stage'][$slot]['live_cost_bonus'] =
+            intval($ownerP['stage'][$slot]['live_cost_bonus'] ?? 0)
+            + intval($prompt['cost_bonus'] ?? 5);
         $state = addLog($state, $state['players'][$owner]['name'] .
             ' — Member cost +' . intval($prompt['cost_bonus'] ?? 5) . ' until Live ends.');
         unset($state['pending_prompt']);
