@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=40">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=21">
+<link rel="stylesheet" href="client/css/portrait.css?v=22">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -988,6 +988,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <h2 id="deck-screen-title" data-i18n="deck.title">Deck Builder</h2>
       </div>
       <div id="portrait-deck-chrome" class="portrait-deck-chrome" hidden>
+        <div id="portrait-deck-batch-host" class="portrait-deck-batch-host" aria-live="polite"></div>
         <div class="portrait-deck-row portrait-deck-row--top">
           <label class="portrait-deck-preset-wrap">
             <select id="sel-portrait-deck-preset" data-i18n-aria-label="deck.presetSlot" aria-label="Preset slot"></select>
@@ -29644,7 +29645,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script src="client/js/portrait-bridge.js?v=7"></script>
-<script src="client/js/portrait-deck.js?v=1"></script>
+<script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=9"></script>
 <script>void bootApp();</script>
 </body>

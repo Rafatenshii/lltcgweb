@@ -52,8 +52,42 @@
   function restoreAllParked() {
     ['deck-sleeve-picker', 'deck-pool-search-wrap', 'deck-filter-panel',
       'deck-collection-sort-wrap', 'deck-builder-import-search', 'deck-builder-actions',
-      'deck-builder-name-wrap', 'btn-deck-seal-batch']
+      'deck-builder-name-wrap', 'btn-deck-seal-batch', 'deck-seal-batch-bar']
       .forEach((id) => restore(el(id)));
+  }
+
+  function syncBatchModeUi() {
+    if (!portraitActive()) return;
+    const screen = el('screen-deck');
+    const bar = el('deck-seal-batch-bar');
+    const host = el('portrait-deck-batch-host');
+    const inBatch = !!(global.A && global.A.deckSealBatchMode);
+    if (!screen) return;
+    screen.classList.toggle('portrait-deck-batch-mode', inBatch);
+    if (inBatch) {
+      closeAllSheets();
+      setView('pool');
+      if (host && bar) {
+        park(bar, host);
+        bar.hidden = false;
+      }
+    } else if (bar) {
+      restore(bar);
+    }
+  }
+
+  function wrapBatchModeHooks() {
+    ['enterDeckSealBatchMode', 'exitDeckSealBatchMode', 'updateDeckSealBatchBar'].forEach((name) => {
+      const orig = global[name];
+      if (typeof orig !== 'function' || orig._pdWrapped) return;
+      const wrapped = function () {
+        const result = orig.apply(this, arguments);
+        try { syncBatchModeUi(); } catch (_) { /* ignore */ }
+        return result;
+      };
+      wrapped._pdWrapped = true;
+      global[name] = wrapped;
+    });
   }
 
   function closeSheet(id) {
@@ -188,6 +222,8 @@
   function unmountChrome() {
     closeAllSheets();
     restoreAllParked();
+    const screen = el('screen-deck');
+    screen?.classList.remove('portrait-deck-batch-mode');
     const chrome = el('portrait-deck-chrome');
     if (chrome) chrome.hidden = true;
   }
@@ -231,13 +267,20 @@
 
   function handleBack() {
     if (!portraitActive()) return false;
-    return closeAllSheets();
+    if (closeAllSheets()) return true;
+    if (global.A?.deckSealBatchMode && typeof global.exitDeckSealBatchMode === 'function') {
+      global.exitDeckSealBatchMode();
+      return true;
+    }
+    return false;
   }
 
   function sync() {
     if (!portraitActive()) return;
+    wrapBatchModeHooks();
     bindOnce();
     mountChrome();
+    syncBatchModeUi();
   }
 
   global.tcgPortraitSyncDeckChrome = sync;
