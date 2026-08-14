@@ -258,15 +258,17 @@ html.tcg-portrait-play .overlay.open .account-shell{
 }
 
 /* ═══════════════════════════════════════════
-   GAME — mockup vertical stack (compact)
-   Opp hand → opp stages+lives → slim HUD → my lives+stages → hand
+   GAME — #portrait-board mockup grid (mounted by portrait-board.js)
+   Opp hand → opp stages+lives → HUD → my lives+stages → hand
    ═══════════════════════════════════════════ */
 html.tcg-portrait-play{
-  --p-hand-opp:56px;
-  --p-hand-mine:100px;
-  --p-hud-h:auto;
-  --p-gap:3px;
-  --p-slot-r:8px;
+  --p-hand-opp: clamp(52px, 7.2vh, 68px);
+  --p-hand-mine: clamp(92px, 12vh, 118px);
+  --p-gap: 3px;
+  --p-slot-r: 8px;
+  --p-zone-bg: linear-gradient(180deg, #fff8fb 0%, #f4d4e4 100%);
+  --p-zone-border: #e891b4;
+  --p-live-bg: linear-gradient(180deg, #fff6fa 0%, #efc8db 100%);
 }
 html.tcg-portrait-play #screen-game.active{
   display:flex!important;
@@ -277,58 +279,134 @@ html.tcg-portrait-play #screen-game.active{
   overflow:hidden;
   padding:0;
   box-sizing:border-box;
+  background:#0a1220;
 }
 html.tcg-portrait-play #screen-game .game-viewport-frame{
   flex:1 1 auto;
   width:100%;
   min-height:0;
   height:100%;
-  max-height:100%;
   display:flex;
-  align-items:stretch;
-  justify-content:stretch;
+  position:relative;
   overflow:hidden;
 }
-html.tcg-portrait-play #screen-game .game-wide-wrap{
+html.tcg-portrait-play #screen-game .game-wide-wrap.portrait-wide-hidden{
+  display:none!important;
+}
+html.tcg-portrait-play #portrait-board{
+  flex:1 1 auto;
   width:100%;
   height:100%;
-  max-height:100%;
+  min-height:0;
+  display:grid;
+  grid-template-rows:
+    var(--p-hand-opp)
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1.12fr)
+    var(--p-hand-mine);
+  grid-template-areas:
+    "opp-hand"
+    "opp-field"
+    "hud"
+    "my-field"
+    "my-hand";
+  gap: var(--p-gap);
+  padding: max(2px, env(safe-area-inset-top, 0px)) 6px max(2px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  background: #0a1220;
+  position: relative;
+  overflow: hidden;
+}
+html.tcg-portrait-play .pb-opp-hand{ grid-area: opp-hand; min-height:0; overflow:hidden; }
+html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:hidden; display:flex; }
+html.tcg-portrait-play .pb-hud{ grid-area: hud; flex:0 0 auto; z-index:8; }
+html.tcg-portrait-play .pb-my-field{ grid-area: my-field; min-height:0; overflow:hidden; display:flex; }
+html.tcg-portrait-play .pb-my-hand{ grid-area: my-hand; min-height:0; overflow:hidden; }
+html.tcg-portrait-play .pb-chrome{
+  position:absolute;
+  right:6px;
+  top: calc(var(--p-hand-opp) + 8px);
+  z-index:40;
   display:flex;
   flex-direction:column;
+  gap:6px;
+  pointer-events:none;
+}
+html.tcg-portrait-play .pb-chrome > *{ pointer-events:auto; }
+
+html.tcg-portrait-play .pb-opp-hand .opp-hand-strip,
+html.tcg-portrait-play .pb-my-hand .my-hand-strip{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  margin:0;
+  padding:0;
+}
+html.tcg-portrait-play .pb-my-hand .my-hand-strip{
+  overflow-x:auto;
+  overflow-y:visible;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+  scrollbar-width:none;
+}
+html.tcg-portrait-play .pb-my-hand .my-hand-strip::-webkit-scrollbar{display:none}
+html.tcg-portrait-play .hand-strip-label{display:none!important}
+html.tcg-portrait-play .hand-fan{
+  display:flex;
+  flex-direction:row;
   flex-wrap:nowrap;
-  gap:var(--p-gap);
-  padding:max(2px,env(safe-area-inset-top,0px)) 4px max(2px,env(safe-area-inset-bottom,0px));
+  align-items:flex-end;
+  justify-content:center;
+  width:max-content;
+  min-width:100%;
+  height:100%;
+  margin:0 auto;
+  padding:0 6px;
   box-sizing:border-box;
-  border:none;
-  box-shadow:none;
-  background:#070b14;
-  align-items:stretch;
-  justify-content:flex-start;
+}
+html.tcg-portrait-play .pb-opp-hand .hand-fan{
+  width:100%;
+  min-width:0;
   overflow:hidden;
+}
+html.tcg-portrait-play #screen-game .hcard,
+html.tcg-portrait-play #screen-game .opp-hand-card{
+  flex:0 0 auto;
+  height: calc(var(--p-hand-mine) - 8px)!important;
+  width: auto!important;
+  aspect-ratio: 63 / 88;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:100%;
+  transition: transform .18s ease;
+}
+html.tcg-portrait-play #screen-game .opp-hand-card{
+  height: calc(var(--p-hand-opp) - 4px)!important;
+}
+html.tcg-portrait-play #screen-game .hcard.play-sel{
+  transform: translateY(-16px)!important;
+  z-index:40!important;
+}
+
+html.tcg-portrait-play .pb-opp-field .playmat-frame,
+html.tcg-portrait-play .pb-my-field .playmat-frame{
+  flex:1 1 auto;
+  width:100%;
+  height:100%;
   min-height:0;
+  aspect-ratio:auto!important;
+  max-height:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  position:relative;
+  overflow:hidden;
 }
-
-html.tcg-portrait-play #screen-game .side-panel.side-left,
-html.tcg-portrait-play #screen-game .side-panel.side-right,
-html.tcg-portrait-play #screen-game .playmat-column,
-html.tcg-portrait-play #screen-game .playmat-mat-viewport,
-html.tcg-portrait-play #screen-game .playmat-mat-stack,
-html.tcg-portrait-play #screen-game .side-log.sidebar{
-  display:contents;
-}
-
-/* Hide landscape chrome / clutter not in mockup */
-html.tcg-portrait-play #screen-game .mat-seam,
 html.tcg-portrait-play #screen-game .playmat-img,
 html.tcg-portrait-play #screen-game .mat-owner-label,
-html.tcg-portrait-play #screen-game .hand-strip-label,
-html.tcg-portrait-play #screen-game .turn-block,
-html.tcg-portrait-play #screen-game .side-left-actions-host,
-html.tcg-portrait-play #screen-game .tcg-radio-bar,
-html.tcg-portrait-play #screen-game .tcg-radio-stack,
-html.tcg-portrait-play #screen-game .tcg-debug-only,
-html.tcg-portrait-play #screen-game .btn-spectate-pov,
-html.tcg-portrait-play #screen-game .btn-spectate-hidden-hands,
+html.tcg-portrait-play #screen-game .mat-seam,
 html.tcg-portrait-play #screen-game .z-my-energy,
 html.tcg-portrait-play #screen-game .z-opp-energy,
 html.tcg-portrait-play #screen-game .z-baton-toggle,
@@ -339,164 +417,33 @@ html.tcg-portrait-play #screen-game .z-waiting-room,
 html.tcg-portrait-play #screen-game .z-energy-deck,
 html.tcg-portrait-play #screen-game .z-opp-main-deck,
 html.tcg-portrait-play #screen-game .z-opp-waiting-room,
-html.tcg-portrait-play #screen-game .z-opp-energy-deck,
-html.tcg-portrait-play #screen-game .stage-board-panel > h4,
-html.tcg-portrait-play #screen-game .stage-board-active,
-html.tcg-portrait-play #screen-game .stage-board-abilities:not(.portrait-skills-open),
-html.tcg-portrait-play #screen-game .pmsg,
-html.tcg-portrait-play #screen-game .phase-timer-wrap,
-html.tcg-portrait-play #screen-game .spectator-count{
+html.tcg-portrait-play #screen-game .z-opp-energy-deck{
   display:none!important;
 }
-/* Hide deck-count pill (3rd); keep energy, hand, WR */
-html.tcg-portrait-play #screen-game .player-stat-strip .cpill:nth-child(3){display:none!important}
-
-/* Hands */
-html.tcg-portrait-play #screen-game .opp-hand-strip{
-  order:1;
-  flex:0 0 var(--p-hand-opp);
-  height:var(--p-hand-opp);
-  max-height:var(--p-hand-opp);
-  min-height:var(--p-hand-opp);
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  padding:0;
-  overflow:hidden;
-  z-index:5;
-}
-html.tcg-portrait-play #screen-game .my-hand-strip{
-  order:90;
-  flex:0 0 var(--p-hand-mine);
-  height:var(--p-hand-mine);
-  max-height:var(--p-hand-mine);
-  min-height:var(--p-hand-mine);
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:flex-end;
-  padding:0 0 2px;
-  overflow-x:auto;
-  overflow-y:visible;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-x:contain;
-  touch-action:pan-x;
-  scrollbar-width:none;
-  z-index:6;
-  gap:0;
-}
-html.tcg-portrait-play #screen-game .my-hand-strip::-webkit-scrollbar{display:none}
-html.tcg-portrait-play #screen-game .hand-fan{
-  display:flex;
-  flex-direction:row;
-  flex-wrap:nowrap;
-  align-items:flex-end;
-  justify-content:center;
-  width:max-content;
-  min-width:100%;
-  height:100%;
-  min-height:0;
-  margin:0 auto;
-  padding:0 8px;
-  box-sizing:border-box;
-}
-html.tcg-portrait-play #screen-game .opp-hand-strip .hand-fan{
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-  justify-content:center;
-  padding:0 4px;
-}
-html.tcg-portrait-play #screen-game .hcard,
-html.tcg-portrait-play #screen-game .opp-hand-card{
-  flex:0 0 auto;
-  width:auto!important;
-  height:calc(var(--p-hand-mine) - 10px)!important;
-  aspect-ratio:63 / 88;
-  min-width:0!important;
-  min-height:0!important;
-  max-height:100%;
-  touch-action:manipulation;
-  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-html.tcg-portrait-play #screen-game .opp-hand-card{
-  height:calc(var(--p-hand-opp) - 6px)!important;
-}
-html.tcg-portrait-play #screen-game .hcard.play-sel{
-  transform:translateY(-18px)!important;
-  z-index:40!important;
-}
-html.tcg-portrait-play #screen-game .hcard.card-arriving,
-html.tcg-portrait-play #screen-game .hcard.stack-shift-anim{
-  max-height:calc(var(--p-hand-mine) - 10px);
-}
-
-/* Fields */
-html.tcg-portrait-play #screen-game .playmat-frame.opp-mat{
-  order:2;
-  flex:1.05 1 0;
-  min-height:0;
-  max-height:none;
-  aspect-ratio:auto;
-  overflow:hidden;
-  box-shadow:none;
-  background:transparent;
-  display:flex;
-  position:relative;
-}
-html.tcg-portrait-play #screen-game .playmat-frame.my-mat{
-  order:80;
-  flex:1.2 1 0;
-  min-height:0;
-  max-height:none;
-  aspect-ratio:auto;
-  overflow:hidden;
-  box-shadow:none;
-  background:transparent;
-  display:flex;
-  position:relative;
-}
 html.tcg-portrait-play #screen-game .playmat-overlay{
-  position:relative;
-  inset:auto;
-  width:100%;
-  height:100%;
-  display:grid;
-  gap:4px;
-  padding:2px 2px 0;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  gap:5px;
+  padding:2px;
   box-sizing:border-box;
-  min-height:0;
 }
+/* Opp field is mirrored vs us: visual L→R = their Right, Center, Left */
 html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  grid-template-rows:minmax(0,1.2fr) minmax(0,.78fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1.25fr) minmax(0, 0.72fr);
   grid-template-areas:
-    "sl sc sr"
-    "l0 l1 l2";
+    "sr sc sl"
+    "l2 l1 l0";
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  grid-template-rows:minmax(0,.78fr) minmax(0,1.2fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.25fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
-}
-html.tcg-portrait-play #screen-game .mat-zone{
-  position:relative!important;
-  left:auto!important;
-  top:auto!important;
-  width:auto!important;
-  height:auto!important;
-  min-height:0;
-  border-radius:var(--p-slot-r);
-  border:1.5px solid rgba(255,150,195,.65);
-  background:rgba(255,255,255,.06);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  contain:layout paint;
 }
 html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-left{grid-area:sl}
@@ -511,6 +458,60 @@ html.tcg-portrait-play #screen-game .z-my-live-1{grid-area:l1}
 html.tcg-portrait-play #screen-game .z-opp-live-2,
 html.tcg-portrait-play #screen-game .z-my-live-2{grid-area:l2}
 
+html.tcg-portrait-play #screen-game .mat-zone{
+  position:relative!important;
+  left:auto!important; top:auto!important;
+  width:auto!important; height:auto!important;
+  min-height:0;
+  border-radius: var(--p-slot-r);
+  border: 1.5px solid rgba(255,255,255,.85);
+  outline: 1px solid var(--p-zone-border);
+  background:
+    linear-gradient(180deg, rgba(255,248,251,.88) 0%, rgba(244,200,220,.82) 100%),
+    url('../../playmat.png') center / 220% auto;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 2px 8px rgba(0,0,0,.28);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-game .mslot,
+html.tcg-portrait-play #screen-game .lcard,
+html.tcg-portrait-play #screen-game .stage-slot,
+html.tcg-portrait-play #screen-game .mat-zone > *{
+  position:relative;
+  z-index:1;
+}
+html.tcg-portrait-play #screen-game .z-opp-live-0,
+html.tcg-portrait-play #screen-game .z-opp-live-1,
+html.tcg-portrait-play #screen-game .z-opp-live-2,
+html.tcg-portrait-play #screen-game .z-my-live-0,
+html.tcg-portrait-play #screen-game .z-my-live-1,
+html.tcg-portrait-play #screen-game .z-my-live-2{
+  background: var(--p-live-bg);
+}
+html.tcg-portrait-play #screen-game .mat-zone[data-portrait-label]::before{
+  content: attr(data-portrait-label);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: clamp(8px, 2.4vw, 11px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: .02em;
+  color: rgba(160, 55, 95, .72);
+  pointer-events: none;
+  z-index: 0;
+}
+html.tcg-portrait-play #screen-game .mat-zone:has(.mslot, .lcard, img:not(.pill-ico))::before{
+  opacity: .18;
+  font-size: 8px;
+}
 html.tcg-portrait-play #screen-game .mslot,
 html.tcg-portrait-play #screen-game .lcard,
 html.tcg-portrait-play #screen-game .stage-slot{
@@ -522,223 +523,228 @@ html.tcg-portrait-play #screen-game .stage-slot{
   min-height:0!important;
 }
 html.tcg-portrait-play #screen-game .mslot img,
-html.tcg-portrait-play #screen-game .lcard img,
-html.tcg-portrait-play #screen-game .stage-slot img{
+html.tcg-portrait-play #screen-game .lcard img{
   max-width:100%;
   max-height:100%;
   object-fit:contain;
 }
 
-/* ── Slim center HUD (YOU | OPP) ── */
-html.tcg-portrait-play #screen-game .phase-panel{
-  order:10;
-  flex:0 0 auto;
+html.tcg-portrait-play .pb-hud{
   display:flex;
-  flex-direction:row;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px;
-  padding:4px 8px;
+  flex-direction:column;
+  gap:3px;
+  padding:4px 6px 6px;
   margin:0;
-  background:rgba(12,18,32,.96);
-  border:1px solid rgba(186,228,255,.2);
-  border-radius:10px 10px 0 0;
-  border-bottom:none;
-  z-index:8;
+  background: rgba(8, 14, 28, .94);
+  border: 1px solid rgba(186,228,255,.22);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.35);
 }
-html.tcg-portrait-play #screen-game .phase-panel-head{
-  display:flex;
+html.tcg-portrait-play .pb-wins-row{
+  display:grid;
+  grid-template-columns: auto 1fr auto;
   align-items:center;
   gap:6px;
-  flex:1 1 auto;
+}
+html.tcg-portrait-play .pb-side{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+html.tcg-portrait-play .pb-side.opp{ flex-direction: row; }
+html.tcg-portrait-play .pb-nrg{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  min-height:22px;
+  padding:2px 6px;
+  border-radius:5px;
+  background: rgba(20, 28, 48, .95);
+  border: 1px solid rgba(186,228,255,.22);
+  font-size:11px;
+  font-weight:800;
+  color:#ffe08a;
+}
+html.tcg-portrait-play .pb-nrg .cpill{
+  margin:0;
+  padding:0;
+  border:none;
+  background:transparent;
+  min-height:0;
+  font-size:inherit;
+  color:inherit;
+}
+html.tcg-portrait-play .pb-nrg .pill-ico{ width:12px; height:12px; }
+html.tcg-portrait-play .pb-nrg b{ color:#ffe08a; font-size:12px; }
+html.tcg-portrait-play .pb-win-val{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:38px;
+  padding:3px 7px;
+  border-radius:5px;
+  font-size:13px;
+  font-weight:900;
+  color:#b8ffc8;
+  background: #1a3d28;
+  border: 1px solid #3d9a5c;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+html.tcg-portrait-play .pb-win-center{
+  display:flex;
+  justify-content:center;
   min-width:0;
 }
-html.tcg-portrait-play #screen-game .phase-head-stack{min-width:0}
-html.tcg-portrait-play #screen-game .pbadge{
-  font-size:11px;
-  padding:3px 8px;
-  min-height:22px;
-  white-space:nowrap;
-}
-html.tcg-portrait-play #screen-game .pbtns{
+html.tcg-portrait-play .pb-hud .phase-panel{
   display:flex;
-  flex-wrap:nowrap;
-  gap:4px;
-  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:0;
+  margin:0;
+  background:transparent;
+  border:none;
 }
-html.tcg-portrait-play #screen-game .pbtns .btn,
-html.tcg-portrait-play #screen-game .pbtns button{
-  min-height:32px;
-  min-width:36px;
+html.tcg-portrait-play .pb-hud .phase-panel-head{ display:flex; align-items:center; gap:6px; }
+html.tcg-portrait-play .pb-hud .pbadge{
   font-size:11px;
-  padding:4px 8px;
+  padding:3px 10px;
+  min-height:22px;
 }
+html.tcg-portrait-play .pb-hud .pmsg,
+html.tcg-portrait-play .pb-hud .phase-timer-wrap,
+html.tcg-portrait-play .pb-hud .spectator-count,
+html.tcg-portrait-play .pb-hud .btn-spectate-pov,
+html.tcg-portrait-play .pb-hud .btn-spectate-hidden-hands{ display:none!important; }
+html.tcg-portrait-play .pb-hud .pbtns{ display:flex; gap:4px; }
+html.tcg-portrait-play .pb-hud .pbtns button{ min-height:28px; font-size:11px; padding:4px 8px; }
 
-html.tcg-portrait-play #screen-game .players-stats-panel{
-  order:11;
-  flex:0 0 auto;
+html.tcg-portrait-play .pb-hud .players-stats-panel{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:4px;
-  padding:4px 6px;
+  gap:6px;
+  padding:0;
   margin:0;
-  background:rgba(12,18,32,.96);
-  border-left:1px solid rgba(186,228,255,.2);
-  border-right:1px solid rgba(186,228,255,.2);
-  z-index:8;
+  background:transparent;
+  border:none;
 }
-html.tcg-portrait-play #screen-game .player-stat-strip{
+html.tcg-portrait-play .pb-hud .player-stat-strip{
   display:flex;
   flex-direction:column;
   gap:2px;
   padding:2px 4px;
-  border-radius:8px;
   background:transparent;
 }
-html.tcg-portrait-play #screen-game .player-stat-strip h3{
+html.tcg-portrait-play .pb-hud .player-stat-strip h3{
   margin:0;
-  font-size:10px;
-  letter-spacing:.08em;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.06em;
   text-transform:uppercase;
-  opacity:.85;
 }
-html.tcg-portrait-play #screen-game .cpills-inline{
-  display:flex;
-  flex-wrap:nowrap;
-  gap:3px;
-}
-html.tcg-portrait-play #screen-game .cpill{
-  font-size:10px;
-  padding:2px 5px;
-  min-height:20px;
-  border-radius:6px;
-  flex:0 0 auto;
-}
-html.tcg-portrait-play #screen-game .cpill.nrg b{font-size:12px;color:#ffe08a}
-html.tcg-portrait-play #screen-game .pill-ico{width:12px;height:12px}
+html.tcg-portrait-play .pb-hud .player-stat-strip.mine h3{ color:#ff8cbe; }
+html.tcg-portrait-play .pb-hud .player-stat-strip.opp h3{ color:#7eb6ff; }
+/* Energy lives in .pb-wins-row; hide Hand/Deck/WR clutter from mockup HUD */
+html.tcg-portrait-play .pb-hud .cpills-inline{ display:none!important; }
 
-html.tcg-portrait-play #screen-game .stage-board-panel{
-  order:12;
-  flex:0 0 auto;
-  display:block;
-  padding:2px 6px 4px;
+html.tcg-portrait-play .pb-hud .stage-board-panel{
+  padding:0;
   margin:0;
-  background:rgba(12,18,32,.96);
-  border:1px solid rgba(186,228,255,.2);
-  border-top:none;
-  border-radius:0 0 10px 10px;
-  z-index:8;
+  background:transparent;
+  border:none;
 }
-html.tcg-portrait-play #screen-game .stage-board-grid{
+html.tcg-portrait-play .pb-hud .stage-board-panel > h4{ display:none; }
+html.tcg-portrait-play .pb-hud .stage-board-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:4px;
+  gap:6px;
 }
-html.tcg-portrait-play #screen-game .stage-board-side-lbl{display:none}
-html.tcg-portrait-play #screen-game .stage-board-hearts{
-  min-height:16px;
+html.tcg-portrait-play .pb-hud .stage-board-side-lbl{ display:none; }
+html.tcg-portrait-play .pb-hud .stage-board-hearts{
+  min-height:14px;
   display:flex;
   flex-wrap:wrap;
   gap:2px;
-  justify-content:flex-start;
 }
-html.tcg-portrait-play #screen-game .stage-board-yell{
-  font-size:9px;
-  opacity:.75;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+html.tcg-portrait-play .pb-hud .stage-board-hearts img,
+html.tcg-portrait-play .pb-hud .stage-board-hearts .ticon{
+  width:13px!important;
+  height:13px!important;
 }
-html.tcg-portrait-play #screen-game .stage-board-hearts img,
-html.tcg-portrait-play #screen-game .stage-board-hearts .ticon{
-  width:14px!important;
-  height:14px!important;
+html.tcg-portrait-play .pb-hud .stage-board-yell{
+  font-size:10px;
+  opacity:.85;
+}
+html.tcg-portrait-play .pb-hud .stage-board-active,
+html.tcg-portrait-play .pb-hud .stage-board-abilities{ display:none!important; }
+
+html.tcg-portrait-play .pb-hud .phase-action-bar{
+  display:flex!important;
+  justify-content:center;
+  padding:2px 0 0;
+  margin:0;
+  background:transparent;
+  border:none;
+}
+html.tcg-portrait-play .pb-hud .phase-action-bar[hidden]{ display:none!important; }
+html.tcg-portrait-play .pb-hud .btn-phase-primary{
+  min-height:34px;
+  width:100%;
+  max-width:280px;
+  font-size:13px;
+  border-radius:10px;
+}
+html.tcg-portrait-play .pb-hud .play-cost-hud,
+html.tcg-portrait-play .pb-hud .live-score-hud{
+  position:relative;
+  left:auto; bottom:auto; top:auto;
+  transform:none;
+  align-self:center;
+  margin:2px auto 0;
+  font-size:11px;
 }
 
-html.tcg-portrait-play #screen-game .logscroll,
-html.tcg-portrait-play #screen-game .side-log > .sbs{display:none}
-html.tcg-portrait-play #screen-game .sbfoot{
-  order:91;
-  position:absolute;
-  right:4px;
-  bottom:calc(var(--p-hand-mine) + 6px);
+html.tcg-portrait-play .pb-chrome .sbfoot{
   display:flex;
   flex-direction:column;
   gap:4px;
-  z-index:30;
-  pointer-events:none;
-  padding:0;
   margin:0;
+  padding:0;
 }
-html.tcg-portrait-play #screen-game .sbfoot > *{pointer-events:auto}
-html.tcg-portrait-play #screen-game #btn-stamp,
-html.tcg-portrait-play #screen-game #btn-resign,
-html.tcg-portrait-play #screen-game #btn-portrait-log{
-  min-height:34px;
-  min-width:34px;
+html.tcg-portrait-play .pb-chrome #btn-stamp,
+html.tcg-portrait-play .pb-chrome #btn-resign,
+html.tcg-portrait-play .pb-chrome #btn-portrait-log{
+  min-height:32px;
+  min-width:32px;
   font-size:11px;
   padding:4px 8px;
   border-radius:999px;
-  background:rgba(8,14,28,.88);
+  background:rgba(8,14,28,.9);
   border:1px solid rgba(186,228,255,.35);
 }
-html.tcg-portrait-play #screen-game .phase-action-bar{
-  order:13;
-  flex:0 0 auto;
-  display:flex!important;
-  justify-content:center;
-  padding:0 6px 4px;
-  margin:0;
-  background:rgba(12,18,32,.96);
-  border-left:1px solid rgba(186,228,255,.2);
-  border-right:1px solid rgba(186,228,255,.2);
-  z-index:9;
-}
-html.tcg-portrait-play #screen-game .phase-action-bar[hidden]{display:none!important}
-html.tcg-portrait-play #screen-game .btn-phase-primary{
-  min-height:36px;
-  width:100%;
-  max-width:100%;
-  font-size:13px;
-  font-weight:800;
-  border-radius:10px;
-}
+html.tcg-portrait-play .pb-chrome .tcg-debug-only,
+html.tcg-portrait-play .turn-block,
+html.tcg-portrait-play .side-left-actions-host,
+html.tcg-portrait-play .tcg-radio-bar,
+html.tcg-portrait-play .tcg-radio-stack,
+html.tcg-portrait-play .logscroll,
+html.tcg-portrait-play .side-log > .sbs{ display:none!important; }
 
-html.tcg-portrait-play #screen-game .play-cost-hud,
-html.tcg-portrait-play #screen-game .live-score-hud{
-  order:14;
-  flex:0 0 auto;
-  position:relative;
-  left:auto;bottom:auto;top:auto;
-  transform:none;
-  align-self:center;
-  margin:0 auto 2px;
-  z-index:20;
-  font-size:12px;
-  padding:4px 8px;
-}
-
-/* Center card info + L/C/R play actions (raised hand card) */
 html.tcg-portrait-play #screen-game .card-hover-panel{
   display:none!important;
   position:fixed!important;
   left:50%!important;
   top:50%!important;
-  right:auto!important;
-  bottom:auto!important;
   transform:translate(-50%,-50%)!important;
   width:min(92vw,360px)!important;
   max-height:min(70dvh,560px)!important;
-  margin:0!important;
   z-index:92000!important;
   overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding:12px 12px 14px!important;
+  padding:12px!important;
   border-radius:16px!important;
   background:rgba(8,12,24,.97)!important;
   border:1px solid rgba(186,228,255,.28)!important;
   box-shadow:0 16px 48px rgba(0,0,0,.55)!important;
-  pointer-events:auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel.visible,
 html.tcg-portrait-play #screen-game.portrait-play-selecting .card-hover-panel{
@@ -749,26 +755,9 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-img{
   max-width:min(200px,52vw);
   max-height:36vh;
   margin:0 auto 8px;
-  border-radius:8px;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-name{
-  font-size:15px;
-  font-weight:800;
-  text-align:center;
-}
-html.tcg-portrait-play #screen-game .card-hover-panel .hc-sub,
-html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
-  font-size:12px;
-  line-height:1.4;
-}
-html.tcg-portrait-play #screen-game .card-hover-panel .hc-play-actions{
-  margin-top:10px;
-}
-html.tcg-portrait-play #screen-game .card-hover-panel .hc-play-label{
-  font-size:12px;
-  font-weight:700;
-  margin:0 0 6px;
-  text-align:center;
+  font-size:15px; font-weight:800; text-align:center;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow{
@@ -782,7 +771,6 @@ html.tcg-portrait-play #screen-game .card-hover-panel .slotrow button{
   font-size:13px;
   font-weight:800;
   border-radius:10px;
-  padding:8px 6px;
 }
 html.tcg-portrait-play #portrait-play-scrim{
   display:none;
@@ -791,11 +779,8 @@ html.tcg-portrait-play #portrait-play-scrim{
   z-index:91000;
   background:rgba(0,0,0,.45);
 }
-html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim{
-  display:block;
-}
+html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim{ display:block; }
 
-/* Flight / animation bounds */
 html.tcg-portrait-play #screen-game .card-flight,
 html.tcg-portrait-play #screen-game .flight-card,
 html.tcg-portrait-play .card-flight-layer{
@@ -806,6 +791,50 @@ html.tcg-portrait-play #perf-spectacle{
   max-height:100dvh;
   overflow:hidden;
 }
+
+html.tcg-portrait-play #portrait-log-sheet{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:95000;
+  background:rgba(0,0,0,.55);
+  align-items:flex-end;
+  justify-content:center;
+}
+html.tcg-portrait-play #portrait-log-sheet.open{display:flex}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-panel{
+  width:100%;
+  max-height:70dvh;
+  background:rgba(8,12,24,.97);
+  border-radius:18px 18px 0 0;
+  padding:12px 12px max(16px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-head h3{margin:0;font-size:16px}
+html.tcg-portrait-play #portrait-log-sheet .portrait-sheet-close{
+  min-width:44px;min-height:44px;font-size:18px;
+}
+html.tcg-portrait-play #portrait-log-sheet .portrait-log-host{
+  flex:1 1 auto;
+  min-height:180px;
+  max-height:55dvh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid rgba(186,228,255,.15);
+  border-radius:12px;
+  padding:8px;
+  font-size:13px;
+}
+html.tcg-portrait-play #portrait-inspect-sheet{display:none!important}
 
 /* Portrait log sheet */
 html.tcg-portrait-play #portrait-log-sheet{

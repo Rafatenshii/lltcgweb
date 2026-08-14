@@ -173,6 +173,9 @@ function renderGame(s, opts = {}) {
       syncMobileMatLayout(s);
     }
   }
+  if (typeof tcgPortraitOnRender === 'function') {
+    try { tcgPortraitOnRender(s, myId); } catch (_) { /* ignore */ }
+  }
 
   if (G.isSpectator) bindSpectatorInspectOnRenderedCards(s);
 

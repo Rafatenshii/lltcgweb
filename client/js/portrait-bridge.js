@@ -14,10 +14,12 @@
 
   function t(key, fallback) {
     try {
-      if (global.t) return global.t(key) || fallback;
-      if (global.LLTCG_I18N && typeof global.LLTCG_I18N.t === 'function') {
-        return global.LLTCG_I18N.t(key) || fallback;
+      let v;
+      if (typeof global.t === 'function') v = global.t(key);
+      else if (global.LLTCG_I18N && typeof global.LLTCG_I18N.t === 'function') {
+        v = global.LLTCG_I18N.t(key);
       }
+      if (v != null && v !== '' && v !== key) return v;
     } catch (_) { /* ignore */ }
     return fallback;
   }
