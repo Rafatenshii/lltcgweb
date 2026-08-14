@@ -1314,17 +1314,17 @@ html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
   padding:0!important;
   overflow:visible!important;
 }
-/* Blades face the hands. Tuck the enlarged badges onto the card edge:
-   higher for us and lower for the opponent, away from both hand fans. */
+/* Player blade stays on the bottom edge (away from the hand). Opponent blade
+   sits on the lower half of the card, directly above the hearts row. */
 html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-blade{
   top:auto!important;
   bottom:0!important;
   transform: translate(-50%, -8%)!important;
 }
 html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-blade{
-  top:0!important;
-  bottom:auto!important;
-  transform: translate(-50%, 8%)!important;
+  top:auto!important;
+  bottom:0!important;
+  transform: translate(-50%, -72%)!important;
 }
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade img,
 html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .ticon,
