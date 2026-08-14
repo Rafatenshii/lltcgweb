@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $cardNo = (string)($_GET['card_no'] ?? '');
+$variantWidth = tcgCardImageVariantWidth($_GET['w'] ?? 0);
 $file = localCardImageFile($cardNo);
 
 if (!$file && $cardNo !== '') {
@@ -32,6 +33,10 @@ if (!$file) {
     tcgSendCorsHeaders();
     http_response_code(404);
     exit;
+}
+
+if ($variantWidth > 0) {
+    $file = ensureCardImageVariant($cardNo, $file, $variantWidth);
 }
 
 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));

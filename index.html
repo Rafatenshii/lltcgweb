@@ -6856,7 +6856,11 @@ function renderBoosterRatesModal(rates) {
     thumbBtn.className = 'booster-rates-thumb';
     thumbBtn.title = 'View card details';
     const cardObj = enrichCard(G.allCards[row.card_no] || row);
-    appendCardFace(thumbBtn, cardObj, { sideways: isLiveCard(cardObj), lazy: true });
+    appendCardFace(thumbBtn, cardObj, {
+      sideways: isLiveCard(cardObj),
+      lazy: true,
+      thumbWidth: 96,
+    });
     thumbBtn.addEventListener('click', ev => {
       ev.stopPropagation();
       showCatalogCard(cardObj);
@@ -7359,10 +7363,10 @@ function appendDeckTileFace(tile, card, { lazy } = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'deck-live-art';
     tile.appendChild(wrap);
-    appendCardFaceFill(wrap, card, { lazy: lazyImg });
+    appendCardFaceFill(wrap, card, { lazy: lazyImg, thumbWidth: 180 });
     return;
   }
-  appendCardFace(tile, card, { sideways: false, lazy: lazyImg });
+  appendCardFace(tile, card, { sideways: false, lazy: lazyImg, thumbWidth: 180 });
 }
 
 function appendDeckCardTile(parent, card, qty, onTap, { inDeck = false, sealBatchQty = 0, sealBatchDim = false } = {}) {
@@ -14085,9 +14089,10 @@ function tcgDebugRecordAction(type, data, via = 'player') {
 
 const _imgPersistQueued = new Set();
 
-function cachedCardImgUrl(cardNo) {
+function cachedCardImgUrl(cardNo, width = 0) {
   if (!cardNo) return '';
-  return `${CARDIMG}?card_no=${encodeURIComponent(cardNo)}`;
+  const w = [96, 180, 256].includes(Number(width)) ? Number(width) : 0;
+  return `${CARDIMG}?card_no=${encodeURIComponent(cardNo)}${w ? `&w=${w}` : ''}`;
 }
 
 function queuePersistCardImage(card) {
@@ -14359,7 +14364,7 @@ function appendFlipBackFill(parent, card = null) {
   return b;
 }
 
-function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false } = {}) {
+function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false, thumbWidth = 0 } = {}) {
   card = enrichCard(card);
   if (card.image || card.card_no) {
     const img = document.createElement('img');
@@ -14367,12 +14372,13 @@ function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false } = {})
     img.draggable = false;
     img.setAttribute('draggable', 'false');
     if (lazy) img.loading = 'lazy';
+    const gridThumbWidth = thumbWidth || (lazy ? 180 : 0);
     if (!applyCardImageToImg(img, card, () => {
       img.remove();
       const ni = mkNoImg(card);
       ni.classList.add('card-face-fill');
       parent.appendChild(ni);
-    }, { preferSrc })) {
+    }, { preferSrc, lazy, thumbWidth: gridThumbWidth })) {
       const ni = mkNoImg(card);
       ni.classList.add('card-face-fill');
       parent.appendChild(ni);
@@ -14602,7 +14608,7 @@ function menuCardClasses(card) {
   return isLiveCard(card) ? 'landscape' : 'portrait';
 }
 
-function appendCardFace(parent, card, { sideways = false, preferSrc = '', lazy = false } = {}) {
+function appendCardFace(parent, card, { sideways = false, preferSrc = '', lazy = false, thumbWidth = 0 } = {}) {
   card = enrichCard(card);
   let target = parent;
   if (sideways) {
@@ -14611,7 +14617,7 @@ function appendCardFace(parent, card, { sideways = false, preferSrc = '', lazy =
     parent.appendChild(wrap);
     target = wrap;
   }
-  appendCardFaceFill(target, card, { preferSrc, lazy });
+  appendCardFaceFill(target, card, { preferSrc, lazy, thumbWidth });
 }
 
 /** Yell row chips are portrait; landscape Live art uses the shared in-portrait wrapper (not live-sideways spin). */
@@ -14848,7 +14854,8 @@ function applyCardImageToImg(img, card, onFail, opts = {}) {
   card = enrichCard(card);
   const preferSrc = opts.preferSrc || '';
   const remote = card?.image || '';
-  const cached = card?.card_no ? cachedCardImgUrl(card.card_no) : '';
+  const thumbWidth = Number(opts.thumbWidth) || 0;
+  const cached = card?.card_no ? cachedCardImgUrl(card.card_no, thumbWidth) : '';
   const official = isOfficialCardImageUrl(remote) ? remote : '';
   if (!official && !remote && !cached && !preferSrc) return false;
 
@@ -14886,8 +14893,10 @@ function applyCardImageToImg(img, card, onFail, opts = {}) {
     img.src = preferSrc;
     return true;
   }
-  // Portrait: try Hostinger cardimg.php first (HTTP cacheable in WebView).
-  const preferCacheFirst = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive() && cached;
+  // Grid thumbnails always use the small Hostinger variant first. Portrait
+  // continues to prefer Hostinger for full art as well.
+  const preferCacheFirst = cached && (thumbWidth > 0
+    || (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()));
   if (preferCacheFirst) {
     img.dataset.imgSrc = 'cached';
     img.src = cached;

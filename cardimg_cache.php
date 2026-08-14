@@ -40,6 +40,87 @@ function localCardImageWebPath(string $cardNo): ?string {
     return $file ? 'cardimg/' . basename($file) : null;
 }
 
+/** Fixed widths prevent arbitrary query values from filling runtime storage. */
+function tcgCardImageVariantWidth(mixed $value): int {
+    $width = filter_var($value, FILTER_VALIDATE_INT);
+    return in_array($width, [96, 180, 256], true) ? $width : 0;
+}
+
+function cardImageVariantDir(int $width): string {
+    return CARDIMG_DIR . 'thumbs/' . $width . '/';
+}
+
+function localCardImageVariantFile(string $cardNo, int $width): ?string {
+    if ($cardNo === '' || $width <= 0) {
+        return null;
+    }
+    $path = cardImageVariantDir($width) . safeCardImgBasename($cardNo) . '.webp';
+    return is_file($path) && filesize($path) > 200 ? $path : null;
+}
+
+/**
+ * Build a transparent WebP thumbnail from the permanent full-art cache.
+ * If GD/WebP is unavailable, return the full image rather than failing the card.
+ */
+function ensureCardImageVariant(string $cardNo, string $source, int $width): string {
+    if ($width <= 0 || !is_file($source)) {
+        return $source;
+    }
+    $existing = localCardImageVariantFile($cardNo, $width);
+    if ($existing && filemtime($existing) >= filemtime($source)) {
+        return $existing;
+    }
+    if (!function_exists('imagecreatefromstring') || !function_exists('imagewebp')) {
+        return $source;
+    }
+
+    $bytes = @file_get_contents($source);
+    $src = is_string($bytes) ? @imagecreatefromstring($bytes) : false;
+    if (!$src) {
+        return $source;
+    }
+    $srcW = imagesx($src);
+    $srcH = imagesy($src);
+    if ($srcW < 1 || $srcH < 1) {
+        imagedestroy($src);
+        return $source;
+    }
+
+    $targetW = min($width, $srcW);
+    $targetH = max(1, (int)round($srcH * ($targetW / $srcW)));
+    $dst = imagecreatetruecolor($targetW, $targetH);
+    if (!$dst) {
+        imagedestroy($src);
+        return $source;
+    }
+    imagealphablending($dst, false);
+    imagesavealpha($dst, true);
+    $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+    imagefilledrectangle($dst, 0, 0, $targetW, $targetH, $transparent);
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $targetW, $targetH, $srcW, $srcH);
+
+    $dir = cardImageVariantDir($width);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $dest = $dir . safeCardImgBasename($cardNo) . '.webp';
+    $tmp = is_dir($dir) ? @tempnam($dir, '.thumb-') : false;
+    $written = is_string($tmp) && @imagewebp($dst, $tmp, 82);
+    imagedestroy($dst);
+    imagedestroy($src);
+    if (!$written || !is_string($tmp)) {
+        if (is_string($tmp)) {
+            @unlink($tmp);
+        }
+        return $source;
+    }
+    if (!@rename($tmp, $dest)) {
+        @unlink($tmp);
+        return $source;
+    }
+    return $dest;
+}
+
 function lookupCardImageUrl(string $cardNo): string {
     if ($cardNo === '') {
         return '';
