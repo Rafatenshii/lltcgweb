@@ -442,6 +442,10 @@ html.tcg-portrait-play #screen-game .my-hand-strip .hcard{
   min-height:0!important;
   aspect-ratio: 63 / 88;
   transition: transform .18s ease;
+  /* JS owns horizontal scroll vs tap — block browser gesture steal */
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
 }
 html.tcg-portrait-play #screen-game .opp-hand-card,
 html.tcg-portrait-play #screen-game .opp-hand-strip .opp-hand-card{

@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=40">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=9">
+<link rel="stylesheet" href="client/css/portrait.css?v=10">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -23617,14 +23617,19 @@ function onDocPointerMove(e) {
   const dx = e.clientX - hp.sx;
   const dy = e.clientY - hp.sy;
   const dist = Math.hypot(dx, dy);
-  if (dist <= DRAG_THRESHOLD) return;
-
   const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
+  // Portrait: slightly higher threshold so a firm tap isn't treated as a scroll.
+  const moveThresh = portrait ? Math.max(DRAG_THRESHOLD, 16) : DRAG_THRESHOLD;
+  if (dist <= moveThresh) return;
+
   if (portrait) {
-    if (hp.portraitPan || (!G.drag && Math.abs(dx) > Math.abs(dy) * 1.1)) {
+    const mostlyHorizontal = Math.abs(dx) >= Math.abs(dy) * 0.85;
+    if (hp.portraitPan || mostlyHorizontal) {
       hp.moved = true;
       hp.portraitPan = true;
       if (hp.longPressTimer) { clearTimeout(hp.longPressTimer); hp.longPressTimer = null; }
+      // Never flash inspect / play sheet while scrolling the hand.
+      clearHoverCardPreview();
       const strip = hp.el?.closest?.('.my-hand-strip');
       if (strip) {
         if (hp._lastPanX == null) hp._lastPanX = hp.sx;
@@ -23633,7 +23638,7 @@ function onDocPointerMove(e) {
       }
       return;
     }
-    // Portrait play uses tap + L/C/R buttons — do not start drag-to-slot.
+    // Vertical wiggle while holding — still not a tap; do not open info.
     hp.moved = true;
     if (hp.longPressTimer) { clearTimeout(hp.longPressTimer); hp.longPressTimer = null; }
     return;
@@ -23656,6 +23661,47 @@ function onDocPointerMove(e) {
   }
 }
 
+/** Portrait: resolve a quick tap even when pointerup lands on a neighboring overlapped card. */
+function finishPortraitHandTap(hp) {
+  if (!hp || hp.moved || hp.portraitPan || hp.longFired || G.drag) return;
+  const iid = hp.iid || hp.el?.dataset?.iid;
+  if (!iid) return;
+  if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
+  const myId = hp.myId || G.playerId;
+  const state = liveGameState(hp.s);
+  const tapCard = findHand(iid, state, myId) || hp.card;
+  if (!tapCard) return;
+  if (isLiveSetSelecting(state, myId) && isLiveHandSelectable(tapCard)) {
+    if (typeof tutBlocks === 'function' && tutBlocks('set_live_cards')) return;
+    toggleLiveSelect(iid, state, myId);
+  } else if (canSelectMemberForPlay(tapCard, state, myId)) {
+    if (window.TutorialInteractive?.handCardAllowed && !TutorialInteractive.handCardAllowed(tapCard)) return;
+    togglePlaySelect(iid, state, myId);
+  } else {
+    // Non-playable (Live, wrong phase, etc.): tap toggles raise + center info sheet.
+    const game = el('screen-game');
+    const already = hp.el?.classList?.contains('play-sel')
+      && game?.classList.contains('portrait-play-selecting')
+      && G.hoverCardId === iid;
+    if (already) {
+      document.querySelectorAll('#hand-row .hcard.play-sel').forEach(n => n.classList.remove('play-sel'));
+      clearPlaySelection();
+      return;
+    }
+    document.querySelectorAll('#hand-row .hcard.play-sel').forEach(n => n.classList.remove('play-sel'));
+    G.selCard = null;
+    syncHandSelectionClasses(state, myId);
+    hp.el?.classList?.add('play-sel');
+    G.hoverCardId = iid;
+    if (typeof tcgPortraitSyncPlaySheet === 'function') {
+      game?.classList.add('portrait-play-selecting');
+      tcgPortraitSyncPlaySheet(tapCard, state, myId);
+    } else {
+      showHoverCardPreview(tapCard, state, myId);
+    }
+  }
+}
+
 function onDocPointerUp(e) {
   // Slideshow tutorial has no live hand play; live tutorial must finish drags.
   if (G.isTutorial && !G.tutorialLive) return;
@@ -23667,6 +23713,10 @@ function onDocPointerUp(e) {
   const hp = G.handPointer;
   if (hp && e.pointerId === hp.pointerId) {
     if (hp.longPressTimer) clearTimeout(hp.longPressTimer);
+    const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
+    if (portrait && !hp.moved && !hp.portraitPan && !hp.longFired && !G.drag) {
+      finishPortraitHandTap(hp);
+    }
     G.handPointer = null;
   }
 }
@@ -23699,9 +23749,12 @@ function bindHandCardEvents(d, card, s, myId) {
   d._tcgHandBound = true;
   d.addEventListener('pointerenter', () => {
     if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
+    // Portrait: no hover-preview flash — only deliberate taps open the sheet.
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) return;
     if (!G.drag && !(tcgMobileViewportActive() && G.selCard)) showHoverCardPreview(card, liveGameState(s), myId);
   });
   d.addEventListener('pointerleave', () => {
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) return;
     if (!G.drag && G.hoverCardId === card.instance_id && !pinnedHandPreviewIid()) clearHoverCardPreview();
     else if (!G.drag && pinnedHandPreviewIid() === card.instance_id) {
       G.hoverCardId = pinnedHandPreviewIid();
@@ -23715,6 +23768,7 @@ function bindHandCardEvents(d, card, s, myId) {
     if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
     const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
     // Portrait: allow horizontal hand pan — do not preventDefault / capture until we know intent.
+    // Tap completion is handled in onDocPointerUp via finishPortraitHandTap.
     if (!portrait) {
       e.preventDefault();
       try { d.setPointerCapture(e.pointerId); } catch (_) {}
@@ -23729,7 +23783,9 @@ function bindHandCardEvents(d, card, s, myId) {
       pointerId: e.pointerId,
       moved: false,
       portraitPan: false,
-      longPressTimer: setTimeout(() => {
+      longFired: false,
+      // Portrait: never open inspect on long-press (hold is for scroll). Landscape keeps inspect.
+      longPressTimer: portrait ? null : setTimeout(() => {
         const hp = G.handPointer;
         if (!hp || hp.iid !== iid || hp.moved || G.drag || hp.portraitPan) return;
         if (G.selCard === iid) return;
@@ -23742,6 +23798,8 @@ function bindHandCardEvents(d, card, s, myId) {
   });
   d.addEventListener('pointerup', e => {
     const hp = G.handPointer;
+    // Portrait taps are completed in onDocPointerUp (no pointer capture).
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) return;
     const tapIid = d.dataset.iid || hp?.iid;
     if (hp?.el === d && hp.pointerId === e.pointerId && !hp.moved && !hp.longFired && !hp.portraitPan && !G.drag && tapIid) {
       if (hp.longPressTimer) clearTimeout(hp.longPressTimer);
@@ -23755,9 +23813,6 @@ function bindHandCardEvents(d, card, s, myId) {
       } else if (canSelectMemberForPlay(tapCard, state, myId)) {
         if (window.TutorialInteractive?.handCardAllowed && !TutorialInteractive.handCardAllowed(tapCard)) return;
         togglePlaySelect(tapIid, state, myId);
-      } else if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
-        // Portrait: tap non-playable cards still opens readable info.
-        showCard(tapCard, tapIid, state, myId);
       }
     } else if (hp?.el === d && hp.pointerId === e.pointerId) {
       if (hp.longPressTimer) clearTimeout(hp.longPressTimer);
