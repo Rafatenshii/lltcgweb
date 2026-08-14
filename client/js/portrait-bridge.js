@@ -273,6 +273,7 @@
     }
     if (closeLogSheet()) return true;
     if (closeSheet('portrait-inspect-sheet')) return true;
+    if (typeof global.tcgPortraitDeckHandleBack === 'function' && global.tcgPortraitDeckHandleBack()) return true;
     const menuPop = global.document.getElementById('portrait-menu-pop');
     if (menuPop && !menuPop.hidden) {
       closePortraitMenu();

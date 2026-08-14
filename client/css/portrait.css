@@ -183,32 +183,223 @@ html.tcg-portrait-play .login-bonus-reward{
   line-height:1.3;
 }
 
-/* Deck builder — single column, inspect as sheet */
+/* Deck builder — compact chrome, card list dominates */
 html.tcg-portrait-play #screen-deck.active{
-  overflow-y:auto;
+  display:flex!important;
+  flex-direction:column;
+  height:100%;
+  max-height:100dvh;
+  overflow:hidden!important;
+  padding: max(6px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px));
+  box-sizing:border-box;
 }
 html.tcg-portrait-play #screen-deck .deck-builder-shell{
   max-width:100%;
   width:100%;
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-deck .account-panel{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:8px 8px 10px;
+}
+html.tcg-portrait-play #screen-deck .logo,
+html.tcg-portrait-play #screen-deck .deck-builder-hint,
+html.tcg-portrait-play #screen-deck .deck-builder-meta,
+html.tcg-portrait-play #screen-deck .deck-builder-actions,
+html.tcg-portrait-play #screen-deck #deck-sleeve-empty-hint,
+html.tcg-portrait-play #screen-deck .deck-builder-hint--compact,
+html.tcg-portrait-play #screen-deck #deck-starter-hint{
+  display:none!important;
+}
+html.tcg-portrait-play #screen-deck .account-screen-head{
+  flex:0 0 auto;
+  margin-bottom:6px;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-deck .account-screen-head h2{
+  font-size:16px;
+  margin:0;
+}
+html.tcg-portrait-play #screen-deck #portrait-deck-chrome,
+html.tcg-portrait-play #screen-deck .portrait-deck-chrome{
+  display:flex!important;
+  flex-direction:column;
+  gap:6px;
+  flex:0 0 auto;
+  margin:0 0 6px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-preset-wrap{
+  flex:1 1 42%;
+  min-width:0;
+  margin:0;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-preset-wrap select{
+  width:100%;
+  min-height:36px;
+  font-size:13px;
+  font-weight:700;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host{
+  flex:0 0 auto;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-picker,
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host #deck-sleeve-picker{
+  display:block!important;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current{
+  padding:2px;
+  gap:0;
+  min-width:36px;
+  max-width:40px;
+  border-radius:8px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__meta{
+  display:none!important;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__art{
+  width:32px!important;
+  height:32px!important;
+  border-radius:4px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__art--none{
+  width:24px!important;
+  height:auto!important;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-view-toggle{
+  display:flex;
+  flex:1 1 48%;
+  min-width:0;
+  border:1px solid rgba(186,228,255,.28);
+  border-radius:10px;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-view-btn{
+  flex:1 1 0;
+  min-height:36px;
+  min-width:0;
+  padding:4px 6px;
+  border:none;
+  background:transparent;
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-view-btn.is-active{
+  background:rgba(186,228,255,.18);
+  color:#b8ffc8;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-search-host{
+  flex:1 1 auto;
+  min-width:0;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-search-host .field,
+html.tcg-portrait-play #screen-deck .portrait-deck-search-host label{
+  margin:0;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-search-host label{
+  display:none;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-search-host input{
+  width:100%;
+  min-height:36px;
+  font-size:14px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-row--tools{
+  flex-wrap:nowrap;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-tool{
+  flex:0 0 auto;
+  min-height:36px;
+  min-width:0;
+  padding:4px 7px;
+  font-size:11px;
+  font-weight:800;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-stats{
+  margin:0;
+  font-size:11px;
+  opacity:.78;
+  min-height:14px;
 }
 html.tcg-portrait-play #screen-deck .deck-builder-lists{
   display:flex;
   flex-direction:column;
-  gap:14px;
+  flex:1 1 auto;
+  min-height:66vh;
+  gap:0;
   max-height:none;
-  grid-template-columns:1fr;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-deck.portrait-deck-view-pool .deck-builder-section--deck,
+html.tcg-portrait-play #screen-deck.portrait-deck-view-deck .deck-builder-section--pool{
+  display:none!important;
 }
 html.tcg-portrait-play #screen-deck .deck-builder-section{
-  max-height:none;
+  flex:1 1 auto;
   min-height:0;
+  max-height:none;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
 }
 html.tcg-portrait-play #screen-deck .deck-builder-section--deck{
-  order:-1; /* deck list first for thumbs */
+  order:0;
 }
 html.tcg-portrait-play #screen-deck .deck-builder-pool-layout{
   display:flex;
   flex-direction:column;
-  gap:10px;
+  flex:1 1 auto;
+  min-height:0;
+  gap:0;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-pool-main{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+html.tcg-portrait-play #screen-deck .deck-section-head{
+  flex:0 0 auto;
+  padding:2px 0 4px;
+}
+html.tcg-portrait-play #screen-deck .deck-section-head__title-row{
+  display:none;
+}
+html.tcg-portrait-play #screen-deck .deck-section-stats{
+  font-size:11px;
+  margin:0;
+}
+html.tcg-portrait-play #screen-deck .deck-card-grid{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+html.tcg-portrait-play #screen-deck .deck-card-tile,
+html.tcg-portrait-play #screen-deck .menu-card{
+  min-width:72px;
+  min-height:100px;
+}
+html.tcg-portrait-play #screen-deck #deck-err{
+  flex:0 0 auto;
+  font-size:12px;
+  margin:4px 0 0;
 }
 html.tcg-portrait-play #screen-deck #deck-card-hover-panel{
   position:fixed;
@@ -227,18 +418,101 @@ html.tcg-portrait-play #screen-deck #deck-card-hover-panel{
   pointer-events:none;
 }
 html.tcg-portrait-play #screen-deck #deck-card-hover-panel.portrait-sheet-open,
+html.tcg-portrait-play #screen-deck #deck-card-hover-panel.visible,
 html.tcg-portrait-play #screen-deck #deck-card-hover-panel:has(.hc-img.show){
   transform:translateY(0);
   pointer-events:auto;
 }
-html.tcg-portrait-play #screen-deck .deck-card-tile,
-html.tcg-portrait-play #screen-deck .menu-card{
-  min-width:72px;
-  min-height:100px;
+html.tcg-portrait-play #screen-deck .deck-seal-batch-bar{
+  flex:0 0 auto;
 }
-html.tcg-portrait-play #screen-deck .deck-builder-hint--compact{
-  font-size:12px;
+
+html.tcg-portrait-play .overlay.portrait-deck-sheet{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:94000;
+  background:rgba(0,0,0,.55);
+  align-items:flex-end;
+  justify-content:center;
 }
+html.tcg-portrait-play .overlay.portrait-deck-sheet.open{
+  display:flex!important;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .portrait-sheet-panel{
+  width:100%;
+  max-height:78dvh;
+  background:rgba(8,12,24,.97);
+  border-radius:18px 18px 0 0;
+  padding:12px 12px max(16px,env(safe-area-inset-bottom,0px));
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .portrait-sheet-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .portrait-sheet-head h3{
+  margin:0;
+  font-size:16px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .portrait-sheet-close{
+  min-width:44px;
+  min-height:44px;
+  font-size:18px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .portrait-deck-sheet-body{
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:64dvh;
+  min-height:80px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #deck-filter-panel,
+html.tcg-portrait-play .overlay.portrait-deck-sheet .deck-filter-panel{
+  display:block!important;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #deck-builder-actions,
+html.tcg-portrait-play .overlay.portrait-deck-sheet .deck-builder-actions{
+  display:flex!important;
+  flex-wrap:wrap;
+  gap:8px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet .deck-builder-actions button{
+  min-height:44px;
+  flex:1 1 140px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #deck-builder-import-search{
+  display:flex!important;
+  flex-direction:column;
+  gap:10px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #deck-builder-name-wrap{
+  display:block!important;
+  margin-bottom:8px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #btn-deck-seal-batch{
+  display:inline-flex!important;
+  min-height:44px;
+  width:100%;
+  margin-bottom:8px;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #deck-collection-sort-wrap,
+html.tcg-portrait-play .overlay.portrait-deck-sheet .deck-collection-sort{
+  display:block!important;
+}
+html.tcg-portrait-play .overlay.portrait-deck-sheet #sel-deck-pool-sort{
+  width:100%;
+  min-height:44px;
+}
+
+/* Non-portrait: chrome and sheets stay hidden */
+#portrait-deck-chrome,
+.portrait-deck-chrome{ display:none; }
+.overlay.portrait-deck-sheet{ display:none; }
 
 /* Shops / ranked / options */
 html.tcg-portrait-play #screen-ranked .account-shell,
