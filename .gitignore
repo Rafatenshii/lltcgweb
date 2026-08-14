@@ -37,6 +37,10 @@ exports/*
 !/assets/ui/**
 !/assets/sleeves/
 !/assets/sleeves/**
+# Small booster box picker thumbs (compressed from official art)
+!/assets/packs/
+!/assets/packs/boxes/
+!/assets/packs/boxes/**
 /bg/**
 /icons/**
 /cardimg/**
@@ -77,6 +81,8 @@ sfx_manifest.json
 
 /*.py
 /scripts/*.py
+!/scripts/gen_booster_box_thumbs.py
+!/scripts/gen_launcher_icons.py
 audit_tutorial_browser.js
 build_tutorial.php
 build_tutorial.py
