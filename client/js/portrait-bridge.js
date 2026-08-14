@@ -331,6 +331,7 @@
       if (handle) handle.setAttribute('aria-expanded', 'false');
       closed = true;
     });
+    if (closed) positionDeckDrawers();
     return closed;
   }
 
@@ -366,9 +367,6 @@
     const root = global.document.getElementById('portrait-deck-drawers');
     const board = global.document.getElementById('portrait-board');
     if (!root || !board) return;
-    const safeRight = Math.max(0, Number.parseFloat(
-      (global.getComputedStyle(global.document.documentElement).getPropertyValue('env(safe-area-inset-right)') || '0')
-    ) || 0);
     // Prefer CSS env via padding on root.
     root.style.paddingRight = 'max(0px, env(safe-area-inset-right, 0px))';
 
@@ -379,12 +377,18 @@
       const drawer = root.querySelector('.pb-deck-drawer.' + side);
       if (!field || !drawer) return;
       const fr = field.getBoundingClientRect();
-      const top = Math.round(fr.top + Math.max(8, fr.height * 0.12));
-      const height = Math.round(Math.max(96, Math.min(fr.height * 0.76, 220)));
+      const open = drawer.classList.contains('open');
+      // Collapsed: short handle mid-field so it clears both hand strips.
+      // Open: taller tray for Deck + Waiting Room content.
+      const closedH = Math.round(Math.max(52, Math.min(72, fr.height * 0.22)));
+      const openH = Math.round(Math.max(168, Math.min(fr.height * 0.72, 220)));
+      const height = open ? openH : closedH;
+      const top = open
+        ? Math.round(fr.top + Math.max(8, (fr.height - openH) * 0.5))
+        : Math.round(fr.top + (fr.height - closedH) * 0.5);
       drawer.style.top = top + 'px';
       drawer.style.height = height + 'px';
       drawer.style.right = '0px';
-      void safeRight;
     });
   }
 

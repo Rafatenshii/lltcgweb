@@ -2336,9 +2336,11 @@ html.tcg-portrait-play .pb-deck-drawer{
   max-width:min(46vw,180px);
   pointer-events:auto;
   transform:translateX(calc(100% - var(--pb-drawer-handle-w,28px)));
-  transition:transform .22s cubic-bezier(.2,.9,.2,1);
+  transition:transform .22s cubic-bezier(.2,.9,.2,1),
+              height .18s ease,
+              top .18s ease;
   filter:drop-shadow(-4px 0 14px rgba(0,0,0,.4));
-  will-change:transform;
+  will-change:transform,height,top;
 }
 html.tcg-portrait-play .pb-deck-drawer.open{
   transform:translateX(0);
