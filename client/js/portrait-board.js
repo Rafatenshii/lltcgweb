@@ -199,8 +199,9 @@
     const root = document.documentElement;
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');
-    root.style.setProperty('--p-hand-mine', (cardH + 12).toFixed(2) + 'px');
-    root.style.setProperty('--p-hand-opp', (cardH * 0.92 + 6).toFixed(2) + 'px');
+    // Short strip rows so cards overhang into the stage (PC energy-deck style)
+    root.style.setProperty('--p-hand-mine', (cardH * 0.58).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-opp', (cardH * 0.50).toFixed(2) + 'px');
     root.style.setProperty('--p-card-w-opp', (cardW * 0.92).toFixed(2) + 'px');
   }
 

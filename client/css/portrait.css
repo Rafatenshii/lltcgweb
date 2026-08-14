@@ -266,11 +266,12 @@ html.tcg-portrait-play{
   --p-hand-pad-x: 8px;
   --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / 6) * 1.5);
   --p-card-h: calc(var(--p-card-w) * 88 / 63);
-  --p-hand-mine: calc(var(--p-card-h) + 12px);
-  --p-hand-opp: calc(var(--p-card-h) * 0.92 + 6px);
+  /* Strip rows are shorter than cards so hands peek over the stage (PC energy-deck overlap) */
+  --p-hand-mine: calc(var(--p-card-h) * 0.58);
+  --p-hand-opp: calc(var(--p-card-h) * 0.50);
   --p-card-w-opp: calc(var(--p-card-w) * 0.92);
-  --p-gap: 2px;
-  --p-slot-r: 8px;
+  --p-gap: 0px;
+  --p-slot-r: 7px;
   --p-zone-bg: linear-gradient(180deg, #fff8fb 0%, #f4d4e4 100%);
   --p-zone-border: #e891b4;
   --p-live-bg: linear-gradient(180deg, #fff6fa 0%, #efc8db 100%);
@@ -308,12 +309,12 @@ html.tcg-portrait-play #portrait-board{
   height:100%;
   min-height:0;
   display:grid;
-  /* Equal fields so mine never collapses under a tall hand/HUD */
+  /* Equal fields; hand rows are short so cards overhang into the stage */
   grid-template-rows:
     var(--p-hand-opp)
-    minmax(132px, 1fr)
+    minmax(110px, 1fr)
     auto
-    minmax(132px, 1fr)
+    minmax(110px, 1fr)
     var(--p-hand-mine);
   grid-template-areas:
     "opp-hand"
@@ -322,17 +323,30 @@ html.tcg-portrait-play #portrait-board{
     "my-field"
     "my-hand";
   gap: var(--p-gap);
-  padding: max(2px, env(safe-area-inset-top, 0px)) var(--p-hand-pad-x) max(2px, env(safe-area-inset-bottom, 0px));
+  /* Flush to top/bottom — no hand margins (safe-area only on sides if needed) */
+  padding: 0 var(--p-hand-pad-x);
   box-sizing: border-box;
   background: #0a1220;
   position: relative;
   overflow: hidden;
 }
-html.tcg-portrait-play .pb-opp-hand{ grid-area: opp-hand; min-height:0; overflow:hidden; z-index:6; }
-html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:hidden; display:flex; z-index:4; }
+html.tcg-portrait-play .pb-opp-hand{
+  grid-area: opp-hand;
+  min-height:0;
+  overflow:visible;
+  z-index:7;
+  align-self:start;
+}
+html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:visible; display:flex; z-index:4; }
 html.tcg-portrait-play .pb-hud{ grid-area: hud; flex:0 0 auto; z-index:8; max-height:26vh; overflow-x:hidden; overflow-y:auto; }
-html.tcg-portrait-play .pb-my-field{ grid-area: my-field; min-height:0; overflow:hidden; display:flex; z-index:4; }
-html.tcg-portrait-play .pb-my-hand{ grid-area: my-hand; min-height:0; overflow:hidden; z-index:6; }
+html.tcg-portrait-play .pb-my-field{ grid-area: my-field; min-height:0; overflow:visible; display:flex; z-index:4; }
+html.tcg-portrait-play .pb-my-hand{
+  grid-area: my-hand;
+  min-height:0;
+  overflow:visible;
+  z-index:7;
+  align-self:end;
+}
 /* Overhaul custom elements default to display:inline and collapse the mat */
 html.tcg-portrait-play ll-stage-board,
 html.tcg-portrait-play .pb-my-field > ll-stage-board,
@@ -381,7 +395,7 @@ html.tcg-portrait-play #screen-game .hand-strip{
   width:100%!important;
   height:100%!important;
   min-height:0!important;
-  max-height:100%!important;
+  max-height:none!important;
   display:flex!important;
   align-items:flex-end;
   justify-content:center;
@@ -389,10 +403,10 @@ html.tcg-portrait-play #screen-game .hand-strip{
   padding:0!important;
   background:transparent!important;
   border:none!important;
-  /* Landscape strips use overflow:visible + z-index:25 and cover the field — kill that */
+  /* Allow cards to overhang into the field; keep horizontal scroll */
   overflow-x:auto!important;
-  overflow-y:hidden!important;
-  z-index:auto!important;
+  overflow-y:visible!important;
+  z-index:7!important;
   -webkit-overflow-scrolling:touch;
   touch-action:pan-x;
   scrollbar-width:none;
@@ -400,6 +414,7 @@ html.tcg-portrait-play #screen-game .hand-strip{
 html.tcg-portrait-play .pb-opp-hand .opp-hand-strip{
   align-items:flex-start;
   overflow-x:hidden!important;
+  overflow-y:visible!important;
 }
 html.tcg-portrait-play #screen-game .hand-strip::-webkit-scrollbar{display:none}
 html.tcg-portrait-play .hand-strip-label{display:none!important}
@@ -483,7 +498,8 @@ html.tcg-portrait-play #screen-game #game-stage{
   box-shadow:none!important;
   background:transparent!important;
   position:relative!important;
-  overflow:hidden!important;
+  /* visible so neighboring hand overhang can paint over the mat edge */
+  overflow:visible!important;
   contain:none!important;
 }
 html.tcg-portrait-play #screen-game .playmat-img,
@@ -508,21 +524,24 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
   width:100%!important;
   height:100%!important;
   display:grid!important;
-  gap:5px;
-  padding:2px;
+  gap:4px 6px;
+  padding:2px 4px;
   box-sizing:border-box;
+  /* Size stage/live outlines from cell height/width */
+  container-type: size;
 }
-/* Opp field is mirrored vs us: visual L→R = their Right, Center, Left */
+/* Opp field is mirrored vs us: visual L→R = their Right, Center, Left
+   Stage row taller (portrait members); live row shorter (landscape lives) */
 html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.25fr) minmax(0, 0.72fr);
+  grid-template-rows: minmax(0, 1.65fr) minmax(0, 0.58fr);
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.25fr);
+  grid-template-rows: minmax(0, 0.58fr) minmax(0, 1.65fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
@@ -543,7 +562,7 @@ html.tcg-portrait-play #screen-game .z-my-live-2{grid-area:l2}
 html.tcg-portrait-play #screen-game .mat-zone{
   position:relative!important;
   left:auto!important; top:auto!important;
-  width:auto!important; height:auto!important;
+  min-width:0;
   min-height:0;
   border-radius: var(--p-slot-r);
   border: 1.5px solid rgba(255,255,255,.85);
@@ -556,6 +575,36 @@ html.tcg-portrait-play #screen-game .mat-zone{
   align-items:center;
   justify-content:center;
   overflow:hidden;
+  box-sizing:border-box;
+  justify-self:center;
+  align-self:center;
+}
+/* Member stage slots — portrait card shape (63×88) */
+html.tcg-portrait-play #screen-game .z-opp-stage-left,
+html.tcg-portrait-play #screen-game .z-opp-stage-center,
+html.tcg-portrait-play #screen-game .z-opp-stage-right,
+html.tcg-portrait-play #screen-game .z-my-stage-left,
+html.tcg-portrait-play #screen-game .z-my-stage-center,
+html.tcg-portrait-play #screen-game .z-my-stage-right{
+  aspect-ratio: 63 / 88;
+  height: min(100%, calc(100cqw / 3 * 88 / 63));
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+/* Live storage — landscape card shape (88×63) */
+html.tcg-portrait-play #screen-game .z-opp-live-0,
+html.tcg-portrait-play #screen-game .z-opp-live-1,
+html.tcg-portrait-play #screen-game .z-opp-live-2,
+html.tcg-portrait-play #screen-game .z-my-live-0,
+html.tcg-portrait-play #screen-game .z-my-live-1,
+html.tcg-portrait-play #screen-game .z-my-live-2{
+  aspect-ratio: 88 / 63;
+  width: min(100%, calc(100cqh * 88 / 63));
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  background: var(--p-live-bg);
 }
 html.tcg-portrait-play #screen-game .mslot,
 html.tcg-portrait-play #screen-game .lcard,
@@ -563,14 +612,6 @@ html.tcg-portrait-play #screen-game .stage-slot,
 html.tcg-portrait-play #screen-game .mat-zone > *{
   position:relative;
   z-index:1;
-}
-html.tcg-portrait-play #screen-game .z-opp-live-0,
-html.tcg-portrait-play #screen-game .z-opp-live-1,
-html.tcg-portrait-play #screen-game .z-opp-live-2,
-html.tcg-portrait-play #screen-game .z-my-live-0,
-html.tcg-portrait-play #screen-game .z-my-live-1,
-html.tcg-portrait-play #screen-game .z-my-live-2{
-  background: var(--p-live-bg);
 }
 html.tcg-portrait-play #screen-game .mat-zone[data-portrait-label]::before{
   content: attr(data-portrait-label);
@@ -603,12 +644,16 @@ html.tcg-portrait-play #screen-game .stage-slot{
   max-height:100%!important;
   min-width:0!important;
   min-height:0!important;
+  border-radius: calc(var(--p-slot-r) - 2px);
+  overflow:hidden;
 }
 html.tcg-portrait-play #screen-game .mslot img,
 html.tcg-portrait-play #screen-game .lcard img{
+  width:100%;
+  height:100%;
   max-width:100%;
   max-height:100%;
-  object-fit:contain;
+  object-fit:cover;
 }
 
 html.tcg-portrait-play .pb-hud{
