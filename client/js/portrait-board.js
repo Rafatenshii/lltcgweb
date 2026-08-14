@@ -60,17 +60,23 @@
     const myHandSec = wrap('pb-my-hand');
     const chromeSec = wrap('pb-chrome');
 
-    // Mockup top HUD: [energy][wins] | phase | [wins][energy]
+    // Mockup top HUD: [energy][wins] / names | phase | [wins][energy] / names
     const wins = wrap('pb-wins-row');
     wins.innerHTML =
       '<div class="pb-side mine">' +
-        '<span class="pb-nrg" id="portrait-my-nrg-host"></span>' +
-        '<span class="pb-win-val" id="portrait-my-wins">0/3</span>' +
+        '<div class="pb-side-top">' +
+          '<span class="pb-nrg" id="portrait-my-nrg-host"></span>' +
+          '<span class="pb-win-val" id="portrait-my-wins">0/3</span>' +
+        '</div>' +
+        '<div class="pb-name-host" id="portrait-my-name-host"></div>' +
       '</div>' +
       '<div class="pb-win-center" id="portrait-hud-center"></div>' +
       '<div class="pb-side opp">' +
-        '<span class="pb-win-val" id="portrait-opp-wins">0/3</span>' +
-        '<span class="pb-nrg" id="portrait-opp-nrg-host"></span>' +
+        '<div class="pb-side-top">' +
+          '<span class="pb-win-val" id="portrait-opp-wins">0/3</span>' +
+          '<span class="pb-nrg" id="portrait-opp-nrg-host"></span>' +
+        '</div>' +
+        '<div class="pb-name-host" id="portrait-opp-name-host"></div>' +
       '</div>';
 
     oppHandSec.appendChild(oppHand);
@@ -82,8 +88,17 @@
     if (myNrgPill && myHost) myHost.appendChild(myNrgPill);
     if (oppNrgPill && oppHost) oppHost.appendChild(oppNrgPill);
 
+    const myName = el('my-name');
+    const oppName = el('opp-name');
+    if (myName) wins.querySelector('#portrait-my-name-host')?.appendChild(myName);
+    if (oppName) wins.querySelector('#portrait-opp-name-host')?.appendChild(oppName);
+
     if (phase) wins.querySelector('#portrait-hud-center')?.appendChild(phase);
-    if (stats) hudSec.appendChild(stats);
+    // Keep stats panel only as a hidden host for remaining pills; hearts come from stage-board
+    if (stats) {
+      stats.classList.add('portrait-stats-shell');
+      hudSec.appendChild(stats);
+    }
     if (stageBoard) hudSec.appendChild(stageBoard);
     if (phaseBar) hudSec.appendChild(phaseBar);
     if (playCost) hudSec.appendChild(playCost);

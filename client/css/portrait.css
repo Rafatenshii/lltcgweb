@@ -548,10 +548,35 @@ html.tcg-portrait-play .pb-wins-row{
 }
 html.tcg-portrait-play .pb-side{
   display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:2px;
+  min-width:0;
+}
+html.tcg-portrait-play .pb-side.mine{ align-items:flex-start; }
+html.tcg-portrait-play .pb-side.opp{ align-items:flex-end; }
+html.tcg-portrait-play .pb-side-top{
+  display:flex;
   align-items:center;
   gap:4px;
 }
-html.tcg-portrait-play .pb-side.opp{ flex-direction: row; }
+html.tcg-portrait-play .pb-name-host h3,
+html.tcg-portrait-play .pb-name-host #my-name,
+html.tcg-portrait-play .pb-name-host #opp-name{
+  margin:0;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  line-height:1.1;
+}
+html.tcg-portrait-play .pb-side.mine .pb-name-host h3,
+html.tcg-portrait-play .pb-side.mine #my-name{ color:#ff8cbe; }
+html.tcg-portrait-play .pb-side.opp .pb-name-host h3,
+html.tcg-portrait-play .pb-side.opp #opp-name{ color:#7eb6ff; }
+html.tcg-portrait-play .pb-hud .players-stats-panel.portrait-stats-shell{
+  display:none!important;
+}
 html.tcg-portrait-play .pb-nrg{
   display:inline-flex;
   align-items:center;
@@ -620,27 +645,13 @@ html.tcg-portrait-play .pb-hud .pbtns{ display:flex; gap:4px; }
 html.tcg-portrait-play .pb-hud .pbtns button{ min-height:28px; font-size:11px; padding:4px 8px; }
 
 html.tcg-portrait-play .pb-hud .players-stats-panel{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:6px;
-  padding:0;
-  margin:0;
-  background:transparent;
-  border:none;
+  display:none;
 }
 html.tcg-portrait-play .pb-hud .player-stat-strip{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  padding:2px 4px;
-  background:transparent;
+  display:none;
 }
 html.tcg-portrait-play .pb-hud .player-stat-strip h3{
-  margin:0;
-  font-size:11px;
-  font-weight:900;
-  letter-spacing:.06em;
-  text-transform:uppercase;
+  display:none;
 }
 html.tcg-portrait-play .pb-hud .player-stat-strip.mine h3{ color:#ff8cbe; }
 html.tcg-portrait-play .pb-hud .player-stat-strip.opp h3{ color:#7eb6ff; }
