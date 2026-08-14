@@ -550,8 +550,9 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
   width:100%!important;
   height:100%!important;
   display:grid!important;
-  gap:2px 6px;
-  padding:2px 4px;
+  gap:2px 3px;
+  /* Side inset packs L/C/R + lives closer toward the middle */
+  padding:2px 9%;
   box-sizing:border-box;
   /* Size stage/live outlines from cell height/width */
   container-type: size;
@@ -560,14 +561,14 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
    Stage row taller (portrait members); live row shorter (landscape lives) */
 html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.72fr);
+  grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.78fr);
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.2fr);
+  grid-template-rows: minmax(0, 0.78fr) minmax(0, 1.15fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
@@ -600,7 +601,8 @@ html.tcg-portrait-play #screen-game .mat-zone{
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
+  /* Hearts / blades sit outside the card frame — must not clip */
+  overflow:visible;
   box-sizing:border-box;
   justify-self:center;
   align-self:center;
@@ -631,7 +633,7 @@ html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   align-self: start;
 }
-/* Live storage — landscape (88×63), tighter width so border matches the card */
+/* Live storage — landscape (88×63), ~1.2× prior size, packed toward HUD */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
 html.tcg-portrait-play #screen-game .z-opp-live-1,
 html.tcg-portrait-play #screen-game .z-opp-live-2,
@@ -639,23 +641,23 @@ html.tcg-portrait-play #screen-game .z-my-live-0,
 html.tcg-portrait-play #screen-game .z-my-live-1,
 html.tcg-portrait-play #screen-game .z-my-live-2{
   aspect-ratio: 88 / 63;
-  width: min(68%, calc(100cqh * 88 / 63 * 0.72));
+  width: min(82%, calc(100cqh * 88 / 63 * 0.86));
   height: auto;
-  max-width: 68%;
-  max-height: 92%;
+  max-width: 82%;
+  max-height: 96%;
   background: var(--p-live-bg);
   justify-self: center;
 }
-/* Opp lives: toward stages above; my lives: toward stages below */
+/* Opp lives: toward HUD below; my lives: toward HUD above */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
 html.tcg-portrait-play #screen-game .z-opp-live-1,
 html.tcg-portrait-play #screen-game .z-opp-live-2{
-  align-self: start;
+  align-self: end;
 }
 html.tcg-portrait-play #screen-game .z-my-live-0,
 html.tcg-portrait-play #screen-game .z-my-live-1,
 html.tcg-portrait-play #screen-game .z-my-live-2{
-  align-self: end;
+  align-self: start;
 }
 html.tcg-portrait-play #screen-game .mslot,
 html.tcg-portrait-play #screen-game .lcard,
@@ -696,15 +698,65 @@ html.tcg-portrait-play #screen-game .stage-slot{
   min-width:0!important;
   min-height:0!important;
   border-radius: calc(var(--p-slot-r) - 2px);
-  overflow:hidden;
+  overflow:visible!important;
 }
-html.tcg-portrait-play #screen-game .mslot img,
-html.tcg-portrait-play #screen-game .lcard img{
+/* Card art only — do not blow up blade/heart icons inside the slot */
+html.tcg-portrait-play #screen-game .mslot > img,
+html.tcg-portrait-play #screen-game .mslot > .noimg,
+html.tcg-portrait-play #screen-game .lcard > img,
+html.tcg-portrait-play #screen-game .lcard > .noimg{
   width:100%;
   height:100%;
   max-width:100%;
   max-height:100%;
   object-fit:cover;
+  border-radius: inherit;
+}
+/* Stage hearts + blade sit outside the card face */
+html.tcg-portrait-play #screen-game .mslot .stage-hearts,
+html.tcg-portrait-play #screen-game .stage-slot .stage-hearts{
+  z-index:12!important;
+  pointer-events:none;
+}
+html.tcg-portrait-play #screen-game .mslot .stage-hearts .hicon.fld,
+html.tcg-portrait-play #screen-game .stage-slot .stage-hearts .hicon.fld{
+  width:14px!important;
+  height:14px!important;
+  max-width:14px!important;
+  max-height:14px!important;
+}
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade,
+html.tcg-portrait-play #screen-game .stage-slot .field-badge.field-blade{
+  z-index:12!important;
+  width:auto!important;
+  max-width:100%;
+  left:50%!important;
+  right:auto!important;
+  transform: translateX(-50%);
+  display:flex!important;
+  justify-content:center;
+  gap:2px;
+  padding:0!important;
+  overflow:visible!important;
+}
+html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-blade{
+  top:auto!important;
+  bottom:0!important;
+  transform: translate(-50%, 48%)!important;
+}
+html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-blade{
+  top:0!important;
+  bottom:auto!important;
+  transform: translate(-50%, -48%)!important;
+}
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade img,
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .ticon,
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .hicon{
+  width:14px!important;
+  height:14px!important;
+  max-width:14px!important;
+  max-height:14px!important;
+  object-fit:contain!important;
 }
 
 html.tcg-portrait-play .pb-hud{
@@ -1099,15 +1151,24 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow,
 html.tcg-portrait-play #screen-game #hc-actions{
-  display:grid!important;
-  grid-template-columns:1fr 1fr 1fr;
+  display:flex!important;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  justify-content:center;
+  align-items:stretch;
   gap:8px;
-  margin-top:8px;
+  margin:10px auto 0;
+  width:100%;
+  max-width:320px;
   flex:0 0 auto;
+  box-sizing:border-box;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow .btn-smol,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow button,
 html.tcg-portrait-play #screen-game #hc-actions button{
+  flex:1 1 0;
+  min-width:0;
+  max-width:104px;
   min-height:44px;
   font-size:13px;
   font-weight:800;
