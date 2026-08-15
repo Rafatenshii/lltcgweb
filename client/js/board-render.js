@@ -2050,6 +2050,13 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     const existingWrap = e.querySelector('.live-slot-wrap');
     const existingCard = existingWrap?.querySelector('.lcard.live-card');
 
+    // A held pre-outcome snapshot can be repainted while a newer state is
+    // committing. Once a flight has handed off, never recreate that source.
+    if (card?.instance_id && G._liveStorageDepartedIids?.has(card.instance_id)) {
+      e.innerHTML = '';
+      continue;
+    }
+
     if (!card) {
       // Mid-reveal / WR flight may still own the shell; otherwise ghost flips from the
       // previous Live round survive into Main when the server zone is already empty.

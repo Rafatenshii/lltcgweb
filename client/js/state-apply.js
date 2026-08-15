@@ -807,6 +807,9 @@
           prepareWrPileAnimPending(animPrev, s, moves);
           G.gameState = s;
           renderGame(s, { skipHand: deferHand, skipOppHand: deferOppHand });
+          // The authoritative board is now painted. Departure latches are only
+          // needed to guard stale held snapshots during the flight handoff.
+          if (!G._liveStorageOutcomePending) G._liveStorageDepartedIids = null;
           const silentWrAdds = animPrev ? wrCardsAddedWithoutAnimMoves(animPrev, s, moves) : [];
           if (silentWrAdds.length) {
             void refreshWaitingRoomPiles(s, G.playerId, {

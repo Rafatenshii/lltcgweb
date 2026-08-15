@@ -2356,7 +2356,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=44"></script>
-<script src="client/js/state-apply.js?v=52"></script>
+<script src="client/js/state-apply.js?v=53"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=83"></script>
@@ -17842,7 +17842,19 @@ function projectFieldCardRect(loc, card, myId) {
       : loc.zone === 'energy_deck' ? `${pre}-nrg-deck-pile`
       : `${pre}-deck-pile`;
     const stack = el(pileId)?.querySelector('.deck-stack');
-    return rectFromEl(stack);
+    const pileRect = rectFromEl(stack);
+    if (pileRect) return pileRect;
+    // Android portrait hides the desktop piles. Aim at the matching visible
+    // drawer handle so storage exits still fly off the mat.
+    if (document.documentElement.classList.contains('tcg-portrait-play')) {
+      const side = pre === 'my' ? 'mine' : 'opp';
+      const drawerTarget = document.querySelector(
+        `#portrait-deck-drawers .pb-deck-drawer.${side} .pb-deck-drawer-handle`
+      );
+      const drawerRect = rectFromEl(drawerTarget);
+      if (drawerRect) return drawerRect;
+    }
+    return null;
   }
   if (loc.zone === 'energy') return projectEnergyChipRect(loc, myId, G.gameState);
   return null;
@@ -19545,6 +19557,8 @@ function removeLiveStorageCardFromDomIfDeparted(fromLoc, iid, myId, stateAfter) 
   const stillInLive = (stateAfter.players?.[pid]?.live_zone || [])
     .some(c => c.instance_id === iid);
   if (stillInLive) return;
+  if (!G._liveStorageDepartedIids) G._liveStorageDepartedIids = new Set();
+  G._liveStorageDepartedIids.add(iid);
   removeLiveStorageCardFromDom(fromLoc, iid, myId);
 }
 
@@ -19638,6 +19652,7 @@ function holdLiveRoundBoardForPrompts(next, myId) {
 function commitLiveRoundAfterOutcomes(fallback) {
   G._liveStorageOutcomePending = false;
   G._livePostRevealBoard = null;
+  G._liveStorageDepartedIids = null;
   commitDeferredLiveState(fallback || G.gameState);
 }
 
@@ -19752,7 +19767,15 @@ function targetRectForLoc(loc, spec, finalState, myId, handSlots, preferBefore) 
       const r = rectFromEl(chips[idx]);
       if (r) return r;
     }
-    if (!zone || zone.clientWidth < 10) return rectFromEl(zone);
+    if (!zone || zone.clientWidth < 10) {
+      const desktopRect = rectFromEl(zone);
+      if (desktopRect) return desktopRect;
+      // Portrait replaces the Success pile with compact win counters.
+      if (document.documentElement.classList.contains('tcg-portrait-play')) {
+        return rectFromEl(el(`portrait-${pre}-wins`));
+      }
+      return null;
+    }
     const n = Math.max(idx + 1, chips?.length || 0);
     return successLiveChipRect(zone, successLiveStackMetrics(zone, n), idx, pre === 'opp')
       || rectFromEl(zone);
@@ -29915,7 +29938,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=74"></script>
-<script src="client/js/board-render.js?v=20"></script>
+<script src="client/js/board-render.js?v=21"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
