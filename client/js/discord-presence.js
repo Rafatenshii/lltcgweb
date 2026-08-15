@@ -185,6 +185,7 @@
         // public spectate action that a player would, so friends can observe too.
         joinable: true,
         joinType: 'spectate',
+        actionLabel: 'Spectate',
         roomId: g.roomId,
       };
     }
@@ -208,6 +209,7 @@
           largeImage: presenceArt('loveca_ranked'),
           joinable: true,
           joinType: 'spectate',
+          actionLabel: 'Spectate',
           roomId: g.roomId,
         };
       }
@@ -218,6 +220,7 @@
         largeImage: presenceArt('loveca_casual'),
         joinable: true,
         joinType: 'spectate',
+        actionLabel: 'Spectate',
         roomId: g.roomId,
       };
     }
@@ -355,6 +358,7 @@
       largeText: 'Loveca Sim',
       startTimestampMs: startMs,
       joinSecret: joinSecret || '',
+      actionLabel: act.actionLabel || 'Join',
       partyId: act.roomId ? ('room:' + act.roomId) : (act.joinType === 'ranked_queue' ? ('queue:' + (act.gameMode || 'standard')) : ''),
       partySize: act.joinable && act.joinType === 'spectate' ? 2 : (act.joinable ? 1 : 0),
       partyMax: act.joinable && act.joinType === 'spectate' ? 8 : (act.joinable ? 2 : 0),
