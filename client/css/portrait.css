@@ -2112,7 +2112,7 @@ html.tcg-portrait-play #perf-spectacle{
   --perf-member-w:54px;
   --perf-col-side-inset:0px;
   --perf-yell-rail-gap:8px;
-  --perf-rail-slot-w:min(34vw,142px);
+  --perf-rail-slot-w:min(44vw,176px);
   --perf-safe-top:max(12px,
     calc(env(safe-area-inset-top,0px) + 6px),
     calc(var(--tcg-safe-top-fallback,0px) + 6px));
@@ -2164,10 +2164,12 @@ html.tcg-portrait-play #perf-spectacle .perf-yell-rail{
   width:var(--perf-rail-slot-w);
   min-width:var(--perf-rail-slot-w);
   max-width:var(--perf-rail-slot-w);
-  align-self:center!important;
-  align-items:center!important;
-  justify-content:center;
-  gap:8px;
+  align-self:flex-end!important;
+  align-items:flex-end!important;
+  justify-content:flex-end;
+  gap:10px;
+  margin-right:max(2px, env(safe-area-inset-right, 0px));
+  padding-right:2px;
 }
 html.tcg-portrait-play #perf-spectacle .perf-col.opp .perf-yell-rail{
   order:1;
@@ -2181,10 +2183,14 @@ html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-card-stack{
 html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-yell-rail{
   order:2;
 }
-html.tcg-portrait-play #perf-spectacle .perf-card.member,
+html.tcg-portrait-play #perf-spectacle .perf-card.member{
+  width:min(12vw,52px);
+  height:auto;
+  aspect-ratio:63/88;
+}
 html.tcg-portrait-play #perf-spectacle .perf-deck-pile,
 html.tcg-portrait-play #perf-spectacle .perf-yell-row{
-  width:min(14vw,62px);
+  width:min(18vw,78px);
   height:auto;
   aspect-ratio:63/88;
 }
@@ -2212,28 +2218,28 @@ html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi{
   align-items:center;
 }
 html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member{
-  /* Slightly tighter than lives so 3 portrait cards still fit vertically. */
-  width:min(calc((100vw - 40px) / 3),100px);
+  /* Slightly smaller than before so deck/yell can grow without crowding. */
+  width:min(calc((100vw - 48px) / 3),86px);
   height:auto;
   aspect-ratio:63/88;
   max-height:none;
 }
 html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member.member-in-wait{
-  width:min(calc((100vw - 40px) / 3 * 88 / 63),calc(100px * 88 / 63));
-  height:min(calc((100vw - 40px) / 3),100px);
+  width:min(calc((100vw - 48px) / 3 * 88 / 63),calc(86px * 88 / 63));
+  height:min(calc((100vw - 48px) / 3),86px);
   aspect-ratio:88/63;
 }
 html.tcg-portrait-play #perf-spectacle .perf-stage-row:not(.perf-stage-multi) .perf-card.member{
-  width:min(30vw,136px);
+  width:min(24vw,112px);
   height:auto;
   aspect-ratio:63/88;
 }
 html.tcg-portrait-play #perf-spectacle .perf-col-side{
   left:0;
   right:auto;
-  /* Deck/yell is centered. Reserve only the unobstructed strip to its left. */
-  width:max(56px,calc((100% - var(--perf-rail-slot-w)) / 2 - 8px));
-  max-width:calc(50% - 8px);
+  /* Deck/yell is right-aligned — names keep the clear strip on the left. */
+  width:max(72px,calc(100% - var(--perf-rail-slot-w) - 16px));
+  max-width:calc(100% - var(--perf-rail-slot-w) - 12px);
   z-index:8;
   align-items:flex-start;
   gap:4px;
