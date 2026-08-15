@@ -377,18 +377,16 @@
       const drawer = root.querySelector('.pb-deck-drawer.' + side);
       if (!field || !drawer) return;
       const fr = field.getBoundingClientRect();
-      const open = drawer.classList.contains('open');
-      // Collapsed: short handle mid-field so it clears both hand strips.
-      // Open: taller tray for Deck + Waiting Room content.
-      const closedH = Math.round(Math.max(52, Math.min(72, fr.height * 0.22)));
-      const openH = Math.round(Math.max(168, Math.min(fr.height * 0.72, 220)));
-      const height = open ? openH : closedH;
-      const top = open
-        ? Math.round(fr.top + Math.max(8, (fr.height - openH) * 0.5))
-        : Math.round(fr.top + (fr.height - closedH) * 0.5);
-      drawer.style.top = top + 'px';
-      drawer.style.height = height + 'px';
+      // Height follows content: the tray keeps Deck + Waiting Room at full size
+      // and the handle stays short, centered on the tray.
       drawer.style.right = '0px';
+      drawer.style.height = 'auto';
+      const h = drawer.offsetHeight || 56;
+      const vh = global.innerHeight || global.document.documentElement.clientHeight || 0;
+      const minTop = 6;
+      const maxTop = Math.max(minTop, vh - h - 6);
+      const top = Math.max(minTop, Math.min(fr.top + (fr.height - h) / 2, maxTop));
+      drawer.style.top = Math.round(top) + 'px';
     });
   }
 

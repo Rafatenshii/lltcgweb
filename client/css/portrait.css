@@ -2341,10 +2341,10 @@ html.tcg-portrait-play .pb-deck-drawer{
   right:0;
   display:flex;
   flex-direction:row;
-  align-items:stretch;
+  align-items:center;
   width:auto;
   max-width:min(46vw,180px);
-  pointer-events:auto;
+  pointer-events:none;
   transform:translateX(calc(100% - var(--pb-drawer-handle-w,28px)));
   transition:transform .22s cubic-bezier(.2,.9,.2,1),
               height .18s ease,
@@ -2359,6 +2359,9 @@ html.tcg-portrait-play .pb-deck-drawer-handle{
   flex:0 0 var(--pb-drawer-handle-w,28px);
   width:var(--pb-drawer-handle-w,28px);
   min-width:var(--pb-drawer-handle-w,28px);
+  height:var(--pb-drawer-handle-h,56px);
+  align-self:center;
+  pointer-events:auto;
   margin:0;
   padding:0;
   border:1px solid rgba(186,228,255,.35);
@@ -2389,10 +2392,12 @@ html.tcg-portrait-play .pb-deck-drawer.open .pb-deck-drawer-chevron{
 }
 html.tcg-portrait-play .pb-deck-drawer-tray{
   display:flex;
+  flex:0 0 auto;
   flex-direction:column;
   justify-content:center;
   gap:8px;
   min-width:108px;
+  max-height:calc(100vh - 16px);
   padding:8px 8px 8px 6px;
   box-sizing:border-box;
   background:rgba(8,14,28,.96);
@@ -2411,6 +2416,7 @@ html.tcg-portrait-play .pb-deck-drawer.open .pb-deck-drawer-tray{
 html.tcg-portrait-play .pb-deck-drawer-item{
   position:relative;
   display:flex;
+  flex:0 0 auto;
   flex-direction:column;
   align-items:center;
   gap:3px;
