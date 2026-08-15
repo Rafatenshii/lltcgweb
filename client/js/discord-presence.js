@@ -9,6 +9,12 @@
   var OPT_IN_KEY = 'tcg_discord_presence_opt_in';
   var THROTTLE_MS = 2500;
   var DISCORD_APP_ID = '1538239969976647740'; // Loveca Sim (presence only; site login stays on LLR app)
+  // Prefer a hosted HTTPS image until Rich Presence art keys are uploaded in the portal.
+  // (Missing portal keys show no icon; invalid keys also suppress the app default icon.)
+  var PRESENCE_ICON_URL = 'https://loveliveradio.ca/tcg/downloads/loveca-icon-192.png';
+  function presenceArt(_key) {
+    return PRESENCE_ICON_URL;
+  }
 
   var lastKey = '';
   var lastSentAt = 0;
@@ -103,7 +109,7 @@
     var modeTxt = modeLabel(mode);
 
     if (!screen || screen === 'auth') {
-      return { kind: 'idle', details: 'Signed out', state: '', largeImage: 'loveca', joinable: false };
+      return { kind: 'idle', details: 'Signed out', state: '', largeImage: presenceArt('loveca'), joinable: false };
     }
 
     if (a.rankedSearching) {
@@ -111,7 +117,7 @@
         kind: 'ranked_queue',
         details: 'Waiting for Ranked game (' + modeTxt + ')',
         state: 'Ranked queue',
-        largeImage: 'loveca_ranked',
+        largeImage: presenceArt('loveca_ranked'),
         joinable: true,
         joinType: 'ranked_queue',
         gameMode: mode,
@@ -124,7 +130,7 @@
           kind: 'cpu',
           details: 'In CPU game (' + modeTxt + ')',
           state: 'vs CPU',
-          largeImage: 'loveca_cpu',
+          largeImage: presenceArt('loveca_cpu'),
           joinable: false,
         };
       }
@@ -134,7 +140,7 @@
           kind: 'ranked_match',
           details: 'In Ranked game (' + modeTxt + ')',
           state: 'In a match',
-          largeImage: 'loveca_ranked',
+          largeImage: presenceArt('loveca_ranked'),
           joinable: true,
           joinType: 'spectate',
           roomId: g.roomId,
@@ -144,7 +150,7 @@
         kind: 'unranked_match',
         details: 'In Unranked game (' + modeTxt + ')',
         state: g.casualRandomMatch ? 'Casual match' : 'Friend match',
-        largeImage: 'loveca_casual',
+        largeImage: presenceArt('loveca_casual'),
         joinable: true,
         joinType: 'spectate',
         roomId: g.roomId,
@@ -156,7 +162,7 @@
         kind: 'booster',
         details: 'Opening booster packs',
         state: 'Booster shop',
-        largeImage: 'loveca_booster',
+        largeImage: presenceArt('loveca_booster'),
         joinable: false,
       };
     }
@@ -165,7 +171,7 @@
         kind: 'sticker',
         details: 'Browsing the sticker shop',
         state: 'Sticker shop',
-        largeImage: 'loveca_sticker',
+        largeImage: presenceArt('loveca_sticker'),
         joinable: false,
       };
     }
@@ -174,7 +180,7 @@
         kind: 'menu_ranked',
         details: 'In menus',
         state: 'Ranked hub',
-        largeImage: 'loveca',
+        largeImage: presenceArt('loveca'),
         joinable: false,
       };
     }
@@ -183,7 +189,7 @@
         kind: 'menu_unranked',
         details: 'In menus',
         state: 'Unranked lobby',
-        largeImage: 'loveca',
+        largeImage: presenceArt('loveca'),
         joinable: false,
       };
     }
@@ -192,7 +198,7 @@
         kind: 'menu_deck',
         details: 'In menus',
         state: 'Deck builder',
-        largeImage: 'loveca',
+        largeImage: presenceArt('loveca'),
         joinable: false,
       };
     }
@@ -200,7 +206,7 @@
       kind: 'menu',
       details: 'In menus',
       state: screen ? screen.replace(/-/g, ' ') : 'Hub',
-      largeImage: 'loveca',
+      largeImage: presenceArt('loveca'),
       joinable: false,
     };
   }
@@ -251,7 +257,7 @@
       applicationId: DISCORD_APP_ID,
       details: act.details || '',
       state: act.state || '',
-      largeImage: act.largeImage || 'loveca',
+      largeImage: act.largeImage || presenceArt('loveca'),
       largeText: 'Loveca',
       startTimestampMs: startMs,
       joinSecret: joinSecret || '',
