@@ -448,6 +448,63 @@ function plMuseGapAdvanceBothTrim(array $state): array {
     return addLog($state, "Both players trimmed to $target and drew $drawCount.");
 }
 
+/**
+ * Look at deck top = Live total score + bonus; add pick to hand, rest to WR.
+ * Discard cost is paid by optional_discard_prompt (or legacy prompt yes) before this.
+ */
+function plMuseGapExecuteLookRevealLiveScorePlus(
+    array $state,
+    string $pid,
+    array $ability,
+    array $source = []
+): array {
+    $name = $source['name_en'] ?? $source['name'] ?? 'Member';
+    $bonus = max(0, intval($ability['bonus'] ?? 2));
+    $pick = max(1, intval($ability['pick'] ?? 1));
+    $score = function_exists('getLiveTotalScore') ? getLiveTotalScore($state, $pid) : 0;
+    $lookN = max(0, $score + $bonus);
+    if ($lookN <= 0) {
+        return addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] Live score + $bonus = 0; no cards to look at.");
+    }
+
+    if (function_exists('refreshMainDeckFromWaitingRoom')) {
+        refreshMainDeckFromWaitingRoom($state, $pid);
+    }
+    $p = &$state['players'][$pid];
+    $top = array_splice($p['main_deck'], 0, min($lookN, count($p['main_deck'] ?? [])));
+    if (empty($p['main_deck']) && function_exists('refreshMainDeckFromWaitingRoom')) {
+        refreshMainDeckFromWaitingRoom($state, $pid);
+    }
+    if (empty($top)) {
+        return addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] deck empty — cannot look (score+$bonus).");
+    }
+
+    if (count($top) === 1 && $pick === 1) {
+        $p['hand'][] = $top[0];
+        return addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] looked at 1 card (Live score $score + $bonus); added to hand.");
+    }
+
+    $state['pending_prompt'] = [
+        'type'        => 'surveil_pick_one',
+        'owner'       => $pid,
+        'responder'   => $pid,
+        'source_id'   => $source['instance_id'] ?? '',
+        'source_name' => $name,
+        'look_cards'  => $top,
+        'candidates'  => array_map('cardPromptSummary', $top),
+        'rest_to_wr'  => true,
+        'pick'        => $pick,
+        'prompt'      => $pick === 1
+            ? 'Choose 1 card to add to your hand (rest go to Waiting Room).'
+            : "Choose $pick card(s) to add to your hand (rest go to Waiting Room).",
+    ];
+    return addLog($state, $state['players'][$pid]['name'] .
+        " — [$name] looked at " . count($top) . " card(s) (Live score $score + $bonus).");
+}
+
 function plMuseGapResolveEffect(array $state, string $pid, array $source, array $ab, array $ctx = []): array {
     $type = $ab['type'] ?? '';
     if (!plMuseGapIsEffectType($type)) return $state;
@@ -457,19 +514,10 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
 
     switch ($type) {
         case 'look_reveal_live_score_plus':
+            // Paid cost (optional discard) is handled by optional_discard_prompt;
+            // this type only runs the look / surveil pick.
             if (!empty($state['pending_prompt'])) break;
-            $state['pending_prompt'] = [
-                'type'          => 'look_reveal_live_score_plus',
-                'owner'         => $pid,
-                'responder'     => $pid,
-                'source_name'   => $name,
-                'ability'       => $ab,
-                'choices'       => ['yes', 'no'],
-                'choice_labels' => ['Yes — Discard 1', 'No — Skip'],
-                'prompt'        => 'Put 1 card from your hand into the Waiting Room: look at deck top equal to Live score + ' .
-                    intval($ab['bonus'] ?? 2) . ', add 1 to hand?',
-            ];
-            $state = addLog($state, $state['players'][$pid]['name'] . " — [$name] optional look (score+bonus).");
+            $state = plMuseGapExecuteLookRevealLiveScorePlus($state, $pid, $ab, $source);
             break;
 
         case 'mandatory_discard_group_branch':
@@ -2011,26 +2059,26 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
     $name = $prompt['source_name'] ?? 'Card';
 
     if ($type === 'look_reveal_live_score_plus' && $choice === 'yes') {
-        if (!empty($p['hand'])) $p['waiting_room'][] = array_pop($p['hand']);
-        $look = getLiveTotalScore($state, $owner) + intval($prompt['ability']['bonus'] ?? 2);
-        $top = [];
-        for ($i = 0; $i < $look && !empty($p['main_deck']); $i++) {
-            $top[] = array_shift($p['main_deck']);
+        if (!empty($p['hand'])) {
+            $p['waiting_room'][] = array_pop($p['hand']);
         }
-        if (count($top) === 1) {
-            $p['hand'][] = $top[0];
-        } elseif (count($top) > 1) {
-            $state['pending_prompt'] = [
-                'type'        => 'surveil_pick_one',
-                'owner'       => $owner,
-                'responder'   => $owner,
-                'source_name' => $name,
-                'look_cards'  => $top,
-                'candidates'  => array_map('cardPromptSummary', $top),
-                'rest_to_wr'  => true,
-                'prompt'      => 'Choose 1 card to add to your hand (rest go to Waiting Room).',
-            ];
+        unset($state['pending_prompt']);
+        $source = [
+            'instance_id' => $prompt['source_id'] ?? '',
+            'name_en' => $name,
+            'name' => $name,
+        ];
+        $state = plMuseGapExecuteLookRevealLiveScorePlus(
+            $state,
+            $owner,
+            is_array($prompt['ability'] ?? null) ? $prompt['ability'] : [],
+            $source
+        );
+        if (empty($state['pending_prompt'])) {
+            $state['seq']++;
+            return finishPromptEffects($state);
         }
+        $state['seq']++;
         return $state;
     }
 

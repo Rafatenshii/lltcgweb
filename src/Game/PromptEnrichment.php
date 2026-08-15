@@ -934,6 +934,24 @@ function resolveOptionalDiscardPromptChoice(
                     $state['seq']++;
                     return $state;
                 }
+            } elseif (($then['type'] ?? '') === 'look_reveal_live_score_plus') {
+                // Honoka bp5-001 — discard already paid; run Live score+bonus look.
+                unset($state['pending_prompt']);
+                $src = findSourceCard($state, $owner, $prompt['source_id'] ?? '')
+                    ?: [
+                        'instance_id' => $prompt['source_id'] ?? '',
+                        'name_en' => $prompt['source_name'] ?? 'Member',
+                        'name' => $prompt['source_name'] ?? 'Member',
+                    ];
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded $need.");
+                if (function_exists('plMuseGapExecuteLookRevealLiveScorePlus')) {
+                    $state = plMuseGapExecuteLookRevealLiveScorePlus($state, $owner, $then, $src);
+                }
+                if (!empty($state['pending_prompt'])) {
+                    $state['seq']++;
+                    return $state;
+                }
             } elseif (($then['type'] ?? '') === 'blade_bonus') {
                 $src = ['instance_id' => (string)($prompt['source_id'] ?? '')];
                 $state = applyModifierEffect($state, $owner, $then, $src);
