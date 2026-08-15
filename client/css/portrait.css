@@ -1830,8 +1830,14 @@ html.tcg-portrait-play .pb-hud .phase-action-bar{
 html.tcg-portrait-play .pb-hud .phase-action-bar[hidden]{
   display:none!important;
 }
+/* Spectate / non-action turns: only the burger shows — keep it centered. */
 html.tcg-portrait-play .pb-phase-actions:has(.phase-action-bar[hidden]){
-  justify-content:flex-end;
+  justify-content:center;
+}
+html.tcg-portrait-play .pb-phase-actions:has(.phase-action-bar[hidden]) .pb-menu-pop{
+  right:auto;
+  left:50%;
+  transform:translateX(-50%);
 }
 html.tcg-portrait-play .pb-hud .btn-phase-primary{
   min-height:34px;
@@ -1869,7 +1875,7 @@ html.tcg-portrait-play .pb-menu-pop{
   position:absolute;
   right:0;
   bottom:calc(100% + 6px);
-  min-width:140px;
+  min-width:168px;
   padding:6px;
   border-radius:12px;
   background:rgba(8,12,24,.97);
@@ -1894,9 +1900,14 @@ html.tcg-portrait-play .pb-menu-item{
   cursor:pointer;
   touch-action:manipulation;
 }
+html.tcg-portrait-play .pb-menu-item[hidden]{ display:none!important; }
 html.tcg-portrait-play .pb-menu-item:active,
 html.tcg-portrait-play .pb-menu-item:hover{
   background:rgba(186,228,255,.12);
+}
+html.tcg-portrait-play .pb-menu-item.is-active{
+  background:rgba(186,228,255,.16);
+  box-shadow:inset 0 0 0 1px rgba(186,228,255,.35);
 }
 html.tcg-portrait-play .pb-menu-item.pb-menu-danger{
   color:#ff8a9a;

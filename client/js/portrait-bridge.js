@@ -479,13 +479,50 @@
     } catch (_) { /* ignore */ }
   }
 
-  /** Burger menu beside End Main Phase — holds Log + Resign. */
+  /** Refresh burger items for play vs spectate (POV / hidden hands / Leave). */
+  function syncPortraitMenuForMode() {
+    const spectating = !!(global.G && global.G.isSpectator);
+    const pov = global.document.getElementById('btn-portrait-menu-pov');
+    const hh = global.document.getElementById('btn-portrait-menu-hidden-hands');
+    const resignItem = global.document.getElementById('btn-portrait-menu-resign');
+    const logItem = global.document.getElementById('btn-portrait-menu-log');
+    if (logItem) logItem.textContent = t('mobile.openLog', 'Log');
+    if (pov) {
+      pov.hidden = !spectating;
+      pov.textContent = t('spectate.switchPerspective', 'Switch perspective');
+    }
+    if (hh) {
+      hh.hidden = !spectating;
+      const on = !!(global.G && global.G.spectateHiddenHands);
+      hh.textContent = on
+        ? t('spectate.hiddenHandsOn', 'Show hands')
+        : t('spectate.hiddenHands', 'Hidden hands');
+      hh.classList.toggle('is-active', on);
+      hh.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    if (resignItem) {
+      if (spectating) {
+        resignItem.textContent = t('spectate.leave', 'Leave');
+        resignItem.classList.remove('pb-menu-danger');
+      } else {
+        const realResign = global.document.getElementById('btn-resign');
+        resignItem.textContent = (realResign && realResign.textContent.trim())
+          || t('game.resign', 'Resign');
+        resignItem.classList.add('pb-menu-danger');
+      }
+    }
+  }
+
+  /** Burger menu beside End Main Phase — Log + Resign; spectate adds POV / hands. */
   function ensurePhaseMenu() {
     if (!global.document.getElementById('portrait-board')) return;
     bindZonePreviewTargets();
     ensureDeckDrawers();
     bindDeckDrawerLifecycle();
-    if (global.document.getElementById('portrait-phase-row')) return;
+    if (global.document.getElementById('portrait-phase-row')) {
+      syncPortraitMenuForMode();
+      return;
+    }
 
     const hud = global.document.querySelector('#portrait-board .pb-hud');
     const bar = global.document.getElementById('phase-action-bar');
@@ -512,19 +549,14 @@
     menuWrap.innerHTML =
       '<button type="button" class="pb-menu-btn" id="btn-portrait-menu" aria-label="Menu" aria-expanded="false" aria-controls="portrait-menu-pop">☰</button>' +
       '<div class="pb-menu-pop" id="portrait-menu-pop" hidden role="menu">' +
+        '<button type="button" class="pb-menu-item" id="btn-portrait-menu-pov" role="menuitem" hidden></button>' +
+        '<button type="button" class="pb-menu-item" id="btn-portrait-menu-hidden-hands" role="menuitem" hidden aria-pressed="false"></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-log" role="menuitem"></button>' +
         '<button type="button" class="pb-menu-item pb-menu-danger" id="btn-portrait-menu-resign" role="menuitem"></button>' +
       '</div>';
     actions.appendChild(menuWrap);
     row.appendChild(actions);
-
-    const logItem = menuWrap.querySelector('#btn-portrait-menu-log');
-    const resignItem = menuWrap.querySelector('#btn-portrait-menu-resign');
-    if (logItem) logItem.textContent = t('mobile.openLog', 'Log');
-    if (resignItem) {
-      const realResign = global.document.getElementById('btn-resign');
-      resignItem.textContent = (realResign && realResign.textContent.trim()) || t('game.resign', 'Resign');
-    }
+    syncPortraitMenuForMode();
   }
 
   function closePortraitMenu() {
@@ -701,7 +733,17 @@
     }
     const game = global.document.getElementById('screen-game');
     if (game && game.classList.contains('active')) {
-      // Confirm leave via existing resign if available
+      if (global.G && global.G.isSpectator) {
+        const leaveBtn = global.document.getElementById('btn-spectate-leave');
+        if (leaveBtn) {
+          leaveBtn.click();
+          return true;
+        }
+        if (typeof global.leaveSpectatorMode === 'function') {
+          void global.leaveSpectatorMode();
+          return true;
+        }
+      }
       const resign = global.document.getElementById('btn-resign');
       if (resign) {
         resign.click();
@@ -778,7 +820,28 @@
         if (!t || !t.closest) return;
         if (t.closest('#btn-portrait-menu')) {
           e.preventDefault();
+          syncPortraitMenuForMode();
           togglePortraitMenu();
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-pov')) {
+          e.preventDefault();
+          closePortraitMenu();
+          if (typeof global.toggleSpectatorPerspective === 'function') {
+            global.toggleSpectatorPerspective();
+          } else {
+            global.document.getElementById('btn-spectate-pov')?.click();
+          }
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-hidden-hands')) {
+          e.preventDefault();
+          if (typeof global.toggleSpectateHiddenHands === 'function') {
+            global.toggleSpectateHiddenHands();
+          } else {
+            global.document.getElementById('btn-spectate-hidden-hands')?.click();
+          }
+          syncPortraitMenuForMode();
           return;
         }
         if (t.closest('#btn-portrait-menu-log')) {
@@ -790,6 +853,12 @@
         if (t.closest('#btn-portrait-menu-resign')) {
           e.preventDefault();
           closePortraitMenu();
+          if (global.G && global.G.isSpectator) {
+            const leaveBtn = global.document.getElementById('btn-spectate-leave');
+            if (leaveBtn) leaveBtn.click();
+            else if (typeof global.leaveSpectatorMode === 'function') void global.leaveSpectatorMode();
+            return;
+          }
           const resign = global.document.getElementById('btn-resign');
           if (resign) resign.click();
           return;
@@ -886,6 +955,7 @@
   global.tcgPortraitOpenInspect = openInspectFromHover;
   global.tcgPortraitSyncPlaySheet = syncPlaySheet;
   global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
+  global.tcgPortraitSyncMenu = syncPortraitMenuForMode;
   global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;
   global.tcgPortraitHideZonePreview = hideZonePreview;
   global.tcgPortraitEnsureDeckDrawers = ensureDeckDrawers;

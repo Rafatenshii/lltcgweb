@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=42">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=49">
+<link rel="stylesheet" href="client/css/portrait.css?v=50">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -29253,14 +29253,16 @@ function syncSpectateHiddenHandsUi() {
   const on = spectatorHandsHidden();
   document.body.classList.toggle('tcg-spectator-hidden-hands', on);
   const btn = el('btn-spectate-hidden-hands');
-  if (!btn) return;
-  btn.classList.toggle('is-active', !!G.spectateHiddenHands);
-  btn.setAttribute('aria-pressed', G.spectateHiddenHands ? 'true' : 'false');
-  const title = G.spectateHiddenHands
-    ? (typeof t === 'function' ? t('spectate.hiddenHandsOnTitle') : 'Hidden hands on — tap to show hands')
-    : (typeof t === 'function' ? t('spectate.hiddenHandsTitle') : 'Hidden hands (tournament view)');
-  btn.title = title;
-  btn.setAttribute('aria-label', typeof t === 'function' ? t('spectate.hiddenHands') : 'Hidden hands');
+  if (btn) {
+    btn.classList.toggle('is-active', !!G.spectateHiddenHands);
+    btn.setAttribute('aria-pressed', G.spectateHiddenHands ? 'true' : 'false');
+    const title = G.spectateHiddenHands
+      ? (typeof t === 'function' ? t('spectate.hiddenHandsOnTitle') : 'Hidden hands on — tap to show hands')
+      : (typeof t === 'function' ? t('spectate.hiddenHandsTitle') : 'Hidden hands (tournament view)');
+    btn.title = title;
+    btn.setAttribute('aria-label', typeof t === 'function' ? t('spectate.hiddenHands') : 'Hidden hands');
+  }
+  if (typeof tcgPortraitSyncMenu === 'function') tcgPortraitSyncMenu();
 }
 
 function setSpectateHiddenHands(on, { rerender = true } = {}) {
@@ -29835,7 +29837,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
-<script src="client/js/portrait-bridge.js?v=14"></script>
+<script src="client/js/portrait-bridge.js?v=15"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=11"></script>
 <script>void bootApp();</script>
