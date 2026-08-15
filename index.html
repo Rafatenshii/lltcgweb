@@ -2345,7 +2345,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=118"></script>
+<script src="i18n.js?v=119"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -2360,7 +2360,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=83"></script>
-<script src="client/js/tutorial-interactive.js?v=23"></script>
+<script src="client/js/tutorial-interactive.js?v=24"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
 (function () {
@@ -27241,9 +27241,99 @@ function showWin(s){
   }
 }
 // ── TUTORIAL MODE ────────────────────────────────────
+/** Portrait board remounts piles into HUD / right drawers — spotlight must follow. */
+function tutorialPortraitBoardReady() {
+  return tcgPortraitPlayActive()
+    && !!document.documentElement.classList.contains('tcg-portrait-board-mounted');
+}
+
+function tutorialPortraitVisibleNode(node) {
+  if (!node) return null;
+  const r = node.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return null;
+  return node;
+}
+
+function tutorialPortraitEnergyHost(side) {
+  return tutorialPortraitVisibleNode(
+    el(side === 'opp' ? 'portrait-opp-nrg-host' : 'portrait-my-nrg-host')
+  );
+}
+
+function tutorialPortraitWinsHost(side) {
+  return tutorialPortraitVisibleNode(
+    el(side === 'opp' ? 'portrait-opp-wins' : 'portrait-my-wins')
+  );
+}
+
+function tutorialPortraitDrawerItem(side, kind) {
+  const root = el('portrait-deck-drawers');
+  if (!root) return null;
+  const drawer = root.querySelector('.pb-deck-drawer.' + side);
+  if (!drawer) return null;
+  const item = drawer.querySelector('.pb-deck-drawer-item.' + kind);
+  const visible = tutorialPortraitVisibleNode(item);
+  if (visible) return visible;
+  // Tray still sliding / closed — fall back to the edge handle.
+  return tutorialPortraitVisibleNode(drawer.querySelector('.pb-deck-drawer-handle'));
+}
+
+function tutorialPortraitDrawerTargets(highlights) {
+  let mine = false;
+  let opp = false;
+  for (const h of highlights || []) {
+    const t = h?.target;
+    if (t === 'my-deck-pile' || t === 'my-wait-pile') mine = true;
+    if (t === 'opp-deck-pile' || t === 'opp-wait-pile') opp = true;
+  }
+  return { mine, opp };
+}
+
+/** Open/close portrait chrome so remapped spotlight targets have real rects. */
+function prepareTutorialPortraitChrome(highlights) {
+  if (!tutorialPortraitBoardReady()) return false;
+  if (typeof tcgPortraitEnsureDeckDrawers === 'function') tcgPortraitEnsureDeckDrawers();
+  const need = tutorialPortraitDrawerTargets(highlights);
+  let touched = false;
+  const snapOpen = (side) => {
+    if (typeof tcgPortraitOpenDeckDrawer !== 'function') return;
+    const drawer = document.querySelector('#portrait-deck-drawers .pb-deck-drawer.' + side);
+    if (drawer) drawer.style.transition = 'none';
+    tcgPortraitOpenDeckDrawer(side);
+    if (drawer) {
+      void drawer.offsetWidth;
+      requestAnimationFrame(() => { drawer.style.transition = ''; });
+    }
+    touched = true;
+  };
+  if (need.mine) snapOpen('mine');
+  else if (need.opp) snapOpen('opp');
+  else if (typeof tcgPortraitCloseDeckDrawers === 'function') {
+    tcgPortraitCloseDeckDrawers();
+  }
+  return touched;
+}
+
+function paintTutorialSpotlightAndBubble(highlights) {
+  prepareTutorialPortraitChrome(highlights);
+  renderTutorialSpotlight(highlights);
+  positionTutorialBubble(highlights);
+  if (tutorialPortraitBoardReady()) {
+    requestAnimationFrame(() => {
+      if (!G.isTutorial) return;
+      renderTutorialSpotlight(highlights);
+      positionTutorialBubble(highlights);
+    });
+  }
+}
+
 const TUTORIAL_TARGETS = {
-  'my-energy': () => el('my-energy'),
-  'opp-energy': () => el('opp-energy'),
+  'my-energy': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitEnergyHost('mine') || el('my-energy'))
+    : el('my-energy'),
+  'opp-energy': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitEnergyHost('opp') || el('opp-energy'))
+    : el('opp-energy'),
   'my-stage-left': () => el('my-stage-left'),
   'my-stage-center': () => el('my-stage-center'),
   'my-stage-right': () => el('my-stage-right'),
@@ -27256,16 +27346,41 @@ const TUTORIAL_TARGETS = {
   'opp-live-0': () => el('opp-live-0'),
   'opp-live-1': () => el('opp-live-1'),
   'opp-live-2': () => el('opp-live-2'),
-  'my-pips': () => el('my-pips'),
-  'opp-pips': () => el('opp-pips'),
+  'my-pips': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitWinsHost('mine') || el('my-pips'))
+    : el('my-pips'),
+  'opp-pips': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitWinsHost('opp') || el('opp-pips'))
+    : el('opp-pips'),
   'hand-row': () => el('hand-row'),
   'opp-hand-zone': () => el('opp-hand-zone'),
-  'my-deck-pile': () => (G._perfSpectacleActive ? el('perf-mine-deck') : null) || el('my-deck-pile'),
-  'opp-deck-pile': () => (G._perfSpectacleActive ? el('perf-opp-deck') : null) || el('opp-deck-pile'),
-  'my-wait-pile': () => el('my-wait-pile'),
-  'opp-wait-pile': () => el('opp-wait-pile'),
-  'my-nrg-deck-pile': () => el('my-nrg-deck-pile'),
-  'opp-nrg-deck-pile': () => el('opp-nrg-deck-pile'),
+  'my-deck-pile': () => {
+    if (G._perfSpectacleActive && el('perf-mine-deck')) return el('perf-mine-deck');
+    if (tutorialPortraitBoardReady()) {
+      return tutorialPortraitDrawerItem('mine', 'deck') || el('my-deck-pile');
+    }
+    return el('my-deck-pile');
+  },
+  'opp-deck-pile': () => {
+    if (G._perfSpectacleActive && el('perf-opp-deck')) return el('perf-opp-deck');
+    if (tutorialPortraitBoardReady()) {
+      return tutorialPortraitDrawerItem('opp', 'deck') || el('opp-deck-pile');
+    }
+    return el('opp-deck-pile');
+  },
+  'my-wait-pile': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitDrawerItem('mine', 'wr') || el('my-wait-pile'))
+    : el('my-wait-pile'),
+  'opp-wait-pile': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitDrawerItem('opp', 'wr') || el('opp-wait-pile'))
+    : el('opp-wait-pile'),
+  // Portrait has no separate energy-deck pile — same HUD energy box.
+  'my-nrg-deck-pile': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitEnergyHost('mine') || el('my-nrg-deck-pile'))
+    : el('my-nrg-deck-pile'),
+  'opp-nrg-deck-pile': () => tutorialPortraitBoardReady()
+    ? (tutorialPortraitEnergyHost('opp') || el('opp-nrg-deck-pile'))
+    : el('opp-nrg-deck-pile'),
   'pbadge': () => el('pbadge'),
   'phase-action-bar': () => el('phase-action-bar'),
   'overlay-prompt': () => {
@@ -27466,6 +27581,12 @@ function repositionTutorialBubbleForLiveModal() {
 
 function tutorialBubbleFocusRect(highlights) {
   const deckTargets = new Set(['my-deck-pile', 'opp-deck-pile', 'perf-mine-deck', 'perf-opp-deck']);
+  if (tutorialPortraitBoardReady()) {
+    deckTargets.add('my-wait-pile');
+    deckTargets.add('opp-wait-pile');
+    deckTargets.add('my-nrg-deck-pile');
+    deckTargets.add('opp-nrg-deck-pile');
+  }
   const forPlacement = (highlights || []).filter(h => !deckTargets.has(h.target));
   return tutorialFocusRect(forPlacement.length ? forPlacement : highlights);
 }
@@ -27704,8 +27825,7 @@ async function prepositionTutorialPerfYellBubble(step, perfPrev, toState, myId) 
 function repositionTutorialPerfYellBubble(step) {
   if (!step || step.bubblePlacement !== 'perf-yell-names') return;
   const hl = step.highlights || [];
-  renderTutorialSpotlight(hl);
-  positionTutorialBubble(hl);
+  paintTutorialSpotlightAndBubble(hl);
 }
 
 function positionTutorialBubbleOverlayAnchor(overlay, bar, anchorId, tutStep, opts) {
@@ -28110,8 +28230,7 @@ function renderTutorialSpotlight(highlights) {
     applyTutorialSpotlightDim(G.tutorialData?.steps?.[G.tutorialStep]);
     return;
   }
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const seen = new Set();
   for (const h of highlights) {
     const pad = h.padding ?? 10;
     const rect = tutorialTargetRect(h.target);
@@ -28128,6 +28247,9 @@ function renderTutorialSpotlight(highlights) {
       w = d;
       ht = d;
     }
+    const dedupeKey = shape + ':' + Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w) + ',' + Math.round(ht);
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
     if (shape === 'circle') {
       const cx = x + w / 2;
       const cy = y + ht / 2;
@@ -28519,16 +28641,15 @@ function renderTutorialStep(idx, opts = {}) {
   }
   if (opts.textOnly) return;
   const hl = tutorialSpotlightHighlights(step);
-  renderTutorialSpotlight(hl);
   applyTutorialStepUi(step);
   if (G.gameState) renderStageBoardPanel(G.gameState, G.playerId || 'p1');
+  paintTutorialSpotlightAndBubble(hl);
   requestAnimationFrame(() => {
     if (G.isTutorial && G.gameState && !G.tutorialLive) {
       if (step.id === 'setup_coin_p1') G.coinFlipSeq = null;
       maybeShowTutorialFlowScreens(G.gameState, G.playerId || 'p1');
     }
-    renderTutorialSpotlight(tutorialSpotlightHighlights(step));
-    positionTutorialBubble(hl);
+    paintTutorialSpotlightAndBubble(tutorialSpotlightHighlights(step));
   });
 }
 
@@ -28788,8 +28909,7 @@ async function startTutorial() {
       window.addEventListener('resize', () => {
         if (!G.isTutorial) return;
         const hl = G.tutorialData?.steps?.[G.tutorialStep]?.highlights || [];
-        renderTutorialSpotlight(hl);
-        positionTutorialBubble(hl);
+        paintTutorialSpotlightAndBubble(hl);
       });
     }
     closeM('overlay-mull');
@@ -28814,6 +28934,7 @@ function exitTutorial() {
   el('tutorial-spotlight')?.classList.remove('light', 'no-dim');
   document.body.classList.remove('tutorial-mode');
   document.body.classList.remove('tutorial-spotlight-light');
+  if (typeof tcgPortraitCloseDeckDrawers === 'function') tcgPortraitCloseDeckDrawers();
   clearTutorialCardPreview();
   G.isTutorial = false;
   G.tutorialData = null;
@@ -29961,7 +30082,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
-<script src="client/js/portrait-bridge.js?v=21"></script>
+<script src="client/js/portrait-bridge.js?v=22"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=15"></script>
 <script>void bootApp();</script>

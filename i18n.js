@@ -9647,6 +9647,26 @@
   function tutorialDialogue(step) {
     if (!step) return '';
     var loc = getLocale();
+    var portrait = false;
+    try {
+      portrait = !!(typeof document !== 'undefined'
+        && document.documentElement
+        && (document.documentElement.classList.contains('tcg-portrait-play')
+          || document.documentElement.dataset.tcgPortraitPlay === '1'));
+    } catch (e) { portrait = false; }
+    function fromPack(pack) {
+      if (!portrait || !pack) return null;
+      if (pack[step.id + '_portrait']) return pack[step.id + '_portrait'];
+      return null;
+    }
+    var packedPortrait = null;
+    if (loc === 'ja') packedPortrait = fromPack(_tutorialJa);
+    else if (loc === 'es') packedPortrait = fromPack(_tutorialEs);
+    else if (loc === 'ko') packedPortrait = fromPack(_tutorialKo);
+    else if (loc === 'zh') packedPortrait = fromPack(_tutorialZh);
+    else if (loc === 'th') packedPortrait = fromPack(_tutorialTh);
+    if (packedPortrait) return packedPortrait;
+    if (portrait && step.dialogue_portrait) return step.dialogue_portrait;
     if (loc === 'ja') {
       if (_tutorialJa && _tutorialJa[step.id]) return _tutorialJa[step.id];
       var jaTranslated = t('tutorial.' + step.id);
@@ -9806,7 +9826,7 @@
 
   function loadTutorialJa() {
     if (_tutorialJa) return Promise.resolve(_tutorialJa);
-    return fetch('./tutorial_ja.json?v=8', { cache: 'no-store' })
+    return fetch('./tutorial_ja.json?v=9', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('tutorial_ja HTTP ' + r.status);
         return r.json();

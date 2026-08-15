@@ -1138,11 +1138,13 @@
   global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
   global.tcgPortraitSyncMenu = syncPortraitMenuForMode;
   global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;
-  global.tcgPortraitHideZonePreview = hideZonePreview;
   global.tcgPortraitEnsureDeckDrawers = ensureDeckDrawers;
   global.tcgPortraitSyncDeckDrawers = syncDeckDrawerCounts;
   global.tcgPortraitSyncWinCounts = syncPortraitWinCounts;
+  global.tcgPortraitOpenDeckDrawer = openDeckDrawer;
   global.tcgPortraitCloseDeckDrawers = closeAllDeckDrawers;
+  global.tcgPortraitShowZonePreview = showZonePreview;
+  global.tcgPortraitHideZonePreview = hideZonePreview;
 
   if (global.document.readyState === 'loading') {
     global.document.addEventListener('DOMContentLoaded', boot);

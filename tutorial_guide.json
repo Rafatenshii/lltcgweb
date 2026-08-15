@@ -198,6 +198,7 @@
       "id": "goal",
       "kind": "info",
       "dialogue": "Just as the name says, a **Live** card is a card for live shows. You perform live shows with these — and the first player to make **three** of them a success wins the game!",
+      "dialogue_portrait": "Just as the name says, a **Live** card is a card for live shows. You perform live shows with these — and the first player to make **three** of them a success wins. On phone, your win tally is the **score box** in the top HUD.",
       "highlights": [
         {
           "target": "my-pips",
@@ -271,6 +272,7 @@
       "id": "zones_storage",
       "kind": "info",
       "dialogue": "Around the edge sit your **main deck storage**, your **energy deck**, the **Waiting Room** where used cards rest, and the **Success live card storage** that counts your wins.",
+      "dialogue_portrait": "On the **right drawer** you'll find your **main deck** and **Waiting Room**. Your **energy** count and **win tally** sit in the **top HUD** — tap energy anytime to peek at the cards.",
       "highlights": [
         {
           "target": "my-deck-pile",
@@ -298,6 +300,7 @@
       "id": "prep_deck",
       "kind": "info",
       "dialogue": "Now that you know the cards, we can begin! Both players shuffle their **main deck** and place it in the main deck storage.",
+      "dialogue_portrait": "Now that you know the cards, we can begin! Both players shuffle their **main deck** — on phone, your deck lives in the **right drawer**.",
       "highlights": [
         {
           "target": "my-deck-pile",
@@ -351,6 +354,7 @@
       "id": "prep_energy",
       "kind": "info",
       "dialogue": "That's the hand exchange done. Each player then places **3** energy cards from the energy deck face up on the **energy deck storage**. You're all set — let's play!",
+      "dialogue_portrait": "That's the hand exchange done. Each player places **3** energy cards face up — on phone, that count shows in the **energy box** in the top HUD. You're all set — let's play!",
       "highlights": [
         {
           "target": "my-energy",
@@ -375,6 +379,7 @@
       "id": "phase_energy",
       "kind": "info",
       "dialogue": "Then the **Energy Phase** — one more energy card moves from the energy deck onto the energy deck storage.",
+      "dialogue_portrait": "Then the **Energy Phase** — one more energy card is added. Watch the **energy box** in the top HUD tick up.",
       "highlights": [
         {
           "target": "my-nrg-deck-pile",
@@ -392,6 +397,7 @@
       "id": "phase_draw",
       "kind": "info",
       "dialogue": "Then the **Draw Phase** — draw one card from the main deck and add it to your hand.",
+      "dialogue_portrait": "Then the **Draw Phase** — draw one card from your **main deck** (right drawer) and add it to your hand.",
       "highlights": [
         {
           "target": "my-deck-pile",
@@ -463,6 +469,7 @@
       "id": "baton_pass",
       "kind": "info",
       "dialogue": "Here's a piece of advice: there's another way to bring a Member out — the **baton pass**. Send a Member already on Stage to the **Waiting Room**, and her cost counts as paid for a new Member of the same cost.",
+      "dialogue_portrait": "Here's a piece of advice: there's another way to bring a Member out — the **baton pass**. Send a Member already on Stage to the **Waiting Room** (right drawer), and her cost counts as paid for a new Member of the same cost.",
       "highlights": [
         {
           "target": "my-stage-center",
