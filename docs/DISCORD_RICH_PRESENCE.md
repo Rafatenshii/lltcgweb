@@ -1,17 +1,23 @@
 # Discord Rich Presence (Android Loveca)
 
 Android-only Discord Social SDK Rich Presence. The Capacitor shell lives in the private
-sibling repo `lltcg-android`. Website Discord OAuth (`identify` via Wrapped) is **not**
-enough for mobile presence — Discord requires Social SDK account linking.
+sibling repo `lltcg-android`.
 
-## Discord Developer Portal checklist
+**Two Discord applications:**
 
-Application: Love Live Radio / Loveca (`client_id` `1439716818058088612`).
+| App | ID | Purpose |
+|-----|-----|---------|
+| Love Live Radio (Wrapped / site) | `1439716818058088612` | Website Discord login (`identify`) only |
+| **Loveca Sim** | `1538239969976647740` | Social SDK Rich Presence / join deep links |
 
-1. Enable **Social SDK / Social Layer** for the application.
-2. OAuth2 redirect URI (mobile PKCE):
-   `discord-1439716818058088612:/authorize/callback`
-3. **Deep link URL** (General / Social Layer):
+Website OAuth sessions do **not** grant Social SDK presence scopes.
+
+## Discord Developer Portal checklist (Loveca Sim)
+
+1. Enable **Social SDK / Social Layer** on **Loveca Sim**.
+2. OAuth2 redirect URI (mobile PKCE) — must use the **Loveca Sim** id:
+   `discord-1538239969976647740:/authorize/callback`
+3. **Deep Link URL** (General Information, after Social SDK is enabled):
    `https://loveliveradio.ca/tcg`
    Discord appends `/_discord/join?secret=…` when a friend accepts Join.
 4. Upload Rich Presence art assets (large image keys used by the client:
@@ -19,6 +25,9 @@ Application: Love Live Radio / Loveca (`client_id` `1439716818058088612`).
 5. Download `discord_partner_sdk.aar` and place it at:
    `lltcg-android/android/app/libs/discord_partner_sdk.aar`
    (gitignored — never commit the AAR).
+
+Do **not** change Love Live Radio’s Wrapped redirect
+(`https://www.loveliveradio.ca/wrapped`).
 
 ## Android shell
 
@@ -32,7 +41,7 @@ See `lltcg-android/README.md` § Discord Rich Presence.
 
 ## Web / API
 
-- Client: `client/js/discord-presence.js` (no-op off Android).
+- Client: `client/js/discord-presence.js` (no-op off Android; uses Loveca Sim app id).
 - Opt-in: Options → “Discord Rich Presence (Android)”.
 - Opaque actions: `account.php` `presence_action_mint` / `presence_action_redeem`
   (table `tcg_presence_actions`). Join secrets never embed room IDs or seat tokens

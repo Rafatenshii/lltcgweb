@@ -8,7 +8,7 @@
 
   var OPT_IN_KEY = 'tcg_discord_presence_opt_in';
   var THROTTLE_MS = 2500;
-  var DISCORD_APP_ID = '1439716818058088612';
+  var DISCORD_APP_ID = '1538239969976647740'; // Loveca Sim (presence only; site login stays on LLR app)
 
   var lastKey = '';
   var lastSentAt = 0;
