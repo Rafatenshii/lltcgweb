@@ -472,6 +472,14 @@
           await global.enterRankedMatch(res.match);
           return;
         }
+        if (res.queue_stats && typeof global.updateRankedQueueStats === 'function') {
+          global.updateRankedQueueStats(res.queue_stats);
+        }
+        if (typeof global.setRankedSearchingUI === 'function') {
+          global.setRankedSearchingUI(true, 0);
+        } else {
+          A().rankedSearching = true;
+        }
         if (typeof global.toast === 'function') {
           global.toast('Joined the same ranked queue. Waiting for a match…', 3600);
         }
