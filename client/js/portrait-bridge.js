@@ -598,6 +598,16 @@
     } catch (_) { /* ignore */ }
   }
 
+  /** Keep the phase timer between End Main and the burger in portrait. */
+  function ensurePortraitPhaseTimerSlot() {
+    const actions = global.document.querySelector('#portrait-phase-row .pb-phase-actions');
+    const timer = global.document.getElementById('phase-timer-wrap');
+    const menuWrap = actions?.querySelector('.pb-menu-wrap');
+    if (!actions || !timer || !menuWrap) return;
+    if (timer.parentElement === actions && timer.nextElementSibling === menuWrap) return;
+    actions.insertBefore(timer, menuWrap);
+  }
+
   /** Soft page reload — same recovery path as refreshing the web tab. */
   function reloadPortraitApp() {
     try {
@@ -632,6 +642,7 @@
   /** Refresh burger items for play vs spectate (POV / hidden hands / Leave). */
   function syncPortraitMenuForMode() {
     ensurePortraitRefreshMenuItem();
+    ensurePortraitPhaseTimerSlot();
     const spectating = !!(global.G && global.G.isSpectator);
     const pov = global.document.getElementById('btn-portrait-menu-pov');
     const hh = global.document.getElementById('btn-portrait-menu-hidden-hands');
@@ -709,6 +720,7 @@
         '<button type="button" class="pb-menu-item pb-menu-danger" id="btn-portrait-menu-resign" role="menuitem"></button>' +
       '</div>';
     actions.appendChild(menuWrap);
+    ensurePortraitPhaseTimerSlot();
     row.appendChild(actions);
     syncPortraitMenuForMode();
   }

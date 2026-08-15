@@ -1750,7 +1750,6 @@ html.tcg-portrait-play .pb-hud .pbadge{
   min-height:22px;
 }
 html.tcg-portrait-play .pb-hud .pmsg,
-html.tcg-portrait-play .pb-hud .phase-timer-wrap,
 html.tcg-portrait-play .pb-hud .spectator-count,
 html.tcg-portrait-play .pb-hud .btn-spectate-pov,
 html.tcg-portrait-play .pb-hud .btn-spectate-hidden-hands{ display:none!important; }
@@ -1883,6 +1882,35 @@ html.tcg-portrait-play .pb-hud .btn-phase-primary{
   font-size:13px;
   border-radius:10px;
   padding:6px 12px;
+}
+/* Phase timer sits between End Main and the burger when enabled. */
+html.tcg-portrait-play .pb-phase-actions > .phase-timer-wrap{
+  display:block;
+  flex:0 0 auto;
+  line-height:0;
+  position:static;
+  top:auto;
+  right:auto;
+  z-index:1;
+  pointer-events:none;
+}
+html.tcg-portrait-play .pb-phase-actions > .phase-timer-wrap[hidden]{
+  display:none!important;
+}
+html.tcg-portrait-play .pb-phase-actions > .phase-timer-wrap.phase-timer-wrap--prompt{
+  position:static;
+  top:auto;
+  right:auto;
+  z-index:1;
+}
+html.tcg-portrait-play .pb-phase-actions .time-pie.phase-timer-pie{
+  width:34px;
+  height:34px;
+  border-width:2px;
+}
+html.tcg-portrait-play .pb-phase-actions .time-pie.phase-timer-pie > span{
+  font-size:13px;
+  letter-spacing:0;
 }
 html.tcg-portrait-play .pb-menu-wrap{
   position:relative;
