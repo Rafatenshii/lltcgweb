@@ -653,13 +653,52 @@ function tcgQueueStatsFromCache(string $cacheFile, string $gameMode, ?int $maxAg
 }
 
 /**
+ * Ranked modes (other than $currentMode) that currently have ≥1 player waiting.
+ *
+ * @return list<string>
+ */
+function tcgRankedOtherModesWithWaiting(string $currentMode): array {
+    require_once __DIR__ . '/game_mode.php';
+    $currentMode = tcgNormalizeRankedGameMode($currentMode);
+    $db = tcgDb();
+    $stmt = $db->query(
+        'SELECT q.game_mode AS game_mode, COUNT(*) AS c
+         FROM tcg_match_queue q
+         WHERE NOT EXISTS (
+           SELECT 1 FROM tcg_ranked_matches m
+           WHERE m.status = "pending"
+             AND (m.p1_id = q.discord_id OR m.p2_id = q.discord_id)
+         )
+         GROUP BY q.game_mode'
+    );
+    if ($stmt === false) {
+        return [];
+    }
+    $counts = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $m = tcgNormalizeRankedGameMode($row['game_mode'] ?? '');
+        $counts[$m] = ($counts[$m] ?? 0) + (int)($row['c'] ?? 0);
+    }
+    $out = [];
+    foreach (tcgRankedGameModeIds() as $m) {
+        if ($m === $currentMode) {
+            continue;
+        }
+        if (($counts[$m] ?? 0) > 0) {
+            $out[] = $m;
+        }
+    }
+    return $out;
+}
+
+/**
  * Public queue stats for the ranked menu (waiting in lobby vs in active ranked games).
  *
  * Hot path for ranked_status polling: it must never block on the VPS or on a long
  * pending-row probe loop, or the client aborts at 12s with "Request timed out".
  */
 function tcgQueuePublicStats(?string $gameMode = null): array {
-    $gameMode = tcgNormalizeGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
+    $gameMode = tcgNormalizeRankedGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
     $cacheFile = tcgPath('data') . 'queue_stats_cache_' . preg_replace('/[^a-z0-9_]/', '', $gameMode) . '.json';
 
     // Queue size is a local COUNT(*) — always live. in_game needs the match host,
@@ -677,10 +716,13 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
     );
     $stmt->execute([$gameMode]);
     $waiting = (int)$stmt->fetchColumn();
+    $otherModes = tcgRankedOtherModesWithWaiting($gameMode);
 
     $fresh = tcgQueueStatsFromCache($cacheFile, $gameMode, 15);
     if ($fresh !== null) {
         $fresh['waiting'] = $waiting;
+        $fresh['other_modes_waiting'] = $otherModes;
+        $fresh['game_mode'] = $gameMode;
         return $fresh;
     }
 
@@ -695,6 +737,8 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
         $stale = tcgQueueStatsFromCache($cacheFile, $gameMode);
         if ($stale !== null) {
             $stale['waiting'] = $waiting;
+            $stale['other_modes_waiting'] = $otherModes;
+            $stale['game_mode'] = $gameMode;
             return $stale;
         }
         // Another request is computing in_game — never stampede the VPS or hang the
@@ -703,11 +747,14 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
             'waiting' => $waiting,
             'in_game' => 0,
             'game_mode' => $gameMode,
+            'other_modes_waiting' => $otherModes,
         ];
     }
 
     try {
-        return tcgComputeQueuePublicStats($gameMode, $cacheFile, $waiting);
+        $stats = tcgComputeQueuePublicStats($gameMode, $cacheFile, $waiting);
+        $stats['other_modes_waiting'] = $otherModes;
+        return $stats;
     } finally {
         if ($owner && $lock !== false) {
             @flock($lock, LOCK_UN);

@@ -59,7 +59,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=44">
+<link rel="stylesheet" href="client/css/shell-all.css?v=45">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 <link rel="stylesheet" href="client/css/portrait.css?v=63">
@@ -1301,6 +1301,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <input type="checkbox" id="chk-ranked-match-sound"> <span data-i18n="ranked.matchSound">Play sound when match is found</span>
       </label>
       <p id="ranked-queue-stats" class="hub-stat ranked-queue-stats">— waiting · — in ranked games</p>
+      <p id="ranked-queue-other-modes" class="hub-stat queue-other-modes" hidden></p>
       <button class="btn-grad" id="btn-ranked-search" type="button" data-i18n="ranked.findMatch">Find Match</button>
       <button class="btn-out" id="btn-ranked-spectate" type="button" data-i18n="ranked.spectate">Spectate Match</button>
       <button class="btn-out" id="btn-ranked-leaderboard" type="button" data-i18n="ranked.leaderboard">Leaderboard</button>
@@ -1427,6 +1428,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               <button class="btn-grad" id="btn-casual-search" type="button" data-i18n="lobby.findRandomMatch">Find Random Match</button>
               <p class="hub-stat lobby-casual-hint" data-i18n="lobby.casualHint">Casual PvP — no ELO or ranked record</p>
               <p id="casual-queue-stats" class="hub-stat ranked-queue-stats">— waiting · — in casual games</p>
+              <p id="casual-queue-other-modes" class="hub-stat queue-other-modes" hidden></p>
               <button class="btn-ghost" id="btn-casual-cancel" type="button" hidden data-i18n="lobby.cancelSearch">Cancel search</button>
             </div>
           </div>
@@ -2345,7 +2347,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=119"></script>
+<script src="i18n.js?v=120"></script>
 <script src="log_i18n.js?v=15"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -12831,6 +12833,61 @@ function playRankedMatchSound() {
   sfxPlay('match_found', { volume: 0.95 });
 }
 
+function gameModeShortLabel(mode) {
+  const m = normalizeGameMode(mode);
+  const key = 'gameMode.short.' + m;
+  const labeled = t(key);
+  if (labeled && labeled !== key) return labeled;
+  if (m === 'starters') return 'Starters';
+  if (m === 'free') return t('gameMode.free');
+  if (m === 'randomized') return 'Randomized';
+  return t('gameMode.standard');
+}
+
+function normalizeOtherModesWaiting(raw, currentMode, allowedModes) {
+  const cur = normalizeGameMode(currentMode);
+  const allow = new Set((allowedModes || []).map(normalizeGameMode));
+  const seen = new Set();
+  const list = Array.isArray(raw) ? raw : [];
+  for (const item of list) {
+    const m = normalizeGameMode(item);
+    if (!m || m === cur || seen.has(m)) continue;
+    if (allow.size && !allow.has(m)) continue;
+    seen.add(m);
+  }
+  // Stable UI order matching the mode selectors.
+  return (allowedModes || []).map(normalizeGameMode).filter(m => seen.has(m));
+}
+
+function renderQueueOtherModesHint(nodeId, modes) {
+  const node = el(nodeId);
+  if (!node) return;
+  if (!modes?.length) {
+    node.hidden = true;
+    node.replaceChildren();
+    return;
+  }
+  node.hidden = false;
+  node.replaceChildren();
+  const lead = document.createElement('span');
+  lead.className = 'queue-other-modes-lead';
+  lead.textContent = t('lobby.otherModesQueuedLead');
+  node.appendChild(lead);
+  node.appendChild(document.createTextNode(' '));
+  modes.forEach((m, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'queue-other-modes-sep';
+      sep.textContent = ', ';
+      node.appendChild(sep);
+    }
+    const name = document.createElement('span');
+    name.className = 'queue-other-mode-name';
+    name.textContent = gameModeShortLabel(m);
+    node.appendChild(name);
+  });
+}
+
 function updateRankedQueueStats(stats) {
   const node = el('ranked-queue-stats');
   if (!node || !stats) return;
@@ -12841,15 +12898,23 @@ function updateRankedQueueStats(stats) {
   }
   const waiting = stats.waiting ?? 0;
   const inGame = stats.in_game ?? 0;
+  const mode = stats.game_mode != null ? normalizeRankedGameMode(stats.game_mode) : rankedGameMode();
+  const otherModes = normalizeOtherModesWaiting(
+    stats.other_modes_waiting,
+    mode,
+    TCG_RANKED_GAME_MODES
+  );
   A.rankedQueueStats = {
     waiting,
     in_game: inGame,
-    game_mode: stats.game_mode != null ? normalizeRankedGameMode(stats.game_mode) : rankedGameMode(),
+    game_mode: mode,
+    other_modes_waiting: otherModes,
   };
   node.textContent = t('ranked.queueStats', {
     waiting,
     inGame,
   });
+  renderQueueOtherModesHint('ranked-queue-other-modes', otherModes);
 }
 
 function stopRankedLobbyStatsPoll() {
@@ -13673,10 +13738,17 @@ function updateCasualQueueStats(stats) {
       && normalizeGameMode(stats.game_mode) !== currentGameMode()) {
     return;
   }
+  const mode = stats.game_mode != null ? normalizeGameMode(stats.game_mode) : currentGameMode();
+  const otherModes = normalizeOtherModesWaiting(
+    stats.other_modes_waiting,
+    mode,
+    TCG_GAME_MODES
+  );
   node.textContent = t('lobby.casualQueueStats', {
     waiting: stats.waiting ?? 0,
     inGame: stats.in_game ?? 0,
   });
+  renderQueueOtherModesHint('casual-queue-other-modes', otherModes);
 }
 
 function stopCasualLobbyStatsPoll() {

@@ -239,6 +239,9 @@ final class GameModeMatchmakingTest extends TestCase
         $this->assertSame(TCG_GAME_MODE_STARTERS, $st['game_mode']);
         $this->assertSame($stdWaiting, $std['waiting']);
         $this->assertSame($stWaiting, $st['waiting']);
+        $this->assertContains(TCG_GAME_MODE_STARTERS, $std['other_modes_waiting'] ?? []);
+        $this->assertContains(TCG_GAME_MODE_STANDARD, $st['other_modes_waiting'] ?? []);
+        $this->assertNotContains(TCG_GAME_MODE_STANDARD, $std['other_modes_waiting'] ?? []);
     }
 
     public function testFindQueueOpponentSkipsPlayersWithPendingMatch(): void

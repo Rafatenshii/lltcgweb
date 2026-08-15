@@ -219,6 +219,7 @@
       "freeModeNeedsExperiment": "Free requires a Deck Experiment deck (saved or password)",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} waiting · {inGame} in casual games",
+      "otherModesQueuedLead": "Players are queued in other modes:",
       "casualSearching": "Searching for opponent… ({seconds}s)"
     },
     "deck": {
@@ -548,6 +549,12 @@
       "starters": "Starter decks only",
       "free": "Free",
       "randomized": "Randomized Decks",
+      "short": {
+        "standard": "Standard",
+        "starters": "Starters",
+        "free": "Free",
+        "randomized": "Randomized"
+      },
       "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
       "startersDesc": "Only starter decks you've unlocked. Official starter lists stay playable even if you exchanged those cards away.",
       "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards.",
@@ -1525,6 +1532,7 @@
       "experimentDeckHint": "デッキ実験で構築しパスワードを発行してここに入力——または下から保存済みデッキを選択。",
       "secondsLabel": "{n}秒",
       "casualQueueStats": "待機 {waiting} · カジュアル対戦中 {inGame}",
+      "otherModesQueuedLead": "他のモードで待機中のプレイヤーがいます：",
       "casualSearching": "相手を検索中…（{seconds}秒）"
     },
     "deck": {
@@ -1850,6 +1858,12 @@
       "starters": "スターターデッキのみ",
       "free": "フリー",
       "randomized": "ランダムデッキ",
+      "short": {
+        "standard": "スタンダード",
+        "starters": "スターター",
+        "free": "フリー",
+        "randomized": "ランダム"
+      },
       "standardDesc": "通常のTCGモードです。所持カードで組んだデッキで他のプレイヤーと対戦します。",
       "startersDesc": "アンロック済みスターターデッキのみ。カードを交換しても公式スターターリストはそのまま使えます。",
       "freeDesc": "デッキ実験のデッキを使えます。ゲーム内のどのカードでもOK（所持不要）。このモードにリーダーボードはありません。",
@@ -2755,6 +2769,7 @@
       "experimentDeckHint": "Construye en Experimento de mazo, genera una contraseña y luego introdúcela aquí, o elige un mazo guardado abajo.",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} esperando · {inGame} en partidas casuales",
+      "otherModesQueuedLead": "Hay jugadores en cola en otros modos:",
       "casualSearching": "Buscando oponente… ({seconds}s)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "Fácil",
@@ -3006,6 +3021,12 @@
       "starters": "Solo mazos iniciales",
       "free": "Libre",
       "randomized": "Mazos aleatorios",
+      "short": {
+        "standard": "Estándar",
+        "starters": "Iniciales",
+        "free": "Libre",
+        "randomized": "Aleatorio"
+      },
       "standardDesc": "El modo TCG estándar. Usa mazos construidos con cartas que posees contra otros jugadores.",
       "startersDesc": "Este modo solo se puede jugar con mazos iniciales.",
       "freeDesc": "Usa mazos del experimento de mazos, ¡con cualquier carta del juego! (No hace falta poseerlas). Este modo no tiene tablas de clasificación.",
@@ -4060,6 +4081,7 @@
       "experimentDeckHint": "덱 실험에서 덱을 만들고 비밀번호를 생성한 뒤 여기에 입력하세요 — 또는 아래에서 저장된 덱을 선택하세요.",
       "secondsLabel": "{n}초",
       "casualQueueStats": "대기 {waiting}명 · 캐주얼 진행 중 {inGame}명",
+      "otherModesQueuedLead": "다른 모드에 대기 중인 플레이어:",
       "casualSearching": "상대 찾는 중… ({seconds}초)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "쉬움",
@@ -4321,6 +4343,12 @@
       "starters": "스타터 덱 전용",
       "free": "프리",
       "randomized": "랜덤 덱",
+      "short": {
+        "standard": "스탠다드",
+        "starters": "스타터",
+        "free": "프리",
+        "randomized": "랜덤"
+      },
       "standardDesc": "표준 TCG 모드입니다. 보유 카드로 만든 덱으로 다른 플레이어와 대전합니다.",
       "startersDesc": "이 모드는 스타터 덱으로만 플레이할 수 있습니다.",
       "freeDesc": "덱 실험의 덱을 사용합니다. 게임의 어떤 카드든 가능합니다(소유 불필요). 이 모드에는 리더보드가 없습니다.",
@@ -5389,6 +5417,7 @@
       "experimentDeckHint": "在「牌组实验」中构筑并生成密码，然后粘贴到这里 — 或从下方选择已保存的牌组。",
       "secondsLabel": "{n} 秒",
       "casualQueueStats": "{waiting} 人等待 · {inGame} 场休闲对战中",
+      "otherModesQueuedLead": "其他模式也有玩家在排队：",
       "casualSearching": "正在寻找对手…（{seconds} 秒）",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "简单",
@@ -5650,6 +5679,12 @@
       "starters": "仅限初始牌组",
       "free": "自由",
       "randomized": "随机牌组",
+      "short": {
+        "standard": "标准",
+        "starters": "初始",
+        "free": "自由",
+        "randomized": "随机"
+      },
       "standardDesc": "标准TCG模式。使用你用持有卡牌构筑的牌组与其他玩家对战。",
       "startersDesc": "此模式只能使用初始牌组进行对战。",
       "freeDesc": "使用牌组实验中的牌组，可使用游戏中的任意卡牌（无需持有）。此模式没有排行榜。",
@@ -6719,6 +6754,7 @@
       "experimentDeckHint": "สร้างในทดลองเด็ค สร้างรหัสผ่าน แล้วใส่ที่นี่ — หรือเลือกเด็คที่บันทึกไว้ด้านล่าง",
       "secondsLabel": "{n} วินาที",
       "casualQueueStats": "{waiting} รอคิว · {inGame} ในเกมแคชชวล",
+      "otherModesQueuedLead": "มีผู้เล่นรอคิวในโหมดอื่น:",
       "casualSearching": "กำลังค้นหาคู่ต่อสู้… ({seconds} วินาที)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "ง่าย",
@@ -6970,6 +7006,12 @@
       "starters": "เฉพาะเด็คเริ่มต้น",
       "free": "ฟรี",
       "randomized": "เด็คสุ่ม",
+      "short": {
+        "standard": "มาตรฐาน",
+        "starters": "เริ่มต้น",
+        "free": "ฟรี",
+        "randomized": "สุ่ม"
+      },
       "standardDesc": "โหมด TCG มาตรฐาน ใช้เด็คที่สร้างจากการ์ดที่คุณมีเพื่อแข่งกับผู้เล่นอื่น",
       "startersDesc": "โหมดนี้เล่นได้เฉพาะเด็คเริ่มต้นเท่านั้น",
       "freeDesc": "ใช้เด็คจาก Deck Experiment ใช้การ์ดใดก็ได้ในเกม (ไม่ต้องมีในครอบครอง) โหมดนี้ไม่มีลีดเดอร์บอร์ด",

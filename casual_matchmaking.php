@@ -535,6 +535,36 @@ function tcgCasualCountLivePvpPlayers(?string $gameMode = null): int {
     return $inGame;
 }
 
+/**
+ * Casual modes (other than $currentMode) that currently have ≥1 player waiting.
+ *
+ * @return list<string>
+ */
+function tcgCasualOtherModesWithWaiting(string $currentMode): array {
+    require_once __DIR__ . '/game_mode.php';
+    $currentMode = tcgNormalizeGameMode($currentMode);
+    $db = tcgDb();
+    $stmt = $db->query('SELECT game_mode, COUNT(*) AS c FROM tcg_casual_queue GROUP BY game_mode');
+    if ($stmt === false) {
+        return [];
+    }
+    $counts = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $m = tcgNormalizeGameMode($row['game_mode'] ?? '');
+        $counts[$m] = ($counts[$m] ?? 0) + (int)($row['c'] ?? 0);
+    }
+    $out = [];
+    foreach (tcgGameModeIds() as $m) {
+        if ($m === $currentMode) {
+            continue;
+        }
+        if (($counts[$m] ?? 0) > 0) {
+            $out[] = $m;
+        }
+    }
+    return $out;
+}
+
 function tcgCasualQueuePublicStats(?string $gameMode = null): array {
     require_once __DIR__ . '/game_mode.php';
     $gameMode = ($gameMode !== null && $gameMode !== '')
@@ -545,6 +575,9 @@ function tcgCasualQueuePublicStats(?string $gameMode = null): array {
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 15) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached) && isset($cached['waiting'], $cached['in_game'])) {
+            // Always refresh other-mode waiting — GROUP BY is cheap and avoids stale hints.
+            $cached['other_modes_waiting'] = tcgCasualOtherModesWithWaiting($gameMode);
+            $cached['game_mode'] = $gameMode;
             return $cached;
         }
     }
@@ -554,7 +587,12 @@ function tcgCasualQueuePublicStats(?string $gameMode = null): array {
     $stmt->execute([$gameMode]);
     $waiting = (int)$stmt->fetchColumn();
     $inGame = tcgCasualCountLivePvpPlayers($gameMode);
-    $stats = ['waiting' => $waiting, 'in_game' => $inGame, 'game_mode' => $gameMode];
+    $stats = [
+        'waiting' => $waiting,
+        'in_game' => $inGame,
+        'game_mode' => $gameMode,
+        'other_modes_waiting' => tcgCasualOtherModesWithWaiting($gameMode),
+    ];
     @file_put_contents($cacheFile, json_encode($stats), LOCK_EX);
     return $stats;
 }
