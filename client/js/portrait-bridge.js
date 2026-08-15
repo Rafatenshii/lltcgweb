@@ -821,23 +821,33 @@
     if (log.parentElement !== host) {
       host._logHome = log.parentElement;
       host.appendChild(log);
-      log.style.display = 'block';
-      log.style.maxHeight = '100%';
-      log.style.overflow = 'auto';
     }
+    log.classList.add('portrait-log-active');
+    log.style.display = 'block';
+    log.style.maxHeight = 'none';
+    log.style.overflow = 'visible';
+    // Ensure the sheet paints after content-visibility:hidden while closed.
+    sheet.style.contentVisibility = 'visible';
     sheet.classList.add('open');
     sheet.setAttribute('aria-hidden', 'false');
+    try {
+      log.scrollTop = log.scrollHeight;
+      host.scrollTop = host.scrollHeight;
+    } catch (_) { /* ignore */ }
   }
 
   function closeLogSheet() {
     const host = global.document.getElementById('portrait-log-host');
     const log = global.document.getElementById('game-log');
+    const sheet = global.document.getElementById('portrait-log-sheet');
     if (host && log && host._logHome) {
       host._logHome.appendChild(log);
+      log.classList.remove('portrait-log-active');
       log.style.display = '';
       log.style.maxHeight = '';
       log.style.overflow = '';
     }
+    if (sheet) sheet.style.contentVisibility = '';
     return closeSheet('portrait-log-sheet');
   }
 

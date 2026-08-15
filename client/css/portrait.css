@@ -2025,8 +2025,21 @@ html.tcg-portrait-play .turn-block,
 html.tcg-portrait-play .side-left-actions-host,
 html.tcg-portrait-play .tcg-radio-bar,
 html.tcg-portrait-play .tcg-radio-stack,
-html.tcg-portrait-play .logscroll,
 html.tcg-portrait-play .side-log > .sbs{ display:none!important; }
+/* Hide the desktop sidebar log while it sits in the side panel — but never
+   when it has been moved into the portrait Log sheet. */
+html.tcg-portrait-play .side-log > .logscroll,
+html.tcg-portrait-play .side-log > ll-side-panel > .logscroll{
+  display:none!important;
+}
+html.tcg-portrait-play #portrait-log-host .logscroll{
+  display:block!important;
+  height:auto;
+  min-height:120px;
+  max-height:none!important;
+  overflow:visible;
+  color:rgba(255,255,255,.92);
+}
 
 html.tcg-portrait-play #screen-game .card-hover-panel,
 html.tcg-portrait-play #screen-game #card-hover-panel{
