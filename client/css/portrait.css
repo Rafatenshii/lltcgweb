@@ -156,14 +156,18 @@ html.tcg-portrait-play #overlay-news .news-shell{
   width:100%;
   max-width:min(520px,96vw);
   margin-block:auto;
+  /* Hug content so a short panel sits mid-screen (not a tall empty blue slab). */
   flex:0 1 auto;
+  height:auto;
   max-height:min(78dvh,720px);
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
 }
 html.tcg-portrait-play #overlay-missions .missions-panel-shell{
-  max-height:none;
-  flex:1 1 auto;
+  flex:0 1 auto;
+  max-height:min(70dvh,640px);
+  height:auto;
 }
 html.tcg-portrait-play #overlay-login-bonus .login-bonus-lead{
   font-size:14px;
