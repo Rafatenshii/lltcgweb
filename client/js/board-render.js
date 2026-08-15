@@ -1139,7 +1139,9 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
       } else if(mbr.image || mbr.card_no){
         const img = document.createElement('img');
         img.alt = mbr.name_en||mbr.name;
-        if (!applyCardImageToImg(img, mbr, () => img.replaceWith(mkNoImg(mbr)))) {
+        if (!applyCardImageToImg(img, mbr, () => img.replaceWith(mkNoImg(mbr)), {
+          thumbWidth: (typeof CARD_THUMB_BOARD === 'number' ? CARD_THUMB_BOARD : 256),
+        })) {
           d.appendChild(mkNoImg(mbr));
         } else d.appendChild(img);
         d.classList.add('occupied');

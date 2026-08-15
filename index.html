@@ -14001,6 +14001,9 @@ async function cancelCasualSearch() {
 }
 
 const CARDIMG = './cardimg.php';
+/** Hostinger cardimg.php thumbs (see cardimg_cache.php). Board faces are ~110–170 CSS px. */
+const CARD_THUMB_BOARD = 256;
+const CARD_THUMB_GRID = 180;
 
 /** Verbose F12 logging: ?debug or ?debug=all, or ?debug=poll,state,live,cpu */
 const TCG_DEBUG = (() => {
@@ -14412,6 +14415,21 @@ function cachedCardImgUrl(cardNo, width = 0) {
   return `${CARDIMG}?card_no=${encodeURIComponent(cardNo)}${w ? `&w=${w}` : ''}`;
 }
 
+/**
+ * Resolve a cardimg thumb width.
+ * - omit / undefined → board (256), or grid (180) when lazy
+ * - 0 → full art (hover / detail / crop)
+ * - 96 | 180 | 256 → that variant
+ */
+function resolveCardThumbWidth(thumbWidth, { lazy = false } = {}) {
+  if (thumbWidth === 0) return 0;
+  if (thumbWidth != null && thumbWidth !== '') {
+    const n = Number(thumbWidth);
+    return [96, 180, 256].includes(n) ? n : 0;
+  }
+  return lazy ? CARD_THUMB_GRID : CARD_THUMB_BOARD;
+}
+
 function queuePersistCardImage(card) {
   if (!card?.card_no || !card?.image || _imgPersistQueued.has(card.card_no)) return;
   _imgPersistQueued.add(card.card_no);
@@ -14681,7 +14699,7 @@ function appendFlipBackFill(parent, card = null) {
   return b;
 }
 
-function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false, thumbWidth = 0 } = {}) {
+function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false, thumbWidth } = {}) {
   card = enrichCard(card);
   if (card.image || card.card_no) {
     const img = document.createElement('img');
@@ -14689,13 +14707,13 @@ function appendCardFaceFill(parent, card, { preferSrc = '', lazy = false, thumbW
     img.draggable = false;
     img.setAttribute('draggable', 'false');
     if (lazy) img.loading = 'lazy';
-    const gridThumbWidth = thumbWidth || (lazy ? 180 : 0);
+    const resolvedThumb = resolveCardThumbWidth(thumbWidth, { lazy });
     if (!applyCardImageToImg(img, card, () => {
       img.remove();
       const ni = mkNoImg(card);
       ni.classList.add('card-face-fill');
       parent.appendChild(ni);
-    }, { preferSrc, lazy, thumbWidth: gridThumbWidth })) {
+    }, { preferSrc, lazy, thumbWidth: resolvedThumb })) {
       const ni = mkNoImg(card);
       ni.classList.add('card-face-fill');
       parent.appendChild(ni);
@@ -14925,7 +14943,7 @@ function menuCardClasses(card) {
   return isLiveCard(card) ? 'landscape' : 'portrait';
 }
 
-function appendCardFace(parent, card, { sideways = false, preferSrc = '', lazy = false, thumbWidth = 0 } = {}) {
+function appendCardFace(parent, card, { sideways = false, preferSrc = '', lazy = false, thumbWidth } = {}) {
   card = enrichCard(card);
   let target = parent;
   if (sideways) {
@@ -15129,16 +15147,18 @@ function ensureCardImageLoaded(card) {
   return preloadCardFaceImage(card).then(() => {});
 }
 
-/** Preload card face with official remote→cache fallback; returns the URL that loaded. */
-function preloadCardFaceImage(card) {
+/** Preload card face with Hostinger thumb→full fallback; returns the URL that loaded. */
+function preloadCardFaceImage(card, thumbWidth) {
   card = enrichCard(card);
+  const w = resolveCardThumbWidth(thumbWidth === undefined ? CARD_THUMB_BOARD : thumbWidth);
   const remote = card?.image || '';
-  const cached = card?.card_no ? cachedCardImgUrl(card.card_no) : '';
+  const cached = card?.card_no ? cachedCardImgUrl(card.card_no, w) : '';
   const official = isOfficialCardImageUrl(remote) ? remote : '';
   if (!official && !remote && !cached) return Promise.resolve('');
 
   return new Promise(resolve => {
     const finish = (url) => {
+      // Only persist full official art when we actually fetched it (not a thumb hit).
       if (url && url === official) queuePersistCardImage(card);
       resolve(url || '');
     };
@@ -15159,7 +15179,9 @@ function preloadCardFaceImage(card) {
       probe.src = src;
       if (probe.complete && probe.naturalWidth > 0) finish(src);
     };
-    tryRemote();
+    // Board/grid thumbs: prefer Hostinger so we never pull full art just to paint a slot.
+    if (w > 0 && cached) tryCached();
+    else tryRemote();
   });
 }
 
@@ -15287,7 +15309,7 @@ function setCardDetailImage(card) {
   imgEl.classList.toggle('landscape', isLiveCard(card));
   applyCardImageToImg(imgEl, card, () => {
     imgEl.style.display = 'none';
-  });
+  }, { thumbWidth: 0 });
 }
 
 let G = {
@@ -23405,7 +23427,7 @@ function fillCardDetailPanel(prefix, card, s, myId) {
       img.classList.toggle('show', !!(card.image || card.card_no));
       if (card.image || card.card_no) {
         img.style.display = '';
-        applyCardImageToImg(img, card, () => img.classList.remove('show'));
+        applyCardImageToImg(img, card, () => img.classList.remove('show'), { thumbWidth: 0 });
       } else img.style.display = 'none';
     }
   }
@@ -26689,7 +26711,7 @@ function fillLiveSelMultiPreview(s, myId) {
     img.alt = cardLocaleName(card) || 'Live';
     img.loading = 'lazy';
     if (card.image || card.card_no) {
-      applyCardImageToImg(img, card, () => { img.remove(); });
+      applyCardImageToImg(img, card, () => { img.remove(); }, { thumbWidth: 96 });
     }
     thumbs.appendChild(img);
   });
@@ -30206,7 +30228,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=75"></script>
-<script src="client/js/board-render.js?v=21"></script>
+<script src="client/js/board-render.js?v=22"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>
 <script src="client/js/cpu-eval.js?v=5"></script>
