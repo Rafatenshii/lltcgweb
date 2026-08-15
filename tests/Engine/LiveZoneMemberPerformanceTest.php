@@ -6,7 +6,7 @@ namespace LLTCG\Tests\Engine;
 
 use PHPUnit\Framework\TestCase;
 
-/** Issue #45: Member bluffs leave storage at reveal; zone-count skills count Live cards only. */
+/** Issue #45: Member bluffs stay through spectacle; zone-count skills count Live cards only. */
 final class LiveZoneMemberPerformanceTest extends TestCase
 {
     private function member(string $id, string $group = 'Nijigasaki'): array
@@ -143,6 +143,67 @@ final class LiveZoneMemberPerformanceTest extends TestCase
         $this->assertCount(2, $after['players']['p1']['hand'], 'Reveal discard must not draw again');
         $this->assertSame('draw1', $after['players']['p1']['hand'][0]['instance_id']);
         $this->assertSame('draw2', $after['players']['p1']['hand'][1]['instance_id']);
+    }
+
+    public function testBeginPerformanceKeepsMembersUntilAfterYell(): void
+    {
+        $zone = [
+            $this->member('m1'),
+            $this->live('live1'),
+        ];
+        $state = $this->performanceState($zone);
+        $state['phase'] = 'live_set';
+        $state['players']['p2']['live_zone'] = [];
+
+        $after = \beginPerformancePhase($state);
+
+        $this->assertSame('reveal', $after['live_show']['stage'] ?? null);
+        $iids = array_map(
+            fn($c) => $c['instance_id'] ?? '',
+            $after['players']['p1']['live_zone'] ?? []
+        );
+        $this->assertContains('m1', $iids, 'Member bluff must remain through reveal/spectacle');
+        $this->assertContains('live1', $iids);
+        $this->assertCount(0, array_filter(
+            $after['players']['p1']['waiting_room'] ?? [],
+            fn($c) => ($c['instance_id'] ?? '') === 'm1'
+        ));
+    }
+
+    public function testHeartsResolveDiscardsMembersBeforeOutcomes(): void
+    {
+        $zone = [
+            $this->member('m1'),
+            $this->live('live1'),
+        ];
+        $state = $this->performanceState($zone);
+        $state['phase'] = 'live_performance_first';
+        $state['live_attempt'] = ['p1'];
+        $state['live_show'] = [
+            'turn' => 2,
+            'stage' => 'performance',
+            'performer' => 'p1',
+            'stage_seq' => 3,
+            'acks' => [],
+        ];
+
+        $after = \queueLiveShowOutcomes($state);
+
+        $this->assertSame('outcomes', $after['live_show']['stage'] ?? null);
+        $this->assertCount(0, array_filter(
+            $after['players']['p1']['live_zone'] ?? [],
+            fn($c) => ($c['instance_id'] ?? '') === 'm1'
+        ));
+        $this->assertTrue(
+            count(array_filter(
+                $after['players']['p1']['waiting_room'] ?? [],
+                fn($c) => ($c['instance_id'] ?? '') === 'm1'
+            )) >= 1
+        );
+        $this->assertContains(
+            'live1',
+            array_map(fn($c) => $c['instance_id'] ?? '', $after['players']['p1']['live_zone'] ?? [])
+        );
     }
 
     public function testLanzhuContinuousHeartsCountOnlyLiveCardsInZone(): void

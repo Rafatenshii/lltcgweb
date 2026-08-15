@@ -2220,13 +2220,8 @@ function beginPerformancePhase(array $state): array {
         $state['_stage_hearts_snapshot'],
         $state['_deferred_mp_extra_hearts']
     );
-    if (liveStorageHasAnyCards($state)) {
-        // Bluff Members leave storage immediately; Live cards stay face-down until
-        // that performer's reveal beat.
-        foreach (['p1', 'p2'] as $pid) {
-            $state = discardLiveZoneMembersToWaitingRoom($state, $pid);
-        }
-    }
+    // Members stay through Yell; after heart math, queueLiveShowOutcomes sends them to WR.
+    // Zone-count skills already ignore non-Live cards.
     if (!performanceRoundHasLiveCards($state)) {
         return skipEmptyPerformanceRound($state);
     }
@@ -2427,6 +2422,11 @@ function liveShowStageFullyAcked(array $state): bool {
  * Judge scores and winner movement are intentionally not computed here.
  */
 function queueLiveShowOutcomes(array $state): array {
+    // After Yell spectacle (+ heart math): Member bluffs leave storage → Waiting Room.
+    // Kept through reveal / Live Start / Yell so clients can show them for the show.
+    foreach (['p1', 'p2'] as $pid) {
+        $state = discardLiveZoneMembersToWaitingRoom($state, $pid);
+    }
     if (!empty($state['live_show'])) {
         $cur = (string)($state['live_show']['stage'] ?? '');
         // Already on/after outcomes — do not bump stage_seq again.

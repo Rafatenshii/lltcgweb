@@ -59,7 +59,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=47">
+<link rel="stylesheet" href="client/css/shell-all.css?v=48">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 <link rel="stylesheet" href="client/css/portrait.css?v=63">
@@ -18067,8 +18067,8 @@ function flightOrientClass(card, zone) {
     return 'flight-portrait';
   }
   if (zone === 'live') {
-    if (isLiveCard(card)) return 'flight-landscape';
-    return 'flight-portrait';
+    // Live storage slots are always landscape (Members use rotated portrait art).
+    return 'flight-landscape';
   }
   if (zone === 'main_deck' || zone === 'waiting_room' || zone === 'energy_deck') {
     return isLiveCard(card) ? 'flight-deck-live' : 'flight-portrait';
@@ -22709,6 +22709,10 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
               ghost.classList.add('member-shell-spin');
             } else if (memberArtMorph) {
               ghost.classList.add('member-storage-morph');
+              if (fromClass !== toClass) {
+                ghost.classList.remove(fromClass);
+                ghost.classList.add(toClass);
+              }
               const wrap = inner.querySelector('.card-portrait-in-landscape');
               if (wrap) {
                 if (isPortraitHandToLiveFlight(card, fromZone, toZone)) {
@@ -30227,7 +30231,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=75"></script>
+<script src="client/js/spectacle.js?v=76"></script>
 <script src="client/js/board-render.js?v=22"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=5"></script>

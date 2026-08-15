@@ -7723,6 +7723,16 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     perfClearHeartCheckHold();
     return;
   }
+  // Member bluffs stay through Yell; when outcomes lands they leave storage → WR first.
+  if (stage === 'outcomes'
+      && typeof collectLiveBluffDiscards === 'function'
+      && typeof playLiveStorageWrDiscards === 'function'
+      && collectLiveBluffDiscards(prev, next).length) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    await playLiveStorageWrDiscards(prev, next, myId, {
+      initialDelayMs: typeof LIVE_BLUFF_WR_DELAY_MS === 'number' ? LIVE_BLUFF_WR_DELAY_MS : 180,
+    });
+  }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
