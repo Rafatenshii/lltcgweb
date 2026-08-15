@@ -215,8 +215,9 @@
     if (!board) return;
     const w = board.clientWidth || global.innerWidth || 360;
     const pad = 16;
-    // 1.5× “6 across” → ~4 cards visible; hold-drag scrolls the rest
-    const cardW = Math.max(48, ((w - pad) / 6) * 1.5);
+    const gap = 3;
+    // Exactly ~6 cards across; extras scroll horizontally (no compress-to-fit).
+    const cardW = Math.max(44, (w - pad - gap * 5) / 6);
     const cardH = cardW * (88 / 63);
     const root = document.documentElement;
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');

@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=42">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=50">
+<link rel="stylesheet" href="client/css/portrait.css?v=51">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -16882,29 +16882,19 @@ function layoutHandFan(fanEl, opts = {}) {
   const n = cards.filter(c => !skip(c)).length || cards.length;
   let step;
   if (portrait) {
-    // Card size stays ~1.5× of 6-across (~4 visible when packed).
-    const fitW = Math.max(36, (avail / 6) * 1.5);
+    // Fixed ~6-across card size — never compress when the hand grows.
+    const gap = 3;
+    const visible = 6;
+    const fitW = Math.max(40, (avail - gap * (visible - 1)) / visible);
     cardW = isMyHand ? fitW : fitW * 0.92;
-    if (n <= 6) {
-      // Spread across the full strip — no horizontal scroll needed
-      step = n > 1 ? (avail - cardW) / (n - 1) : cardW;
-      fanEl.style.justifyContent = 'flex-start';
-      fanEl.style.width = Math.max(0, avail) + 'px';
-      fanEl.style.marginLeft = '0';
-      fanEl.style.marginRight = '0';
-    } else {
-      // 7+ cards: tight overlap + scroll
-      const overlap = 0.55;
-      step = cardW * overlap;
-      fanEl.style.justifyContent = 'flex-start';
-      fanEl.style.width = 'max-content';
-      fanEl.style.marginLeft = '0';
-      fanEl.style.marginRight = '0';
-    }
-    if (isMyHand) {
-      const stripEl = fanEl.closest('.my-hand-strip');
-      if (stripEl) stripEl.style.touchAction = 'pan-x';
-    }
+    step = cardW + gap;
+    const totalW = n > 0 ? cardW + step * Math.max(0, n - 1) : 0;
+    fanEl.style.justifyContent = totalW <= avail + 1 ? 'center' : 'flex-start';
+    fanEl.style.width = 'max-content';
+    fanEl.style.marginLeft = totalW <= avail + 1 ? 'auto' : '0';
+    fanEl.style.marginRight = totalW <= avail + 1 ? 'auto' : '0';
+    const stripEl = fanEl.closest('.my-hand-strip, .opp-hand-strip, .hand-strip');
+    if (stripEl) stripEl.style.touchAction = 'pan-x';
   } else {
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
@@ -29839,7 +29829,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script src="client/js/portrait-bridge.js?v=16"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
-<script src="client/js/portrait-board.js?v=11"></script>
+<script src="client/js/portrait-board.js?v=12"></script>
 <script>void bootApp();</script>
 </body>
 </html>
