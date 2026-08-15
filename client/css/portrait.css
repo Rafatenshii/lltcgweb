@@ -1294,6 +1294,13 @@ html.tcg-portrait-play #screen-game .my-hand-strip .hcard{
   -webkit-user-select:none;
   user-select:none;
 }
+/* Spectators cannot use the play-hand pan path; let the strip scroll natively. */
+html.tcg-portrait-play body.tcg-spectator-mode #screen-game .hcard,
+html.tcg-portrait-play body.tcg-spectator-mode #screen-game .my-hand-strip .hcard,
+html.tcg-portrait-play body.tcg-spectator-mode #screen-game .opp-hand-card,
+html.tcg-portrait-play body.tcg-spectator-mode #screen-game .opp-hand-strip .opp-hand-card{
+  touch-action:pan-x;
+}
 html.tcg-portrait-play #screen-game .opp-hand-card,
 html.tcg-portrait-play #screen-game .opp-hand-strip .opp-hand-card{
   flex:0 0 auto!important;

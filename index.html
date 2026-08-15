@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=43">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=58">
+<link rel="stylesheet" href="client/css/portrait.css?v=59">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -23918,7 +23918,7 @@ function onDocPointerMove(e) {
       hp.portraitPan = true;
       if (hp.longPressTimer) { clearTimeout(hp.longPressTimer); hp.longPressTimer = null; }
       clearHoverCardPreview();
-      const strip = hp.el?.closest?.('.my-hand-strip');
+      const strip = hp.el?.closest?.('.my-hand-strip, .opp-hand-strip, .hand-strip');
       if (strip) {
         if (hp._lastPanX == null) hp._lastPanX = hp.sx;
         strip.scrollLeft += hp._lastPanX - e.clientX;
@@ -23948,6 +23948,7 @@ function onDocPointerMove(e) {
 /** Portrait: resolve a quick tap even when pointerup lands on a neighboring overlapped card. */
 function finishPortraitHandTap(hp) {
   if (!hp || hp.moved || hp.portraitPan || hp.longFired || G.drag) return;
+  if (G.isSpectator || hp.spectator) return;
   const iid = hp.iid || hp.el?.dataset?.iid;
   if (!iid) return;
   if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
@@ -24179,27 +24180,51 @@ function bindSpectatorCardInspect(node, card, s) {
   });
   node.addEventListener('pointerdown', e => {
     if (!G.isSpectator || e.button !== 0) return;
-    e.preventDefault();
-    try { node.setPointerCapture(e.pointerId); } catch (_) {}
-    const ptr = { sx: e.clientX, sy: e.clientY, moved: false, longFired: false, longPressTimer: null };
+    const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
+    const handStrip = node.closest('.my-hand-strip, .opp-hand-strip, .hand-strip');
+    // Portrait hands must stay scrollable — never capture / preventDefault on cards.
+    const allowHandScroll = portrait && !!handStrip;
+    if (!allowHandScroll) {
+      e.preventDefault();
+      try { node.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    const ptr = {
+      sx: e.clientX,
+      sy: e.clientY,
+      moved: false,
+      longFired: false,
+      longPressTimer: null,
+      pointerId: e.pointerId,
+    };
+    const moveThresh = allowHandScroll ? Math.max(DRAG_THRESHOLD, 16) : DRAG_THRESHOLD;
     ptr.longPressTimer = setTimeout(() => {
       if (ptr.moved) return;
       ptr.longFired = true;
       showSpectatorCardDetail(card, s || G.gameState);
     }, LONG_PRESS_MS);
     const onMove = ev => {
-      if (Math.hypot(ev.clientX - ptr.sx, ev.clientY - ptr.sy) > DRAG_THRESHOLD) ptr.moved = true;
+      if (ev.pointerId !== ptr.pointerId) return;
+      if (Math.hypot(ev.clientX - ptr.sx, ev.clientY - ptr.sy) > moveThresh) {
+        ptr.moved = true;
+        if (ptr.longPressTimer) {
+          clearTimeout(ptr.longPressTimer);
+          ptr.longPressTimer = null;
+        }
+      }
     };
     const onUp = ev => {
+      if (ev.pointerId !== ptr.pointerId) return;
       if (ptr.longPressTimer) clearTimeout(ptr.longPressTimer);
-      node.removeEventListener('pointermove', onMove);
-      node.removeEventListener('pointerup', onUp);
-      node.removeEventListener('pointercancel', onUp);
-      try { node.releasePointerCapture(ev.pointerId); } catch (_) {}
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onUp, true);
+      if (!allowHandScroll) {
+        try { node.releasePointerCapture(ev.pointerId); } catch (_) {}
+      }
     };
-    node.addEventListener('pointermove', onMove);
-    node.addEventListener('pointerup', onUp);
-    node.addEventListener('pointercancel', onUp);
+    document.addEventListener('pointermove', onMove, true);
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onUp, true);
   });
   node.addEventListener('contextmenu', e => {
     if (!G.isSpectator) return;
