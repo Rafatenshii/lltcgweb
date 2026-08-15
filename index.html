@@ -2358,7 +2358,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/game-sync.js?v=44"></script>
-<script src="client/js/state-apply.js?v=53"></script>
+<script src="client/js/state-apply.js?v=54"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=83"></script>
@@ -19268,12 +19268,22 @@ function shouldDeferLiveStorageMemberWr(prev, next) {
   return liveStorageOutcomePlaybackPending(prev, next);
 }
 
+function liveStorageOutcomesAlreadyPlayed(final) {
+  if (!final) return false;
+  const outcomeKey = `${final.room_id || G.roomId || ''}:${final.turn ?? '?'}:${final.seq ?? 0}:outcomes`;
+  return G._liveStorageOutcomesPlayedKey === outcomeKey;
+}
+
 function filterLiveStorageDeferredMoves(prev, moves, next) {
   next = next || G.gameState;
-  const deferLive = liveStorageOutcomePlaybackPending(prev, next);
-  const deferMember = shouldDeferLiveStorageMemberWr(prev, next);
+  // Live→WR/Success exits always go through playDeferredLiveStorageOutcomes /
+  // playLiveStorageWrDiscards. Re-flying them from state-apply after renderGame
+  // invents an empty-slot from-rect once portrait dests resolve → ghost flights.
+  const deferMember = shouldDeferLiveStorageMemberWr(prev, next)
+    || liveStorageOutcomePlaybackPending(prev, next)
+    || liveStorageOutcomesAlreadyPlayed(next);
   return (moves || []).filter(m => {
-    if (isLiveCardOutcomeMove(prev, m) && deferLive) return false;
+    if (isLiveCardOutcomeMove(prev, m)) return false;
     if (isMemberLiveStorageWrMove(prev, m) && deferMember) return false;
     return true;
   });
@@ -19308,10 +19318,16 @@ function preLiveRevealMoves(prev, final) {
 function postLiveRevealOutcomeMoves(prev, final) {
   return diffCardMoves(prev, final).filter(m => {
     if (!isLiveCardOutcomeMove(prev, m)) return false;
-    // Card already sits in Success on the from-board — re-flying causes ghost Success chips.
-    if ((m.to?.zone || '') === 'success') {
-      const pid = m.to?.pid || m.from?.pid;
+    if (m.iid && G._liveStorageDepartedIids?.has(m.iid)) return false;
+    const pid = m.to?.pid || m.from?.pid;
+    const toZone = m.to?.zone || '';
+    // Card already sits at the destination on the from-board — re-flying causes ghosts.
+    if (toZone === 'success') {
       const already = (prev.players?.[pid]?.success_lives || [])
+        .some(c => c && c.instance_id === m.iid);
+      if (already) return false;
+    } else if (toZone === 'waiting_room') {
+      const already = (prev.players?.[pid]?.waiting_room || [])
         .some(c => c && c.instance_id === m.iid);
       if (already) return false;
     }
@@ -20501,6 +20517,12 @@ async function executeCardMoveAnimation(m, opts) {
   const hideLiveSource = hideSource || isLiveStorageExit;
   const deferSourceHide = hideLiveSource && keepHiddenEffective;
 
+  // Ghost guard: card already handed off, or already painted at the destination
+  // (state-apply renderGame-before-fly). Portrait dest fallbacks made these visible again.
+  if (isLiveStorageExit && m.iid && G._liveStorageDepartedIids?.has(m.iid)) {
+    return;
+  }
+
   if (playerHandReveal && isHiddenSourceToHand(m)) {
     markHandRevealFlip(m.iid);
     if (primeHandLayoutFromBaseline(stateAfter, myId, myId)) {
@@ -20524,15 +20546,27 @@ async function executeCardMoveAnimation(m, opts) {
     layoutLiveSlots(m.from.pid === myId ? 'my' : 'opp');
   }
   const cardEl = document.querySelector(`[data-iid="${CSS.escape(m.iid)}"]`);
+  if (isLiveStorageExit && cardEl && domCardAtMoveLoc(cardEl, m.to, myId)) {
+    // Already at Success/WR in the DOM — do not invent a live-slot ghost flight.
+    clearAnimHideIid(m.iid);
+    return;
+  }
   let fr = fromRectFromSavedPrev({ iid: m.iid }, m.from, prevRects);
   if (!fr && cardEl && domCardAtMoveLoc(cardEl, m.from, myId)) {
     const domRect = rectFromEl(cardEl);
     if (domRect?.width > 2 && domRect?.height > 2) fr = domRect;
   }
   if (!fr) {
-    fr = targetRectForLoc(m.from, { iid: m.iid, pid: m.from?.pid }, stateBefore, myId, handSlots, true)
-      || projectFieldCardRect(m.from, m.card, myId)
-      || resolveMoveRect(m.from, m.iid, prevRects, handSlots, myId, true, stateBefore);
+    // For storage exits, only invent a from-rect when the card is still on the
+    // from-board live zone (legitimate mid-flight race). Otherwise skip.
+    const stillInFromLive = isLiveStorageExit
+      && (stateBefore?.players?.[m.from?.pid]?.live_zone || [])
+        .some(c => c?.instance_id === m.iid);
+    if (!isLiveStorageExit || stillInFromLive) {
+      fr = targetRectForLoc(m.from, { iid: m.iid, pid: m.from?.pid }, stateBefore, myId, handSlots, true)
+        || projectFieldCardRect(m.from, m.card, myId)
+        || resolveMoveRect(m.from, m.iid, prevRects, handSlots, myId, true, stateBefore);
+    }
   }
 
   if (!deferSourceHide) setCardArriving(m.iid, true);

@@ -656,7 +656,7 @@
       if (G._deferredHandDrawIids?.size) {
         moves = filterDeferredHandDrawMoves(moves, G._deferredHandDrawIids);
       }
-      if (prev && liveStorageOutcomePlaybackPending(prev, s)) {
+      if (prev) {
         moves = filterLiveStorageDeferredMoves(prev, moves, s);
       }
       if (emptyLiveRoundPresentationPending(prev, s)) {
@@ -755,7 +755,7 @@
               if (G._deferredHandDrawIids?.size) {
                 moves = filterDeferredHandDrawMoves(moves, G._deferredHandDrawIids);
               }
-              if (prev && liveStorageOutcomePlaybackPending(prev, s)) {
+              if (prev) {
                 moves = filterLiveStorageDeferredMoves(prev, moves, s);
               }
               moves = filterEmptyLivePendingWrMoves(prev, moves, s);
@@ -780,7 +780,7 @@
                 if (G._deferredHandDrawIids?.size) {
                   moves = filterDeferredHandDrawMoves(moves, G._deferredHandDrawIids);
                 }
-                if (prev && liveStorageOutcomePlaybackPending(prev, s)) {
+                if (prev) {
                   moves = filterLiveStorageDeferredMoves(prev, moves, s);
                 }
                 G._prevRects = collectCardRects();
