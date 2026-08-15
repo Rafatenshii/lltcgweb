@@ -689,15 +689,16 @@ html.tcg-portrait-play #overlay-pack-open .pack-open-skip{
   font-size:13px;
 }
 
-/* Pack results — denser portrait layout (no logo, 2-2-1 cards, full names) */
+/* Pack results — denser portrait layout (no logo, 3-2 cards, full names, one screen) */
 html.tcg-portrait-play #screen-pack-results.active{
   justify-content:flex-start!important;
   align-items:stretch;
+  overflow-y:auto;
 }
 html.tcg-portrait-play #screen-pack-results .account-shell,
 html.tcg-portrait-play #screen-pack-results .account-shell.wide{
   margin-block:0;
-  padding-bottom:max(12px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
+  padding-bottom:max(8px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
   max-width:100%;
 }
 html.tcg-portrait-play #screen-pack-results .logo{
@@ -708,90 +709,99 @@ html.tcg-portrait-play #screen-pack-results .account-panel{
 }
 html.tcg-portrait-play #screen-pack-results #pack-results-title{
   text-align:center;
-  font-size:clamp(22px,6.2vw,28px);
-  margin:0 0 6px;
-  line-height:1.2;
+  font-size:clamp(18px,5vw,24px);
+  margin:0 0 4px;
+  line-height:1.15;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-god-banner{
-  margin:0 0 8px;
-  font-size:clamp(18px,5vw,24px);
+  margin:0 0 4px;
+  font-size:clamp(16px,4.5vw,20px);
 }
 html.tcg-portrait-play #screen-pack-results #pack-results-sub,
 html.tcg-portrait-play #screen-pack-results #pack-results-star-gems-info{
   text-align:center;
-  font-size:13px;
-  margin:0 0 8px;
-  line-height:1.35;
+  font-size:12px;
+  margin:0 0 4px;
+  line-height:1.3;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-cards-block{
-  margin:8px auto 12px;
-  padding:12px 10px 14px;
+  margin:4px auto 8px;
+  padding:8px 8px 10px;
   box-sizing:border-box;
 }
-/* Single pack: 2 per row, 5th centered alone */
+/* Single pack: 3 on top, 2 centered below — sized to fit one viewport */
 html.tcg-portrait-play #screen-pack-results .pack-results-grid:not(.pack-results-grid--box){
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px 12px;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:8px 8px;
   justify-content:center;
   align-items:start;
   overflow:visible;
   width:100%;
-  max-width:420px;
+  max-width:100%;
   margin:0 auto;
   padding:0;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-grid:not(.pack-results-grid--box) .pack-results-item{
   width:100%;
   min-width:0;
-  gap:8px;
+  gap:4px;
+  grid-column:span 2;
 }
-html.tcg-portrait-play #screen-pack-results .pack-results-grid:not(.pack-results-grid--box) .pack-results-item:last-child:nth-child(odd){
-  grid-column:1 / -1;
-  width:calc((100% - 12px) / 2);
-  justify-self:center;
+/* Row 1: cards 1–3 each span 2 of 6 */
+/* Row 2: cards 4–5 centered — start at columns 2 and 4 */
+html.tcg-portrait-play #screen-pack-results .pack-results-grid:not(.pack-results-grid--box) .pack-results-item:nth-child(4){
+  grid-column:2 / span 2;
+}
+html.tcg-portrait-play #screen-pack-results .pack-results-grid:not(.pack-results-grid--box) .pack-results-item:nth-child(5){
+  grid-column:4 / span 2;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-name{
   display:block;
-  font-size:12px;
+  font-size:10px;
   font-weight:700;
-  line-height:1.35;
+  line-height:1.25;
   min-height:0;
-  max-height:none;
-  overflow:visible;
+  max-height:2.5em;
+  overflow:hidden;
   white-space:normal;
   word-break:break-word;
-  -webkit-line-clamp:unset;
-  -webkit-box-orient:unset;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-card{
-  border-radius:10px;
-  box-shadow:0 8px 22px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12);
+  border-radius:8px;
+  box-shadow:0 4px 14px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.1);
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-rarity{
-  font-size:18px;
+  font-size:13px;
+  line-height:1.1;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-grid--box{
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px 10px;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
   max-width:100%;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-actions{
   display:flex;
   flex-direction:column;
-  gap:10px;
-  margin-top:18px;
-  margin-bottom:max(8px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
+  gap:8px;
+  margin-top:10px;
+  margin-bottom:max(4px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
   width:100%;
-  max-width:420px;
+  max-width:100%;
   margin-left:auto;
   margin-right:auto;
 }
 html.tcg-portrait-play #screen-pack-results .pack-results-actions .btn-grad,
 html.tcg-portrait-play #screen-pack-results .pack-results-actions .btn-out{
   width:100%;
-  min-height:48px;
+  min-height:44px;
   justify-content:center;
+  padding-top:10px;
+  padding-bottom:10px;
+  font-size:14px;
 }
 
 /* Sleeve shop — category + character pickers as centered 3-across grids */
