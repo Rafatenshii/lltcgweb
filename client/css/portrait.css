@@ -2135,18 +2135,48 @@ html.tcg-portrait-play #perf-spectacle .perf-card.member,
 html.tcg-portrait-play #perf-spectacle .perf-deck-pile,
 html.tcg-portrait-play #perf-spectacle .perf-yell-row{
   width:min(14vw,62px);
+  height:auto;
+  aspect-ratio:63/88;
 }
 html.tcg-portrait-play #perf-spectacle .perf-card.live{
   width:min(48vw,216px);
+  height:auto;
+  aspect-ratio:88/63;
+}
+html.tcg-portrait-play #perf-spectacle .perf-live-row.perf-live-multi{
+  min-height:0;
+  max-height:none;
+  height:auto;
 }
 html.tcg-portrait-play #perf-spectacle .perf-live-row.perf-live-multi .perf-card.live{
   width:min(calc((100vw - 32px) / 3),142px);
+  height:auto;
+  aspect-ratio:88/63;
+}
+/* Multi stage: unlock the landscape row max-height (~128px). Wide portrait
+   widths + that cap crushed 63:88 members into rounded squares. */
+html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi{
+  min-height:0;
+  max-height:none;
+  height:auto;
+  align-items:center;
 }
 html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member{
-  width:min(calc((100vw - 32px) / 3),142px);
+  /* Slightly tighter than lives so 3 portrait cards still fit vertically. */
+  width:min(calc((100vw - 40px) / 3),100px);
+  height:auto;
+  aspect-ratio:63/88;
+  max-height:none;
+}
+html.tcg-portrait-play #perf-spectacle .perf-stage-row.perf-stage-multi .perf-card.member.member-in-wait{
+  width:min(calc((100vw - 40px) / 3 * 88 / 63),calc(100px * 88 / 63));
+  height:min(calc((100vw - 40px) / 3),100px);
+  aspect-ratio:88/63;
 }
 html.tcg-portrait-play #perf-spectacle .perf-stage-row:not(.perf-stage-multi) .perf-card.member{
   width:min(30vw,136px);
+  height:auto;
+  aspect-ratio:63/88;
 }
 html.tcg-portrait-play #perf-spectacle .perf-col-side{
   left:8px;

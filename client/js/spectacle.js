@@ -5215,7 +5215,11 @@ function perfMeasureRailSlotW(rail) {
 }
 
 function tcgMobileSpectacleLayout() {
-  return document.documentElement.classList.contains('tcg-mobile-viewport');
+  const root = document.documentElement;
+  // Portrait-play skips the desktop inline fitter (same as phone landscape
+  // frame). Portrait CSS owns live/stage card sizes + aspect ratios.
+  return root.classList.contains('tcg-mobile-viewport')
+    || root.classList.contains('tcg-portrait-play');
 }
 
 /** Keep portrait player names large while fitting the complete name on one line. */
