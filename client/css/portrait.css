@@ -2242,6 +2242,37 @@ html.tcg-portrait-play #perf-spectacle .perf-stage-row{
 html.tcg-portrait-play #perf-spectacle .perf-judge-center{
   margin-left:0;
   margin-right:0;
+  max-width:min(94vw,420px);
+  gap:clamp(10px,2vh,16px);
+  transform:scale(1.18);
+  transform-origin:center center;
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-title{
+  font-size:clamp(26px,7vw,40px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-duel{
+  gap:clamp(14px,4vw,24px);
+  padding:clamp(16px,2.4vh,24px) clamp(22px,5vw,34px);
+  border-radius:18px;
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-side{
+  min-width:clamp(72px,20vw,110px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-side-lbl{
+  font-size:clamp(12px,3.2vw,15px);
+  max-width:clamp(80px,22vw,130px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-side-num{
+  font-size:clamp(44px,12vw,72px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-sep{
+  font-size:clamp(28px,8vw,42px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-judge-solo{
+  font-size:clamp(28px,8vw,44px);
+}
+html.tcg-portrait-play #perf-spectacle .perf-verdict{
+  font-size:clamp(28px,8vw,48px);
 }
 /* The portrait board is mounted outside the landscape wrappers hidden by the
    base spectacle rules. Hide it too so Performance plays over the sky only. */
