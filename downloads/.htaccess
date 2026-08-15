@@ -1,0 +1,11 @@
+# Serve Android packages with the correct MIME type (sideload installs).
+<IfModule mod_mime.c>
+  AddType application/vnd.android.package-archive .apk
+</IfModule>
+
+# Allow direct download of the Loveca APK launcher.
+<IfModule mod_headers.c>
+  <FilesMatch "\.apk$">
+    Header set Content-Disposition "attachment"
+  </FilesMatch>
+</IfModule>

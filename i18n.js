@@ -91,7 +91,11 @@
       "officialVideo": "Official 8-min video ↗",
       "backHub": "← Hub",
       "missions": "Missions",
-      "loginBonus": "Login"
+      "loginBonus": "Login",
+      "apk": {
+        "title": "Playing on Android? Get the APK launcher!",
+        "sub": "Download Loveca, allow installs from unknown sources, then open the APK."
+      }
     },
     "missions": {
       "title": "Missions",
@@ -1394,7 +1398,11 @@
       "officialVideo": "公式8分動画 ↗",
       "backHub": "← ハブ",
       "missions": "ミッション",
-      "loginBonus": "ログイン"
+      "loginBonus": "ログイン",
+      "apk": {
+        "title": "Androidで遊ぶ？APKランチャーを入手！",
+        "sub": "Lovecaをダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
+      }
     },
     "missions": {
       "title": "ミッション",
@@ -2680,6 +2688,10 @@
       "backHub": "← Hub",
       "missions": "Misiones",
       "loginBonus": "Login",
+      "apk": {
+        "title": "¿Juegas en Android? ¡Consigue el lanzador APK!",
+        "sub": "Descarga Loveca, permite instalar desde orígenes desconocidos y abre el APK."
+      },
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "Recompensas de packs PR clasificatorias restantes hoy: {remaining} / {limit} (JST · 3 cartas c/u)",
       "stickerShop": "Tienda de stickers",
@@ -3980,6 +3992,10 @@
       "backHub": "← 허브",
       "missions": "미션",
       "loginBonus": "출석",
+      "apk": {
+        "title": "Android에서 플레이하나요? APK 런처를 받으세요!",
+        "sub": "Loveca를 다운로드하고 알 수 없는 출처 설치를 허용한 뒤 APK를 여세요."
+      },
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "오늘 남은 랭크 PR 팩: {remaining} / {limit} (JST · 각 3장)",
       "stickerShop": "스티커 샵",
@@ -5304,6 +5320,10 @@
       "backHub": "← 主页",
       "missions": "任务",
       "loginBonus": "签到",
+      "apk": {
+        "title": "在 Android 上玩？获取 APK 启动器！",
+        "sub": "下载 Loveca，允许安装未知来源应用，然后打开 APK。"
+      },
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "今日剩余排名 PR 包：{remaining} / {limit}（JST · 每包 3 张）",
       "stickerShop": "贴纸商店",
@@ -6626,6 +6646,10 @@
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
       "loginBonus": "ล็อกอิน",
+      "apk": {
+        "title": "เล่นบน Android ไหม? ดาวน์โหลดตัวเปิด APK!",
+        "sub": "ดาวน์โหลด Loveca อนุญาตติดตั้งจากแหล่งที่ไม่รู้จัก แล้วเปิดไฟล์ APK"
+      },
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "รางวัลแพ็ก PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST · แพ็กละ 3 ใบ)",
       "stickerShop": "ร้านสติกเกอร์",
