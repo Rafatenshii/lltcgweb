@@ -135,6 +135,51 @@ final class MissionProgressTest extends TestCase
         $this->assertTrue(tcgMissionIsClaimed($this->discordId, 'ms_win_turn_3', ''));
     }
 
+    public function testYellAndLiveScorePeakMilestones(): void
+    {
+        require_once dirname(__DIR__, 2) . '/coins.php';
+        require_once dirname(__DIR__, 2) . '/ranked_pr_rewards.php';
+
+        $state = [
+            'status' => 'finished',
+            'mode' => 'unranked',
+            'winner' => 'p2',
+            'turn' => 8,
+            '_mission_peaks' => [
+                'p1' => ['yell' => 20, 'live' => 15],
+            ],
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'Human',
+                    'discord_id' => $this->discordId,
+                ],
+                'p2' => [
+                    'id' => 'p2',
+                    'name' => 'CPU (Easy)',
+                    'deck_choice' => 'cpu:easy',
+                ],
+            ],
+        ];
+
+        $completions = tcgMissionOnGameFinished($state);
+        $ids = array_column($completions, 'id');
+        $this->assertContains('ms_yell_score_20', $ids);
+        $this->assertContains('ms_live_score_15', $ids);
+        $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_yell_score_20', ''));
+        $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_live_score_15', ''));
+
+        $before = tcgGetCoins($this->discordId);
+        $claimYell = tcgMissionClaim($this->discordId, 'ms_yell_score_20');
+        $this->assertSame(500, $claimYell['coins_gained'] ?? null);
+        $this->assertSame($before + 500, $claimYell['coins'] ?? null);
+        $this->assertNotEmpty($claimYell['pr_pack']['cards'] ?? []);
+
+        $claimLive = tcgMissionClaim($this->discordId, 'ms_live_score_15');
+        $this->assertSame(500, $claimLive['coins_gained'] ?? null);
+        $this->assertNotEmpty($claimLive['pr_pack']['cards'] ?? []);
+    }
+
     public function testResignToCpuDoesNotGrantCpuGroupWinMission(): void
     {
         $cards = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];

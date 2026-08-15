@@ -364,6 +364,8 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         'end_reason' => $body['end_reason'] ?? null,
         'resigned_by' => $body['resigned_by'] ?? null,
         'disconnected_player' => $body['disconnected_player'] ?? null,
+        'turn' => intval($body['turn'] ?? 0),
+        '_mission_peaks' => is_array($body['mission_peaks'] ?? null) ? $body['mission_peaks'] : [],
         'ranked' => [
             'p1_discord_id' => $p1Id,
             'p2_discord_id' => $p2Id,

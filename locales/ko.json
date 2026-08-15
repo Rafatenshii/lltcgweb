@@ -1119,7 +1119,9 @@
       "sticker50": "스티커 샵에서 실을 50회 교환했다",
       "sticker100": "스티커 샵에서 실을 100회 교환했다",
       "cards2400": "카드 2,400장 보유",
-      "winTurn3": "3번째 턴에 승리하기"
+      "winTurn3": "3번째 턴에 승리하기",
+      "yellScore20": "Yell 스코어 20 이상 달성",
+      "liveScore15": "한 라운드에서 Live 스코어 15점 이상 달성"
     },
     "rewardStarter": "스타터 덱 선택",
     "rewardStarterOwned": "이미 보유 중",

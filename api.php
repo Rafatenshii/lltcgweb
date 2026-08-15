@@ -3144,6 +3144,7 @@ function resolvePerformanceHeartCheck(array $state, string $pid, bool $continueA
     $yellScoreIcons = countYellScoreIcons($yellCards);
     $state['_last_yell_score_icons'] = $yellScoreIcons;
     $state['_last_yell_score_icons_' . $pid] = $yellScoreIcons;
+    missionNotePeakScore($state, $pid, 'yell', $yellScoreIcons);
     if ($yellWildcard) {
         $yellHearts = resolveSmartYellWildcardHeartColors(
             $yellHearts,
@@ -3344,6 +3345,10 @@ function resolveLiveJudge(array $state): array {
     $liveWinners = [];
     $isScoreTie = false;
     $blockTieSuccess = false;
+
+    foreach (['p1', 'p2'] as $scorePid) {
+        missionNotePeakScore($state, $scorePid, 'live', getLiveTotalScore($state, $scorePid));
+    }
 
     if (!$firstOk && !$secondOk) {
         $state = addLog($state, 'Neither player succeeds — no Live winner this turn.');

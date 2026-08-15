@@ -452,6 +452,56 @@ function yellScoreIconsForPlayer(array $state, string $pid): int {
     return intval($state['_last_yell_score_icons'] ?? 0);
 }
 
+/** Track peak yell / live scores for mission milestones (persisted on room state). */
+function missionNotePeakScore(array &$state, string $pid, string $metric, int $value): void {
+    if ($pid !== 'p1' && $pid !== 'p2') {
+        return;
+    }
+    if ($value <= 0) {
+        return;
+    }
+    if (!isset($state['_mission_peaks']) || !is_array($state['_mission_peaks'])) {
+        $state['_mission_peaks'] = [];
+    }
+    if (!isset($state['_mission_peaks'][$pid]) || !is_array($state['_mission_peaks'][$pid])) {
+        $state['_mission_peaks'][$pid] = [];
+    }
+    $cur = intval($state['_mission_peaks'][$pid][$metric] ?? 0);
+    if ($value > $cur) {
+        $state['_mission_peaks'][$pid][$metric] = $value;
+    }
+}
+
+/**
+ * @return array{p1?: array{yell?: int, live?: int}, p2?: array{yell?: int, live?: int}}
+ */
+function missionPeaksExport(array $state): array {
+    $peaks = $state['_mission_peaks'] ?? null;
+    if (!is_array($peaks)) {
+        return [];
+    }
+    $out = [];
+    foreach (['p1', 'p2'] as $pid) {
+        $row = $peaks[$pid] ?? null;
+        if (!is_array($row)) {
+            continue;
+        }
+        $slice = [];
+        $yell = intval($row['yell'] ?? 0);
+        $live = intval($row['live'] ?? 0);
+        if ($yell > 0) {
+            $slice['yell'] = $yell;
+        }
+        if ($live > 0) {
+            $slice['live'] = $live;
+        }
+        if ($slice !== []) {
+            $out[$pid] = $slice;
+        }
+    }
+    return $out;
+}
+
 /** Yell Live cards revealed for this player (per-pid; shared key is last performer only). */
 function yellLiveCountForPlayer(array $state, string $pid): int {
     $key = '_last_yell_live_count_' . $pid;

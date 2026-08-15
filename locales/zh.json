@@ -1120,7 +1120,9 @@
       "sticker50": "在贴纸商店兑换印章 50 次",
       "sticker100": "在贴纸商店兑换印章 100 次",
       "cards2400": "拥有 2,400 张卡",
-      "winTurn3": "在第3回合获胜"
+      "winTurn3": "在第3回合获胜",
+      "yellScore20": "Yell分数达到20或以上",
+      "liveScore15": "单回合Live分数达到15或以上"
     },
     "rewardStarter": "选择入门牌组",
     "rewardStarterOwned": "已拥有",

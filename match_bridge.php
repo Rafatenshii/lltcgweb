@@ -181,6 +181,10 @@ function tcgPostMissionGameFinishedBundleToHostinger(array $state): array {
         'disconnected_player' => $state['disconnected_player'] ?? null,
         'cpu_solo' => !empty($state['cpu_solo']),
         'cpu_difficulty' => (string)($state['cpu_difficulty'] ?? ''),
+        'turn' => intval($state['turn'] ?? 0),
+        'mission_peaks' => function_exists('missionPeaksExport')
+            ? missionPeaksExport($state)
+            : (is_array($state['_mission_peaks'] ?? null) ? $state['_mission_peaks'] : []),
         'players' => [
             'p1' => tcgMissionPlayerSlim(is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : null),
             'p2' => tcgMissionPlayerSlim(is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : null),
@@ -336,6 +340,10 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
         'p2_deck_choice' => (string)($p2['deck_choice'] ?? ''),
         'p1_name' => (string)($p1['name'] ?? ''),
         'p2_name' => (string)($p2['name'] ?? ''),
+        'turn' => intval($state['turn'] ?? 0),
+        'mission_peaks' => function_exists('missionPeaksExport')
+            ? missionPeaksExport($state)
+            : (is_array($state['_mission_peaks'] ?? null) ? $state['_mission_peaks'] : []),
     ];
     $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 15);
     if (!is_array($res) || empty($res['success']) || !empty($res['error'])) {

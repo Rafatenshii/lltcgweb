@@ -108,7 +108,9 @@
       "cards1600": "Own 1,600 cards",
       "cards2000": "Own 2,000 cards",
       "cards2400": "Own 2,400 cards",
-      "winTurn3": "Win a game on your 3rd turn"
+      "winTurn3": "Win a game on your 3rd turn",
+      "yellScore20": "Achieve a Yell score of 20 or more",
+      "liveScore15": "Achieve a Live score of 15 or more points in a single round"
     },
     "rewardStarter": "Choose a starter deck",
     "rewardStarterOwned": "Already owned",

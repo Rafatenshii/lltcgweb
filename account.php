@@ -1202,6 +1202,8 @@ function tcgApiMissionGameFinished(array $body): array {
         'disconnected_player' => $body['disconnected_player'] ?? null,
         'cpu_solo' => !empty($body['cpu_solo']),
         'cpu_difficulty' => (string)($body['cpu_difficulty'] ?? ''),
+        'turn' => intval($body['turn'] ?? 0),
+        '_mission_peaks' => is_array($body['mission_peaks'] ?? null) ? $body['mission_peaks'] : [],
         'players' => [
             'p1' => $p1,
             'p2' => $p2,

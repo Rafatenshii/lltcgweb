@@ -45,6 +45,8 @@ function tcgMissionDefinitions(): array {
         ['id' => 'ms_sticker_50', 'type' => 'milestone', 'reward' => 500, 'sort' => 282, 'i18n_key' => 'missions.milestone.sticker50', 'threshold' => 50],
         ['id' => 'ms_sticker_100', 'type' => 'milestone', 'reward' => 1000, 'sort' => 283, 'i18n_key' => 'missions.milestone.sticker100', 'threshold' => 100],
         ['id' => 'ms_win_turn_3', 'type' => 'milestone', 'reward' => 800, 'reward_type' => 'coins_and_pr_pack', 'sort' => 290, 'i18n_key' => 'missions.milestone.winTurn3', 'threshold' => 3],
+        ['id' => 'ms_yell_score_20', 'type' => 'milestone', 'reward' => 500, 'reward_type' => 'coins_and_pr_pack', 'sort' => 292, 'i18n_key' => 'missions.milestone.yellScore20', 'threshold' => 20],
+        ['id' => 'ms_live_score_15', 'type' => 'milestone', 'reward' => 500, 'reward_type' => 'coins_and_pr_pack', 'sort' => 294, 'i18n_key' => 'missions.milestone.liveScore15', 'threshold' => 15],
         ['id' => 'ms_win_muse', 'type' => 'milestone', 'reward' => 1000, 'sort' => 300, 'i18n_key' => 'missions.milestone.winMuse', 'group' => "μ's"],
         ['id' => 'ms_win_aqours', 'type' => 'milestone', 'reward' => 1000, 'sort' => 310, 'i18n_key' => 'missions.milestone.winAqours', 'group' => 'Sunshine'],
         ['id' => 'ms_win_liella', 'type' => 'milestone', 'reward' => 1000, 'sort' => 320, 'i18n_key' => 'missions.milestone.winLiella', 'group' => 'Superstar'],
@@ -645,6 +647,7 @@ function tcgMissionOnGameFinished(array $state): array {
             tcgIncrementUnrankedGames($discordId);
         }
         $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckRankedThresholds($discordId));
+        $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckScorePeaks($discordId, $state, $pid));
         if ($winner === $pid) {
             $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckGroupWin($discordId, $state, $pid));
             $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckTurnWin($discordId, $state));
@@ -664,6 +667,38 @@ function tcgMissionCheckTurnWin(string $discordId, array $state): array {
         $need = intval($def['threshold'] ?? 3);
         if ($turn === $need) {
             $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $def['id']));
+        }
+    }
+    return $completions;
+}
+
+/**
+ * Yell / Live score peak milestones from room `_mission_peaks` (or nested mission_peaks).
+ *
+ * @return list<array{id: string, i18n_key: string, reward: int}>
+ */
+function tcgMissionCheckScorePeaks(string $discordId, array $state, string $playerId): array {
+    $peaks = $state['_mission_peaks'][$playerId] ?? ($state['mission_peaks'][$playerId] ?? null);
+    if (!is_array($peaks)) {
+        $peaks = [];
+    }
+    $yell = intval($peaks['yell'] ?? 0);
+    $live = intval($peaks['live'] ?? 0);
+    $completions = [];
+    foreach (tcgMissionDefinitions() as $def) {
+        if (($def['type'] ?? '') !== 'milestone') {
+            continue;
+        }
+        $id = (string)($def['id'] ?? '');
+        $need = intval($def['threshold'] ?? 0);
+        if ($need <= 0) {
+            continue;
+        }
+        if ($id === 'ms_yell_score_20' && $yell >= $need) {
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $id));
+        }
+        if ($id === 'ms_live_score_15' && $live >= $need) {
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $id));
         }
     }
     return $completions;

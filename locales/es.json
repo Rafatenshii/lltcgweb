@@ -1095,7 +1095,9 @@
       "sticker50": "Canjeaste sellos en la tienda de stickers 50 veces",
       "sticker100": "Canjeaste sellos en la tienda de stickers 100 veces",
       "cards2400": "Posee 2.400 cartas",
-      "winTurn3": "Gana una partida en tu 3.er turno"
+      "winTurn3": "Gana una partida en tu 3.er turno",
+      "yellScore20": "Consigue una puntuación Yell de 20 o más",
+      "liveScore15": "Consigue una puntuación Live de 15 o más en una sola ronda"
     },
     "rewardStarter": "Elige un mazo inicial",
     "rewardStarterOwned": "Ya lo tienes",
