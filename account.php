@@ -1117,7 +1117,14 @@ function tcgApiRankedLeave(array $body): array {
     require_once __DIR__ . '/game_mode.php';
     $uid = tcgRequireAuthUser($body);
     $gameMode = isset($body['game_mode']) ? tcgNormalizeGameMode($body['game_mode']) : null;
-    return ['success' => true, 'queue' => tcgQueueLeave($uid, $gameMode)];
+    $left = tcgQueueLeave($uid, $gameMode);
+    $statsMode = $gameMode ?? tcgNormalizeGameMode(TCG_GAME_MODE_STANDARD);
+    return [
+        'success' => true,
+        'queue' => $left,
+        'queue_stats' => tcgQueuePublicStats($statsMode),
+        'game_mode' => $statsMode,
+    ];
 }
 
 function tcgApiActiveGame(array $body): array {

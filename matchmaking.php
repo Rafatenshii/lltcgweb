@@ -697,6 +697,13 @@ function tcgQueuePublicStats(?string $gameMode = null): array {
             $stale['waiting'] = $waiting;
             return $stale;
         }
+        // Another request is computing in_game — never stampede the VPS or hang the
+        // ranked hub on a cold cache. Waiting is live; in_game fills in on the next poll.
+        return [
+            'waiting' => $waiting,
+            'in_game' => 0,
+            'game_mode' => $gameMode,
+        ];
     }
 
     try {

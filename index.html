@@ -2584,6 +2584,8 @@ const A = {
   rankedPollTimer: null,
   rankedSecTimer: null,
   rankedPollScheduled: false,
+  rankedLobbyStatsTimer: null,
+  rankedQueueStats: null,
   rankedSearching: false,
   rankedWaitSeconds: 0,
   rankedWaitSecondsShown: null,
@@ -3551,6 +3553,7 @@ function updateRankedScreenDynamic(me) {
       record,
     });
   }
+  if (A.rankedQueueStats) updateRankedQueueStats(A.rankedQueueStats);
   syncRankedPrFromProfile(me);
   updateRankedPrUI();
   syncRankedScreenSearchControls(!!A.rankedSearching);
@@ -12836,10 +12839,56 @@ function updateRankedQueueStats(stats) {
       && normalizeRankedGameMode(stats.game_mode) !== rankedGameMode()) {
     return;
   }
+  const waiting = stats.waiting ?? 0;
+  const inGame = stats.in_game ?? 0;
+  A.rankedQueueStats = {
+    waiting,
+    in_game: inGame,
+    game_mode: stats.game_mode != null ? normalizeRankedGameMode(stats.game_mode) : rankedGameMode(),
+  };
   node.textContent = t('ranked.queueStats', {
-    waiting: stats.waiting ?? 0,
-    inGame: stats.in_game ?? 0,
+    waiting,
+    inGame,
   });
+}
+
+function stopRankedLobbyStatsPoll() {
+  if (A.rankedLobbyStatsTimer) {
+    clearInterval(A.rankedLobbyStatsTimer);
+    A.rankedLobbyStatsTimer = null;
+  }
+}
+
+/** Idle ranked-hub stats (waiting / in-game). Separate from match-found polling. */
+async function refreshRankedQueueStatsQuiet() {
+  try {
+    const res = await accountGet('ranked_status', {
+      game_mode: rankedGameMode(),
+      include_stats: '1',
+    });
+    if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
+    // Keep search chrome in sync when we are idle on the hub (not mid match-found race).
+    if (!A.rankedSearching && res.ranked) {
+      const st = res.ranked.status || 'idle';
+      if (st === 'searching') {
+        setRankedSearchingUI(true, res.ranked.wait_seconds || 0);
+        if (!A.rankedPollScheduled) startRankedPoll();
+      } else if (st !== 'matched') {
+        setRankedSearchingUI(false);
+      }
+    }
+  } catch (e) { /* keep last numbers — never snap back to em dashes */ }
+}
+
+function startRankedLobbyStatsPoll() {
+  stopRankedLobbyStatsPoll();
+  A.rankedLobbyStatsTimer = setInterval(() => {
+    if (!el('screen-ranked')?.classList.contains('active')) {
+      stopRankedLobbyStatsPoll();
+      return;
+    }
+    void refreshRankedQueueStatsQuiet();
+  }, 12000);
 }
 
 function syncRankedScreenSearchControls(searching) {
@@ -13246,9 +13295,14 @@ async function refreshRankedScreenModeStats(opts = {}) {
   } catch (e) {
     /* keep last info line */
   }
+  // Always refresh queue counts separately from match-found status (include_stats=0).
+  await refreshRankedQueueStatsQuiet();
   if (opts.skipStatus) return;
   try {
-    const res = await accountGet('ranked_status', { game_mode: mode });
+    const res = await accountGet('ranked_status', {
+      game_mode: mode,
+      include_stats: '0',
+    });
     applyRankedStatusResponse(res);
   } catch (e) {}
 }
@@ -13517,6 +13571,7 @@ async function openRankedScreen() {
   renderRankedDeckOptions({ preferRemembered: true });
   await pollRankedStatus();
   if (A.rankedSearching && !A.rankedPollScheduled) startRankedPoll();
+  startRankedLobbyStatsPoll();
   showScr('ranked');
 }
 
@@ -13568,7 +13623,8 @@ async function startRankedSearch() {
 }
 
 async function cancelRankedSearch() {
-  await accountPost('ranked_leave', { game_mode: rankedGameMode() });
+  const res = await accountPost('ranked_leave', { game_mode: rankedGameMode() });
+  if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
   markRankedSearchActive(false);
   stopRankedPoll();
   setRankedSearchingUI(false);
@@ -29505,6 +29561,7 @@ function showScr(n){
     try { window.tcgPortraitUnmountDeckChrome?.(); } catch (e) { /* ignore */ }
   }
   if (n !== 'lobby') stopCasualLobbyStatsPoll();
+  if (n !== 'ranked') stopRankedLobbyStatsPoll();
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active');
     s.hidden = true;
@@ -29522,6 +29579,10 @@ function showScr(n){
   if (n === 'lobby') {
     if (prevActive !== 'screen-lobby') void refreshCasualQueueStatsQuiet();
     startCasualLobbyStatsPoll();
+  }
+  if (n === 'ranked') {
+    if (prevActive !== 'screen-ranked') void refreshRankedQueueStatsQuiet();
+    startRankedLobbyStatsPoll();
   }
   if (n === 'leaderboard') {
     const lb = el('screen-leaderboard');
