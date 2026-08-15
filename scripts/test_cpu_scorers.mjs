@@ -60,6 +60,28 @@ if (/cpuEvalLiveBonus\([^)]*'p2'/.test(loopSrc)) {
   ok('Live eval bonus uses dynamic seat');
 }
 
+// Baton placement must score board quality (hearts/blade/Live colors), not first-slot.
+if (!/function cpuScoreBatonBoardDelta\(/.test(loopSrc)) {
+  fail('cpuScoreBatonBoardDelta missing');
+} else {
+  ok('cpuScoreBatonBoardDelta present');
+}
+if (!/cpuScoreBatonBoardDelta\(/.test(loopSrc.split('function cpuPlanMemberPlay')[1] || '')) {
+  fail('cpuPlanMemberPlay must use cpuScoreBatonBoardDelta');
+} else {
+  ok('cpuPlanMemberPlay scores baton board delta');
+}
+if (!/function cpuUpcomingLiveTargets\(/.test(loopSrc) || !/live_zone/.test(loopSrc.match(/function cpuUpcomingLiveTargets[\s\S]{0,800}/)?.[0] || '')) {
+  fail('cpuUpcomingLiveTargets must consider live_zone');
+} else {
+  ok('upcoming Lives include live_zone');
+}
+if (!/boardDelta >= minDelta/.test(loopSrc)) {
+  fail('baton plans should reject clear board downgrades (minDelta gate)');
+} else {
+  ok('baton downgrade gate present');
+}
+
 // Key Live / zone ability types must be scored above default 1.2
 for (const type of [
   'score_if_live_zone_min',
