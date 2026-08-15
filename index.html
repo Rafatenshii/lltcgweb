@@ -7494,12 +7494,22 @@ function normalizeExperimentPasswordInput(raw) {
 }
 
 async function apiExperimentCall(action, body = {}) {
-  const r = await fetch(`${API}?action=${encodeURIComponent(action)}`, {
+  // Password files live on Hostinger — never follow match/overflow API lock.
+  const urls = (typeof tcgResolveApiUrls === 'function')
+    ? tcgResolveApiUrls('hub', action)
+    : { API: './api.php' };
+  const r = await fetch(`${urls.API}?action=${encodeURIComponent(action)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const d = await r.json();
+  const text = await r.text();
+  let d;
+  try {
+    d = JSON.parse(text);
+  } catch (_) {
+    throw new Error('Server returned a non-JSON response — try again in a moment');
+  }
   if (d.error) throw new Error(d.error);
   return d;
 }

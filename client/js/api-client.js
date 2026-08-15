@@ -81,6 +81,9 @@
     experiment_preset_list: 1, experiment_preset_save: 1,
     experiment_preset_set_sleeve: 1,
     experiment_preset_delete: 1, experiment_preset_get: 1,
+    // Shared password files live on Hostinger (VPS experiment_decks/ is not writable).
+    experiment_deck_save: 1, experiment_deck_load: 1,
+    experiment_decklog_import: 1, experiment_random_deck: 1,
   };
   const OVERFLOW_BLOCKED_GAME = {
     action: 1, // in-match always follows locked room origin

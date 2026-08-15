@@ -148,6 +148,9 @@ function readExperimentDeckFile(string $password): ?array {
 
 function writeExperimentDeckFile(string $password, string $name, array $main, array $energy, string $sleeveId = ''): void {
     ensureExperimentDecksDir();
+    if (!is_dir(EXPERIMENT_DECKS_DIR) || !is_writable(EXPERIMENT_DECKS_DIR)) {
+        throw new Exception('Experiment deck storage is unavailable');
+    }
     $payload = [
         'password'     => $password,
         'name'         => normalizeExperimentDeckName($name),
@@ -158,8 +161,17 @@ function writeExperimentDeckFile(string $password, string $name, array $main, ar
     ];
     $path = experimentDeckPath($password);
     $tmp = $path . '.tmp.' . getmypid();
-    file_put_contents($tmp, json_encode($payload, JSON_UNESCAPED_UNICODE), LOCK_EX);
-    rename($tmp, $path);
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
+        throw new Exception('Could not encode experiment deck');
+    }
+    if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+        throw new Exception('Could not save experiment deck');
+    }
+    if (!@rename($tmp, $path)) {
+        @unlink($tmp);
+        throw new Exception('Could not save experiment deck');
+    }
 }
 
 function apiExperimentDeckSave(array $body): array {
