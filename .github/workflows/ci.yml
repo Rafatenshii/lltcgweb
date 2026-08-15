@@ -45,7 +45,7 @@ jobs:
       - name: CPU prompt / scorer contracts
         run: |
           node scripts/audit_card_interactions.mjs --write=reports/card_interaction_matrix.json
-          python audit_cpu_prompts.py
+          python scripts/audit_cpu_prompts.py
           node scripts/test_cpu_scorers.mjs
 
   docker-smoke:

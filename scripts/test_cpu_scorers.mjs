@@ -86,14 +86,14 @@ if (!hardBlend || !expertBlend || Number(expertBlend[1]) <= Number(hardBlend[1])
 }
 
 // Hang-risk gaps from audit_cpu_prompts.py must be empty
-const py = spawnSync('python', [path.join(root, 'audit_cpu_prompts.py')], {
+const py = spawnSync('python', [path.join(root, 'scripts', 'audit_cpu_prompts.py')], {
   cwd: root,
   encoding: 'utf8',
 });
 const out = `${py.stdout || ''}\n${py.stderr || ''}`;
 if (py.status !== 0 && py.error) {
   // try python3
-  const py3 = spawnSync('python3', [path.join(root, 'audit_cpu_prompts.py')], {
+  const py3 = spawnSync('python3', [path.join(root, 'scripts', 'audit_cpu_prompts.py')], {
     cwd: root,
     encoding: 'utf8',
   });
