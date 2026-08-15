@@ -2083,8 +2083,9 @@ html.tcg-portrait-play #perf-spectacle{
   width:100vw;
   height:100dvh;
   max-height:100dvh;
-  padding:max(6px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px))
-    max(6px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));
+  /* Names use their own safe-area padding; keep only side insets on the stage shell */
+  padding:0 max(4px,env(safe-area-inset-right,0px))
+    0 max(4px,env(safe-area-inset-left,0px));
   box-sizing:border-box;
   overflow:hidden;
 }
@@ -2192,21 +2193,43 @@ html.tcg-portrait-play #perf-spectacle .perf-stage-row:not(.perf-stage-multi) .p
   aspect-ratio:63/88;
 }
 html.tcg-portrait-play #perf-spectacle .perf-col-side{
-  left:8px;
-  width:calc(100% - 16px);
-  max-width:calc(100vw - 16px);
+  left:0;
+  right:0;
+  width:100%;
+  max-width:none;
   z-index:8;
+  align-items:center;
+  gap:4px;
+  pointer-events:none;
 }
+/* Opp name under the notch / top safe area — clear of the Live row */
+html.tcg-portrait-play #perf-spectacle .perf-col.opp .perf-col-side{
+  top:0;
+  bottom:auto;
+  justify-content:flex-start;
+  padding-top:max(2px, env(safe-area-inset-top, 0px), var(--tcg-safe-top-fallback, 0px));
+}
+/* Your name along the bottom — clear of the Live row */
+html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-col-side{
+  top:auto;
+  bottom:0;
+  justify-content:flex-end;
+  padding-bottom:max(2px, env(safe-area-inset-bottom, 0px), var(--tcg-safe-bottom-fallback, 0px));
+}
+html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-col-lbl{order:2}
+html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-side-outcomes{order:1}
 html.tcg-portrait-play #perf-spectacle .perf-col-lbl{
   display:block;
-  width:max-content;
+  width:100%;
   max-width:100%;
-  font-size:clamp(20px,6vw,28px);
-  line-height:1;
+  text-align:center;
+  font-size:clamp(18px,5.5vw,26px);
+  line-height:1.05;
   white-space:nowrap;
   overflow-wrap:normal;
   word-break:normal;
   hyphens:none;
+  text-shadow:0 2px 10px rgba(0,0,0,.65),0 0 18px rgba(0,0,0,.35);
 }
 html.tcg-portrait-play #perf-spectacle .perf-hearts-band,
 html.tcg-portrait-play #perf-spectacle .perf-live-row,
