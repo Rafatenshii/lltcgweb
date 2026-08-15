@@ -33,6 +33,21 @@
     return node.closest('ll-stage-board') || node;
   }
 
+  function placeHudCornerNames() {
+    const board = el('portrait-board');
+    const hud = board?.querySelector('.pb-hud');
+    if (!hud) return;
+    const myHost = el('portrait-my-name-host');
+    const oppHost = el('portrait-opp-name-host');
+    // Anchor names to the HUD panel corners (you: bottom-left, opp: top-right).
+    if (myHost && myHost.parentElement !== hud) hud.appendChild(myHost);
+    if (oppHost && oppHost.parentElement !== hud) hud.appendChild(oppHost);
+    const myName = el('my-name');
+    const oppName = el('opp-name');
+    if (myName && myHost && myName.parentElement !== myHost) myHost.appendChild(myName);
+    if (oppName && oppHost && oppName.parentElement !== oppHost) oppHost.appendChild(oppName);
+  }
+
   function ensureFieldHosts() {
     const board = el('portrait-board');
     if (!board) return false;
@@ -50,6 +65,7 @@
     const cardHover = el('card-hover-panel');
     const game = el('screen-game');
     if (cardHover && game && cardHover.parentElement !== game) game.appendChild(cardHover);
+    placeHudCornerNames();
     return true;
   }
 
@@ -145,6 +161,7 @@
     if (phaseBar) hudSec.appendChild(phaseBar);
     if (playCost) hudSec.appendChild(playCost);
     if (liveScore) hudSec.appendChild(liveScore);
+    placeHudCornerNames();
 
     myFieldSec.appendChild(myMat);
     myHandSec.appendChild(myHand);

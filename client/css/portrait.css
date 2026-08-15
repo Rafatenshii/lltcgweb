@@ -1588,12 +1588,15 @@ html.tcg-portrait-play .pb-hud{
   display:flex;
   flex-direction:column;
   gap:3px;
-  padding:4px 6px 6px;
+  position:relative;
+  /* Room for corner names: opp top-right, you bottom-left */
+  padding:18px 6px 18px;
   margin:0;
   background: rgba(8, 14, 28, .94);
   border: 1px solid rgba(186,228,255,.22);
   border-radius: 12px;
   box-shadow: 0 4px 18px rgba(0,0,0,.35);
+  overflow:visible;
 }
 html.tcg-portrait-play .pb-wins-row{
   display:grid;
@@ -1623,9 +1626,29 @@ html.tcg-portrait-play .pb-side-top{
 }
 html.tcg-portrait-play .pb-side.mine .pb-side-top{justify-content:flex-start}
 html.tcg-portrait-play .pb-side.opp .pb-side-top{justify-content:flex-end}
-html.tcg-portrait-play .pb-name-host{
+/* Names sit on the HUD panel corners (not under energy/wins). */
+html.tcg-portrait-play .pb-hud > .pb-name-host,
+html.tcg-portrait-play #portrait-my-name-host,
+html.tcg-portrait-play #portrait-opp-name-host{
+  position:absolute;
+  z-index:3;
   min-width:0;
-  max-width:100%;
+  max-width:46%;
+  pointer-events:none;
+}
+html.tcg-portrait-play #portrait-my-name-host{
+  left:8px;
+  bottom:4px;
+  right:auto;
+  top:auto;
+  text-align:left;
+}
+html.tcg-portrait-play #portrait-opp-name-host{
+  right:8px;
+  top:4px;
+  left:auto;
+  bottom:auto;
+  text-align:right;
 }
 html.tcg-portrait-play .pb-name-host h3,
 html.tcg-portrait-play .pb-name-host #my-name,
@@ -1642,8 +1665,12 @@ html.tcg-portrait-play .pb-name-host #opp-name{
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+html.tcg-portrait-play #portrait-my-name-host h3,
+html.tcg-portrait-play #portrait-my-name-host #my-name,
 html.tcg-portrait-play .pb-side.mine .pb-name-host h3,
 html.tcg-portrait-play .pb-side.mine #my-name{ color:#ff8cbe; }
+html.tcg-portrait-play #portrait-opp-name-host h3,
+html.tcg-portrait-play #portrait-opp-name-host #opp-name,
 html.tcg-portrait-play .pb-side.opp .pb-name-host h3,
 html.tcg-portrait-play .pb-side.opp #opp-name{ color:#7eb6ff; }
 html.tcg-portrait-play .pb-hud .players-stats-panel.portrait-stats-shell{
