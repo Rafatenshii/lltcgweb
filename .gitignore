@@ -83,6 +83,7 @@ sfx_manifest.json
 /scripts/*.py
 !/scripts/gen_booster_box_thumbs.py
 !/scripts/gen_launcher_icons.py
+!/scripts/audit_cpu_prompts.py
 audit_tutorial_browser.js
 build_tutorial.php
 build_tutorial.py
