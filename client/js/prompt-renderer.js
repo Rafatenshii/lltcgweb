@@ -282,7 +282,7 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
     const handBtn = document.createElement('button');
     handBtn.className = 'btn-grad';
     handBtn.style.width = '100%';
-    handBtn.textContent = 'Add to hand';
+    handBtn.textContent = pt('prompt.addToHand');
     handBtn.onclick = () => {
       closeM('overlay-pick');
       sendAct('resolve_prompt', { choice: 'hand' });
@@ -293,7 +293,7 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
       b.className = 'btn-grad';
       b.style.width = '100%';
       b.style.marginTop = '8px';
-      b.textContent = 'Play to ' + slotLabel(slot);
+      b.textContent = pt('prompt.playToSlot', { slot: slotLabel(slot) });
       b.onclick = () => {
         closeM('overlay-pick');
         sendAct('resolve_prompt', { choice: slot, slot });
@@ -310,8 +310,8 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
   const noneEligible=eligible.size===0;
   const singleTap=need===1;
   const skipLabel=noneEligible
-    ? 'No matching cards — put all in Waiting Room'
-    : 'Skip — put all in Waiting Room';
+    ? pt('prompt.noMatchAllWaitingRoom')
+    : pt('prompt.skipAllWaitingRoom');
   el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose from deck');
   el('pick-msg').textContent=promptDisplayText(pr, noneEligible
     ? 'No matching cards among these. Confirm to put them into the Waiting Room.'
@@ -397,7 +397,7 @@ global.openStageMemberPickById = function openStageMemberPickById(pr){
   const btnCancel=el('btn-pick-cancel');
   if(btnOk) btnOk.style.display='none';
   if(btnCancel) btnCancel.style.display='none';
-  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-ttl').textContent=promptDisplayTitle(pr, pt('prompt.chooseMemberTitle'));
   el('pick-msg').textContent=promptDisplayText(pr, 'Choose 1 Member on your Stage.');
   const g=el('pick-grid'); g.innerHTML='';
   g.classList.remove('pick-grid-order');
@@ -468,7 +468,7 @@ global.openStageSlotPick = function openStageSlotPick(pr){
       },
       onCancel: ()=> sendAct('resolve_prompt',{slots:[]}),
     };
-    el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+    el('pick-ttl').textContent=promptDisplayTitle(pr, pt('prompt.chooseMemberTitle'));
     el('pick-msg').textContent=promptDisplayText(pr, `Choose up to ${maxPick} Member(s).`);
     const g=el('pick-grid'); g.innerHTML='';
     const btnOk=el('btn-pick-ok');
@@ -492,7 +492,7 @@ global.openStageSlotPick = function openStageSlotPick(pr){
     openM('overlay-pick');
     return;
   }
-  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-ttl').textContent=promptDisplayTitle(pr, pt('prompt.chooseMemberTitle'));
   el('pick-msg').textContent=promptDisplayText(pr, 'Choose a Member on your Stage.');
   const g=el('pick-grid'); g.innerHTML='';
   const btnOk=el('btn-pick-ok');
@@ -719,7 +719,7 @@ global.openSuccessLiveAreaPick = function openSuccessLiveAreaPick(pr, opts = {})
     return full ? { ...c, ...full } : c;
   }).filter(c => c.instance_id);
   if (!cards.length) {
-    toast('No cards in Success Live area', 3200);
+    toast(pt('prompt.noCardsSuccessLive'), 3200);
     return;
   }
   el('pick-ttl').textContent = promptDisplayTitle(pr, pt('prompt.successLiveHandTitle'), s);
@@ -753,7 +753,7 @@ global.openLiveZonePick = function openLiveZonePick(pr, opts = {}) {
     return full ? { ...c, ...full } : c;
   }).filter(c => c.instance_id);
   if (!cards.length) {
-    toast('No cards in your Live', 3200);
+    toast(pt('prompt.noCardsInLive'), 3200);
     return;
   }
   el('pick-ttl').textContent = promptDisplayTitle(pr, 'Choose Live', s);
@@ -794,7 +794,7 @@ global.openWrMembersDeckTopPick = function openWrMembersDeckTopPick(pr){
   const minPick = upTo ? 0 : need;
   G.pickCtx={count:need, min:minPick, onConfirm:(ids)=>sendAct('resolve_prompt',{card_ids:ids})};
   G.pickMarked.clear();
-  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Members');
+  el('pick-ttl').textContent=promptDisplayTitle(pr, pt('prompt.chooseMembersTitle'));
   el('pick-msg').textContent=promptDisplayText(pr, upTo
     ? `Choose up to ${need} Member card(s) from your Waiting Room (order = deck top).`
     : `Choose ${need} Member card(s) from your Waiting Room (order = deck top).`);
@@ -847,7 +847,7 @@ global.openBatch99StackWrPick = function openBatch99StackWrPick(pr){
   const skipBtn=document.createElement('button');
   skipBtn.className='btn-ghost';
   skipBtn.style.width='100%'; skipBtn.style.marginTop='10px';
-  skipBtn.textContent='Skip';
+  skipBtn.textContent=pt('prompt.skip');
   skipBtn.onclick=()=>{
     closeM('overlay-pick');
     sendAct('resolve_prompt',{choice:'skip'});
@@ -922,7 +922,7 @@ global.openHiddenHandPick = function openHiddenHandPick(pr){
 
 global.openOppActiveMemberPick = function openOppActiveMemberPick(pr){
   const cards=pr.stage_members||[];
-  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-ttl').textContent=promptDisplayTitle(pr, pt('prompt.chooseMemberTitle'));
   el('pick-msg').textContent=promptDisplayText(pr, 'Choose 1 active Member on your Stage to put into Wait.');
   const g=el('pick-grid'); g.innerHTML='';
   cards.forEach(card=>{
@@ -1172,7 +1172,7 @@ global.heartColorChoiceDisplayName = function heartColorChoiceDisplayName(color)
     blue: 'heart.blue',
   };
   if (keys[c]) return t(keys[c]);
-  if (c === 'gray' || c === 'any') return c === 'any' ? 'Any' : 'Gray';
+  if (c === 'gray' || c === 'any') return c === 'any' ? pt('heart.any') : pt('heart.gray');
   return c ? c.charAt(0).toUpperCase() + c.slice(1) : '';
 }
 
@@ -1189,7 +1189,7 @@ global.fillHeartColorChoiceContent = function fillHeartColorChoiceContent(el, ke
     el.appendChild(mkHeartIcon('gray', true));
     const caption = document.createElement('span');
     caption.className = 'prompt-choice-heart-caption';
-    caption.textContent = `2× ${heartColorChoiceDisplayName(color)} + Gray`;
+    caption.textContent = pt('heart.twicePlusGray', { color: heartColorChoiceDisplayName(color) });
     el.appendChild(caption);
     return true;
   }
@@ -1201,7 +1201,7 @@ global.fillHeartColorChoiceContent = function fillHeartColorChoiceContent(el, ke
   if (pr?.type === 'waive_required_heart_color') {
     const suffix = document.createElement('span');
     suffix.className = 'prompt-choice-heart-suffix';
-    suffix.textContent = ' — waived';
+    suffix.textContent = pt('heart.waivedSuffix');
     el.appendChild(suffix);
   }
   return true;
@@ -1591,12 +1591,12 @@ global.confirmSurveil = async function confirmSurveil(){
   const all = Object.keys(G.surveil.byId);
   if (G.surveil.returnAll) {
     if (G.surveil.wr.length || all.some(id => !surveilTopIds().includes(id))) {
-      toast('Put every card back on top of the deck');
+      toast(pt('prompt.surveilReturnAll'));
       return;
     }
   }
   const assigned = new Set([...surveilTopIds(), ...G.surveil.wr]);
-  if (all.some(id => !assigned.has(id))) { toast('Assign every card to a deck spot or Waiting Room'); return; }
+  if (all.some(id => !assigned.has(id))) { toast(pt('prompt.surveilAssignAll')); return; }
   const btn = el('btn-surveil-ok');
   if (btn?.disabled) return;
   if (btn) btn.disabled = true;
@@ -1924,7 +1924,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
           return;
         }
         el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play stacked Member', s);
-        el('prompt-msg').textContent='Choose an empty Stage area.';
+        el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseEmptyStage', s);
         const box=el('prompt-btns'); box.innerHTML='';
         empty.forEach(slot=>{
           const b=document.createElement('button');
@@ -2030,15 +2030,15 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
     }
     if(pr.type==='optional_discard_prompt' && pr.ability?.filter==='live'){
       pickHand=pickHand.filter(c=>c && (c.card_type==='ライブ' || c.card_type_en==='Live'));
-      if(!pickHand.length){ toast('No Live card in hand'); return; }
+      if(!pickHand.length){ toast(pt('prompt.noLiveInHand')); return; }
     }
     if(pr.type==='optional_discard_prompt' && pr.ability?.filter==='member'){
       pickHand=pickHand.filter(c=>c && (c.card_type==='メンバー' || c.card_type_en==='Member'));
-      if(!pickHand.length){ toast('No Member card in hand'); return; }
+      if(!pickHand.length){ toast(pt('prompt.noMemberInHand')); return; }
     }
     if(pr.type==='opp_may_discard_or_modifier'){
       pickHand=pickHand.filter(c=>c.card_type==='ライブ');
-      if(!pickHand.length){ toast('No Live card in hand'); return; }
+      if(!pickHand.length){ toast(pt('prompt.noLiveInHand')); return; }
     }
     if(pr.type==='live_start_pay_or_discard'&&choice==='discard'){
       pickHand=me.hand||[];
@@ -2454,7 +2454,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: pr.candidates||[],
       count: 1,
       min: 1,
-      title: pr.source_name||'Choose Member',
+      title: pr.source_name||pt('prompt.chooseMemberTitle'),
       msg: promptDisplayText(pr, 'Choose 1 Member on your Stage.', s),
       onConfirm: (picked)=>{
         const c=(pr.candidates||[]).find(x=>x.instance_id===picked[0]);
@@ -2499,7 +2499,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: pr.candidates||[],
       count: max,
       min: 1,
-      title: pr.source_name||'Choose Members',
+      title: pr.source_name||pt('prompt.chooseMembersTitle'),
       msg: promptDisplayText(pr, `Choose up to ${max} Member(s).`, s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{card_ids:picked}),
     });
@@ -2512,7 +2512,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: pr.candidates||[],
       count: max,
       min: 1,
-      title: pr.source_name||'Choose Members',
+      title: pr.source_name||pt('prompt.chooseMembersTitle'),
       msg: promptDisplayText(pr, `Choose up to ${max} Yell Member(s).`, s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{card_ids:picked}),
     });
@@ -2619,7 +2619,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='ssd1_play_wr_empty'&&pr.step==='pick_slot'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play Member', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseArea', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -2634,7 +2634,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='both_wr_member_to_empty_stage'&&pr.step==='pick_slot'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Waiting Room Member', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an empty Stage area:', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseEmptyStage', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -2650,7 +2650,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     if(pr.step==='pick_slot'){
       ovl.classList.remove('open');
       el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play Member', s);
-      el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
+      el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseArea', s);
       const box=el('prompt-btns'); box.innerHTML='';
       (pr.slots||[]).forEach(slot=>{
         const b=document.createElement('button');
@@ -2723,7 +2723,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       if (!cands.length) {
         sendAct('resolve_prompt', { choice: 'no' });
       } else {
-        toast(pt('prompt.wrEmpty') || 'No Yell cards available to mill.', 3200);
+        toast(pt('prompt.noYellMill'), 3200);
       }
       return;
     }
@@ -2847,7 +2847,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         hand: pr.candidates||[],
         count: 1,
         min: 1,
-        title: pr.source_name||'Choose Member',
+        title: pr.source_name||pt('prompt.chooseMemberTitle'),
         msg: promptDisplayText(pr, 'Choose 1 Member on your Stage.', s),
         onConfirm: (picked)=>{
           const c=(pr.candidates||[]).find(x=>x.instance_id===picked[0]);
@@ -2943,7 +2943,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         const picked = (ids || []).map(id => (pr.candidates || []).find(c => c.instance_id === id)).filter(Boolean);
         const total = picked.reduce((sum, c) => sum + Number(c.cost || 0), 0);
         if (total > maxCombined) {
-          toast(`Combined cost must be ≤${maxCombined}`, 2800, true);
+          toast(pt('prompt.combinedCostMax', { n: maxCombined }), 2800, true);
           return;
         }
         if (!ids?.length) {
@@ -3046,7 +3046,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='on_enter_draw_swap_area'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Move Member', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseArea', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -3066,7 +3066,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='activate_energy_up_to'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Activate Energy', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'How many Energy to activate?', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.howManyEnergyActivate', s);
     const box=el('prompt-btns'); box.innerHTML='';
     const max=pr.max||6;
     for(let i=0;i<=max;i++){
@@ -3379,7 +3379,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       }
       const b=document.createElement('button');
       b.className='btn-grad';
-      b.textContent='Confirm';
+      b.textContent=pt('prompt.confirm');
       b.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:'confirm'}); };
       box.appendChild(b);
       ovl.classList.add('open');
@@ -3411,7 +3411,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       go.textContent='Use number';
       go.onclick=()=>{
         const n=Number(inp.value);
-        if(!Number.isFinite(n)||n<0||n>99){ toast('Enter a number from 0 to 99'); return; }
+        if(!Number.isFinite(n)||n<0||n>99){ toast(pt('prompt.enterNumber0to99')); return; }
         closeM('overlay-prompt');
         sendAct('resolve_prompt',{choice:String(Math.floor(n)), number:Math.floor(n)});
       };
@@ -3603,7 +3603,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='spbp5_mill_swap_pick'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Position change', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.chooseArea', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.choices||[]).forEach((slot,i)=>{
       const b=document.createElement('button');
@@ -3618,7 +3618,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='spbp5_pay_energy_score'&&pr.responder===myId){
     ovl.classList.remove('open');
     el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Pay Energy', s);
-    el('prompt-msg').textContent=promptDisplayText(pr, 'How much Energy to pay?', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.howMuchEnergy', s);
     const box=el('prompt-btns'); box.innerHTML='';
     const me=s.players?.[myId];
     const max=(me?.energy_zone||[]).filter(energyChipActive).length;
@@ -3631,7 +3631,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     const skip=document.createElement('button');
     skip.className='btn-grad';
-    skip.textContent='Skip';
+    skip.textContent=pt('prompt.skip');
     skip.onclick=()=>{ closeM('overlay-prompt'); sendAct('resolve_prompt',{choice:'skip'}); };
     box.appendChild(skip);
     ovl.classList.add('open');
