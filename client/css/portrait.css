@@ -2105,11 +2105,14 @@ html.tcg-portrait-play #perf-spectacle{
   --perf-col-side-inset:0px;
   --perf-yell-rail-gap:8px;
   --perf-rail-slot-w:min(34vw,142px);
+  --perf-safe-top:max(12px,
+    calc(env(safe-area-inset-top,0px) + 6px),
+    calc(var(--tcg-safe-top-fallback,0px) + 6px));
   width:100vw;
   height:100dvh;
   max-height:100dvh;
-  /* Names use their own safe-area padding; keep only side insets on the stage shell */
-  padding:0 max(4px,env(safe-area-inset-right,0px))
+  /* Keep the opponent deck/yell rail below Android cutouts. */
+  padding:var(--perf-safe-top) max(4px,env(safe-area-inset-right,0px))
     0 max(4px,env(safe-area-inset-left,0px));
   box-sizing:border-box;
   overflow:hidden;
@@ -2219,22 +2222,22 @@ html.tcg-portrait-play #perf-spectacle .perf-stage-row:not(.perf-stage-multi) .p
 }
 html.tcg-portrait-play #perf-spectacle .perf-col-side{
   left:0;
-  right:0;
-  width:100%;
-  max-width:none;
+  right:auto;
+  /* Deck/yell is centered. Reserve only the unobstructed strip to its left. */
+  width:max(56px,calc((100% - var(--perf-rail-slot-w)) / 2 - 8px));
+  max-width:calc(50% - 8px);
   z-index:8;
-  align-items:center;
+  align-items:flex-start;
   gap:4px;
   pointer-events:none;
 }
-/* Opp name under the notch / top safe area — clear of the Live row */
+/* Names share the deck/yell rows, aligned to their unobstructed left side. */
 html.tcg-portrait-play #perf-spectacle .perf-col.opp .perf-col-side{
   top:0;
   bottom:auto;
   justify-content:flex-start;
-  padding-top:max(2px, env(safe-area-inset-top, 0px), var(--tcg-safe-top-fallback, 0px));
+  padding-top:0;
 }
-/* Your name along the bottom — clear of the Live row */
 html.tcg-portrait-play #perf-spectacle .perf-col.mine .perf-col-side{
   top:auto;
   bottom:0;
@@ -2247,7 +2250,7 @@ html.tcg-portrait-play #perf-spectacle .perf-col-lbl{
   display:block;
   width:100%;
   max-width:100%;
-  text-align:center;
+  text-align:left;
   font-size:clamp(18px,5.5vw,26px);
   line-height:1.05;
   white-space:nowrap;

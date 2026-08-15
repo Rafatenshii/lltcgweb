@@ -5222,18 +5222,30 @@ function tcgMobileSpectacleLayout() {
     || root.classList.contains('tcg-portrait-play');
 }
 
-/** Keep portrait player names large while fitting the complete name on one line. */
+/** Keep portrait names on the left without crossing into the centered deck/yell rail. */
 function fitPerfPortraitName(label) {
   if (!label) return;
   label.style.removeProperty('font-size');
   if (!document.documentElement.classList.contains('tcg-portrait-play')) return;
   requestAnimationFrame(() => {
-    const maxW = Math.max(120, Math.min(window.innerWidth - 16, label.parentElement?.clientWidth || window.innerWidth - 16));
+    const side = label.closest('.perf-col-side');
+    const col = label.closest('.perf-col');
+    const rail = col?.querySelector('.perf-yell-rail');
+    const sideRect = side?.getBoundingClientRect();
+    const railRect = rail?.getBoundingClientRect();
+    const clearW = sideRect && railRect ? railRect.left - sideRect.left - 8 : 0;
+    const parentW = label.parentElement?.clientWidth || window.innerWidth - 16;
+    const maxW = Math.max(56, Math.min(parentW, clearW > 0 ? clearW : parentW));
     const naturalW = label.scrollWidth;
     if (naturalW <= maxW || naturalW <= 0) return;
     const basePx = parseFloat(getComputedStyle(label).fontSize) || 28;
-    label.style.fontSize = Math.max(13, basePx * maxW / naturalW).toFixed(1) + 'px';
+    label.style.fontSize = Math.max(10, basePx * maxW / naturalW).toFixed(1) + 'px';
   });
+}
+
+function fitPerfPortraitNames() {
+  fitPerfPortraitName(el('perf-mine-lbl'));
+  fitPerfPortraitName(el('perf-opp-lbl'));
 }
 
 function clearPerfMobileInlineLayout() {
@@ -5410,6 +5422,7 @@ function layoutPerfLiveRows() {
   layoutPerfYellRail(el('perf-mine-yell')?.closest('.perf-yell-rail'));
   layoutPerfYellRail(el('perf-opp-yell')?.closest('.perf-yell-rail'));
   layoutPerfColSides();
+  fitPerfPortraitNames();
   requestAnimationFrame(() => {
     layoutPerfRailSlots();
     layoutPerfLiveRow(el('perf-mine-lives'));
@@ -5417,6 +5430,7 @@ function layoutPerfLiveRows() {
     layoutPerfYellRail(el('perf-mine-yell')?.closest('.perf-yell-rail'));
     layoutPerfYellRail(el('perf-opp-yell')?.closest('.perf-yell-rail'));
     layoutPerfColSides();
+    fitPerfPortraitNames();
   });
 }
 
