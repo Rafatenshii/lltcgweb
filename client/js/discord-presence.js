@@ -101,6 +101,15 @@
     return global.A || {};
   }
 
+  function spectatedPlayerNames(state) {
+    var players = (state && state.players) || {};
+    var p1 = players.p1 || {};
+    var p2 = players.p2 || {};
+    var left = String(p1.name || p1.display_name || 'Player 1').trim() || 'Player 1';
+    var right = String(p2.name || p2.display_name || 'Player 2').trim() || 'Player 2';
+    return { left: left, right: right };
+  }
+
   function deriveActivity() {
     var g = G();
     var a = A();
@@ -121,6 +130,22 @@
         joinable: true,
         joinType: 'ranked_queue',
         gameMode: mode,
+      };
+    }
+
+    if (screen === 'game' && g.roomId && g.isSpectator) {
+      var names = spectatedPlayerNames(g.gameState);
+      var spectatorRanked = (g.gameState && g.gameState.mode === 'ranked') || false;
+      return {
+        kind: 'spectating',
+        details: 'Spectating ' + names.left + ' vs ' + names.right,
+        state: spectatorRanked ? 'Ranked match' : 'Match in progress',
+        largeImage: presenceArt(spectatorRanked ? 'loveca_ranked' : 'loveca_casual'),
+        // A spectator has the room ID but no player secret. Mint the same opaque
+        // public spectate action that a player would, so friends can observe too.
+        joinable: true,
+        joinType: 'spectate',
+        roomId: g.roomId,
       };
     }
 
