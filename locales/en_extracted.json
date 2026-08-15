@@ -107,14 +107,19 @@
       "cards1200": "Own 1,200 cards",
       "cards1600": "Own 1,600 cards",
       "cards2000": "Own 2,000 cards",
-      "cards2400": "Own 2,400 cards"
+      "cards2400": "Own 2,400 cards",
+      "winTurn3": "Win a game on your 3rd turn"
     },
     "rewardStarter": "Choose a starter deck",
     "rewardStarterOwned": "Already owned",
     "claimedStarterToast": "Claimed {title} — unlocked {deck}",
     "starterPickTitle": "Choose a starter deck",
     "starterPickConfirm": "Unlock starter",
-    "starterPickCancel": "Cancel"
+    "starterPickCancel": "Cancel",
+    "rewardCoinsAndPrPack": "+{coins} Coins · PR Pack",
+    "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
+    "rewardFreeSleeve": "Free sleeve claim",
+    "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop"
   },
   "language": {
     "label": "Language",

@@ -1095,7 +1095,8 @@
       "sticker10": "แลกซีลในร้านสติกเกอร์ 10 ครั้ง",
       "sticker50": "แลกซีลในร้านสติกเกอร์ 50 ครั้ง",
       "sticker100": "แลกซีลในร้านสติกเกอร์ 100 ครั้ง",
-      "cards2400": "มีการ์ดครบ 2,400 ใบ"
+      "cards2400": "มีการ์ดครบ 2,400 ใบ",
+      "winTurn3": "ชนะเกมในเทิร์นที่ 3"
     },
     "rewardStarter": "เลือกเด็คสตาร์ทเตอร์",
     "rewardStarterOwned": "มีอยู่แล้ว",
@@ -1108,7 +1109,11 @@
     "statusReady": "พร้อมรับ",
     "tabDaily": "รายวัน",
     "tabMilestone": "ไมล์สโตน",
-    "title": "ภารกิจ"
+    "title": "ภารกิจ",
+    "rewardCoinsAndPrPack": "+{coins} เหรียญ · แพ็ก PR",
+    "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
+    "rewardFreeSleeve": "รับซองฟรี",
+    "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด"
   },
   "stamps": {
     "audio": "เสียงแสตมป์",

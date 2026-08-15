@@ -1118,7 +1118,8 @@
       "sticker10": "스티커 샵에서 실을 10회 교환했다",
       "sticker50": "스티커 샵에서 실을 50회 교환했다",
       "sticker100": "스티커 샵에서 실을 100회 교환했다",
-      "cards2400": "카드 2,400장 보유"
+      "cards2400": "카드 2,400장 보유",
+      "winTurn3": "3번째 턴에 승리하기"
     },
     "rewardStarter": "스타터 덱 선택",
     "rewardStarterOwned": "이미 보유 중",
@@ -1131,7 +1132,11 @@
     "statusReady": "수령 가능",
     "tabDaily": "일일",
     "tabMilestone": "마일스톤",
-    "title": "미션"
+    "title": "미션",
+    "rewardCoinsAndPrPack": "+{coins} 코인 · PR 팩",
+    "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
+    "rewardFreeSleeve": "무료 슬리브",
+    "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능"
   },
   "stamps": {
     "audio": "스탬프 오디오",

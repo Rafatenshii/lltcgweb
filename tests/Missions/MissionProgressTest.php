@@ -89,6 +89,52 @@ final class MissionProgressTest extends TestCase
         $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_win_nijigasaki', ''));
     }
 
+    public function testWinOnTurn3MilestoneCompletesAndClaimsCoinsPlusPr(): void
+    {
+        require_once dirname(__DIR__, 2) . '/coins.php';
+        require_once dirname(__DIR__, 2) . '/ranked_pr_rewards.php';
+
+        $beforeCoins = tcgGetCoins($this->discordId);
+        $state = [
+            'status' => 'finished',
+            'mode' => 'unranked',
+            'winner' => 'p1',
+            'turn' => 3,
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'Human',
+                    'discord_id' => $this->discordId,
+                ],
+                'p2' => [
+                    'id' => 'p2',
+                    'name' => 'CPU (Easy)',
+                    'deck_choice' => 'cpu:easy',
+                ],
+            ],
+        ];
+
+        $completions = tcgMissionOnGameFinished($state);
+        $ids = array_column($completions, 'id');
+        $this->assertContains('ms_win_turn_3', $ids);
+        $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_win_turn_3', ''));
+
+        $stateWrongTurn = $state;
+        $stateWrongTurn['turn'] = 4;
+        $otherId = 'test_missions_t3_' . bin2hex(random_bytes(3));
+        tcgEnsureUser($otherId, ['username' => 'Turn3 Other']);
+        $stateWrongTurn['players']['p1']['discord_id'] = $otherId;
+        $miss = tcgMissionOnGameFinished($stateWrongTurn);
+        $this->assertNotContains('ms_win_turn_3', array_column($miss, 'id'));
+
+        $claim = tcgMissionClaim($this->discordId, 'ms_win_turn_3');
+        $this->assertSame('coins_and_pr_pack', $claim['mission']['reward_type'] ?? null);
+        $this->assertSame(800, $claim['coins_gained'] ?? null);
+        $this->assertSame($beforeCoins + 800, $claim['coins'] ?? null);
+        $this->assertNotEmpty($claim['pr_pack']['cards'] ?? []);
+        $this->assertTrue(tcgMissionIsClaimed($this->discordId, 'ms_win_turn_3', ''));
+    }
+
     public function testResignToCpuDoesNotGrantCpuGroupWinMission(): void
     {
         $cards = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];

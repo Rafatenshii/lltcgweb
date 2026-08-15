@@ -105,6 +105,11 @@
       return (t('missions.rewardFreeSleeve') || 'Free sleeve claim')
         + progressBit + ' · ' + missionStatusLabel(m.status);
     }
+    if (m.reward_type === 'coins_and_pr_pack') {
+      return (t('missions.rewardCoinsAndPrPack', { coins: Number(m.reward || 0) })
+        || ('+' + Number(m.reward || 0).toLocaleString() + ' Coins · PR Pack'))
+        + ' · ' + missionStatusLabel(m.status);
+    }
     return '+' + Number(m.reward || 0).toLocaleString()
       + ' <span class="star-gem-inline">' + starGemIconHtml(16) + '</span>'
       + ' · ' + missionStatusLabel(m.status);
@@ -242,12 +247,18 @@
       global.syncStarGemsFromProfile(global.A.profile);
       if (typeof global.updateStarGemsUI === 'function') global.updateStarGemsUI();
     }
-    if (res.free_sleeve_claims != null && typeof global.syncCoinsFromProfile === 'function') {
+    if ((res.coins != null || res.free_sleeve_claims != null)
+      && typeof global.syncCoinsFromProfile === 'function') {
       global.syncCoinsFromProfile({
         ...(global.A && global.A.profile ? global.A.profile : {}),
-        free_sleeve_claims: res.free_sleeve_claims,
+        free_sleeve_claims: res.free_sleeve_claims != null
+          ? res.free_sleeve_claims
+          : (global.A && global.A.profile && global.A.profile.free_sleeve_claims),
         coins: res.coins != null ? res.coins : (global.A && global.A.coins),
       });
+    }
+    if (res.pr_pack && typeof global.queueRankedPrReward === 'function') {
+      global.queueRankedPrReward(res.pr_pack);
     }
     syncHubBadge(res.claimable_count ?? 0);
     await loadMissions();
@@ -261,6 +272,11 @@
       } else if ((res.mission?.reward_type || res.reward_type) === 'free_sleeve') {
         global.toastSuccess(t('missions.claimedFreeSleeveToast', { title })
           || ('Claimed ' + title + ' — free sleeve unlocked'), 3200);
+      } else if ((res.mission?.reward_type || res.reward_type) === 'coins_and_pr_pack') {
+        global.toastSuccess(t('missions.claimedCoinsAndPrToast', {
+          title,
+          coins: res.coins_gained || res.mission?.reward || 0,
+        }) || ('Claimed ' + title + ' (+' + (res.coins_gained || 0) + ' Coins · PR Pack)'), 3600);
       } else {
         global.toastSuccess(t('missions.claimedToast', {
           title,

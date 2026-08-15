@@ -1119,7 +1119,8 @@
       "sticker10": "在贴纸商店兑换印章 10 次",
       "sticker50": "在贴纸商店兑换印章 50 次",
       "sticker100": "在贴纸商店兑换印章 100 次",
-      "cards2400": "拥有 2,400 张卡"
+      "cards2400": "拥有 2,400 张卡",
+      "winTurn3": "在第3回合获胜"
     },
     "rewardStarter": "选择入门牌组",
     "rewardStarterOwned": "已拥有",
@@ -1132,7 +1133,11 @@
     "statusReady": "可领取",
     "tabDaily": "每日",
     "tabMilestone": "里程碑",
-    "title": "任务"
+    "title": "任务",
+    "rewardCoinsAndPrPack": "+{coins} 金币 · PR包",
+    "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
+    "rewardFreeSleeve": "免费卡套领取",
+    "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取"
   },
   "stamps": {
     "audio": "贴纸语音",

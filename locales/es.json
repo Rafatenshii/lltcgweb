@@ -1094,7 +1094,8 @@
       "sticker10": "Canjeaste sellos en la tienda de stickers 10 veces",
       "sticker50": "Canjeaste sellos en la tienda de stickers 50 veces",
       "sticker100": "Canjeaste sellos en la tienda de stickers 100 veces",
-      "cards2400": "Posee 2.400 cartas"
+      "cards2400": "Posee 2.400 cartas",
+      "winTurn3": "Gana una partida en tu 3.er turno"
     },
     "rewardStarter": "Elige un mazo inicial",
     "rewardStarterOwned": "Ya lo tienes",
@@ -1107,7 +1108,11 @@
     "statusReady": "Lista para reclamar",
     "tabDaily": "Diarias",
     "tabMilestone": "Hitos",
-    "title": "Misiones"
+    "title": "Misiones",
+    "rewardCoinsAndPrPack": "+{coins} monedas · Pack PR",
+    "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
+    "rewardFreeSleeve": "Funda gratis",
+    "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas"
   },
   "stamps": {
     "audio": "Audio de sellos",

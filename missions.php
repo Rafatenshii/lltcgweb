@@ -44,6 +44,7 @@ function tcgMissionDefinitions(): array {
         ['id' => 'ms_sticker_10', 'type' => 'milestone', 'reward' => 200, 'sort' => 281, 'i18n_key' => 'missions.milestone.sticker10', 'threshold' => 10],
         ['id' => 'ms_sticker_50', 'type' => 'milestone', 'reward' => 500, 'sort' => 282, 'i18n_key' => 'missions.milestone.sticker50', 'threshold' => 50],
         ['id' => 'ms_sticker_100', 'type' => 'milestone', 'reward' => 1000, 'sort' => 283, 'i18n_key' => 'missions.milestone.sticker100', 'threshold' => 100],
+        ['id' => 'ms_win_turn_3', 'type' => 'milestone', 'reward' => 800, 'reward_type' => 'coins_and_pr_pack', 'sort' => 290, 'i18n_key' => 'missions.milestone.winTurn3', 'threshold' => 3],
         ['id' => 'ms_win_muse', 'type' => 'milestone', 'reward' => 1000, 'sort' => 300, 'i18n_key' => 'missions.milestone.winMuse', 'group' => "μ's"],
         ['id' => 'ms_win_aqours', 'type' => 'milestone', 'reward' => 1000, 'sort' => 310, 'i18n_key' => 'missions.milestone.winAqours', 'group' => 'Sunshine'],
         ['id' => 'ms_win_liella', 'type' => 'milestone', 'reward' => 1000, 'sort' => 320, 'i18n_key' => 'missions.milestone.winLiella', 'group' => 'Superstar'],
@@ -278,6 +279,30 @@ function tcgMissionClaim(string $discordId, string $missionId, ?string $starterK
             'star_gems' => tcgGetStarGems($discordId),
             'star_gems_gained' => 0,
             'free_sleeve_claims' => tcgGetFreeSleeveClaims($discordId),
+        ];
+    }
+
+    if ($rewardType === 'coins_and_pr_pack') {
+        require_once __DIR__ . '/coins.php';
+        require_once __DIR__ . '/ranked_pr_rewards.php';
+        $coinsGain = max(0, intval($def['reward'] ?? 0));
+        $db->prepare('UPDATE tcg_mission_progress SET claimed_at = ? WHERE discord_id = ? AND mission_id = ? AND period_key = ?')
+            ->execute([$now, $discordId, $missionId, $periodKey]);
+        $coins = $coinsGain > 0 ? tcgAddCoins($discordId, $coinsGain) : tcgGetCoins($discordId);
+        $prPack = tcgGrantPrPackCards($discordId);
+        return [
+            'mission' => [
+                'id' => $missionId,
+                'i18n_key' => $def['i18n_key'],
+                'reward' => $coinsGain,
+                'reward_type' => 'coins_and_pr_pack',
+                'status' => 'claimed',
+            ],
+            'star_gems' => tcgGetStarGems($discordId),
+            'star_gems_gained' => 0,
+            'coins' => $coins,
+            'coins_gained' => $coinsGain,
+            'pr_pack' => $prPack,
         ];
     }
 
@@ -622,6 +647,23 @@ function tcgMissionOnGameFinished(array $state): array {
         $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckRankedThresholds($discordId));
         if ($winner === $pid) {
             $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckGroupWin($discordId, $state, $pid));
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckTurnWin($discordId, $state));
+        }
+    }
+    return $completions;
+}
+
+/** Mark turn-number win milestones (e.g. win while game turn === 3). */
+function tcgMissionCheckTurnWin(string $discordId, array $state): array {
+    $turn = intval($state['turn'] ?? 0);
+    $completions = [];
+    foreach (tcgMissionDefinitions() as $def) {
+        if (($def['type'] ?? '') !== 'milestone' || ($def['id'] ?? '') !== 'ms_win_turn_3') {
+            continue;
+        }
+        $need = intval($def['threshold'] ?? 3);
+        if ($turn === $need) {
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $def['id']));
         }
     }
     return $completions;
@@ -890,11 +932,19 @@ function tcgMissionRetract(string $discordId, string $missionId, ?string $period
     }
     $wasClaimed = !empty($row['claimed_at']);
     $reward = max(0, intval($def['reward'] ?? 0));
+    $rewardType = (string)($def['reward_type'] ?? 'star_gems');
     $gemsClawed = 0;
-    if ($wasClaimed && $reward > 0) {
+    if ($wasClaimed && $reward > 0 && $rewardType === 'star_gems') {
         $before = tcgGetStarGems($discordId);
         tcgSoftClawbackStarGems($discordId, $reward);
         $gemsClawed = max(0, $before - tcgGetStarGems($discordId));
+    } elseif ($wasClaimed && $reward > 0 && $rewardType === 'coins_and_pr_pack') {
+        require_once __DIR__ . '/coins.php';
+        try {
+            tcgDeductCoins($discordId, min($reward, tcgGetCoins($discordId)));
+        } catch (Throwable $e) {
+            // Soft clawback: leave balance alone if deduct fails.
+        }
     }
     tcgDb()->prepare('DELETE FROM tcg_mission_progress WHERE discord_id = ? AND mission_id = ? AND period_key = ?')
         ->execute([$discordId, $missionId, $periodKey]);
