@@ -1067,6 +1067,8 @@ html.tcg-portrait-play{
   --p-zone-bg: linear-gradient(180deg, #fff8fb 0%, #f4d4e4 100%);
   --p-zone-border: #e891b4;
   --p-live-bg: linear-gradient(180deg, #fff6fa 0%, #efc8db 100%);
+  /* Stage outlines smaller than hand cards; hearts/blades stay fixed px below */
+  --p-stage-outline-scale: 0.72;
   /* Defeat landscape hand-strip vars that blow cards past the field */
   --hand-strip-h: var(--p-hand-mine);
   --my-hand-card-h: var(--p-card-h);
@@ -1413,7 +1415,8 @@ html.tcg-portrait-play #screen-game .mat-zone{
   justify-self:center;
   align-self:center;
 }
-/* Member stage slots — portrait (63×88), large but contained in their field row. */
+/* Member stage slots — portrait (63×88), smaller than hand so sizes stay distinct.
+   Hearts / blades use fixed px sizes below and do not scale with this. */
 html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-opp-stage-center,
 html.tcg-portrait-play #screen-game .z-opp-stage-right,
@@ -1421,9 +1424,9 @@ html.tcg-portrait-play #screen-game .z-my-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   aspect-ratio: 63 / 88;
-  height: min(calc(100% / 1.23), calc(100cqw / 3 * 88 / 63 / 1.23));
+  height: min(calc(100% * var(--p-stage-outline-scale)), calc(100cqw / 3 * 88 / 63 * var(--p-stage-outline-scale)));
   width: auto;
-  max-width: calc(100% / 1.23);
+  max-width: calc(100% * var(--p-stage-outline-scale));
   max-height: 100%;
   justify-self: center;
 }
