@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  const NEWS_JSON = './news.json?v=29';
+  const NEWS_JSON = './news.json?v=30';
   const LAST_SEEN_KEY = 'lltcg.news.lastSeenNewestId';
   /** Matches catalog card_no tokens in news copy (PL!… / LL-…). */
   const NEWS_CARD_ID_RE = /(PL![A-Za-z0-9!＋._-]+|LL-[A-Za-z0-9!＋._-]+|PL!-[A-Za-z0-9!＋._-]+)/g;
@@ -44,6 +44,10 @@
   function formatBody(text) {
     return linkNewsCardIds(String(text || ''))
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(
+        /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+        '<a class="news-ext-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
+      )
       .replace(/\n/g, '<br>');
   }
 
