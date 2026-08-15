@@ -2088,11 +2088,9 @@ html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim
   display:none!important;
 }
 
-html.tcg-portrait-play #screen-game .card-flight,
-html.tcg-portrait-play #screen-game .flight-card{
-  max-width:min(42vw,160px);
-  max-height:min(28vh,220px);
-}
+/* Flights live in #card-flight-layer (outside #screen-game). Never cap
+   .card-flight size here — landscape live-storage destinations are often
+   wider than 42vw and must morph to the real slot aspect. */
 /* The fixed layer must cover the whole phone. Capping the layer itself to the
    ghost size clipped every player-side flight below y=220 while opponent
    flights near the top remained visible. */
