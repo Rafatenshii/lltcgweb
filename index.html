@@ -19120,6 +19120,7 @@ function animHideIidsForMoves(prev, moves) {
     const pid = m.to?.pid || m.from?.pid;
     if (!pid || !m.iid) continue;
     const toZone = m.to?.zone;
+    const fromZone = m.from?.zone;
     if (toZone === 'hand') {
       const wasInHand = (prev.players?.[pid]?.hand || []).some(c => c.instance_id === m.iid);
       if (!wasInHand) hide.add(m.iid);
@@ -19129,6 +19130,9 @@ function animHideIidsForMoves(prev, moves) {
     } else if (toZone === 'stage') {
       const wasOnStage = Object.values(prev.players?.[pid]?.stage || {}).some(c => c?.instance_id === m.iid);
       if (!wasOnStage) hide.add(m.iid);
+    } else if (fromZone === 'live' && (toZone === 'waiting_room' || toZone === 'success')) {
+      // Keep departing storage cards hidden if a mid-flight render rebuilds the mat.
+      hide.add(m.iid);
     }
     // Energy is always public face-up — never hide destination chips during flight.
   }
@@ -19653,6 +19657,9 @@ function commitLiveRoundAfterOutcomes(fallback) {
   G._liveStorageOutcomePending = false;
   G._livePostRevealBoard = null;
   G._liveStorageDepartedIids = null;
+  // Prefer the post-outcome board (empty live_zone). A deferred hold from mid-spectacle
+  // still has storage cards and would briefly re-paint them after flights finish.
+  if (fallback) G._deferredLiveState = fallback;
   commitDeferredLiveState(fallback || G.gameState);
 }
 
@@ -20414,8 +20421,13 @@ async function executeCardMoveAnimation(m, opts) {
   const oppLiveReveal = faceDown && m.to?.zone === 'live' && m.to?.pid !== myId && !!destCard?.revealed;
   const playerHandReveal = isPlayerHandRevealMove(m, myId);
   const handSlots = { before: handBefore, after: handAfter || collectHandSlotRects() };
-  const hideLiveSource = hideSource || (m.from?.zone === 'live' && m.to?.zone === 'waiting_room');
-  const deferSourceHide = hideLiveSource && keepHidden;
+  // Live→WR/Success exits: keep the mat source hidden until DOM remove finishes.
+  // Default keepHidden:false races flyCard's async handoff and briefly re-shows storage.
+  const isLiveStorageExit = m.from?.zone === 'live'
+    && (m.to?.zone === 'waiting_room' || m.to?.zone === 'success');
+  const keepHiddenEffective = keepHidden || isLiveStorageExit;
+  const hideLiveSource = hideSource || isLiveStorageExit;
+  const deferSourceHide = hideLiveSource && keepHiddenEffective;
 
   if (playerHandReveal && isHiddenSourceToHand(m)) {
     markHandRevealFlip(m.iid);
@@ -20452,8 +20464,9 @@ async function executeCardMoveAnimation(m, opts) {
   }
 
   if (!deferSourceHide) setCardArriving(m.iid, true);
+  let handoffPromise = null;
   try {
-    const trEl = keepHidden ? null : (cardEl && domCardAtMoveLoc(cardEl, m.to, myId) ? cardEl : null);
+    const trEl = keepHiddenEffective ? null : (cardEl && domCardAtMoveLoc(cardEl, m.to, myId) ? cardEl : null);
     const tr = (trEl && !hideLiveSource && rectFromEl(trEl))
       || targetRectForLoc(m.to, { iid: m.iid, pid: m.to?.pid }, stateAfter, myId, handSlots, false)
       || projectFieldCardRect(m.to, m.card, myId)
@@ -20469,13 +20482,15 @@ async function executeCardMoveAnimation(m, opts) {
       finalState: stateAfter,
     };
     const runHandoff = () => {
-      void (async () => {
+      if (handoffPromise) return handoffPromise;
+      handoffPromise = (async () => {
         if (m.to?.zone === 'waiting_room') {
           await wrPileRevealPendingMove(m.to.pid, m.iid, renderState || stateAfter, myId);
         }
         removeLiveStorageCardFromDomIfDeparted(m.from, m.iid, myId, renderState || stateAfter);
         finishCardMoveHandoff(m.iid, handoffOpts);
       })();
+      return handoffPromise;
     };
     if (fr && tr) {
       sfxPlayCard(sfxCardMoveSound(m));
@@ -20496,8 +20511,9 @@ async function executeCardMoveAnimation(m, opts) {
       TCG_DEBUG.warn('anim', 'executeCardMoveAnimation missing rect', { iid: m.iid, from: m.from?.zone, to: m.to?.zone, fr: !!fr, tr: !!tr });
       runHandoff();
     }
+    if (handoffPromise) await handoffPromise;
   } finally {
-    if (!keepHidden) clearAnimHideIid(m.iid);
+    if (!keepHiddenEffective) clearAnimHideIid(m.iid);
   }
 }
 
