@@ -127,6 +127,8 @@ function collectPhpStringSet(files, options) {
     const src = readText(file);
     const regexes = [];
     if (options.caseLabels) regexes.push({ kind: 'case', re: /case\s+['"]([^'"]+)['"]\s*:/g });
+    // EffectHandlers::tryHandle dispatches through a match expression, not a switch.
+    if (options.matchArms) regexes.push({ kind: 'match arm', re: /^\s*['"]([^'"]+)['"]\s*=>\s*self::/gm });
     if (options.typeVariable) regexes.push({ kind: '$type comparison', re: /\$type\s*={2,3}\s*['"]([^'"]+)['"]/g });
     if (options.promptTypeVariable) regexes.push({ kind: '$promptType comparison', re: /\$promptType\s*={2,3}\s*['"]([^'"]+)['"]/g });
     if (options.abilityArray) {
@@ -345,6 +347,8 @@ function buildMatrix() {
     ...resolverSwitchFiles,
     path.join(srcGameDir, 'AbilityResolver.php'),
     path.join(srcGameDir, 'ActivateAbility.php'),
+    path.join(srcGameDir, 'EffectRegistry.php'),
+    path.join(srcGameDir, 'EffectHandlers.php'),
     path.join(srcGameDir, 'LiveModifiers.php'),
     path.join(srcGameDir, 'LiveScoreBonus.php'),
     path.join(srcGameDir, 'PromptEnrichment.php'),
@@ -360,6 +364,7 @@ function buildMatrix() {
 
   const abilityScan = collectPhpStringSet(abilityHandlerFiles, {
     caseLabels: true,
+    matchArms: true,
     typeVariable: true,
     abilityArray: true,
     typeInArray: true,
@@ -378,10 +383,24 @@ function buildMatrix() {
     ? collectJsPromptTypes(clientPromptPath, { includeSets: true })
     : { values: new Set(), noGeneric: new Set(), meta: new Map() };
 
-  const indexPath = path.join(root, 'index.html');
-  const cpuPromptScan = fs.existsSync(indexPath)
-    ? collectJsPromptTypes(indexPath, { regionStart: 'CPU_NO_GENERIC_YESNO', cpuNoGenericFallback: true, includeSets: true })
-    : { values: new Set(), noGeneric: new Set(), meta: new Map() };
+  // CPU prompt branches live in client modules (overhaul); merge all sources.
+  const cpuPromptFiles = [
+    path.join(root, 'client', 'js', 'cpu-loop.js'),
+    path.join(root, 'client', 'js', 'cpu-ai.js'),
+    path.join(root, 'index.html'),
+  ].filter((file) => fs.existsSync(file));
+  const cpuPromptScan = { values: new Set(), noGeneric: new Set(), meta: new Map() };
+  for (const cpuFile of cpuPromptFiles) {
+    const opts = path.basename(cpuFile) === 'index.html'
+      ? { regionStart: 'CPU_NO_GENERIC_YESNO', cpuNoGenericFallback: true, includeSets: true }
+      : { cpuNoGenericFallback: true, includeSets: true };
+    const scan = collectJsPromptTypes(cpuFile, opts);
+    for (const value of scan.values) addMatch(cpuPromptScan.values, cpuPromptScan.meta, value, cpuFile, 'cpu');
+    for (const value of scan.noGeneric) cpuPromptScan.noGeneric.add(value);
+  }
+  const indexPath = cpuPromptFiles.find((f) => f.endsWith('cpu-loop.js'))
+    || cpuPromptFiles[0]
+    || path.join(root, 'client', 'js', 'cpu-loop.js');
 
   const abilityExactMissing = new Set([...abilityTypes].filter((type) => !abilityScan.values.has(type)));
   const abilityMissingAnyRoute = new Set([...abilityExactMissing].filter((type) => !coveredByPrefix(type, abilityPrefixes.values)));
@@ -405,6 +424,7 @@ function buildMatrix() {
       ability_handler_files: abilityHandlerFiles.map(slashPath),
       prompt_resolver_files: promptResolverFiles.map(slashPath),
       client_prompt_renderer: fs.existsSync(clientPromptPath) ? slashPath(clientPromptPath) : null,
+      cpu_prompt_sources: cpuPromptFiles.map(slashPath),
       cpu_prompt_source: fs.existsSync(indexPath) ? slashPath(indexPath) : null,
     },
     summary: {

@@ -35,7 +35,7 @@
     if (!pr) return;
     const tier = global.cpuDiff();
     const winPressure = global.cpuWinPressure(cpu);
-    const read = tier === 'easy' ? null : global.cpuReadOpponent(s, 'p2');
+    const read = tier === 'easy' ? null : global.cpuReadOpponent(s, typeof global.cpuOpponentId === 'function' ? global.cpuOpponentId() : 'p2');
     if (resolveYellDeckTopPrompt(pr, cpu, tier, read)) return;
     // BP07 prompts are generic shapes; resolve them before the step/smart heuristics
     // so a bp7 card pick is never answered with a bare yes/no.

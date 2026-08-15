@@ -152,13 +152,15 @@ function cpuAbilityLadderEnergyBonus(type, cpu, tier, s) {
 }
 
 function cpuTierAbilityMul(tier) {
-  return { easy: 0.4, normal: 1, hard: 1.35 }[tier] || 0.4;
+  return { easy: 0.45, normal: 1, hard: 1.35, expert: 1.55 }[tier] || 1;
 }
 
 function cpuAbilityBaseScores() {
   return {
     draw: 3.2, draw_cards: 3.2, draw_and_discard: 2.8, draw_discard: 2.8,
     baton_enter_draw_discard: 3, draw_per_stage_discard: 2.6, draw_if_stage_cost_min: 2.4,
+    draw_if_stage_cost_less_than_opp: 2.5, draw_if_stage_cost_less_surveil: 3.2,
+    draw_per_stage_group_discard: 2.7,
     deck_surveil: 3.4, look_reveal_filter: 4.2, look_reveal_group: 3.8, look_reveal_named: 3.8,
     look_reveal_live_score_plus: 4, look_deck_top_arrange: 4.5, look_top_optional_wr: 2.8,
     add_from_wr: 3.8, add_from_wr_max_cost: 3.5, add_from_waiting_room: 3.6,
@@ -167,23 +169,36 @@ function cpuAbilityBaseScores() {
     optional_discard_add_from_wr: 3.5, pay_energy_play_wr_empty: 3.2, pay_leave_stage_play_wr_member: 3,
     wait_opponent_stage_max_cost: 4, wait_self_draw_discard: 3.5, wait_self_draw_discard_activate: 4,
     wait_self_discard_draw: 3.2, optional_wait_self_wait_opp: 2.8, optional_wait_subunit_opp_active: 3.2,
-    wait_self_choose_heart: 2.6,
+    wait_self_choose_heart: 2.6, put_opponent_active_into_wait: 3.8,
     activated_wait_opp_reduce_cost_per_group: 3, blade_bonus: 2.6, member_blade_bonus: 2.8,
     live_score_bonus: 3.2, hand_discard_for_stage_blade: 2.4, blade_if_entered_or_moved: 2.2,
-    blade_per_opp_wait: 3, hearts_and_blade_bonus: 2.8, activate_energy: 2.8, pay_energy_draw: 3.2,
+    blade_per_opp_wait: 3, blade_per_other_subunit: 2.8, blade_per_stage_excl_subunit: 2.6,
+    hearts_and_blade_bonus: 2.8, activate_energy: 2.8, pay_energy_draw: 3.2,
     pay_energy_surveil: 3.4, optional_pay_energy: 2.4, energy_wait_from_deck: 2.6,
-    activate_energy_if_success: 2.2, hand_cost_reduction: 2, if_baton_lower_cost: 1.8,
+    activate_energy_if_success: 2.2, activate_energy_if_other_group: 2.4,
+    activate_energy_if_other_subunit: 2.4, activate_subunit_members: 2.6,
+    hand_cost_reduction: 2, if_baton_lower_cost: 1.8,
     continuous_hearts_in_slot: 2.2, continuous_mus_blade_if_live_zone: 2.4, yell_hearts_wildcard: 2,
     hearts_if_min_energy: 1.8, on_enter_side_area: 2.4, optional_live_start: 3,
     live_success_pick_yell_card: 2.8, optional_success_live_swap: 3.2, score_if_stage_member_hearts: 2.4,
+    score_if_live_zone_min: 3.4, score_if_live_zone_group: 3.2,
+    blade_if_live_zone_group_live: 3.5, blade_if_live_zone_min: 3.2,
     activated_swap_area_member: 2.6, activated_pay_discard_add_wr_live: 3.6, activated_swap_area: 2.4,
+    activated_leave_play_wr_same_slot: 3.4, activated_pick_on_enter_ability: 2.8,
     discard_cost_add_live_subunit: 3.2, optional_discard_prompt: 2.2, optional_discard_hand: 2,
     optional_discard_surveil: 3.2, optional_wait_self_surveil: 3.4, optional_wait_self_look_reveal: 3.6,
     optional_discard_look_reveal_subunit: 3.4, optional_stage_reposition: 2, optional_pay_play_hand_member: 3.5,
     optional_wr_member_reenter: 3, mill_deck_to_wr: 2, optional_wait_self: 2.6, optional_wait_self_add_wr: 3,
     optional_wait_members_draw: 3.2, optional_pay_energy_on_enter: 2.6, optional_pay_energy_if_baton: 2.4,
     optional_wait_self_discard_look_reveal_group: 3.8, optional_wait_discard_look_reveal_group: 3.6,
+    optional_pay_energy_add_from_wr: 3.6, optional_ema_punch_ask: 2.8,
+    optional_opp_wr_members_to_deck_bottom_then_wait: 3.4,
+    mill_fill_wr_optional_live_deck_top: 3.2, pr_vol9_wait_opp_max_blade: 3.8,
     choose_heart_per_success: 2, player_choice: 2.4, reveal_top_live_score: 2.8,
+    live_start_all_stage_group_bonus: 3, live_score_if_full_stage_distinct_group: 3.2,
+    live_score_if_stage_group_hearts_total: 2.8, live_score_per_stage_wait_member: 2.6,
+    grant_live_success_yell_live_score_if_full_stage: 3.4,
+    pick_stage_member: 2.8,
   };
 }
 
@@ -335,7 +350,7 @@ function cpuExpectedYellAnyHearts(s, pid, tier) {
 /** Stage hearts + expected Yell wildcards (Hard/Expert pro clear model). */
 function cpuClearHeartPool(cpu, s, pid, tier) {
   const pool = stageHeartPool(cpu).slice();
-  const extras = cpuExpectedYellAnyHearts(s || G.gameState, pid || 'p2', tier || cpuDiff());
+  const extras = cpuExpectedYellAnyHearts(s || G.gameState, pid || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), tier || cpuDiff());
   for (let i = 0; i < extras; i++) pool.push('any');
   return pool;
 }
@@ -344,7 +359,7 @@ function cpuHandLiveContext(cpu, opts = null) {
   const hand = cpu?.hand || [];
   const tier = opts?.tier || (typeof cpuDiff === 'function' ? cpuDiff() : 'normal');
   const s = opts?.s || G.gameState;
-  const pid = opts?.pid || 'p2';
+  const pid = opts?.pid || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
   const stagePool = stageHeartPool(cpu);
   const clearPool = cpuTierHardPlus(tier) || tier === 'normal'
     ? cpuClearHeartPool(cpu, s, pid, tier)
@@ -577,11 +592,18 @@ function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
   }
   const cardCands = pr.candidates || pr.look_cards || pr.looked_cards || [];
   if (cardCands.length) {
-    const pick = cpuPickBestCandidate(cardCands, cpu, hand, tier, read)
-      || cardCands[Math.floor(Math.random() * cardCands.length)];
-    if (pick?.instance_id) {
-      const payload = { card_id: pick.instance_id };
-      if (pr.pick_count > 1) payload.card_ids = [pick.instance_id];
+    const need = Math.max(1, pr.pick_count || pr.max_pick || pr.count || 1);
+    const ranked = [...cardCands].sort((a, b) => {
+      const sa = cpuPickBestCandidate([a], cpu, hand, tier, read) ? 1 : 0;
+      const sb = cpuPickBestCandidate([b], cpu, hand, tier, read) ? 1 : 0;
+      return (cpuScoreSurveilCandidate(b, cpu, hand, tier, read) || 0)
+        - (cpuScoreSurveilCandidate(a, cpu, hand, tier, read) || 0)
+        || sb - sa;
+    });
+    const ids = ranked.map(c => c?.instance_id).filter(Boolean).slice(0, need);
+    if (ids.length) {
+      const payload = need > 1 ? { card_ids: ids, card_id: ids[0] } : { card_id: ids[0] };
+      if (ids[0] && ranked[0]?.slot) payload.slot = ranked[0].slot;
       cpuAct('resolve_prompt', payload);
       return true;
     }
@@ -807,8 +829,9 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'mandatory_discard_color_threshold_reveal5', 'maki_reveal5_choose_color', 'maki_reveal5_pick_mus',
   'surveil_arrange', 'surveil_pick_one', 'surveil_pick_one_hand_rest_wr',
   'surveil_pick_one_deck_top', 'surveil_pick_one_hand_rest_top',
-  'live_success_pick_yell_deck_top', 'pick_named_member_blade', 'pick_named_members_grant_blade',
+  'live_success_pick_yell_deck_top',   'pick_named_member_blade', 'pick_named_members_grant_blade',
   'pick_named_members_grant_hearts', 'pick_member_grant_hearts', 'pick_member_cost_bonus',
+  'pick_stage_member',
   'sbp6_pick_revealed_member', 'sbp5_pick_revealed_member', 'bp5_pick_kasumi_reveal',
   'sbp6_swap_pick_wr_member', 'sbp6_swap_pick_stage_member', 'sbp6_live_zone_deck_top_hearts',
   'sbp6_leave_play_wr_slot', 'hs_leave_play_wr_slot', 'hs_pick_wr_live_to_zone', 'sbp6_pick_members_live_score',
@@ -838,6 +861,9 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'stack_energy_zone_pick',
   'both_shuffle_wr_members_deck_bottom_threshold',
   'live_start_unless_discard_return_energy', 'live_success_choose_draw_or_energy_wait',
+  'mill_fill_wr_optional_live_deck_top', 'optional_ema_punch_ask',
+  'optional_opp_wr_members_to_deck_bottom_then_wait', 'optional_pay_energy_add_from_wr',
+  'pr_vol9_wait_opp_max_blade',
 ]);
 
 /** Prefer a non-empty CPU hand — empty [] must not block fallback to cpu.hand. */
@@ -1052,6 +1078,10 @@ function cpuDesiredLiveStorageTotal(ctx, hand, viableLives, alreadyStored) {
   if (cpuTierHardPlus(tier) && posture.ahead && viableCount >= 1 && handLen >= 3) {
     target = Math.max(target, Math.min(3, alreadyStored + 1));
   }
+  // Expert: when multiple Lives clear, push toward full storage more often.
+  if (tier === 'expert' && stageViableCount >= 2 && handLen >= 3) {
+    target = Math.max(target, Math.min(3, alreadyStored + Math.min(stageViableCount, 2)));
+  }
 
   return Math.min(3, target);
 }
@@ -1216,15 +1246,16 @@ function cpuScoreOptionalAbility(ab, cpu, tier, ae, hand, winPressure = 0, read 
       sit: sit || null,
       s: G.gameState,
     };
-    score = cpuEvalPromptBlend(score, G.gameState, 'p2', 'yes', blendCtx);
+    score = cpuEvalPromptBlend(score, G.gameState, (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), 'yes', blendCtx);
   }
   return score;
 }
 
 function cpuOptionalYesThreshold(tier) {
   if (cpuTierHardPlus(tier)) return 0.65;
-  if (tier === 'normal') return 1.0;
-  return 99;
+  if (tier === 'normal') return 0.95;
+  // Easy: allow occasional strong optionals (was 99 = never).
+  return 2.4;
 }
 
 function cpuBuildOptionalYesPayload(pr, cpu, tier, winPressure, discardFn) {
@@ -1418,7 +1449,7 @@ function cpuScorePromptChoice(pr, choiceKey, cpu, tier, ctx) {
   if (choiceKey === 'no' || choiceKey === 'skip') {
     let decline = tier === 'easy' ? 0.55 : 0;
     if (tier !== 'easy' && typeof cpuEvalPromptBlend === 'function' && ctx.s) {
-      decline = cpuEvalPromptBlend(decline, ctx.s, 'p2', choiceKey, ctx);
+      decline = cpuEvalPromptBlend(decline, ctx.s, ctx.cpuId || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), choiceKey, ctx);
     }
     return decline;
   }
@@ -1450,7 +1481,7 @@ function cpuScorePromptChoice(pr, choiceKey, cpu, tier, ctx) {
     }
   }
   if (tier !== 'easy' && typeof cpuEvalPromptBlend === 'function' && ctx.s && score > -50) {
-    score = cpuEvalPromptBlend(score, ctx.s, 'p2', choiceKey, ctx);
+    score = cpuEvalPromptBlend(score, ctx.s, ctx.cpuId || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), choiceKey, ctx);
   }
   return score;
 }
@@ -1583,9 +1614,12 @@ function cpuResolveHangRiskPrompts(pr, cpu, tier, read, s) {
     cpuAct('resolve_prompt', { choice: 'skip' });
     return true;
   }
-  if (pr.type === 'pick_named_member_blade' || pr.type === 'pick_member_cost_bonus') {
-    const best = [...(pr.candidates || [])].sort((a, b) => (b.blade || 0) - (a.blade || 0))[0];
+  if (pr.type === 'pick_named_member_blade' || pr.type === 'pick_member_cost_bonus'
+      || pr.type === 'pick_stage_member') {
+    const best = [...(pr.candidates || [])].sort((a, b) => (b.blade || 0) - (a.blade || 0)
+      || (b.cost || 0) - (a.cost || 0))[0];
     if (best?.slot) { cpuAct('resolve_prompt', { slot: best.slot }); return true; }
+    if (best?.instance_id) { cpuAct('resolve_prompt', { card_id: best.instance_id }); return true; }
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return true;
   }
@@ -1873,9 +1907,10 @@ function cpuMainActionMinScore(tier, posture) {
 }
 
 function cpuActivateMinScore(tier, winPressure, posture) {
+  if (tier === 'easy') return winPressure >= 0.45 ? 2.8 : 3.2;
   let min = cpuTierHardPlus(tier)
     ? (winPressure >= 1 ? 2.2 : winPressure >= 0.45 ? 1.35 : 0.45)
-    : (winPressure >= 1 ? 2 : winPressure >= 0.45 ? 1.25 : 0.75);
+    : (winPressure >= 1 ? 2 : winPressure >= 0.45 ? 1.15 : 0.65);
   if (posture?.behind) {
     if (cpuTierHardPlus(tier)) min -= 0.12;
     else if (tier === 'normal') min -= 0.08;
@@ -1887,9 +1922,10 @@ function cpuListActivateCandidates(s, cpu, ctx) {
   const { tier, winPressure, read } = ctx;
   const posture = cpuPosture(ctx);
   const minScore = cpuActivateMinScore(tier, winPressure, posture);
+  const cpuId = ctx.cpuId || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
   cpuClearAbilityBlacklistIfNewTurn(s);
   const hasViableLive = cpuHandHasViableLive(cpu);
-  let abilities = collectActivatableAbilities(s, 'p2')
+  let abilities = collectActivatableAbilities(s, cpuId)
     .map(a => ({ ...a, score: cpuScoreAbility(a, cpu, tier, read, winPressure) }))
     .filter(a => {
       if (cpuAbilityBlacklisted(a.card?.instance_id, a.idx)) return false;
@@ -2064,8 +2100,9 @@ function cpuListMainActions(s, cpu, ctx) {
   return actions;
 }
 
-function cpuBestMainAction(actions, ctx, s = null, pid = 'p2') {
+function cpuBestMainAction(actions, ctx, s = null, pid = null) {
   if (!actions.length) return null;
+  pid = pid || ctx?.cpuId || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
   const posture = cpuPosture(ctx);
   const min = cpuMainActionMinScore(ctx.tier, posture);
   // Eval-ranked path (Normal/Hard): blend board evaluateState into candidate scores.
@@ -2201,7 +2238,7 @@ function cpuMulligan() {
 
 function cpuFindDebugTestCard(cpu, s) {
   const cfg = s?.debug_card_test;
-  if (!cfg || cfg.test_pid !== 'p2') return null;
+  if (!cfg || (cfg.test_pid && cfg.test_pid !== (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'))) return null;
   const iid = cfg.instance_id;
   const match = (c) => c && (c.debug_test_card || (iid && c.instance_id === iid));
   for (const c of cpu.hand || []) {
@@ -2252,7 +2289,7 @@ function cpuTryDebugTestCard(s, cpu, tier, winPressure, read) {
     }
   }
   if (found.zone === 'stage') {
-    const abilities = collectActivatableAbilities(s, 'p2').filter(a => {
+    const abilities = collectActivatableAbilities(s, typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2').filter(a => {
       const card = a.card;
       return card && (card.debug_test_card || card.instance_id === found.card.instance_id);
     });
@@ -2605,7 +2642,15 @@ async function cpuMain() {
   if (!s.pending_prompt) clearDeferredPromptState();
   if (s.debug_card_test && cpuTryDebugTestCard(s, cpu, ctx.tier, ctx.winPressure, ctx.read)) return;
   if (ctx.tier === 'easy') {
-  if (cpuPlayMemberFromHand(s, cpu, hand, ctx.tier, ctx.read)) return;
+    // Occasional strong activates so Easy still exercises skills without playing optimally.
+    if (Math.random() < 0.28) {
+      const acts = cpuListActivateCandidates(s, cpu, ctx);
+      if (acts[0] && (acts[0].score || 0) >= 3.0) {
+        cpuApplyMainAction(acts[0]);
+        return;
+      }
+    }
+    if (cpuPlayMemberFromHand(s, cpu, hand, ctx.tier, ctx.read)) return;
     cpuAct('end_main', {});
     return;
   }
@@ -2689,7 +2734,7 @@ function cpuSelectIndependentLives(pool, liveInHand, targetLiveCount, tier, winP
   const scoreLive = (c) => {
     let sc = cpuScoreLiveForSet(c, tier, winPressure, read, cpu) + cpuLiveJitter(tier);
     if (tier !== 'easy' && typeof cpuEvalLiveBonus === 'function' && ctx?.s) {
-      sc += cpuEvalLiveBonus(ctx.s, 'p2', c, ctx);
+      sc += cpuEvalLiveBonus(ctx.s, ctx.cpuId || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), c, ctx);
     }
     // Prefer stage-clearable Lives over Yell-dependent ones when scores are close.
     const stagePool = ctx?.liveCtx?.stagePool || stageHeartPool(cpu || {});
@@ -2829,10 +2874,10 @@ function cpuLiveSet() {
   const alreadyStored = storage.length;
   const canAdd = 3 - alreadyStored;
   const hand = cpu.hand || [];
-  const ctx = cpuCtx(s, cpu);
+  const ctx = cpuCtx(s, cpu, cpuId);
   const { tier, winPressure, read, sit } = ctx;
 
-  if (s.debug_card_test?.test_pid === 'p2' && alreadyStored > 0) {
+  if (s.debug_card_test?.test_pid === cpuId && alreadyStored > 0) {
     cpuAct('end_live_set', {});
     return;
   }
@@ -3248,7 +3293,7 @@ function cpuResolveBranchPickPrompts(pr, cpu, tier, winPressure, read, s) {
     }
     const lives = pool.filter(c => c.card_type === 'ライブ');
     const nonLives = pool.filter(c => c.card_type !== 'ライブ');
-    const ownerIsCpu = pr.owner === 'p2';
+    const ownerIsCpu = pr.owner === (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     let ids;
     if (ownerIsCpu) {
       const ranked = [...nonLives].sort((a, b) =>
@@ -3335,7 +3380,7 @@ function cpuResolveBranchPickPrompts(pr, cpu, tier, winPressure, read, s) {
         c.card_type === 'メンバー' || c.card_type_en === 'Member'
       );
       const maxPick = pr.max_pick || 2;
-      const millOpp = pr.target && pr.target !== 'p2';
+      const millOpp = pr.target && pr.target !== (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
       const sorted = [...wr].sort((a, b) => {
         const sa = millOpp ? (b.cost || 0) : -(b.cost || 0);
         const sb = millOpp ? (a.cost || 0) : -(a.cost || 0);
@@ -3816,7 +3861,8 @@ function cpuResolvePromptBody(s, cpu, pr) {
   const tier = cpuDiff();
   const hand = cpu.hand || [];
   const winPressure = cpuWinPressure(cpu);
-  const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
+  const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
+  const read = tier === 'easy' ? null : cpuReadOpponent(s, cpuId);
   if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return;
   if (cpuResolveBp7Prompt(s, cpu, pr, tier, winPressure, read)) return;
   if (pr.type === 'optional_discard_prompt') {
@@ -3844,7 +3890,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
     return;
   }
   if(pr.type==='spbp5_mill_swap_pick'){
-    cpuAct('resolve_prompt',{choice:cpuPickPositionSlot(pr, cpu, cpuReadOpponent(G.gameState, 'p2'), cpuDiff())});
+    cpuAct('resolve_prompt',{choice:cpuPickPositionSlot(pr, cpu, cpuReadOpponent(G.gameState, typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2'), cpuDiff())});
     return;
   }
   if(pr.type==='spbp5_pay_energy_score'){
@@ -4042,7 +4088,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
   if(pr.type==='mandatory_discard_look_reveal'){
     const tier = cpuDiff();
     const winPressure = cpuWinPressure(cpu);
-    const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
+    const read = tier === 'easy' ? null : cpuReadOpponent(s, typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return;
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return;
@@ -4365,14 +4411,14 @@ function cpuResolvePromptBody(s, cpu, pr) {
     return;
   }
   if(pr.type==='auto_yell_no_live_retry'){
-    const owner = pr.owner || pr.responder || 'p2';
+    const owner = pr.owner || pr.responder || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     const yellCards = s.yell_reveal?.[owner] || [];
     const hasLive = yellCards.some(c => isLiveTypeCard(c));
     cpuAct('resolve_prompt', { choice: hasLive ? 'no' : 'yes' });
     return;
   }
   if(pr.type==='auto_yell_mill_extra_yell'){
-    const owner = pr.owner || pr.responder || 'p2';
+    const owner = pr.owner || pr.responder || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     const ids = (pr.candidates || []).slice(0, 2).map(c => c.instance_id).filter(Boolean);
     cpuAct('resolve_prompt', { choice: ids.length ? 'yes' : 'no', card_ids: ids });
     return;
@@ -4482,7 +4528,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
   if(pr.type==='mandatory_discard_after_draw'){
     const tier = cpuDiff();
     const winPressure = cpuWinPressure(cpu);
-    const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
+    const read = tier === 'easy' ? null : cpuReadOpponent(s, typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return;
     cpuSchedulePromptRetryIfStuck(s, cpu);
     return;
@@ -4490,9 +4536,32 @@ function cpuResolvePromptBody(s, cpu, pr) {
   if(pr.type==='sbp5_draw_deck_bottom'||pr.type==='sbp6_discard_after_draw'){
     const tier = cpuDiff();
     const winPressure = cpuWinPressure(cpu);
-    const read = tier === 'easy' ? null : cpuReadOpponent(s, 'p2');
+    const read = tier === 'easy' ? null : cpuReadOpponent(s, typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
     if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return;
     cpuSchedulePromptRetryIfStuck(s, cpu);
+    return;
+  }
+  if (pr.type === 'optional_pay_energy_add_from_wr'
+      || pr.type === 'optional_ema_punch_ask'
+      || pr.type === 'optional_opp_wr_members_to_deck_bottom_then_wait'
+      || pr.type === 'mill_fill_wr_optional_live_deck_top'
+      || pr.type === 'pr_vol9_wait_opp_max_blade') {
+    const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
+    const score = cpuScoreOptionalAbility(pr.ability || { type: pr.type }, cpu, tier, ae, hand, winPressure, read);
+    const yes = score >= cpuOptionalYesThreshold(tier);
+    if (yes && (pr.candidates || []).length && (pr.pick_count || pr.max_pick || 0) > 0) {
+      const need = pr.pick_count || pr.max_pick || 1;
+      const pick = cpuPickBestCandidate(pr.candidates, cpu, hand, tier, read);
+      const ids = [];
+      if (pick?.instance_id) ids.push(pick.instance_id);
+      for (const c of (pr.candidates || [])) {
+        if (ids.length >= need) break;
+        if (c?.instance_id && !ids.includes(c.instance_id)) ids.push(c.instance_id);
+      }
+      cpuAct('resolve_prompt', { choice: 'yes', card_ids: ids.slice(0, need), card_id: ids[0] });
+      return;
+    }
+    cpuAct('resolve_prompt', { choice: yes ? 'yes' : 'no' });
     return;
   }
   const heartTypes=['choose_heart_per_success','choose_heart_mus_member','choose_heart_modifier','waive_required_heart_color','choose_required_heart_pair_gray','choose_replace_member_hearts','maki_reveal5_choose_color'];
@@ -4540,7 +4609,7 @@ function cpuResolvePromptBody(s, cpu, pr) {
 function cpuResolvePromptSmart(s, cpu, pr, tier) {
   const hand = cpu.hand || [];
   const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
-  const ctx = cpuCtx(s, cpu);
+  const ctx = cpuCtx(s, cpu, typeof cpuOpponentId === 'function' ? cpuOpponentId() : null);
   const winPressure = ctx.winPressure;
   const read = ctx.read;
   const discard = (need, pool) => cpuPickDiscardIds(pool || hand, need, tier, winPressure, read);

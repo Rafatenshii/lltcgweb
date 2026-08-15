@@ -22228,14 +22228,15 @@ function cpuSituation(s, cpu, cpuPid = 'p2') {
   };
 }
 
-function cpuCtx(s, cpu, cpuPid = 'p2') {
+function cpuCtx(s, cpu, cpuPid = null) {
+  cpuPid = cpuPid || (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2');
   const tier = cpuDiff();
   const liveCtx = cpuHandLiveContext(cpu, { s, pid: cpuPid, tier });
   if (tier === 'easy') {
-    return { s, cpu, tier, sit: null, read: null, winPressure: cpuWinPressure(cpu), liveCtx };
+    return { s, cpu, cpuId: cpuPid, tier, sit: null, read: null, winPressure: cpuWinPressure(cpu), liveCtx };
   }
   const sit = cpuSituation(s, cpu, cpuPid);
-  return { s, cpu, tier, sit, read: sit.read, winPressure: sit.urgency, liveCtx };
+  return { s, cpu, cpuId: cpuPid, tier, sit, read: sit.read, winPressure: sit.urgency, liveCtx };
 }
 
 /** ?debug=cpu — log top scored candidates (no behavior change). */
@@ -30234,11 +30235,11 @@ function mkNoImg(card){
 <script src="client/js/spectacle.js?v=76"></script>
 <script src="client/js/board-render.js?v=22"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
-<script src="client/js/cpu-meta-weights.js?v=5"></script>
-<script src="client/js/cpu-eval.js?v=5"></script>
+<script src="client/js/cpu-meta-weights.js?v=6"></script>
+<script src="client/js/cpu-eval.js?v=6"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=24"></script>
-<script src="client/js/cpu-ai.js?v=9"></script>
+<script src="client/js/cpu-loop.js?v=25"></script>
+<script src="client/js/cpu-ai.js?v=10"></script>
 <script src="client/js/portrait-bridge.js?v=22"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=15"></script>

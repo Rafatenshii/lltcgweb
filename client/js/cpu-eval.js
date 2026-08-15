@@ -89,7 +89,7 @@
     if (typeof global.cpuHandLiveContext === 'function') {
       const ctx = global.cpuHandLiveContext(cpu, {
         s: global.G?.gameState,
-        pid: 'p2',
+        pid: typeof global.cpuOpponentId === 'function' ? global.cpuOpponentId() : 'p2',
         tier: typeof global.cpuDiff === 'function' ? global.cpuDiff() : 'normal',
       });
       const best = (ctx.viableLives || []).reduce((m, c) => Math.max(m, c.score || 0), 0);

@@ -10,7 +10,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -28,17 +28,31 @@ jobs:
       - name: Validate cards
         run: php scripts/validate_cards.php
 
+      - name: Validate ability IR
+        run: php scripts/validate_ability_ir.php
+
       - name: PHP lint
         run: bash scripts/lint_php.sh
 
       - name: PHPUnit
         run: composer test
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: CPU prompt / scorer contracts
+        run: |
+          node scripts/audit_card_interactions.mjs --write=reports/card_interaction_matrix.json
+          python audit_cpu_prompts.py
+          node scripts/test_cpu_scorers.mjs
+
   docker-smoke:
     runs-on: ubuntu-latest
     needs: verify
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build and smoke test container
         run: |
