@@ -206,10 +206,57 @@
     rail.className = 'pb-zone-preview-rail kind-' + kind;
     if (kind === 'energy') fillEnergyPreview(rail, cards);
     else fillSuccessPreview(rail, cards);
+    // Keep the HUD counter honest — preview always reads live G.gameState.
+    if (kind === 'success') {
+      const badge = global.document.getElementById(
+        side === 'mine' ? 'portrait-my-wins' : 'portrait-opp-wins'
+      );
+      if (badge) badge.textContent = String(cards.length) + '/3';
+      if (!global.G._portraitWinCounts) global.G._portraitWinCounts = {};
+      global.G._portraitWinCounts[side === 'mine' ? 'my' : 'opp'] = cards.length;
+    }
     root.classList.remove('mine', 'opp', 'kind-energy', 'kind-success');
     root.classList.add('show', side === 'mine' ? 'mine' : 'opp', 'kind-' + kind);
     root.hidden = false;
     root.setAttribute('aria-hidden', 'false');
+  }
+
+  /** Prefer live match state when an anim frame has fewer Success Lives. */
+  function pickWinsBoard(s) {
+    const live = global.G?.gameState;
+    if (!s?.players) return live || s;
+    if (!live?.players || live === s) return s;
+    const pid = global.G?.playerId || 'p1';
+    const oppId = pid === 'p1' ? 'p2' : 'p1';
+    const score = function (board) {
+      return (board.players?.[pid]?.success_lives || []).length
+        + (board.players?.[oppId]?.success_lives || []).length;
+    };
+    return score(live) > score(s) ? live : s;
+  }
+
+  function syncPortraitWinCounts(s, myId) {
+    if (!portraitActive()) return;
+    const board = pickWinsBoard(s);
+    const live = global.G?.gameState;
+    if (!board?.players && !live?.players) return;
+    const pid = myId || global.G?.playerId || 'p1';
+    const oppId = pid === 'p1' ? 'p2' : 'p1';
+    const count = function (src, who) {
+      return (src?.players?.[who]?.success_lives || []).length;
+    };
+    // Success Lives only rise during a match — never let an anim frame wipe the HUD.
+    if (!global.G) global.G = {};
+    if (!global.G._portraitWinCounts) global.G._portraitWinCounts = { my: 0, opp: 0 };
+    const trusted = global.G._portraitWinCounts;
+    const myN = Math.max(count(board, pid), count(live, pid), trusted.my || 0);
+    const oppN = Math.max(count(board, oppId), count(live, oppId), trusted.opp || 0);
+    trusted.my = myN;
+    trusted.opp = oppN;
+    const myWins = global.document.getElementById('portrait-my-wins');
+    const oppWins = global.document.getElementById('portrait-opp-wins');
+    if (myWins) myWins.textContent = String(myN) + '/3';
+    if (oppWins) oppWins.textContent = String(oppN) + '/3';
   }
 
   function onZonePreviewDown(e, side, kind) {
@@ -543,6 +590,7 @@
           global.document.getElementById('portrait-deck-drawers')
             ?.classList.remove('pb-deck-drawers-hidden');
           syncDeckDrawerCounts(global.G?.gameState, global.G?.playerId);
+          syncPortraitWinCounts(global.G?.gameState, global.G?.playerId);
           positionDeckDrawers();
         }
       });
@@ -1031,6 +1079,7 @@
   global.tcgPortraitHideZonePreview = hideZonePreview;
   global.tcgPortraitEnsureDeckDrawers = ensureDeckDrawers;
   global.tcgPortraitSyncDeckDrawers = syncDeckDrawerCounts;
+  global.tcgPortraitSyncWinCounts = syncPortraitWinCounts;
   global.tcgPortraitCloseDeckDrawers = closeAllDeckDrawers;
 
   if (global.document.readyState === 'loading') {

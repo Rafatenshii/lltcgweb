@@ -122,6 +122,9 @@ function renderGame(s, opts = {}) {
   // Pips
   renderSuccessLives('my-pips',  me.success_lives||[]);
   renderSuccessLives('opp-pips', opp.success_lives||[]);
+  if (typeof tcgPortraitSyncWinCounts === 'function') {
+    try { tcgPortraitSyncWinCounts(s, myId); } catch (_) { /* ignore */ }
+  }
 
   // Live zones (3 slots each)
   renderLiveSlots('my',  liveZoneForRender(s, myId),  true, myId);

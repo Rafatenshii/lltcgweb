@@ -247,10 +247,14 @@
     const me = s.players[myId];
     const oppId = myId === 'p1' ? 'p2' : 'p1';
     const opp = s.players[oppId];
-    const myWins = el('portrait-my-wins');
-    const oppWins = el('portrait-opp-wins');
-    if (myWins) myWins.textContent = String((me?.success_lives || []).length) + '/3';
-    if (oppWins) oppWins.textContent = String((opp?.success_lives || []).length) + '/3';
+    if (typeof global.tcgPortraitSyncWinCounts === 'function') {
+      global.tcgPortraitSyncWinCounts(s, myId);
+    } else {
+      const myWins = el('portrait-my-wins');
+      const oppWins = el('portrait-opp-wins');
+      if (myWins) myWins.textContent = String((me?.success_lives || []).length) + '/3';
+      if (oppWins) oppWins.textContent = String((opp?.success_lives || []).length) + '/3';
+    }
 
     try {
       if (typeof global.layoutHandFan === 'function') {
