@@ -283,11 +283,13 @@ function apiExperimentRandomDeck(array $body): array {
     $tier = in_array((string)($body['tier'] ?? ''), ['easy', 'normal', 'hard'], true)
         ? (string)$body['tier']
         : 'normal';
-    $gen = generateEnhancedCpuDeckLists($cards, $tier);
+    $group = trim((string)($body['group'] ?? ''));
+    $gen = generateEnhancedCpuDeckLists($cards, $tier, $group !== '' ? $group : null);
     validateExperimentDeckPayload($gen['main_deck'], $gen['energy_deck'], $data);
     return [
         'success'     => true,
         'name'        => 'Random Deck',
+        'group'       => $gen['group'] ?? $group,
         'main_deck'   => array_values($gen['main_deck'] ?? []),
         'energy_deck' => array_values($gen['energy_deck'] ?? []),
     ];

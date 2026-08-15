@@ -4,6 +4,9 @@
  * Targets 4 → 9 → 15 baton ramp, heart-heavy fillers, and color-aligned Lives.
  */
 require_once __DIR__ . '/loveca_points.php';
+if (is_file(__DIR__ . '/subunits.php')) {
+    require_once __DIR__ . '/subunits.php';
+}
 
 const DECKGEN_MEMBER_SLOTS = 48;
 const DECKGEN_LIVE_SLOTS   = 12;
@@ -12,6 +15,8 @@ const DECKGEN_MAX_COPIES   = 4;
 const DECKGEN_MAX_ENERGY_COPIES = 12;
 
 const DECKGEN_GROUPS = ["μ's", 'Nijigasaki', 'Sunshine', 'Superstar', 'Hasunosora'];
+/** Deck-builder group chips that actually match card subunit (not school group). */
+const DECKGEN_FILTER_SUBUNIT_GROUPS = ['Saint Snow', 'A-RISE', 'Sunny Passion'];
 
 function deckgenGroupDisplay(string $group): string {
     return match ($group) {
@@ -19,6 +24,76 @@ function deckgenGroupDisplay(string $group): string {
         'Superstar'  => 'Liella!',
         default      => $group,
     };
+}
+
+function deckgenNormalizeForcedGroup(?string $forced): ?string {
+    $forced = trim((string)$forced);
+    if ($forced === '' || strcasecmp($forced, 'mixed') === 0) {
+        return null;
+    }
+    return $forced;
+}
+
+function deckgenIsSchoolGroup(string $group): bool {
+    return in_array($group, DECKGEN_GROUPS, true);
+}
+
+function deckgenCardMatchesGroupFilter(array $card, string $filter): bool {
+    $filter = trim($filter);
+    if ($filter === '' || strcasecmp($filter, 'mixed') === 0) {
+        return true;
+    }
+    if (($card['group'] ?? '') === $filter) {
+        return true;
+    }
+    if (!in_array($filter, DECKGEN_FILTER_SUBUNIT_GROUPS, true)) {
+        return false;
+    }
+    $want = mb_strtolower($filter);
+    $subs = [];
+    if (($card['subunit'] ?? '') !== '') {
+        $subs[] = (string)$card['subunit'];
+    }
+    foreach ($card['subunits'] ?? [] as $s) {
+        if ($s !== '') {
+            $subs[] = (string)$s;
+        }
+    }
+    foreach ($subs as $s) {
+        if (mb_strtolower($s) === $want) {
+            return true;
+        }
+        // JP Saint Snow etc. when EN filter is selected
+        if (function_exists('subunitDisplayEn') && mb_strtolower(subunitDisplayEn($s)) === $want) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function deckgenFilterMemberPool(array $members, string $filter): array {
+    return array_values(array_filter(
+        $members,
+        static fn(array $c): bool => deckgenCardMatchesGroupFilter($c, $filter)
+    ));
+}
+
+function deckgenFilterCanRamp(array $members, string $filter): bool {
+    $has4 = $has9 = $has15 = false;
+    foreach ($members as $c) {
+        if (!deckgenCardMatchesGroupFilter($c, $filter)) {
+            continue;
+        }
+        $cost = intval($c['cost'] ?? 0);
+        if ($cost === 4) {
+            $has4 = true;
+        } elseif ($cost === 9) {
+            $has9 = true;
+        } elseif ($cost === 15) {
+            $has15 = true;
+        }
+    }
+    return $has4 && $has9 && $has15;
 }
 
 function deckgenMemberHeartTotal(array $card): int {
@@ -773,11 +848,19 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         $group = 'mixed';
         $memberPool = $members;
     } else {
-        $starterGroup = null;
-        $mixed = ($forcedGroup === null || $forcedGroup === '');
-        if (!$mixed) {
-            $starterGroup = $forcedGroup;
+        $forced = deckgenNormalizeForcedGroup($forcedGroup);
+        if ($forced !== null) {
+            // Honor an explicit UI group filter — do not silently switch schools.
+            $group = $forced;
+            $memberPool = deckgenFilterMemberPool($members, $forced);
+            if (count($memberPool) < 8) {
+                if ($starterFallback !== null) {
+                    return deckgenStarterBuildResult($starterFallback);
+                }
+                throw new Exception('Not enough owned cards to auto-build for ' . deckgenGroupDisplay($forced) . '.');
+            }
         } else {
+            $starterGroup = null;
             $countsByGroup = [];
             foreach ($members as $c) {
                 $g = $c['group'] ?? '';
@@ -790,17 +873,17 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
                 arsort($countsByGroup);
                 $starterGroup = array_key_first($countsByGroup);
             }
-        }
 
-        $group = deckgenPickGroupFromCollection($members, $starterGroup, $owned);
-        $memberPool = array_values(array_filter($members, fn($c) => ($c['group'] ?? '') === $group));
-        if (count($memberPool) < 8) {
-            $group = deckgenPickGroupFromCollection($members, null, $owned);
+            $group = deckgenPickGroupFromCollection($members, $starterGroup, $owned);
             $memberPool = array_values(array_filter($members, fn($c) => ($c['group'] ?? '') === $group));
-        }
-        if (empty($memberPool)) {
-            $memberPool = $members;
-            $group = 'mixed';
+            if (count($memberPool) < 8) {
+                $group = deckgenPickGroupFromCollection($members, null, $owned);
+                $memberPool = array_values(array_filter($members, fn($c) => ($c['group'] ?? '') === $group));
+            }
+            if (empty($memberPool)) {
+                $memberPool = $members;
+                $group = 'mixed';
+            }
         }
     }
 
@@ -823,9 +906,23 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
     }
     $counts = deckgenRebuildCounts($main);
 
-    $liveGroup   = $group === 'mixed' ? null : $group;
+    $liveGroup = null;
+    $livePool = $lives;
+    if ($group !== 'mixed') {
+        if (deckgenIsSchoolGroup($group)) {
+            $liveGroup = $group;
+        } else {
+            $filteredLives = array_values(array_filter(
+                $lives,
+                static fn(array $c): bool => deckgenCardMatchesGroupFilter($c, $group)
+            ));
+            if (count($filteredLives) >= DECKGEN_LIVE_SLOTS) {
+                $livePool = $filteredLives;
+            }
+        }
+    }
     $colorCounts = deckgenColorCountsFromMain($main, $cardMap);
-    $liveNos     = deckgenPickLives($lives, $liveGroup, $colorCounts, $owned, null, null, $main);
+    $liveNos     = deckgenPickLives($livePool, $liveGroup, $colorCounts, $owned, null, null, $main);
     if (count($liveNos) < DECKGEN_LIVE_SLOTS) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
@@ -833,7 +930,8 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         throw new Exception('Could not assemble a legal deck.');
     }
 
-    $energyDeck = deckgenBuildEnergyDeck($energies, $group === 'mixed' ? null : $group, $owned);
+    $energyGroup = ($group !== 'mixed' && deckgenIsSchoolGroup($group)) ? $group : null;
+    $energyDeck = deckgenBuildEnergyDeck($energies, $energyGroup, $owned);
     if (count($energyDeck) < DECKGEN_ENERGY_SLOTS) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
@@ -967,7 +1065,7 @@ function generateCpuEasyDeckLists(array $starterDecks, ?string $avoidKey = null)
     ];
 }
 
-function generateEnhancedCpuDeckLists(array $allCards, string $tier): array {
+function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $forcedGroup = null): array {
     $cardMap  = [];
     $members  = [];
     $lives    = [];
@@ -988,11 +1086,24 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier): array {
         }
     }
 
-    $group      = deckgenPickGroup($members, null);
-    $memberPool = deckgenCpuMemberPool(
-        array_values(array_filter($members, fn($c) => ($c['group'] ?? '') === $group)),
-        $tier
-    );
+    $forced = deckgenNormalizeForcedGroup($forcedGroup);
+    if ($forced !== null) {
+        $group = $forced;
+        $schoolPool = deckgenFilterMemberPool($members, $forced);
+        if (empty($schoolPool)) {
+            throw new Exception('No cards available to build for ' . deckgenGroupDisplay($forced) . '.');
+        }
+        $memberPool = deckgenCpuMemberPool($schoolPool, $tier);
+        if (empty($memberPool)) {
+            $memberPool = $schoolPool;
+        }
+    } else {
+        $group      = deckgenPickGroup($members, null);
+        $memberPool = deckgenCpuMemberPool(
+            array_values(array_filter($members, fn($c) => ($c['group'] ?? '') === $group)),
+            $tier
+        );
+    }
     if (empty($memberPool)) {
         throw new Exception('Could not build CPU deck');
     }
@@ -1099,8 +1210,20 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier): array {
         ? ['low' => 2, 'mid' => 4, 'high' => 6]
         : ['low' => 3, 'mid' => 5, 'high' => 4];
     $liveFitFn = fn($c) => deckgenCpuLiveFitScore($c, $colorCounts, $tier) + mt_rand(0, 3);
-    $liveNos   = deckgenPickLives($lives, $group, $colorCounts, null, $liveTargets, $liveFitFn, $main);
-    $energyNo  = deckgenPickEnergy($energies, $group);
+    $livePool = $lives;
+    $liveGroup = deckgenIsSchoolGroup($group) ? $group : null;
+    if ($liveGroup === null && deckgenNormalizeForcedGroup($group) !== null) {
+        $filteredLives = array_values(array_filter(
+            $lives,
+            static fn(array $c): bool => deckgenCardMatchesGroupFilter($c, $group)
+        ));
+        if (count($filteredLives) >= DECKGEN_LIVE_SLOTS) {
+            $livePool = $filteredLives;
+        }
+    }
+    $liveNos   = deckgenPickLives($livePool, $liveGroup, $colorCounts, null, $liveTargets, $liveFitFn, $main);
+    $energyGroup = deckgenIsSchoolGroup($group) ? $group : null;
+    $energyNo  = deckgenPickEnergy($energies, $energyGroup);
     $energyDeck = array_fill(0, DECKGEN_ENERGY_SLOTS, $energyNo);
 
     return [

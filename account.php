@@ -954,10 +954,23 @@ function tcgApiDeckAutoBuild(array $body): array {
         $groupPref = 'mixed';
     }
     $forcedGroup = $groupPref === '' ? null : $groupPref;
-    $gen = generateCollectionDeckLists($cards['cards'] ?? [], $owned, $forcedGroup, $starterLists);
+    $explicitGroup = $forcedGroup !== null && $forcedGroup !== '' && strcasecmp($forcedGroup, 'mixed') !== 0;
+    // Explicit UI group filter: never silently replace with the starter loadout.
+    $gen = generateCollectionDeckLists(
+        $cards['cards'] ?? [],
+        $owned,
+        $forcedGroup,
+        $explicitGroup ? null : $starterLists
+    );
     $cardMap = tcgBuildCardMap($cards);
     $validation = tcgValidateDeckLists($gen['main_deck'], $gen['energy_deck'], $cardMap, $owned);
     if (!$validation['valid']) {
+        if ($explicitGroup) {
+            throw new Exception(
+                'Could not auto-build a legal ' . (function_exists('deckgenGroupDisplay') ? deckgenGroupDisplay($forcedGroup) : $forcedGroup)
+                . ' deck from your collection: ' . implode('; ', $validation['errors'])
+            );
+        }
         $gen = deckgenStarterBuildResult($starterLists);
         $validation = tcgValidateDeckLists($gen['main_deck'], $gen['energy_deck'], $cardMap, $owned);
     }

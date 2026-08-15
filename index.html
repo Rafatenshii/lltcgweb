@@ -11773,19 +11773,30 @@ async function randomExperimentDeck() {
   const btn = el('btn-deck-auto-build');
   el('deck-err').textContent = '';
   const prevLabel = btn?.textContent;
+  const group = deckAutoBuildGroupPref();
   if (btn) { btn.disabled = true; btn.textContent = 'Building…'; }
   try {
-    const res = await apiExperimentCall('experiment_random_deck', {});
+    const body = group ? { group } : {};
+    const res = await apiExperimentCall('experiment_random_deck', body);
     A.deckMain = [...(res.main_deck || [])];
     A.deckEnergy = [...(res.energy_deck || [])];
     A.experimentPassword = '';
     renderDeckBuilder({ deferPool: true });
-    el('deck-err').textContent = 'Random legal deck built from the full card pool.';
+    const builtGroup = res.group || group;
+    el('deck-err').textContent = builtGroup
+      ? `Random legal deck built from ${deckFilterGroupLabel(builtGroup)}.`
+      : 'Random legal deck built from the full card pool.';
   } catch (e) {
     el('deck-err').textContent = e.message;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Random deck'; }
   }
+}
+
+/** Active deck-builder group chip — empty means no group preference (mixed / full pool). */
+function deckAutoBuildGroupPref() {
+  const g = (deckPoolFilterState().group || '').trim();
+  return g || '';
 }
 
 async function autoBuildDeckFromCollection() {
@@ -11799,10 +11810,12 @@ async function autoBuildDeckFromCollection() {
     return;
   }
   const prevLabel = btn?.textContent;
+  const group = deckAutoBuildGroupPref();
   if (btn) { btn.disabled = true; btn.textContent = t('deck.building'); }
   try {
     await refreshCollection();
-    const res = await accountPost('deck_auto_build', {});
+    const body = group ? { group } : {};
+    const res = await accountPost('deck_auto_build', body);
     const build = res.build || {};
     A.deckMain = [...(build.main_deck || [])];
     A.deckEnergy = [...(build.energy_deck || [])];
@@ -11811,7 +11824,10 @@ async function autoBuildDeckFromCollection() {
       el('inp-deck-name').value = build.name || curName || 'My Deck';
     }
     renderDeckBuilder();
-    el('deck-err').textContent = t('deck.autoBuiltSuccess');
+    const builtGroup = build.group || group;
+    el('deck-err').textContent = (builtGroup && builtGroup !== 'mixed')
+      ? `${t('deck.autoBuiltSuccess')} (${deckFilterGroupLabel(builtGroup)})`
+      : t('deck.autoBuiltSuccess');
   } catch (e) {
     el('deck-err').textContent = e.message;
   } finally {
