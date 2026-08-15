@@ -885,10 +885,10 @@
     if (!portraitActive()) return;
     try {
       const mem = global.navigator && global.navigator.deviceMemory;
-      const cores = global.navigator && global.navigator.hardwareConcurrency;
       const reduced = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const low = reduced || (typeof mem === 'number' && mem > 0 && mem <= 4)
-        || (typeof cores === 'number' && cores > 0 && cores <= 4);
+      // Only flag truly constrained devices. cores<=4 / mem<=4 was matching most
+      // Android phones and silently skipped the LIVE Performance spectacle.
+      const low = reduced || (typeof mem === 'number' && mem > 0 && mem <= 2);
       if (low) {
         global.document.documentElement.classList.add('tcg-low-end');
         global.TCG_LOW_END = true;

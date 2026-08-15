@@ -337,7 +337,14 @@ function currentRoundLogHasPerformance(next) {
 }
 
 function liveStartPromptNeedsWait(next, myId) {
-  if (!next?.pending_prompt) return false;
+  if (!next) return false;
+  // Spectators never receive pending_prompt (only pending_prompt_meta). Still wait
+  // out live_start_effects so we do not skip/seal Performance while players choose.
+  if (G.isSpectator) {
+    if (currentRoundLogHasPerformance(next)) return false;
+    return next.phase === 'live_start_effects';
+  }
+  if (!next.pending_prompt) return false;
   const pr = next.pending_prompt;
   if (PERF_SPECTACLE_DEFERRED_PROMPTS.has(pr.type)) return false;
   if (next.phase === 'live_success_effects') return false;
@@ -393,7 +400,15 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
       continue;
     }
     const seqBefore = G.lastSeq ?? 0;
-    if (pr?.responder === myId && !isMyBlockingPromptOpen(cur)) {
+    // Spectators have no pending_prompt — keep polling until the phase advances.
+    if (G.isSpectator) {
+      await pullPromptResolutionState();
+      if ((G.lastSeq ?? 0) > seqBefore || G.gameState?.status === 'finished') {
+        stalePulls = 0;
+        continue;
+      }
+      if (G._pendingStateQueue?.length) flushPendingState();
+    } else if (pr?.responder === myId && !isMyBlockingPromptOpen(cur)) {
       if (isLiveSuccessDiscardPrompt(cur)) clearLiveSuccessHandDeferral(cur);
       const submitting = (typeof isPromptSubmitting === 'function' && isPromptSubmitting(cur))
         || (G._resolvePromptSentKey && typeof promptIdentityKey === 'function'
@@ -434,15 +449,21 @@ async function awaitLiveStartPromptsIfNeeded(prev, next, myId) {
   // Round-scoped: only skip the wait if THIS round already performed (whole
   // pipeline resolved in one poll), not because an earlier round performed.
   if (currentRoundLogHasPerformance(next)) return;
-  TCG_DEBUG.log('live', 'awaitLiveStartPromptsIfNeeded');
+  TCG_DEBUG.log('live', 'awaitLiveStartPromptsIfNeeded', { spectator: !!G.isSpectator });
   G._awaitingLiveStartPrompts = true;
   try {
     G.gameState = next;
     renderGame(next, { skipLog: true, skipPrompt: false });
-    ensurePendingPromptSurfaced(next, myId);
+    if (!G.isSpectator) ensurePendingPromptSurfaced(next, myId);
     await waitForPipelinePromptResolution(myId, {
       targetState: next,
-      isResolved: (s) => !s?.pending_prompt || s.phase !== 'live_start_effects',
+      isResolved: (s) => {
+        if (!s) return true;
+        if (currentRoundLogHasPerformance(s)) return true;
+        // Spectators: wait until the server leaves Live Start (prompts are stripped).
+        if (G.isSpectator) return s.phase !== 'live_start_effects';
+        return !s.pending_prompt || s.phase !== 'live_start_effects';
+      },
     });
   } finally {
     G._awaitingLiveStartPrompts = false;
@@ -3889,14 +3910,10 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     G._postSpectacleSplashPause = true;
     return true;
   }
-  // Mid-range portrait / reduced motion: skip heavy LIVE show, keep judge flow.
+  // Mid-range / reduced-motion still runs the show — only shorten timings inside
+  // the spectacle. Skipping here left Android spectators on "Live Start" with no Performance.
   if (tcgSpectacleReduced() && !opts.forceFullSpectacle) {
-    TCG_DEBUG.log('live', 'spectacle skip: reduced / low-end');
-    savePerfSpectacleDoneKey(perfPrev, next, showTurn);
-    markLiveShowPerformancePresented(showTurn);
-    G._liveRoundPostSpectacleReady = true;
-    G._postSpectacleSplashPause = true;
-    return true;
+    TCG_DEBUG.log('live', 'spectacle: reduced / low-end pace (full show still runs)');
   }
   const spectacleNext = pickSpectacleStateForPerf(next);
   // Defense-in-depth: never open the spectacle while pre-performance Live Start
