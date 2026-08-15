@@ -816,6 +816,10 @@ function resolveOptionalDiscardPromptChoice(
             if ($energyCost > 0 && !payEnergyCost($ownerP, $energyCost)) {
                 throw new Exception("Need $energyCost active Energy");
             }
+            if ($energyCost > 0) {
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] paid $energyCost Energy.");
+            }
             $then = $promptAbility['then'] ?? [];
             if (!optionalDiscardThenViable($ownerP, $then)) {
                 $state = addLog($state, $state['players'][$owner]['name'] .

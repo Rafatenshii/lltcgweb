@@ -387,16 +387,20 @@ function tryResolveAbilityEffectSwitchOptional(
                 }
             }
             $energyCost = intval($ab['energy_cost'] ?? 0);
-            $deferEnergyPay = (($ab['trigger'] ?? '') === 'activated')
-                || (($ctx['phase'] ?? '') === 'activated');
-            if ($energyCost > 0 && !$deferEnergyPay && !payEnergyCost($p, $energyCost)) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] could not pay $energyCost Energy; effect skipped.");
-                break;
-            }
-            if ($energyCost > 0 && !$deferEnergyPay) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] paid $energyCost Energy.");
+            // Always defer Energy until the player confirms Yes. Prepaid On Enter
+            // costs (e.g. Ceras pb1-007) charged players who declined the optional effect.
+            if ($energyCost > 0) {
+                $activeEnergy = 0;
+                foreach ($p['energy_zone'] ?? [] as $e) {
+                    if (!empty($e['active'])) {
+                        $activeEnergy++;
+                    }
+                }
+                if ($activeEnergy < $energyCost) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] could not pay $energyCost Energy; effect skipped.");
+                    break;
+                }
             }
             if (!empty($ctx['confirm']) || !empty($ctx['discard_ids'])) {
                 return resolveOptionalDiscardPromptChoice($state, $pid, [
