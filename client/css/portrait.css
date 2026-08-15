@@ -1054,10 +1054,10 @@ html.tcg-portrait-play .overlay.open .account-shell{
    Opp hand → opp stages+lives → HUD → my lives+stages → hand
    ═══════════════════════════════════════════ */
 html.tcg-portrait-play{
-  /* ~6 cards across the strip; extras scroll horizontally */
+  /* Keep the original large hand cards. The fan overlaps them into six visible
+     positions; cards after the sixth extend into the horizontal scroll area. */
   --p-hand-pad-x: 8px;
-  --p-hand-card-gap: 3px;
-  --p-card-w: calc((100vw - (var(--p-hand-pad-x) * 2) - (var(--p-hand-card-gap) * 5)) / 6);
+  --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / 6) * 1.5);
   --p-card-h: calc(var(--p-card-w) * 88 / 63);
   /* Strip rows are shorter than cards so hands peek over the stage (PC energy-deck overlap) */
   --p-hand-mine: calc(var(--p-card-h) * 0.58);
