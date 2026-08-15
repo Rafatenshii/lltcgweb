@@ -144,6 +144,17 @@
       };
     }
 
+    // Tutorial shares the CPU path locally but should not read as a CPU match.
+    if (screen === 'game' && g.isTutorial) {
+      return {
+        kind: 'tutorial',
+        details: 'Playing the tutorial',
+        state: 'Tutorial',
+        largeImage: presenceArt('loveca'),
+        joinable: false,
+      };
+    }
+
     if (a.rankedSearching) {
       return {
         kind: 'ranked_queue',
