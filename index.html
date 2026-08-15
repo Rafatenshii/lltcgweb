@@ -29323,6 +29323,8 @@ async function leaveSpectatorMode(opts = {}) {
   if (bar) bar.hidden = true;
   G.isSpectator = false;
   G.spectatorViewAs = 'p1';
+  G._portraitWinCounts = null;
+  G._portraitPileCounts = null;
   G._spectateP1Name = null;
   G._spectateP2Name = null;
   G.roomId = null;
@@ -29831,7 +29833,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-ai.js?v=9"></script>
 <script src="client/js/portrait-bridge.js?v=17"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
-<script src="client/js/portrait-board.js?v=12"></script>
+<script src="client/js/portrait-board.js?v=13"></script>
 <script>void bootApp();</script>
 </body>
 </html>
