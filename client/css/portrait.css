@@ -68,8 +68,10 @@ html.tcg-portrait-play .llc-menu-screen .account-shell,
 html.tcg-portrait-play .llc-menu-screen .account-shell.wide{
   width:100%;
   max-width:100%;
-  margin:0 auto;
-  flex:1 1 auto;
+  /* flex-start parent + margin-block:auto → centers when short, scrolls when tall */
+  margin-block:auto;
+  margin-inline:auto;
+  flex:0 1 auto;
 }
 html.tcg-portrait-play .logo-img{
   max-width:min(280px,70vw);
