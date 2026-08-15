@@ -69664,7 +69664,7 @@
             "text": "[Live Start] [Center] If the total score of Live cards in your Live area is 8 or more, until this Live ends, gain \"[Always] +1 total Live score\".",
             "text_jp": "[ライブ開始時] [センター] 自分のライブカード置き場にあるライブカードのスコアの合計が8以上の場合、「常時 ライブの合計スコアを＋１する。」を得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!SP-PR-026-PR.png",
-            "subunit": "Sunny Passion",
+            "subunit": "5yncri5e!",
             "abilities": [
                 {
                     "trigger": "live_start",
