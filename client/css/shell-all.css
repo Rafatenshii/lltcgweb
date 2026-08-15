@@ -4698,17 +4698,19 @@ body.missions-overlay-open{overflow:hidden}
 .llc-menu-screen .queue-other-modes{
   margin:2px 0 10px;
   text-align:center;
-  color:#8eb6d8;
+  color:rgba(255,255,255,.94);
   font-size:12px;
   line-height:1.35;
+  text-shadow:0 1px 2px rgba(0,0,0,.55),0 0 10px rgba(0,0,0,.28);
 }
 #screen-lobby .queue-other-modes{text-align:left;margin:2px 0 8px}
-.llc-menu-screen .queue-other-modes-lead{color:#8eb6d8}
-.llc-menu-screen .queue-other-modes-sep{color:#8eb6d8}
+.llc-menu-screen .queue-other-modes-lead,
+.llc-menu-screen .queue-other-modes-sep{color:rgba(255,255,255,.94)}
 .llc-menu-screen .queue-other-mode-name{
-  color:#ffc978;
+  color:#ffd28a;
   font-weight:700;
   font-style:normal;
+  text-shadow:0 1px 2px rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.25);
 }
 #ranked-search-float{
   position:fixed;top:12px;right:12px;z-index:9000;pointer-events:auto;
