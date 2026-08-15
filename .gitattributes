@@ -1,0 +1,2 @@
+# Exclude agent/editor metadata from GitHub source archives on Releases.
+.cursor/ export-ignore
