@@ -110,6 +110,17 @@
     return { left: left, right: right };
   }
 
+  function isReplayViewingPresence() {
+    var g = G();
+    if (g.replayHandoff) return false;
+    if (g.replayMode) return true;
+    if (g.gameState && (g.gameState.mode || '') === 'replay_view') return true;
+    if (typeof global.isReplayViewing === 'function') {
+      try { return !!global.isReplayViewing(); } catch (e) { /* ignore */ }
+    }
+    return false;
+  }
+
   function deriveActivity() {
     var g = G();
     var a = A();
@@ -119,6 +130,18 @@
 
     if (!screen || screen === 'auth') {
       return { kind: 'idle', details: 'Signed out', state: '', largeImage: presenceArt('loveca'), joinable: false };
+    }
+
+    // Replay is a local/saved recording — never joinable as a live match.
+    if (screen === 'game' && isReplayViewingPresence()) {
+      var replayNames = spectatedPlayerNames(g.gameState);
+      return {
+        kind: 'replay',
+        details: 'Watching a replay (' + replayNames.left + ' vs ' + replayNames.right + ')',
+        state: 'Replay',
+        largeImage: presenceArt('loveca'),
+        joinable: false,
+      };
     }
 
     if (a.rankedSearching) {
