@@ -61,18 +61,18 @@ function renderGame(s, opts = {}) {
   const te=(me.energy_zone||[]).length;
   el('my-en').textContent  = `${ae}/${te}`;
   el('my-dn').textContent  = zoneCardCount(me, 'main_deck');
-  el('my-wn').textContent  = (me.waiting_room||[]).length;
+  el('my-wn').textContent  = zoneCardCount(me, 'waiting_room');
   if(el('my-dn-side')) el('my-dn-side').textContent = zoneCardCount(me, 'main_deck');
-  if(el('my-wn-side')) el('my-wn-side').textContent = (me.waiting_room||[]).length;
+  if(el('my-wn-side')) el('my-wn-side').textContent = zoneCardCount(me, 'waiting_room');
   if(el('my-nrg-deck-n')) el('my-nrg-deck-n').textContent = zoneCardCount(me, 'energy_deck');
   const oppAe=(opp.energy_zone||[]).filter(energyChipActive).length;
   const oppTe=(opp.energy_zone||[]).length;
   if(el('opp-en')) el('opp-en').textContent = `${oppAe}/${oppTe}`;
   el('opp-hn').textContent = opp.hand_count??(opp.hand||[]).length;
   el('opp-dn').textContent = zoneCardCount(opp, 'main_deck');
-  el('opp-wn').textContent = (opp.waiting_room||[]).length;
+  el('opp-wn').textContent = zoneCardCount(opp, 'waiting_room');
   if(el('opp-dn-side')) el('opp-dn-side').textContent = zoneCardCount(opp, 'main_deck');
-  if(el('opp-wn-side')) el('opp-wn-side').textContent = (opp.waiting_room||[]).length;
+  if(el('opp-wn-side')) el('opp-wn-side').textContent = zoneCardCount(opp, 'waiting_room');
   if(el('opp-nrg-deck-n')) el('opp-nrg-deck-n').textContent = zoneCardCount(opp, 'energy_deck');
   el('hand-n').textContent = handsHiddenOnMat(s) ? '0' : (me.hand||[]).length;
 
@@ -84,12 +84,15 @@ function renderGame(s, opts = {}) {
     myDeckPile.title = deckHidden ? 'Main Deck (face down)' : 'Main Deck';
   }
   renderWaitingRoomPile('my-wait-pile', me.waiting_room, s, myId);
-  renderDeckPileOpacity('my-wait-pile', (me.waiting_room||[]).length);
+  renderDeckPileOpacity('my-wait-pile', zoneCardCount(me, 'waiting_room'));
   renderDeckPileOpacity('my-nrg-deck-pile', zoneCardCount(me, 'energy_deck'));
   renderDeckPileOpacity('opp-deck-pile', zoneCardCount(opp, 'main_deck'));
   renderWaitingRoomPile('opp-wait-pile', opp.waiting_room, s, myId);
-  renderDeckPileOpacity('opp-wait-pile', (opp.waiting_room||[]).length);
+  renderDeckPileOpacity('opp-wait-pile', zoneCardCount(opp, 'waiting_room'));
   renderDeckPileOpacity('opp-nrg-deck-pile', zoneCardCount(opp, 'energy_deck'));
+  if (typeof tcgPortraitSyncDeckDrawers === 'function') {
+    try { tcgPortraitSyncDeckDrawers(s, myId); } catch (_) { /* ignore */ }
+  }
 
   // Sidebar
   el('sb-info').innerHTML = formatSidebarInfoHtml(s);

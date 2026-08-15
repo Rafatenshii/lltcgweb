@@ -346,6 +346,8 @@
     closeAllDeckDrawers();
     const d = root.querySelector('.pb-deck-drawer.' + side);
     if (!d) return;
+    // Refresh from committed match state so anim frames cannot leave badges at 0.
+    syncDeckDrawerCounts(global.G?.gameState, global.G?.playerId);
     positionDeckDrawers();
     d.classList.add('open');
     const handle = d.querySelector('.pb-deck-drawer-handle');
@@ -402,22 +404,90 @@
     return 0;
   }
 
+  function pileCountSignal(board, pid) {
+    const p = board?.players?.[pid];
+    if (!p) return 0;
+    return readZoneCount(p, 'main_deck')
+      + readZoneCount(p, 'waiting_room')
+      + readZoneCount(p, 'energy_deck');
+  }
+
+  /** Anim / spectacle boards sometimes strip decks; prefer the richer match state. */
+  function pickPileCountBoard(s) {
+    const live = global.G?.gameState;
+    if (!s?.players) return live || s;
+    if (!live?.players || live === s) return s;
+    const pid = global.G?.playerId || 'p1';
+    const oppId = pid === 'p1' ? 'p2' : 'p1';
+    const liveScore = pileCountSignal(live, pid) + pileCountSignal(live, oppId);
+    const sScore = pileCountSignal(s, pid) + pileCountSignal(s, oppId);
+    return liveScore > sScore ? live : s;
+  }
+
+  function matBadgeCount(matId) {
+    const raw = global.document.getElementById(matId)?.textContent;
+    const n = parseInt(String(raw || '').trim(), 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function boardLooksPileStubbed(board) {
+    if (!board?.players) return true;
+    for (const pid of ['p1', 'p2']) {
+      const p = board.players[pid];
+      if (!p) continue;
+      const deckEmpty = !Array.isArray(p.main_deck) || p.main_deck.length === 0;
+      // Real spectator/opponent filters always send main_deck_count. Missing count
+      // on an otherwise-active board is a card-flight / spectacle playback stub.
+      if (deckEmpty && p.main_deck_count == null) {
+        if ((p.hand || []).length
+            || (p.waiting_room || []).length
+            || (p.live_zone || []).length
+            || Object.values(p.stage || {}).some(Boolean)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function writeDrawerCount(root, portraitId, matId, stateCount, board) {
+    const node = root.querySelector('#' + portraitId)
+      || global.document.getElementById(portraitId);
+    if (!node) return;
+    let v = Number(stateCount);
+    if (!Number.isFinite(v) || v < 0) v = 0;
+    if (v === 0) {
+      const mat = matBadgeCount(matId);
+      if (mat != null && mat > 0) v = mat;
+    }
+    if (!global.G) global.G = {};
+    if (!global.G._portraitPileCounts) global.G._portraitPileCounts = {};
+    const trusted = global.G._portraitPileCounts;
+    const stubbed = boardLooksPileStubbed(board);
+    if (v === 0 && stubbed && trusted[portraitId] > 0) {
+      v = trusted[portraitId];
+    } else if (!stubbed) {
+      trusted[portraitId] = v;
+    } else if (v > 0) {
+      trusted[portraitId] = v;
+    }
+    node.textContent = String(v);
+  }
+
   function syncDeckDrawerCounts(s, myId) {
     if (!portraitActive()) return;
     const root = ensureDeckDrawers();
-    if (!root || !s?.players) return;
+    if (!root) return;
+    const board = pickPileCountBoard(s);
+    if (!board?.players) return;
     const pid = myId || global.G?.playerId || 'p1';
     const oppId = pid === 'p1' ? 'p2' : 'p1';
-    const me = s.players[pid];
-    const opp = s.players[oppId];
-    const myDn = global.document.getElementById('portrait-my-dn');
-    const myWn = global.document.getElementById('portrait-my-wn');
-    const oppDn = global.document.getElementById('portrait-opp-dn');
-    const oppWn = global.document.getElementById('portrait-opp-wn');
-    if (myDn) myDn.textContent = String(readZoneCount(me, 'main_deck'));
-    if (myWn) myWn.textContent = String((me?.waiting_room || []).length);
-    if (oppDn) oppDn.textContent = String(readZoneCount(opp, 'main_deck'));
-    if (oppWn) oppWn.textContent = String((opp?.waiting_room || []).length);
+    const me = board.players[pid];
+    const opp = board.players[oppId];
+    writeDrawerCount(root, 'portrait-my-dn', 'my-dn', readZoneCount(me, 'main_deck'), board);
+    writeDrawerCount(root, 'portrait-my-wn', 'my-wn', readZoneCount(me, 'waiting_room'), board);
+    writeDrawerCount(root, 'portrait-opp-dn', 'opp-dn', readZoneCount(opp, 'main_deck'), board);
+    writeDrawerCount(root, 'portrait-opp-wn', 'opp-wn', readZoneCount(opp, 'waiting_room'), board);
 
     // Hide drawers during Performance spectacle.
     const spectacle = !!global.document.body.classList.contains('perf-spectacle-active');
@@ -472,6 +542,7 @@
         } else {
           global.document.getElementById('portrait-deck-drawers')
             ?.classList.remove('pb-deck-drawers-hidden');
+          syncDeckDrawerCounts(global.G?.gameState, global.G?.playerId);
           positionDeckDrawers();
         }
       });
