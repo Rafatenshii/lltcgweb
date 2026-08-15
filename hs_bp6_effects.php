@@ -1073,13 +1073,19 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
 
     if ($promptType === 'pick_named_member_blade') {
         $slot = $data['slot'] ?? $choice;
-        if ($slot === '' || empty($ownerP['stage'][$slot])) throw new Exception('Choose a Member');
+        $validSlots = array_column($prompt['candidates'] ?? [], 'slot');
+        if ($slot === '' || !in_array($slot, $validSlots, true) || empty($ownerP['stage'][$slot])) {
+            throw new Exception('Choose an eligible Member');
+        }
         $ownerP['stage'][$slot]['live_blade_bonus'] = intval($ownerP['stage'][$slot]['live_blade_bonus'] ?? 0)
             + intval($prompt['blade'] ?? 1);
         $state = addLog($state, $state['players'][$owner]['name'] .
             ' — named Member gained +' . intval($prompt['blade'] ?? 1) . ' Blade.');
         unset($state['pending_prompt']);
         $state['seq']++;
+        if (!empty($prompt['continue_live_start'])) {
+            return finishLiveStartEffects($state);
+        }
         return $state;
     }
 
@@ -1125,22 +1131,36 @@ function hsResolveHasunosoraPrompt(array $state, string $owner, array $prompt, s
         $ownerP['main_deck'] = array_merge($ownerP['main_deck'], $members);
         $named = $prompt['named'] ?? 'Hime Anyoji';
         if ($subCount >= intval($prompt['min_subunit'] ?? 15)) {
-            foreach ($ownerP['stage'] as $slot => &$mbr) {
+            $candidates = [];
+            foreach ($ownerP['stage'] as $slot => $mbr) {
                 if (!$mbr) continue;
                 if (cardNameKey($mbr) === $named || str_contains(cardNameKey($mbr), $named)) {
-                    $mbr['live_blade_bonus'] = intval($mbr['live_blade_bonus'] ?? 0) + intval($prompt['blade'] ?? 3);
-                    $ownerP['stage'][$slot] = $mbr;
-                    $state = addLog($state, $state['players'][$owner]['name'] .
-                        " — [$named] gained +" . intval($prompt['blade'] ?? 3) . ' Blade.');
-                    break;
+                    $candidates[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
                 }
             }
-            unset($mbr);
+            if (!empty($candidates)) {
+                $state['pending_prompt'] = [
+                    'type' => 'pick_named_member_blade',
+                    'owner' => $owner,
+                    'responder' => $owner,
+                    'source_name' => $prompt['source_name'] ?? 'Live',
+                    'candidates' => $candidates,
+                    'blade' => intval($prompt['blade'] ?? 3),
+                    'prompt' => "Choose 1 $named for +" . intval($prompt['blade'] ?? 3) .
+                        ' Blade until this Live ends.',
+                    'continue_live_start' => true,
+                ];
+            }
         }
         $state = addLog($state, $state['players'][$owner]['name'] .
             ' — shuffled ' . count($members) . ' WR Member(s) to deck bottom.');
-        unset($state['pending_prompt']);
+        if (($state['pending_prompt']['type'] ?? '') === 'optional_shuffle_wr_members_deck_bottom') {
+            unset($state['pending_prompt']);
+        }
         $state['seq']++;
+        if (($state['pending_prompt']['type'] ?? '') === 'pick_named_member_blade') {
+            return $state;
+        }
         return finishLiveStartEffects($state);
     }
 
