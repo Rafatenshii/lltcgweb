@@ -558,7 +558,16 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
   border-radius:8px;overflow:hidden;box-shadow:0 10px 32px rgba(0,0,0,.48);
   background:rgba(0,0,0,.18);position:relative;flex-shrink:0;
 }
-.perf-card.live{width:clamp(168px,26vw,240px);aspect-ratio:88/63}
+/* Judge score badges hang above the Live art — do not clip them. */
+.perf-card.live{
+  width:clamp(168px,26vw,240px);aspect-ratio:88/63;overflow:visible;z-index:2;
+}
+.perf-card.live:has(> .perf-card-score){z-index:5}
+.perf-card.live > img,
+.perf-card.live > .noimg,
+.perf-card.live > .card-art{
+  border-radius:8px;
+}
 .perf-live-row.perf-live-multi .perf-card.live{
   width:var(--perf-live-w, clamp(108px,16vw,168px));
   height:var(--perf-live-h, auto);
@@ -903,7 +912,7 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card-score{
   position:absolute;left:50%;top:0;
   display:flex;align-items:center;justify-content:center;gap:clamp(3px,.8vw,6px);
-  z-index:8;pointer-events:none;white-space:nowrap;
+  z-index:12;pointer-events:none;white-space:nowrap;
   opacity:0;transform:translate(-50%,-28%) scale(.7);
   transition:opacity .35s ease,transform .45s cubic-bezier(.2,.9,.2,1);
 }
