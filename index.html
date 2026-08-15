@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=41">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=43">
+<link rel="stylesheet" href="client/css/portrait.css?v=44">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -2578,6 +2578,7 @@ const A = {
   lastPackCards: [],
   lastOpenMode: 'pack',
   lastOpenPayment: 'daily',
+  packOpenSkipBox: false,
   dupeMigrationShown: false,
   packOpenBusy: false,
   rankedPollTimer: null,
@@ -4184,11 +4185,17 @@ function buildPackOpenCardEl(c, stackIndex, total, preferSrc = '') {
   return card;
 }
 
-function playPackOpenAnimation(cards, packImage, packStyle, faceSrcByIndex = null) {
+function playPackOpenAnimation(cards, packImage, packStyle, faceSrcByIndex = null, opts = {}) {
   const wrapper = Array.isArray(packImage) ? (packImage[0] || null) : packImage;
   if (typeof wrapper !== 'string' || !wrapper) return Promise.resolve();
+  // Box open: prior Skip already requested end of whole sequence.
+  if (opts.boxSequence && A.packOpenSkipBox) return Promise.resolve();
   return preloadPackPullFaces(cards, faceSrcByIndex).then(resolvedFaces =>
     preloadImages([wrapper]).then(() => new Promise(resolve => {
+    if (opts.boxSequence && A.packOpenSkipBox) {
+      resolve();
+      return;
+    }
     const overlay = el('overlay-pack-open');
     const packEl = el('pack-open-pack');
     const topEl = el('pack-open-top');
@@ -4286,6 +4293,8 @@ function playPackOpenAnimation(cards, packImage, packStyle, faceSrcByIndex = nul
       if (busy) return;
       busy = true;
       hintEl.hidden = true;
+      // Box open: Skip ends the whole box sequence, not only this pack.
+      if (opts.boxSequence) A.packOpenSkipBox = true;
       cleanup();
     };
 
@@ -4370,6 +4379,10 @@ function playPackOpenAnimation(cards, packImage, packStyle, faceSrcByIndex = nul
     overlay.dataset.phase = 'ready';
 
     const revealOverlay = () => {
+      if (opts.boxSequence && A.packOpenSkipBox) {
+        cleanup();
+        return;
+      }
       overlay.classList.add('active', 'phase-ready');
       overlay.setAttribute('aria-hidden', 'false');
       hintEl.textContent = t('ui.clickToOpen');
@@ -6682,17 +6695,20 @@ async function runBoosterOpen(payment) {
   if (open.mode === 'box' && Array.isArray(open.packs) && open.packs.length) {
     const allFaceSrc = [];
     let offset = 0;
+    A.packOpenSkipBox = false;
     for (const pack of open.packs) {
       const cards = pack.cards || [];
       const faceSrcByIndex = await preloadPackPullFaces(cards);
       for (let i = 0; i < faceSrcByIndex.length; i++) allFaceSrc[offset + i] = faceSrcByIndex[i];
       offset += faceSrcByIndex.length;
+      if (A.packOpenSkipBox) continue;
       const packImg = pack.pack_wrapper || pickPackWrapperImage(A.boxPick);
       const packStyle = pack.pack_style || packStyleForBox(A.boxPick);
       if (usesPackOpenAnimation(A.boxPick) && packImg) {
-        await playPackOpenAnimation(cards, packImg, packStyle, faceSrcByIndex);
+        await playPackOpenAnimation(cards, packImg, packStyle, faceSrcByIndex, { boxSequence: true });
       }
     }
+    A.packOpenSkipBox = false;
     showPackResults(open.cards || [], boxName, {
       godPack: !!open.god_pack,
       faceSrcByIndex: allFaceSrc,

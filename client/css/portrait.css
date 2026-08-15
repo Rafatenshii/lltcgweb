@@ -680,6 +680,15 @@ html.tcg-portrait-play body:has(#modal-paid-booster.open) #screen-booster .boost
   pointer-events:none;
 }
 
+/* Pack open — keep Skip below notch / status bar */
+html.tcg-portrait-play #overlay-pack-open .pack-open-skip{
+  top:max(52px, calc(env(safe-area-inset-top, 0px) + 14px), calc(var(--tcg-safe-top-fallback, 0px) + 14px));
+  right:max(12px, env(safe-area-inset-right, 0px));
+  min-height:44px;
+  padding:10px 14px;
+  font-size:13px;
+}
+
 /* Sleeve shop — category + character pickers as centered 3-across grids */
 html.tcg-portrait-play #screen-sleeve-shop .sleeve-shop-gens{
   display:grid;
