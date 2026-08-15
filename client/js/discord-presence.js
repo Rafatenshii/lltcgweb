@@ -10,7 +10,7 @@
   var THROTTLE_MS = 2500;
   var DISCORD_APP_ID = '1538239969976647740'; // Loveca Sim (presence only; site login stays on LLR app)
   // Prefer a hosted HTTPS image until Rich Presence art keys are uploaded in the portal.
-  // (Missing portal keys show no icon; invalid keys also suppress the app default icon.)
+  // Same Honoka art as the Android APK / hub download icon.
   var PRESENCE_ICON_URL = 'https://loveliveradio.ca/tcg/downloads/loveca-icon-192.png';
   function presenceArt(_key) {
     return PRESENCE_ICON_URL;
@@ -258,7 +258,7 @@
       details: act.details || '',
       state: act.state || '',
       largeImage: act.largeImage || presenceArt('loveca'),
-      largeText: 'Loveca',
+      largeText: 'Loveca Sim',
       startTimestampMs: startMs,
       joinSecret: joinSecret || '',
       partyId: act.roomId ? ('room:' + act.roomId) : (act.joinType === 'ranked_queue' ? ('queue:' + (act.gameMode || 'standard')) : ''),

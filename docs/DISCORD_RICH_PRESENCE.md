@@ -25,7 +25,8 @@ Website OAuth sessions do **not** grant Social SDK presence scopes.
    `loveca_sticker`). Until then the client uses
    `https://loveliveradio.ca/tcg/downloads/loveca-icon-192.png`.
    Also set the app **name** / icon under General Information — RPC can otherwise show
-   a generic “Game” label (the Android shell forces `Activity::SetName("Loveca")`).
+   a generic “Game” label (the Android shell forces `Activity::SetName("Loveca Sim")`
+   and uses the APK Honoka icon URL for large image art).
 5. Download `discord_partner_sdk.aar` and place it at:
    `lltcg-android/android/app/libs/discord_partner_sdk.aar`
    (gitignored — never commit the AAR).
