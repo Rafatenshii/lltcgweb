@@ -76,6 +76,7 @@
     stamp_favorites_set: 1, public_profile: 1, public_leaderboard: 1,
     sticker_shop_catalog: 1, sticker_shop_cards: 1,
     convert_to_seal: 1, convert_to_seals_batch: 1, sticker_buy: 1,
+    presence_action_mint: 1, presence_action_redeem: 1,
     replay_save: 1, replay_list: 1, replay_get: 1, replay_start: 1,
     reset_account: 1,
     experiment_preset_list: 1, experiment_preset_save: 1,

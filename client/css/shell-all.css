@@ -4695,8 +4695,13 @@ body.missions-overlay-open{overflow:hidden}
   display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:13px;color:rgba(255,255,255,.88);cursor:pointer}
 #screen-ranked .ranked-sound-opt input{width:16px;height:16px;accent-color:#bae4ff;cursor:pointer}
 #screen-ranked .ranked-queue-stats{margin:8px 0 10px;text-align:center}
-.llc-menu-screen .queue-other-modes{
-  margin:2px 0 10px;
+.llc-menu-screen .options-discord-presence{
+  margin:10px 0 12px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(186,228,255,.28);background:rgba(8,18,36,.35)
+}
+.llc-menu-screen .options-discord-presence .account-lead{margin:6px 0 8px;font-size:12px}
+.llc-menu-screen .options-discord-presence .btn-out{width:auto;display:inline-flex}
+.llc-menu-screen .queue-other-modes{  margin:2px 0 10px;
   text-align:center;
   color:rgba(255,255,255,.94);
   font-size:12px;

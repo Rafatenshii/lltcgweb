@@ -11,7 +11,8 @@
  *   deck_list, deck_save, deck_set_sleeve, deck_delete, deck_equip, deck_equip_starter, deck_reset_starter, deck_auto_build, deck_import_decklog, reset_account,
  *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, mission_game_finished, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
- *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy
+ *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy,
+ *   presence_action_mint, presence_action_redeem
  */
 require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/config/cors.php';
@@ -47,6 +48,7 @@ require_once __DIR__ . '/matchmaking.php';
 require_once __DIR__ . '/deckgen.php';
 require_once __DIR__ . '/missions.php';
 require_once __DIR__ . '/login_bonus.php';
+require_once __DIR__ . '/presence_actions.php';
 if (!defined('TCG_API_LIB_ONLY')) {
     define('TCG_API_LIB_ONLY', true);
 }
@@ -113,6 +115,8 @@ try {
         case 'sleeve_claim_free':  echo json_encode(tcgApiSleeveClaimFree($body)); break;
         case 'sleeve_equip_intro_seen': echo json_encode(tcgApiSleeveEquipIntroSeen($body)); break;
         case 'owned_sleeves':      echo json_encode(tcgApiOwnedSleeves($body)); break;
+        case 'presence_action_mint': echo json_encode(tcgApiPresenceActionMint($body)); break;
+        case 'presence_action_redeem': echo json_encode(tcgApiPresenceActionRedeem($body)); break;
         default:
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Unknown action']);
