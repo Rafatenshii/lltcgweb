@@ -843,8 +843,35 @@
     });
   }
 
+  function applySafeAreaFallbacks() {
+    if (!portraitActive() || !global.document) return;
+    var root = global.document.documentElement;
+    var probe = global.document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;'
+      + 'padding-top:env(safe-area-inset-top,0px);'
+      + 'padding-bottom:env(safe-area-inset-bottom,0px);';
+    global.document.body.appendChild(probe);
+    var cs = global.getComputedStyle(probe);
+    var topPx = parseFloat(cs.paddingTop) || 0;
+    var botPx = parseFloat(cs.paddingBottom) || 0;
+    probe.remove();
+    // Capacitor / some Android WebViews report 0 while drawing under the status bar / cutout.
+    var ua = String(global.navigator && global.navigator.userAgent || '');
+    var nativeShell = /LoveCaAndroid/i.test(ua)
+      || !!(global.Capacitor && (global.Capacitor.isNativePlatform
+        ? global.Capacitor.isNativePlatform()
+        : global.Capacitor.Plugins));
+    if (nativeShell && topPx < 1) {
+      root.style.setProperty('--tcg-safe-top-fallback', '36px');
+    }
+    if (nativeShell && botPx < 1) {
+      root.style.setProperty('--tcg-safe-bottom-fallback', '16px');
+    }
+  }
+
   function boot() {
     if (!portraitActive()) return;
+    applySafeAreaFallbacks();
     bindUi();
   }
 

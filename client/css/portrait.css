@@ -16,7 +16,10 @@ html.tcg-portrait-play body{
   touch-action:manipulation;
 }
 html.tcg-portrait-play body.tcg-portrait-play-body{
-  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  padding:max(0px,env(safe-area-inset-top,0px),var(--tcg-safe-top-fallback,0px))
+    env(safe-area-inset-right,0px)
+    max(0px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px))
+    env(safe-area-inset-left,0px);
   box-sizing:border-box;
 }
 html.tcg-portrait-play #tcg-mobile-rotate-hint,
@@ -56,7 +59,9 @@ html.tcg-portrait-play .screen.llc-menu-screen.active{
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
-  padding:max(8px,env(safe-area-inset-top,0px)) 12px max(16px,env(safe-area-inset-bottom,0px));
+  /* Keep chrome below notch / status bar (env may be 0 on some WebViews — floor helps). */
+  padding:max(20px,env(safe-area-inset-top,0px),var(--tcg-safe-top-fallback,0px)) 12px
+    max(16px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
   box-sizing:border-box;
 }
 html.tcg-portrait-play .llc-menu-screen .account-shell,
@@ -116,27 +121,47 @@ html.tcg-portrait-play .wait-box{
   max-width:100%;
 }
 
-/* Login bonus — larger reward icons, vertically centered panel */
+/* Modal menu overlays — below notch, vertically centered (not top-stuck) */
 html.tcg-portrait-play #overlay-login-bonus.llc-menu-screen,
-html.tcg-portrait-play #overlay-login-bonus.open{
+html.tcg-portrait-play #overlay-login-bonus.open,
+html.tcg-portrait-play #overlay-missions.llc-menu-screen,
+html.tcg-portrait-play #overlay-missions.open,
+html.tcg-portrait-play #overlay-mission-starter.llc-menu-screen,
+html.tcg-portrait-play #overlay-mission-starter.open,
+html.tcg-portrait-play #overlay-news.llc-menu-screen,
+html.tcg-portrait-play #overlay-news.open{
   display:flex!important;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
-  padding:max(12px,env(safe-area-inset-top,0px)) 14px max(16px,env(safe-area-inset-bottom,0px));
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:max(20px,env(safe-area-inset-top,0px),var(--tcg-safe-top-fallback,0px)) 14px
+    max(16px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
   box-sizing:border-box;
 }
-html.tcg-portrait-play #overlay-login-bonus:not(.open){
+html.tcg-portrait-play #overlay-login-bonus:not(.open),
+html.tcg-portrait-play #overlay-missions:not(.open),
+html.tcg-portrait-play #overlay-mission-starter:not(.open),
+html.tcg-portrait-play #overlay-news:not(.open){
   display:none!important;
 }
-html.tcg-portrait-play #overlay-login-bonus .login-bonus-shell{
+html.tcg-portrait-play #overlay-login-bonus .login-bonus-shell,
+html.tcg-portrait-play #overlay-missions .missions-shell,
+html.tcg-portrait-play #overlay-mission-starter .mission-starter-shell,
+html.tcg-portrait-play #overlay-news .news-shell{
   width:100%;
   max-width:min(520px,96vw);
   margin-block:auto;
   flex:0 1 auto;
-  max-height:min(88dvh,760px);
+  max-height:min(78dvh,720px);
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
+}
+html.tcg-portrait-play #overlay-missions .missions-panel-shell{
+  max-height:none;
+  flex:1 1 auto;
 }
 html.tcg-portrait-play #overlay-login-bonus .login-bonus-lead{
   font-size:14px;
