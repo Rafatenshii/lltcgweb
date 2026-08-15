@@ -873,6 +873,50 @@ html.tcg-portrait-play #screen-sleeve-shop .sleeve-shop-grid{
   margin-left:auto;
   margin-right:auto;
 }
+html.tcg-portrait-play #screen-sleeve-shop .sleeve-shop-tile__art{
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+/* Fullscreen sleeve preview (long-press art → tap to close) */
+.sleeve-shop-lightbox{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:9800;
+  align-items:center;
+  justify-content:center;
+  padding:max(20px,env(safe-area-inset-top,0px),var(--tcg-safe-top-fallback,0px)) 16px
+    max(20px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
+  box-sizing:border-box;
+  background:rgba(4,10,24,.92);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.sleeve-shop-lightbox.open{
+  display:flex;
+}
+.sleeve-shop-lightbox__img{
+  display:block;
+  max-width:min(88vw,420px);
+  max-height:min(78dvh,760px);
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:14px;
+  box-shadow:0 18px 48px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.18);
+  pointer-events:none;
+  background:rgba(0,0,0,.25);
+}
+.sleeve-shop-lightbox__img.is-landscape{
+  max-width:min(94vw,560px);
+  max-height:min(52dvh,380px);
+}
+body.sleeve-shop-lightbox-open{overflow:hidden}
 
 /* Leaderboard — compact rows; keep banner to the right of the name */
 html.tcg-portrait-play #screen-leaderboard .account-panel{

@@ -62,7 +62,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=41">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=46">
+<link rel="stylesheet" href="client/css/portrait.css?v=47">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -6034,6 +6034,89 @@ function clearSleeveShopHover() {
   }
 }
 
+function sleeveShopPortraitActive() {
+  return !!(document.documentElement.classList.contains('tcg-portrait-play')
+    || (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()));
+}
+
+function ensureSleeveShopLightbox() {
+  let lb = el('sleeve-shop-lightbox');
+  if (lb) return lb;
+  lb = document.createElement('div');
+  lb.id = 'sleeve-shop-lightbox';
+  lb.className = 'sleeve-shop-lightbox';
+  lb.hidden = true;
+  lb.setAttribute('role', 'dialog');
+  lb.setAttribute('aria-modal', 'true');
+  lb.setAttribute('aria-hidden', 'true');
+  lb.setAttribute('aria-label', tOr('sleeveShop.previewClose', 'Sleeve preview — tap to close'));
+  const img = document.createElement('img');
+  img.className = 'sleeve-shop-lightbox__img';
+  img.alt = '';
+  img.decoding = 'async';
+  lb.appendChild(img);
+  lb.addEventListener('click', () => closeSleeveShopLightbox());
+  document.body.appendChild(lb);
+  return lb;
+}
+
+function openSleeveShopLightbox(src, landscape) {
+  if (!src || !sleeveShopPortraitActive()) return;
+  const lb = ensureSleeveShopLightbox();
+  const img = lb.querySelector('.sleeve-shop-lightbox__img');
+  if (!img) return;
+  img.classList.toggle('is-landscape', !!landscape);
+  img.src = src;
+  lb.hidden = false;
+  lb.classList.add('open');
+  lb.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('sleeve-shop-lightbox-open');
+}
+
+function closeSleeveShopLightbox() {
+  const lb = el('sleeve-shop-lightbox');
+  if (!lb || !lb.classList.contains('open')) return false;
+  lb.classList.remove('open');
+  lb.hidden = true;
+  lb.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('sleeve-shop-lightbox-open');
+  const img = lb.querySelector('.sleeve-shop-lightbox__img');
+  if (img) {
+    img.removeAttribute('src');
+    img.classList.remove('is-landscape');
+  }
+  return true;
+}
+
+/** Long-press sleeve art on portrait → fullscreen preview; tap overlay to close. */
+function bindSleeveShopArtHoldPreview(art, src, landscape) {
+  if (!art || !src || art.dataset.sleeveLightboxBound === '1') return;
+  art.dataset.sleeveLightboxBound = '1';
+  let holdTimer = null;
+  const clearHold = () => {
+    if (holdTimer != null) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  };
+  art.addEventListener('pointerdown', (e) => {
+    if (!sleeveShopPortraitActive()) return;
+    if (e.button != null && e.button !== 0) return;
+    clearHold();
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      openSleeveShopLightbox(src, landscape);
+      try { navigator.vibrate?.(12); } catch (_) { /* ignore */ }
+    }, 400);
+  });
+  art.addEventListener('pointerup', clearHold);
+  art.addEventListener('pointercancel', clearHold);
+  art.addEventListener('pointerleave', clearHold);
+  art.addEventListener('contextmenu', (e) => {
+    if (sleeveShopPortraitActive()) e.preventDefault();
+  });
+}
+
 function showSleeveShopHover(src, opts) {
   const panel = el('sleeve-shop-hover-panel');
   const img = el('ssh-img');
@@ -6201,6 +6284,7 @@ function renderSleeveShopGrid(sleeves) {
     art.addEventListener('mouseleave', () => clearSleeveShopHover());
     art.addEventListener('focus', () => showSleeveShopHover(src, { landscape }));
     art.addEventListener('blur', () => clearSleeveShopHover());
+    bindSleeveShopArtHoldPreview(art, src, landscape);
     const label = document.createElement('div');
     label.className = 'sleeve-shop-tile__name';
     label.textContent = sleeveShopDisplayName(s);
@@ -29751,7 +29835,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=24"></script>
 <script src="client/js/cpu-ai.js?v=9"></script>
-<script src="client/js/portrait-bridge.js?v=13"></script>
+<script src="client/js/portrait-bridge.js?v=14"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=11"></script>
 <script>void bootApp();</script>

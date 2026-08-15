@@ -668,6 +668,9 @@
 
   function handleBack() {
     if (!portraitActive()) return false;
+    if (typeof global.closeSleeveShopLightbox === 'function' && global.closeSleeveShopLightbox()) {
+      return true;
+    }
     if (global.document.getElementById('portrait-zone-preview')?.classList.contains('show')) {
       hideZonePreview();
       return true;
