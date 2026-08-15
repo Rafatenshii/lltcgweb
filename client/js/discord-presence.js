@@ -250,6 +250,15 @@
         joinable: false,
       };
     }
+    if (screen === 'debug-replay') {
+      return {
+        kind: 'menu_replay',
+        details: 'In menus',
+        state: 'Replay viewer',
+        largeImage: presenceArt('loveca'),
+        joinable: false,
+      };
+    }
     return {
       kind: 'menu',
       details: 'In menus',
