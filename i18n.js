@@ -1233,6 +1233,7 @@
       "rotateTitle": "This game is played in landscape",
       "rotateSub": "Rotate your device to continue.",
       "openLog": "Log",
+      "refresh": "Refresh",
       "offlineNeedNetwork": "No network — reconnect to play.",
       "portraitHint": "Portrait mode for phones",
       "deckInspectHint": "Tap a card to preview"
@@ -2534,6 +2535,7 @@
       "rotateTitle": "このゲームは横向きでプレイします",
       "rotateSub": "デバイスを回転して続行してください。",
       "openLog": "ログ",
+      "refresh": "更新",
       "offlineNeedNetwork": "ネットワークがありません — 再接続してプレイしてください。",
       "portraitHint": "スマホ向け縦画面モード",
       "deckInspectHint": "カードをタップしてプレビュー"
@@ -3683,6 +3685,7 @@
       "rotateTitle": "Este juego se juega en horizontal",
       "rotateSub": "Gira tu dispositivo para continuar.",
       "openLog": "Registro",
+      "refresh": "Actualizar",
       "offlineNeedNetwork": "Sin red — vuelve a conectar para jugar.",
       "portraitHint": "Modo vertical para móviles",
       "deckInspectHint": "Toca una carta para verla"
@@ -5011,6 +5014,7 @@
       "rotateTitle": "이 게임은 가로 화면으로 플레이합니다",
       "rotateSub": "계속하려면 기기를 회전하세요.",
       "openLog": "로그",
+      "refresh": "새로고침",
       "offlineNeedNetwork": "네트워크 없음 — 다시 연결한 뒤 플레이하세요.",
       "portraitHint": "휴대폰용 세로 모드",
       "deckInspectHint": "카드를 탭하여 미리보기"
@@ -6340,6 +6344,7 @@
       "rotateTitle": "这个游戏是横屏玩的",
       "rotateSub": "旋转您的设备以继续。",
       "openLog": "日志",
+      "refresh": "刷新",
       "offlineNeedNetwork": "无网络 — 请重新连接后再游玩。",
       "portraitHint": "手机竖屏模式",
       "deckInspectHint": "点按卡牌预览"
@@ -7645,6 +7650,7 @@
       "rotateTitle": "เกมนี้เล่นในแนวนอน",
       "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ",
       "openLog": "บันทึก",
+      "refresh": "รีเฟรช",
       "offlineNeedNetwork": "ไม่มีเครือข่าย — เชื่อมต่อใหม่เพื่อเล่น",
       "portraitHint": "โหมดแนวตั้งสำหรับมือถือ",
       "deckInspectHint": "แตะการ์ดเพื่อดูตัวอย่าง"
