@@ -170,9 +170,8 @@ global.openLiveSuccessOrderPick = function openLiveSuccessOrderPick(pr) {
   let order = cards.map((c) => c.instance_id).filter(Boolean);
   const isLiveStart = pr.type === 'live_start_order_sources';
 
-  el('pick-ttl').textContent = pr.source_name || (isLiveStart ? 'Live Start' : 'Live Success');
-  el('pick-msg').textContent = pr.prompt
-    || (isLiveStart
+  el('pick-ttl').textContent = promptDisplayTitle(pr, isLiveStart ? 'Live Start' : 'Live Success');
+  el('pick-msg').textContent = promptDisplayText(pr, isLiveStart
       ? 'Choose the order to activate Live Start abilities (first → last).'
       : 'Choose the order to activate Live Success abilities (first → last).');
   const g = el('pick-grid');
@@ -276,8 +275,8 @@ global.openSurveilPickOne = function openSurveilPickOne(pr){
 
 global.openLookedDeckPick = function openLookedDeckPick(pr){
   if (pr.step === 'pick_destination') {
-    el('pick-ttl').textContent = pr.source_name || 'Choose destination';
-    el('pick-msg').textContent = pr.prompt || 'Add to hand or play to an empty Stage area?';
+    el('pick-ttl').textContent = promptDisplayTitle(pr, 'Choose destination');
+    el('pick-msg').textContent = promptDisplayText(pr, 'Add to hand or play to an empty Stage area?');
     const g = el('pick-grid');
     g.innerHTML = '';
     const handBtn = document.createElement('button');
@@ -313,8 +312,8 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
   const skipLabel=noneEligible
     ? 'No matching cards — put all in Waiting Room'
     : 'Skip — put all in Waiting Room';
-  el('pick-ttl').textContent=pr.source_name||'Choose from deck';
-  el('pick-msg').textContent=pr.prompt||(noneEligible
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose from deck');
+  el('pick-msg').textContent=promptDisplayText(pr, noneEligible
     ? 'No matching cards among these. Confirm to put them into the Waiting Room.'
     : 'Choose card(s) to add to your hand.');
   const g=el('pick-grid'); g.innerHTML='';
@@ -356,7 +355,7 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
         if(!ok) return;
         if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
         else {
-          if(G.pickMarked.size>=need){ toast(`Select at most ${need}`); return; }
+          if(G.pickMarked.size>=need){ toast(t('prompt.selectAtMost', { n: need })); return; }
           G.pickMarked.add(card.instance_id);
           sfxCardPick();
         }
@@ -398,8 +397,8 @@ global.openStageMemberPickById = function openStageMemberPickById(pr){
   const btnCancel=el('btn-pick-cancel');
   if(btnOk) btnOk.style.display='none';
   if(btnCancel) btnCancel.style.display='none';
-  el('pick-ttl').textContent=pr.source_name||'Choose Member';
-  el('pick-msg').textContent=pr.prompt||'Choose 1 Member on your Stage.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose 1 Member on your Stage.');
   const g=el('pick-grid'); g.innerHTML='';
   g.classList.remove('pick-grid-order');
   cards.forEach(card=>{
@@ -469,8 +468,8 @@ global.openStageSlotPick = function openStageSlotPick(pr){
       },
       onCancel: ()=> sendAct('resolve_prompt',{slots:[]}),
     };
-    el('pick-ttl').textContent=pr.source_name||'Choose Member';
-    el('pick-msg').textContent=pr.prompt||`Choose up to ${maxPick} Member(s).`;
+    el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+    el('pick-msg').textContent=promptDisplayText(pr, `Choose up to ${maxPick} Member(s).`);
     const g=el('pick-grid'); g.innerHTML='';
     const btnOk=el('btn-pick-ok');
     const btnCancel=el('btn-pick-cancel');
@@ -480,7 +479,7 @@ global.openStageSlotPick = function openStageSlotPick(pr){
       g.appendChild(mkPickCardEl(card,'pickcard',()=>{
         if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
         else {
-          if(G.pickMarked.size>=maxPick){ toast(`Select at most ${maxPick}`); return; }
+          if(G.pickMarked.size>=maxPick){ toast(t('prompt.selectAtMost', { n: maxPick })); return; }
           G.pickMarked.add(card.instance_id);
           sfxCardPick();
         }
@@ -493,8 +492,8 @@ global.openStageSlotPick = function openStageSlotPick(pr){
     openM('overlay-pick');
     return;
   }
-  el('pick-ttl').textContent=pr.source_name||'Choose Member';
-  el('pick-msg').textContent=pr.prompt||'Choose a Member on your Stage.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose a Member on your Stage.');
   const g=el('pick-grid'); g.innerHTML='';
   const btnOk=el('btn-pick-ok');
   const btnCancel=el('btn-pick-cancel');
@@ -571,8 +570,8 @@ global.openWrToHandPick = function openWrToHandPick(pr, opts = {}) {
     return;
   }
   const upTo = need > 1 || !!pr.up_to;
-  el('pick-ttl').textContent = pr.source_name || pt('prompt.wrPickTitle');
-  el('pick-msg').textContent = pr.prompt || pt('prompt.wrPickMsg');
+  el('pick-ttl').textContent = promptDisplayTitle(pr, pt('prompt.wrPickTitle'), s);
+  el('pick-msg').textContent = promptDisplayText(pr, 'prompt.wrPickMsg', s);
   const g = el('pick-grid');
   g.innerHTML = '';
   const onCancel = opts.onCancel || (upTo
@@ -616,7 +615,7 @@ global.openWrToHandPick = function openWrToHandPick(pr, opts = {}) {
       if (!ok || isPromptSubmitting(s)) return;
       if (G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
       else {
-        if (G.pickMarked.size >= need) { toast(`Select at most ${need}`); return; }
+        if (G.pickMarked.size >= need) { toast(t('prompt.selectAtMost', { n: need })); return; }
         G.pickMarked.add(card.instance_id);
         sfxCardPick();
       }
@@ -656,8 +655,8 @@ global.openYellRevealPick = function openYellRevealPick(pr, opts = {}) {
     toast(pt('prompt.yellNoCards'), 3200);
     return;
   }
-  el('pick-ttl').textContent = pr.source_name || pt('prompt.yellPickTitle');
-  el('pick-msg').textContent = pr.prompt || pt('prompt.yellPickMsg');
+  el('pick-ttl').textContent = promptDisplayTitle(pr, pt('prompt.yellPickTitle'), s);
+  el('pick-msg').textContent = promptDisplayText(pr, 'prompt.yellPickMsg', s);
   const g = el('pick-grid');
   g.innerHTML = '';
   G.pickCtx = onCancel ? { onCancel } : null;
@@ -687,8 +686,8 @@ global.openJudgeSuccessLivePick = function openJudgeSuccessLivePick(pr, opts = {
     toast(pt('prompt.noLiveSuccess'), 3200);
     return;
   }
-  el('pick-ttl').textContent = pr.source_name || pt('prompt.successLivePickTitle');
-  el('pick-msg').textContent = pr.prompt || pt('prompt.successLivePickMsg');
+  el('pick-ttl').textContent = promptDisplayTitle(pr, pt('prompt.successLivePickTitle'), s);
+  el('pick-msg').textContent = promptDisplayText(pr, 'prompt.successLivePickMsg', s);
   const g = el('pick-grid');
   g.innerHTML = '';
   G.pickCtx = null;
@@ -723,8 +722,8 @@ global.openSuccessLiveAreaPick = function openSuccessLiveAreaPick(pr, opts = {})
     toast('No cards in Success Live area', 3200);
     return;
   }
-  el('pick-ttl').textContent = pr.source_name || pt('prompt.successLiveHandTitle');
-  el('pick-msg').textContent = pr.prompt || pt('prompt.successLiveHandMsg');
+  el('pick-ttl').textContent = promptDisplayTitle(pr, pt('prompt.successLiveHandTitle'), s);
+  el('pick-msg').textContent = promptDisplayText(pr, 'prompt.successLiveHandMsg', s);
   const g = el('pick-grid');
   g.innerHTML = '';
   G.pickCtx = null;
@@ -757,8 +756,8 @@ global.openLiveZonePick = function openLiveZonePick(pr, opts = {}) {
     toast('No cards in your Live', 3200);
     return;
   }
-  el('pick-ttl').textContent = pr.source_name || 'Choose Live';
-  el('pick-msg').textContent = pr.prompt || 'Choose 1 Live card in your Live.';
+  el('pick-ttl').textContent = promptDisplayTitle(pr, 'Choose Live', s);
+  el('pick-msg').textContent = promptDisplayText(pr, 'Choose 1 Live card in your Live.', s);
   const g = el('pick-grid');
   g.innerHTML = '';
   G.pickCtx = null;
@@ -795,8 +794,8 @@ global.openWrMembersDeckTopPick = function openWrMembersDeckTopPick(pr){
   const minPick = upTo ? 0 : need;
   G.pickCtx={count:need, min:minPick, onConfirm:(ids)=>sendAct('resolve_prompt',{card_ids:ids})};
   G.pickMarked.clear();
-  el('pick-ttl').textContent=pr.source_name||'Choose Members';
-  el('pick-msg').textContent=pr.prompt||(upTo
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Members');
+  el('pick-msg').textContent=promptDisplayText(pr, upTo
     ? `Choose up to ${need} Member card(s) from your Waiting Room (order = deck top).`
     : `Choose ${need} Member card(s) from your Waiting Room (order = deck top).`);
   const g=el('pick-grid'); g.innerHTML='';
@@ -815,7 +814,7 @@ global.openWrMembersDeckTopPick = function openWrMembersDeckTopPick(pr){
     g.appendChild(mkPickCardEl(card,'pickcard',()=>{
       if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
       else {
-        if(G.pickMarked.size>=need){ toast(`Select at most ${need}`); return; }
+        if(G.pickMarked.size>=need){ toast(t('prompt.selectAtMost', { n: need })); return; }
         G.pickMarked.add(card.instance_id);
         sfxCardPick();
       }
@@ -831,8 +830,8 @@ global.openWrMembersDeckTopPick = function openWrMembersDeckTopPick(pr){
 
 global.openBatch99StackWrPick = function openBatch99StackWrPick(pr){
   const cards=pr.candidates||[];
-  el('pick-ttl').textContent=pr.source_name||'Stack Member';
-  el('pick-msg').textContent=pr.prompt||'Choose a Member from your Waiting Room to stack under this Member.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Stack Member');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose a Member from your Waiting Room to stack under this Member.');
   const g=el('pick-grid'); g.innerHTML='';
   const btnOk=el('btn-pick-ok');
   const btnCancel=el('btn-pick-cancel');
@@ -864,14 +863,14 @@ global.openMemberWaitPick = function openMemberWaitPick(pr, myId){
   const min=pr.min_members??0;
   G.pickCtx={count:max, min, onConfirm:(ids)=>sendAct('resolve_prompt',{member_ids:ids})};
   G.pickMarked.clear();
-  el('pick-ttl').textContent=pr.source_name||'Wait Members';
-  el('pick-msg').textContent=pr.prompt||`Choose up to ${max} Member(s) to put into Wait.`;
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Wait Members');
+  el('pick-msg').textContent=promptDisplayText(pr, `Choose up to ${max} Member(s) to put into Wait.`);
   const g=el('pick-grid'); g.innerHTML='';
   (pr.stage_members||[]).forEach(card=>{
     g.appendChild(mkPickCardEl(card,'pickcard',()=>{
       if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
       else {
-        if(G.pickMarked.size>=max){ toast(`Select at most ${max}`); return; }
+        if(G.pickMarked.size>=max){ toast(t('prompt.selectAtMost', { n: max })); return; }
         G.pickMarked.add(card.instance_id);
         sfxCardPick();
       }
@@ -884,7 +883,7 @@ global.openMemberWaitPick = function openMemberWaitPick(pr, myId){
   const btn=el('pick-confirm');
   if(btn){
     btn.onclick=()=>{
-      if(G.pickMarked.size<min){ toast(`Select at least ${min}`); return; }
+      if(G.pickMarked.size<min){ toast(t('prompt.selectAtLeast', { n: min })); return; }
       closeM('overlay-pick');
       G.pickCtx.onConfirm([...G.pickMarked]);
     };
@@ -906,8 +905,8 @@ function mkHiddenHandPickEl(slot, onClick){
 
 
 global.openHiddenHandPick = function openHiddenHandPick(pr){
-  el('pick-ttl').textContent=pr.source_name||'Opponent hand';
-  el('pick-msg').textContent=pr.prompt||'Choose 1 card without looking.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Opponent hand');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose 1 card without looking.');
   const g=el('pick-grid'); g.innerHTML='';
   (pr.hand_slots||[]).forEach(slot=>{
     const elCard=mkHiddenHandPickEl(slot, ()=>{
@@ -923,8 +922,8 @@ global.openHiddenHandPick = function openHiddenHandPick(pr){
 
 global.openOppActiveMemberPick = function openOppActiveMemberPick(pr){
   const cards=pr.stage_members||[];
-  el('pick-ttl').textContent=pr.source_name||'Choose Member';
-  el('pick-msg').textContent=pr.prompt||'Choose 1 active Member on your Stage to put into Wait.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose Member');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose 1 active Member on your Stage to put into Wait.');
   const g=el('pick-grid'); g.innerHTML='';
   cards.forEach(card=>{
     g.appendChild(mkPickCardEl(card,'pickcard',()=>{
@@ -939,8 +938,8 @@ global.openOppActiveMemberPick = function openOppActiveMemberPick(pr){
 
 global.openPickMemberReturnEnergy = function openPickMemberReturnEnergy(pr){
   const members=pr.members||[];
-  el('pick-ttl').textContent=pr.source_name||'Return Energy';
-  el('pick-msg').textContent=pr.prompt||'Choose a Member with stacked Energy to return.';
+  el('pick-ttl').textContent=promptDisplayTitle(pr, 'Return Energy');
+  el('pick-msg').textContent=promptDisplayText(pr, 'Choose a Member with stacked Energy to return.');
   const g=el('pick-grid'); g.innerHTML='';
   members.forEach(m=>{
     const card={instance_id:m.instance_id,name:m.name,name_en:m.name,cost:m.stacked_count};
@@ -961,7 +960,7 @@ global.openHandPick = function openHandPick({hand,count,title,msg,onConfirm,onCa
   G.handPickCtx={count:need,min:minPick,singleTap,onConfirm,onCancel,promptKey};
   G.pickMarked.clear();
   el('hpick-ttl').textContent=title||t('prompt.chooseFromHand');
-  el('hpick-msg').textContent=localizeSubunitText(msg||(singleTap
+  el('hpick-msg').textContent=localizePromptDisplayText(msg||(singleTap
     ? t('prompt.discardOne')
     : t('prompt.discardMany', { count: need })));
   const fan=el('hpick-fan'); fan.innerHTML='';
@@ -977,7 +976,7 @@ global.openHandPick = function openHandPick({hand,count,title,msg,onConfirm,onCa
       }
       if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
       else {
-        if(G.pickMarked.size>=ctx.count){ toast(`Select at most ${ctx.count}`); return; }
+        if(G.pickMarked.size>=ctx.count){ toast(t('prompt.selectAtMost', { n: ctx.count })); return; }
         G.pickMarked.add(card.instance_id);
         sfxCardPick();
       }
@@ -1075,6 +1074,36 @@ global.localizePromptDisplayText = function localizePromptDisplayText(text, pr, 
     return LLTCG_LOG_I18N.localizeLogMessage(text, G.allCards);
   }
   return localizeSubunitText(text);
+}
+
+/**
+ * Localize text shown by an interactive prompt. Server prompt copy remains the
+ * primary source, except the shared Waiting Room → hand wording, which has a
+ * stable chrome translation independent of the originating card.
+ */
+global.promptDisplayText = function promptDisplayText(pr, fallbackKeyOrText, s) {
+  const state = s || G.gameState;
+  const raw = String(pr?.prompt || '').trim();
+  const genericWrToHand = /^(?:choose|pick)\s+(?:a|1)\s+(?:matching\s+)?(?:member\s+)?card\s+from\s+(?:your\s+)?waiting room\s+to\s+add\s+to\s+(?:your\s+)?hand\.?$/i;
+  if (raw) {
+    if ((pr?.type === 'pick_wr_to_hand' || pr?.type === 'pick_wr_leave_stage_add'
+        || /^pick_wr/.test(pr?.type || '')) && genericWrToHand.test(raw)) {
+      return pt('prompt.wrPickMsg');
+    }
+    return localizePromptDisplayText(raw, pr, state);
+  }
+  if (typeof fallbackKeyOrText === 'string' && fallbackKeyOrText.startsWith('prompt.')) {
+    return pt(fallbackKeyOrText);
+  }
+  return localizePromptDisplayText(fallbackKeyOrText || '', pr, state);
+}
+
+global.promptDisplayTitle = function promptDisplayTitle(pr, fallbackText, s, titleText) {
+  return localizePromptDisplayText(
+    titleText || pr?.source_name || fallbackText || '',
+    pr,
+    s || G.gameState
+  );
 }
 
 global.localizePromptEffectText = function localizePromptEffectText(pr, s) {
@@ -1472,9 +1501,9 @@ global.renderSurveilOverlay = function renderSurveilOverlay(pr){
   const ovl=el('overlay-surveil');
   const returnAll = !!pr.return_all;
   ovl?.classList.toggle('return-all', returnAll);
-  el('surveil-ttl').textContent=pr.source_name||'Look at deck';
+  el('surveil-ttl').textContent=promptDisplayTitle(pr, 'Look at deck');
   const n = (pr.looked_cards || []).length;
-  el('surveil-msg').textContent=localizeSubunitText(pr.prompt||(
+  el('surveil-msg').textContent=promptDisplayText(pr, (
     returnAll
       ? (n === 1
         ? 'Look at the top card of your deck and put it back on top.'
@@ -1652,11 +1681,11 @@ global.openOptionalLiveStartDiscardPick = function openOptionalLiveStartDiscardP
     count: discardNeed,
     min: minPick,
     title: pr.source_name || pt('prompt.discardFromHand'),
-    msg: pr.prompt || (minPick === 0
+    msg: promptDisplayText(pr, minPick === 0
       ? `Choose up to ${discardNeed} cards to send to the Waiting Room.`
       : discardNeed === 1
       ? 'Choose a card to send to the Waiting Room.'
-      : `Choose ${discardNeed} cards to send to the Waiting Room.`),
+      : `Choose ${discardNeed} cards to send to the Waiting Room.`, s),
     onConfirm: (ids) => sendResolvePrompt('yes', { discard_ids: ids }),
     // Cancel = skip the optional "may" (do not re-open the same pick — #79 Proof Kosuzu).
     onCancel: () => {
@@ -1849,7 +1878,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
     openHandPick({
       hand:me.hand||[], count:need, min:need,
       title:pr.source_name||'Discard',
-      msg:pr.prompt||`Discard ${need} card(s).`,
+      msg:promptDisplayText(pr, `Discard ${need} card(s).`, s),
       onConfirm:(ids)=>sendAct('resolve_prompt',{choice:'discard', discard_ids:ids}),
       onCancel:()=>{ if(G.gameState) renderPrompt(G.gameState,myId); }
     });
@@ -1869,7 +1898,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
       count: 1,
       forceConfirm: true,
       title: pr.source_name||'Reveal Member',
-      msg: pr.prompt||'Choose a matching Member from your hand to stack under this Member.',
+      msg: promptDisplayText(pr, 'Choose a matching Member from your hand to stack under this Member.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{choice:'yes',card_id:picked[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
     });
@@ -1894,7 +1923,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
           sendAct('resolve_prompt',{choice:'yes',card_id:picked[0],slot:empty[0]});
           return;
         }
-        el('prompt-ttl').textContent=pr.source_name||'Play stacked Member';
+        el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play stacked Member', s);
         el('prompt-msg').textContent='Choose an empty Stage area.';
         const box=el('prompt-btns'); box.innerHTML='';
         empty.forEach(slot=>{
@@ -1940,7 +1969,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||pt('prompt.wrPickTitle')||'Waiting Room',
-      msg: pr.prompt||'Choose 1 card from your Waiting Room to put on top of your deck.',
+      msg: promptDisplayText(pr, 'Choose 1 card from your Waiting Room to put on top of your deck.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{choice:'yes',card_id:picked[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
     });
@@ -1960,7 +1989,7 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
         count: 1,
         min: 1,
         title: pr.source_name || pt('prompt.deckTopTitle'),
-        msg: pr.prompt || pt('prompt.deckTopMsg'),
+        msg: promptDisplayText(pr, 'prompt.deckTopMsg', s),
         onConfirm: (picked) => sendAct('resolve_prompt', { card_id: picked[0] }),
         onCancel: () => sendAct('resolve_prompt', { choice: 'skip' }),
       });
@@ -2021,11 +2050,11 @@ global.handlePromptChoice = function handlePromptChoice(pr, choice, s, myId){
     openHandPick({
       hand:pickHand, count:discardNeed, min:minPick,
       title:pr.source_name||'Discard from hand',
-      msg:pr.prompt||(minPick===0
+    msg:promptDisplayText(pr, minPick===0
         ? `Choose up to ${discardNeed} cards to send to the Waiting Room.`
         : discardNeed===1
         ? 'Choose a card to send to the Waiting Room.'
-        : `Choose ${discardNeed} cards to send to the Waiting Room.`),
+      : `Choose ${discardNeed} cards to send to the Waiting Room.`, s),
       onConfirm:(ids)=>sendResolvePrompt(choice,{discard_ids:ids,pay:needsPay}),
       onCancel:()=>{
         G._promptSubmitKey=null;
@@ -2071,10 +2100,10 @@ global.renderPromptBp7Pick = function renderPromptBp7Pick(s, myId, pr) {
   }
   const enrich = (c) => (typeof enrichCard === 'function' ? enrichCard(c) : c);
   const cards = cands.map(enrich);
-  el('pick-ttl').textContent = pr.source_name || 'Choose card(s)';
-  el('pick-msg').textContent = pr.prompt || (max === 1
+  el('pick-ttl').textContent = promptDisplayTitle(pr, 'Choose card(s)', s);
+  el('pick-msg').textContent = promptDisplayText(pr, max === 1
     ? 'Choose 1 card.'
-    : `Choose ${min > 0 ? '' : 'up to '}${max} card(s).`);
+    : `Choose ${min > 0 ? '' : 'up to '}${max} card(s).`, s);
   const g = el('pick-grid');
   g.innerHTML = '';
   const btnOk = el('btn-pick-ok');
@@ -2098,7 +2127,7 @@ global.renderPromptBp7Pick = function renderPromptBp7Pick(s, myId, pr) {
       }
       if (G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
       else {
-        if (G.pickMarked.size >= max) { toast(`Select at most ${max}`); return; }
+        if (G.pickMarked.size >= max) { toast(t('prompt.selectAtMost', { n: max })); return; }
         G.pickMarked.add(card.instance_id);
         sfxCardPick();
       }
@@ -2136,9 +2165,9 @@ global.renderPromptDiscardHandBranch = function renderPromptDiscardHandBranch(s,
     count: need,
     min: need,
     title: pr.source_name || t('prompt.discardFromHand'),
-    msg: pr.prompt || ((need) === 1
+    msg: promptDisplayText(pr, (need) === 1
       ? t('prompt.discardOne')
-      : t('prompt.discardMany', { count: need })),
+      : t('prompt.discardMany', { count: need }), s),
     allowCancel: false,
     forceConfirm,
     promptKey,
@@ -2236,7 +2265,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openOppActiveMemberPick({
       ...pr,
       stage_members: members,
-      prompt: pr.prompt || `Choose 1 ${pr.group || 'Nijigasaki'} Member to put into Wait.`,
+      prompt: promptDisplayText(pr, `Choose 1 ${pr.group || 'Nijigasaki'} Member to put into Wait.`, s),
     });
     return;
   }
@@ -2251,7 +2280,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       openOppActiveMemberPick({
         ...pr,
         stage_members: members,
-        prompt: pr.prompt || `Choose 1 ${pr.group || 'Nijigasaki'} Member to put into Wait.`,
+        prompt: promptDisplayText(pr, `Choose 1 ${pr.group || 'Nijigasaki'} Member to put into Wait.`, s),
       });
       return;
     }
@@ -2285,9 +2314,9 @@ global.renderPrompt = function renderPrompt(s, myId){
         hand: me?.hand || [],
         count: need,
         title: pr.source_name || 'Discard',
-        msg: pr.prompt || (need === 1
+        msg: promptDisplayText(pr, need === 1
           ? 'Choose 1 card to put into the Waiting Room.'
-          : `Choose ${need} cards to put into the Waiting Room.`),
+          : `Choose ${need} cards to put into the Waiting Room.`, s),
         onConfirm: (ids) => sendAct('resolve_prompt', { discard_ids: ids }),
       });
       return;
@@ -2410,7 +2439,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       pick_count: 1,
       optional: true,
       eligible_ids: eligible,
-      prompt: pr.prompt || 'Look at the top 2 cards. You may add 1 μ\'s card to your hand, or send both to the Waiting Room.',
+      prompt: promptDisplayText(pr, 'Look at the top 2 cards. You may add 1 μ\'s card to your hand, or send both to the Waiting Room.', s),
     });
     return;
   }
@@ -2426,7 +2455,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||'Choose Member',
-      msg: pr.prompt||'Choose 1 Member on your Stage.',
+      msg: promptDisplayText(pr, 'Choose 1 Member on your Stage.', s),
       onConfirm: (picked)=>{
         const c=(pr.candidates||[]).find(x=>x.instance_id===picked[0]);
         sendAct('resolve_prompt',{slot:c?.slot||'center'});
@@ -2442,7 +2471,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openActivateWrMemberPick({
       ...pr,
       candidates: pool.length ? pool.map(enrichCard) : (pr.candidates||[]),
-      prompt: pr.prompt||'Choose 1 Aqours Member from your Waiting Room.',
+      prompt: promptDisplayText(pr, 'Choose 1 Aqours Member from your Waiting Room.', s),
     });
     return;
   }
@@ -2459,7 +2488,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openActivateWrMemberPick({
       ...pr,
       candidates: pool.length ? pool.map(enrichCard) : (pr.candidates||[]),
-      prompt: pr.prompt||'Choose 1 Member from your Waiting Room.',
+      prompt: promptDisplayText(pr, 'Choose 1 Member from your Waiting Room.', s),
     });
     return;
   }
@@ -2471,7 +2500,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: max,
       min: 1,
       title: pr.source_name||'Choose Members',
-      msg: pr.prompt||`Choose up to ${max} Member(s).`,
+      msg: promptDisplayText(pr, `Choose up to ${max} Member(s).`, s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{card_ids:picked}),
     });
     return;
@@ -2484,7 +2513,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: max,
       min: 1,
       title: pr.source_name||'Choose Members',
-      msg: pr.prompt||`Choose up to ${max} Yell Member(s).`,
+      msg: promptDisplayText(pr, `Choose up to ${max} Yell Member(s).`, s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{card_ids:picked}),
     });
     return;
@@ -2498,7 +2527,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     ovl.classList.remove('open');
     openJudgeSuccessLivePick({
       ...pr,
-      prompt: pr.prompt || pt('prompt.successLivePickMsg'),
+      prompt: promptDisplayText(pr, 'prompt.successLivePickMsg', s),
       source_name: pr.source_name || pt('prompt.successLivePickTitle'),
     }, { state: s, myId });
     return;
@@ -2509,7 +2538,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       ovl.classList.remove('open');
       openWrLivePick({
         ...pr,
-        prompt: pr.prompt || 'Choose 1 Live from Waiting Room for Success.',
+        prompt: promptDisplayText(pr, 'Choose 1 Live from Waiting Room for Success.', s),
       }, { state: s, myId });
       return;
     }
@@ -2548,7 +2577,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: max,
       min: 1,
       title: pr.source_name||'Waiting Room',
-      msg: pr.prompt||`Choose up to ${max} matching Member card(s) from your Waiting Room.`,
+      msg: promptDisplayText(pr, `Choose up to ${max} matching Member card(s) from your Waiting Room.`, s),
       onConfirm: (ids)=>sendAct('resolve_prompt',{card_ids:ids}),
       onCancel: ()=>{
         G._promptSubmitKey=null;
@@ -2589,8 +2618,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='ssd1_play_wr_empty'&&pr.step==='pick_slot'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Play Member';
-    el('prompt-msg').textContent=pr.prompt||'Choose an area:';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play Member', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -2604,8 +2633,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='both_wr_member_to_empty_stage'&&pr.step==='pick_slot'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Waiting Room Member';
-    el('prompt-msg').textContent=pr.prompt||'Choose an empty Stage area:';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Waiting Room Member', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an empty Stage area:', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -2620,8 +2649,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='optional_pay_play_hand_member'&&pr.responder===myId){
     if(pr.step==='pick_slot'){
       ovl.classList.remove('open');
-      el('prompt-ttl').textContent=pr.source_name||'Play Member';
-      el('prompt-msg').textContent=pr.prompt||'Choose an area:';
+      el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Play Member', s);
+      el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
       const box=el('prompt-btns'); box.innerHTML='';
       (pr.slots||[]).forEach(slot=>{
         const b=document.createElement('button');
@@ -2652,7 +2681,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand,
       count: 1,
       title: pr.source_name||'Play Member',
-      msg: pr.prompt||`Choose a ${label} Member (cost ≤${maxCost}) from hand.`,
+      msg: promptDisplayText(pr, `Choose a ${label} Member (cost ≤${maxCost}) from hand.`, s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{choice:'yes',card_id:ids[0]}),
       onCancel: ()=> sendAct('resolve_prompt',{choice:'no'})
     });
@@ -2699,9 +2728,9 @@ global.renderPrompt = function renderPrompt(s, myId){
       return;
     }
     const max = pr.max_pick || yellPool.length;
-    el('prompt-ttl').textContent = pr.source_name || 'Yell mill';
-    el('prompt-msg').textContent = pr.prompt
-      || `Put up to ${max} non-Blade-heart Hasunosora Yell card(s) into the Waiting Room for extra Yell?`;
+    el('prompt-ttl').textContent = promptDisplayTitle(pr, 'Yell mill', s);
+    el('prompt-msg').textContent = promptDisplayText(pr,
+      `Put up to ${max} non-Blade-heart Hasunosora Yell card(s) into the Waiting Room for extra Yell?`, s);
     const box = el('prompt-btns');
     box.innerHTML = '';
     const labels = pr.choice_labels || ['Yes', 'No — Skip'];
@@ -2721,7 +2750,7 @@ global.renderPrompt = function renderPrompt(s, myId){
           min: 1,
           promptKey: promptIdentityKey(s),
           title: pr.source_name || 'Yell mill',
-          msg: pr.prompt || `Choose up to ${max} Yell card(s) to mill.`,
+          msg: promptDisplayText(pr, `Choose up to ${max} Yell card(s) to mill.`, s),
           onConfirm: (ids) => {
             if (ids.length) sendAct('resolve_prompt', { choice: 'yes', card_ids: ids });
           },
@@ -2747,7 +2776,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Waiting Room',
-      msg: pr.prompt||`Choose ${need} Live cards with different names from your Waiting Room.`,
+      msg: promptDisplayText(pr, `Choose ${need} Live cards with different names from your Waiting Room.`, s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_ids:ids}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
       forceConfirm: true,
@@ -2765,7 +2794,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Energy',
-      msg: pr.prompt||`Choose ${need} Energy from your Energy Zone to place under this Member.`,
+      msg: promptDisplayText(pr, `Choose ${need} Energy from your Energy Zone to place under this Member.`, s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{energy_ids:ids, card_ids:ids}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
       forceConfirm: true,
@@ -2789,7 +2818,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||`Put 1 Member with cost ${maxCost} or less from your hand into the Waiting Room.`,
+      msg: promptDisplayText(pr, `Put 1 Member with cost ${maxCost} or less from your hand into the Waiting Room.`, s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
       forceConfirm: true,
@@ -2806,7 +2835,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         count: 1,
         min: 1,
         title: pr.source_name||'Discard',
-        msg: pr.prompt||`Put 1 ${grp} card from your hand into the Waiting Room.`,
+        msg: promptDisplayText(pr, `Put 1 ${grp} card from your hand into the Waiting Room.`, s),
         onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
         onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState,myId); },
       });
@@ -2819,7 +2848,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         count: 1,
         min: 1,
         title: pr.source_name||'Choose Member',
-        msg: pr.prompt||'Choose 1 Member on your Stage.',
+        msg: promptDisplayText(pr, 'Choose 1 Member on your Stage.', s),
         onConfirm: (picked)=>{
           const c=(pr.candidates||[]).find(x=>x.instance_id===picked[0]);
           sendAct('resolve_prompt',{slot:c?.slot||'center'});
@@ -2851,7 +2880,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||'Reveal Live',
-      msg: pr.prompt||'Choose 1 Live card from your hand to reveal.',
+      msg: promptDisplayText(pr, 'Choose 1 Live card from your hand to reveal.', s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_id: ids[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); },
     });
@@ -2885,7 +2914,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         count: 1,
         min: 1,
         title: pr.source_name || pt('prompt.deckTopTitle'),
-        msg: pr.prompt || pt('prompt.deckTopMsg'),
+        msg: promptDisplayText(pr, 'prompt.deckTopMsg', s),
         onConfirm: (picked) => sendAct('resolve_prompt', { card_id: picked[0] }),
         onCancel: () => sendAct('resolve_prompt', { choice: 'skip' }),
       });
@@ -2907,7 +2936,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: maxCount,
       min: 0,
       title: pr.source_name || pt('prompt.wrPickTitle'),
-      msg: pr.prompt || `Choose up to ${maxCount} Member(s) (combined cost ≤${maxCombined}).`,
+      msg: promptDisplayText(pr, `Choose up to ${maxCount} Member(s) (combined cost ≤${maxCombined}).`, s),
       allowCancel: true,
       forceConfirm: maxCount > 1,
       onConfirm: (ids) => {
@@ -2934,7 +2963,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: me?.hand||[],
       count: pr.discard_count||1,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||'Choose a card to send to the Waiting Room.',
+      msg: promptDisplayText(pr, 'Choose a card to send to the Waiting Room.', s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
     });
@@ -2949,7 +2978,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||`Choose ${need} card(s) to send to the Waiting Room.`,
+      msg: promptDisplayText(pr, `Choose ${need} card(s) to send to the Waiting Room.`, s),
       allowCancel: false,
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
     });
@@ -2964,7 +2993,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||`Choose ${need} card(s) to send to the Waiting Room, then choose a heart color.`,
+      msg: promptDisplayText(pr, `Choose ${need} card(s) to send to the Waiting Room, then choose a heart color.`, s),
       allowCancel: false,
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
     });
@@ -2994,7 +3023,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||`Discard ${need} card(s) from your hand to look at your deck.`,
+      msg: promptDisplayText(pr, `Discard ${need} card(s) from your hand to look at your deck.`, s),
       allowCancel: false,
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
     });
@@ -3008,7 +3037,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: (me?.hand||[]).length,
       min: 0,
       title: pr.source_name||'Reveal Members',
-      msg: pr.prompt||'Select Member cards to reveal from hand.',
+      msg: promptDisplayText(pr, 'Select Member cards to reveal from hand.', s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_ids:ids}),
       onCancel: ()=> sendAct('resolve_prompt',{card_ids:[]})
     });
@@ -3016,8 +3045,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='on_enter_draw_swap_area'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Move Member';
-    el('prompt-msg').textContent=pr.prompt||'Choose an area:';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Move Member', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.slots||[]).forEach(slot=>{
       const b=document.createElement('button');
@@ -3036,8 +3065,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='activate_energy_up_to'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Activate Energy';
-    el('prompt-msg').textContent=pr.prompt||'How many Energy to activate?';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Activate Energy', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'How many Energy to activate?', s);
     const box=el('prompt-btns'); box.innerHTML='';
     const max=pr.max||6;
     for(let i=0;i<=max;i++){
@@ -3067,7 +3096,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: (me?.hand||[]).filter(c=>c.card_type==='ライブ'),
       count: 1,
       title: pr.source_name||'Reveal Live',
-      msg: pr.prompt||'Choose 1 Live card from your hand.',
+      msg: promptDisplayText(pr, 'Choose 1 Live card from your hand.', s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
     });
@@ -3085,7 +3114,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||pt('prompt.wrPickTitle')||'Waiting Room',
-      msg: pr.prompt||'Choose 1 card from your Waiting Room to put on top of your deck.',
+      msg: promptDisplayText(pr, 'Choose 1 card from your Waiting Room to put on top of your deck.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{choice:'yes',card_id:picked[0]}),
       onCancel: ()=> sendAct('resolve_prompt',{choice:'no'}),
     });
@@ -3125,7 +3154,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         hand: me?.hand||[],
         count: 1,
         title: pr.source_name||'Discard',
-        msg: pr.prompt||'Choose 1 card to send to the Waiting Room.',
+        msg: promptDisplayText(pr, 'Choose 1 card to send to the Waiting Room.', s),
         onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
         onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
       });
@@ -3162,7 +3191,7 @@ global.renderPrompt = function renderPrompt(s, myId){
           hand: (me?.hand||[]).filter(c=>c.card_type==='ライブ'),
           count: 1,
           title: pr.source_name||'Maki Nishikino',
-          msg: pr.prompt||'Choose 1 Live card from your hand to reveal.',
+          msg: promptDisplayText(pr, 'Choose 1 Live card from your hand to reveal.', s),
           onConfirm: (ids)=> sendAct('resolve_prompt',{card_id:ids[0]}),
           onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
         });
@@ -3181,7 +3210,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       hand: me?.hand||[],
       count: pr.discard_count||1,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||'Choose card(s) to send to the Waiting Room.',
+      msg: promptDisplayText(pr, 'Choose card(s) to send to the Waiting Room.', s),
       onConfirm: (ids)=> sendAct('resolve_prompt',{discard_ids:ids}),
       onCancel: ()=> { if(G.gameState) renderPrompt(G.gameState, myId); }
     });
@@ -3199,7 +3228,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         count: 1,
         forceConfirm: true,
         title: pr.source_name||'Reveal Member',
-        msg: pr.prompt||'Choose a matching Member from your hand to stack under this Member.',
+        msg: promptDisplayText(pr, 'Choose a matching Member from your hand to stack under this Member.', s),
         onConfirm: (picked)=> sendAct('resolve_prompt',{card_id:picked[0]}),
         onCancel: ()=> sendAct('resolve_prompt',{choice:'no'})
       });
@@ -3214,8 +3243,8 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     if(pr.step==='pick_ability'){
       ovl.classList.remove('open');
-      el('prompt-ttl').textContent=pr.wr_member_name||pr.source_name||'Choose ability';
-      el('prompt-msg').textContent=pr.prompt||'Choose 1 ability to activate.';
+      el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Choose ability', s, pr.wr_member_name||pr.source_name);
+      el('prompt-msg').textContent=promptDisplayText(pr, 'Choose 1 ability to activate.', s);
       const box=el('prompt-btns'); box.innerHTML='';
       const choices=pr.choices||[];
       const labels=pr.choice_labels||choices;
@@ -3238,7 +3267,7 @@ global.renderPrompt = function renderPrompt(s, myId){
         count: need,
         min: need,
         title: pr.wr_member_name||pr.source_name||'Discard',
-        msg: pr.prompt||(`Choose ${need} card(s) to send to the Waiting Room.`),
+        msg: promptDisplayText(pr, `Choose ${need} card(s) to send to the Waiting Room.`, s),
         allowCancel: false,
         onConfirm: (picked)=> sendAct('resolve_prompt',{discard_ids:picked}),
       });
@@ -3258,8 +3287,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='spbp2_wait_self_opp_heart_gap'&&pr.responder===myId){
     ovl.classList.remove('open');
     if(pr.step==='confirm'){
-      el('prompt-ttl').textContent=pr.source_name||'Wait chain';
-      el('prompt-msg').textContent=pr.prompt||'Optional Wait effect';
+      el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Wait chain', s);
+      el('prompt-msg').textContent=promptDisplayText(pr, 'Optional Wait effect', s);
       const box=el('prompt-btns'); box.innerHTML='';
       (pr.choice_labels||['Yes','No']).forEach((label,i)=>{
         const b=document.createElement('button');
@@ -3277,8 +3306,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   if((pr?.type==='spbp2_center_move_choose'||pr?.type==='spbp2_center_move_position')&&pr.responder===myId){
     ovl.classList.remove('open');
     if(pr.type==='spbp2_center_move_position'&&pr.choices?.includes('yes')){
-      el('prompt-ttl').textContent=pr.source_name||'Position change';
-      el('prompt-msg').textContent=pr.prompt||'Position-change this Member?';
+      el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Position change', s);
+      el('prompt-msg').textContent=promptDisplayText(pr, 'Position-change this Member?', s);
       const box=el('prompt-btns'); box.innerHTML='';
       ['Yes — Position change','No — Done'].forEach((label,i)=>{
         const b=document.createElement('button');
@@ -3297,8 +3326,8 @@ global.renderPrompt = function renderPrompt(s, myId){
       ovl.classList.add('open');
       return;
     }
-    el('prompt-ttl').textContent=pr.source_name||'Center moved';
-    el('prompt-msg').textContent=pr.prompt||'Choose one effect';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Center moved', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose one effect', s);
     const box=el('prompt-btns'); box.innerHTML='';
     const choices=pr.choices||['heart','wait_opp','draw'];
     const labels=pr.choice_labels||choices;
@@ -3322,7 +3351,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: pool.length,
       min: 0,
       title: pr.source_name||'Discard subunit',
-      msg: pr.prompt||'Choose any number of subunit Members to discard, then draw that many +1.',
+      msg: promptDisplayText(pr, 'Choose any number of subunit Members to discard, then draw that many +1.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{discard_ids:picked}),
       onCancel: ()=> sendAct('resolve_prompt',{discard_ids:[]})
     });
@@ -3331,10 +3360,10 @@ global.renderPrompt = function renderPrompt(s, myId){
   if(pr?.type==='pick_number_reveal_deck_top'&&pr.responder===myId){
     ovl.classList.remove('open');
     if((pr.step||'pick_number')==='resolve_reveal'){
-      el('prompt-ttl').textContent=pr.source_name||'Deck top revealed';
+      el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Deck top revealed', s);
       const rev=pr.revealed||{};
       const n=pr.chosen_number;
-      el('prompt-msg').textContent=pr.prompt||`Revealed: ${rev.name_en||rev.name||'card'} (cost ${rev.cost??'?'}). Chosen number: ${n}.`;
+      el('prompt-msg').textContent=promptDisplayText(pr, `Revealed: ${rev.name_en||rev.name||'card'} (cost ${rev.cost??'?'}). Chosen number: ${n}.`, s);
       const box=el('prompt-btns'); box.innerHTML='';
       if(rev.image||rev.instance_id){
         try{
@@ -3356,8 +3385,8 @@ global.renderPrompt = function renderPrompt(s, myId){
       ovl.classList.add('open');
       return;
     }
-    el('prompt-ttl').textContent=pr.source_name||'Pick a number';
-    el('prompt-msg').textContent=pr.prompt||'Choose a number (0 or higher), then reveal your deck top.';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Pick a number', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose a number (0 or higher), then reveal your deck top.', s);
     const box=el('prompt-btns'); box.innerHTML='';
     box.style.cssText='display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:420px';
     (pr.numbers||[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]).forEach(num=>{
@@ -3434,7 +3463,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     openStageMemberPickById({
       ...pr,
-      prompt: pr.prompt||'Choose 1 Member in Wait to activate.',
+      prompt: promptDisplayText(pr, 'Choose 1 Member in Wait to activate.', s),
     });
     return;
   }
@@ -3446,7 +3475,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     openStageMemberPickById({
       ...pr,
-      prompt: pr.prompt||'Choose 1 Member to Position Change.',
+      prompt: promptDisplayText(pr, 'Choose 1 Member to Position Change.', s),
     });
     return;
   }
@@ -3458,9 +3487,9 @@ global.renderPrompt = function renderPrompt(s, myId){
     }
     openStageMemberPickById({
       ...pr,
-      prompt: pr.prompt || (pr.type==='sbp5_pick_saint_snow_position'
+      prompt: promptDisplayText(pr, pr.type==='sbp5_pick_saint_snow_position'
         ? 'Choose 1 Saint Snow Member to Position Change.'
-        : 'Choose 1 Aqours Member for +Blade until Live ends.'),
+        : 'Choose 1 Aqours Member for +Blade until Live ends.', s),
     });
     return;
   }
@@ -3469,7 +3498,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageSlotPick({
       ...pr,
       candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
-      prompt: pr.prompt||'Choose an area to Position Change into.',
+      prompt: promptDisplayText(pr, 'Choose an area to Position Change into.', s),
     });
     return;
   }
@@ -3478,7 +3507,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageSlotPick({
       ...pr,
       candidates: (pr.target_slots||[]).map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
-      prompt: pr.prompt||'Choose an area to Position Change into.',
+      prompt: promptDisplayText(pr, 'Choose an area to Position Change into.', s),
     });
     return;
   }
@@ -3492,7 +3521,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     openStageSlotPick({
       ...pr,
       candidates: slots.map(slot=>({slot, name_en: typeof slotLabel==='function'?slotLabel(slot):slot})),
-      prompt: pr.prompt||'Choose an area for this Member.',
+      prompt: promptDisplayText(pr, 'Choose an area for this Member.', s),
     });
     return;
   }
@@ -3504,7 +3533,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 1,
       title: pr.source_name||'Choose card',
-      msg: pr.prompt||'Choose a card.',
+      msg: promptDisplayText(pr, 'Choose a card.', s),
       allowCancel: !mandatoryBothWr,
       onConfirm: (picked)=> sendAct('resolve_prompt',{card_id:picked[0]}),
       onCancel: ()=> {
@@ -3523,7 +3552,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Deck bottom',
-      msg: pr.prompt||`Choose ${need} card(s) to put on the bottom of your deck.`,
+      msg: promptDisplayText(pr, `Choose ${need} card(s) to put on the bottom of your deck.`, s),
       confirmLabel: need===1?'Tap a card to put it on the bottom of your deck.':undefined,
       allowCancel: false,
       onConfirm: (picked)=> sendAct('resolve_prompt',{discard_ids:picked}),
@@ -3539,7 +3568,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: need,
       min: need,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||`Discard ${need} card(s).`,
+      msg: promptDisplayText(pr, `Discard ${need} card(s).`, s),
       allowCancel: false,
       onConfirm: (picked)=> sendAct('resolve_prompt',{discard_ids:picked}),
     });
@@ -3553,7 +3582,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: pr.discard_count||1,
       min: pr.discard_count||1,
       title: pr.source_name||'Discard',
-      msg: pr.prompt||'Discard from hand.',
+      msg: promptDisplayText(pr, 'Discard from hand.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt',{discard_ids:picked}),
     });
     return;
@@ -3565,7 +3594,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       count: 1,
       min: 0,
       title: pr.source_name||'Reveal Member',
-      msg: pr.prompt||'Choose a matching Member to add to your hand, or skip.',
+      msg: promptDisplayText(pr, 'Choose a matching Member to add to your hand, or skip.', s),
       onConfirm: (picked)=> sendAct('resolve_prompt', picked.length ? { card_id: picked[0] } : { choice: 'skip' }),
       onCancel: ()=> sendAct('resolve_prompt',{choice:'skip'}),
     });
@@ -3573,8 +3602,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='spbp5_mill_swap_pick'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Position change';
-    el('prompt-msg').textContent=pr.prompt||'Choose an area:';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Position change', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'Choose an area:', s);
     const box=el('prompt-btns'); box.innerHTML='';
     (pr.choices||[]).forEach((slot,i)=>{
       const b=document.createElement('button');
@@ -3588,8 +3617,8 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   if(pr?.type==='spbp5_pay_energy_score'&&pr.responder===myId){
     ovl.classList.remove('open');
-    el('prompt-ttl').textContent=pr.source_name||'Pay Energy';
-    el('prompt-msg').textContent=pr.prompt||'How much Energy to pay?';
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Pay Energy', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'How much Energy to pay?', s);
     const box=el('prompt-btns'); box.innerHTML='';
     const me=s.players?.[myId];
     const max=(me?.energy_zone||[]).filter(energyChipActive).length;
@@ -3618,8 +3647,8 @@ global.renderPrompt = function renderPrompt(s, myId){
     return;
   }
   if(pr.type==='opponent_text_answer'){
-    el('prompt-ttl').textContent=pr.source_name||'Live Start';
-    el('prompt-msg').textContent=localizeSubunitText(pr.prompt||'What do you like?');
+    el('prompt-ttl').textContent=promptDisplayTitle(pr, 'Live Start', s);
+    el('prompt-msg').textContent=promptDisplayText(pr, 'What do you like?', s);
     renderTextAnswerPrompt(pr);
     ovl.classList.add('open');
     return;
@@ -3637,7 +3666,7 @@ global.renderPrompt = function renderPrompt(s, myId){
   const branch=isBranchChoicePrompt(pr);
   const subEl=el('prompt-sub');
   el('prompt-ttl').textContent=promptSourceDisplayName(pr, s);
-  el('prompt-msg').textContent=localizePromptDisplayText(pr.prompt||t('prompt.tapOption'), pr, s);
+  el('prompt-msg').textContent=promptDisplayText(pr, 'prompt.tapOption', s);
   el('prompt-msg').className='prompt-branch-msg';
   if(branch){
     subEl.hidden=false;

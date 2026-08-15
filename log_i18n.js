@@ -727,52 +727,149 @@
   ];
 
   /** Shared yes/no skill-prompt templates (server pending_prompt.prompt). */
+  var PROMPT_QUESTION_RULES_JA = [
+    [/^Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room[?.]?$/,
+      '手札1枚を控え室に置く：デッキの上から$1枚を見て、1枚を手札に加え、残りを控え室に置く。'],
+    [/^Put 1 card from your hand into the Waiting Room: add 1 (.+?) from your Waiting Room to your hand[?.]?$/,
+      '手札1枚を控え室に置く：控え室から$1を1枚手札に加える。'],
+    [/^Put 1 card from your hand into the Waiting Room: add (\d+) Energy[?.]?$/,
+      '手札1枚を控え室に置く：エネルギーを$1枚追加する。'],
+    [/^Choose (up to )?(\d+) (Member |Live )?card(?:s)? from your Waiting Room to add to your hand(?:,? or skip)?\.?$/,
+      function (_m, upTo, count, kind) {
+        var type = kind === 'Member ' ? 'メンバーカード' : kind === 'Live ' ? 'ライブカード' : 'カード';
+        return '控え室から' + (upTo ? count + '枚までの' : count + '枚の') + type + 'を選び、手札に加える。';
+      }],
+    [/^Choose 1 card from your Waiting Room to add to your hand \(the rest go to the Waiting Room\)\.?$/,
+      '控え室からカードを1枚選んで手札に加え、残りを控え室に置く。'],
+    [/^Choose 1 card revealed by Yell to add to your hand\.?$/, 'エールで公開したカードを1枚選び、手札に加える。'],
+    [/^Choose (?:up to )?(\d+) Member(?:s)? on your Stage\.?$/, '自分のステージのメンバーを$1体まで選ぶ。'],
+    [/^Choose (\d+) card(?:s)? from your hand to (?:send to|put into) the Waiting Room\.?$/, '手札から$1枚選び、控え室に置く。'],
+    [/^Discard (\d+) card(?:s)? from your hand\.?$/, '手札を$1枚捨てる。'],
+    [/^Look at the top (\d+) cards? of your deck\.?$/, 'デッキの上から$1枚を見る。'],
+    [/^Choose (?:an effect|one effect|one):?$/, '効果を1つ選ぶ。'],
+    [/^Choose a heart color\.?$/, 'ハートの色を選ぶ。'],
+    [/^Choose (?:yourself|you) or your opponent\.?$/, '自分または相手を選ぶ。'],
+    [/^Choose a Live card for Success Live\.?$/, '成功ライブにするライブカードを選ぶ。'],
+    [/^Choose 1 card to add to your hand \(the rest go to the Waiting Room\)\.?$/, 'カードを1枚選んで手札に加え、残りを控え室に置く。'],
+    [/^Ask your opponent: "(.+)"$/, '相手に質問：「$1」'],
+  ];
+
   var PROMPT_QUESTION_RULES_ES = [
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\?$/,
+    [/^Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room[?.]?$/,
       'Pon 1 carta de tu mano en la Sala de espera: mira las $1 cartas superiores de tu mazo, añade 1 a tu mano y pon el resto en la Sala de espera?'],
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\./,
-      'Pon 1 carta de tu mano en la Sala de espera: mira las $1 cartas superiores de tu mazo, añade 1 a tu mano y pon el resto en la Sala de espera.'],
-    [/Put 1 card from your hand into the Waiting Room: add 1 Nijigasaki Live card from your Waiting Room to your hand\?$/,
-      '¿Pones 1 carta de tu mano en la Sala de espera: añadir 1 carta Live de Nijigasaki de tu Sala de espera a tu mano?'],
-    [/Put 1 card from your hand into the Waiting Room\?/, '¿Pones 1 carta de tu mano en la Sala de espera?'],
-    [/Use optional Live Start effect\?/, '¿Usar este efecto de Inicio de Live?'],
-    [/Use optional effect\?/, '¿Usar este efecto?'],
+    [/^Put 1 card from your hand into the Waiting Room: add 1 (.+?) from your Waiting Room to your hand[?.]?$/,
+      'Pon 1 carta de tu mano en la Sala de espera: añade 1 $1 de tu Sala de espera a tu mano.'],
+    [/^Put 1 card from your hand into the Waiting Room: add (\d+) Energy[?.]?$/, 'Pon 1 carta de tu mano en la Sala de espera: añade $1 Energía.'],
+    [/^Choose (up to )?(\d+) (Member |Live )?card(?:s)? from your Waiting Room to add to your hand(?:,? or skip)?\.?$/,
+      function (_m, upTo, count, kind) {
+        var plural = count !== '1';
+        var type = kind === 'Member ' ? (plural ? 'cartas de Miembro' : 'carta de Miembro') :
+          kind === 'Live ' ? (plural ? 'cartas Live' : 'carta Live') : (plural ? 'cartas' : 'carta');
+        return 'Elige ' + (upTo ? 'hasta ' : '') + count + ' ' + type + ' de tu Sala de espera y añádela(s) a tu mano.';
+      }],
+    [/^Choose 1 card from your Waiting Room to add to your hand \(the rest go to the Waiting Room\)\.?$/,
+      'Elige 1 carta de tu Sala de espera para añadirla a tu mano; el resto va a la Sala de espera.'],
+    [/^Choose 1 card revealed by Yell to add to your hand\.?$/, 'Elige 1 carta revelada por Yell para añadirla a tu mano.'],
+    [/^Choose (?:up to )?(\d+) Member(?:s)? on your Stage\.?$/, 'Elige hasta $1 Miembro(s) en tu Escenario.'],
+    [/^Choose (\d+) card(?:s)? from your hand to (?:send to|put into) the Waiting Room\.?$/, 'Elige $1 carta(s) de tu mano para ponerla(s) en la Sala de espera.'],
+    [/^Discard (\d+) card(?:s)? from your hand\.?$/, 'Descarta $1 carta(s) de tu mano.'],
+    [/^Look at the top (\d+) cards? of your deck\.?$/, 'Mira las $1 cartas superiores de tu mazo.'],
+    [/^Choose (?:an effect|one effect|one):?$/, 'Elige un efecto.'],
+    [/^Choose a heart color\.?$/, 'Elige un color de corazón.'],
+    [/^Choose (?:yourself|you) or your opponent\.?$/, 'Elígete a ti o a tu oponente.'],
+    [/^Choose a Live card for Success Live\.?$/, 'Elige una carta Live para el Live exitoso.'],
+    [/^Choose 1 card to add to your hand \(the rest go to the Waiting Room\)\.?$/, 'Elige 1 carta para añadirla a tu mano; el resto va a la Sala de espera.'],
+    [/^Ask your opponent: "(.+)"$/, 'Pregunta a tu oponente: «$1»'],
+    [/^Put 1 card from your hand into the Waiting Room\?$/, '¿Pones 1 carta de tu mano en la Sala de espera?'],
+    [/^Use optional Live Start effect\?$/, '¿Usar este efecto de Inicio de Live?'],
+    [/^Use optional effect\?$/, '¿Usar este efecto?'],
   ];
 
   var PROMPT_QUESTION_RULES_KO = [
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\?$/,
+    [/^Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room[?.]?$/,
       '손패 1장을 대기실에 두고: 덱 위 $1장을 보고 1장을 손으로, 나머지를 대기실로 보낼까요?'],
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\./,
-      '손패 1장을 대기실에 두고: 덱 위 $1장을 보고 1장을 손으로, 나머지를 대기실로 보냅니다.'],
-    [/Put 1 card from your hand into the Waiting Room: add 1 Nijigasaki Live card from your Waiting Room to your hand\?$/,
-      '손패 1장을 대기실에 두고: 대기실의 니지가스키 Live 카드 1장을 손으로 추가할까요?'],
-    [/Put 1 card from your hand into the Waiting Room\?/, '손패 1장을 대기실에 둘까요?'],
-    [/Use optional Live Start effect\?/, '이 라이브 개시 효과를 사용하시겠습니까?'],
-    [/Use optional effect\?/, '이 효과를 사용하시겠습니까?'],
+    [/^Put 1 card from your hand into the Waiting Room: add 1 (.+?) from your Waiting Room to your hand[?.]?$/,
+      '손패 1장을 대기실에 두고: 대기실의 $1 1장을 손패에 추가합니다.'],
+    [/^Put 1 card from your hand into the Waiting Room: add (\d+) Energy[?.]?$/, '손패 1장을 대기실에 두고: 에너지를 $1장 추가합니다.'],
+    [/^Choose (up to )?(\d+) (Member |Live )?card(?:s)? from your Waiting Room to add to your hand(?:,? or skip)?\.?$/,
+      function (_m, upTo, count, kind) {
+        var type = kind === 'Member ' ? '멤버 카드' : kind === 'Live ' ? 'Live 카드' : '카드';
+        return '대기실에서 ' + type + ' ' + count + '장' + (upTo ? '까지 선택하여' : '을 선택하여') + ' 손패에 추가합니다.';
+      }],
+    [/^Choose 1 card from your Waiting Room to add to your hand \(the rest go to the Waiting Room\)\.?$/,
+      '대기실에서 카드 1장을 선택하여 손패에 추가하고, 나머지는 대기실로 보냅니다.'],
+    [/^Choose 1 card revealed by Yell to add to your hand\.?$/, 'Yell로 공개된 카드 1장을 선택하여 손패에 추가합니다.'],
+    [/^Choose (?:up to )?(\d+) Member(?:s)? on your Stage\.?$/, '자신의 스테이지에서 멤버를 $1명까지 선택합니다.'],
+    [/^Choose (\d+) card(?:s)? from your hand to (?:send to|put into) the Waiting Room\.?$/, '손패에서 카드 $1장을 선택하여 대기실로 보냅니다.'],
+    [/^Discard (\d+) card(?:s)? from your hand\.?$/, '손패에서 카드 $1장을 버립니다.'],
+    [/^Look at the top (\d+) cards? of your deck\.?$/, '덱 위에서 $1장을 봅니다.'],
+    [/^Choose (?:an effect|one effect|one):?$/, '효과를 하나 선택합니다.'],
+    [/^Choose a heart color\.?$/, '하트 색을 선택합니다.'],
+    [/^Choose (?:yourself|you) or your opponent\.?$/, '자신 또는 상대를 선택합니다.'],
+    [/^Choose a Live card for Success Live\.?$/, '성공 Live로 할 Live 카드를 선택합니다.'],
+    [/^Choose 1 card to add to your hand \(the rest go to the Waiting Room\)\.?$/, '카드 1장을 선택하여 손패에 추가하고, 나머지는 대기실로 보냅니다.'],
+    [/^Ask your opponent: "(.+)"$/, '상대에게 질문: "$1"'],
+    [/^Put 1 card from your hand into the Waiting Room\?$/, '손패 1장을 대기실에 둘까요?'],
+    [/^Use optional Live Start effect\?$/, '이 라이브 개시 효과를 사용하시겠습니까?'],
+    [/^Use optional effect\?$/, '이 효과를 사용하시겠습니까?'],
   ];
 
   var PROMPT_QUESTION_RULES_ZH = [
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\?$/,
+    [/^Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room[?.]?$/,
       '将1张手牌放入等候室：查看牌组顶$1张卡，将1张加入手牌，其余放入等候室？'],
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\./,
-      '将1张手牌放入等候室：查看牌组顶$1张卡，将1张加入手牌，其余放入等候室。'],
-    [/Put 1 card from your hand into the Waiting Room: add 1 Nijigasaki Live card from your Waiting Room to your hand\?$/,
-      '将1张手牌放入等候室：将等候室中的1张虹咲学园Live卡加入手牌？'],
-    [/Put 1 card from your hand into the Waiting Room\?/, '将1张手牌放入等候室？'],
-    [/Use optional Live Start effect\?/, '使用此Live开始效果吗？'],
-    [/Use optional effect\?/, '使用此效果吗？'],
+    [/^Put 1 card from your hand into the Waiting Room: add 1 (.+?) from your Waiting Room to your hand[?.]?$/,
+      '将1张手牌放入等候室：将等候室中的1张$1加入手牌。'],
+    [/^Put 1 card from your hand into the Waiting Room: add (\d+) Energy[?.]?$/, '将1张手牌放入等候室：添加$1点能量。'],
+    [/^Choose (up to )?(\d+) (Member |Live )?card(?:s)? from your Waiting Room to add to your hand(?:,? or skip)?\.?$/,
+      function (_m, upTo, count, kind) {
+        var type = kind === 'Member ' ? '成员卡' : kind === 'Live ' ? 'Live卡' : '卡';
+        return '从等候室选择' + (upTo ? '至多' : '') + count + '张' + type + '加入手牌。';
+      }],
+    [/^Choose 1 card from your Waiting Room to add to your hand \(the rest go to the Waiting Room\)\.?$/,
+      '从等候室选择1张卡加入手牌，其余放入等候室。'],
+    [/^Choose 1 card revealed by Yell to add to your hand\.?$/, '选择Yell公开的1张卡加入手牌。'],
+    [/^Choose (?:up to )?(\d+) Member(?:s)? on your Stage\.?$/, '选择你舞台上的至多$1名成员。'],
+    [/^Choose (\d+) card(?:s)? from your hand to (?:send to|put into) the Waiting Room\.?$/, '从手牌选择$1张卡放入等候室。'],
+    [/^Discard (\d+) card(?:s)? from your hand\.?$/, '弃置$1张手牌。'],
+    [/^Look at the top (\d+) cards? of your deck\.?$/, '查看牌组顶的$1张卡。'],
+    [/^Choose (?:an effect|one effect|one):?$/, '选择一个效果。'],
+    [/^Choose a heart color\.?$/, '选择一种心形颜色。'],
+    [/^Choose (?:yourself|you) or your opponent\.?$/, '选择你自己或对手。'],
+    [/^Choose a Live card for Success Live\.?$/, '选择1张Live卡作为成功Live。'],
+    [/^Choose 1 card to add to your hand \(the rest go to the Waiting Room\)\.?$/, '选择1张卡加入手牌，其余放入等候室。'],
+    [/^Ask your opponent: "(.+)"$/, '询问对手：“$1”'],
+    [/^Put 1 card from your hand into the Waiting Room\?$/, '将1张手牌放入等候室？'],
+    [/^Use optional Live Start effect\?$/, '使用此Live开始效果吗？'],
+    [/^Use optional effect\?$/, '使用此效果吗？'],
   ];
 
   var PROMPT_QUESTION_RULES_TH = [
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\?$/,
+    [/^Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room[?.]?$/,
       'วางการ์ด 1 ใบจากมือลงห้องรอ: ดูการ์ดบนสุดของเด็ค $1 ใบ เพิ่ม 1 ใบเข้ามือ และที่เหลือไปห้องรอ?'],
-    [/Put 1 card from your hand into the Waiting Room: look at the top (\d+) cards of your deck, add 1 to your hand, and put the rest into the Waiting Room\./,
-      'วางการ์ด 1 ใบจากมือลงห้องรอ: ดูการ์ดบนสุดของเด็ค $1 ใบ เพิ่ม 1 ใบเข้ามือ และที่เหลือไปห้องรอ'],
-    [/Put 1 card from your hand into the Waiting Room: add 1 Nijigasaki Live card from your Waiting Room to your hand\?$/,
-      'วางการ์ด 1 ใบจากมือลงห้องรอ: เพิ่มการ์ด Live Nijigasaki 1 ใบจากห้องรอเข้ามือ?'],
-    [/Put 1 card from your hand into the Waiting Room\?/, 'วางการ์ด 1 ใบจากมือลงห้องรอ?'],
-    [/Use optional Live Start effect\?/, 'ใช้เอฟเฟกต์เริ่ม Live ทางเลือกนี้ไหม?'],
-    [/Use optional effect\?/, 'ใช้เอฟเฟกต์นี้ไหม?'],
+    [/^Put 1 card from your hand into the Waiting Room: add 1 (.+?) from your Waiting Room to your hand[?.]?$/,
+      'วางการ์ด 1 ใบจากมือลงห้องรอ: เพิ่ม $1 1 ใบจากห้องรอเข้ามือ'],
+    [/^Put 1 card from your hand into the Waiting Room: add (\d+) Energy[?.]?$/, 'วางการ์ด 1 ใบจากมือลงห้องรอ: เพิ่มพลังงาน $1'],
+    [/^Choose (up to )?(\d+) (Member |Live )?card(?:s)? from your Waiting Room to add to your hand(?:,? or skip)?\.?$/,
+      function (_m, upTo, count, kind) {
+        var type = kind === 'Member ' ? 'การ์ดสมาชิก' : kind === 'Live ' ? 'การ์ด Live' : 'การ์ด';
+        return 'เลือก' + type + ' จากห้องรอ' + (upTo ? 'ได้สูงสุด ' : ' ') + count + ' ใบเพื่อเพิ่มเข้ามือ';
+      }],
+    [/^Choose 1 card from your Waiting Room to add to your hand \(the rest go to the Waiting Room\)\.?$/,
+      'เลือกการ์ด 1 ใบจากห้องรอเพื่อเพิ่มเข้ามือ และนำที่เหลือไปห้องรอ'],
+    [/^Choose 1 card revealed by Yell to add to your hand\.?$/, 'เลือกการ์ดที่ Yell เปิดเผย 1 ใบเพื่อเพิ่มเข้ามือ'],
+    [/^Choose (?:up to )?(\d+) Member(?:s)? on your Stage\.?$/, 'เลือกสมาชิกบนเวทีของคุณได้สูงสุด $1 คน'],
+    [/^Choose (\d+) card(?:s)? from your hand to (?:send to|put into) the Waiting Room\.?$/, 'เลือกการ์ดจากมือ $1 ใบเพื่อนำไปห้องรอ'],
+    [/^Discard (\d+) card(?:s)? from your hand\.?$/, 'ทิ้งการ์ดจากมือ $1 ใบ'],
+    [/^Look at the top (\d+) cards? of your deck\.?$/, 'ดูการ์ดบนสุดของเด็ค $1 ใบ'],
+    [/^Choose (?:an effect|one effect|one):?$/, 'เลือกเอฟเฟกต์หนึ่งอย่าง'],
+    [/^Choose a heart color\.?$/, 'เลือกสีหัวใจ'],
+    [/^Choose (?:yourself|you) or your opponent\.?$/, 'เลือกตัวคุณหรือคู่ต่อสู้'],
+    [/^Choose a Live card for Success Live\.?$/, 'เลือกการ์ด Live สำหรับ Live สำเร็จ'],
+    [/^Choose 1 card to add to your hand \(the rest go to the Waiting Room\)\.?$/, 'เลือกการ์ด 1 ใบเพื่อเพิ่มเข้ามือ และนำที่เหลือไปห้องรอ'],
+    [/^Ask your opponent: "(.+)"$/, 'ถามคู่ต่อสู้: "$1"'],
+    [/^Put 1 card from your hand into the Waiting Room\?$/, 'วางการ์ด 1 ใบจากมือลงห้องรอ?'],
+    [/^Use optional Live Start effect\?$/, 'ใช้เอฟเฟกต์เริ่ม Live ทางเลือกนี้ไหม?'],
+    [/^Use optional effect\?$/, 'ใช้เอฟเฟกต์นี้ไหม?'],
   ];
 
   /** Effect-detail suffix rules for Spanish (draw / discard / play). */
@@ -907,7 +1004,7 @@
       '手札1枚を控え室に：デッキ上$1枚を見て1枚を手札に加え、残りを控え室へ。'],
     [/Use optional Live Start effect\?/, 'このライブ開始時効果を使いますか？'],
     [/Use optional effect\?/, 'この効果を使いますか？'],
-  ];
+  ].concat(PROMPT_QUESTION_RULES_JA);
 
 
   var PHRASE_RULES_ZH = [
@@ -1164,6 +1261,7 @@
     var out = String(msg);
     out = replaceCardNames(out, catalog);
     out = replaceSkillBrackets(out);
+    out = applyRules(out, PROMPT_QUESTION_RULES_JA);
     out = applyRules(out, PHRASE_RULES);
     out = applyRules(out, EFFECT_RULES);
     return out;
@@ -1173,6 +1271,7 @@
     if (!msg) return msg;
     var out = String(msg);
     out = replaceSkillBrackets(out, SKILL_BRACKETS_ES);
+    out = applyRules(out, PROMPT_QUESTION_RULES_ES);
     out = applyRules(out, PHRASE_RULES_ES);
     out = applyRules(out, EFFECT_RULES_ES);
     return out;
@@ -1184,6 +1283,7 @@
     var out = String(msg);
     out = replaceCardNamesKo(out, catalog);
     out = replaceSkillBrackets(out, SKILL_BRACKETS_KO);
+    out = applyRules(out, PROMPT_QUESTION_RULES_KO);
     out = applyRules(out, PHRASE_RULES_KO);
     out = applyRules(out, EFFECT_RULES_KO);
     return out;
@@ -1195,6 +1295,7 @@
     var out = String(msg);
     out = replaceCardNamesZh(out, catalog);
     out = replaceSkillBrackets(out, SKILL_BRACKETS_ZH);
+    out = applyRules(out, PROMPT_QUESTION_RULES_ZH);
     out = applyRules(out, PHRASE_RULES_ZH);
     out = applyRules(out, EFFECT_RULES_ZH);
     return out;
@@ -1206,6 +1307,7 @@
     var out = String(msg);
     out = replaceCardNamesTh(out, catalog);
     out = replaceSkillBrackets(out, SKILL_BRACKETS_TH);
+    out = applyRules(out, PROMPT_QUESTION_RULES_TH);
     out = applyRules(out, PHRASE_RULES_TH);
     out = applyRules(out, EFFECT_RULES_TH);
     return out;
