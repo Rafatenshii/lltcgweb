@@ -1667,13 +1667,22 @@ html.tcg-portrait-play .pb-menu-item.pb-menu-danger{
   color:#ff8a9a;
 }
 
+/* Cost / Live score chips must NOT sit in HUD flow — that grows the middle
+   row and squeezes stage + live storage. Float them over the board instead. */
 html.tcg-portrait-play .pb-hud .play-cost-hud,
-html.tcg-portrait-play .pb-hud .live-score-hud{
-  position:relative;
-  left:auto; bottom:auto; top:auto;
-  transform:none;
-  align-self:center;
-  margin:2px auto 0;
+html.tcg-portrait-play .pb-hud .live-score-hud,
+html.tcg-portrait-play #screen-game .play-cost-hud,
+html.tcg-portrait-play #screen-game .live-score-hud{
+  position:fixed!important;
+  left:50%!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:calc(var(--p-hand-mine, 90px) + 10px)!important;
+  transform:translateX(-50%)!important;
+  margin:0!important;
+  align-self:auto;
+  z-index:45!important;
+  pointer-events:none;
   font-size:11px;
 }
 
