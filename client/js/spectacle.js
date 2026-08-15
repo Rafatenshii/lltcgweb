@@ -5218,6 +5218,20 @@ function tcgMobileSpectacleLayout() {
   return document.documentElement.classList.contains('tcg-mobile-viewport');
 }
 
+/** Keep portrait player names large while fitting the complete name on one line. */
+function fitPerfPortraitName(label) {
+  if (!label) return;
+  label.style.removeProperty('font-size');
+  if (!document.documentElement.classList.contains('tcg-portrait-play')) return;
+  requestAnimationFrame(() => {
+    const maxW = Math.max(120, Math.min(window.innerWidth - 16, label.parentElement?.clientWidth || window.innerWidth - 16));
+    const naturalW = label.scrollWidth;
+    if (naturalW <= maxW || naturalW <= 0) return;
+    const basePx = parseFloat(getComputedStyle(label).fontSize) || 28;
+    label.style.fontSize = Math.max(13, basePx * maxW / naturalW).toFixed(1) + 'px';
+  });
+}
+
 function clearPerfMobileInlineLayout() {
   const root = el('perf-spectacle');
   if (!root) return;
@@ -6478,6 +6492,8 @@ async function perfPopulateBase(ctx) {
     ? (me?.name || 'Player')
     : (me?.name || (typeof t === 'function' ? t('game.you') : 'You') || 'You');
   el('perf-opp-lbl').textContent = opp?.name || 'Opponent';
+  fitPerfPortraitName(el('perf-mine-lbl'));
+  fitPerfPortraitName(el('perf-opp-lbl'));
   const mineLives = el('perf-mine-lives');
   const oppLives = el('perf-opp-lives');
   const mineStage = el('perf-stage-row');
