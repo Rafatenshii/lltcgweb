@@ -6576,6 +6576,7 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
       const chip = document.createElement('div');
       chip.className = 'perf-yell-card show';
       const c = enrichCard(card);
+      if (c.instance_id) chip.dataset.iid = c.instance_id;
       appendPerfYellCardFace(chip, c);
       perfMarkYellBladeHearts(chip, c, { yellWildcard: liveCardsHaveYellHeartsWildcard(liveCards) });
       yellRow.appendChild(chip);
@@ -6614,6 +6615,35 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
     perfRenderBladeRow(bladeEl, totalBlade, { pending: true });
     perfFillHearts(heartsEl, stageHearts);
   }
+}
+
+/**
+ * After a mid-spectacle seq bump, perfPopulateBase wipes yell/outcomes. Restore
+ * whatever the current seek phase already completed so chips do not snap away
+ * before outcomes/judge.
+ */
+function perfRestoreSpectacleProgress(ctx, phase) {
+  if (!ctx || !phase || phase === 'closed') return;
+  const idx = perfPhaseIdx(phase);
+  if (idx < perfPhaseIdx('yell_mine')) return;
+  G._perfYellShownIids = G._perfYellShownIids || { p1: new Set(), p2: new Set() };
+  const first = perfFirstPlayerId(ctx);
+  const second = perfSecondPlayerId(ctx);
+  const restoreSide = (pid, show) => {
+    perfSetYellSideInstant(ctx, pid, show);
+    if (!show) return;
+    const cards = ctx.next.yell_reveal?.[pid] || [];
+    if (!G._perfYellShownIids[pid]) G._perfYellShownIids[pid] = new Set();
+    cards.forEach((c) => {
+      if (c?.instance_id) G._perfYellShownIids[pid].add(c.instance_id);
+    });
+  };
+  restoreSide(first, true);
+  restoreSide(second, idx >= perfPhaseIdx('yell_opp'));
+  if (phase === 'outcomes_mine') perfSetOutcomesInstant(ctx, true);
+  else if (idx >= perfPhaseIdx('outcomes')) perfSetOutcomesInstant(ctx, false);
+  if (idx >= perfPhaseIdx('judge')) perfSetJudgeInstant(ctx);
+  perfEnsureColumnsVisible();
 }
 
 function perfSetOutcomesInstant(ctx, firstOnly) {
@@ -7259,8 +7289,13 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
   const ctxYellTotal = (G._perfCtx?.next?.yell_reveal?.p1?.length || 0)
     + (G._perfCtx?.next?.yell_reveal?.p2?.length || 0);
   if (!G._perfCtx || G._perfCtx.key !== ctxKey || yellTotal > ctxYellTotal) {
+    const prevPhase = G._perfSpectaclePhase || 'closed';
+    const midSpectacle = !!G._perfSpectacleActive && prevPhase !== 'closed';
     G._perfCtx = perfBuildContext(prev, next, myId);
     await perfPopulateBase(G._perfCtx);
+    // Seq bumps between performance → outcomes → judge used to wipe Yell chips
+    // via populateBase, then skip re-paint on the animated climb. Restore them.
+    if (midSpectacle) perfRestoreSpectacleProgress(G._perfCtx, prevPhase);
   }
   let ctx = G._perfCtx;
   let cur = G._perfSpectaclePhase || 'closed';
