@@ -3003,6 +3003,10 @@ function isPostLiveSkillPrompt(state) {
   const pr = state?.pending_prompt;
   if (!pr) return false;
   if (pr.type === 'pick_judge_success_live') return true;
+  // Sakaku♡CROSSROADS replaces its successful Live from the Waiting Room.
+  // It is created during Live Judge and deferred while the Performance
+  // spectacle plays, then must be surfaced before polling is released.
+  if (pr.type === 'replace_success_with_wr_live') return true;
   if (isLiveSuccessDiscardPrompt(state)) return true;
   if (state?.phase === 'live_success_effects' && !isMidSpectacleYellRetryPrompt(state)) return true;
   return false;
