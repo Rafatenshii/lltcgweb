@@ -22,6 +22,12 @@
   var startedAtByKind = Object.create(null);
   var plugin = null;
   var joinListenerBound = false;
+  /** Stable Join URLs while in the same queue/match — reminting revokes the old token. */
+  var joinSecretByKey = Object.create(null);
+  var refreshInFlight = false;
+  var refreshQueuedForce = undefined;
+  var mintRetryTimer = null;
+  var mintRetryCount = 0;
 
   function isAndroidShell() {
     try {
@@ -283,28 +289,44 @@
     return [act.kind, act.details, act.state, act.roomId || '', act.gameMode || '', act.joinable ? '1' : '0'].join('|');
   }
 
+  function joinSecretCacheKey(act) {
+    if (!act || !act.joinable || !act.joinType) return '';
+    if (act.joinType === 'spectate') return 'spectate:' + String(act.roomId || '');
+    if (act.joinType === 'ranked_queue') return 'ranked_queue:' + String(act.gameMode || currentMode());
+    return String(act.joinType);
+  }
+
+  function clearJoinSecretCache() {
+    joinSecretByKey = Object.create(null);
+  }
+
   async function mintJoinSecret(act) {
     if (!act.joinable || !act.joinType) return null;
     if (typeof global.accountPost !== 'function') return null;
+    var cacheKey = joinSecretCacheKey(act);
+    if (cacheKey && joinSecretByKey[cacheKey]) {
+      return joinSecretByKey[cacheKey];
+    }
     try {
+      var token = null;
       if (act.joinType === 'spectate' && act.roomId) {
         var spec = await global.accountPost('presence_action_mint', {
           action_type: 'spectate',
           room_id: act.roomId,
         });
-        return spec && spec.token ? String(spec.token) : null;
-      }
-      if (act.joinType === 'ranked_queue') {
+        token = spec && spec.token ? String(spec.token) : null;
+      } else if (act.joinType === 'ranked_queue') {
         var q = await global.accountPost('presence_action_mint', {
           action_type: 'ranked_queue',
           game_mode: act.gameMode || currentMode(),
         });
-        return q && q.token ? String(q.token) : null;
+        token = q && q.token ? String(q.token) : null;
       }
+      if (token && cacheKey) joinSecretByKey[cacheKey] = token;
+      return token;
     } catch (e) {
       return null;
     }
-    return null;
   }
 
   async function publish(act, force) {
@@ -315,6 +337,10 @@
     var kind = act.kind || 'menu';
     if (!startedAtByKind[kind]) startedAtByKind[kind] = Date.now();
     var startMs = startedAtByKind[kind];
+
+    if (!act.joinable) {
+      clearJoinSecretCache();
+    }
 
     var joinSecret = null;
     if (act.joinable) {
@@ -338,11 +364,25 @@
     try {
       await p.setActivity(payload);
     } catch (e) { /* Discord absent / SDK not linked */ }
+
+    // Mint can fail if we refresh before queue/room is ready — retry a few times.
+    if (act.joinable && !joinSecret && mintRetryCount < 4) {
+      if (mintRetryTimer) clearTimeout(mintRetryTimer);
+      mintRetryTimer = setTimeout(function () {
+        mintRetryTimer = null;
+        mintRetryCount += 1;
+        scheduleRefresh(true);
+      }, 1500);
+    } else if (joinSecret || !act.joinable) {
+      mintRetryCount = 0;
+    }
   }
 
   async function clearActivity() {
     lastKey = '';
     startedAtByKind = Object.create(null);
+    clearJoinSecretCache();
+    mintRetryCount = 0;
     var p = getPlugin();
     if (!p || typeof p.clearActivity !== 'function') return;
     try { await p.clearActivity(); } catch (e) { /* ignore */ }
@@ -357,8 +397,26 @@
     var delay = force ? 0 : THROTTLE_MS;
     pendingTimer = setTimeout(function () {
       pendingTimer = null;
-      void refreshNow(!!force);
+      void enqueueRefresh(!!force);
     }, delay);
+  }
+
+  async function enqueueRefresh(force) {
+    if (refreshInFlight) {
+      refreshQueuedForce = !!(refreshQueuedForce || force);
+      return;
+    }
+    refreshInFlight = true;
+    try {
+      var nextForce = !!force;
+      do {
+        refreshQueuedForce = undefined;
+        await refreshNow(nextForce);
+        nextForce = refreshQueuedForce;
+      } while (nextForce !== undefined);
+    } finally {
+      refreshInFlight = false;
+    }
   }
 
   async function refreshNow(force) {

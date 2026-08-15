@@ -2365,7 +2365,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=6"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
-<script src="client/js/discord-presence.js?v=8"></script>
+<script src="client/js/discord-presence.js?v=9"></script>
 <script src="client/js/game-sync.js?v=44"></script>
 <script src="client/js/state-apply.js?v=54"></script>
 <script src="client/js/stamps.js?v=18"></script>
@@ -12983,6 +12983,7 @@ function syncRankedScreenSearchControls(searching) {
 }
 
 function setRankedSearchingUI(active, waitSeconds) {
+  const wasSearching = !!A.rankedSearching;
   A.rankedSearching = !!active;
   if (active && Number.isFinite(waitSeconds)) A.rankedWaitSeconds = waitSeconds;
   const fl = el('ranked-search-float');
@@ -12994,7 +12995,11 @@ function setRankedSearchingUI(active, waitSeconds) {
     A.rankedWaitSecondsShown = null;
   }
   syncRankedScreenSearchControls(active);
-  try { window.LLTCG_DISCORD_PRESENCE?.refresh?.(true); } catch (e) { /* ignore */ }
+  // Only push Discord presence when search starts/stops — polling wait_seconds
+  // used to remint/revoke Join tokens every few seconds and drop the button.
+  if (wasSearching !== !!active) {
+    try { window.LLTCG_DISCORD_PRESENCE?.refresh?.(true); } catch (e) { /* ignore */ }
+  }
 }
 
 function applyRankedStatusResponse(res) {
