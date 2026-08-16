@@ -17178,7 +17178,10 @@ function playSurveilShiftAnimation(beforeByKey) {
 function layoutHandFan(fanEl, opts = {}) {
   if (!fanEl) return;
   const cards = [...fanEl.querySelectorAll('.hcard, .opp-hand-card')];
+  // Shift anims ignore invisible/dragged cards. Packing must still count
+  // card-arriving slots so draw flights don't briefly restore full card size.
   const skip = c => c.classList.contains('dragging-source') || c.classList.contains('card-arriving');
+  const skipPack = c => c.classList.contains('dragging-source');
   let beforeByEl = opts.beforeRects;
   const wantShiftAnim = opts.animate !== false
     && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17252,30 +17255,33 @@ function layoutHandFan(fanEl, opts = {}) {
   if (portrait && avail < 40) avail = Math.max(avail, (window.innerWidth || 360) - 24);
   const isMyHand = fanEl.id === 'hand-row';
   const mobile = document.documentElement.classList.contains('tcg-mobile-viewport');
-  const cardEl = fanEl.querySelector('.hcard, .opp-hand-card:not(.card-arriving)');
   const stripH = strip ? strip.getBoundingClientRect().height : 128;
   const pad = stripH * (portrait ? 0.06 : 0.16);
   const baseH = Math.max(24, stripH - pad);
-  let cardH = cardEl ? cardEl.getBoundingClientRect().height : null;
-  if (cardH == null || cardH < 8) {
-    if (portrait) {
+  let cardH = null;
+  if (portrait) {
+    const cardEl = fanEl.querySelector('.hcard, .opp-hand-card:not(.card-arriving)');
+    cardH = cardEl ? cardEl.getBoundingClientRect().height : null;
+    if (cardH == null || cardH < 8) {
       const rootStyle = getComputedStyle(document.documentElement);
       const parsed = parseFloat(rootStyle.getPropertyValue('--p-card-h'));
       cardH = Number.isFinite(parsed) && parsed > 8 ? parsed : Math.max(baseH, 72);
-    } else if (!isMyHand && mobile) {
-      const frame = strip?.closest('.game-viewport-frame');
-      cardH = frame ? frame.clientHeight * 0.44 : baseH;
-    } else if (mobile) {
-      cardH = baseH;
-    } else {
-      const rootStyle = getComputedStyle(document.documentElement);
-      const varName = isMyHand ? '--my-hand-card-h' : '--opp-hand-card-h';
-      const parsed = parseFloat(rootStyle.getPropertyValue(varName));
-      cardH = Number.isFinite(parsed) && parsed > 0 ? parsed : baseH * (isMyHand ? 1.44 : 1.28);
     }
+  } else if (!isMyHand && mobile) {
+    const frame = strip?.closest('.game-viewport-frame');
+    cardH = frame ? frame.clientHeight * 0.44 : baseH;
+  } else if (mobile) {
+    cardH = baseH;
+  } else {
+    // Use CSS vars — never measure already-shrunk inline heights, or a draw
+    // flight can briefly restore full-size cards when shrinkScale becomes 1.
+    const rootStyle = getComputedStyle(document.documentElement);
+    const varName = isMyHand ? '--my-hand-card-h' : '--opp-hand-card-h';
+    const parsed = parseFloat(rootStyle.getPropertyValue(varName));
+    cardH = Number.isFinite(parsed) && parsed > 0 ? parsed : baseH * (isMyHand ? 1.44 : 1.28);
   }
   let cardW = cardH * (63 / 88);
-  const n = cards.filter(c => !skip(c)).length || cards.length;
+  const n = cards.filter(c => !skipPack(c)).length || cards.length;
   let step;
   let shrinkScale = 1;
   if (portrait) {
@@ -17347,7 +17353,7 @@ function layoutHandFan(fanEl, opts = {}) {
         c.style.removeProperty('width');
       }
     }
-    if (skip(c)) {
+    if (skipPack(c)) {
       c.style.marginLeft = '0';
       return;
     }
