@@ -17191,7 +17191,11 @@ function layoutHandFan(fanEl, opts = {}) {
   }
   const shiftFromSaved = !!(opts.beforeByKey?.size || beforeByEl?.size);
   const portraitPlay = document.documentElement.classList.contains('tcg-portrait-play');
-  if (shiftFromSaved && wantShiftAnim && !portraitPlay) {
+  // The interactive player hand may use a stable left anchor while cards shift.
+  // Opponent cards have no selection affordance, so keep that fan centered even
+  // during draws/removals; its saved rects still provide the shift animation.
+  const useShiftAnchor = fanEl.id === 'hand-row';
+  if (shiftFromSaved && wantShiftAnim && !portraitPlay && useShiftAnchor) {
     fanEl.style.justifyContent = 'flex-start';
     fanEl.dataset.shiftAnchor = '1';
   } else if (!fanEl.querySelector('.stack-shift-anim')) {
@@ -17306,7 +17310,7 @@ function layoutHandFan(fanEl, opts = {}) {
       fanEl.style.minWidth = '0';
       fanEl.style.marginLeft = '';
       fanEl.style.marginRight = '';
-      if (!shiftFromSaved) fanEl.style.justifyContent = 'center';
+      if (!shiftFromSaved || !useShiftAnchor) fanEl.style.justifyContent = 'center';
     }
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
