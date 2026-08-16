@@ -37,11 +37,13 @@ define('TCG_MAX_DECK_PRESETS', 10);
 
 require_once __DIR__ . '/llr_auth_load.php';
 require_once __DIR__ . '/sleeves.php';
+require_once __DIR__ . '/playmats.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/booster.php';
 require_once __DIR__ . '/seals.php';
 require_once __DIR__ . '/coins.php';
 require_once __DIR__ . '/sleeve_shop.php';
+require_once __DIR__ . '/playmat_shop.php';
 require_once __DIR__ . '/stamps.php';
 require_once __DIR__ . '/deck_validate.php';
 require_once __DIR__ . '/matchmaking.php';
@@ -70,9 +72,11 @@ try {
         case 'deck_list':          echo json_encode(tcgApiDeckList($body)); break;
         case 'deck_save':          echo json_encode(tcgApiDeckSave($body)); break;
         case 'deck_set_sleeve':    echo json_encode(tcgApiDeckSetSleeve($body)); break;
+        case 'deck_set_playmat':   echo json_encode(tcgApiDeckSetPlaymat($body)); break;
         case 'experiment_preset_list':   echo json_encode(tcgApiExperimentPresetList($body)); break;
         case 'experiment_preset_save':   echo json_encode(tcgApiExperimentPresetSave($body)); break;
         case 'experiment_preset_set_sleeve': echo json_encode(tcgApiExperimentPresetSetSleeve($body)); break;
+        case 'experiment_preset_set_playmat': echo json_encode(tcgApiExperimentPresetSetPlaymat($body)); break;
         case 'experiment_preset_delete': echo json_encode(tcgApiExperimentPresetDelete($body)); break;
         case 'experiment_preset_get':    echo json_encode(tcgApiExperimentPresetGet($body)); break;
         case 'deck_delete':        echo json_encode(tcgApiDeckDelete($body)); break;
@@ -115,6 +119,9 @@ try {
         case 'sleeve_claim_free':  echo json_encode(tcgApiSleeveClaimFree($body)); break;
         case 'sleeve_equip_intro_seen': echo json_encode(tcgApiSleeveEquipIntroSeen($body)); break;
         case 'owned_sleeves':      echo json_encode(tcgApiOwnedSleeves($body)); break;
+        case 'playmat_shop_catalog': echo json_encode(tcgApiPlaymatShopCatalog($body)); break;
+        case 'playmat_buy':        echo json_encode(tcgApiPlaymatBuy($body)); break;
+        case 'owned_playmats':     echo json_encode(tcgApiOwnedPlaymats($body)); break;
         case 'presence_action_mint': echo json_encode(tcgApiPresenceActionMint($body)); break;
         case 'presence_action_redeem': echo json_encode(tcgApiPresenceActionRedeem($body)); break;
         default:
@@ -170,6 +177,8 @@ function tcgApiMe(array $body): array {
         'owned_sleeves' => tcgOwnedSleeveIds($uid),
         'sleeves_need_intro' => tcgOwnedSleevesNeedingIntro($uid),
         'sleeve_shop_price' => TCG_SLEEVE_SHOP_PRICE,
+        'owned_playmats' => tcgOwnedPlaymatIds($uid),
+        'playmat_shop_price' => TCG_PLAYMAT_SHOP_PRICE,
         'star_gems_per_card' => TCG_STAR_GEMS_PER_CARD,
         'star_gems_pack_cost' => TCG_STAR_GEMS_PACK_COST,
         'star_gems_box_cost' => TCG_STAR_GEMS_BOX_COST,
@@ -433,7 +442,7 @@ function tcgApiDeckList(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, equipped, updated_at
+    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness, equipped, updated_at
         FROM tcg_deck_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
@@ -447,6 +456,8 @@ function tcgApiDeckList(array $body): array {
             'main_deck' => $main,
             'energy_deck' => $energy,
             'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+            'playmat_id' => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+            'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
             'equipped' => intval($row['equipped']) === 1,
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
@@ -531,7 +542,37 @@ function tcgApiDeckSave(array $body): array {
                 $now,
             ]);
     }
-    return ['success' => true, 'slot' => $slot, 'name' => $name, 'sleeve_id' => $sleeveId, 'validation' => $validation];
+    $playmatId = '';
+    $playmatBrightness = 1.0;
+    $hasPlaymat = array_key_exists('playmat_id', $body) || array_key_exists('playmat_brightness', $body);
+    if ($hasPlaymat) {
+        $playmatId = tcgNormalizePlaymatId($body['playmat_id'] ?? '');
+        $playmatBrightness = tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0);
+        if ($playmatId !== '' && !tcgOwnsPlaymat($uid, $playmatId)) {
+            throw new Exception('Playmat not owned', 400);
+        }
+        if ($playmatId === '') {
+            $playmatBrightness = 1.0;
+        }
+        $db->prepare('UPDATE tcg_deck_presets SET playmat_id = ?, playmat_brightness = ?, updated_at = ?
+            WHERE discord_id = ? AND slot = ?')
+            ->execute([$playmatId, $playmatBrightness, $now, $uid, $slot]);
+    } else {
+        $stmtPm = $db->prepare('SELECT playmat_id, playmat_brightness FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+        $stmtPm->execute([$uid, $slot]);
+        $pmRow = $stmtPm->fetch(PDO::FETCH_ASSOC) ?: [];
+        $playmatId = tcgNormalizePlaymatId($pmRow['playmat_id'] ?? '');
+        $playmatBrightness = tcgNormalizePlaymatBrightness($pmRow['playmat_brightness'] ?? 1.0);
+    }
+    return [
+        'success' => true,
+        'slot' => $slot,
+        'name' => $name,
+        'sleeve_id' => $sleeveId,
+        'playmat_id' => $playmatId,
+        'playmat_brightness' => $playmatBrightness,
+        'validation' => $validation,
+    ];
 }
 
 /** Persist sleeve on an existing account preset without re-validating the full deck. */
@@ -557,12 +598,45 @@ function tcgApiDeckSetSleeve(array $body): array {
     return ['success' => true, 'slot' => $slot, 'sleeve_id' => $sleeveId];
 }
 
+/** Persist playmat + brightness on an existing account preset. */
+function tcgApiDeckSetPlaymat(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_DECK_PRESETS) {
+        throw new Exception('Deck slot must be 1–' . TCG_MAX_DECK_PRESETS);
+    }
+    $playmatId = tcgNormalizePlaymatId($body['playmat_id'] ?? '');
+    $brightness = tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0);
+    if ($playmatId !== '' && !tcgOwnsPlaymat($uid, $playmatId)) {
+        throw new Exception('Playmat not owned', 400);
+    }
+    if ($playmatId === '') {
+        $brightness = 1.0;
+    }
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT slot FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        throw new Exception('Save the deck once before setting a playmat', 400);
+    }
+    $db->prepare('UPDATE tcg_deck_presets SET playmat_id = ?, playmat_brightness = ?, updated_at = ?
+        WHERE discord_id = ? AND slot = ?')
+        ->execute([$playmatId, $brightness, time(), $uid, $slot]);
+    return [
+        'success' => true,
+        'slot' => $slot,
+        'playmat_id' => $playmatId,
+        'playmat_brightness' => $brightness,
+    ];
+}
+
 function tcgApiExperimentPresetList(array $body): array {
     $uid = tcgRequireAuthUser($body);
     tcgEnsureUser($uid, tcgAuthUserProfile($uid));
     require_once __DIR__ . '/experiment_decks.php';
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at
+    $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness, share_password, updated_at
         FROM tcg_experiment_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
@@ -576,6 +650,8 @@ function tcgApiExperimentPresetList(array $body): array {
             'main_deck' => $main,
             'energy_deck' => $energy,
             'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+            'playmat_id' => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+            'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
             'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
@@ -666,11 +742,34 @@ function tcgApiExperimentPresetSave(array $body): array {
                 $now,
             ]);
     }
+    $playmatId = '';
+    $playmatBrightness = 1.0;
+    if (array_key_exists('playmat_id', $body) || array_key_exists('playmat_brightness', $body)) {
+        $playmatId = tcgNormalizePlaymatId($body['playmat_id'] ?? '');
+        $playmatBrightness = tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0);
+        if ($playmatId !== '' && !tcgOwnsPlaymat($uid, $playmatId)) {
+            throw new Exception('Playmat not owned', 400);
+        }
+        if ($playmatId === '') {
+            $playmatBrightness = 1.0;
+        }
+        $db->prepare('UPDATE tcg_experiment_presets SET playmat_id = ?, playmat_brightness = ?, updated_at = ?
+            WHERE discord_id = ? AND slot = ?')
+            ->execute([$playmatId, $playmatBrightness, $now, $uid, $slot]);
+    } else {
+        $stmtPm = $db->prepare('SELECT playmat_id, playmat_brightness FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+        $stmtPm->execute([$uid, $slot]);
+        $pmRow = $stmtPm->fetch(PDO::FETCH_ASSOC) ?: [];
+        $playmatId = tcgNormalizePlaymatId($pmRow['playmat_id'] ?? '');
+        $playmatBrightness = tcgNormalizePlaymatBrightness($pmRow['playmat_brightness'] ?? 1.0);
+    }
     return [
         'success' => true,
         'slot' => $slot,
         'name' => $name,
         'sleeve_id' => $sleeveId,
+        'playmat_id' => $playmatId,
+        'playmat_brightness' => $playmatBrightness,
         'main_count' => count($validated['main']),
         'energy_count' => count($validated['energy']),
     ];
@@ -700,6 +799,40 @@ function tcgApiExperimentPresetSetSleeve(array $body): array {
     return ['success' => true, 'slot' => $slot, 'sleeve_id' => $sleeveId];
 }
 
+/** Persist playmat + brightness on an existing experiment preset. */
+function tcgApiExperimentPresetSetPlaymat(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    require_once __DIR__ . '/experiment_decks.php';
+    $slot = intval($body['slot'] ?? 0);
+    if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
+        throw new Exception('Experiment deck slot must be 1–' . TCG_MAX_EXPERIMENT_PRESETS, 400);
+    }
+    $playmatId = tcgNormalizePlaymatId($body['playmat_id'] ?? '');
+    $brightness = tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0);
+    if ($playmatId !== '' && !tcgOwnsPlaymat($uid, $playmatId)) {
+        throw new Exception('Playmat not owned', 400);
+    }
+    if ($playmatId === '') {
+        $brightness = 1.0;
+    }
+    $db = tcgDb();
+    $stmt = $db->prepare('SELECT slot FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
+    $stmt->execute([$uid, $slot]);
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        throw new Exception('Save the experiment deck once before setting a playmat', 400);
+    }
+    $db->prepare('UPDATE tcg_experiment_presets SET playmat_id = ?, playmat_brightness = ?, updated_at = ?
+        WHERE discord_id = ? AND slot = ?')
+        ->execute([$playmatId, $brightness, time(), $uid, $slot]);
+    return [
+        'success' => true,
+        'slot' => $slot,
+        'playmat_id' => $playmatId,
+        'playmat_brightness' => $brightness,
+    ];
+}
+
 function tcgApiExperimentPresetDelete(array $body): array {
     $uid = tcgRequireAuthUser($body);
     require_once __DIR__ . '/experiment_decks.php';
@@ -719,7 +852,7 @@ function tcgApiExperimentPresetGet(array $body): array {
     if ($slot < 1 || $slot > TCG_MAX_EXPERIMENT_PRESETS) {
         throw new Exception('Invalid experiment deck slot', 400);
     }
-    $stmt = tcgDb()->prepare('SELECT slot, name, main_deck, energy_deck, sleeve_id, share_password, updated_at
+    $stmt = tcgDb()->prepare('SELECT slot, name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness, share_password, updated_at
         FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?');
     $stmt->execute([$uid, $slot]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -736,6 +869,8 @@ function tcgApiExperimentPresetGet(array $body): array {
             'main_deck' => $main,
             'energy_deck' => $energy,
             'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+            'playmat_id' => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+            'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
             'share_password' => $row['share_password'] ? (string)$row['share_password'] : null,
             'updated_at' => intval($row['updated_at']),
         ],
@@ -2442,6 +2577,153 @@ function tcgApiSleeveEquipIntroSeen(array $body): array {
     }
     tcgMarkSleeveEquipIntroSeen($uid, $sleeveId);
     return ['success' => true, 'sleeve_id' => $sleeveId];
+}
+
+function tcgApiOwnedPlaymats(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    return [
+        'success' => true,
+        'coins' => tcgGetCoins($uid),
+        'owned_playmats' => tcgOwnedPlaymatIds($uid),
+        'playmat_shop_price' => TCG_PLAYMAT_SHOP_PRICE,
+    ];
+}
+
+function tcgApiPlaymatShopCatalog(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    tcgTouchLoginDays($uid);
+
+    $catalog = tcgLoadPlaymatCatalog();
+    $owned = array_fill_keys(tcgOwnedPlaymatIds($uid), true);
+    $portraits = tcgLoadIdolPortraits();
+    $portraitById = [];
+    $portraitsByUnit = [];
+    foreach ($portraits as $p) {
+        $portraitById[strtolower($p['id'])] = $p;
+        $unit = tcgSleeveShopUnitForGroup((string)($p['unit'] ?? 'Other'));
+        $portraitsByUnit[$unit][] = $p;
+    }
+
+    $byUnit = [];
+    foreach ($catalog as $mat) {
+        $unit = tcgSleeveShopUnitForGroup($mat['group']);
+        $idol = trim((string)$mat['idol']) ?: 'Group';
+        if (!isset($byUnit[$unit])) {
+            $byUnit[$unit] = [];
+        }
+        if (!isset($byUnit[$unit][$idol])) {
+            $byUnit[$unit][$idol] = [];
+        }
+        $byUnit[$unit][$idol][] = [
+            'id' => $mat['id'],
+            'name' => $mat['name'],
+            'src' => $mat['src'],
+            'vol' => $mat['vol'] ?? null,
+            'owned' => isset($owned[$mat['id']]),
+            'price' => TCG_PLAYMAT_SHOP_PRICE,
+        ];
+    }
+
+    $generations = [];
+    foreach (tcgSleeveShopGenerationOrder() as $unit) {
+        $chars = [];
+        $groupMats = [];
+        $seenIdol = [];
+        foreach (($byUnit[$unit] ?? []) as $idol => $mats) {
+            if (tcgSleeveShopIsGroupIdol((string)$idol, $unit)) {
+                foreach ($mats as $row) {
+                    $groupMats[] = $row;
+                }
+                continue;
+            }
+            $key = strtolower((string)$idol);
+            $seenIdol[$key] = true;
+            $port = $portraitById[$key] ?? null;
+            $chars[] = [
+                'id' => $idol,
+                'name' => $port['name'] ?? $idol,
+                'portrait' => $port['portrait'] ?? '',
+                'icon' => $port['portrait'] ?? '',
+                'is_group' => false,
+                'playmat_count' => count($mats),
+                'playmats' => $mats,
+            ];
+        }
+        // Keep empty member slots from idol portraits so filters stay complete.
+        foreach ($portraitsByUnit[$unit] ?? [] as $port) {
+            $key = strtolower((string)$port['id']);
+            if (isset($seenIdol[$key])) {
+                continue;
+            }
+            $chars[] = [
+                'id' => $port['id'],
+                'name' => $port['name'] ?? $port['id'],
+                'portrait' => $port['portrait'] ?? '',
+                'icon' => $port['portrait'] ?? '',
+                'is_group' => false,
+                'playmat_count' => 0,
+                'playmats' => [],
+            ];
+            $seenIdol[$key] = true;
+        }
+        array_unshift($chars, [
+            'id' => $unit,
+            'name' => $unit,
+            'portrait' => '',
+            'icon' => tcgSleeveShopUnitIconUrl($unit),
+            'is_group' => true,
+            'playmat_count' => count($groupMats),
+            'playmats' => $groupMats,
+        ]);
+        $groupFirst = [];
+        $rest = [];
+        foreach ($chars as $c) {
+            if (!empty($c['is_group'])) {
+                $groupFirst[] = $c;
+            } else {
+                $rest[] = $c;
+            }
+        }
+        usort($rest, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        $chars = array_merge($groupFirst, $rest);
+        $generations[] = [
+            'id' => $unit,
+            'name' => $unit,
+            'icon' => tcgSleeveShopUnitIconUrl($unit),
+            'characters' => $chars,
+        ];
+    }
+
+    return [
+        'success' => true,
+        'coins' => tcgGetCoins($uid),
+        'playmat_shop_price' => TCG_PLAYMAT_SHOP_PRICE,
+        'owned_playmats' => array_keys($owned),
+        'generations' => $generations,
+        'default_playmat' => 'playmat.png',
+    ];
+}
+
+function tcgApiPlaymatBuy(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $playmatId = tcgNormalizePlaymatId($body['playmat_id'] ?? '');
+    if ($playmatId === '' || !tcgPlaymatCatalogIdValid($playmatId)) {
+        throw new Exception('Unknown playmat', 400);
+    }
+    if (tcgOwnsPlaymat($uid, $playmatId)) {
+        throw new Exception('Playmat already owned', 400);
+    }
+    tcgDeductCoins($uid, TCG_PLAYMAT_SHOP_PRICE);
+    tcgGrantOwnedPlaymat($uid, $playmatId, 'shop');
+    return [
+        'success' => true,
+        'playmat_id' => $playmatId,
+        'coins' => tcgGetCoins($uid),
+        'owned_playmats' => tcgOwnedPlaymatIds($uid),
+    ];
 }
 
 /**

@@ -5,6 +5,7 @@
 require_once __DIR__ . '/db.php';
 
 const TCG_SLEEVE_SHOP_PRICE = 1000;
+const TCG_PLAYMAT_SHOP_PRICE = 3000;
 
 /** @var array{win: int, loss: int} */
 const TCG_COIN_PVP = ['win' => 200, 'loss' => 100];

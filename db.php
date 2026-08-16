@@ -271,6 +271,22 @@ function tcgDbMigrate(PDO $db): void {
         )');
     });
 
+    // Playmat cosmetics (shop + per-deck equip / brightness).
+    tcgDbRunMigrationOnce($db, 'playmats_20260816', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_deck_presets', 'playmat_id', "TEXT NOT NULL DEFAULT ''");
+        tcgDbEnsureColumn($db, 'tcg_deck_presets', 'playmat_brightness', 'REAL NOT NULL DEFAULT 1.0');
+        tcgDbEnsureColumn($db, 'tcg_experiment_presets', 'playmat_id', "TEXT NOT NULL DEFAULT ''");
+        tcgDbEnsureColumn($db, 'tcg_experiment_presets', 'playmat_brightness', 'REAL NOT NULL DEFAULT 1.0');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_owned_playmats (
+            discord_id TEXT NOT NULL,
+            playmat_id TEXT NOT NULL,
+            acquired_at INTEGER NOT NULL,
+            source TEXT NOT NULL DEFAULT "shop",
+            PRIMARY KEY (discord_id, playmat_id),
+            FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id) ON DELETE CASCADE
+        )');
+    });
+
     $done = true;
 }
 

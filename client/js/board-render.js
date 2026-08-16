@@ -25,6 +25,9 @@ function renderGame(s, opts = {}) {
   if (window.LLTCG_SLEEVES?.applyMatchSleeves) {
     window.LLTCG_SLEEVES.applyMatchSleeves(s, { myId });
   }
+  if (window.LLTCG_PLAYMATS?.applyMatchPlaymats) {
+    window.LLTCG_PLAYMATS.applyMatchPlaymats(s, { myId });
+  }
   const me=s.players[myId], opp=s.players[oppId];
   if(!me||!opp) return;
   syncPrepHandsChrome(s);

@@ -68,6 +68,7 @@
       "stickerShop": "Sticker Shop",
       "stickerShopSub": "Trade seals for cards from your packs",
       "sleeveShop": { "title": "Sleeve Shop", "sub": "Spend Coins on card sleeves" },
+      "shop": { "title": "Shop", "sub": "Sleeves and playmats" },
       "deckBuilder": "Deck Builder",
       "deckBuilderSub": "Edit presets and ranked loadout",
       "experiment": {
@@ -1314,6 +1315,7 @@
       "signInSleeveShop": "Sign in to use the Sleeve Shop.",
       "sleeveShopLoadFailed": "Failed to load sleeve shop",
       "sleeveBought": "Sleeve unlocked!",
+      "playmatBought": "Playmat unlocked!",
       "sleeveClaimedFree": "Free sleeve claimed!",
       "coinsEarned": "+{n} Coins",
       "stickerLoadFailed": "Failed to load sticker shop",
@@ -8215,10 +8217,44 @@
     loc.hub.sleeveShop = loc.hub.sleeveShop || {};
     loc.hub.sleeveShop.title = loc.hub.sleeveShop.title || (loc.sleeveShop && loc.sleeveShop.title) || 'Sleeve Shop';
     loc.hub.sleeveShop.sub = loc.hub.sleeveShop.sub || 'Spend Coins on card sleeves';
+    loc.hub.shop = loc.hub.shop || {};
+    loc.hub.shop.title = loc.hub.shop.title || 'Shop';
+    loc.hub.shop.sub = loc.hub.shop.sub || 'Sleeves and playmats';
+    loc.shop = loc.shop || {};
+    loc.shop.title = loc.shop.title || loc.hub.shop.title || 'Shop';
+    loc.shop.backHub = loc.shop.backHub || loc.hub.backHub || '← Hub';
+    loc.shop.hint = loc.shop.hint || 'Choose a cosmetic shop. Prices use Coins earned from matches.';
+    loc.shop.sleevesTitle = loc.shop.sleevesTitle || loc.hub.sleeveShop.title || 'Sleeve Shop';
+    loc.shop.sleevesSub = loc.shop.sleevesSub || 'Card backs for your decks';
+    loc.shop.playmatsTitle = loc.shop.playmatsTitle || 'Playmat Shop';
+    loc.shop.playmatsSub = loc.shop.playmatsSub || 'Board art for your seat';
     loc.sleeveShop = loc.sleeveShop || {};
     loc.sleeveShop.title = loc.sleeveShop.title || loc.hub.sleeveShop.title || 'Sleeve Shop';
     loc.sleeveShop.backHub = loc.sleeveShop.backHub || loc.hub.backHub || '← Hub';
+    loc.sleeveShop.backShop = loc.sleeveShop.backShop || '← Shop';
     loc.sleeveShop.backChars = loc.sleeveShop.backChars || '← Characters';
+    loc.playmatShop = loc.playmatShop || {};
+    loc.playmatShop.title = loc.playmatShop.title || 'Playmat Shop';
+    loc.playmatShop.backShop = loc.playmatShop.backShop || '← Shop';
+    loc.playmatShop.backChars = loc.playmatShop.backChars || '← Characters';
+    loc.playmatShop.hint = loc.playmatShop.hint
+      || 'Each playmat costs 3,000 Coins. Filters stay visible even when a member has no mats yet.';
+    loc.playmatShop.coinsAria = loc.playmatShop.coinsAria || 'Coins';
+    loc.playmatShop.owned = loc.playmatShop.owned || 'Owned';
+    loc.playmatShop.hoverEmpty = loc.playmatShop.hoverEmpty || 'Hover a playmat to preview';
+    loc.deck = loc.deck || {};
+    loc.deck.playmat = loc.deck.playmat || 'Playmat';
+    loc.deck.playmatNone = loc.deck.playmatNone || 'Default';
+    loc.deck.playmatChange = loc.deck.playmatChange || 'Change';
+    loc.deck.playmatEmpty = loc.deck.playmatEmpty || 'No playmats available yet.';
+    loc.deck.playmatEmptyHint = loc.deck.playmatEmptyHint || 'Buy playmats in the Playmat Shop.';
+    loc.deck.playmatOwnedHint = loc.deck.playmatOwnedHint || 'Owned playmats from the Playmat Shop.';
+    loc.deck.playmatHint = loc.deck.playmatHint || 'Equipped playmat appears on your seat in matches. Default board if none.';
+    loc.deck.playmatPickTitle = loc.deck.playmatPickTitle || 'Choose playmat';
+    loc.deck.playmatPickClose = loc.deck.playmatPickClose || 'Close';
+    loc.deck.playmatPickLead = loc.deck.playmatPickLead || 'Select an owned playmat, adjust brightness, then confirm.';
+    loc.deck.playmatBrightness = loc.deck.playmatBrightness || 'Brightness';
+    loc.deck.playmatConfirm = loc.deck.playmatConfirm || 'Confirm';
     loc.sleeveShop.hint = loc.sleeveShop.hint
       || 'Earn Coins by finishing matches. Pick a generation, then a character.';
     loc.sleeveShop.coinsAria = loc.sleeveShop.coinsAria || 'Coins';

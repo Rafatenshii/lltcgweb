@@ -107,6 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=71">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
+<link rel="stylesheet" href="client/css/playmats.css?v=1">
 <link rel="stylesheet" href="client/css/portrait.css?v=74">
 
 </head>
@@ -669,10 +670,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
             </span>
           </button>
-          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-pink" id="btn-hub-sleeve-shop" type="button">
+          <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-pink" id="btn-hub-shop" type="button">
             <span class="llc-menu-item-body">
-              <span class="llc-menu-item-title" data-i18n="hub.sleeveShop.title">Sleeve Shop</span>
-              <span class="llc-menu-item-sub" data-i18n="hub.sleeveShop.sub">Spend Coins on card sleeves</span>
+              <span class="llc-menu-item-title" data-i18n="hub.shop.title">Shop</span>
+              <span class="llc-menu-item-sub" data-i18n="hub.shop.sub">Sleeves and playmats</span>
             </span>
           </button>
         </div>
@@ -945,6 +946,78 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
+<!-- ══ SHOP HUB ══ -->
+<div id="screen-shop" class="screen llc-menu-screen" hidden aria-hidden="true">
+  <div class="account-shell">
+    <div class="logo">
+      <img class="logo-img" src="tcglogo.png" alt="">
+      <div class="logo-foot">
+        <span class="logo-version">v0.1.5</span>
+        <p class="logo-tagline" data-i18n="tagline">The Unofficial Web Player</p>
+      </div>
+    </div>
+    <div class="panel account-panel">
+      <div class="account-screen-head">
+        <button class="btn-ghost" id="btn-shop-back" type="button" data-i18n="shop.backHub">← Hub</button>
+        <h2 data-i18n="shop.title">Shop</h2>
+      </div>
+      <p class="hub-stat" data-i18n="shop.hint">Choose a cosmetic shop. Prices use Coins earned from matches.</p>
+      <div class="shop-hub-grid" id="shop-hub-grid">
+        <button type="button" class="shop-hub-tile" id="btn-shop-sleeves">
+          <span class="shop-hub-tile__art" id="shop-hub-sleeve-art" aria-hidden="true"></span>
+          <span class="shop-hub-tile__label" data-i18n="shop.sleevesTitle">Sleeve Shop</span>
+          <span class="shop-hub-tile__sub" data-i18n="shop.sleevesSub">Card backs for your decks</span>
+        </button>
+        <button type="button" class="shop-hub-tile" id="btn-shop-playmats">
+          <span class="shop-hub-tile__art is-playmat" id="shop-hub-playmat-art" aria-hidden="true"></span>
+          <span class="shop-hub-tile__label" data-i18n="shop.playmatsTitle">Playmat Shop</span>
+          <span class="shop-hub-tile__sub" data-i18n="shop.playmatsSub">Board art for your seat</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLAYMAT SHOP ══ -->
+<div id="screen-playmat-shop" class="screen llc-menu-screen" hidden aria-hidden="true">
+  <div class="account-shell wide">
+    <div class="logo">
+      <img class="logo-img" src="tcglogo.png" alt="">
+      <div class="logo-foot">
+        <span class="logo-version">v0.1.5</span>
+        <p class="logo-tagline" data-i18n="tagline">The Unofficial Web Player</p>
+      </div>
+    </div>
+    <div class="panel account-panel">
+      <div class="account-screen-head">
+        <button class="btn-ghost" id="btn-playmat-shop-back" type="button" data-i18n="playmatShop.backShop">← Shop</button>
+        <h2 data-i18n="playmatShop.title">Playmat Shop</h2>
+      </div>
+      <div class="hub-coins-pill sticker-seals-bar" id="playmat-shop-coins-bar" data-i18n-aria-label="playmatShop.coinsAria" aria-label="Coins">
+        <img src="assets/ui/llsifas-gold-coin.webp" alt="" width="22" height="22" aria-hidden="true">
+        <b id="playmat-shop-coins">0</b>
+      </div>
+      <p class="hub-stat" id="playmat-shop-hint" data-i18n="playmatShop.hint">Each playmat costs 3,000 Coins. Filters stay visible even when a member has no mats yet.</p>
+      <div id="playmat-shop-gens" class="sleeve-shop-gens" role="tablist"></div>
+      <div class="sleeve-shop-browse">
+        <aside class="sleeve-shop-hover-panel" id="playmat-shop-hover-panel" aria-live="polite">
+          <p class="hc-empty" id="psh-empty" data-i18n="playmatShop.hoverEmpty">Hover a playmat to preview</p>
+          <img class="hc-img is-playmat" id="psh-img" src="" alt="" onerror="this.classList.remove('show')">
+        </aside>
+        <div class="sleeve-shop-main">
+          <div id="playmat-shop-chars" class="sleeve-shop-chars"></div>
+          <div id="playmat-shop-mats-view" hidden>
+            <button class="btn-ghost" id="btn-playmat-shop-chars-back" type="button" data-i18n="playmatShop.backChars">← Characters</button>
+            <p class="hub-stat" id="playmat-shop-char-name"></p>
+            <div class="sleeve-shop-grid" id="playmat-shop-grid"></div>
+          </div>
+        </div>
+      </div>
+      <p class="lerr" id="playmat-shop-err"></p>
+    </div>
+  </div>
+</div>
+
 <!-- ══ SLEEVE SHOP ══ -->
 <div id="screen-sleeve-shop" class="screen llc-menu-screen" hidden aria-hidden="true">
   <div class="account-shell wide">
@@ -957,7 +1030,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     </div>
     <div class="panel account-panel">
       <div class="account-screen-head">
-        <button class="btn-ghost" id="btn-sleeve-shop-back" type="button" data-i18n="sleeveShop.backHub">← Hub</button>
+        <button class="btn-ghost" id="btn-sleeve-shop-back" type="button" data-i18n="sleeveShop.backShop">← Shop</button>
         <h2 data-i18n="sleeveShop.title">Sleeve Shop</h2>
       </div>
       <div class="hub-coins-pill sticker-seals-bar" id="sleeve-shop-coins-bar" data-i18n-aria-label="sleeveShop.coinsAria" aria-label="Coins">
@@ -1087,11 +1160,19 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <div class="deck-slot-row" id="deck-slots"></div>
         </div>
         <div class="deck-builder-meta__sleeve-row" id="deck-builder-sleeve-row">
+          <div class="deck-builder-meta__cosmetics" id="deck-builder-cosmetics">
           <div class="field deck-builder-meta__sleeve" id="deck-builder-sleeve-wrap">
             <label data-i18n="deck.sleeve">Sleeve</label>
             <div class="deck-sleeve-picker" id="deck-sleeve-picker" data-i18n-aria-label="deck.sleeve"></div>
             <p class="deck-builder-hint deck-builder-hint--compact" id="deck-sleeve-empty-hint" data-i18n="deck.sleeveEmpty">No sleeves available yet.</p>
             <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.sleeveHint">Equipped sleeve replaces your card back in matches. Default: none.</p>
+          </div>
+          <div class="field deck-builder-meta__playmat" id="deck-builder-playmat-wrap">
+            <label data-i18n="deck.playmat">Playmat</label>
+            <div class="deck-playmat-picker" id="deck-playmat-picker" data-i18n-aria-label="deck.playmat"></div>
+            <p class="deck-builder-hint deck-builder-hint--compact" id="deck-playmat-empty-hint" data-i18n="deck.playmatEmpty">No playmats available yet.</p>
+            <p class="deck-builder-hint deck-builder-hint--compact" data-i18n="deck.playmatHint">Equipped playmat appears on your seat in matches. Default board if none.</p>
+          </div>
           </div>
           <div class="deck-builder-meta__side-tools" id="deck-builder-side-tools">
             <div class="deck-pool-tools">
@@ -1222,6 +1303,27 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     </div>
     <p class="deck-sleeve-overlay__lead" data-i18n="deck.sleevePickLead">Tap a sleeve you own to equip it on this deck.</p>
     <div class="deck-sleeve-overlay__grid" id="deck-sleeve-overlay-grid" role="listbox" data-i18n-aria-label="deck.sleeve"></div>
+  </div>
+</div>
+
+<div class="overlay deck-sleeve-overlay deck-playmat-overlay" id="overlay-deck-playmat" aria-modal="true" aria-labelledby="deck-playmat-overlay-title" aria-hidden="true">
+  <div class="deck-playmat-overlay__shell" role="dialog" aria-modal="true" aria-labelledby="deck-playmat-overlay-title">
+    <div class="account-screen-head deck-sleeve-overlay__head">
+      <h2 id="deck-playmat-overlay-title" data-i18n="deck.playmatPickTitle">Choose playmat</h2>
+      <button class="btn-ghost deck-sleeve-overlay__close" type="button" id="btn-deck-playmat-overlay-close" data-i18n-aria-label="deck.playmatPickClose" aria-label="Close">✕</button>
+    </div>
+    <p class="deck-sleeve-overlay__lead" data-i18n="deck.playmatPickLead">Select an owned playmat, adjust brightness, then confirm.</p>
+    <div class="deck-playmat-overlay__preview" id="deck-playmat-overlay-preview" aria-hidden="true"></div>
+    <div class="deck-playmat-overlay__brightness">
+      <label for="deck-playmat-brightness" data-i18n="deck.playmatBrightness">Brightness</label>
+      <input type="range" id="deck-playmat-brightness" min="35" max="100" step="1" value="100">
+      <span id="deck-playmat-brightness-value">100%</span>
+    </div>
+    <div class="deck-playmat-overlay__grid" id="deck-playmat-overlay-grid" role="listbox" data-i18n-aria-label="deck.playmat"></div>
+    <div class="deck-playmat-overlay__actions">
+      <button type="button" class="btn-ghost" id="btn-deck-playmat-overlay-cancel" data-i18n="common.cancel">Cancel</button>
+      <button type="button" class="btn-out" id="btn-deck-playmat-overlay-confirm" data-i18n="deck.playmatConfirm">Confirm</button>
+    </div>
   </div>
 </div>
 
@@ -2409,6 +2511,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script src="client/js/sleeves.js?v=11"></script>
+<script src="client/js/playmats.js?v=1"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=8"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -2591,7 +2694,9 @@ const A = {
   coins: 0,
   freeSleeveClaims: 0,
   sleeveShopPrice: 1000,
+  playmatShopPrice: 3000,
   ownedSleeves: [],
+  ownedPlaymats: [],
   sleevesNeedIntro: [],
   seals: { n: 0, r: 0, p: 0, sec: 0, pr: 0 },
   ownedStarters: [],
@@ -2618,6 +2723,8 @@ const A = {
   deckMain: [],
   deckEnergy: [],
   deckSleeveId: '',
+  deckPlaymatId: '',
+  deckPlaymatBrightness: 1,
   deckBuilderMode: 'account',
   deckBuilderReturn: null,
   experimentSearch: '',
@@ -2726,15 +2833,20 @@ function syncCoinsFromProfile(me) {
   A.coins = Number(me.coins ?? A.coins ?? 0) || 0;
   A.freeSleeveClaims = Number(me.free_sleeve_claims ?? A.freeSleeveClaims ?? 0) || 0;
   A.sleeveShopPrice = Number(me.sleeve_shop_price ?? A.sleeveShopPrice ?? 1000) || 1000;
+  A.playmatShopPrice = Number(me.playmat_shop_price ?? A.playmatShopPrice ?? 3000) || 3000;
   if (Array.isArray(me.owned_sleeves)) A.ownedSleeves = me.owned_sleeves.slice();
   else if (!Array.isArray(A.ownedSleeves)) A.ownedSleeves = [];
+  if (Array.isArray(me.owned_playmats)) A.ownedPlaymats = me.owned_playmats.slice();
+  else if (!Array.isArray(A.ownedPlaymats)) A.ownedPlaymats = [];
   if (Array.isArray(me.sleeves_need_intro)) A.sleevesNeedIntro = me.sleeves_need_intro.slice();
   else if (!Array.isArray(A.sleevesNeedIntro)) A.sleevesNeedIntro = [];
   if (A.profile) {
     A.profile.coins = A.coins;
     A.profile.free_sleeve_claims = A.freeSleeveClaims;
     A.profile.owned_sleeves = A.ownedSleeves.slice();
+    A.profile.owned_playmats = A.ownedPlaymats.slice();
     A.profile.sleeves_need_intro = A.sleevesNeedIntro.slice();
+    A.profile.playmat_shop_price = A.playmatShopPrice;
   }
   updateCoinsUI();
 }
@@ -2749,6 +2861,8 @@ function updateCoinsUI() {
   }
   const shopCoins = el('sleeve-shop-coins');
   if (shopCoins) shopCoins.textContent = count;
+  const playmatCoins = el('playmat-shop-coins');
+  if (playmatCoins) playmatCoins.textContent = count;
   const freeEl = el('sleeve-shop-free');
   if (freeEl) {
     const n = Number(A.freeSleeveClaims || 0);
@@ -6434,6 +6548,232 @@ async function claimFreeSleeveFromShop(sleeveId) {
   }
 }
 
+let _playmatShopData = null;
+let _playmatShopGenId = null;
+let _playmatShopChar = null;
+
+function showPlaymatShopCharsView() {
+  const matsView = el('playmat-shop-mats-view');
+  const chars = el('playmat-shop-chars');
+  if (matsView) matsView.hidden = true;
+  if (chars) chars.hidden = false;
+  _playmatShopChar = null;
+  clearPlaymatShopHover();
+}
+
+function clearPlaymatShopHover() {
+  const panel = el('playmat-shop-hover-panel');
+  const img = el('psh-img');
+  if (panel) panel.classList.remove('has-preview');
+  if (img) {
+    img.removeAttribute('src');
+    img.classList.remove('show');
+  }
+}
+
+function showPlaymatShopHover(src) {
+  const panel = el('playmat-shop-hover-panel');
+  const img = el('psh-img');
+  if (!panel || !img || !src) return;
+  img.src = src;
+  img.classList.add('show');
+  panel.classList.add('has-preview');
+}
+
+async function loadShopHubScreen() {
+  if (!isSignedInAccount()) {
+    toast(t('toast.signInShop') || t('toast.signInDeckBuilder') || 'Sign in required', 2800);
+    return;
+  }
+  showScr('shop');
+  try {
+    await Promise.all([
+      window.LLTCG_SLEEVES?.loadCatalog?.(),
+      window.LLTCG_PLAYMATS?.loadCatalog?.(),
+    ]);
+  } catch (e) { /* ignore */ }
+  const sleeveArt = el('shop-hub-sleeve-art');
+  const playmatArt = el('shop-hub-playmat-art');
+  const sleeves = window.LLTCG_SLEEVES?.catalog || [];
+  const mats = window.LLTCG_PLAYMATS?.catalog || [];
+  if (sleeveArt) {
+    const s = sleeves.length ? sleeves[Math.floor(Math.random() * sleeves.length)] : null;
+    sleeveArt.style.backgroundImage = 'url("' + String(s?.src || 'lltcg-back.png').replace(/"/g, '\\"') + '")';
+  }
+  if (playmatArt) {
+    const src = window.LLTCG_PLAYMATS?.randomCatalogSrc
+      ? window.LLTCG_PLAYMATS.randomCatalogSrc()
+      : (mats[0]?.src || 'playmat.png');
+    playmatArt.style.backgroundImage = 'url("' + String(src).replace(/"/g, '\\"') + '")';
+  }
+}
+
+async function loadPlaymatShopScreen() {
+  if (!isSignedInAccount()) {
+    toast(t('toast.signInShop') || t('toast.signInDeckBuilder') || 'Sign in required', 2800);
+    return;
+  }
+  const err = el('playmat-shop-err');
+  if (err) err.textContent = '';
+  showPlaymatShopCharsView();
+  showScr('playmat-shop');
+  try {
+    await window.LLTCG_PLAYMATS?.loadCatalog?.();
+    const res = await accountPost('playmat_shop_catalog', {});
+    syncCoinsFromProfile(res);
+    _playmatShopData = res;
+    const gens = res.generations || [];
+    if (!_playmatShopGenId || !gens.some((g) => g.id === _playmatShopGenId)) {
+      _playmatShopGenId = gens[0]?.id || null;
+    }
+    renderPlaymatShopGens();
+    renderPlaymatShopChars();
+    const coinsEl = el('playmat-shop-coins');
+    if (coinsEl) coinsEl.textContent = String(A.coins || 0);
+  } catch (e) {
+    if (err) err.textContent = e.message || 'Failed to load playmat shop';
+  }
+}
+
+function renderPlaymatShopGens() {
+  const host = el('playmat-shop-gens');
+  if (!host) return;
+  host.replaceChildren();
+  (_playmatShopData?.generations || []).forEach((g) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sleeve-shop-gen' + (g.id === _playmatShopGenId ? ' is-active' : '');
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', g.id === _playmatShopGenId ? 'true' : 'false');
+    if (g.icon) {
+      const img = document.createElement('img');
+      img.className = 'sleeve-shop-gen__icon';
+      img.src = g.icon;
+      img.alt = '';
+      b.appendChild(img);
+    }
+    const label = document.createElement('span');
+    label.className = 'sleeve-shop-gen__label';
+    label.textContent = sleeveShopUnitLabel(g.name || g.id);
+    b.appendChild(label);
+    b.onclick = () => {
+      _playmatShopGenId = g.id;
+      showPlaymatShopCharsView();
+      renderPlaymatShopGens();
+      renderPlaymatShopChars();
+    };
+    host.appendChild(b);
+  });
+}
+
+function renderPlaymatShopChars() {
+  const host = el('playmat-shop-chars');
+  if (!host) return;
+  host.replaceChildren();
+  host.hidden = false;
+  const gen = (_playmatShopData?.generations || []).find((g) => g.id === _playmatShopGenId);
+  (gen?.characters || []).forEach((c) => {
+    const isGroup = !!c.is_group;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '');
+    const name = document.createElement('span');
+    name.className = 'sleeve-shop-char__name';
+    name.textContent = isGroup
+      ? sleeveShopUnitLabel(gen?.name || c.name || c.id)
+      : sleeveShopIdolLabel(c.id || c.name, 'given');
+    const img = document.createElement('img');
+    img.className = 'sleeve-shop-char__icon' + (isGroup ? ' sleeve-shop-char__icon--unit' : '');
+    img.src = isGroup ? (c.icon || gen?.icon || '') : (c.portrait || c.icon || '');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+    const count = document.createElement('span');
+    count.className = 'sleeve-shop-char__count';
+    count.textContent = String(c.playmat_count || (c.playmats || []).length || 0);
+    b.appendChild(name);
+    b.appendChild(count);
+    b.appendChild(img);
+    b.onclick = () => openPlaymatShopCharacter(c);
+    host.appendChild(b);
+  });
+}
+
+function openPlaymatShopCharacter(character) {
+  _playmatShopChar = character;
+  const chars = el('playmat-shop-chars');
+  const view = el('playmat-shop-mats-view');
+  const nameEl = el('playmat-shop-char-name');
+  if (chars) chars.hidden = true;
+  if (view) view.hidden = false;
+  if (nameEl) {
+    nameEl.textContent = character?.is_group
+      ? sleeveShopUnitLabel(character?.name || character?.id)
+      : sleeveShopIdolLabel(character?.id || character?.name, 'given');
+  }
+  renderPlaymatShopGrid(character?.playmats || []);
+}
+
+function renderPlaymatShopGrid(mats) {
+  const grid = el('playmat-shop-grid');
+  if (!grid) return;
+  grid.replaceChildren();
+  clearPlaymatShopHover();
+  const price = Number(A.playmatShopPrice || 3000);
+  (mats || []).forEach((m) => {
+    const tile = document.createElement('div');
+    tile.className = 'sleeve-shop-tile' + (m.owned ? ' is-owned' : '');
+    const art = document.createElement('div');
+    art.className = 'sleeve-shop-tile__art is-playmat playmat-shop-tile__art';
+    const src = String(m.src || '');
+    art.style.backgroundImage = 'url("' + src.replace(/"/g, '\\"') + '")';
+    art.addEventListener('mouseenter', () => showPlaymatShopHover(src));
+    art.addEventListener('mouseleave', () => clearPlaymatShopHover());
+    const label = document.createElement('div');
+    label.className = 'sleeve-shop-tile__name';
+    label.textContent = window.LLTCG_PLAYMATS?.displayName?.(m) || m.name || m.id;
+    const actions = document.createElement('div');
+    actions.className = 'sleeve-shop-tile__actions';
+    if (m.owned) {
+      const owned = document.createElement('span');
+      owned.className = 'sleeve-shop-owned';
+      owned.textContent = tOr('playmatShop.owned', 'Owned');
+      actions.appendChild(owned);
+    } else {
+      const buy = document.createElement('button');
+      buy.type = 'button';
+      const canAfford = Number(A.coins || 0) >= price;
+      buy.className = 'btn-smol sleeve-shop-buy' + (canAfford ? ' is-affordable' : ' is-unaffordable');
+      buy.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> ' + price;
+      buy.disabled = !canAfford;
+      buy.onclick = () => void buyPlaymatFromShop(m.id);
+      actions.appendChild(buy);
+    }
+    tile.appendChild(art);
+    tile.appendChild(label);
+    tile.appendChild(actions);
+    grid.appendChild(tile);
+  });
+}
+
+async function buyPlaymatFromShop(playmatId) {
+  const err = el('playmat-shop-err');
+  if (err) err.textContent = '';
+  try {
+    const res = await accountPost('playmat_buy', { playmat_id: playmatId });
+    syncCoinsFromProfile(res);
+    toast(t('toast.playmatBought') || 'Playmat unlocked!', 2400);
+    await loadPlaymatShopScreen();
+    if (_playmatShopChar) {
+      const gen = (_playmatShopData?.generations || []).find((g) => g.id === _playmatShopGenId);
+      const fresh = (gen?.characters || []).find((c) => c.id === _playmatShopChar.id);
+      if (fresh) openPlaymatShopCharacter(fresh);
+    }
+  } catch (e) {
+    if (err) err.textContent = e.message || 'Buy failed';
+  }
+}
+
 function renderStickerProductGrid(products) {
   const grid = el('sticker-product-grid');
   if (!grid) return;
@@ -7711,6 +8051,12 @@ function applyExperimentDeckToBuilder(data) {
   A.deckEnergy = [...(data.energy_deck || [])];
   if (data && Object.prototype.hasOwnProperty.call(data, 'sleeve_id')) {
     A.deckSleeveId = normalizeDeckSleeveId(data.sleeve_id);
+  }
+  if (data && Object.prototype.hasOwnProperty.call(data, 'playmat_id')) {
+    A.deckPlaymatId = normalizeDeckPlaymatId(data.playmat_id);
+  }
+  if (data && Object.prototype.hasOwnProperty.call(data, 'playmat_brightness')) {
+    A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(data.playmat_brightness);
   }
   A.experimentPassword = data.password || '';
   if (A.experimentPassword) {
@@ -9201,6 +9547,16 @@ function normalizeDeckSleeveId(raw) {
   return window.LLTCG_SLEEVES?.normalize ? window.LLTCG_SLEEVES.normalize(raw) : String(raw || '').trim().toLowerCase();
 }
 
+function normalizeDeckPlaymatId(raw) {
+  return window.LLTCG_PLAYMATS?.normalize ? window.LLTCG_PLAYMATS.normalize(raw) : String(raw || '').trim().toLowerCase();
+}
+
+function normalizeDeckPlaymatBrightness(raw) {
+  return window.LLTCG_PLAYMATS?.normalizeBrightness
+    ? window.LLTCG_PLAYMATS.normalizeBrightness(raw)
+    : 1;
+}
+
 function patchLocalDeckSleeve(slot, sleeveId, { experiment = false } = {}) {
   const id = normalizeDeckSleeveId(sleeveId);
   const list = experiment ? (A.experimentDecks || []) : (A.decks || []);
@@ -9234,6 +9590,71 @@ async function persistSelectedDeckSleeve(sleeveId) {
     markDeckListDirty();
   } catch (e) {
     // Preset may not exist yet — full Save still sends sleeve_id.
+  }
+}
+
+function patchLocalDeckPlaymat(slot, playmatId, brightness, { experiment = false } = {}) {
+  const id = normalizeDeckPlaymatId(playmatId);
+  const bright = id ? normalizeDeckPlaymatBrightness(brightness) : 1;
+  const list = experiment ? (A.experimentDecks || []) : (A.decks || []);
+  const idx = list.findIndex(d => d.slot === slot);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], playmat_id: id, playmat_brightness: bright };
+  }
+  if (experiment) A.experimentDecks = list;
+  else A.decks = list;
+}
+
+async function persistSelectedDeckPlaymat(playmatId, brightness) {
+  const id = normalizeDeckPlaymatId(playmatId);
+  const bright = id ? normalizeDeckPlaymatBrightness(brightness) : 1;
+  if (A.deckBuilderMode === 'experiment') {
+    if (!isSignedInAccount()) return;
+    const slot = A.experimentSlot || 1;
+    try {
+      await accountPost('experiment_preset_set_playmat', {
+        slot,
+        playmat_id: id,
+        playmat_brightness: bright,
+      });
+      patchLocalDeckPlaymat(slot, id, bright, { experiment: true });
+      markExperimentListDirty();
+    } catch (e) { /* full Save still sends fields */ }
+    return;
+  }
+  if (!isSignedInAccount()) return;
+  const slot = A.deckSlot || 1;
+  try {
+    await accountPost('deck_set_playmat', {
+      slot,
+      playmat_id: id,
+      playmat_brightness: bright,
+    });
+    patchLocalDeckPlaymat(slot, id, bright);
+    markDeckListDirty();
+  } catch (e) { /* full Save still sends fields */ }
+}
+
+function renderDeckPlaymatPickerUi() {
+  if (!window.LLTCG_PLAYMATS?.renderPicker) return;
+  const onPick = async (nextId, nextBright) => {
+    const id = normalizeDeckPlaymatId(nextId);
+    const bright = id ? normalizeDeckPlaymatBrightness(nextBright) : 1;
+    const prevId = normalizeDeckPlaymatId(A.deckPlaymatId);
+    const prevBright = normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness);
+    A.deckPlaymatId = id;
+    A.deckPlaymatBrightness = bright;
+    renderDeckPlaymatPickerUi();
+    if (id === prevId && bright === prevBright) return;
+    void persistSelectedDeckPlaymat(id, bright);
+  };
+  const paint = () => window.LLTCG_PLAYMATS.renderPicker(A.deckPlaymatId, A.deckPlaymatBrightness, onPick);
+  paint();
+  const load = window.LLTCG_PLAYMATS.loadCatalog;
+  if (typeof load === 'function') {
+    void load().then(() => {
+      if (el('screen-deck') && !el('screen-deck').hidden) paint();
+    }).catch(() => {});
   }
 }
 
@@ -9274,6 +9695,7 @@ function renderDeckBuilder(opts = {}) {
   const savedScroll = preservePoolScroll ? captureDeckBuilderScroll() : null;
   syncDeckBuilderChrome();
   renderDeckSleevePickerUi();
+  renderDeckPlaymatPickerUi();
   const experiment = A.deckBuilderMode === 'experiment';
   const slots = el('deck-slots');
   if (slots && !experiment) {
@@ -9410,6 +9832,8 @@ function selectDeckSlot(slot) {
   A.deckMain = saved ? [...(saved.main_deck || [])] : [];
   A.deckEnergy = saved ? [...(saved.energy_deck || [])] : [];
   A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id);
+  A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id);
+  A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness);
   el('inp-deck-name').value = saved?.name || ('Deck ' + slot);
   renderDeckBuilder();
 }
@@ -9517,6 +9941,8 @@ async function openDeckExperiment(opts) {
   A.deckMain = [];
   A.deckEnergy = [];
   A.deckSleeveId = '';
+  A.deckPlaymatId = '';
+  A.deckPlaymatBrightness = 1;
   const searchInp = el('inp-experiment-load-pwd');
   const cardSearch = el('inp-deck-card-search');
   if (searchInp) searchInp.value = '';
@@ -9561,6 +9987,8 @@ function selectExperimentSlot(slot) {
   const saved = (A.experimentDecks || []).find(d => d.slot === slot);
   el('inp-deck-name').value = saved?.name || ('Experiment ' + slot);
   A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id);
+  A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id);
+  A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness);
   if (saved?.main_deck?.length) {
     A.deckMain = [...saved.main_deck];
     A.deckEnergy = [...(saved.energy_deck || [])];
@@ -11858,6 +12286,8 @@ async function saveExperimentDeckPassword() {
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
       sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
+      playmat_id: normalizeDeckPlaymatId(A.deckPlaymatId),
+      playmat_brightness: normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness),
     };
     if (A.experimentPassword) body.password = A.experimentPassword;
     const res = await apiExperimentCall('experiment_deck_save', body);
@@ -11869,6 +12299,8 @@ async function saveExperimentDeckPassword() {
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
       sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
+      playmat_id: normalizeDeckPlaymatId(A.deckPlaymatId),
+      playmat_brightness: normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness),
     });
     if (isSignedInAccount()) {
       try {
@@ -11878,6 +12310,8 @@ async function saveExperimentDeckPassword() {
           main_deck: [...A.deckMain],
           energy_deck: [...A.deckEnergy],
           sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
+          playmat_id: normalizeDeckPlaymatId(A.deckPlaymatId),
+          playmat_brightness: normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness),
           share_password: res.password,
         });
         markExperimentListDirty();
@@ -11915,15 +12349,22 @@ async function saveExperimentPresetToAccount() {
       main_deck: [...A.deckMain],
       energy_deck: [...A.deckEnergy],
       sleeve_id: normalizeDeckSleeveId(A.deckSleeveId),
+      playmat_id: normalizeDeckPlaymatId(A.deckPlaymatId),
+      playmat_brightness: normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness),
     };
     if (A.experimentPassword) body.share_password = A.experimentPassword;
     const sleeveId = body.sleeve_id;
+    const playmatId = body.playmat_id;
+    const playmatBrightness = body.playmat_brightness;
     await accountPost('experiment_preset_save', body);
     patchLocalDeckSleeve(A.experimentSlot || 1, sleeveId, { experiment: true });
+    patchLocalDeckPlaymat(A.experimentSlot || 1, playmatId, playmatBrightness, { experiment: true });
     markExperimentListDirty();
     await ensureExperimentDeckList({ force: true });
     const saved = (A.experimentDecks || []).find(d => d.slot === (A.experimentSlot || 1));
     A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id ?? sleeveId);
+    A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id ?? playmatId);
+    A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness ?? playmatBrightness);
     renderExperimentSlots();
     renderDeckBuilder();
     el('deck-err').textContent = t('deck.experimentSaved') || 'Experiment deck saved to your account.';
@@ -11942,18 +12383,25 @@ async function saveDeckPreset() {
   }
   try {
     const sleeveId = normalizeDeckSleeveId(A.deckSleeveId);
+    const playmatId = normalizeDeckPlaymatId(A.deckPlaymatId);
+    const playmatBrightness = normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness);
     await accountPost('deck_save', {
       slot: A.deckSlot,
       name: el('inp-deck-name').value.trim() || 'My Deck',
       main_deck: A.deckMain,
       energy_deck: A.deckEnergy,
       sleeve_id: sleeveId,
+      playmat_id: playmatId,
+      playmat_brightness: playmatBrightness,
     });
     patchLocalDeckSleeve(A.deckSlot, sleeveId);
+    patchLocalDeckPlaymat(A.deckSlot, playmatId, playmatBrightness);
     markDeckListDirty();
     await ensureDeckList({ force: true });
     const saved = (A.decks || []).find(d => d.slot === A.deckSlot);
     A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id ?? sleeveId);
+    A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id ?? playmatId);
+    A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness ?? playmatBrightness);
     renderDeckBuilder();
     el('deck-err').textContent = 'Saved!';
   } catch (e) { el('deck-err').textContent = e.message; }
@@ -15514,8 +15962,13 @@ async function bootApp() {
   on('btn-starter-confirm', 'click', confirmStarter);
   on('btn-hub-booster', 'click', loadBoosterScreen);
   on('btn-hub-sticker', 'click', loadStickerShopScreen);
-  on('btn-hub-sleeve-shop', 'click', () => { void loadSleeveShopScreen(); });
-  on('btn-sleeve-shop-back', 'click', () => { clearSleeveShopHover(); enterHub(A.profile); });
+  on('btn-hub-shop', 'click', () => { void loadShopHubScreen(); });
+  on('btn-shop-back', 'click', () => { enterHub(A.profile); });
+  on('btn-shop-sleeves', 'click', () => { void loadSleeveShopScreen(); });
+  on('btn-shop-playmats', 'click', () => { void loadPlaymatShopScreen(); });
+  on('btn-sleeve-shop-back', 'click', () => { clearSleeveShopHover(); void loadShopHubScreen(); });
+  on('btn-playmat-shop-back', 'click', () => { clearPlaymatShopHover(); void loadShopHubScreen(); });
+  on('btn-playmat-shop-chars-back', 'click', showPlaymatShopCharsView);
   on('btn-sleeve-shop-chars-back', 'click', showSleeveShopCharsView);
   if (window.LLTCG_I18N && typeof window.LLTCG_I18N.onLocaleChange === 'function') {
     window.LLTCG_I18N.onLocaleChange(() => {
@@ -17654,12 +18107,13 @@ function renderLobbyDeckOptions(opts = {}) {
 }
 
 /** Inline account presets so VPS match-primary can validate without Hostinger SQLite. */
-function presetInlineDeckPayload(main, energy, label, slot, sleeveId) {
+function presetInlineDeckPayload(main, energy, label, slot, sleeveId, playmatId, playmatBrightness) {
   const mainDeck = Array.isArray(main) ? main.map(String) : [];
   const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
   if (mainDeck.length < 60 || energyDeck.length < 12) {
     throw new Error(t('lobby.presetDeckIncomplete') || 'That saved deck is incomplete or not loaded yet');
   }
+  const pmId = normalizeDeckPlaymatId(playmatId);
   return {
     deck: 'preset',
     deck_slot: slot,
@@ -17667,22 +18121,27 @@ function presetInlineDeckPayload(main, energy, label, slot, sleeveId) {
     main_deck: mainDeck,
     energy_deck: energyDeck,
     sleeve_id: normalizeDeckSleeveId(sleeveId),
+    playmat_id: pmId,
+    playmat_brightness: pmId ? normalizeDeckPlaymatBrightness(playmatBrightness) : 1,
   };
 }
 
 /** Inline Free-mode experiment lists so VPS match-primary can validate without Hostinger SQLite/files. */
-function experimentInlineDeckPayload(main, energy, label, sleeveId) {
+function experimentInlineDeckPayload(main, energy, label, sleeveId, playmatId, playmatBrightness) {
   const mainDeck = Array.isArray(main) ? main.map(String) : [];
   const energyDeck = Array.isArray(energy) ? energy.map(String) : [];
   if (mainDeck.length < 60 || energyDeck.length < 12) {
     throw new Error(t('lobby.experimentDeckIncomplete') || 'That experiment deck is incomplete or not loaded yet');
   }
+  const pmId = normalizeDeckPlaymatId(playmatId);
   return {
     deck: 'experiment',
     deck_label: label || 'Deck Experiment',
     main_deck: mainDeck,
     energy_deck: energyDeck,
     sleeve_id: normalizeDeckSleeveId(sleeveId),
+    playmat_id: pmId,
+    playmat_brightness: pmId ? normalizeDeckPlaymatBrightness(playmatBrightness) : 1,
   };
 }
 
@@ -17708,6 +18167,8 @@ function deckPayloadFromChoice(deckSel) {
         saved.energy_deck,
         saved.name || ('Experiment ' + slot),
         saved.sleeve_id,
+        saved.playmat_id,
+        saved.playmat_brightness,
       ),
       experiment_slot: slot,
       token,
@@ -17728,6 +18189,8 @@ function deckPayloadFromChoice(deckSel) {
         cached.energy_deck,
         cached.name || 'Deck Experiment',
         cached.sleeve_id,
+        cached.playmat_id,
+        cached.playmat_brightness,
       );
     }
     // Fallback when cache is cold (Hostinger-only match path).
@@ -17757,6 +18220,8 @@ function deckPayloadFromChoice(deckSel) {
         saved.name || ('Deck ' + slot),
         slot,
         saved.sleeve_id,
+        saved.playmat_id,
+        saved.playmat_brightness,
       ),
       token,
     };
@@ -17765,9 +18230,12 @@ function deckPayloadFromChoice(deckSel) {
 }
 
 async function ensureLobbyExperimentDeckReady() {
-  // Sleeve backs need the catalog on first board paint.
+  // Cosmetic catalogs need to be warm for first board paint.
   if (window.LLTCG_SLEEVES?.loadCatalog) {
     try { await window.LLTCG_SLEEVES.loadCatalog(); } catch (e) { /* best effort */ }
+  }
+  if (window.LLTCG_PLAYMATS?.loadCatalog) {
+    try { await window.LLTCG_PLAYMATS.loadCatalog(); } catch (e) { /* best effort */ }
   }
   const mode = currentGameMode();
   const choice = el('sel-deck')?.value || '';

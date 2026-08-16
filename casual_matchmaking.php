@@ -425,6 +425,8 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
         'main_deck' => $main1,
         'energy_deck' => $energy1,
         'sleeve_id' => tcgNormalizeSleeveId($resolved1['sleeve_id'] ?? ($body1['sleeve_id'] ?? '')),
+        'playmat_id' => tcgNormalizePlaymatId($resolved1['playmat_id'] ?? ($body1['playmat_id'] ?? '')),
+        'playmat_brightness' => tcgNormalizePlaymatBrightness($resolved1['playmat_brightness'] ?? ($body1['playmat_brightness'] ?? 1.0)),
         'discord_id' => (string)($p1Row['discord_id'] ?? '') ?: null,
     ]);
     $state['phase_timer_cfg'] = parsePhaseTimerConfigFromBody($body1);
@@ -443,6 +445,8 @@ function tcgCreateCasualRoomPair(array $p1Row, array $p2Row): ?array {
         'main_deck' => $main2,
         'energy_deck' => $energy2,
         'sleeve_id' => tcgNormalizeSleeveId($resolved2['sleeve_id'] ?? ($body2['sleeve_id'] ?? '')),
+        'playmat_id' => tcgNormalizePlaymatId($resolved2['playmat_id'] ?? ($body2['playmat_id'] ?? '')),
+        'playmat_brightness' => tcgNormalizePlaymatBrightness($resolved2['playmat_brightness'] ?? ($body2['playmat_brightness'] ?? 1.0)),
         'discord_id' => (string)($p2Row['discord_id'] ?? '') ?: null,
     ], null);
 

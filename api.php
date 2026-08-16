@@ -73,6 +73,7 @@ function tcgRequireAuthLoader(): void {
     $loaded = true;
 }
 require_once __DIR__ . '/sleeves.php';
+require_once __DIR__ . '/playmats.php';
 require_once __DIR__ . '/effects.php';
 require_once __DIR__ . '/stamps.php';
 require_once __DIR__ . '/cardimg_cache.php';
@@ -451,6 +452,8 @@ function resolveAccountPresetDeckLists(array $body, array $cards, int $slot): ar
             'main_nos'    => $main,
             'energy_nos'  => $energy,
             'sleeve_id'   => tcgNormalizeSleeveId($body['sleeve_id'] ?? ''),
+            'playmat_id'  => tcgNormalizePlaymatId($body['playmat_id'] ?? ''),
+            'playmat_brightness' => tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0),
         ];
     }
 
@@ -460,7 +463,7 @@ function resolveAccountPresetDeckLists(array $body, array $cards, int $slot): ar
 
     $uid = tcgRequireAuthUser($body);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT name, main_deck, energy_deck, sleeve_id FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+    $stmt = $db->prepare('SELECT name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
     $stmt->execute([$uid, $slot]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
@@ -480,6 +483,8 @@ function resolveAccountPresetDeckLists(array $body, array $cards, int $slot): ar
         'main_nos'    => $main,
         'energy_nos'  => $energy,
         'sleeve_id'   => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+        'playmat_id'  => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+        'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
     ];
 }
 
@@ -514,6 +519,8 @@ function resolveExperimentDeckLists(array $body, array $cardsData): array {
             'main_nos'    => $validated['main'],
             'energy_nos'  => $validated['energy'],
             'sleeve_id'   => tcgNormalizeSleeveId($body['sleeve_id'] ?? ''),
+            'playmat_id'  => tcgNormalizePlaymatId($body['playmat_id'] ?? ''),
+            'playmat_brightness' => tcgNormalizePlaymatBrightness($body['playmat_brightness'] ?? 1.0),
         ];
     }
 
@@ -541,6 +548,8 @@ function createRoom(array $body): array {
          'deck_choice' => $resolved['deck_choice'], 'deck_label' => $resolved['deck_label'],
          'main_deck' => $mainDeck, 'energy_deck' => $energyDeck,
          'sleeve_id' => tcgNormalizeSleeveId($resolved['sleeve_id'] ?? ($body['sleeve_id'] ?? '')),
+         'playmat_id' => tcgNormalizePlaymatId($resolved['playmat_id'] ?? ($body['playmat_id'] ?? '')),
+         'playmat_brightness' => tcgNormalizePlaymatBrightness($resolved['playmat_brightness'] ?? ($body['playmat_brightness'] ?? 1.0)),
          'deck_snapshot' => ['main_nos' => $resolved['main_nos'], 'energy_nos' => $resolved['energy_nos']]];
     // CPU seats must never inherit the human auth id (solo join reuses the session).
     $deckChoiceResolved = (string)($resolved['deck_choice'] ?? '');
@@ -611,6 +620,8 @@ function joinRoom(array $body): array {
          'deck_choice' => $resolved['deck_choice'], 'deck_label' => $resolved['deck_label'],
          'main_deck' => $mainDeck, 'energy_deck' => $energyDeck,
          'sleeve_id' => tcgNormalizeSleeveId($resolved['sleeve_id'] ?? ($body['sleeve_id'] ?? '')),
+         'playmat_id' => tcgNormalizePlaymatId($resolved['playmat_id'] ?? ($body['playmat_id'] ?? '')),
+         'playmat_brightness' => tcgNormalizePlaymatBrightness($resolved['playmat_brightness'] ?? ($body['playmat_brightness'] ?? 1.0)),
          'deck_snapshot' => ['main_nos' => $resolved['main_nos'], 'energy_nos' => $resolved['energy_nos']]];
     // Solo vs CPU: client joins p2 with deck=cpu using the same auth session as p1.
     // Never copy that discord_id onto the CPU seat or resign→CPU-win grants the CPU deck's missions.
@@ -1335,6 +1346,8 @@ function initPlayerState(array $p): array {
         'deck_snapshot'=> $p['deck_snapshot'] ?? null,
         'discord_id'   => $p['discord_id'] ?? null,
         'sleeve_id'    => tcgNormalizeSleeveId($p['sleeve_id'] ?? ''),
+        'playmat_id'   => tcgNormalizePlaymatId($p['playmat_id'] ?? ''),
+        'playmat_brightness' => tcgNormalizePlaymatBrightness($p['playmat_brightness'] ?? 1.0),
         'main_deck'    => $p['main_deck'],
         'energy_deck'  => $p['energy_deck'],
         'hand'         => [],
@@ -4246,6 +4259,8 @@ function rebuildRematchPlayer(array $old, array $cardsData): array {
         'energy_deck'   => $energyDeck,
         'deck_snapshot' => ['main_nos' => $mainNos, 'energy_nos' => $energyNos],
         'sleeve_id'     => tcgNormalizeSleeveId($old['sleeve_id'] ?? ''),
+        'playmat_id'    => tcgNormalizePlaymatId($old['playmat_id'] ?? ''),
+        'playmat_brightness' => tcgNormalizePlaymatBrightness($old['playmat_brightness'] ?? 1.0),
     ];
     // Keep signed-in identity so stamp/mission side effects still resolve after rematch.
     if (!empty($old['discord_id'])) {

@@ -1,0 +1,1264 @@
+{
+  "items": [
+    {
+      "id": "br-rm-65",
+      "name": "Vol.65 ラブライブ！サンシャイン!! 『1年生』",
+      "group": "Aqours",
+      "idol": "1st Years",
+      "vol": 65,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/25",
+      "src": "assets/playmats/br-rm-65.webp"
+    },
+    {
+      "id": "br-rm-64",
+      "name": "Vol.64 ラブライブ！サンシャイン!! 『2年生』",
+      "group": "Aqours",
+      "idol": "2nd Years",
+      "vol": 64,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/25",
+      "src": "assets/playmats/br-rm-64.webp"
+    },
+    {
+      "id": "br-rm-66",
+      "name": "Vol.66 ラブライブ！サンシャイン!! 『3年生』",
+      "group": "Aqours",
+      "idol": "3rd Years",
+      "vol": 66,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/25",
+      "src": "assets/playmats/br-rm-66.webp"
+    },
+    {
+      "id": "br-rmv2-269",
+      "name": "Vol.269 ラブライブ！サンシャイン!! 『高海千歌』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Chika",
+      "vol": 269,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-269.webp"
+    },
+    {
+      "id": "br-rmv2-272",
+      "name": "Vol.272 ラブライブ！サンシャイン!! 『黒澤ダイヤ』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Dia",
+      "vol": 272,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-272.webp"
+    },
+    {
+      "id": "br-rm-53",
+      "name": "Vol.53 ラブライブ！サンシャイン!! 『Aqours』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 53,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/20",
+      "src": "assets/playmats/br-rm-53.webp"
+    },
+    {
+      "id": "br-rm-69",
+      "name": "Vol.69 ラブライブ！サンシャイン!! 『Aqours』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 69,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/27",
+      "src": "assets/playmats/br-rm-69.webp"
+    },
+    {
+      "id": "br-rm-136",
+      "name": "Vol.136 ラブライブ！サンシャイン!! 『高海 千歌』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 136,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-136.webp"
+    },
+    {
+      "id": "br-rm-137",
+      "name": "Vol.137 ラブライブ！サンシャイン!! 『桜内 梨子』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 137,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-137.webp"
+    },
+    {
+      "id": "br-rm-138",
+      "name": "Vol.138 ラブライブ！サンシャイン!! 『松浦 果南』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 138,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-138.webp"
+    },
+    {
+      "id": "br-rm-139",
+      "name": "Vol.139 ラブライブ！サンシャイン!! 『黒澤 ダイヤ』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 139,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-139.webp"
+    },
+    {
+      "id": "br-rm-141",
+      "name": "Vol.141 ラブライブ！サンシャイン!! 『津島 善子』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 141,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-141.webp"
+    },
+    {
+      "id": "br-rm-142",
+      "name": "Vol.142 ラブライブ！サンシャイン!! 『国木田 花丸』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 142,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-142.webp"
+    },
+    {
+      "id": "br-rm-143",
+      "name": "Vol.143 ラブライブ！サンシャイン!! 『小原 鞠莉』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 143,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-143.webp"
+    },
+    {
+      "id": "br-rm-144",
+      "name": "Vol.144 ラブライブ！サンシャイン!! 『黒澤 ルビィ』",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 144,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-144.webp"
+    },
+    {
+      "id": "br-rm-377",
+      "name": "Vol.377 ラブライブ！サンシャイン!! 『高海 千歌』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 377,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-377.webp"
+    },
+    {
+      "id": "br-rm-378",
+      "name": "Vol.378 ラブライブ！サンシャイン!! 『桜内 梨子』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 378,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-378.webp"
+    },
+    {
+      "id": "br-rm-379",
+      "name": "Vol.379 ラブライブ！サンシャイン!! 『松浦 果南』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 379,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-379.webp"
+    },
+    {
+      "id": "br-rm-380",
+      "name": "Vol.380 ラブライブ！サンシャイン!! 『黒澤 ダイヤ』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 380,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-380.webp"
+    },
+    {
+      "id": "br-rm-382",
+      "name": "Vol.382 ラブライブ！サンシャイン!! 『津島 善子』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 382,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-382.webp"
+    },
+    {
+      "id": "br-rm-383",
+      "name": "Vol.383 ラブライブ！サンシャイン!! 『国木田 花丸』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 383,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-383.webp"
+    },
+    {
+      "id": "br-rm-384",
+      "name": "Vol.384 ラブライブ！サンシャイン!! 『小原 鞠莉』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 384,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-384.webp"
+    },
+    {
+      "id": "br-rm-385",
+      "name": "Vol.385 ラブライブ！サンシャイン!! 『黒澤 ルビィ』Part.2",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 385,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-385.webp"
+    },
+    {
+      "id": "br-rmv2-453",
+      "name": "Vol.453 『ラブライブ！サンシャイン!!』 スクフェスシリーズ感謝祭2022ver.",
+      "group": "Aqours",
+      "idol": "Group",
+      "vol": 453,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1851",
+      "src": "assets/playmats/br-rmv2-453.webp"
+    },
+    {
+      "id": "br-rmv2-275",
+      "name": "Vol.275 ラブライブ！サンシャイン!! 『国木田花丸』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Hanamaru",
+      "vol": 275,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-275.webp"
+    },
+    {
+      "id": "br-rmv2-271",
+      "name": "Vol.271 ラブライブ！サンシャイン!! 『松浦果南』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Kanan",
+      "vol": 271,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-271.webp"
+    },
+    {
+      "id": "br-rmv2-276",
+      "name": "Vol.276 ラブライブ！サンシャイン!! 『小原鞠莉』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Mari",
+      "vol": 276,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-276.webp"
+    },
+    {
+      "id": "br-rmv2-270",
+      "name": "Vol.270 ラブライブ！サンシャイン!! 『桜内梨子』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Riko",
+      "vol": 270,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-270.webp"
+    },
+    {
+      "id": "br-rmv2-277",
+      "name": "Vol.277 ラブライブ！サンシャイン!! 『黒澤ルビィ』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Ruby",
+      "vol": 277,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-277.webp"
+    },
+    {
+      "id": "br-rmv2-274",
+      "name": "Vol.274 ラブライブ！サンシャイン!! 『津島善子』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "Yoshiko",
+      "vol": 274,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-274.webp"
+    },
+    {
+      "id": "br-rm-140",
+      "name": "Vol.140 ラブライブ！サンシャイン!! 『渡辺 曜』",
+      "group": "Aqours",
+      "idol": "You",
+      "vol": 140,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/639",
+      "src": "assets/playmats/br-rm-140.webp"
+    },
+    {
+      "id": "br-rmv2-273",
+      "name": "Vol.273 ラブライブ！サンシャイン!! 『渡辺 曜』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Aqours",
+      "idol": "You",
+      "vol": 273,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1587",
+      "src": "assets/playmats/br-rmv2-273.webp"
+    },
+    {
+      "id": "br-rm-381",
+      "name": "Vol.381 ラブライブ！サンシャイン!! 『渡辺 曜』Part.2",
+      "group": "Aqours",
+      "idol": "You",
+      "vol": 381,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1029",
+      "src": "assets/playmats/br-rm-381.webp"
+    },
+    {
+      "id": "br-rmv2-1546",
+      "name": "Vol.1546 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『百生吟子』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Ginko",
+      "vol": 1546,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1546.webp"
+    },
+    {
+      "id": "br-rmv2-1548",
+      "name": "Vol.1548 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『安養寺姫芽』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Hime",
+      "vol": 1548,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1548.webp"
+    },
+    {
+      "id": "br-rmv2-1434",
+      "name": "Vol.1434 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『日野下花帆』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Kaho",
+      "vol": 1434,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1434.webp"
+    },
+    {
+      "id": "br-rmv2-1540",
+      "name": "Vol.1540 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『日野下花帆』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Kaho",
+      "vol": 1540,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1540.webp"
+    },
+    {
+      "id": "br-rmv2-1547",
+      "name": "Vol.1547 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『徒町小鈴』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Kosuzu",
+      "vol": 1547,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1547.webp"
+    },
+    {
+      "id": "br-rmv2-1436",
+      "name": "Vol.1436 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『乙宗 梢』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "vol": 1436,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1436.webp"
+    },
+    {
+      "id": "br-rmv2-1542",
+      "name": "Vol.1542 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『乙宗 梢』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Kozue",
+      "vol": 1542,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1542.webp"
+    },
+    {
+      "id": "br-rmv2-1439",
+      "name": "Vol.1439 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『藤島 慈』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Megumi",
+      "vol": 1439,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1439.webp"
+    },
+    {
+      "id": "br-rmv2-1545",
+      "name": "Vol.1545 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『藤島 慈』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Megumi",
+      "vol": 1545,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1545.webp"
+    },
+    {
+      "id": "br-rmv2-1438",
+      "name": "Vol.1438 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『大沢瑠璃乃』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Rurino",
+      "vol": 1438,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1438.webp"
+    },
+    {
+      "id": "br-rmv2-1544",
+      "name": "Vol.1544 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『大沢瑠璃乃』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Rurino",
+      "vol": 1544,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1544.webp"
+    },
+    {
+      "id": "br-rmv2-1435",
+      "name": "Vol.1435 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『村野さやか』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Sayaka",
+      "vol": 1435,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1435.webp"
+    },
+    {
+      "id": "br-rmv2-1541",
+      "name": "Vol.1541 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『村野さやか』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Sayaka",
+      "vol": 1541,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1541.webp"
+    },
+    {
+      "id": "br-rmv2-1437",
+      "name": "Vol.1437 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『夕霧綴理』Reバースver.",
+      "group": "Hasunosora",
+      "idol": "Tsuzuri",
+      "vol": 1437,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2559",
+      "src": "assets/playmats/br-rmv2-1437.webp"
+    },
+    {
+      "id": "br-rmv2-1543",
+      "name": "Vol.1543 ラブライブ！蓮ノ空女学院スクールアイドルクラブ 『夕霧綴理』Dream Believers ver.",
+      "group": "Hasunosora",
+      "idol": "Tsuzuri",
+      "vol": 1543,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/2650",
+      "src": "assets/playmats/br-rmv2-1543.webp"
+    },
+    {
+      "id": "br-rmv2-183",
+      "name": "Vol.183 ラブライブ！スーパースター!! 『嵐 千砂都』",
+      "group": "Liella",
+      "idol": "Chisato",
+      "vol": 183,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1536",
+      "src": "assets/playmats/br-rmv2-183.webp"
+    },
+    {
+      "id": "br-rmv2-580",
+      "name": "Vol.580 ラブライブ！スーパースター!! 『嵐 千砂都』 夏服ver.",
+      "group": "Liella",
+      "idol": "Chisato",
+      "vol": 580,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-580.webp"
+    },
+    {
+      "id": "br-rmv2-455",
+      "name": "Vol.455 『ラブライブ！スーパースター!!』 スクフェスシリーズ感謝祭2022ver.",
+      "group": "Liella",
+      "idol": "Group",
+      "vol": 455,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1851",
+      "src": "assets/playmats/br-rmv2-455.webp"
+    },
+    {
+      "id": "br-rmv2-181",
+      "name": "Vol.181 ラブライブ！スーパースター!! 『澁谷かのん』",
+      "group": "Liella",
+      "idol": "Kanon",
+      "vol": 181,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1536",
+      "src": "assets/playmats/br-rmv2-181.webp"
+    },
+    {
+      "id": "br-rmv2-578",
+      "name": "Vol.578 ラブライブ！スーパースター!! 『澁谷かのん』 夏服ver.",
+      "group": "Liella",
+      "idol": "Kanon",
+      "vol": 578,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-578.webp"
+    },
+    {
+      "id": "br-rmv2-182",
+      "name": "Vol.182 ラブライブ！スーパースター!! 『唐 可可』",
+      "group": "Liella",
+      "idol": "Keke",
+      "vol": 182,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1536",
+      "src": "assets/playmats/br-rmv2-182.webp"
+    },
+    {
+      "id": "br-rmv2-579",
+      "name": "Vol.579 ラブライブ！スーパースター!! 『唐 可可』 夏服ver.",
+      "group": "Liella",
+      "idol": "Keke",
+      "vol": 579,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-579.webp"
+    },
+    {
+      "id": "br-rmv2-583",
+      "name": "Vol.583 ラブライブ！スーパースター!! 『桜小路きな子』 夏服ver.",
+      "group": "Liella",
+      "idol": "Kinako",
+      "vol": 583,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-583.webp"
+    },
+    {
+      "id": "br-rmv2-584",
+      "name": "Vol.584 ラブライブ！スーパースター!! 『米女メイ』 夏服ver.",
+      "group": "Liella",
+      "idol": "Mei",
+      "vol": 584,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-584.webp"
+    },
+    {
+      "id": "br-rmv2-586",
+      "name": "Vol.586 ラブライブ！スーパースター!! 『鬼塚夏美』 夏服ver.",
+      "group": "Liella",
+      "idol": "Natsumi",
+      "vol": 586,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-586.webp"
+    },
+    {
+      "id": "br-rmv2-185",
+      "name": "Vol.185 ラブライブ！スーパースター!! 『葉月 恋』",
+      "group": "Liella",
+      "idol": "Ren",
+      "vol": 185,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1536",
+      "src": "assets/playmats/br-rmv2-185.webp"
+    },
+    {
+      "id": "br-rmv2-582",
+      "name": "Vol.582 ラブライブ！スーパースター!! 『葉月 恋』 夏服ver.",
+      "group": "Liella",
+      "idol": "Ren",
+      "vol": 582,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-582.webp"
+    },
+    {
+      "id": "br-rmv2-585",
+      "name": "Vol.585 ラブライブ！スーパースター!! 『若菜四季』 夏服ver.",
+      "group": "Liella",
+      "idol": "Shiki",
+      "vol": 585,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-585.webp"
+    },
+    {
+      "id": "br-rmv2-184",
+      "name": "Vol.184 ラブライブ！スーパースター!! 『平安名すみれ』",
+      "group": "Liella",
+      "idol": "Sumire",
+      "vol": 184,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1536",
+      "src": "assets/playmats/br-rmv2-184.webp"
+    },
+    {
+      "id": "br-rmv2-581",
+      "name": "Vol.581 ラブライブ！スーパースター!! 『平安名すみれ』 夏服ver.",
+      "group": "Liella",
+      "idol": "Sumire",
+      "vol": 581,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
+      "src": "assets/playmats/br-rmv2-581.webp"
+    },
+    {
+      "id": "br-rmv2-71",
+      "name": "Vol.71 ラブライブ！ 『絢瀬絵里』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Eli",
+      "vol": 71,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-71.webp"
+    },
+    {
+      "id": "br-rm-9",
+      "name": "Vol.9 『ラブライブ！』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 9,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/4",
+      "src": "assets/playmats/br-rm-9.webp"
+    },
+    {
+      "id": "br-rm-37",
+      "name": "Vol.37 ラブライブ！ 『高坂 穂乃果』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 37,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-37.webp"
+    },
+    {
+      "id": "br-rm-38",
+      "name": "Vol.38 ラブライブ！ 『絢瀬 絵里』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 38,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-38.webp"
+    },
+    {
+      "id": "br-rm-40",
+      "name": "Vol.40 ラブライブ！ 『園田 海未』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 40,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-40.webp"
+    },
+    {
+      "id": "br-rm-42",
+      "name": "Vol.42 ラブライブ！ 『西木野 真姫』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 42,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-42.webp"
+    },
+    {
+      "id": "br-rm-44",
+      "name": "Vol.44 ラブライブ！ 『小泉 花陽』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 44,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-44.webp"
+    },
+    {
+      "id": "br-rm-45",
+      "name": "Vol.45 ラブライブ！ 『矢澤 にこ』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 45,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-45.webp"
+    },
+    {
+      "id": "br-rm-46",
+      "name": "Vol.46 ラブライブ！ 『&mu;'s』",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 46,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/16",
+      "src": "assets/playmats/br-rm-46.webp"
+    },
+    {
+      "id": "br-rm-368",
+      "name": "Vol.368 ラブライブ！ 『高坂 穂乃果』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 368,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-368.webp"
+    },
+    {
+      "id": "br-rm-369",
+      "name": "Vol.369 ラブライブ！ 『絢瀬 絵里』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 369,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-369.webp"
+    },
+    {
+      "id": "br-rm-371",
+      "name": "Vol.371 ラブライブ！ 『園田 海未』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 371,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-371.webp"
+    },
+    {
+      "id": "br-rm-373",
+      "name": "Vol.373 ラブライブ！ 『西木野 真姫』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 373,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-373.webp"
+    },
+    {
+      "id": "br-rm-375",
+      "name": "Vol.375 ラブライブ！ 『小泉 花陽』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 375,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-375.webp"
+    },
+    {
+      "id": "br-rm-376",
+      "name": "Vol.376 ラブライブ！ 『矢澤 にこ』Part.2",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 376,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-376.webp"
+    },
+    {
+      "id": "br-rmv2-452",
+      "name": "Vol.452 『ラブライブ！』 スクフェスシリーズ感謝祭2022ver.",
+      "group": "Muse",
+      "idol": "Group",
+      "vol": 452,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1851",
+      "src": "assets/playmats/br-rmv2-452.webp"
+    },
+    {
+      "id": "br-rmv2-77",
+      "name": "Vol.77 ラブライブ！ 『小泉花陽』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Hanayo",
+      "vol": 77,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-77.webp"
+    },
+    {
+      "id": "br-rmv2-70",
+      "name": "Vol.70 ラブライブ！ 『高坂穂乃果』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Honoka",
+      "vol": 70,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-70.webp"
+    },
+    {
+      "id": "br-rm-39",
+      "name": "Vol.39 ラブライブ！ 『南 ことり』",
+      "group": "Muse",
+      "idol": "Kotori",
+      "vol": 39,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-39.webp"
+    },
+    {
+      "id": "br-rmv2-72",
+      "name": "Vol.72 ラブライブ！ 『南 ことり』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Kotori",
+      "vol": 72,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-72.webp"
+    },
+    {
+      "id": "br-rm-370",
+      "name": "Vol.370 ラブライブ！ 『南 ことり』Part.2",
+      "group": "Muse",
+      "idol": "Kotori",
+      "vol": 370,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-370.webp"
+    },
+    {
+      "id": "br-rmv2-75",
+      "name": "Vol.75 ラブライブ！ 『西木野真姫』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Maki",
+      "vol": 75,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-75.webp"
+    },
+    {
+      "id": "br-rmv2-78",
+      "name": "Vol.78 ラブライブ！ 『矢澤にこ』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Nico",
+      "vol": 78,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-78.webp"
+    },
+    {
+      "id": "br-rm-43",
+      "name": "Vol.43 ラブライブ！ 『東條 希』",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "vol": 43,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-43.webp"
+    },
+    {
+      "id": "br-rmv2-76",
+      "name": "Vol.76 ラブライブ！ 『東條 希』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "vol": 76,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-76.webp"
+    },
+    {
+      "id": "br-rm-374",
+      "name": "Vol.374 ラブライブ！ 『東條 希』Part.2",
+      "group": "Muse",
+      "idol": "Nozomi",
+      "vol": 374,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-374.webp"
+    },
+    {
+      "id": "br-rm-41",
+      "name": "Vol.41 ラブライブ！ 『星空 凛』",
+      "group": "Muse",
+      "idol": "Rin",
+      "vol": 41,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/15",
+      "src": "assets/playmats/br-rm-41.webp"
+    },
+    {
+      "id": "br-rmv2-74",
+      "name": "Vol.74 ラブライブ！ 『星空 凛』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Rin",
+      "vol": 74,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-74.webp"
+    },
+    {
+      "id": "br-rm-372",
+      "name": "Vol.372 ラブライブ！ 『星空 凛』Part.2",
+      "group": "Muse",
+      "idol": "Rin",
+      "vol": 372,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1028",
+      "src": "assets/playmats/br-rm-372.webp"
+    },
+    {
+      "id": "br-rmv2-73",
+      "name": "Vol.73 ラブライブ！ 『園田海未』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Muse",
+      "idol": "Umi",
+      "vol": 73,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1461",
+      "src": "assets/playmats/br-rmv2-73.webp"
+    },
+    {
+      "id": "br-rmv2-5",
+      "name": "Vol.5 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『宮下 愛』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "vol": 5,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-5.webp"
+    },
+    {
+      "id": "br-rm-616",
+      "name": "Vol.616 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『宮下 愛』",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "vol": 616,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-616.webp"
+    },
+    {
+      "id": "br-rmv2-724",
+      "name": "Vol.724 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『宮下 愛』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Ai",
+      "vol": 724,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-724.webp"
+    },
+    {
+      "id": "br-rmv2-1",
+      "name": "Vol.1 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『上原歩夢』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "vol": 1,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-1.webp"
+    },
+    {
+      "id": "br-rm-612",
+      "name": "Vol.612 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『上原歩夢』",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "vol": 612,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-612.webp"
+    },
+    {
+      "id": "br-rmv2-720",
+      "name": "Vol.720 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『上原歩夢』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Ayumu",
+      "vol": 720,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-720.webp"
+    },
+    {
+      "id": "br-rmv2-8",
+      "name": "Vol.8 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『エマ・ヴェルデ』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "vol": 8,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-8.webp"
+    },
+    {
+      "id": "br-rm-619",
+      "name": "Vol.619 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『エマ・ヴェルデ』",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "vol": 619,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-619.webp"
+    },
+    {
+      "id": "br-rmv2-727",
+      "name": "Vol.727 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『エマ・ヴェルデ』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Emma",
+      "vol": 727,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-727.webp"
+    },
+    {
+      "id": "br-rmv2-328",
+      "name": "Vol.328 『ラブライブ！虹ヶ咲学園スクールアイドル同好会』",
+      "group": "Nijigasaki",
+      "idol": "Group",
+      "vol": 328,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1628",
+      "src": "assets/playmats/br-rmv2-328.webp"
+    },
+    {
+      "id": "br-rmv2-454",
+      "name": "Vol.454 『ラブライブ！虹ヶ咲学園スクールアイドル同好会』 スクフェスシリーズ感謝祭2022ver.",
+      "group": "Nijigasaki",
+      "idol": "Group",
+      "vol": 454,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1851",
+      "src": "assets/playmats/br-rmv2-454.webp"
+    },
+    {
+      "id": "br-rmv2-6",
+      "name": "Vol.6 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『近江彼方』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "vol": 6,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-6.webp"
+    },
+    {
+      "id": "br-rm-617",
+      "name": "Vol.617 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『近江彼方』",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "vol": 617,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-617.webp"
+    },
+    {
+      "id": "br-rmv2-725",
+      "name": "Vol.725 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『近江彼方』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Kanata",
+      "vol": 725,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-725.webp"
+    },
+    {
+      "id": "br-rmv2-4",
+      "name": "Vol.4 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『朝香果林』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "vol": 4,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-4.webp"
+    },
+    {
+      "id": "br-rm-615",
+      "name": "Vol.615 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『朝香果林』",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "vol": 615,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-615.webp"
+    },
+    {
+      "id": "br-rmv2-723",
+      "name": "Vol.723 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『朝香果林』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Karin",
+      "vol": 723,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-723.webp"
+    },
+    {
+      "id": "br-rmv2-2",
+      "name": "Vol.2 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "vol": 2,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-2.webp"
+    },
+    {
+      "id": "br-rm-613",
+      "name": "Vol.613 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "vol": 613,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-613.webp"
+    },
+    {
+      "id": "br-rmv2-721",
+      "name": "Vol.721 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『中須かすみ』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Kasumi",
+      "vol": 721,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-721.webp"
+    },
+    {
+      "id": "br-rmv2-731",
+      "name": "Vol.731 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『鐘 嵐珠』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Lanzhu",
+      "vol": 731,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-731.webp"
+    },
+    {
+      "id": "br-rmv2-730",
+      "name": "Vol.730 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『ミア・テイラー』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Mia",
+      "vol": 730,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-730.webp"
+    },
+    {
+      "id": "br-rmv2-9",
+      "name": "Vol.9 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『天王寺璃奈』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "vol": 9,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-9.webp"
+    },
+    {
+      "id": "br-rm-620",
+      "name": "Vol.620 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『天王寺璃奈』",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "vol": 620,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-620.webp"
+    },
+    {
+      "id": "br-rmv2-728",
+      "name": "Vol.728 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『天王寺璃奈』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Rina",
+      "vol": 728,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-728.webp"
+    },
+    {
+      "id": "br-rmv2-7",
+      "name": "Vol.7 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『優木せつ菜』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "vol": 7,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-7.webp"
+    },
+    {
+      "id": "br-rm-618",
+      "name": "Vol.618 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『優木せつ菜』",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "vol": 618,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-618.webp"
+    },
+    {
+      "id": "br-rmv2-726",
+      "name": "Vol.726 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『優木せつ菜』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Setsuna",
+      "vol": 726,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-726.webp"
+    },
+    {
+      "id": "br-rmv2-10",
+      "name": "Vol.10 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『三船栞子』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Shioriko",
+      "vol": 10,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-10.webp"
+    },
+    {
+      "id": "br-rmv2-729",
+      "name": "Vol.729 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『三船栞子』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Shioriko",
+      "vol": 729,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-729.webp"
+    },
+    {
+      "id": "br-rmv2-3",
+      "name": "Vol.3 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』 スクフェスシリーズ感謝祭2020ver.",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "vol": 3,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1386",
+      "src": "assets/playmats/br-rmv2-3.webp"
+    },
+    {
+      "id": "br-rm-614",
+      "name": "Vol.614 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "vol": 614,
+      "line": "ex_rm",
+      "listing_url": "https://bushiroad.com/products/ex_rm/1233",
+      "src": "assets/playmats/br-rm-614.webp"
+    },
+    {
+      "id": "br-rmv2-722",
+      "name": "Vol.722 ラブライブ！虹ヶ咲学園スクールアイドル同好会 『桜坂しずく』 ソロアイドル衣装Vol.2ver.",
+      "group": "Nijigasaki",
+      "idol": "Shizuku",
+      "vol": 722,
+      "line": "ex_rm_v2",
+      "listing_url": "https://bushiroad.com/products/ex_rm_v2/1928",
+      "src": "assets/playmats/br-rmv2-722.webp"
+    }
+  ]
+}
