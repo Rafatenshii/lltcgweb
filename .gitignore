@@ -37,6 +37,8 @@ exports/*
 !/assets/ui/**
 !/assets/sleeves/
 !/assets/sleeves/**
+!/assets/playmats/
+!/assets/playmats/**
 # Small booster box picker thumbs (compressed from official art)
 !/assets/packs/
 !/assets/packs/boxes/
@@ -47,6 +49,8 @@ exports/*
 /titles/**
 # Local TCGPlayer sleeve art dumps (not for deploy/git)
 /Sleeves/
+# Local Bushiroad playmat art dumps (not for deploy/git)
+/Playmats/
 
 # Root-level art (playmat, card back, logo, calibration scratch)
 /*.png
@@ -84,6 +88,9 @@ sfx_manifest.json
 !/scripts/gen_booster_box_thumbs.py
 !/scripts/gen_launcher_icons.py
 !/scripts/audit_cpu_prompts.py
+!/scripts/download_bushiroad_playmats.py
+!/scripts/build_playmat_catalog.py
+!/scripts/validate_playmats_catalog.py
 audit_tutorial_browser.js
 build_tutorial.php
 build_tutorial.py
