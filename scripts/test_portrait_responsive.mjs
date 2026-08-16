@@ -306,16 +306,18 @@ if (!portraitCss.includes('hc-live-place') || !shellCss.includes('hc-live-place'
   ok('hc-live-place styles present');
 }
 
-if (!portraitCss.includes('--p-hand-visible: 5') || !portraitCss.includes('html.tcg-portrait-play.tcg-android')) {
-  fail('Android portrait must use five visible hand slots');
+if (!portraitCss.includes('--p-hand-visible: 5')
+    || /--p-hand-visible:\s*6/.test(portraitCss)
+    || /tcg-android[^{]*\{[^}]*--p-hand-visible/.test(portraitCss)) {
+  fail('portrait play must default to five visible hand slots for all mobile layouts');
 } else {
-  ok('Android portrait CSS uses five visible hand slots');
+  ok('portrait CSS defaults to five visible hand slots');
 }
 
-if (!indexSrc.includes('const visible = android ? 5 : 6') || !boardJs.includes('cardSlots')) {
-  fail('hand fan / portrait-board must pack five cards on Android');
+if (!indexSrc.includes('const visible = 5') || !boardJs.includes('const cardSlots = 5')) {
+  fail('hand fan / portrait-board must pack five cards in portrait');
 } else {
-  ok('hand fan packs five cards on Android');
+  ok('hand fan packs five cards in portrait');
 }
 
 if (process.exitCode) {
