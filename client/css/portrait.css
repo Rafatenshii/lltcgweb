@@ -2877,7 +2877,11 @@ html.tcg-portrait-play.tcg-low-end #portrait-zone-preview.pb-zone-preview{
    Handle peeks on the right; open slides the tray left.
    Overlay only — board geometry does not reflow.
    ═══════════════════════════════════════════ */
+#portrait-deck-drawers.pb-deck-drawers{
+  display:none!important;
+}
 html.tcg-portrait-play #portrait-deck-drawers.pb-deck-drawers{
+  display:block!important;
   position:fixed;
   inset:0;
   z-index:48;

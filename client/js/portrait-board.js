@@ -323,6 +323,12 @@
     root.style.removeProperty('--p-card-w-opp');
 
     try {
+      if (typeof global.tcgPortraitRemoveDeckDrawers === 'function') {
+        global.tcgPortraitRemoveDeckDrawers();
+      }
+    } catch (_) { /* ignore */ }
+
+    try {
       if (typeof global.tcgPortraitUnmountDeckChrome === 'function') {
         global.tcgPortraitUnmountDeckChrome();
       }

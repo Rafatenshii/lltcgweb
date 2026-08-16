@@ -364,6 +364,13 @@
     return root;
   }
 
+  function removeDeckDrawers() {
+    const root = global.document.getElementById('portrait-deck-drawers');
+    if (!root) return false;
+    root.remove();
+    return true;
+  }
+
   function closeDeckDrawer(side) {
     const root = global.document.getElementById('portrait-deck-drawers');
     if (!root) return false;
@@ -1195,6 +1202,7 @@
   global.tcgPortraitSyncMenu = syncPortraitMenuForMode;
   global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;
   global.tcgPortraitEnsureDeckDrawers = ensureDeckDrawers;
+  global.tcgPortraitRemoveDeckDrawers = removeDeckDrawers;
   global.tcgPortraitSyncDeckDrawers = syncDeckDrawerCounts;
   global.tcgPortraitSyncWinCounts = syncPortraitWinCounts;
   global.tcgPortraitOpenDeckDrawer = openDeckDrawer;
