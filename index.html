@@ -14603,7 +14603,9 @@ async function startCasualSearch() {
   try {
     if (isSignedInAccount() && A.rankedSearching) await cancelRankedSearch();
     await ensureLobbyExperimentDeckReady();
+    const deckKey = currentLobbyDeckChoiceKey();
     const res = await apiPost('casual_join', casualJoinPayload());
+    noteMatchStartDeckChoice(deckKey);
     if (res.match?.status === 'matched') {
       if (res.queue_stats) updateCasualQueueStats(res.queue_stats);
       await enterCasualMatch(res.match);
@@ -18208,11 +18210,17 @@ function renderLobbyDeckOptions(opts = {}) {
     chosen = prev;
   } else if (remembered && values.includes(remembered)) {
     chosen = remembered;
+  } else if (prev && (prev.startsWith('preset:') || prev.startsWith('experiment'))) {
+    // Preset/experiment temporarily missing from options (deck list still loading).
+    // Do not fall back to the first starter — that poisons rematch / remembered deck.
+    chosen = '';
   } else {
     chosen = values[0] || '';
   }
-  if (chosen) sel.value = chosen;
-  if (chosen) rememberLobbyDeckForMode(mode, chosen);
+  if (chosen) {
+    sel.value = chosen;
+    rememberLobbyDeckForMode(mode, chosen);
+  }
   syncLobbyExperimentField();
   updateDeckPrev();
   const expBtn = el('btn-lobby-deck-experiment');
@@ -18398,6 +18406,54 @@ function lobbyDeckPayload() {
   return { game_mode: mode, ...deckPart };
 }
 
+/** Lobby key used for create/join (may differ from #sel-deck when Free password is typed). */
+function currentLobbyDeckChoiceKey() {
+  const mode = currentGameMode();
+  if (isRandomizedGameMode(mode)) return 'random';
+  const lobbyPwd = normalizeExperimentPasswordInput(el('inp-lobby-experiment-pwd')?.value);
+  if (isFreeGameMode(mode) && lobbyPwd) return 'experiment:' + lobbyPwd;
+  return String(el('sel-deck')?.value || '').trim();
+}
+
+function noteMatchStartDeckChoice(choice) {
+  const v = String(choice || '').trim();
+  if (!v || v === 'cpu' || v.startsWith('cpu:')) return;
+  G.matchStartDeckChoice = v;
+  try {
+    rememberLobbyDeckForMode(currentGameMode(), v);
+  } catch (e) { /* ignore */ }
+}
+
+function isCpuDeckChoiceKey(choice) {
+  const v = String(choice || '').trim();
+  return !v || v === 'cpu' || v.startsWith('cpu:');
+}
+
+/** Prefer the deck this match actually started with; lobby #sel-deck can drift mid-match. */
+function resolveRematchDeckChoice(s) {
+  const myId = G.playerId || s?.my_id || 'p1';
+  const me = s?.players?.[myId];
+  const server = String(me?.deck_choice || '').trim();
+  const lobby = String(el('sel-deck')?.value || '').trim();
+  const started = String(G.matchStartDeckChoice || '').trim();
+  const mode = s?.game_mode || currentGameMode();
+  const remembered = String(rememberedLobbyDeckForMode(mode) || '').trim();
+
+  const lobbyRicherExperiment = (lob, srv) => {
+    if (!lob) return false;
+    if (lob.startsWith('experiment:') && (!srv || srv === 'experiment' || !String(srv).includes(':'))) return true;
+    if (lob.startsWith('experiment_preset:') && (!srv || srv === 'experiment_preset' || srv === 'experiment')) return true;
+    return false;
+  };
+
+  if (started && !isCpuDeckChoiceKey(started)) return started;
+  if (lobbyRicherExperiment(lobby, server)) return lobby;
+  if (server && !isCpuDeckChoiceKey(server)) return server;
+  if (lobby && !isCpuDeckChoiceKey(lobby)) return lobby;
+  if (remembered && !isCpuDeckChoiceKey(remembered)) return remembered;
+  return 'nijigasaki';
+}
+
 function phaseTimerOptsFromCfg(cfg) {
   if (!cfg) return lobbyPhaseTimerOpts();
   const enabled = !!cfg.enabled;
@@ -18452,9 +18508,7 @@ function captureRematchSettings(s) {
     cpuSolo: !!(s.cpu_solo || G.isCPU),
     cpuDifficulty: cpuDiff,
     name: me?.name || el('inp-name')?.value?.trim() || defaultPlayerName(1),
-    // Prefer lobby selection so Free rematch keeps experiment_preset:/experiment: keys
-    // (server may store a generic "experiment" choice after inline resolve).
-    deckChoice: el('sel-deck')?.value || me?.deck_choice || 'nijigasaki',
+    deckChoice: resolveRematchDeckChoice(s),
     gameMode: s.game_mode || currentGameMode(),
     phaseTimer: s.phase_timer_cfg ? { ...s.phase_timer_cfg } : null,
   };
@@ -18505,6 +18559,12 @@ function applyRematchToLobbyUI(rematch) {
   if (sel && rematch.deckChoice) {
     const v = rematch.deckChoice;
     if ([...sel.options].some(o => o.value === v)) sel.value = v;
+    else if (v.startsWith('experiment:')) {
+      const pwd = normalizeExperimentPasswordInput(v.slice(11));
+      const inp = el('inp-lobby-experiment-pwd');
+      if (inp && pwd) inp.value = pwd;
+    }
+    rememberLobbyDeckForMode(rematch.gameMode || currentGameMode(), v);
     updateDeckPrev();
   }
   if (rematch.cpuDifficulty) setCpuDifficulty(rematch.cpuDifficulty, { persist: false });
@@ -18545,10 +18605,11 @@ function cpuOpponentName() {
 
 async function startSoloRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
-  applyRematchToLobbyUI(rematch);
   await ensureLobbyExperimentDeckReady();
+  applyRematchToLobbyUI(rematch);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
   const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
+  noteMatchStartDeckChoice(deckSel);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
   if (typeof stopPoll === 'function') stopPoll();
@@ -18572,14 +18633,16 @@ async function startSoloRematch(rematch) {
 
 async function startUnrankedRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
-  applyRematchToLobbyUI(rematch);
   await ensureLobbyExperimentDeckReady();
+  applyRematchToLobbyUI(rematch);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
+  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
+  noteMatchStartDeckChoice(deckSel);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   const r = await apiPost('create_room', {
     name,
     game_mode: currentGameMode(),
-    ...deckPayloadFromChoice(rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki'),
+    ...deckPayloadFromChoice(deckSel),
     ...timerOpts,
   });
   G.roomId = r.room_id; G.token = r.player_token; G.playerId = r.player_id; G.isCPU = false;
@@ -18757,7 +18820,9 @@ async function doCreate() {
     if (typeof stopPoll === 'function') stopPoll();
     if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
     await ensureLobbyExperimentDeckReady();
+    const deckKey = currentLobbyDeckChoiceKey();
     const r = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
+    noteMatchStartDeckChoice(deckKey);
     G.roomId=r.room_id; G.token=r.player_token; G.playerId=r.player_id; G.isCPU=false;
     captureSyncMeta(r);
     el('disp-code').textContent=r.room_id;
@@ -18776,7 +18841,9 @@ async function doJoin() {
   setErr(''); G.roomId=code;
   try {
     await ensureLobbyExperimentDeckReady();
+    const deckKey = currentLobbyDeckChoiceKey();
     const r = await apiPost('join_room',{room_id:code,name,...lobbyDeckPayload()});
+    noteMatchStartDeckChoice(deckKey);
     G.token=r.player_token; G.playerId=r.player_id; G.isCPU=false;
     captureSyncMeta(r);
     showScr('game'); startPoll();
@@ -18802,7 +18869,9 @@ async function doSolo() {
     if (typeof stopPoll === 'function') stopPoll();
     if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
     await ensureLobbyExperimentDeckReady();
+    const deckKey = currentLobbyDeckChoiceKey();
     const r1 = await apiPost('create_room',{name,...lobbyDeckPayload(),...timerOpts});
+    noteMatchStartDeckChoice(deckKey);
     G.roomId=r1.room_id; G.token=r1.player_token; G.playerId='p1'; G.isCPU=true;
     captureSyncMeta(r1);
     const r2 = await apiPost('join_room', {
@@ -30633,6 +30702,7 @@ function freshGameGlobals() {
   return {
     roomId:null, token:null, cpuToken:null, playerId:null, isCPU:false, casualRandomMatch:false, cpuDifficulty:'easy',
     gameState:null, allCards:G.allCards, starterDecks:G.starterDecks,
+    matchStartDeckChoice: G.matchStartDeckChoice || null,
     lastSeq:0, polling:false, pollTimer:null, _gameSessionEpoch:nextEpoch,
     syncEnabled:null, syncTicket:null, syncEventSource:null,
     presenceTimer:null, syncFallbackTimer:null, _syncReconnectTimer:null, _syncPullTimer:null, _syncFailCount:0,
@@ -30891,7 +30961,7 @@ async function onWinPlayAgain() {
     cpuSolo: !G.lastFinishedPvp,
     cpuDifficulty: G.cpuDifficulty || 'easy',
     name: el('inp-name')?.value?.trim() || defaultPlayerName(1),
-    deckChoice: el('sel-deck')?.value || 'nijigasaki',
+    deckChoice: G.matchStartDeckChoice || el('sel-deck')?.value || 'nijigasaki',
     phaseTimer: null,
   };
   if (isFriendPvpRematchEligible(rematch) && G.roomId && G.token) {
