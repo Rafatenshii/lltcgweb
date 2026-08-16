@@ -8266,6 +8266,8 @@
     loc.playmatShop.coinsAria = loc.playmatShop.coinsAria || 'Coins';
     loc.playmatShop.owned = loc.playmatShop.owned || 'Owned';
     loc.playmatShop.hoverEmpty = loc.playmatShop.hoverEmpty || 'Hover a playmat to preview';
+    loc.playmatShop.previewOpen = loc.playmatShop.previewOpen || 'View full size';
+    loc.playmatShop.previewClose = loc.playmatShop.previewClose || 'Playmat preview — tap to close';
     loc.deck = loc.deck || {};
     loc.deck.playmat = loc.deck.playmat || 'Playmat';
     loc.deck.playmatNone = loc.deck.playmatNone || 'Default';

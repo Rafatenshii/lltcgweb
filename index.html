@@ -107,7 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=71">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
-<link rel="stylesheet" href="client/css/playmats.css?v=2">
+<link rel="stylesheet" href="client/css/playmats.css?v=3">
 <link rel="stylesheet" href="client/css/portrait.css?v=74">
 
 </head>
@@ -1009,7 +1009,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <div id="playmat-shop-mats-view" hidden>
             <button class="btn-ghost" id="btn-playmat-shop-chars-back" type="button" data-i18n="playmatShop.backChars">← Characters</button>
             <p class="hub-stat" id="playmat-shop-char-name"></p>
-            <div class="sleeve-shop-grid" id="playmat-shop-grid"></div>
+            <div class="sleeve-shop-grid playmat-shop-grid" id="playmat-shop-grid"></div>
           </div>
         </div>
       </div>
@@ -6568,6 +6568,7 @@ function clearPlaymatShopHover() {
   if (img) {
     img.removeAttribute('src');
     img.classList.remove('show');
+    img.onclick = null;
   }
 }
 
@@ -6578,6 +6579,61 @@ function showPlaymatShopHover(src) {
   img.src = src;
   img.classList.add('show');
   panel.classList.add('has-preview');
+  img.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openPlaymatShopLightbox(src);
+  };
+}
+
+function ensurePlaymatShopLightbox() {
+  let lb = el('playmat-shop-lightbox');
+  if (lb) return lb;
+  lb = document.createElement('div');
+  lb.id = 'playmat-shop-lightbox';
+  lb.className = 'playmat-shop-lightbox';
+  lb.hidden = true;
+  lb.setAttribute('role', 'dialog');
+  lb.setAttribute('aria-modal', 'true');
+  lb.setAttribute('aria-hidden', 'true');
+  lb.setAttribute('aria-label', tOr('playmatShop.previewClose', 'Playmat preview — tap to close'));
+  const frame = document.createElement('div');
+  frame.className = 'playmat-shop-lightbox__frame';
+  frame.setAttribute('aria-hidden', 'true');
+  lb.appendChild(frame);
+  lb.addEventListener('click', () => closePlaymatShopLightbox());
+  document.body.appendChild(lb);
+  if (!window._playmatShopLightboxEscBound) {
+    window._playmatShopLightboxEscBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePlaymatShopLightbox();
+    });
+  }
+  return lb;
+}
+
+function openPlaymatShopLightbox(src) {
+  if (!src) return;
+  const lb = ensurePlaymatShopLightbox();
+  const frame = lb.querySelector('.playmat-shop-lightbox__frame');
+  if (!frame) return;
+  frame.style.backgroundImage = 'url("' + String(src).replace(/"/g, '\\"') + '")';
+  lb.hidden = false;
+  lb.classList.add('open');
+  lb.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('playmat-shop-lightbox-open');
+}
+
+function closePlaymatShopLightbox() {
+  const lb = el('playmat-shop-lightbox');
+  if (!lb || !lb.classList.contains('open')) return false;
+  lb.classList.remove('open');
+  lb.hidden = true;
+  lb.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('playmat-shop-lightbox-open');
+  const frame = lb.querySelector('.playmat-shop-lightbox__frame');
+  if (frame) frame.style.backgroundImage = '';
+  return true;
 }
 
 async function loadShopHubScreen() {
@@ -6727,8 +6783,25 @@ function renderPlaymatShopGrid(mats) {
     art.className = 'sleeve-shop-tile__art is-playmat playmat-shop-tile__art';
     const src = String(m.src || '');
     art.style.backgroundImage = 'url("' + src.replace(/"/g, '\\"') + '")';
+    art.tabIndex = 0;
+    art.setAttribute('role', 'button');
+    art.setAttribute('aria-label', (window.LLTCG_PLAYMATS?.displayName?.(m) || m.name || m.id || 'Playmat')
+      + ' — ' + (tOr('playmatShop.previewOpen', 'View full size')));
     art.addEventListener('mouseenter', () => showPlaymatShopHover(src));
     art.addEventListener('mouseleave', () => clearPlaymatShopHover());
+    art.addEventListener('focus', () => showPlaymatShopHover(src));
+    art.addEventListener('blur', () => clearPlaymatShopHover());
+    art.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openPlaymatShopLightbox(src);
+    });
+    art.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openPlaymatShopLightbox(src);
+      }
+    });
     const label = document.createElement('div');
     label.className = 'sleeve-shop-tile__name';
     label.textContent = window.LLTCG_PLAYMATS?.displayName?.(m) || m.name || m.id;
