@@ -29,6 +29,13 @@
     return '';
   }
 
+  function coinIconHtml(size) {
+    const px = Number(size) || 16;
+    return '<img src="assets/ui/llsifas-gold-coin.webp" alt="" aria-hidden="true" width="'
+      + px + '" height="' + px + '" style="width:' + px + 'px;height:' + px
+      + 'px;object-fit:contain;display:block">';
+  }
+
   function overlayEl() {
     return el('overlay-missions');
   }
@@ -106,8 +113,10 @@
         + progressBit + ' · ' + missionStatusLabel(m.status);
     }
     if (m.reward_type === 'coins_and_pr_pack') {
-      return (t('missions.rewardCoinsAndPrPack', { coins: Number(m.reward || 0) })
-        || ('+' + Number(m.reward || 0).toLocaleString() + ' Coins · PR Pack'))
+      const prLabel = t('loginBonus.reward.prPack') || 'PR Pack';
+      return '+' + Number(m.reward || 0).toLocaleString()
+        + ' <span class="star-gem-inline">' + coinIconHtml(16) + '</span>'
+        + ' · ' + prLabel
         + ' · ' + missionStatusLabel(m.status);
     }
     return '+' + Number(m.reward || 0).toLocaleString()
