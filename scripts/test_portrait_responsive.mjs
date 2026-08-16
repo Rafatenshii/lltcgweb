@@ -275,6 +275,37 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   }
 }
 
+for (const needle of [
+  'function tcgIsAndroidClient',
+  'enableLongPressInspect',
+  'Android portrait: upward slide starts member drag',
+  'syncAndroidLivePlaceAction',
+  'hc-live-place',
+  'game.placeLiveCard',
+  'game.placeLiveCards',
+]) {
+  if (!indexSrc.includes(needle)) fail(`missing Android gesture/live helper: ${needle}`);
+  else ok(`source has ${needle}`);
+}
+
+if (!indexSrc.includes('enableLongPressInspect = android || !portrait')) {
+  fail('Android must keep long-press inspect even in portrait');
+} else {
+  ok('Android long-press inspect stays enabled in portrait');
+}
+
+if (!indexSrc.includes('Android: raise is visual-only')) {
+  fail('Android raise must skip opening the info sheet');
+} else {
+  ok('Android raise skips the info sheet');
+}
+
+if (!portraitCss.includes('hc-live-place') || !shellCss.includes('hc-live-place')) {
+  fail('hc-live-place styles missing from portrait/shell CSS');
+} else {
+  ok('hc-live-place styles present');
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);
