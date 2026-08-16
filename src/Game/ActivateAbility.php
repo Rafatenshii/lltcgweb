@@ -759,7 +759,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         clearMemberWait($played);
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $p['stage'][$slot] = $played;
-        notifyMemberEnteredStage($state, $pid, $played);
+        // Stage play counted inside resolveOnEnterAbilities → notifyMemberEnteredStage.
         $state = resolveOnEnterAbilities($state, $pid, $played, $slot);
         $state = addLog($state, $state['players'][$pid]['name'] .
             ' — [' . ($leavingMember['name_en'] ?? $leavingMember['name']) . '] left Stage; played ' .

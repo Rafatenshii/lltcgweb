@@ -379,6 +379,12 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         ],
     ];
 
+    $playDeltas = is_array($body['play_stat_deltas'] ?? null) ? $body['play_stat_deltas'] : [];
+    if ($playDeltas !== []) {
+        require_once __DIR__ . '/play_stats.php';
+        tcgApplyPlayStatDeltasOnce($roomId, $playDeltas);
+    }
+
     if ($alreadyDone && $prAlready) {
         $out = ['success' => true, 'already_applied' => true, 'room_id' => $roomId];
         try {

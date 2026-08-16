@@ -1323,6 +1323,7 @@ function tcgApiMissionGameFinished(array $body): array {
     require_once __DIR__ . '/match_bridge.php';
     require_once __DIR__ . '/missions.php';
     require_once __DIR__ . '/coins.php';
+    require_once __DIR__ . '/play_stats.php';
     tcgRequireInternalMatchSecret();
     $playersIn = is_array($body['players'] ?? null) ? $body['players'] : [];
     $p1 = tcgMissionPlayerSlim(is_array($playersIn['p1'] ?? null) ? $playersIn['p1'] : null);
@@ -1346,6 +1347,10 @@ function tcgApiMissionGameFinished(array $body): array {
     ];
     if (is_array($body['ranked'] ?? null)) {
         $state['ranked'] = $body['ranked'];
+    }
+    $deltas = is_array($body['play_stat_deltas'] ?? null) ? $body['play_stat_deltas'] : [];
+    if ($deltas !== []) {
+        tcgApplyPlayStatDeltasOnce((string)($state['room_id'] ?? ''), $deltas);
     }
     $completions = tcgMissionOnGameFinished($state);
     $coinGrants = tcgCoinsOnGameFinished($state);

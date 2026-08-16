@@ -59,7 +59,7 @@
   function onMissionCompletions(completions) {
     if (!Array.isArray(completions) || !completions.length) return;
     completions.forEach((item) => {
-      const title = t(item.i18n_key || item.id || '');
+      const title = t(item.i18n_key || item.id || '', item.i18n_vars || {});
       if (typeof global.toastSuccess === 'function') {
         global.toastSuccess(t('missions.completeToast', { title }), 3200);
       } else if (typeof global.toast === 'function') {
@@ -117,6 +117,17 @@
       return '+' + Number(m.reward || 0).toLocaleString()
         + ' <span class="star-gem-inline">' + coinIconHtml(16) + '</span>'
         + ' · ' + prLabel
+        + ' · ' + missionStatusLabel(m.status);
+    }
+    if (m.reward_type === 'coins') {
+      let progressBit = '';
+      if (m.threshold != null && m.status !== 'claimed') {
+        const cur = Number(m.progress != null ? m.progress : 0);
+        progressBit = ' · ' + cur.toLocaleString() + ' / ' + Number(m.threshold).toLocaleString();
+      }
+      return '+' + Number(m.reward || 0).toLocaleString()
+        + ' <span class="star-gem-inline">' + coinIconHtml(16) + '</span>'
+        + progressBit
         + ' · ' + missionStatusLabel(m.status);
     }
     return '+' + Number(m.reward || 0).toLocaleString()
@@ -272,7 +283,7 @@
     syncHubBadge(res.claimable_count ?? 0);
     await loadMissions();
     if (typeof global.toastSuccess === 'function') {
-      const title = t(res.mission?.i18n_key || 'missions.claimed');
+      const title = t(res.mission?.i18n_key || 'missions.claimed', res.mission?.i18n_vars || {});
       if (res.starter_granted && res.starter_granted.label) {
         global.toastSuccess(t('missions.claimedStarterToast', {
           title,
@@ -286,6 +297,11 @@
           title,
           coins: res.coins_gained || res.mission?.reward || 0,
         }) || ('Claimed ' + title + ' (+' + (res.coins_gained || 0) + ' Coins · PR Pack)'), 3600);
+      } else if ((res.mission?.reward_type || res.reward_type) === 'coins') {
+        global.toastSuccess(t('missions.claimedCoinsToast', {
+          title,
+          coins: res.coins_gained || res.mission?.reward || 0,
+        }) || ('Claimed ' + title + ' (+' + (res.coins_gained || 0) + ' Coins)'), 3200);
       } else {
         global.toastSuccess(t('missions.claimedToast', {
           title,
@@ -331,7 +347,7 @@
       body.className = 'llc-menu-item-body';
       const title = document.createElement('span');
       title.className = 'llc-menu-item-title';
-      title.textContent = t(m.i18n_key || m.id);
+      title.textContent = t(m.i18n_key || m.id, m.i18n_vars || {});
       const sub = document.createElement('span');
       sub.className = 'llc-menu-item-sub';
       sub.innerHTML = rewardSubHtml(m);

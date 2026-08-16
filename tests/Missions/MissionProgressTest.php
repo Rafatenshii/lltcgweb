@@ -556,4 +556,106 @@ final class MissionProgressTest extends TestCase
         $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_sticker_50', $period));
         $this->assertFalse(tcgMissionIsCompleted($this->discordId, 'ms_sticker_100', $period));
     }
+
+    public function testPlayIdolMilestonesCoinsAndHiddenUntilStarted(): void
+    {
+        require_once dirname(__DIR__, 2) . '/coins.php';
+        require_once dirname(__DIR__, 2) . '/play_stats.php';
+
+        $idol = 'Honoka Kosaka';
+        $id100 = 'ms_play_idol:' . $idol . ':100';
+        $id500 = 'ms_play_idol:' . $idol . ':500';
+        $def = tcgMissionDefById($id100);
+        $this->assertNotNull($def);
+        $this->assertSame('coins', $def['reward_type'] ?? null);
+        $this->assertSame(200, intval($def['reward'] ?? 0));
+
+        $listBefore = tcgMissionListForUser($this->discordId);
+        $idsBefore = array_column($listBefore, 'id');
+        $this->assertNotContains($id100, $idsBefore);
+
+        tcgBumpPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, $idol, 100);
+        $completions = tcgMissionCheckPlayStatThresholds($this->discordId);
+        $this->assertContains($id100, array_column($completions, 'id'));
+        $this->assertNotContains($id500, array_column($completions, 'id'));
+
+        $list = tcgMissionListForUser($this->discordId);
+        $byId = [];
+        foreach ($list as $m) {
+            $byId[$m['id']] = $m;
+        }
+        $this->assertArrayHasKey($id100, $byId);
+        $this->assertSame(100, $byId[$id100]['progress'] ?? null);
+        $this->assertSame('completed', $byId[$id100]['status'] ?? null);
+        $this->assertArrayHasKey($id500, $byId);
+        $this->assertSame('active', $byId[$id500]['status'] ?? null);
+
+        $beforeCoins = tcgGetCoins($this->discordId);
+        $claim = tcgMissionClaim($this->discordId, $id100);
+        $this->assertSame('coins', $claim['mission']['reward_type'] ?? null);
+        $this->assertSame(200, intval($claim['coins_gained'] ?? 0));
+        $this->assertSame($beforeCoins + 200, tcgGetCoins($this->discordId));
+    }
+
+    public function testPlayLiveGroupAndSubunitMilestones(): void
+    {
+        require_once dirname(__DIR__, 2) . '/play_stats.php';
+
+        $unitId = 'ms_play_unit:Sunshine:100';
+        $subId = 'ms_play_subunit:CYaRon！:100';
+        $this->assertNotNull(tcgMissionDefById($unitId));
+        // Subunit may use fullwidth or ascii bang depending on catalog — pick an existing play def.
+        $subDef = null;
+        foreach (tcgMissionPlayDefinitions() as $def) {
+            if (($def['play_family'] ?? '') === 'subunit' && intval($def['threshold'] ?? 0) === 100) {
+                $subDef = $def;
+                break;
+            }
+        }
+        $this->assertNotNull($subDef);
+
+        tcgBumpPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_UNIT, 'Sunshine', 100);
+        tcgBumpPlayStat(
+            $this->discordId,
+            TCG_PLAY_TRACKER_LIVE_SUCCESS,
+            TCG_PLAY_DIM_SUBUNIT,
+            (string)$subDef['play_key'],
+            100
+        );
+        $completions = tcgMissionCheckPlayStatThresholds($this->discordId);
+        $ids = array_column($completions, 'id');
+        $this->assertContains($unitId, $ids);
+        $this->assertContains($subDef['id'], $ids);
+    }
+
+    public function testPlayStatBridgeDeltasUnlockMission(): void
+    {
+        require_once dirname(__DIR__, 2) . '/play_stats.php';
+        $idol = 'Umi Sonoda';
+        $missionId = 'ms_play_idol:' . $idol . ':100';
+        $room = 'PLAY' . strtoupper(bin2hex(random_bytes(3)));
+        tcgApplyPlayStatDeltasOnce($room, [
+            $this->discordId => [
+                [
+                    'tracker' => TCG_PLAY_TRACKER_STAGE,
+                    'dim' => TCG_PLAY_DIM_IDOL,
+                    'key' => $idol,
+                    'count' => 100,
+                ],
+            ],
+        ]);
+        $completions = tcgMissionCheckPlayStatThresholds($this->discordId);
+        $this->assertContains($missionId, array_column($completions, 'id'));
+        $this->assertFalse(tcgApplyPlayStatDeltasOnce($room, [
+            $this->discordId => [
+                [
+                    'tracker' => TCG_PLAY_TRACKER_STAGE,
+                    'dim' => TCG_PLAY_DIM_IDOL,
+                    'key' => $idol,
+                    'count' => 100,
+                ],
+            ],
+        ]));
+        $this->assertSame(100, tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, $idol));
+    }
 }

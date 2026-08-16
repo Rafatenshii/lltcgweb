@@ -483,6 +483,11 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_play_stats_user_tracker
         ON tcg_play_stats(discord_id, tracker)');
 
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_play_stat_match_applied (
+        room_id TEXT NOT NULL PRIMARY KEY,
+        applied_at INTEGER NOT NULL
+    )');
+
     $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_casual_queue_discord
         ON tcg_casual_queue(discord_id) WHERE discord_id IS NOT NULL');
 

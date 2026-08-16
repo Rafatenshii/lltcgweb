@@ -92,12 +92,41 @@ final class PlayStatsTrackingTest extends TestCase
         ];
 
         \notifyMemberEnteredStage($state, 'p1', $member);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
         \notifyMemberEnteredStage($state, 'p1', $member);
 
         $this->assertSame(2, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, 'Honoka Kosaka'));
         $this->assertSame(2, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_UNIT, "μ's"));
         $this->assertSame(2, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_SUBUNIT, 'Printemps'));
         $this->assertSame(2, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_CARD, 'PL!-TEST-HONOKA'));
+    }
+
+    public function testSameSeqStageNotifyIsDedupedOnce(): void
+    {
+        $member = [
+            'instance_id' => 'ps_dedupe',
+            'card_type' => 'メンバー',
+            'name_en' => 'Kotori Minami',
+            'group' => "μ's",
+            'card_no' => 'PL!-TEST-KOTORI',
+            'active' => true,
+        ];
+        $state = [
+            'room_id' => 'DEDUP1',
+            'seq' => 7,
+            'status' => 'playing',
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'Human',
+                    'discord_id' => $this->discordId,
+                    'deck_choice' => 'muse',
+                ],
+            ],
+        ];
+        \notifyMemberEnteredStage($state, 'p1', $member);
+        \notifyMemberEnteredStage($state, 'p1', $member);
+        $this->assertSame(1, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, 'Kotori Minami'));
     }
 
     public function testCpuSeatIsNotTracked(): void
@@ -130,6 +159,7 @@ final class PlayStatsTrackingTest extends TestCase
             'card_type' => 'ライブ',
             'name_en' => 'START:DASH!!',
             'group' => "μ's",
+            'subunit' => 'Printemps',
             'card_no' => 'PL!-TEST-LIVE',
         ];
         $state = [
@@ -146,9 +176,23 @@ final class PlayStatsTrackingTest extends TestCase
 
         $this->assertSame(1, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_LIVE_NAME, 'START:DASH!!'));
         $this->assertSame(1, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_UNIT, "μ's"));
+        $this->assertSame(1, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_SUBUNIT, 'Printemps'));
         $this->assertSame(1, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_CARD, 'PL!-TEST-LIVE'));
         $this->assertSame(0, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_LIVE_NAME, 'START:DASH!!'));
         $this->assertSame(0, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_IDOL, 'Honoka Kosaka'));
+    }
+
+    public function testPlayStatDeltasApplyOncePerRoom(): void
+    {
+        $deltas = [
+            $this->discordId => [
+                ['tracker' => TCG_PLAY_TRACKER_STAGE, 'dim' => TCG_PLAY_DIM_IDOL, 'key' => 'Rin Hoshizora', 'count' => 3],
+            ],
+        ];
+        $this->assertTrue(\tcgApplyPlayStatDeltasOnce('ROOMABC', $deltas));
+        $this->assertSame(3, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, 'Rin Hoshizora'));
+        $this->assertFalse(\tcgApplyPlayStatDeltasOnce('ROOMABC', $deltas));
+        $this->assertSame(3, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, 'Rin Hoshizora'));
     }
 
     public function testResolveOnEnterAbilitiesRecordsStagePlay(): void

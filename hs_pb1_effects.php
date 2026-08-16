@@ -1100,7 +1100,7 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         $played['entered_turn'] = intval($state['turn'] ?? 1);
         $ownerP['stage'][$slot] = $played;
         unset($state['pending_prompt']);
-        notifyMemberEnteredStage($state, $owner, $played);
+        // Stage play counted inside resolveOnEnterAbilities → notifyMemberEnteredStage.
         $state = resolveOnEnterAbilities($state, $owner, $played, $slot);
         $state = addLog($state, $state['players'][$owner]['name'] .
             ' — [' . ($leaving['name_en'] ?? $leaving['name'] ?? 'Member') . '] left Stage; played ' .

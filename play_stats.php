@@ -11,6 +11,9 @@
  * }
  * When omitted, tags are derived from name_en / group / subunit / card_no.
  * Energy cards are never counted.
+ *
+ * Match-primary (Redis) buffers increments on room state as `_play_stat_deltas`
+ * and posts them to Hostinger on finish so hub missions see the same counters.
  */
 
 require_once __DIR__ . '/db.php';
@@ -42,6 +45,10 @@ function tcgPlayStatsEnsureSchema(): void {
     )');
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_play_stats_user_tracker
         ON tcg_play_stats(discord_id, tracker)');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_play_stat_match_applied (
+        room_id TEXT NOT NULL PRIMARY KEY,
+        applied_at INTEGER NOT NULL
+    )');
     $done = true;
 }
 
@@ -226,7 +233,7 @@ function tcgBumpPlayStat(string $discordId, string $tracker, string $dim, string
     )->execute([$discordId, $tracker, $dim, $key, $by, $now]);
 }
 
-/** Persist all derived counters for one card event. */
+/** Persist all derived counters for one card event (direct DB write). */
 function tcgRecordPlayStats(string $discordId, string $tracker, array $card): void {
     if ($discordId === '') {
         return;
@@ -234,6 +241,138 @@ function tcgRecordPlayStats(string $discordId, string $tracker, array $card): vo
     foreach (tcgPlayStatIncrementsForCard($tracker, $card) as $row) {
         tcgBumpPlayStat($discordId, $tracker, $row['dim'], $row['key'], 1);
     }
+}
+
+function tcgPlayStatsShouldBufferForHostinger(): bool {
+    if (!function_exists('tcgMissionShouldWriteOnHostinger')) {
+        if (is_file(__DIR__ . '/match_bridge.php')) {
+            require_once __DIR__ . '/match_bridge.php';
+        }
+    }
+    return function_exists('tcgMissionShouldWriteOnHostinger') && tcgMissionShouldWriteOnHostinger();
+}
+
+/**
+ * Accumulate a play-stat delta on room state (for Hostinger bridge).
+ *
+ * @param array<string,mixed> $state
+ */
+function tcgNotePlayStatDelta(array &$state, string $discordId, string $tracker, string $dim, string $key, int $by = 1): void {
+    if ($discordId === '' || $tracker === '' || $dim === '' || $key === '' || $by === 0) {
+        return;
+    }
+    if (!isset($state['_play_stat_deltas']) || !is_array($state['_play_stat_deltas'])) {
+        $state['_play_stat_deltas'] = [];
+    }
+    if (!isset($state['_play_stat_deltas'][$discordId]) || !is_array($state['_play_stat_deltas'][$discordId])) {
+        $state['_play_stat_deltas'][$discordId] = [];
+    }
+    $bucket = &$state['_play_stat_deltas'][$discordId];
+    $found = false;
+    foreach ($bucket as &$row) {
+        if (($row['tracker'] ?? '') === $tracker
+            && ($row['dim'] ?? '') === $dim
+            && ($row['key'] ?? '') === $key) {
+            $row['count'] = intval($row['count'] ?? 0) + $by;
+            $found = true;
+            break;
+        }
+    }
+    unset($row);
+    if (!$found) {
+        $bucket[] = [
+            'tracker' => $tracker,
+            'dim' => $dim,
+            'key' => $key,
+            'count' => $by,
+        ];
+    }
+}
+
+/**
+ * Export deltas for Hostinger finish payloads.
+ *
+ * @return array<string, list<array{tracker: string, dim: string, key: string, count: int}>>
+ */
+function tcgPlayStatDeltasExport(array $state): array {
+    $raw = $state['_play_stat_deltas'] ?? null;
+    if (!is_array($raw)) {
+        return [];
+    }
+    $out = [];
+    foreach ($raw as $discordId => $rows) {
+        $discordId = trim((string)$discordId);
+        if ($discordId === '' || !is_array($rows)) {
+            continue;
+        }
+        $clean = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $tracker = trim((string)($row['tracker'] ?? ''));
+            $dim = trim((string)($row['dim'] ?? ''));
+            $key = trim((string)($row['key'] ?? ''));
+            $count = intval($row['count'] ?? 0);
+            if ($tracker === '' || $dim === '' || $key === '' || $count === 0) {
+                continue;
+            }
+            $clean[] = [
+                'tracker' => $tracker,
+                'dim' => $dim,
+                'key' => $key,
+                'count' => $count,
+            ];
+        }
+        if ($clean !== []) {
+            $out[$discordId] = $clean;
+        }
+    }
+    return $out;
+}
+
+/**
+ * Apply buffered match deltas once per room (Hostinger account DB).
+ * Empty room_id always applies (tests / local without room).
+ *
+ * @param array<string, list<array{tracker?: string, dim?: string, key?: string, count?: int}>> $deltas
+ */
+function tcgApplyPlayStatDeltasOnce(?string $roomId, array $deltas): bool {
+    if ($deltas === []) {
+        return false;
+    }
+    tcgPlayStatsEnsureSchema();
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)($roomId ?? '')) ?? '');
+    $db = tcgDb();
+    if ($roomId !== '') {
+        $ins = $db->prepare('INSERT OR IGNORE INTO tcg_play_stat_match_applied (room_id, applied_at) VALUES (?, ?)');
+        $ins->execute([$roomId, time()]);
+        if ($ins->rowCount() < 1) {
+            return false;
+        }
+    }
+    foreach ($deltas as $discordId => $rows) {
+        $discordId = trim((string)$discordId);
+        if ($discordId === '' || !is_array($rows)) {
+            continue;
+        }
+        if (function_exists('tcgEnsureUser')) {
+            tcgEnsureUser($discordId, []);
+        }
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            tcgBumpPlayStat(
+                $discordId,
+                trim((string)($row['tracker'] ?? '')),
+                trim((string)($row['dim'] ?? '')),
+                trim((string)($row['key'] ?? '')),
+                intval($row['count'] ?? 0)
+            );
+        }
+    }
+    return true;
 }
 
 function tcgPlayStatsSeatIsTrackable(array $state, string $pid): ?string {
@@ -255,10 +394,35 @@ function tcgPlayStatsSeatIsTrackable(array $state, string $pid): ?string {
 }
 
 /**
+ * Same room+seq+instance Stage enter should only count once (guards notify+resolveOnEnter doubles).
+ */
+function tcgPlayStatStageDedupeHit(array $state, string $pid, array $member): bool {
+    $iid = trim((string)($member['instance_id'] ?? ''));
+    if ($iid === '') {
+        return false;
+    }
+    static $recent = [];
+    $key = (string)($state['room_id'] ?? '')
+        . '|' . $pid
+        . '|' . $iid
+        . '|' . intval($state['seq'] ?? 0);
+    if (isset($recent[$key])) {
+        return true;
+    }
+    $recent[$key] = true;
+    if (count($recent) > 800) {
+        $recent = array_slice($recent, -300, null, true);
+    }
+    return false;
+}
+
+/**
  * Attribute a play event to the signed-in human on this seat (no-op for CPU/guests).
  * Safe to call from rules code even when DB is unavailable (swallows errors).
+ *
+ * @param array<string,mixed> $state
  */
-function tcgTrackPlayerCardEvent(array $state, string $pid, string $tracker, array $card): void {
+function tcgTrackPlayerCardEvent(array &$state, string $pid, string $tracker, array $card): void {
     try {
         $discordId = tcgPlayStatsSeatIsTrackable($state, $pid);
         if ($discordId === null) {
@@ -267,7 +431,18 @@ function tcgTrackPlayerCardEvent(array $state, string $pid, string $tracker, arr
         if (function_exists('mergeCardCatalogFields')) {
             mergeCardCatalogFields($card);
         }
-        tcgRecordPlayStats($discordId, $tracker, $card);
+        $increments = tcgPlayStatIncrementsForCard($tracker, $card);
+        if ($increments === []) {
+            return;
+        }
+        $buffer = tcgPlayStatsShouldBufferForHostinger();
+        foreach ($increments as $row) {
+            if ($buffer) {
+                tcgNotePlayStatDelta($state, $discordId, $tracker, $row['dim'], $row['key'], 1);
+            } else {
+                tcgBumpPlayStat($discordId, $tracker, $row['dim'], $row['key'], 1);
+            }
+        }
     } catch (Throwable $e) {
         // Never break gameplay for analytics.
         if (function_exists('error_log')) {
@@ -277,15 +452,18 @@ function tcgTrackPlayerCardEvent(array $state, string $pid, string $tracker, arr
 }
 
 /** Member entered Stage (hand play, baton, WR put, re-enter, skill place, …). */
-function notifyMemberEnteredStage(array $state, string $pid, array $member): void {
+function notifyMemberEnteredStage(array &$state, string $pid, array $member): void {
     if (!tcgCardIsMember($member)) {
+        return;
+    }
+    if (tcgPlayStatStageDedupeHit($state, $pid, $member)) {
         return;
     }
     tcgTrackPlayerCardEvent($state, $pid, TCG_PLAY_TRACKER_STAGE, $member);
 }
 
 /** Live (or tracked card) entered Success Live storage. */
-function notifyLiveEnteredSuccess(array $state, string $pid, array $live): void {
+function notifyLiveEnteredSuccess(array &$state, string $pid, array $live): void {
     tcgTrackPlayerCardEvent($state, $pid, TCG_PLAY_TRACKER_LIVE_SUCCESS, $live);
 }
 
@@ -329,4 +507,75 @@ function tcgListPlayStats(string $discordId, string $tracker, ?string $dim = nul
         ];
     }
     return $rows;
+}
+
+/**
+ * Catalog-derived keys for play milestones.
+ *
+ * @return array{idols: list<string>, units: list<string>, subunits: list<string>}
+ */
+function tcgPlayStatMilestoneKeysFromCatalog(): array {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $idols = [];
+    $units = [];
+    $subunits = [];
+    $path = defined('TCG_CARDS_FILE') ? TCG_CARDS_FILE : (defined('CARDS_FILE') ? CARDS_FILE : '');
+    if ($path === '' || !is_file($path)) {
+        $cache = ['idols' => [], 'units' => [], 'subunits' => []];
+        return $cache;
+    }
+    $raw = json_decode((string)file_get_contents($path), true);
+    $cards = is_array($raw['cards'] ?? null) ? $raw['cards'] : (is_array($raw) ? $raw : []);
+    foreach ($cards as $card) {
+        if (!is_array($card)) {
+            continue;
+        }
+        $typeEn = strtolower((string)($card['card_type_en'] ?? ''));
+        $type = (string)($card['card_type'] ?? '');
+        $isMember = $type === 'メンバー' || $typeEn === 'member';
+        $isLive = $type === 'ライブ' || $typeEn === 'live';
+        if (!$isMember && !$isLive) {
+            continue;
+        }
+        if ($isMember) {
+            $name = trim((string)($card['name_en'] ?? $card['name'] ?? ''));
+            foreach (tcgSplitIdolNames($name) as $idol) {
+                $idols[$idol] = true;
+            }
+        }
+        if ($isLive) {
+            $group = trim((string)($card['group'] ?? ''));
+            if ($group !== '') {
+                $units[$group] = true;
+            }
+            $subunit = trim((string)($card['subunit'] ?? ''));
+            if ($subunit !== '') {
+                $subunits[$subunit] = true;
+            }
+        }
+    }
+    $idolList = array_keys($idols);
+    $unitList = array_keys($units);
+    $subunitList = array_keys($subunits);
+    natcasesort($idolList);
+    natcasesort($unitList);
+    natcasesort($subunitList);
+    $cache = [
+        'idols' => array_values($idolList),
+        'units' => array_values($unitList),
+        'subunits' => array_values($subunitList),
+    ];
+    return $cache;
+}
+
+/** Player-facing group label (catalog key → display). */
+function tcgPlayStatUnitDisplayName(string $unit): string {
+    return match ($unit) {
+        'Sunshine' => 'Aqours',
+        'Superstar' => 'Liella!',
+        default => $unit,
+    };
 }

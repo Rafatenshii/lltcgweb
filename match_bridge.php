@@ -171,6 +171,9 @@ function tcgPostMissionGameFinishedToHostinger(array $state): array {
  * @return array{missions: list, coin_grants: list}
  */
 function tcgPostMissionGameFinishedBundleToHostinger(array $state): array {
+    if (!function_exists('tcgPlayStatDeltasExport') && is_file(__DIR__ . '/play_stats.php')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
     $payload = [
         'room_id' => (string)($state['room_id'] ?? ''),
         'mode' => (string)($state['mode'] ?? ''),
@@ -185,6 +188,9 @@ function tcgPostMissionGameFinishedBundleToHostinger(array $state): array {
         'mission_peaks' => function_exists('missionPeaksExport')
             ? missionPeaksExport($state)
             : (is_array($state['_mission_peaks'] ?? null) ? $state['_mission_peaks'] : []),
+        'play_stat_deltas' => function_exists('tcgPlayStatDeltasExport')
+            ? tcgPlayStatDeltasExport($state)
+            : (is_array($state['_play_stat_deltas'] ?? null) ? $state['_play_stat_deltas'] : []),
         'players' => [
             'p1' => tcgMissionPlayerSlim(is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : null),
             'p2' => tcgMissionPlayerSlim(is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : null),
@@ -318,6 +324,9 @@ function tcgSeedRankedRoomToVps(array $state): bool {
  * @param array<string,mixed> $state
  */
 function tcgPostRankedApplyResultToHostinger(array &$state): bool {
+    if (!function_exists('tcgPlayStatDeltasExport') && is_file(__DIR__ . '/play_stats.php')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
     $ranked = $state['ranked'] ?? [];
     if (!is_array($ranked)) {
         $ranked = [];
@@ -344,6 +353,9 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
         'mission_peaks' => function_exists('missionPeaksExport')
             ? missionPeaksExport($state)
             : (is_array($state['_mission_peaks'] ?? null) ? $state['_mission_peaks'] : []),
+        'play_stat_deltas' => function_exists('tcgPlayStatDeltasExport')
+            ? tcgPlayStatDeltasExport($state)
+            : (is_array($state['_play_stat_deltas'] ?? null) ? $state['_play_stat_deltas'] : []),
     ];
     $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 15);
     if (!is_array($res) || empty($res['success']) || !empty($res['error'])) {

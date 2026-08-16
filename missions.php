@@ -56,8 +56,192 @@ function tcgMissionDefinitions(): array {
     ];
 }
 
+const TCG_MISSION_PLAY_THRESHOLDS = [
+    100 => 200,
+    500 => 1000,
+];
+
+/**
+ * Dynamic play-stat milestones (idol Stage / Live group / Live subunit).
+ *
+ * @return list<array<string,mixed>>
+ */
+function tcgMissionPlayDefinitions(): array {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    if (!function_exists('tcgPlayStatMilestoneKeysFromCatalog')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
+    $keys = tcgPlayStatMilestoneKeysFromCatalog();
+    $out = [];
+    $sortBase = 500;
+    $i = 0;
+    foreach ($keys['idols'] as $idol) {
+        foreach (TCG_MISSION_PLAY_THRESHOLDS as $threshold => $coins) {
+            $out[] = [
+                'id' => 'ms_play_idol:' . $idol . ':' . $threshold,
+                'type' => 'milestone',
+                'reward' => $coins,
+                'reward_type' => 'coins',
+                'sort' => $sortBase + ($i++),
+                'i18n_key' => 'missions.milestone.playIdol',
+                'i18n_vars' => ['idol' => $idol, 'n' => $threshold],
+                'threshold' => $threshold,
+                'play_tracker' => TCG_PLAY_TRACKER_STAGE,
+                'play_dim' => TCG_PLAY_DIM_IDOL,
+                'play_key' => $idol,
+                'play_family' => 'idol',
+            ];
+        }
+    }
+    foreach ($keys['units'] as $unit) {
+        $display = tcgPlayStatUnitDisplayName($unit);
+        foreach (TCG_MISSION_PLAY_THRESHOLDS as $threshold => $coins) {
+            $out[] = [
+                'id' => 'ms_play_unit:' . $unit . ':' . $threshold,
+                'type' => 'milestone',
+                'reward' => $coins,
+                'reward_type' => 'coins',
+                'sort' => $sortBase + ($i++),
+                'i18n_key' => 'missions.milestone.playLiveGroup',
+                'i18n_vars' => ['group' => $display, 'n' => $threshold],
+                'threshold' => $threshold,
+                'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
+                'play_dim' => TCG_PLAY_DIM_UNIT,
+                'play_key' => $unit,
+                'play_family' => 'unit',
+            ];
+        }
+    }
+    foreach ($keys['subunits'] as $subunit) {
+        foreach (TCG_MISSION_PLAY_THRESHOLDS as $threshold => $coins) {
+            $out[] = [
+                'id' => 'ms_play_subunit:' . $subunit . ':' . $threshold,
+                'type' => 'milestone',
+                'reward' => $coins,
+                'reward_type' => 'coins',
+                'sort' => $sortBase + ($i++),
+                'i18n_key' => 'missions.milestone.playLiveSubunit',
+                'i18n_vars' => ['subunit' => $subunit, 'n' => $threshold],
+                'threshold' => $threshold,
+                'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
+                'play_dim' => TCG_PLAY_DIM_SUBUNIT,
+                'play_key' => $subunit,
+                'play_family' => 'subunit',
+            ];
+        }
+    }
+    $cache = $out;
+    return $cache;
+}
+
+function tcgMissionIsPlayDef(array $def): bool {
+    return isset($def['play_tracker'], $def['play_dim'], $def['play_key']);
+}
+
+/** @return list<array<string,mixed>> */
+function tcgMissionAllDefinitions(): array {
+    return array_merge(tcgMissionDefinitions(), tcgMissionPlayDefinitions());
+}
+
+function tcgMissionParsePlayDefId(string $missionId): ?array {
+    if (str_starts_with($missionId, 'ms_play_idol:')) {
+        $rest = substr($missionId, strlen('ms_play_idol:'));
+        $pos = strrpos($rest, ':');
+        if ($pos === false) {
+            return null;
+        }
+        $key = substr($rest, 0, $pos);
+        $threshold = intval(substr($rest, $pos + 1));
+        if ($key === '' || !isset(TCG_MISSION_PLAY_THRESHOLDS[$threshold])) {
+            return null;
+        }
+        return [
+            'id' => $missionId,
+            'type' => 'milestone',
+            'reward' => TCG_MISSION_PLAY_THRESHOLDS[$threshold],
+            'reward_type' => 'coins',
+            'sort' => 500,
+            'i18n_key' => 'missions.milestone.playIdol',
+            'i18n_vars' => ['idol' => $key, 'n' => $threshold],
+            'threshold' => $threshold,
+            'play_tracker' => TCG_PLAY_TRACKER_STAGE,
+            'play_dim' => TCG_PLAY_DIM_IDOL,
+            'play_key' => $key,
+            'play_family' => 'idol',
+        ];
+    }
+    if (str_starts_with($missionId, 'ms_play_unit:')) {
+        $rest = substr($missionId, strlen('ms_play_unit:'));
+        $pos = strrpos($rest, ':');
+        if ($pos === false) {
+            return null;
+        }
+        $key = substr($rest, 0, $pos);
+        $threshold = intval(substr($rest, $pos + 1));
+        if ($key === '' || !isset(TCG_MISSION_PLAY_THRESHOLDS[$threshold])) {
+            return null;
+        }
+        if (!function_exists('tcgPlayStatUnitDisplayName')) {
+            require_once __DIR__ . '/play_stats.php';
+        }
+        return [
+            'id' => $missionId,
+            'type' => 'milestone',
+            'reward' => TCG_MISSION_PLAY_THRESHOLDS[$threshold],
+            'reward_type' => 'coins',
+            'sort' => 500,
+            'i18n_key' => 'missions.milestone.playLiveGroup',
+            'i18n_vars' => ['group' => tcgPlayStatUnitDisplayName($key), 'n' => $threshold],
+            'threshold' => $threshold,
+            'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
+            'play_dim' => TCG_PLAY_DIM_UNIT,
+            'play_key' => $key,
+            'play_family' => 'unit',
+        ];
+    }
+    if (str_starts_with($missionId, 'ms_play_subunit:')) {
+        $rest = substr($missionId, strlen('ms_play_subunit:'));
+        $pos = strrpos($rest, ':');
+        if ($pos === false) {
+            return null;
+        }
+        $key = substr($rest, 0, $pos);
+        $threshold = intval(substr($rest, $pos + 1));
+        if ($key === '' || !isset(TCG_MISSION_PLAY_THRESHOLDS[$threshold])) {
+            return null;
+        }
+        return [
+            'id' => $missionId,
+            'type' => 'milestone',
+            'reward' => TCG_MISSION_PLAY_THRESHOLDS[$threshold],
+            'reward_type' => 'coins',
+            'sort' => 500,
+            'i18n_key' => 'missions.milestone.playLiveSubunit',
+            'i18n_vars' => ['subunit' => $key, 'n' => $threshold],
+            'threshold' => $threshold,
+            'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
+            'play_dim' => TCG_PLAY_DIM_SUBUNIT,
+            'play_key' => $key,
+            'play_family' => 'subunit',
+        ];
+    }
+    return null;
+}
+
 function tcgMissionDefById(string $missionId): ?array {
     foreach (tcgMissionDefinitions() as $def) {
+        if ($def['id'] === $missionId) {
+            return $def;
+        }
+    }
+    $parsed = tcgMissionParsePlayDefId($missionId);
+    if ($parsed !== null) {
+        return $parsed;
+    }
+    foreach (tcgMissionPlayDefinitions() as $def) {
         if ($def['id'] === $missionId) {
             return $def;
         }
@@ -113,6 +297,8 @@ function tcgMissionMarkCompleted(string $discordId, string $missionId, ?string $
         'id' => $missionId,
         'i18n_key' => $def['i18n_key'],
         'reward' => intval($def['reward']),
+        'reward_type' => (string)($def['reward_type'] ?? 'star_gems'),
+        'i18n_vars' => is_array($def['i18n_vars'] ?? null) ? $def['i18n_vars'] : null,
     ]];
 }
 
@@ -162,7 +348,7 @@ function tcgMissionSortRank(string $status, int $sort): int {
 
 function tcgMissionClaimableCount(string $discordId): int {
     $n = 0;
-    foreach (tcgMissionDefinitions() as $def) {
+    foreach (tcgMissionAllDefinitions() as $def) {
         if (tcgMissionStatusForDef($discordId, $def) === 'completed') {
             $n++;
         }
@@ -172,11 +358,15 @@ function tcgMissionClaimableCount(string $discordId): int {
 
 function tcgMissionListForUser(string $discordId): array {
     tcgMissionBackfillRetroactive($discordId);
+    if (!function_exists('tcgGetPlayStat')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
+    tcgMissionCheckPlayStatThresholds($discordId);
     $totalCards = tcgCollectionTotalCards($discordId);
     $stickerExchanges = tcgGetStickerExchanges($discordId);
     $starterOptions = null;
     $missions = [];
-    foreach (tcgMissionDefinitions() as $def) {
+    foreach (tcgMissionAllDefinitions() as $def) {
         $periodKey = tcgMissionPeriodKey($def);
         $row = tcgMissionProgressRow($discordId, $def['id'], $periodKey);
         $status = tcgMissionStatusForDef($discordId, $def);
@@ -194,6 +384,9 @@ function tcgMissionListForUser(string $discordId): array {
             'claimed_at' => $row['claimed_at'] ?? null,
             'sort_rank' => tcgMissionSortRank($status, intval($def['sort'])),
         ];
+        if (!empty($def['i18n_vars']) && is_array($def['i18n_vars'])) {
+            $entry['i18n_vars'] = $def['i18n_vars'];
+        }
         if (isset($def['threshold'])) {
             $entry['threshold'] = intval($def['threshold']);
         }
@@ -227,6 +420,20 @@ function tcgMissionListForUser(string $discordId): array {
             $loginDays = tcgGetLoginDays($discordId);
             $entry['progress'] = min($loginDays, intval($def['threshold']));
             $entry['login_days'] = $loginDays;
+        } elseif (tcgMissionIsPlayDef($def) && isset($def['threshold'])) {
+            $count = tcgGetPlayStat(
+                $discordId,
+                (string)$def['play_tracker'],
+                (string)$def['play_dim'],
+                (string)$def['play_key']
+            );
+            $threshold = intval($def['threshold']);
+            $entry['progress'] = min($count, $threshold);
+            $entry['play_count'] = $count;
+            // Hide untouched play milestones until the player starts them.
+            if ($status === 'active' && $count < 1) {
+                continue;
+            }
         }
         $missions[] = $entry;
     }
@@ -296,6 +503,7 @@ function tcgMissionClaim(string $discordId, string $missionId, ?string $starterK
             'mission' => [
                 'id' => $missionId,
                 'i18n_key' => $def['i18n_key'],
+                'i18n_vars' => is_array($def['i18n_vars'] ?? null) ? $def['i18n_vars'] : null,
                 'reward' => $coinsGain,
                 'reward_type' => 'coins_and_pr_pack',
                 'status' => 'claimed',
@@ -305,6 +513,28 @@ function tcgMissionClaim(string $discordId, string $missionId, ?string $starterK
             'coins' => $coins,
             'coins_gained' => $coinsGain,
             'pr_pack' => $prPack,
+        ];
+    }
+
+    if ($rewardType === 'coins') {
+        require_once __DIR__ . '/coins.php';
+        $coinsGain = max(0, intval($def['reward'] ?? 0));
+        $db->prepare('UPDATE tcg_mission_progress SET claimed_at = ? WHERE discord_id = ? AND mission_id = ? AND period_key = ?')
+            ->execute([$now, $discordId, $missionId, $periodKey]);
+        $coins = $coinsGain > 0 ? tcgAddCoins($discordId, $coinsGain) : tcgGetCoins($discordId);
+        return [
+            'mission' => [
+                'id' => $missionId,
+                'i18n_key' => $def['i18n_key'],
+                'i18n_vars' => is_array($def['i18n_vars'] ?? null) ? $def['i18n_vars'] : null,
+                'reward' => $coinsGain,
+                'reward_type' => 'coins',
+                'status' => 'claimed',
+            ],
+            'star_gems' => tcgGetStarGems($discordId),
+            'star_gems_gained' => 0,
+            'coins' => $coins,
+            'coins_gained' => $coinsGain,
         ];
     }
 
@@ -648,9 +878,42 @@ function tcgMissionOnGameFinished(array $state): array {
         }
         $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckRankedThresholds($discordId));
         $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckScorePeaks($discordId, $state, $pid));
+        $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckPlayStatThresholds($discordId));
         if ($winner === $pid) {
             $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckGroupWin($discordId, $state, $pid));
             $completions = tcgMissionMergeCompletions($completions, tcgMissionCheckTurnWin($discordId, $state));
+        }
+    }
+    return $completions;
+}
+
+/** Mark play-stat milestones complete when idol / Live unit / subunit thresholds are met. */
+function tcgMissionCheckPlayStatThresholds(string $discordId): array {
+    if (!function_exists('tcgGetPlayStat')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
+    $counts = [];
+    foreach ([TCG_PLAY_TRACKER_STAGE, TCG_PLAY_TRACKER_LIVE_SUCCESS] as $tracker) {
+        foreach (tcgListPlayStats($discordId, $tracker) as $row) {
+            $counts[$tracker . "\0" . $row['dim'] . "\0" . $row['key']] = intval($row['count']);
+        }
+    }
+    if ($counts === []) {
+        return [];
+    }
+    $completions = [];
+    foreach (tcgMissionPlayDefinitions() as $def) {
+        if (!tcgMissionIsPlayDef($def)) {
+            continue;
+        }
+        $threshold = intval($def['threshold'] ?? 0);
+        if ($threshold < 1) {
+            continue;
+        }
+        $ck = (string)$def['play_tracker'] . "\0" . (string)$def['play_dim'] . "\0" . (string)$def['play_key'];
+        $count = intval($counts[$ck] ?? 0);
+        if ($count >= $threshold) {
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $def['id']));
         }
     }
     return $completions;
