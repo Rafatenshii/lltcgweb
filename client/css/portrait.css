@@ -1055,10 +1055,11 @@ html.tcg-portrait-play .overlay.open .account-shell{
    Opp hand → opp stages+lives → HUD → my lives+stages → hand
    ═══════════════════════════════════════════ */
 html.tcg-portrait-play{
-  /* Keep the original large hand cards. The fan overlaps them into six visible
-     positions; cards after the sixth extend into the horizontal scroll area. */
+  /* Keep the original large hand cards. The fan overlaps them into N visible
+     positions (--p-hand-visible); later cards extend into horizontal scroll. */
+  --p-hand-visible: 6;
   --p-hand-pad-x: 8px;
-  --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / 6) * 1.5);
+  --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.5);
   --p-card-h: calc(var(--p-card-w) * 88 / 63);
   /* Strip rows are shorter than cards so hands peek over the stage (PC energy-deck overlap) */
   --p-hand-mine: calc(var(--p-card-h) * 0.58);
@@ -1080,10 +1081,15 @@ html.tcg-portrait-play{
   --p-hud-max: 26vh;
 }
 
+/* Android: five visible hand slots so cards are less bunched; slide for the rest. */
+html.tcg-portrait-play.tcg-android{
+  --p-hand-visible: 5;
+}
+
 /* Square foldables: reclaim vertical space so both fields stay playable. */
 html.tcg-portrait-play.tcg-portrait-square{
   --p-hand-pad-x: 10px;
-  --p-card-w: calc(((min(100vw, 100%) - (var(--p-hand-pad-x) * 2)) / 6) * 1.22);
+  --p-card-w: calc(((min(100vw, 100%) - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.22);
   --p-hand-mine: calc(var(--p-card-h) * 0.46);
   --p-hand-opp: calc(var(--p-card-h) * 0.40);
   --p-field-min: 96px;
@@ -1095,7 +1101,7 @@ html.tcg-portrait-play.tcg-portrait-square{
 html.tcg-portrait-play.tcg-portrait-tablet{
   --p-hand-pad-x: 16px;
   --p-board-max-w: min(720px, 100%);
-  --p-card-w: calc(((min(720px, 100vw) - (var(--p-hand-pad-x) * 2)) / 6) * 1.38);
+  --p-card-w: calc(((min(720px, 100vw) - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.38);
   --p-hand-mine: calc(var(--p-card-h) * 0.55);
   --p-hand-opp: calc(var(--p-card-h) * 0.48);
   --p-field-min: 140px;

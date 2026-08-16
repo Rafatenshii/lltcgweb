@@ -361,7 +361,11 @@
       mineFrac = 0.55;
       oppFrac = 0.48;
     }
-    const cardW = Math.max(44, ((layoutW - pad) / 6) * cardMul);
+    const cardSlots = (typeof global.tcgIsAndroidClient === 'function' && global.tcgIsAndroidClient())
+      || root.classList.contains('tcg-android')
+      ? 5
+      : 6;
+    const cardW = Math.max(44, ((layoutW - pad) / cardSlots) * cardMul);
     const cardH = cardW * (88 / 63);
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');

@@ -84,6 +84,9 @@
       if (!forceOn) root.dataset.tcgPortraitAuto = '1';
       else root.dataset.tcgPortraitAuto = '0';
     }
+    if (fromUa || fromCap || /Android/i.test(ua)) {
+      root.classList.add('tcg-android');
+    }
   } catch (e) { /* ignore */ }
 })();
 </script>
@@ -104,7 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=57">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=66">
+<link rel="stylesheet" href="client/css/portrait.css?v=67">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -16608,6 +16611,7 @@ function bindMobileViewport() {
     try { finePointer = window.matchMedia('(any-pointer: fine)').matches; } catch (_) { /* ignore */ }
     const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const portraitPlay = tcgApplyPortraitPlayState(w, h);
+    root.classList.toggle('tcg-android', typeof tcgIsAndroidClient === 'function' && tcgIsAndroidClient());
     // Landscape fixed-frame stays on UA/coarse-pointer detection only: a touch-capable
     // desktop at 1080p must keep the full three-column desktop board.
     const mobile = mobileUa || coarseTouch || portraitPlay;
@@ -17232,9 +17236,11 @@ function layoutHandFan(fanEl, opts = {}) {
   let step;
   let shrinkScale = 1;
   if (portrait) {
-    // Keep the large portrait card size, but space six card positions across
-    // the viewport. Position 7+ extends off-screen into the scrollable strip.
-    const visible = 6;
+    // Keep the large portrait card size. Space N card positions across the
+    // viewport; cards after that extend into the scrollable strip.
+    // Android uses 5 so hands are less bunched; iOS / other portrait keeps 6.
+    const android = typeof tcgIsAndroidClient === 'function' && tcgIsAndroidClient();
+    const visible = android ? 5 : 6;
     const largeW = Math.max(48, (avail / visible) * 1.5);
     cardW = isMyHand ? largeW : largeW * 0.92;
     step = Math.max(1, (avail - cardW) / (visible - 1));
@@ -30618,7 +30624,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-ai.js?v=10"></script>
 <script src="client/js/portrait-bridge.js?v=23"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
-<script src="client/js/portrait-board.js?v=16"></script>
+<script src="client/js/portrait-board.js?v=17"></script>
 <script>void bootApp();</script>
 </body>
 </html>
