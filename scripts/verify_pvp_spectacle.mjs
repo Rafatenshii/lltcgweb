@@ -11,7 +11,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const spectacleJs = fs.readFileSync(path.join(root, 'client/js/spectacle.js'), 'utf8');
-const sources = [html, spectacleJs];
+const boardRenderJs = fs.readFileSync(path.join(root, 'client/js/board-render.js'), 'utf8');
+const sources = [html, spectacleJs, boardRenderJs];
 
 function extractFn(name) {
   const re = new RegExp(`function ${name}\\([^)]*\\)\\s*\\{`);
@@ -31,6 +32,8 @@ function extractFn(name) {
 }
 
 const fnNames = [
+  'isSlideshowTutorial',
+  'isDeferredLiveSuccessPrompt',
   'parseTurnMarker',
   'turnAtLogIndex',
   'newLogEntries',
@@ -90,12 +93,17 @@ const fnNames = [
   'synthesizePerfPrevFromNext',
   'buildPerfSpectaclePrev',
   'collectPerfRoundLiveCards',
+  'hydrateSpectacleLiveCard',
+  'perfPerformingLiveNamesFromLog',
+  'collectWrLivesMatchingPerformingLog',
   'playerHadLivePerformance',
   'playerHadLivePerformanceForTurn',
   'perfLivePerfSuccessIds',
   'perfYellRevealInline',
   'perfLiveSuccessCountFromLog',
+  'perfLiveFailCountFromLog',
   'playerLiveRoundSucceeded',
+  'intvalTurn',
   'resolvePerfSpectacleBaseline',
   'rememberPerfSpectacleBaseline',
   'roundHasLivePerformanceSignals',
@@ -143,6 +151,7 @@ const fnNames = [
   'perfYellRevealFor',
   'shouldSkipStaleLiveLogAnnouncements',
   'shouldTriggerPerfSpectacle',
+  'liveShowPerformancePresentedForTurn',
   'liveStartPromptNeedsWait',
   'currentRoundLogHasPerformance',
   'currentPerformanceRoundLogStart',
@@ -153,7 +162,8 @@ const PERF_SPECTACLE_DONE_STORAGE_KEY = 'tcg_perf_spectacle_done';
 const PERF_SPECTACLE_DEFERRED_PROMPTS = new Set(['pick_judge_success_live']);
 const PERF_SPECTACLE_MID_PROMPTS = new Set(['auto_yell_no_live_retry']);
 const LIVE_ZONE_MAX = 3;
-const TCG_DEBUG = { log() {}, warn() {}, group() { return { end() {} }; }, trans() { return {}; } };function isLiveTypeCard(c) { return c?.card_type_en === 'Live'; }
+const TCG_DEBUG = { log() {}, warn() {}, group() { return { end() {} }; }, trans() { return {}; } };
+function isLiveTypeCard(c) { return c?.card_type_en === 'Live'; }
 function isMemberCard(c) { return c?.card_type_en === 'Member'; }
 function isRedactedLiveZoneCard(c) { return !!c?.instance_id && !c.revealed && c.card_no === '?'; }
 function enrichCard(c) { return c; }
@@ -258,7 +268,16 @@ function livePlaybackBlocksMainPhaseUi(s, prev) {
 ${fnNames.map(extractFn).join('\n')}
 `;
 
-const sandbox = { console, G: { isTutorial: false, roomId: 'test-room' } };
+const sandbox = {
+  console,
+  G: { isTutorial: false, roomId: 'test-room' },
+  sessionStorage: {
+    _data: {},
+    getItem(k) { return this._data[k] ?? null; },
+    setItem(k, v) { this._data[k] = String(v); },
+    removeItem(k) { delete this._data[k]; },
+  },
+};
 vm.createContext(sandbox);
 vm.runInContext(body, sandbox, { filename: 'verify_pvp_spectacle.js' });
 
@@ -294,6 +313,8 @@ const {
   liveStorageRevealFlipsActive,
   synthesizePerfPrevFromNext,
   buildPerfSpectaclePrev,
+  collectPerfRoundLiveCards,
+  augmentPerfSpectaclePrev,
   shouldScheduleLiveStorageFlips,
   resolveLiveRevealFlipKeys,
   liveStorageFlipKeysForRender,
@@ -932,6 +953,94 @@ ok('live_start mid: shouldTrigger defers while skills open',
   !shouldTriggerPerfSpectacle(liveStartDeferPrev, liveStartEffects));
 sandbox.G._deferPerfSpectaclePrev = null;
 sandbox.G._liveStorageRevealDoneTurns = new Set();
+
+// Failed Live still appears in spectacle after judge drain (9F5149 / arc vs squeaky).
+const awokeLive = {
+  instance_id: 'awoke-1',
+  card_no: 'HS-bp2-005-L',
+  name_en: 'AWOKE',
+  card_type_en: 'Live',
+  revealed: true,
+};
+const heartbeatLive = {
+  instance_id: 'hb-1',
+  card_no: 'PL!-bp1-001-L',
+  name_en: 'HEARTBEAT',
+  card_type_en: 'Live',
+  revealed: true,
+};
+const awokeStub = { instance_id: 'awoke-1', card_no: '?', revealed: false };
+const failLiveDefer = {
+  turn: 4,
+  phase: 'live_set',
+  players: {
+    p1: { name: 'squeakychair', live_zone: [{ ...heartbeatLive, revealed: false }] },
+    p2: { name: 'arc_riku', live_zone: [awokeStub] },
+  },
+};
+const failLivePrev = {
+  turn: 4,
+  phase: 'live_start_effects',
+  players: {
+    p1: { name: 'squeakychair', live_zone: [heartbeatLive] },
+    p2: { name: 'arc_riku', live_zone: [awokeLive] },
+  },
+  log: [
+    { msg: '=== Turn 4 begins ===' },
+    { msg: '=== LIVE Phase ===' },
+    { msg: '=== Live Start Effects ===' },
+  ],
+};
+const failLiveNext = {
+  turn: 5,
+  phase: 'finished',
+  status: 'finished',
+  live_round_success: { p1: true, p2: false },
+  live_perf_success: { p1: ['hb-1'], p2: [] },
+  players: {
+    p1: {
+      name: 'squeakychair',
+      live_zone: [],
+      success_lives: [heartbeatLive],
+      waiting_room: [],
+    },
+    p2: {
+      name: 'arc_riku',
+      live_zone: [],
+      success_lives: [],
+      waiting_room: [awokeLive],
+    },
+  },
+  log: [
+    ...failLivePrev.log,
+    { msg: 'arc_riku is performing Live with "AWOKE".' },
+    { msg: 'squeakychair is performing Live with "HEARTBEAT".' },
+    { msg: '=== Performance Phase ===' },
+    { msg: 'squeakychair performed Live! Blades: 4 | Hearts: [pink] | Live success: 1 | Failed: 0' },
+    { msg: 'arc_riku performed Live! Blades: 2 | Hearts: [] | Live success: 0 | Failed: 1 | Round: failed (not all Lives succeeded)' },
+    { msg: 'Live Scores: squeakychair = 3 | arc_riku = 0' },
+  ],
+};
+sandbox.G.playerId = 'p1';
+sandbox.G._deferPerfSpectaclePrev = failLiveDefer;
+sandbox.G._perfSpectacleDoneTurns = new Set();
+const failedOppLives = collectPerfRoundLiveCards(failLiveNext, 'p2', failLivePrev, 4);
+ok('failed Live recovered from redacted defer + WR',
+  failedOppLives.some(c => c.instance_id === 'awoke-1' && c.name_en === 'AWOKE'));
+const keptBaseline = augmentPerfSpectaclePrev(failLiveDefer, failLiveNext);
+ok('finished turn++ keeps deferred Live baseline',
+  (keptBaseline.players.p2.live_zone || []).some(c => c.instance_id === 'awoke-1'));
+sandbox.G._deferPerfSpectaclePrev = null;
+const failedFromLog = collectPerfRoundLiveCards(failLiveNext, 'p2', failLiveNext, 4);
+ok('failed Live recovered from performing-log + WR when defer wiped',
+  failedFromLog.some(c => c.instance_id === 'awoke-1' && c.name_en === 'AWOKE'));
+
+ok('yell draw icons mark special icons on yell chips',
+  spectacleJs.includes('function perfMarkYellSpecialIcons(')
+  && spectacleJs.includes('perfMarkYellSpecialIcons(chip, card)'));
+ok('yell draw pending counts enrich yell_reveal rows',
+  spectacleJs.includes('Enrich before counting')
+  && spectacleJs.includes('yellDrawTotal += cardYellDrawIconCount(c)'));
 
 if (failed) process.exit(1);
 console.log('verify_pvp_spectacle: all checks passed');
