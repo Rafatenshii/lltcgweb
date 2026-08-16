@@ -709,21 +709,32 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop){
     --field-card-scale:1.04;
     --pile-fill-scale:1.02;
-    /* 1080p: player hand a bit larger; opp stays smaller for energy-deck room. */
+    /* 1080p: large hands, shifted toward the viewport edges. */
     --hand-strip-h:96px;
     --hand-card-pad:18px;
-    --my-hand-card-h:calc(var(--hand-strip-h) * 1.22);
-    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.12);
+    --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
+    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.5);
+    --hand-safe-inline:24px;
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
     --hand-strip-h:96px;
     --hand-card-pad:18px;
-    --my-hand-card-h:calc(var(--hand-strip-h) * 1.22);
-    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.12);
-    --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2);
+    --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
+    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.5);
+    --hand-safe-inline:24px;
+    --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2 - 14px);
     --side-panel-w:min(440px,max(280px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
     --playmat-col-max-w:min(calc(100vw - var(--playmat-gutter)),calc(var(--playmat-mat-max-h) * 1024 / 563));
+  }
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .hand-strip{
+    padding-inline:var(--hand-safe-inline);
+  }
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .opp-hand-strip{
+    transform:translateY(-26px);
+  }
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .my-hand-strip{
+    transform:translateY(26px);
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .stage-slot .mslot,
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .live-slot-wrap .lcard.live-card{

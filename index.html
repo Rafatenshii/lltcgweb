@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=61">
+<link rel="stylesheet" href="client/css/shell-all.css?v=62">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
 <link rel="stylesheet" href="client/css/portrait.css?v=71">
@@ -17227,7 +17227,13 @@ function layoutHandFan(fanEl, opts = {}) {
   const layoutWidth = portrait
     ? (portraitBoard?.clientWidth || window.innerWidth || strip?.clientWidth || fanEl.clientWidth)
     : (strip ? strip.clientWidth : fanEl.clientWidth);
-  let avail = layoutWidth - 24;
+  const safeInlineRaw = !portrait && strip
+    ? parseFloat(getComputedStyle(strip).getPropertyValue('--hand-safe-inline'))
+    : NaN;
+  const safeInline = Number.isFinite(safeInlineRaw) ? safeInlineRaw : 12;
+  // Keep first/last cards inside the playmat column. Large hands shrink/pack
+  // against this safe width instead of painting into either side panel.
+  let avail = layoutWidth - (safeInline * 2);
   // Portrait board can mount before the strip has a real width — retry once.
   if (portrait && avail < 40 && !opts._portraitRetry) {
     requestAnimationFrame(() => layoutHandFan(fanEl, { ...opts, animate: false, _portraitRetry: true }));
