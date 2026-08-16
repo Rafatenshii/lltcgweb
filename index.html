@@ -108,7 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=4">
-<link rel="stylesheet" href="client/css/portrait.css?v=75">
+<link rel="stylesheet" href="client/css/portrait.css?v=77">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1142,12 +1142,14 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </div>
         </div>
         <div class="portrait-deck-row portrait-deck-row--tools">
-          <div class="portrait-deck-playmat-host" id="portrait-deck-playmat-host"></div>
           <div class="portrait-deck-search-host" id="portrait-deck-search-host"></div>
-          <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-filters" data-i18n="deck.filters.title">Filters</button>
-          <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-sort" data-i18n="deck.sort">Sort</button>
-          <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-import" data-i18n="deck.decklogImport">Import</button>
-          <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-more" data-i18n="deck.more">More</button>
+          <div class="portrait-deck-playmat-host" id="portrait-deck-playmat-host"></div>
+          <div class="portrait-deck-tools-host" id="portrait-deck-tools-host">
+            <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-filters" data-i18n="deck.filters.title">Filters</button>
+            <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-sort" data-i18n="deck.sort">Sort</button>
+            <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-import" data-i18n="deck.decklogImport">Import</button>
+            <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-more" data-i18n="deck.more">More</button>
+          </div>
         </div>
         <p class="portrait-deck-stats" id="portrait-deck-stats"></p>
       </div>

@@ -262,28 +262,40 @@ html.tcg-portrait-play #screen-deck .account-screen-head h2{
 }
 html.tcg-portrait-play #screen-deck #portrait-deck-chrome,
 html.tcg-portrait-play #screen-deck .portrait-deck-chrome{
-  display:flex!important;
-  flex-direction:column;
-  gap:6px;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.1fr) auto minmax(0,1.2fr);
+  grid-template-areas:
+    "preset sleeve views"
+    "search playmat tools"
+    "stats stats stats"
+    "batch batch batch";
+  column-gap:6px;
+  row-gap:6px;
   flex:0 0 auto;
   margin:0 0 6px;
+  align-items:center;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-row{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  min-width:0;
+  display:contents;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-preset-wrap{
-  flex:1 1 42%;
+  grid-area:preset;
+  flex:unset;
   min-width:0;
   margin:0;
+  width:100%;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-preset-wrap select{
   width:100%;
   min-height:36px;
   font-size:13px;
   font-weight:700;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host{
+  grid-area:sleeve;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host{
+  grid-area:playmat;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host,
 html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host{
@@ -337,9 +349,11 @@ html.tcg-portrait-play #screen-deck #deck-playmat-empty-hint{
   display:none!important;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-view-toggle{
+  grid-area:views;
   display:flex;
-  flex:1 1 48%;
+  flex:unset;
   min-width:0;
+  width:100%;
   border:1px solid rgba(186,228,255,.28);
   border-radius:10px;
   overflow:hidden;
@@ -361,8 +375,10 @@ html.tcg-portrait-play #screen-deck .portrait-deck-view-btn.is-active{
   color:#b8ffc8;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-search-host{
-  flex:1 1 auto;
+  grid-area:search;
+  flex:unset;
   min-width:0;
+  width:100%;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-search-host .field,
 html.tcg-portrait-play #screen-deck .portrait-deck-search-host label{
@@ -376,6 +392,16 @@ html.tcg-portrait-play #screen-deck .portrait-deck-search-host input{
   min-height:36px;
   font-size:14px;
 }
+html.tcg-portrait-play #screen-deck .portrait-deck-tools-host{
+  grid-area:tools;
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  width:100%;
+  justify-content:flex-end;
+}
 html.tcg-portrait-play #screen-deck .portrait-deck-row--tools{
   flex-wrap:nowrap;
 }
@@ -388,15 +414,22 @@ html.tcg-portrait-play #screen-deck .portrait-deck-tool{
   font-weight:800;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-stats{
+  grid-area:stats;
   margin:0;
   font-size:11px;
   opacity:.78;
   min-height:14px;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-batch-host{
+  grid-area:batch;
   display:none;
 }
-html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-row,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-preset-wrap,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-sleeve-host,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-playmat-host,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-view-toggle,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-search-host,
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-tools-host,
 html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .portrait-deck-stats{
   display:none!important;
 }
