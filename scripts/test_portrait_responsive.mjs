@@ -320,6 +320,20 @@ if (!indexSrc.includes('const visible = 5') || !boardJs.includes('const cardSlot
   ok('hand fan packs five cards in portrait');
 }
 
+if (!indexSrc.includes('portraitAnchor')
+    || !indexSrc.includes('Math.abs(slot - portraitAnchor)')
+    || !indexSrc.includes('Math.max(cardW * 0.5')) {
+  fail('portrait hand must fan outward from selection with half-card exposure');
+} else {
+  ok('portrait hand fans outward from selection with half-card exposure');
+}
+
+if (/\.hcard\.play-sel[\s\S]{0,180}z-index\s*:\s*40\s*!important/.test(portraitCss)) {
+  fail('portrait selected-card CSS must not override radial hand z-order');
+} else {
+  ok('portrait selection leaves radial z-order to layoutHandFan');
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);
