@@ -7611,25 +7611,37 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
   G._deferPerfSpectaclePrev = null;
 }
 
+/** Preserve pre-outcome storage before painting a server board that removed cards. */
+function holdLiveShowStorageBeforeOutcomePaint(prior, board) {
+  const stage = board?.live_show?.stage;
+  if (!['outcomes', 'judge', 'done'].includes(stage)) return;
+  if (!prior || typeof liveStorageHasCards !== 'function' || !liveStorageHasCards(prior)) return;
+  if (typeof ensureLivePostRevealBoardSnapshot === 'function') {
+    ensureLivePostRevealBoardSnapshot(prior);
+  }
+  G._liveStorageOutcomePending = true;
+}
+
 /**
- * Live cards move to Success/WR only when the server leaves judge (ack → done).
- * Play those exits once from the held storage board after spectacle chrome closes.
+ * Every card leaves Live storage only when the server leaves judge (ack → done).
+ * Play Member→WR and Live→Success/WR once from the held storage board after
+ * the winner / no-success verdict and spectacle chrome have finished.
  */
 async function playLiveShowPostJudgeStorageExits(fromBoard, toBoard, myId) {
   if (!fromBoard || !toBoard || typeof playDeferredLiveStorageOutcomes !== 'function') {
     return false;
   }
-  if (typeof liveStorageLiveOutcomesAlreadyPlayed === 'function'
-      && liveStorageLiveOutcomesAlreadyPlayed(toBoard)) {
+  if (typeof liveStorageOutcomesAlreadyPlayed === 'function'
+      && liveStorageOutcomesAlreadyPlayed(toBoard)) {
     return false;
   }
   const storageBoard = G._livePostRevealBoard || fromBoard;
   const ran = await playDeferredLiveStorageOutcomes(storageBoard, toBoard, myId, {
-    kinds: 'live',
+    kinds: 'all',
     skipInitialRender: true,
   });
-  if (ran || (typeof liveStorageLiveOutcomesAlreadyPlayed === 'function'
-      && liveStorageLiveOutcomesAlreadyPlayed(toBoard))) {
+  if (ran || (typeof liveStorageOutcomesAlreadyPlayed === 'function'
+      && liveStorageOutcomesAlreadyPlayed(toBoard))) {
     if (typeof commitLiveRoundAfterOutcomes === 'function') {
       commitLiveRoundAfterOutcomes(toBoard);
     } else {
@@ -7791,19 +7803,14 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     perfClearHeartCheckHold();
     return;
   }
-  // Member bluffs stay through Yell; when outcomes lands they leave storage → WR.
-  // Live→Success/WR waits until after the judge beat (kinds:'live').
+  // The server has resolved Member bluffs at outcomes, but presentation keeps
+  // every card latched in storage through the winner / no-success verdict.
   if (stage === 'outcomes'
       && typeof playDeferredLiveStorageOutcomes === 'function') {
     if (typeof ensureLivePostRevealBoardSnapshot === 'function') {
       ensureLivePostRevealBoardSnapshot(prev);
     }
     G._liveStorageOutcomePending = true;
-    if (typeof collectLiveBluffDiscards === 'function'
-        && collectLiveBluffDiscards(prev, next).length) {
-      if (G._perfSpectacleActive) perfCloseSpectacle();
-      await playDeferredLiveStorageOutcomes(prev, next, myId, { kinds: 'bluff' });
-    }
   }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
   if (liveShowPresentationCancelled()) {
@@ -8102,6 +8109,7 @@ async function presentServerLiveShowStage(prev, next, myId) {
 
       // Paint between beats so Live Start prompts / mat updates are visible.
       if (typeof renderGame === 'function') {
+        holdLiveShowStorageBeforeOutcomePaint(prior, board);
         renderGame(board, {
           skipLog: true,
           skipPrompt: !!board.pending_prompt && board.pending_prompt.responder !== myId,

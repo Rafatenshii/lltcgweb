@@ -187,6 +187,27 @@ const liveFaceDown = buildMovementVisualDescriptor(liveCard, 'hand', 'live', tru
 ok('face-down live placement keeps landscape destination class',
   liveFaceDown.toClass === 'flight-landscape' && liveFaceDown.faceDown === true);
 
+// --- persisted live_show timing contract ---
+const oneBeatStart = spectacleJs.indexOf('async function presentOneLiveShowBeat');
+const oneBeatEnd = spectacleJs.indexOf('/**\n * Drive the persisted server live_show cursor', oneBeatStart);
+const oneBeatSource = spectacleJs.slice(oneBeatStart, oneBeatEnd);
+const postJudgeStart = spectacleJs.indexOf('async function playLiveShowPostJudgeStorageExits');
+const postJudgeEnd = spectacleJs.indexOf('async function fetchLiveShowStateNow', postJudgeStart);
+const postJudgeSource = spectacleJs.slice(postJudgeStart, postJudgeEnd);
+const stateApplyJs = fs.readFileSync(path.join(root, 'client/js/state-apply.js'), 'utf8');
+ok('outcomes beat does not fly Member bluffs before verdict',
+  !oneBeatSource.includes("kinds: 'bluff'")
+  && !oneBeatSource.includes('playLiveStorageWrDiscards('));
+ok('post-judge handoff owns every storage exit',
+  postJudgeSource.includes("kinds: 'all'")
+  && postJudgeSource.includes('liveStorageOutcomesAlreadyPlayed'));
+ok('server outcomes board is latched before first paint',
+  stateApplyJs.indexOf('holdLiveShowStorageBeforeOutcomePaint(prev, s)')
+    < stateApplyJs.indexOf('commitServerBoardToUi(s)', stateApplyJs.indexOf("s.live_show?.stage")));
+ok('chained live_show outcomes board is latched before repaint',
+  spectacleJs.indexOf('holdLiveShowStorageBeforeOutcomePaint(prior, board)')
+    < spectacleJs.indexOf('renderGame(board, {', spectacleJs.indexOf('holdLiveShowStorageBeforeOutcomePaint(prior, board)')));
+
 if (failed) {
   console.error(`\n${failed} failure(s)`);
   process.exit(1);

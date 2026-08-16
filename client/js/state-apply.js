@@ -512,6 +512,9 @@
       }
       // Paint only the board-safe state first. Judge chrome remains gated by
       // live_show.stage while the director seeks/resumes the persisted beat.
+      if (typeof holdLiveShowStorageBeforeOutcomePaint === 'function') {
+        holdLiveShowStorageBeforeOutcomePaint(prev, s);
+      }
       commitServerBoardToUi(s);
       await presentServerLiveShowStage(prev, s, G.playerId);
       const live = G.gameState || s;
