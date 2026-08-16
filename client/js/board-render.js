@@ -740,6 +740,16 @@ function wasLiveRevealBluffMove(prev, move) {
 
 async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
   const showTurn = inferLiveShowTurn(prev, final);
+  const revealGen = G._liveFlipGen || 0;
+  const directorToken = opts.directorToken
+    || ((typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active)
+      ? LiveRoundDirector.token : 0);
+  const revealCancelled = () => {
+    if (revealGen !== (G._liveFlipGen || 0)) return true;
+    if (directorToken && typeof LiveRoundDirector !== 'undefined'
+        && !LiveRoundDirector.check(directorToken)) return true;
+    return typeof isPresentationSuperseded === 'function' && isPresentationSuperseded();
+  };
   if (liveStorageRevealDoneForTurn(showTurn)) {
     TCG_DEBUG.log('live', 'reveal sequence skip (already done for turn)', { showTurn });
     return true;
@@ -777,6 +787,7 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
   // Gate flip CSS: only this sequence may arm/start live-storage flips.
   G._liveStorageRevealRunning = true;
   try {
+    if (revealCancelled()) return false;
     if (!opts.skipIntroBanner && liveStorageHasCards(playback) && liveRoundHasLiveCards(playback)
         && !isLiveSetPhase(final?.phase)) {
       queuePerformancePhaseBanner(inferLiveShowTurn(prev, final), prev, final);
@@ -793,7 +804,9 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
     renderGame(playback, { skipLog: true });
     flushLiveStorageFlipScheduling(myId);
     await Promise.all(preload);
+    if (revealCancelled()) return false;
     await waitForBannersIdle();
+    if (revealCancelled()) return false;
     flushLiveStorageFlipScheduling(myId);
 
     const flipWait = LIVE_STORAGE_FLIP_MS
@@ -802,14 +815,19 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
       flushLiveStorageFlipScheduling(myId);
     }
     await sleep(flipWait);
+    if (revealCancelled()) return false;
     await waitForCardFlipsIdle();
+    if (revealCancelled()) return false;
     if (flipKeys.size && !G._liveStorageRevealAnimCount && !liveStorageRevealFlipsActive(flipKeys, myId)) {
       TCG_DEBUG.warn('live', 'reveal sequence: flip not started — retry scheduling', { flipKeys: flipKeys.size });
       flushLiveStorageFlipScheduling(myId);
       await sleep(flipWait);
+      if (revealCancelled()) return false;
       await waitForCardFlipsIdle();
+      if (revealCancelled()) return false;
     }
     await sleep(80);
+    if (revealCancelled()) return false;
 
     for (const pid of ['p1', 'p2']) {
       const zone = playback.players?.[pid]?.live_zone || [];
@@ -843,7 +861,9 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
     }
     return revealAnimRan && (flipKeys.size > 0 || !oppFaceDownPending);
   } finally {
-    G._liveStorageRevealRunning = false;
+    if (revealGen === (G._liveFlipGen || 0)) {
+      G._liveStorageRevealRunning = false;
+    }
   }
 }
 

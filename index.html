@@ -19945,8 +19945,13 @@ async function playLivePhaseTransition(prev, final, myId, opts = {}) {
     const revealRan = await runLiveStorageRevealSequence(revealFrom, final, myId, {
       skipIntroBanner,
       deferWrDiscards: deferFinal,
+      directorToken: opts.directorToken || 0,
     });
     if (!revealRan) return false;
+    if (opts.directorToken && typeof LiveRoundDirector !== 'undefined'
+        && !LiveRoundDirector.check(opts.directorToken)) {
+      return false;
+    }
     if (!deferFinal) {
       await playPostLiveRevealOutcomes(G.gameState || revealFrom, final, myId);
     }
@@ -31042,8 +31047,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=86"></script>
-<script src="client/js/board-render.js?v=25"></script>
+<script src="client/js/spectacle.js?v=87"></script>
+<script src="client/js/board-render.js?v=26"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

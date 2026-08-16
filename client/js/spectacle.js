@@ -1040,7 +1040,25 @@ function sweepStaleLiveStorageFlipDom(s, myId = G.playerId) {
 }
 
 function clearStaleLiveStorageFlipState(prev, next) {
-  if (!next || G._liveRoundPlaybackActive || G._perfSpectacleActive || G._liveSpectacleGateRunning) return;
+  if (!next) return;
+  const staleMain = isMainOrActivePhase(next.phase)
+    && shouldIgnoreStaleLivePerfSignals(prev, next);
+  const staleTurn = staleMain ? inferLiveShowTurn(prev, next) : null;
+  const completedStaleRun = staleMain
+    && staleTurn != null
+    && liveSpectacleDoneForTurn(staleTurn);
+  // A completed round is authoritative even if an old image/banner await still
+  // has playback flags set. Invalidate its delayed flips before they can repaint Main.
+  if (completedStaleRun) {
+    G._liveFlipGen = (G._liveFlipGen || 0) + 1;
+    G._liveRevealFlips = new Set();
+    G._liveFlipScheduled = new Set();
+    G._liveStorageRevealAnimCount = 0;
+    G._liveStorageRevealRunning = false;
+    cancelStalePerformancePhaseSplash();
+    el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
+  }
+  if (G._liveRoundPlaybackActive || G._perfSpectacleActive || G._liveSpectacleGateRunning) return;
   if (G._liveStorageRevealRunning) return;
   if (!isMainOrActivePhase(next.phase)) return;
   if (detectPendingLiveSpectacleTurn(prev, next) != null) return;
@@ -1056,10 +1074,11 @@ function clearStaleLiveStorageFlipState(prev, next) {
     G._livePostRevealBoard = null;
     G._liveStorageOutcomePending = false;
   }
-  const staleMain = shouldIgnoreStaleLivePerfSignals(prev, next);
   if (staleMain) {
     G._deferPerfSpectaclePrev = null;
     if (!G._livePostRevealBoard) G._liveSetStorageBaseline = null;
+    cancelStalePerformancePhaseSplash();
+    el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
   }
   sweepStaleLiveStorageFlipDom(next, G.playerId);
   // Force mat slots to match the (usually empty) server zone after leftover cleanup.
@@ -2881,6 +2900,20 @@ function clearCenterBannerQueue() {
   }
 }
 
+/** Remove only stale Performance-phase splash work; preserve queued Main banners. */
+function cancelStalePerformancePhaseSplash() {
+  const queued = G._bannerQueue || [];
+  G._bannerQueue = queued.filter((spec) => !isSplashPerformanceBanner(spec));
+  if (!performancePhaseBannerShowing()) return;
+  G._bannerDrainGen = (G._bannerDrainGen || 0) + 1;
+  cancelCenterBannerAutoDismiss();
+  el('center-banner')?.classList.remove('show');
+  resolveCenterBannerShow();
+  G._bannerActive = false;
+  notifyBannerIdleWaiters();
+  if (G._bannerQueue.length) queueMicrotask(drainCenterBannerQueue);
+}
+
 async function waitForCenterBannersClear() {
   await waitForBannersIdle();
   clearCenterBannerQueue();
@@ -3334,6 +3367,11 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
     }
     LiveRoundDirector.bannersReleased = false;
   }
+  const presentationRunCancelled = () => !!(
+    dirToken
+    && typeof LiveRoundDirector !== 'undefined'
+    && !LiveRoundDirector.check(dirToken)
+  );
   let spectacleRan = false;
   let revealRan = false;
   let emptyWrPlayed = false;
@@ -3356,7 +3394,13 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
     || (emptySkip && shouldAnimateEmptyLiveStorageWr(prev, next));
   try {
     await prepareLiveRoundBannerSlot();
+    if (presentationRunCancelled()) {
+      return { reveal: false, spectacle: false, empty: false, cancelled: true };
+    }
     await waitForBlockingOverlaysIdle(next);
+    if (presentationRunCancelled()) {
+      return { reveal: false, spectacle: false, empty: false, cancelled: true };
+    }
 
     if (runStorageReveal) {
       if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.setStep('reveal');
@@ -3368,6 +3412,7 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
           deferFinal: deferStorageOutcomes,
           skipIntroBanner: wantsSpectacle || emptySkip
               || perfSplashAlreadyShown(showTurnForReveal, prev, next),
+          directorToken: dirToken,
         }));
         if (!revealRan && liveStorageRevealDoneForTurn(showTurnForReveal)) {
           revealRan = true;
@@ -3386,6 +3431,7 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
           deferWrDiscards: deferStorageOutcomes,
           skipIntroBanner: wantsSpectacle || emptySkip
               || perfSplashAlreadyShown(showTurnForReveal, prev, next),
+          directorToken: dirToken,
         });
       }
       if (!revealRan && liveStorageRevealBypassOk(prev, next, showTurnForReveal, myId)) {
@@ -3406,8 +3452,14 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
 
     if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.pause('live_start');
     await awaitLiveStartPromptsIfNeeded(prev, next, myId);
+    if (presentationRunCancelled()) {
+      return { reveal: revealRan, spectacle: false, empty: false, cancelled: true };
+    }
     if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.resume('live_start_done');
     await presentSkippedLiveStartBanners(prev, next, myId);
+    if (presentationRunCancelled()) {
+      return { reveal: revealRan, spectacle: false, empty: false, cancelled: true };
+    }
     next = pickSpectacleStateForPerf(G.gameState || next);
     if (!emptySkip) {
       const afterStartPlan = liveRoundPresentationPlan(prev, next, {
@@ -3446,6 +3498,7 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
           revealRan = await runLiveStorageRevealSequence(wrFrom, next, myId, {
             deferWrDiscards: true,
             skipIntroBanner: true,
+            directorToken: dirToken,
           });
         }
       }
@@ -7891,6 +7944,15 @@ async function presentSpectatorHiddenLiveReveal(board, performer, myId) {
   const beatKey = show
     ? `${show.turn}:${show.stage_seq}:reveal:${performer}`
     : `reveal:${performer}`;
+  const flipGen = G._liveFlipGen || 0;
+  const runnerEpoch = G._liveShowRunnerEpoch || 0;
+  const revealStillCurrent = () => {
+    if (flipGen !== (G._liveFlipGen || 0)) return false;
+    if (runnerEpoch !== (G._liveShowRunnerEpoch || 0)) return false;
+    const current = G.gameState?.live_show;
+    if (!current) return false;
+    return `${current.turn}:${current.stage_seq}:reveal:${current.performer}` === beatKey;
+  };
   if (!G._spectatorHiddenRevealBeats) G._spectatorHiddenRevealBeats = new Set();
   if (G._spectatorHiddenRevealBeats.has(beatKey)) {
     await perfSleep(400);
@@ -7928,6 +7990,7 @@ async function presentSpectatorHiddenLiveReveal(board, performer, myId) {
       flushLiveStorageFlipScheduling(myId);
     }
     await Promise.all(preload);
+    if (!revealStillCurrent()) return;
     if (typeof flushLiveStorageFlipScheduling === 'function') {
       flushLiveStorageFlipScheduling(myId);
     }
@@ -7935,15 +7998,23 @@ async function presentSpectatorHiddenLiveReveal(board, performer, myId) {
       + Math.max(0, flipKeys.size - 1)
       * (typeof LIVE_STORAGE_FLIP_STAGGER_MS === 'number' ? LIVE_STORAGE_FLIP_STAGGER_MS : 90);
     await perfSleep(Math.max(700, flipWait));
+    if (!revealStillCurrent()) return;
     if (typeof waitForCardFlipsIdle === 'function') await waitForCardFlipsIdle();
   } finally {
-    G._liveStorageRevealRunning = false;
-    G._liveRevealFlips = new Set();
-    G._liveFlipScheduled = new Set();
-    G._spectatorHiddenRevealBeats.add(beatKey);
-    G.gameState = board || prevState;
-    if (typeof renderGame === 'function') {
-      renderGame(G.gameState, { skipLog: true, skipPrompt: true });
+    const stillCurrent = revealStillCurrent();
+    if (flipGen === (G._liveFlipGen || 0)) {
+      G._liveStorageRevealRunning = false;
+      G._liveRevealFlips = new Set();
+      G._liveFlipScheduled = new Set();
+    }
+    if (stillCurrent) {
+      G._spectatorHiddenRevealBeats.add(beatKey);
+      G.gameState = board || prevState;
+      if (typeof renderGame === 'function') {
+        renderGame(G.gameState, { skipLog: true, skipPrompt: true });
+      }
+    } else if (G.gameState && typeof sweepStaleLiveStorageFlipDom === 'function') {
+      sweepStaleLiveStorageFlipDom(G.gameState, myId);
     }
   }
 }
