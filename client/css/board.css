@@ -145,8 +145,10 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
 }
 @media (min-width:1000px) and (min-aspect-ratio:16/10) and (max-height:1100px) {
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop){
-    --field-card-scale:1.04;
-    --pile-fill-scale:1.02;
+    /* Field cards fill their printed slot (slight bleed) instead of sitting
+       small inside the outline. */
+    --field-card-scale:1.16;
+    --pile-fill-scale:1.14;
     /* 1080p: large hands, shifted toward the viewport edges. */
     --hand-strip-h:96px;
     --hand-card-pad:18px;
@@ -177,7 +179,7 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .stage-slot .mslot,
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .live-slot-wrap .lcard.live-card{
-    width:90%;
+    width:100%;
   }
 }
 .side-panel.side-left{padding-bottom:12px}

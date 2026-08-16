@@ -228,7 +228,7 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
     'transform:translateY(-26px)',
     '/ 2 - 14px',
     '--side-panel-w:min(440px',
-    'width:90%',
+    'width:100%',
     '(max-height:1100px)',
   ];
   for (const token of densityTokens) {
