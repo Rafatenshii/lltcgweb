@@ -203,7 +203,19 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   } else {
     ok(`${label}.css fills 16:9 desktop side space with panels`);
   }
-  const densityTokens = ['--hand-strip-h:96px', '--hand-card-pad:18px', '--playmat-mat-max-h:calc(', '--side-panel-w:min(440px', 'width:90%', '(max-height:1100px)'];
+  const densityTokens = [
+    '--hand-strip-h:96px',
+    '--hand-card-pad:18px',
+    '--my-hand-card-h:calc(var(--hand-strip-h) * 1.5)',
+    '--opp-hand-card-h:calc(var(--hand-strip-h) * 1.5)',
+    '--hand-safe-inline:24px',
+    'transform:translateY(26px)',
+    'transform:translateY(-26px)',
+    '/ 2 - 14px',
+    '--side-panel-w:min(440px',
+    'width:90%',
+    '(max-height:1100px)',
+  ];
   for (const token of densityTokens) {
     if (!src.includes(token)) fail(`${label}.css missing 1080p board-density token ${token}`);
   }
@@ -212,13 +224,13 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   }
 }
 
-function desktopMatWidth(w, h, handStrip) {
-  const matH = (h - 2 * handStrip - 5 - 8) / 2;
+function desktopMatWidth(w, h, handStrip, trim = 0) {
+  const matH = (h - 2 * handStrip - 5 - 8) / 2 - trim;
   return Math.min(w, matH * 1024 / 563);
 }
 const old1080MatW = desktopMatWidth(1920, 1080, 132);
-const new1080MatW = desktopMatWidth(1920, 1080, 96);
-if (new1080MatW < old1080MatW * 1.08) {
+const new1080MatW = desktopMatWidth(1920, 1080, 96, 14);
+if (new1080MatW < old1080MatW * 1.04) {
   fail(`1080p mat widening is too small (${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)})`);
 } else {
   ok(`1080p mat widens ${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)}px`);
@@ -243,28 +255,32 @@ function packedDesktopHandWidth(avail, cardW, count) {
   }
   return { width: cardW + step * Math.max(0, count - 1), scale, stepRatio: step / cardW };
 }
-const packed = packedDesktopHandWidth(new1080MatW - 24, 80, 30);
-if (packed.width > new1080MatW - 24 + 0.01) {
+const handSafeWidth = new1080MatW - 48;
+const handCardW = (96 * 1.5) * (63 / 88);
+const packed = packedDesktopHandWidth(handSafeWidth, handCardW, 30);
+if (packed.width > handSafeWidth + 0.01) {
   fail(`large desktop hand spills past the playmat (${packed.width.toFixed(1)}px)`);
 } else {
-  ok('large desktop hand packs inside the playmat borders');
+  ok('large desktop hand packs inside the 24px playmat safe edges');
 }
 if (!(packed.scale < 0.95 && packed.scale >= 0.58)) {
   fail(`massive desktop hand should shrink cards a bit, got scale ${packed.scale.toFixed(3)}`);
 } else {
   ok(`massive desktop hand shrinks cards to ${(packed.scale * 100).toFixed(0)}%`);
 }
-const normalPacked = packedDesktopHandWidth(new1080MatW - 24, 80, 8);
+const normalPacked = packedDesktopHandWidth(handSafeWidth, handCardW, 8);
 if (normalPacked.scale !== 1) {
   fail(`normal desktop hand must keep full card size, got scale ${normalPacked.scale}`);
 } else {
   ok('normal desktop hand keeps full card size');
 }
 
-if (!indexSrc.includes('Massive desktop hands: shrink cards') || !indexSrc.includes('minStepRatio = 0.45')) {
+if (!indexSrc.includes('Massive desktop hands: shrink cards')
+    || !indexSrc.includes('minStepRatio = 0.45')
+    || !indexSrc.includes('safeInline * 2')) {
   fail('desktop hand fan is missing massive-hand size reduction');
 } else {
-  ok('desktop hand fan shrinks massive hands before extreme overlap');
+  ok('desktop hand fan shrinks massive hands inside safe horizontal edges');
 }
 
 for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
@@ -332,6 +348,16 @@ if (/\.hcard\.play-sel[\s\S]{0,180}z-index\s*:\s*40\s*!important/.test(portraitC
   fail('portrait selected-card CSS must not override radial hand z-order');
 } else {
   ok('portrait selection leaves radial z-order to layoutHandFan');
+}
+
+if (!indexSrc.includes('syncPlayCostHudToLiveStorage')
+    || !indexSrc.includes('pch-over-live')
+    || !portraitCss.includes('pch-over-live')
+    || !shellCss.includes('pch-over-live')
+    || !boardCss.includes('pch-over-live')) {
+  fail('main-phase play-cost HUD must park over live storage on mobile/portrait');
+} else {
+  ok('play-cost HUD parks over live storage on mobile/portrait');
 }
 
 if (process.exitCode) {
