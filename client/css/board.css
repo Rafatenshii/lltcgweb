@@ -52,7 +52,10 @@
 .hand-strip.opp-hand-strip{
   align-items:flex-start;padding-top:10px;
   border-bottom:1px solid var(--ui-panel-border);
-  overflow:visible;
+  /* Clip sideways so large fans never paint over side panels; keep Y open for peek. */
+  overflow-x:clip;
+  overflow-y:visible;
+  max-width:100%;
   z-index:25;
 }
 .opp-hand-strip .hand-fan{
@@ -64,7 +67,9 @@
 .hand-strip.my-hand-strip{
   align-items:flex-end;padding-bottom:10px;
   border-top:1px solid var(--ui-panel-border);
-  overflow:visible;
+  overflow-x:clip;
+  overflow-y:visible;
+  max-width:100%;
   z-index:25;
 }
 .hand-strip.my-hand-strip .hand-fan{
@@ -97,6 +102,13 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
 .hand-fan{
   display:flex;align-items:flex-end;justify-content:center;
   height:100%;min-width:min-content;padding:0 4px;
+}
+/* Desktop: never let min-content fan width escape the playmat column. */
+html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
 }
 #screen-game.prep-hands-hidden .my-hand-strip,
 #screen-game.prep-hands-hidden .opp-hand-strip{

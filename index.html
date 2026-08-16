@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=63">
+<link rel="stylesheet" href="client/css/shell-all.css?v=64">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
 <link rel="stylesheet" href="client/css/portrait.css?v=73">
@@ -17205,6 +17205,11 @@ function layoutHandFan(fanEl, opts = {}) {
       fanEl.style.marginLeft = 'auto';
       fanEl.style.marginRight = 'auto';
     } else if (!document.documentElement.classList.contains('tcg-mobile-viewport')) {
+      fanEl.style.width = '100%';
+      fanEl.style.maxWidth = '100%';
+      fanEl.style.minWidth = '0';
+      fanEl.style.marginLeft = '';
+      fanEl.style.marginRight = '';
       cards.forEach(c => {
         c.style.removeProperty('height');
         c.style.removeProperty('width');
@@ -17220,13 +17225,18 @@ function layoutHandFan(fanEl, opts = {}) {
   }
 
   const strip = fanEl.closest('.hand-strip');
+  const playmatCol = fanEl.closest('.playmat-column');
   const portraitBoard = portrait ? el('portrait-board') : null;
   // The portrait info sheet can transiently change the hand strip's measured
   // width. Anchor fan spacing to the board so raising a card never re-packs
-  // the rest of the hand.
+  // the rest of the hand. On desktop, also clamp to the playmat column so the
+  // fan never packs against a wider-than-column measurement.
   const layoutWidth = portrait
     ? (portraitBoard?.clientWidth || window.innerWidth || strip?.clientWidth || fanEl.clientWidth)
-    : (strip ? strip.clientWidth : fanEl.clientWidth);
+    : (() => {
+        const widths = [strip?.clientWidth, playmatCol?.clientWidth].filter(w => w > 0);
+        return widths.length ? Math.min(...widths) : (fanEl.clientWidth || 0);
+      })();
   const safeInlineRaw = !portrait && strip
     ? parseFloat(getComputedStyle(strip).getPropertyValue('--hand-safe-inline'))
     : NaN;
@@ -17246,7 +17256,7 @@ function layoutHandFan(fanEl, opts = {}) {
   const pad = stripH * (portrait ? 0.06 : 0.16);
   const baseH = Math.max(24, stripH - pad);
   let cardH = cardEl ? cardEl.getBoundingClientRect().height : null;
-  if (cardH == null || (portrait && cardH < 8)) {
+  if (cardH == null || cardH < 8) {
     if (portrait) {
       const rootStyle = getComputedStyle(document.documentElement);
       const parsed = parseFloat(rootStyle.getPropertyValue('--p-card-h'));
@@ -17282,6 +17292,15 @@ function layoutHandFan(fanEl, opts = {}) {
     const stripEl = fanEl.closest('.my-hand-strip, .opp-hand-strip, .hand-strip');
     if (stripEl) stripEl.style.touchAction = 'pan-x';
   } else {
+    // Stay inside the playmat column on every PC width (clear portrait max-content).
+    if (!mobile) {
+      fanEl.style.width = '100%';
+      fanEl.style.maxWidth = '100%';
+      fanEl.style.minWidth = '0';
+      fanEl.style.marginLeft = '';
+      fanEl.style.marginRight = '';
+      if (!shiftFromSaved) fanEl.style.justifyContent = 'center';
+    }
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
       if (mobile) {
@@ -17294,7 +17313,7 @@ function layoutHandFan(fanEl, opts = {}) {
         const packedAtFull = (avail - cardW) / (n - 1);
         if (packedAtFull < cardW * minStepRatio) {
           const neededW = avail / (1 + minStepRatio * (n - 1));
-          shrinkScale = Math.max(0.58, Math.min(1, neededW / cardW));
+          shrinkScale = Math.max(0.5, Math.min(1, neededW / cardW));
           cardW *= shrinkScale;
           cardH *= shrinkScale;
         }
