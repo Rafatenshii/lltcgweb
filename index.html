@@ -16512,8 +16512,13 @@ function tcgPortraitTouchPrimary(w = window.innerWidth, h = window.innerHeight) 
   const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   const iPadOsDesktopUa = touchPoints > 1 && /Macintosh/i.test(ua);
   if (mobileUa || iPadOsDesktopUa || coarse || hoverNone) return true;
-  // Touch-capable desktops (touchscreen laptops / monitors) keep a mouse: not touch-primary.
-  return !!(touchPoints > 0 && !finePointer && Math.min(w, h) <= 920);
+  // Landscape touch-capable desktops keep a mouse and the full desktop board.
+  if (w >= h) return false;
+  // Touchscreen laptops / monitors report a fine pointer alongside their touch input.
+  if (touchPoints > 0 && Math.min(w, h) <= 920) return true;
+  // Mouse-only viewports that are tall and narrow (rotated display, resized window)
+  // read better as the portrait shell than as a squeezed desktop board.
+  return !!(finePointer && w <= 1100 && h >= w * 1.2);
 }
 
 /** Resolve whether the portrait app shell should be active for this viewport. */
