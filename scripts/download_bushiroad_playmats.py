@@ -294,6 +294,12 @@ def find_waifu2x() -> str | None:
     ):
         if cand.is_file():
             return str(cand)
+    # Official Windows release archives unpack into a versioned child folder.
+    bundled = ROOT / "tools" / "waifu2x-ncnn-vulkan"
+    if bundled.is_dir():
+        matches = sorted(bundled.rglob("waifu2x-ncnn-vulkan.exe"))
+        if matches:
+            return str(matches[0])
     return None
 
 
