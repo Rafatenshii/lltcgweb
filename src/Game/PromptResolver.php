@@ -2156,15 +2156,15 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 throw new Exception("Need $cost active Energy");
             }
             $source = findSourceCard($state, $owner, $prompt['source_id'] ?? '');
+            // Clear before nested then — player_choice (and similar) skip when a
+            // pending prompt is still set (Live Start unsets first for the same reason).
+            unset($state['pending_prompt']);
             if ($source && !empty($ability['then'])) {
                 $state = resolveAbilityEffect($state, $owner, $source, $ability['then'], [
                     'phase' => 'on_enter',
                     'slot'  => findMemberSlot($ownerP, $prompt['source_id'] ?? ''),
                     'pay'   => true,
                 ]);
-            }
-            if (($state['pending_prompt']['type'] ?? '') === 'optional_pay_energy_on_enter') {
-                unset($state['pending_prompt']);
             }
         } else {
             $state = addLog($state, $state['players'][$owner]['name'] .
