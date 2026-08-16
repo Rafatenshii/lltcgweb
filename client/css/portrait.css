@@ -1055,9 +1055,9 @@ html.tcg-portrait-play .overlay.open .account-shell{
    Opp hand → opp stages+lives → HUD → my lives+stages → hand
    ═══════════════════════════════════════════ */
 html.tcg-portrait-play{
-  /* Keep the original large hand cards. The fan overlaps them into N visible
-     positions (--p-hand-visible); later cards extend into horizontal scroll. */
-  --p-hand-visible: 6;
+  /* Keep the original large hand cards. The fan overlaps them into five visible
+     positions; later cards extend into horizontal scroll. */
+  --p-hand-visible: 5;
   --p-hand-pad-x: 8px;
   --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.5);
   --p-card-h: calc(var(--p-card-w) * 88 / 63);
@@ -1079,11 +1079,6 @@ html.tcg-portrait-play{
   --p-board-max-w: 100%;
   --p-field-min: 110px;
   --p-hud-max: 26vh;
-}
-
-/* Android: five visible hand slots so cards are less bunched; slide for the rest. */
-html.tcg-portrait-play.tcg-android{
-  --p-hand-visible: 5;
 }
 
 /* Square foldables: reclaim vertical space so both fields stay playable. */
