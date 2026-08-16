@@ -4074,14 +4074,19 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 }
 .perf-deck-pile.perf-deck-draw{transform:translateY(-7px)}
 .perf-yell-draw-pending{
-  position:absolute;right:clamp(-4px,-0.6vw,-2px);bottom:clamp(-6px,-1vw,-4px);
-  display:flex;align-items:center;gap:clamp(2px,.5vw,4px);
-  z-index:6;pointer-events:none;white-space:nowrap;
-  opacity:0;transform:scale(.72);
+  position:absolute;left:50%;top:50%;right:auto;bottom:auto;
+  display:flex;align-items:center;justify-content:center;gap:clamp(2px,.5vw,4px);
+  z-index:8;pointer-events:none;white-space:nowrap;
+  opacity:0;transform:translate(-50%,-50%) scale(.72);
   transition:opacity .32s ease,transform .38s cubic-bezier(.2,.9,.2,1);
 }
-.perf-yell-draw-pending.show{opacity:1;transform:scale(1)}
-.perf-yell-draw-pending.punch{animation:perfScorePunch .32s cubic-bezier(.2,.9,.2,1)}
+.perf-yell-draw-pending.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.perf-yell-draw-pending.punch{animation:perfYellDrawPunch .32s cubic-bezier(.2,.9,.2,1)}
+@keyframes perfYellDrawPunch{
+  0%{transform:translate(-50%,-50%) scale(.85)}
+  55%{transform:translate(-50%,-50%) scale(1.12)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
 .perf-yell-draw-pending .ticon{
   width:clamp(20px,3.8vw,28px);height:clamp(20px,3.8vw,28px);
   filter:drop-shadow(0 0 6px rgba(0,0,0,.8));
