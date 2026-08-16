@@ -1352,7 +1352,7 @@ html.tcg-portrait-play #screen-game .opp-hand-strip .opp-hand-card{
 html.tcg-portrait-play #screen-game .hcard.play-sel,
 html.tcg-portrait-play #screen-game .my-hand-strip .hcard.play-sel{
   transform: translateY(-24px)!important;
-  z-index:40!important;
+  /* layoutHandFan owns z-order so cards fan outward from the latest selection. */
 }
 html.tcg-portrait-play #screen-game .hcard:hover,
 html.tcg-portrait-play #screen-game .hcard.hover-sel{

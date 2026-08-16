@@ -107,7 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=57">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=68">
+<link rel="stylesheet" href="client/css/portrait.css?v=69">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -17241,7 +17241,7 @@ function layoutHandFan(fanEl, opts = {}) {
     const visible = 5;
     const largeW = Math.max(48, (avail / visible) * 1.5);
     cardW = isMyHand ? largeW : largeW * 0.92;
-    step = Math.max(1, (avail - cardW) / (visible - 1));
+    step = Math.max(cardW * 0.5, (avail - cardW) / (visible - 1));
     const totalW = n > 0 ? cardW + step * Math.max(0, n - 1) : 0;
     fanEl.style.justifyContent = totalW <= avail + 1 ? 'center' : 'flex-start';
     fanEl.style.width = 'max-content';
@@ -17270,6 +17270,20 @@ function layoutHandFan(fanEl, opts = {}) {
       }
     }
   }
+  // Portrait hand stacking radiates out from the current selection: cards on
+  // either side descend in z-order with distance, so neither neighbor can bury
+  // the selected card or the cards farther out. The five-slot spacing already
+  // leaves at least half of each overlapped card exposed.
+  let portraitAnchor = -1;
+  if (portrait && isMyHand) {
+    const selectedIid = G.selCard
+      || (G.liveSel?.length ? G.liveSel[G.liveSel.length - 1] : null)
+      || G.hoverCardId;
+    if (selectedIid) {
+      portraitAnchor = cards.filter(c => !skip(c))
+        .findIndex(c => c.dataset.iid === selectedIid);
+    }
+  }
   let slot = 0;
   cards.forEach((c) => {
     if (!mobile && !portrait) {
@@ -17287,10 +17301,15 @@ function layoutHandFan(fanEl, opts = {}) {
     }
     if (slot > 0) c.style.marginLeft = (step - cardW) + 'px';
     else c.style.marginLeft = '0';
-    c.style.zIndex = c.classList.contains('play-sel') ? String(n + 12) : String(slot);
+    if (portraitAnchor >= 0 && isMyHand) {
+      const distance = Math.abs(slot - portraitAnchor);
+      c.style.zIndex = String(n + 12 - distance);
+    } else {
+      c.style.zIndex = c.classList.contains('play-sel') ? String(n + 12) : String(slot);
+    }
     slot += 1;
   });
-  if (portrait && isMyHand && strip && n > 6) {
+  if (portrait && isMyHand && strip && n > 5) {
     // Keep selected card in view when possible
     const sel = fanEl.querySelector('.hcard.play-sel');
     if (sel) {
