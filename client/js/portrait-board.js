@@ -1,9 +1,15 @@
 /**
  * Portrait board mount — reparents existing game nodes into a mockup CSS grid.
  * Keeps board-render IDs intact; only changes DOM ancestry under #screen-game.
+ * Supports unmount so web portrait auto-mode can restore landscape DOM on rotate.
  */
 (function (global) {
   'use strict';
+
+  /** @type {Map<string, { parent: Element, next: ChildNode|null }>} */
+  const homeMap = new Map();
+  let homeSeq = 0;
+  let resizeBound = false;
 
   function portraitActive() {
     return !!(global.document?.documentElement?.classList.contains('tcg-portrait-play')
@@ -31,6 +37,35 @@
     // Overhaul wraps #game-stage in <ll-stage-board> (display:inline by default) —
     // move the host so the field fills the grid cell.
     return node.closest('ll-stage-board') || node;
+  }
+
+  function rememberHome(node) {
+    if (!node || node.dataset.portraitHomeId) return;
+    const id = 'ph' + (++homeSeq);
+    node.dataset.portraitHomeId = id;
+    homeMap.set(id, {
+      parent: node.parentElement,
+      next: node.nextSibling,
+    });
+  }
+
+  function restoreHome(node) {
+    if (!node) return;
+    const id = node.dataset.portraitHomeId;
+    if (!id) return;
+    const home = homeMap.get(id);
+    delete node.dataset.portraitHomeId;
+    homeMap.delete(id);
+    if (!home?.parent || !home.parent.isConnected) return;
+    try {
+      if (home.next && home.next.parentNode === home.parent) {
+        home.parent.insertBefore(node, home.next);
+      } else {
+        home.parent.appendChild(node);
+      }
+    } catch (_) {
+      try { home.parent.appendChild(node); } catch (__) { /* ignore */ }
+    }
   }
 
   function placeHudCornerNames() {
@@ -106,8 +141,15 @@
     const cardHover = el('card-hover-panel');
     const myNrgPill = wide.querySelector('.player-stat-strip.mine .cpill.nrg');
     const oppNrgPill = wide.querySelector('.player-stat-strip.opp .cpill.nrg');
+    const myName = el('my-name');
+    const oppName = el('opp-name');
 
     if (!oppHand || !oppMat || !myMat || !myHand) return false;
+
+    [
+      oppHand, oppMat, myMat, myHand, phase, stats, stageBoard, phaseBar, sbfoot,
+      playCost, liveScore, cardHover, myNrgPill, oppNrgPill, myName, oppName,
+    ].forEach(rememberHome);
 
     const board = wrap('portrait-board');
     board.id = 'portrait-board';
@@ -147,8 +189,6 @@
     if (myNrgPill && myHost) myHost.appendChild(myNrgPill);
     if (oppNrgPill && oppHost) oppHost.appendChild(oppNrgPill);
 
-    const myName = el('my-name');
-    const oppName = el('opp-name');
     if (myName) wins.querySelector('#portrait-my-name-host')?.appendChild(myName);
     if (oppName) wins.querySelector('#portrait-opp-name-host')?.appendChild(oppName);
 
@@ -221,8 +261,81 @@
         }
       });
     } catch (_) { /* ignore */ }
+    if (!resizeBound) {
+      resizeBound = true;
+      try {
+        global.addEventListener('resize', syncHandVars, { passive: true });
+      } catch (_) { /* ignore */ }
+    }
+    return true;
+  }
+
+  function unmount() {
+    const board = el('portrait-board');
+    const viewport = el('game-viewport-frame');
+    const wide = viewport?.querySelector?.('.game-wide-wrap');
+    if (!board && !document.documentElement.classList.contains('tcg-portrait-board-mounted')) {
+      return false;
+    }
+
+    const nodes = Array.from(document.querySelectorAll('[data-portrait-home-id]'));
+    nodes.forEach(restoreHome);
+
+    // Fallback restores if home map was lost after a hot reload.
+    const stack = el('playmat-mat-stack');
+    const sideLeft = document.querySelector('#screen-game .side-panel.side-left');
+    const oppHand = document.querySelector('.opp-hand-strip');
+    const myHand = document.querySelector('.my-hand-strip');
+    const oppMat = el('opp-stage');
+    const myMat = matMountNode('game-stage');
+    const seam = stack?.querySelector('.mat-seam');
+    if (stack && oppHand && oppHand.parentElement !== stack) {
+      stack.insertBefore(oppHand, stack.firstChild);
+    }
+    if (stack && oppMat && oppMat.parentElement !== stack) {
+      const after = oppHand?.nextSibling || stack.firstChild;
+      stack.insertBefore(oppMat, after);
+    }
+    if (stack && myMat && myMat.parentElement !== stack) {
+      stack.insertBefore(myMat, seam ? seam.nextSibling : null);
+    }
+    if (stack && myHand && myHand.parentElement !== stack) {
+      stack.appendChild(myHand);
+    }
+    const cardHover = el('card-hover-panel');
+    if (sideLeft && cardHover && cardHover.parentElement !== sideLeft) {
+      sideLeft.appendChild(cardHover);
+    }
+
+    board?.remove();
+    if (wide) {
+      wide.classList.remove('portrait-wide-hidden');
+      wide.removeAttribute('aria-hidden');
+    }
+    oppMat?.querySelector('.playmat-img')?.classList.add('playmat-img-flipped');
+
+    document.documentElement.classList.remove('tcg-portrait-board-mounted');
+    const root = document.documentElement;
+    root.style.removeProperty('--p-card-w');
+    root.style.removeProperty('--p-card-h');
+    root.style.removeProperty('--p-hand-mine');
+    root.style.removeProperty('--p-hand-opp');
+    root.style.removeProperty('--p-card-w-opp');
+
     try {
-      global.addEventListener('resize', syncHandVars, { passive: true });
+      if (typeof global.tcgPortraitUnmountDeckChrome === 'function') {
+        global.tcgPortraitUnmountDeckChrome();
+      }
+    } catch (_) { /* ignore */ }
+
+    try {
+      if (typeof global.layoutHandFan === 'function') {
+        global.layoutHandFan(el('hand-row'), { animate: false });
+        global.layoutHandFan(el('opp-hand-zone'), { animate: false });
+      }
+      if (global.G?.gameState && typeof global.renderGame === 'function') {
+        global.renderGame(global.G.gameState, { skipLog: true });
+      }
     } catch (_) { /* ignore */ }
     return true;
   }
@@ -230,23 +343,43 @@
   function syncHandVars() {
     const board = el('portrait-board');
     if (!board) return;
-    const w = board.clientWidth || global.innerWidth || 360;
-    const pad = 16;
-    // Preserve the original large cards. layoutHandFan overlaps them into six
-    // visible positions and makes additional positions horizontally scrollable.
-    const cardW = Math.max(48, ((w - pad) / 6) * 1.5);
-    const cardH = cardW * (88 / 63);
     const root = document.documentElement;
+    const size = root.dataset.tcgPortraitSize || 'phone';
+    const rawW = board.clientWidth || global.innerWidth || 360;
+    // Tablets: keep a phone-like column so the mat does not stretch edge-to-edge.
+    const layoutW = size === 'tablet' ? Math.min(rawW, 720) : rawW;
+    const pad = size === 'tablet' ? 24 : 16;
+    let cardMul = 1.5;
+    let mineFrac = 0.58;
+    let oppFrac = 0.50;
+    if (size === 'square') {
+      cardMul = 1.22;
+      mineFrac = 0.46;
+      oppFrac = 0.40;
+    } else if (size === 'tablet') {
+      cardMul = 1.38;
+      mineFrac = 0.55;
+      oppFrac = 0.48;
+    }
+    const cardW = Math.max(44, ((layoutW - pad) / 6) * cardMul);
+    const cardH = cardW * (88 / 63);
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');
-    // Short strip rows so cards overhang into the stage (PC energy-deck style)
-    root.style.setProperty('--p-hand-mine', (cardH * 0.58).toFixed(2) + 'px');
-    root.style.setProperty('--p-hand-opp', (cardH * 0.50).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-mine', (cardH * mineFrac).toFixed(2) + 'px');
+    root.style.setProperty('--p-hand-opp', (cardH * oppFrac).toFixed(2) + 'px');
     root.style.setProperty('--p-card-w-opp', (cardW * 0.92).toFixed(2) + 'px');
+    if (size === 'tablet') {
+      root.style.setProperty('--p-board-max-w', '720px');
+    } else {
+      root.style.removeProperty('--p-board-max-w');
+    }
   }
 
   function onRender(s, myId) {
-    if (!portraitActive() || !s?.players) return;
+    if (!portraitActive()) {
+      if (document.documentElement.classList.contains('tcg-portrait-board-mounted')) unmount();
+      return;
+    }
     mount();
     ensureFieldHosts();
     syncHandVars();
@@ -291,6 +424,8 @@
   }
 
   global.tcgPortraitMountBoard = mount;
+  global.tcgPortraitUnmountBoard = unmount;
+  global.tcgPortraitSyncHandVars = syncHandVars;
   global.tcgPortraitOnRender = onRender;
 
   if (global.document.readyState === 'loading') {

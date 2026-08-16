@@ -48,6 +48,9 @@ jobs:
           python scripts/audit_cpu_prompts.py
           node scripts/test_cpu_scorers.mjs
 
+      - name: Portrait web responsive contracts
+        run: node scripts/test_portrait_responsive.mjs
+
   docker-smoke:
     runs-on: ubuntu-latest
     needs: verify

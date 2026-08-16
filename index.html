@@ -23,24 +23,66 @@
     document.documentElement.dataset.uiTextScale = '100';
   }
 })();
-/* Portrait play gate (Android Capacitor / ?play=portrait) — before first paint. */
+/* Portrait play gate — before first paint.
+   Force-on: Capacitor / LoveCaAndroid / ?play=portrait / LS=1
+   Force-off: ?play=landscape|desktop / ?portrait=0 / LS=0
+   Auto: touch-primary web browsers in portrait (iOS Safari included). */
 (function () {
   try {
     var root = document.documentElement;
     var q = new URLSearchParams(location.search || '');
     var playQ = (q.get('play') || '').toLowerCase();
     var ua = String(navigator.userAgent || '');
-    var fromQuery = playQ === 'portrait' || playQ === '1' || q.get('portrait') === '1';
+    var fromQueryOn = playQ === 'portrait' || playQ === '1' || q.get('portrait') === '1';
+    var fromQueryOff = playQ === 'landscape' || playQ === 'desktop' || playQ === 'auto'
+      || q.get('portrait') === '0';
     var fromUa = /LoveCaAndroid/i.test(ua);
     var fromCap = !!(window.Capacitor && (window.Capacitor.isNativePlatform
       ? window.Capacitor.isNativePlatform()
       : window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android'));
-    var fromLs = false;
-    try { fromLs = localStorage.getItem('tcg_portrait_play') === '1'; } catch (e) {}
-    if (fromQuery || fromUa || fromCap || fromLs) {
+    var ls = null;
+    try { ls = localStorage.getItem('tcg_portrait_play'); } catch (e) {}
+    if (fromQueryOff && playQ === 'auto') {
+      try { localStorage.removeItem('tcg_portrait_play'); } catch (e) {}
+      ls = null;
+    } else if (fromQueryOff) {
+      try { localStorage.setItem('tcg_portrait_play', '0'); } catch (e) {}
+      ls = '0';
+    } else if (fromQueryOn) {
+      try { localStorage.setItem('tcg_portrait_play', '1'); } catch (e) {}
+      ls = '1';
+    }
+    var forceOn = fromQueryOn || fromUa || fromCap || ls === '1';
+    var forceOff = ls === '0' && !fromUa && !fromCap && !fromQueryOn;
+    var w = window.innerWidth || 0;
+    var h = window.innerHeight || 0;
+    var portrait = h >= w;
+    try {
+      if (window.matchMedia) portrait = window.matchMedia('(orientation: portrait)').matches || h >= w;
+    } catch (e) {}
+    var coarse = false;
+    var hoverNone = false;
+    try {
+      if (window.matchMedia) {
+        coarse = window.matchMedia('(pointer: coarse)').matches;
+        hoverNone = window.matchMedia('(hover: none)').matches;
+      }
+    } catch (e) {}
+    var touchPoints = Number(navigator.maxTouchPoints || 0);
+    var mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    // iPadOS 13+ often reports Macintosh + touch.
+    var iPadOsDesktopUa = touchPoints > 1 && /Macintosh/i.test(ua);
+    var touchPrimary = coarse || hoverNone || mobileUa || iPadOsDesktopUa
+      || (touchPoints > 0 && Math.min(w, h) <= 920);
+    var autoOn = !forceOff && !forceOn && touchPrimary && portrait;
+    if (forceOn || autoOn) {
       root.classList.add('tcg-portrait-play');
       root.dataset.tcgPortraitPlay = '1';
-      try { localStorage.setItem('tcg_portrait_play', '1'); } catch (e) {}
+      if (forceOn && (fromQueryOn || fromUa || fromCap)) {
+        try { localStorage.setItem('tcg_portrait_play', '1'); } catch (e) {}
+      }
+      if (!forceOn) root.dataset.tcgPortraitAuto = '1';
+      else root.dataset.tcgPortraitAuto = '0';
     }
   } catch (e) { /* ignore */ }
 })();
@@ -62,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=49">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=64">
+<link rel="stylesheet" href="client/css/portrait.css?v=65">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -16432,22 +16474,107 @@ function syncDesktopUniformScale(w, h, useFixedFrame, portraitBlock, compactDesk
   root.style.setProperty('--playmat-col-max-w', `${colMaxW.toFixed(1)}px`);
 }
 
+function tcgPortraitForceNative() {
+  const ua = String(navigator.userAgent || '');
+  if (/LoveCaAndroid/i.test(ua)) return true;
+  try {
+    if (window.Capacitor) {
+      if (typeof window.Capacitor.isNativePlatform === 'function') {
+        return !!window.Capacitor.isNativePlatform();
+      }
+      if (typeof window.Capacitor.getPlatform === 'function') {
+        return window.Capacitor.getPlatform() === 'android';
+      }
+    }
+  } catch (_) { /* ignore */ }
+  return false;
+}
+
+function tcgPortraitTouchPrimary(w = window.innerWidth, h = window.innerHeight) {
+  const ua = String(navigator.userAgent || '');
+  let coarse = false;
+  let hoverNone = false;
+  try {
+    coarse = window.matchMedia('(pointer: coarse)').matches;
+    hoverNone = window.matchMedia('(hover: none)').matches;
+  } catch (_) { /* ignore */ }
+  const touchPoints = Number(navigator.maxTouchPoints || 0);
+  const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const iPadOsDesktopUa = touchPoints > 1 && /Macintosh/i.test(ua);
+  return !!(coarse || hoverNone || mobileUa || iPadOsDesktopUa
+    || (touchPoints > 0 && Math.min(w, h) <= 920));
+}
+
+/** Resolve whether the portrait app shell should be active for this viewport. */
+function tcgResolvePortraitPlayActive(w = window.innerWidth, h = window.innerHeight) {
+  const q = new URLSearchParams(location.search || '');
+  const playQ = (q.get('play') || '').toLowerCase();
+  const fromQueryOn = playQ === 'portrait' || playQ === '1' || q.get('portrait') === '1';
+  const native = tcgPortraitForceNative();
+  let ls = null;
+  try { ls = localStorage.getItem('tcg_portrait_play'); } catch (_) { /* ignore */ }
+  if (fromQueryOn || native || ls === '1') return { active: true, auto: false, forced: true };
+  if (ls === '0') return { active: false, auto: false, forced: true };
+  let portrait = h >= w;
+  try {
+    portrait = window.matchMedia('(orientation: portrait)').matches || h >= w;
+  } catch (_) { /* ignore */ }
+  const auto = tcgPortraitTouchPrimary(w, h) && portrait;
+  return { active: auto, auto: auto, forced: false };
+}
+
+function tcgPortraitSizeClass(w = window.innerWidth, h = window.innerHeight) {
+  const shortSide = Math.min(w, h);
+  const longSide = Math.max(w, h);
+  const aspect = shortSide > 0 ? w / h : 1;
+  // Unfolded foldables are near-square; keep them out of phone hand rails.
+  if (aspect >= 0.78 && aspect <= 1.18 && shortSide >= 480) return 'square';
+  if (shortSide >= 600 || (shortSide >= 520 && longSide >= 900)) return 'tablet';
+  return 'phone';
+}
+
+function tcgApplyPortraitPlayState(w = window.innerWidth, h = window.innerHeight) {
+  const root = document.documentElement;
+  const resolved = tcgResolvePortraitPlayActive(w, h);
+  const was = root.classList.contains('tcg-portrait-play');
+  root.classList.toggle('tcg-portrait-play', !!resolved.active);
+  root.dataset.tcgPortraitPlay = resolved.active ? '1' : '0';
+  root.dataset.tcgPortraitAuto = resolved.auto ? '1' : '0';
+  document.body?.classList.toggle('tcg-portrait-play-body', !!resolved.active);
+  const size = resolved.active ? tcgPortraitSizeClass(w, h) : '';
+  root.classList.toggle('tcg-portrait-phone', size === 'phone');
+  root.classList.toggle('tcg-portrait-square', size === 'square');
+  root.classList.toggle('tcg-portrait-tablet', size === 'tablet');
+  root.dataset.tcgPortraitSize = size || '';
+  if (resolved.active && !was) {
+    try { if (typeof tcgPortraitMountBoard === 'function') tcgPortraitMountBoard(); } catch (_) { /* ignore */ }
+  } else if (!resolved.active && was) {
+    try { if (typeof tcgPortraitUnmountBoard === 'function') tcgPortraitUnmountBoard(); } catch (_) { /* ignore */ }
+  } else if (resolved.active) {
+    try {
+      if (typeof tcgPortraitSyncHandVars === 'function') tcgPortraitSyncHandVars();
+      else if (typeof tcgPortraitMountBoard === 'function') tcgPortraitMountBoard();
+    } catch (_) { /* ignore */ }
+  }
+  return resolved.active;
+}
+
 function bindMobileViewport() {
   const hint = el('tcg-mobile-rotate-hint');
   const sync = () => {
     const root = document.documentElement;
-    const portraitPlay = tcgPortraitPlayActive();
     const w = window.innerWidth;
     const h = window.innerHeight;
     const landscape = w > h;
     const coarseTouch = window.matchMedia('(pointer: coarse) and (hover: none)').matches;
     const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const mobile = mobileUa || coarseTouch || portraitPlay;
+    const portraitPlay = tcgApplyPortraitPlayState(w, h);
+    const mobile = mobileUa || coarseTouch || portraitPlay || tcgPortraitTouchPrimary(w, h);
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);
     const phone = mobile && shortSide <= 520 && longSide <= 980;
     const tablet = mobile && !phone && shortSide <= 920;
-    // Portrait-play (Android APK / ?play=portrait): never letterbox to 20:9 or block portrait.
+    // Portrait-play (app shell / web portrait): never letterbox to 20:9 or block portrait.
     const useFixedFrame = !portraitPlay && mobile && landscape && (phone || tablet);
     const portraitBlock = !portraitPlay && mobile && (phone || tablet) && !landscape;
     // Compact only on clearly sub-1080p viewports — never on typical 1080p+ desktops
@@ -16461,9 +16588,7 @@ function bindMobileViewport() {
     root.classList.toggle('tcg-phone-landscape', !portraitPlay && phone && landscape);
     root.classList.toggle('tcg-tablet-landscape', !portraitPlay && tablet && landscape);
     root.classList.toggle('tcg-mobile-portrait', portraitBlock);
-    root.classList.toggle('tcg-portrait-play', portraitPlay);
-    document.body.classList.toggle('tcg-portrait-blocked', portraitBlock);
-    document.body.classList.toggle('tcg-portrait-play-body', portraitPlay);
+    document.body?.classList.toggle('tcg-portrait-blocked', portraitBlock);
     if (hint) {
       hint.classList.toggle('show', portraitBlock);
       hint.hidden = !portraitBlock;
@@ -30265,7 +30390,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-ai.js?v=10"></script>
 <script src="client/js/portrait-bridge.js?v=23"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
-<script src="client/js/portrait-board.js?v=15"></script>
+<script src="client/js/portrait-board.js?v=16"></script>
 <script>void bootApp();</script>
 </body>
 </html>

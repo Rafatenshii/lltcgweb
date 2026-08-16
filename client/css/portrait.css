@@ -1,6 +1,7 @@
 /**
  * Portrait play layout — gated by html.tcg-portrait-play
- * (Android Capacitor UA / ?play=portrait). Landscape defaults unchanged.
+ * (Android Capacitor, ?play=portrait, or touch-web portrait auto).
+ * Size modifiers: .tcg-portrait-phone | .tcg-portrait-square | .tcg-portrait-tablet
  */
 
 /* ── Safe areas & base shell ── */
@@ -1074,6 +1075,32 @@ html.tcg-portrait-play{
   --hand-strip-h: var(--p-hand-mine);
   --my-hand-card-h: var(--p-card-h);
   --opp-hand-card-h: calc(var(--p-card-h) * 0.92);
+  --p-board-max-w: 100%;
+  --p-field-min: 110px;
+  --p-hud-max: 26vh;
+}
+
+/* Square foldables: reclaim vertical space so both fields stay playable. */
+html.tcg-portrait-play.tcg-portrait-square{
+  --p-hand-pad-x: 10px;
+  --p-card-w: calc(((min(100vw, 100%) - (var(--p-hand-pad-x) * 2)) / 6) * 1.22);
+  --p-hand-mine: calc(var(--p-card-h) * 0.46);
+  --p-hand-opp: calc(var(--p-card-h) * 0.40);
+  --p-field-min: 96px;
+  --p-hud-max: 18vh;
+  --p-stage-outline-scale: 0.68;
+}
+
+/* Tablets: cap content width and keep a phone-like board column centered. */
+html.tcg-portrait-play.tcg-portrait-tablet{
+  --p-hand-pad-x: 16px;
+  --p-board-max-w: min(720px, 100%);
+  --p-card-w: calc(((min(720px, 100vw) - (var(--p-hand-pad-x) * 2)) / 6) * 1.38);
+  --p-hand-mine: calc(var(--p-card-h) * 0.55);
+  --p-hand-opp: calc(var(--p-card-h) * 0.48);
+  --p-field-min: 140px;
+  --p-hud-max: 22vh;
+  --p-stage-outline-scale: 0.78;
 }
 html.tcg-portrait-play #screen-game.active{
   display:flex!important;
@@ -1101,6 +1128,8 @@ html.tcg-portrait-play #screen-game .game-wide-wrap.portrait-wide-hidden{
 html.tcg-portrait-play #portrait-board{
   flex:1 1 auto;
   width:100%;
+  max-width: var(--p-board-max-w, 100%);
+  margin-inline: auto;
   height:100%;
   min-height:0;
   display:grid;
@@ -1110,9 +1139,9 @@ html.tcg-portrait-play #portrait-board{
   /* Equal fields; hand rows are short so cards overhang into the stage */
   grid-template-rows:
     var(--p-hand-opp)
-    minmax(110px, 1fr)
+    minmax(var(--p-field-min, 110px), 1fr)
     auto
-    minmax(110px, 1fr)
+    minmax(var(--p-field-min, 110px), 1fr)
     var(--p-hand-mine);
   grid-template-areas:
     "opp-hand"
@@ -1136,7 +1165,14 @@ html.tcg-portrait-play .pb-opp-hand{
   align-self:start;
 }
 html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:visible; display:flex; z-index:4; }
-html.tcg-portrait-play .pb-hud{ grid-area: hud; flex:0 0 auto; z-index:8; max-height:26vh; overflow-x:hidden; overflow-y:auto; }
+html.tcg-portrait-play .pb-hud{
+  grid-area: hud;
+  flex:0 0 auto;
+  z-index:8;
+  max-height: var(--p-hud-max, 26vh);
+  overflow-x:hidden;
+  overflow-y:auto;
+}
 /* Burger Log/Resign pop opens upward — lift the HUD so overflow does not clip it
    under the center info rectangle / adjacent playmat layers. */
 html.tcg-portrait-play .pb-hud.pb-menu-open,
@@ -2966,4 +3002,35 @@ html.tcg-portrait-play.tcg-low-end .pb-deck-drawer{
   html.tcg-portrait-play .pb-deck-drawer-chevron{
     transition:none!important;
   }
+}
+
+/* ── Square / tablet refinements ── */
+html.tcg-portrait-play.tcg-portrait-square .pb-hud{
+  max-height: var(--p-hud-max, 18vh);
+}
+html.tcg-portrait-play.tcg-portrait-square #screen-game .card-hover-panel,
+html.tcg-portrait-play.tcg-portrait-square #screen-game #card-hover-panel{
+  max-height: calc(100dvh - var(--p-hand-opp, 64px) - var(--p-hand-mine, 72px) - 40px)!important;
+}
+html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .account-shell,
+html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .account-shell.wide{
+  max-width: min(560px, 100%);
+}
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .game-viewport-frame{
+  justify-content: center;
+}
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .card-hover-panel,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game #card-hover-panel{
+  width: min(420px, 86vw)!important;
+}
+html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-item,
+html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .btn-grad,
+html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .btn-out{
+  min-height: 60px;
+  font-size: 17px;
+}
+html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .mslot,
+html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .lcard{
+  /* Slightly larger stage hit targets on tablets */
+  --p-stage-outline-scale: 0.78;
 }
