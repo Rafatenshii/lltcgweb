@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=72">
+<link rel="stylesheet" href="client/css/shell-all.css?v=73">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=4">
@@ -1327,6 +1327,38 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
+<div class="overlay deck-sleeve-overlay cpu-cosmetic-overlay" id="overlay-cpu-sleeve-picker" aria-modal="true" aria-labelledby="cpu-sleeve-overlay-title" aria-hidden="true">
+  <div class="deck-sleeve-overlay__shell" role="dialog" aria-modal="true" aria-labelledby="cpu-sleeve-overlay-title">
+    <div class="account-screen-head deck-sleeve-overlay__head">
+      <h2 id="cpu-sleeve-overlay-title" data-i18n="lobby.cpuSleeve">CPU sleeve</h2>
+      <button class="btn-ghost deck-sleeve-overlay__close" type="button" id="btn-cpu-sleeve-picker-close" data-i18n-aria-label="deck.sleevePickClose" aria-label="Close">✕</button>
+    </div>
+    <p class="deck-sleeve-overlay__lead" data-i18n="lobby.cpuCosmeticsHint">Choose a cosmetic you own, or random from your collection.</p>
+    <div class="deck-sleeve-overlay__grid" id="cpu-sleeve-picker-grid" role="listbox"></div>
+  </div>
+</div>
+
+<div class="overlay deck-sleeve-overlay deck-playmat-overlay cpu-cosmetic-overlay" id="overlay-cpu-playmat-picker" aria-modal="true" aria-labelledby="cpu-playmat-overlay-title" aria-hidden="true">
+  <div class="deck-playmat-overlay__shell" role="dialog" aria-modal="true" aria-labelledby="cpu-playmat-overlay-title">
+    <div class="account-screen-head deck-sleeve-overlay__head">
+      <h2 id="cpu-playmat-overlay-title" data-i18n="lobby.cpuPlaymat">CPU playmat</h2>
+      <button class="btn-ghost deck-sleeve-overlay__close" type="button" id="btn-cpu-playmat-picker-close" data-i18n-aria-label="deck.playmatPickClose" aria-label="Close">✕</button>
+    </div>
+    <p class="deck-sleeve-overlay__lead" data-i18n="lobby.cpuCosmeticsHint">Choose a cosmetic you own, or random from your collection.</p>
+    <div class="deck-playmat-overlay__preview" id="cpu-playmat-picker-preview" aria-hidden="true"></div>
+    <div class="deck-playmat-overlay__brightness">
+      <label for="cpu-playmat-brightness" data-i18n="deck.playmatBrightness">Brightness</label>
+      <input type="range" id="cpu-playmat-brightness" min="35" max="100" step="1" value="100">
+      <span id="cpu-playmat-brightness-value">100%</span>
+    </div>
+    <div class="deck-playmat-overlay__grid" id="cpu-playmat-picker-grid" role="listbox"></div>
+    <div class="deck-playmat-overlay__actions">
+      <button type="button" class="btn-ghost" id="btn-cpu-playmat-picker-cancel" data-i18n="common.cancel">Cancel</button>
+      <button type="button" class="btn-out" id="btn-cpu-playmat-picker-confirm" data-i18n="deck.playmatConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay portrait-deck-sheet" id="overlay-portrait-deck-filters" aria-modal="true" aria-hidden="true">
   <div class="portrait-sheet-panel" role="dialog" aria-labelledby="portrait-deck-filters-title">
     <div class="portrait-sheet-head">
@@ -1610,13 +1642,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
                 </div>
               </div>
               <div class="field field-cpu-cosmetics" id="cpu-cosmetics-field">
-                <label data-i18n="lobby.cpuSleeve">CPU sleeve</label>
-                <div class="llc-select-wrap">
-                  <select id="sel-cpu-sleeve" aria-label="CPU sleeve"></select>
-                </div>
-                <label class="cpu-cosmetic-label" data-i18n="lobby.cpuPlaymat">CPU playmat</label>
-                <div class="llc-select-wrap">
-                  <select id="sel-cpu-playmat" aria-label="CPU playmat"></select>
+                <div class="cpu-cosmetics-pickers">
+                  <button class="cpu-cosmetic-current cpu-cosmetic-current--sleeve" id="btn-cpu-sleeve-picker" type="button" aria-haspopup="dialog" aria-controls="overlay-cpu-sleeve-picker" data-i18n-aria-label="lobby.cpuSleeve">
+                    <span class="cpu-cosmetic-current__art" id="cpu-sleeve-picker-art" aria-hidden="true"></span>
+                  </button>
+                  <button class="cpu-cosmetic-current cpu-cosmetic-current--playmat" id="btn-cpu-playmat-picker" type="button" aria-haspopup="dialog" aria-controls="overlay-cpu-playmat-picker" data-i18n-aria-label="lobby.cpuPlaymat">
+                    <span class="cpu-cosmetic-current__art" id="cpu-playmat-picker-art" aria-hidden="true"></span>
+                  </button>
                 </div>
                 <p class="cpu-cosmetics-hint" data-i18n="lobby.cpuCosmeticsHint">Choose a cosmetic you own, or random from your collection.</p>
               </div>
@@ -16420,11 +16452,31 @@ async function bootApp() {
     if (!btn || !el('cpu-diff-pills')?.contains(btn)) return;
     setCpuDifficulty(btn.getAttribute('data-cpu-diff') || 'easy');
   });
-  on('sel-cpu-sleeve', 'change', () => {
-    persistCpuCosmeticChoice('sleeve', el('sel-cpu-sleeve')?.value || '');
+  on('btn-cpu-sleeve-picker', 'click', () => openCpuCosmeticPicker('sleeve'));
+  on('btn-cpu-playmat-picker', 'click', () => openCpuCosmeticPicker('playmat'));
+  on('btn-cpu-sleeve-picker-close', 'click', () => closeCpuCosmeticPicker('sleeve'));
+  on('btn-cpu-playmat-picker-close', 'click', () => closeCpuCosmeticPicker('playmat'));
+  on('btn-cpu-playmat-picker-cancel', 'click', () => closeCpuCosmeticPicker('playmat'));
+  on('btn-cpu-playmat-picker-confirm', 'click', () => {
+    persistCpuCosmeticChoice('playmat', cpuPlaymatPickerDraft.id, cpuPlaymatPickerDraft.brightness);
+    closeCpuCosmeticPicker('playmat');
+    refreshCpuCosmeticSelects();
   });
-  on('sel-cpu-playmat', 'change', () => {
-    persistCpuCosmeticChoice('playmat', el('sel-cpu-playmat')?.value || '');
+  on('cpu-playmat-brightness', 'input', () => {
+    const range = el('cpu-playmat-brightness');
+    if (!range || !cpuPlaymatPickerDraft.id) return;
+    cpuPlaymatPickerDraft.brightness = window.LLTCG_PLAYMATS?.normalizeBrightness?.((Number(range.value) || 100) / 100) || 1;
+    syncCpuPlaymatPickerPreview();
+  });
+  ['overlay-cpu-sleeve-picker', 'overlay-cpu-playmat-picker'].forEach((id) => {
+    el(id)?.addEventListener('click', (event) => {
+      if (event.target === el(id)) closeCpuCosmeticPicker(id.includes('sleeve') ? 'sleeve' : 'playmat');
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (el('overlay-cpu-sleeve-picker')?.classList.contains('open')) closeCpuCosmeticPicker('sleeve');
+    if (el('overlay-cpu-playmat-picker')?.classList.contains('open')) closeCpuCosmeticPicker('playmat');
   });
   refreshCpuCosmeticSelects();
   on('sel-deck', 'change', () => {
@@ -18672,6 +18724,8 @@ function cpuJoinPayload(deckChoice) {
 
 const CPU_COSMETIC_LS_SLEEVE = 'tcg_cpu_sleeve';
 const CPU_COSMETIC_LS_PLAYMAT = 'tcg_cpu_playmat';
+const CPU_COSMETIC_LS_PLAYMAT_BRIGHTNESS = 'tcg_cpu_playmat_brightness';
+let cpuPlaymatPickerDraft = { id: '', brightness: 1 };
 
 function tLobbyOr(key, fallback) {
   const v = (typeof t === 'function') ? t(key) : '';
@@ -18686,6 +18740,7 @@ function ownedCpuSleeveOptions() {
     .map((s) => ({
       id: String(s.id),
       label: (LLTCG_SLEEVES.displayName && LLTCG_SLEEVES.displayName(s)) || s.name || s.id,
+      src: s.src || '',
     }));
 }
 
@@ -18697,41 +18752,158 @@ function ownedCpuPlaymatOptions() {
     .map((p) => ({
       id: String(p.id),
       label: (LLTCG_PLAYMATS.displayName && LLTCG_PLAYMATS.displayName(p)) || p.name || p.id,
+      src: p.src || '',
     }));
 }
 
-function fillCpuCosmeticSelect(sel, kind, options) {
-  if (!sel) return;
-  const prev = String(sel.value || '');
-  let saved = '';
+function cpuCosmeticStorageKey(kind) {
+  return kind === 'sleeve' ? CPU_COSMETIC_LS_SLEEVE : CPU_COSMETIC_LS_PLAYMAT;
+}
+
+function cpuCosmeticMode(kind) {
   try {
-    saved = localStorage.getItem(kind === 'sleeve' ? CPU_COSMETIC_LS_SLEEVE : CPU_COSMETIC_LS_PLAYMAT) || '';
+    return String(localStorage.getItem(cpuCosmeticStorageKey(kind)) || '');
   } catch (e) { /* ignore */ }
-  const preferred = prev || saved || '';
-  sel.replaceChildren();
-  const optDefault = document.createElement('option');
-  optDefault.value = '';
-  optDefault.textContent = tLobbyOr('lobby.cpuCosmeticDefault', 'Default');
-  sel.appendChild(optDefault);
-  if (options.length) {
-    const optRandom = document.createElement('option');
-    optRandom.value = 'random';
-    optRandom.textContent = tLobbyOr('lobby.cpuCosmeticRandom', 'Random (owned)');
-    sel.appendChild(optRandom);
-    options.forEach((row) => {
-      const o = document.createElement('option');
-      o.value = row.id;
-      o.textContent = row.label;
-      sel.appendChild(o);
-    });
+  return '';
+}
+
+function cpuPlaymatBrightness() {
+  try {
+    return window.LLTCG_PLAYMATS?.normalizeBrightness?.(localStorage.getItem(CPU_COSMETIC_LS_PLAYMAT_BRIGHTNESS)) || 1;
+  } catch (e) { /* ignore */ }
+  return 1;
+}
+
+function persistCpuCosmeticChoice(kind, value, brightness) {
+  try {
+    localStorage.setItem(cpuCosmeticStorageKey(kind), String(value || ''));
+    if (kind === 'playmat' && brightness != null) {
+      localStorage.setItem(CPU_COSMETIC_LS_PLAYMAT_BRIGHTNESS, String(brightness));
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function cpuCosmeticArt(kind, mode, options) {
+  const selected = options.find((row) => row.id === mode);
+  if (selected?.src) return selected.src;
+  return kind === 'sleeve'
+    ? (window.LLTCG_SLEEVES?.defaultSrc || 'lltcg-back.png')
+    : (window.LLTCG_PLAYMATS?.defaultSrc || 'playmat.png');
+}
+
+function paintCpuCosmeticCurrent(kind, options) {
+  const mode = cpuCosmeticMode(kind);
+  const art = el(kind === 'sleeve' ? 'cpu-sleeve-picker-art' : 'cpu-playmat-picker-art');
+  const btn = el(kind === 'sleeve' ? 'btn-cpu-sleeve-picker' : 'btn-cpu-playmat-picker');
+  if (!art || !btn) return;
+  art.style.backgroundImage = `url("${String(cpuCosmeticArt(kind, mode, options)).replace(/"/g, '\\"')}")`;
+  art.style.filter = kind === 'playmat' ? `brightness(${cpuPlaymatBrightness()})` : '';
+  art.classList.toggle('is-random', mode === 'random');
+  const label = mode === 'random'
+    ? tLobbyOr('lobby.cpuCosmeticRandom', 'Random (owned)')
+    : (options.find((row) => row.id === mode)?.label || tLobbyOr('lobby.cpuCosmeticDefault', 'Default'));
+  btn.setAttribute('aria-label', `${kind === 'sleeve' ? tLobbyOr('lobby.cpuSleeve', 'CPU sleeve') : tLobbyOr('lobby.cpuPlaymat', 'CPU playmat')}: ${label}`);
+  btn.title = label;
+}
+
+function makeCpuCosmeticTile(kind, id, label, src, selected) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = kind === 'sleeve' ? 'deck-sleeve-tile' : 'deck-playmat-tile';
+  if (selected) btn.classList.add('is-selected');
+  btn.dataset.cpuCosmeticId = id;
+  btn.setAttribute('role', 'option');
+  btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+  const art = document.createElement('span');
+  art.className = kind === 'sleeve' ? 'deck-sleeve-tile__art' : 'deck-playmat-tile__art';
+  if (src) art.style.backgroundImage = `url("${String(src).replace(/"/g, '\\"')}")`;
+  else art.classList.add(kind === 'sleeve' ? 'deck-sleeve-tile__art--none' : 'deck-playmat-tile__art--none');
+  if (id === 'random') art.classList.add('is-random');
+  const text = document.createElement('span');
+  text.className = kind === 'sleeve' ? 'deck-sleeve-tile__label' : 'deck-playmat-tile__label';
+  text.textContent = label;
+  btn.append(art, text);
+  return btn;
+}
+
+function fillCpuSleevePickerGrid() {
+  const grid = el('cpu-sleeve-picker-grid');
+  if (!grid) return;
+  const options = ownedCpuSleeveOptions();
+  const selected = cpuCosmeticMode('sleeve');
+  grid.replaceChildren(
+    makeCpuCosmeticTile('sleeve', '', tLobbyOr('lobby.cpuCosmeticDefault', 'Default'), '', selected === ''),
+    makeCpuCosmeticTile('sleeve', 'random', tLobbyOr('lobby.cpuCosmeticRandom', 'Random (owned)'), options[0]?.src || '', selected === 'random'),
+  );
+  options.forEach((row) => grid.appendChild(makeCpuCosmeticTile('sleeve', row.id, row.label, row.src, row.id === selected)));
+  grid.querySelectorAll('[data-cpu-cosmetic-id]').forEach((btn) => btn.addEventListener('click', () => {
+    persistCpuCosmeticChoice('sleeve', btn.dataset.cpuCosmeticId || '');
+    closeCpuCosmeticPicker('sleeve');
+    refreshCpuCosmeticSelects();
+  }));
+}
+
+function syncCpuPlaymatPickerPreview() {
+  const preview = el('cpu-playmat-picker-preview');
+  const range = el('cpu-playmat-brightness');
+  const value = el('cpu-playmat-brightness-value');
+  const options = ownedCpuPlaymatOptions();
+  const row = options.find((item) => item.id === cpuPlaymatPickerDraft.id)
+    || (cpuPlaymatPickerDraft.id === 'random' ? options[0] : null);
+  const usable = !!cpuPlaymatPickerDraft.id;
+  if (preview) {
+    preview.style.backgroundImage = `url("${String(row?.src || window.LLTCG_PLAYMATS?.defaultSrc || 'playmat.png').replace(/"/g, '\\"')}")`;
+    preview.style.filter = `brightness(${cpuPlaymatPickerDraft.brightness})`;
+    preview.classList.toggle('is-default', !usable);
   }
-  const allowed = new Set(['', 'random', ...options.map((o) => o.id)]);
-  sel.value = allowed.has(preferred) ? preferred : '';
+  if (range) {
+    range.value = String(Math.round(cpuPlaymatPickerDraft.brightness * 100));
+    range.disabled = !usable;
+  }
+  if (value) value.textContent = `${Math.round(cpuPlaymatPickerDraft.brightness * 100)}%`;
+}
+
+function fillCpuPlaymatPickerGrid() {
+  const grid = el('cpu-playmat-picker-grid');
+  if (!grid) return;
+  const options = ownedCpuPlaymatOptions();
+  const selected = cpuPlaymatPickerDraft.id;
+  grid.replaceChildren(
+    makeCpuCosmeticTile('playmat', '', tLobbyOr('lobby.cpuCosmeticDefault', 'Default'), '', selected === ''),
+    makeCpuCosmeticTile('playmat', 'random', tLobbyOr('lobby.cpuCosmeticRandom', 'Random (owned)'), options[0]?.src || '', selected === 'random'),
+  );
+  options.forEach((row) => grid.appendChild(makeCpuCosmeticTile('playmat', row.id, row.label, row.src, row.id === selected)));
+  grid.querySelectorAll('[data-cpu-cosmetic-id]').forEach((btn) => btn.addEventListener('click', () => {
+    cpuPlaymatPickerDraft.id = btn.dataset.cpuCosmeticId || '';
+    if (!cpuPlaymatPickerDraft.id) cpuPlaymatPickerDraft.brightness = 1;
+    fillCpuPlaymatPickerGrid();
+    syncCpuPlaymatPickerPreview();
+  }));
+  syncCpuPlaymatPickerPreview();
+}
+
+function openCpuCosmeticPicker(kind) {
+  const overlay = el(kind === 'sleeve' ? 'overlay-cpu-sleeve-picker' : 'overlay-cpu-playmat-picker');
+  if (!overlay) return;
+  if (kind === 'sleeve') fillCpuSleevePickerGrid();
+  else {
+    cpuPlaymatPickerDraft = { id: cpuCosmeticMode('playmat'), brightness: cpuPlaymatBrightness() };
+    fillCpuPlaymatPickerGrid();
+  }
+  applyI18n(overlay);
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeCpuCosmeticPicker(kind) {
+  const overlay = el(kind === 'sleeve' ? 'overlay-cpu-sleeve-picker' : 'overlay-cpu-playmat-picker');
+  overlay?.classList.remove('open');
+  overlay?.setAttribute('aria-hidden', 'true');
 }
 
 function refreshCpuCosmeticSelects() {
-  fillCpuCosmeticSelect(el('sel-cpu-sleeve'), 'sleeve', ownedCpuSleeveOptions());
-  fillCpuCosmeticSelect(el('sel-cpu-playmat'), 'playmat', ownedCpuPlaymatOptions());
+  paintCpuCosmeticCurrent('sleeve', ownedCpuSleeveOptions());
+  paintCpuCosmeticCurrent('playmat', ownedCpuPlaymatOptions());
   const needSleeves = !(window.LLTCG_SLEEVES?.catalog?.length);
   const needMats = !(window.LLTCG_PLAYMATS?.catalog?.length);
   if (!needSleeves && !needMats) return;
@@ -18742,16 +18914,9 @@ function refreshCpuCosmeticSelects() {
     if (needMats && window.LLTCG_PLAYMATS?.loadCatalog) {
       try { await window.LLTCG_PLAYMATS.loadCatalog(); } catch (e) { /* best effort */ }
     }
-    fillCpuCosmeticSelect(el('sel-cpu-sleeve'), 'sleeve', ownedCpuSleeveOptions());
-    fillCpuCosmeticSelect(el('sel-cpu-playmat'), 'playmat', ownedCpuPlaymatOptions());
+    paintCpuCosmeticCurrent('sleeve', ownedCpuSleeveOptions());
+    paintCpuCosmeticCurrent('playmat', ownedCpuPlaymatOptions());
   })();
-}
-
-function persistCpuCosmeticChoice(kind, value) {
-  try {
-    const key = kind === 'sleeve' ? CPU_COSMETIC_LS_SLEEVE : CPU_COSMETIC_LS_PLAYMAT;
-    localStorage.setItem(key, String(value || ''));
-  } catch (e) { /* ignore */ }
 }
 
 function pickOwnedCosmeticId(mode, ownedIds) {
@@ -18768,15 +18933,15 @@ function pickOwnedCosmeticId(mode, ownedIds) {
 }
 
 function resolveCpuCosmeticPayload() {
-  const sleeveMode = el('sel-cpu-sleeve')?.value || '';
-  const playmatMode = el('sel-cpu-playmat')?.value || '';
+  const sleeveMode = cpuCosmeticMode('sleeve');
+  const playmatMode = cpuCosmeticMode('playmat');
   const sleeveId = pickOwnedCosmeticId(sleeveMode, A.ownedSleeves || []);
   const playmatId = pickOwnedCosmeticId(playmatMode, A.ownedPlaymats || []);
   const out = {};
   if (sleeveId) out.sleeve_id = sleeveId;
   if (playmatId) {
     out.playmat_id = playmatId;
-    out.playmat_brightness = 1;
+    out.playmat_brightness = cpuPlaymatBrightness();
   }
   return out;
 }
