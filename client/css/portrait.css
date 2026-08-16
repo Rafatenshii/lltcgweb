@@ -1092,16 +1092,16 @@ html.tcg-portrait-play.tcg-portrait-square{
   --p-stage-outline-scale: 0.68;
 }
 
-/* Tablets: cap content width and keep a phone-like board column centered. */
+/* Tablets + mouse-desktop portrait: cap content width and keep stage cells readable. */
 html.tcg-portrait-play.tcg-portrait-tablet{
   --p-hand-pad-x: 16px;
   --p-board-max-w: min(720px, 100%);
   --p-card-w: calc(((min(720px, 100vw) - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.38);
   --p-hand-mine: calc(var(--p-card-h) * 0.55);
   --p-hand-opp: calc(var(--p-card-h) * 0.48);
-  --p-field-min: 140px;
+  --p-field-min: 160px;
   --p-hud-max: 22vh;
-  --p-stage-outline-scale: 0.78;
+  --p-stage-outline-scale: 0.88;
 }
 html.tcg-portrait-play #screen-game.active{
   display:flex!important;
@@ -1461,7 +1461,9 @@ html.tcg-portrait-play #screen-game .mat-zone{
   align-self:center;
 }
 /* Member stage slots — portrait (63×88), smaller than hand so sizes stay distinct.
-   Hearts / blades use fixed px sizes below and do not scale with this. */
+   Hearts / blades use fixed px sizes below and do not scale with this.
+   Size from the grid cell (height + column width) — avoid 100cqw, which can be 0
+   when container queries have not established on desktop resize into portrait. */
 html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-opp-stage-center,
 html.tcg-portrait-play #screen-game .z-opp-stage-right,
@@ -1469,10 +1471,10 @@ html.tcg-portrait-play #screen-game .z-my-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   aspect-ratio: 63 / 88;
-  height: min(calc(100% * var(--p-stage-outline-scale)), calc(100cqw / 3 * 88 / 63 * var(--p-stage-outline-scale)));
+  height: calc(100% * var(--p-stage-outline-scale));
   width: auto;
-  max-width: calc(100% * var(--p-stage-outline-scale));
-  max-height: 100%;
+  max-width: min(100%, calc(100% * var(--p-stage-outline-scale)));
+  max-height: calc(100% * var(--p-stage-outline-scale));
   justify-self: center;
 }
 /* Opp stages sit above lives — pin to bottom of stage row (toward lives, away from opp hand) */
@@ -3060,6 +3062,6 @@ html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .btn-out{
 }
 html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .mslot,
 html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .lcard{
-  /* Slightly larger stage hit targets on tablets */
-  --p-stage-outline-scale: 0.78;
+  /* Keep stage fill in sync with tablet outline scale */
+  --p-stage-outline-scale: 0.88;
 }
