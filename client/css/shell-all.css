@@ -701,8 +701,24 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
    The playmat remains height-fitted so cards never overlap the hand strips. */
 @media (min-width:1000px) and (min-aspect-ratio:16/10) {
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
-    --side-panel-w:min(600px,max(440px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
+    --side-panel-w:min(600px,max(clamp(280px,23vw,440px),calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
+  }
+}
+@media (min-width:1000px) and (min-aspect-ratio:16/10) and (max-height:1100px) {
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop){
+    --field-card-scale:1.04;
+    --pile-fill-scale:1.02;
+  }
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
+    --hand-strip-h:96px;
+    --hand-card-pad:18px;
+    --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2);
+    --playmat-col-max-w:min(calc(100vw - var(--playmat-gutter)),calc(var(--playmat-mat-max-h) * 1024 / 563));
+  }
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .stage-slot .mslot,
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .live-slot-wrap .lcard.live-card{
+    width:90%;
   }
 }
 .side-panel.side-left{padding-bottom:12px}

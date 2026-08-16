@@ -192,6 +192,25 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   } else {
     ok(`${label}.css fills 16:9 desktop side space with panels`);
   }
+  const densityTokens = ['--hand-strip-h:96px', '--hand-card-pad:18px', '--playmat-mat-max-h:calc(', 'width:90%', '(max-height:1100px)'];
+  for (const token of densityTokens) {
+    if (!src.includes(token)) fail(`${label}.css missing 1080p board-density token ${token}`);
+  }
+  if (densityTokens.every(token => src.includes(token))) {
+    ok(`${label}.css widens the 1080p mat and scales its cards`);
+  }
+}
+
+function desktopMatWidth(w, h, handStrip) {
+  const matH = (h - 2 * handStrip - 5 - 8) / 2;
+  return Math.min(w, matH * 1024 / 563);
+}
+const old1080MatW = desktopMatWidth(1920, 1080, 132);
+const new1080MatW = desktopMatWidth(1920, 1080, 96);
+if (new1080MatW < old1080MatW * 1.08) {
+  fail(`1080p mat widening is too small (${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)})`);
+} else {
+  ok(`1080p mat widens ${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)}px`);
 }
 
 if (process.exitCode) {
