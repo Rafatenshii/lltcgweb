@@ -247,6 +247,7 @@ function renderGame(s, opts = {}) {
     G.liveSel = [];
     G._liveSetLockPid = null;
     setLiveSelMultiPreviewVisible(false);
+    if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
     el('overlay-live')?.classList.remove('open');
   }
 

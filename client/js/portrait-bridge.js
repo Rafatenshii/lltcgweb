@@ -758,20 +758,62 @@
     return panel;
   }
 
+  function forcePlayPanelVisible(panel) {
+    if (!panel) return;
+    panel.classList.add('visible');
+    panel.style.setProperty('display', 'flex', 'important');
+    panel.style.setProperty('visibility', 'visible', 'important');
+    panel.style.setProperty('opacity', '1', 'important');
+    panel.style.setProperty('z-index', '93000', 'important');
+    const empty = global.document.getElementById('hc-empty');
+    if (empty) empty.style.display = 'none';
+  }
+
+  function clearPlayPanelForcedStyles(panel) {
+    if (!panel) return;
+    panel.classList.remove('visible');
+    panel.style.removeProperty('display');
+    panel.style.removeProperty('visibility');
+    panel.style.removeProperty('opacity');
+    panel.style.removeProperty('z-index');
+  }
+
+  /**
+   * LIVE Phase raised cards — same top info sheet as Main member select.
+   * Call after refreshLiveSelPreviewPanel / when clearing liveSel.
+   */
+  function syncLiveSelSheet(s, myId) {
+    if (!portraitActive()) return;
+    ensureChrome();
+    const game = global.document.getElementById('screen-game');
+    const panel = ensurePlayPanelHost();
+    const liveSel = global.G?.liveSel || [];
+    const hasLiveSel = liveSel.length > 0;
+    const hasMemberSel = !!(global.G?.selCard);
+    if (!hasLiveSel) {
+      if (!hasMemberSel) {
+        game?.classList.remove('portrait-play-selecting');
+        clearPlayPanelForcedStyles(panel);
+      }
+      return;
+    }
+    game?.classList.add('portrait-play-selecting');
+    forcePlayPanelVisible(panel);
+  }
+
   function syncPlaySheet(card, s, myId) {
     if (!portraitActive()) return;
     ensureChrome();
     const game = global.document.getElementById('screen-game');
     const panel = ensurePlayPanelHost();
     if (!card) {
-      game?.classList.remove('portrait-play-selecting');
-      if (panel) {
-        panel.classList.remove('visible');
-        panel.style.removeProperty('display');
-        panel.style.removeProperty('visibility');
-        panel.style.removeProperty('opacity');
-        panel.style.removeProperty('z-index');
+      // Keep LIVE raise sheet if cards are still raised.
+      if ((global.G?.liveSel || []).length > 0) {
+        syncLiveSelSheet(s, myId);
+        return;
       }
+      game?.classList.remove('portrait-play-selecting');
+      clearPlayPanelForcedStyles(panel);
       return;
     }
     game?.classList.add('portrait-play-selecting');
@@ -790,16 +832,7 @@
         });
       }
     } catch (_) { /* ignore */ }
-    if (panel) {
-      panel.classList.add('visible');
-      // Force paint above scrim even if other CSS fights us
-      panel.style.setProperty('display', 'block', 'important');
-      panel.style.setProperty('visibility', 'visible', 'important');
-      panel.style.setProperty('opacity', '1', 'important');
-      panel.style.setProperty('z-index', '93000', 'important');
-    }
-    const empty = global.document.getElementById('hc-empty');
-    if (empty) empty.style.display = 'none';
+    forcePlayPanelVisible(panel);
   }
 
   function closeSheet(id) {
@@ -885,6 +918,28 @@
     }
     if (closeAllDeckDrawers()) return true;
     if (global.document.getElementById('screen-game')?.classList.contains('portrait-play-selecting')) {
+      if ((global.G?.liveSel || []).length > 0) {
+        global.G.liveSel = [];
+        const s = global.G?.gameState;
+        const myId = global.G?.playerId;
+        if (typeof global.setLiveSelMultiPreviewVisible === 'function') {
+          global.setLiveSelMultiPreviewVisible(false);
+        }
+        if (typeof global.refreshLiveSelPreviewPanel === 'function' && s && myId) {
+          global.refreshLiveSelPreviewPanel(s, myId);
+        }
+        if (typeof global.updateLiveSetButton === 'function' && s && myId) {
+          global.updateLiveSetButton(s, myId);
+        }
+        if (typeof global.updateLiveScoreHud === 'function' && s && myId) {
+          global.updateLiveScoreHud(s, myId);
+        }
+        if (typeof global.syncHandSelectionClasses === 'function' && s && myId) {
+          global.syncHandSelectionClasses(s, myId);
+        }
+        syncLiveSelSheet(s, myId);
+        return true;
+      }
       if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
       return true;
     }
@@ -1135,6 +1190,7 @@
   global.tcgPortraitOpenLog = openLogSheet;
   global.tcgPortraitOpenInspect = openInspectFromHover;
   global.tcgPortraitSyncPlaySheet = syncPlaySheet;
+  global.tcgPortraitSyncLiveSelSheet = syncLiveSelSheet;
   global.tcgPortraitEnsurePhaseMenu = ensurePhaseMenu;
   global.tcgPortraitSyncMenu = syncPortraitMenuForMode;
   global.tcgPortraitBindZonePreviews = bindZonePreviewTargets;

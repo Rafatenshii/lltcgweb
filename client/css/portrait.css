@@ -2101,6 +2101,28 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
   line-height:1.35;
   white-space:pre-wrap;
 }
+html.tcg-portrait-play #screen-game .card-hover-panel.live-multi{
+  gap:8px;
+  padding-top:14px!important;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi{
+  gap:8px;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi-thumbs .hc-live-thumb{
+  width:min(88px,30vw);
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi-title{
+  font-size:16px;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi-score{
+  font-size:26px;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi-hearts .hicon{
+  width:40px;height:40px;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-multi-hearts .heart-stat-row{
+  font-size:28px;
+}
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow,
 html.tcg-portrait-play #screen-game #hc-actions{

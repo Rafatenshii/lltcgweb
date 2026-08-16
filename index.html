@@ -59,10 +59,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=48">
+<link rel="stylesheet" href="client/css/shell-all.css?v=49">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=63">
+<link rel="stylesheet" href="client/css/portrait.css?v=64">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1573,6 +1573,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         <div class="hc-live-multi" id="hc-live-multi" hidden aria-hidden="true">
           <div class="hc-live-multi-thumbs" id="hc-live-multi-thumbs"></div>
           <div class="hc-live-multi-title" id="hc-live-multi-title"></div>
+          <div class="hc-live-multi-score" id="hc-live-multi-score"></div>
           <div class="hc-live-multi-sub" id="hc-live-multi-sub"></div>
           <div class="hc-live-multi-hearts" id="hc-live-multi-hearts"></div>
           <div class="hc-live-multi-label" id="hc-live-multi-label" data-i18n="live.combinedHearts">Combined required hearts</div>
@@ -2355,7 +2356,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=124"></script>
+<script src="i18n.js?v=125"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -26704,6 +26705,7 @@ function fillLiveSelMultiPreview(s, myId) {
   const lives = liveSelSelectedLiveCards(s, myId);
   const thumbs = el('hc-live-multi-thumbs');
   const title = el('hc-live-multi-title');
+  const scoreEl = el('hc-live-multi-score');
   const sub = el('hc-live-multi-sub');
   const heartsEl = el('hc-live-multi-hearts');
   const label = el('hc-live-multi-label');
@@ -26727,6 +26729,24 @@ function fillLiveSelMultiPreview(s, myId) {
     const c = findHand(iid, s, myId);
     return acc + (c?.card_type === 'メンバー' ? 1 : 0);
   }, 0);
+  const breakdown = liveSelScoreBreakdown(s, myId);
+  if (scoreEl) {
+    if (breakdown.liveCount > 0) {
+      if (breakdown.bonusTotal > 0) {
+        scoreEl.textContent = t('live.combinedScoreBonus', {
+          base: breakdown.baseTotal,
+          bonus: breakdown.bonusTotal,
+          total: breakdown.total,
+        });
+      } else {
+        scoreEl.textContent = t('live.combinedScore', { score: breakdown.total });
+      }
+      scoreEl.style.display = '';
+    } else {
+      scoreEl.textContent = '';
+      scoreEl.style.display = 'none';
+    }
+  }
   if (sub) {
     if (memberCount > 0) {
       sub.textContent = t(memberCount === 1 ? 'live.plusMembersOne' : 'live.plusMembers', { n: memberCount });
@@ -26754,6 +26774,7 @@ function refreshLiveSelPreviewPanel(s, myId) {
     if (lives.length === 1) {
       G.hoverCardId = lives[0].instance_id;
       refreshHandPreviewPanel(lives[0], s, myId);
+      if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
       return;
     }
     if (!(G.liveSel || []).length) {
@@ -26765,6 +26786,7 @@ function refreshLiveSelPreviewPanel(s, myId) {
       if (panel) panel.classList.remove('visible');
       if (empty) empty.style.display = '';
       if (actions) { actions.innerHTML = ''; actions.style.display = 'none'; }
+      if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
       return;
     }
     // Raised members only (no Live cards) — keep last single-card preview if any.
@@ -26774,6 +26796,7 @@ function refreshLiveSelPreviewPanel(s, myId) {
       G.hoverCardId = last.instance_id;
       refreshHandPreviewPanel(last, s, myId);
     }
+    if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
     return;
   }
 
@@ -26787,6 +26810,7 @@ function refreshLiveSelPreviewPanel(s, myId) {
   if (empty) empty.style.display = 'none';
   if (actions) { actions.innerHTML = ''; actions.style.display = 'none'; }
   document.querySelectorAll('#hand-row .hcard.hover-sel').forEach(n => n.classList.remove('hover-sel'));
+  if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
 }
 
 function updateLiveScoreHud(s, myId) {
@@ -27064,9 +27088,6 @@ function toggleLiveSelect(iid, s, myId) {
   updateLiveSetButton(s, myId);
   updateLiveScoreHud(s, myId);
   refreshLiveSelPreviewPanel(s, myId);
-  if (!liveSelMultiPreviewActive(s, myId) && G.liveSel.includes(iid)) {
-    showHoverCardPreview(card, s, myId);
-  }
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   renderPhaseBar(s, s.players[myId], s.players[oppId], myId, oppId);
 }
@@ -27079,6 +27100,8 @@ async function confirmLiveSetFromHand() {
   const ids = [...G.liveSel];
   G.liveSel = [];
   setLiveSelMultiPreviewVisible(false);
+  if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
+  else clearHoverCardPreview();
   syncHandSelectionClasses(s, myId);
   G._liveSetLockPid = myId;
   const cur = G.gameState;
@@ -30233,14 +30256,14 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=76"></script>
-<script src="client/js/board-render.js?v=22"></script>
+<script src="client/js/board-render.js?v=23"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=26"></script>
 <script src="client/js/cpu-ai.js?v=10"></script>
-<script src="client/js/portrait-bridge.js?v=22"></script>
+<script src="client/js/portrait-bridge.js?v=23"></script>
 <script src="client/js/portrait-deck.js?v=2"></script>
 <script src="client/js/portrait-board.js?v=15"></script>
 <script>void bootApp();</script>
