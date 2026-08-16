@@ -33,6 +33,9 @@
     G._livePostRevealBoard = null;
     G._liveStorageOutcomePending = false;
     G._liveStorageOutcomesPlayedKey = null;
+    G._liveStorageOutcomesPlayedBluffKey = null;
+    G._liveStorageOutcomesPlayedLiveKey = null;
+    if (typeof resetMovementLedger === 'function') resetMovementLedger();
     G._liveRoundPlaybackActive = false;
     G._liveRoundPostSpectacleReady = false;
     G._liveSpectacleGateRunning = false;
@@ -241,7 +244,9 @@
     G._livePostRevealBoard = null;
     G._liveStorageOutcomePending = false;
     G._liveStorageOutcomesPlayedKey = null;
-    G._liveStorageOutcomesPlayedKey = null;
+    G._liveStorageOutcomesPlayedBluffKey = null;
+    G._liveStorageOutcomesPlayedLiveKey = null;
+    if (typeof resetMovementLedger === 'function') resetMovementLedger();
     G._promptSubmitKey = null;
     G._resolvePromptSentKey = null;
     G._lastResolvedPromptKey = null;
@@ -528,6 +533,9 @@
     if (s.live_show?.stage === 'done' && typeof sealLiveShowSpectacleTurn === 'function') {
       if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       sealLiveShowSpectacleTurn(s, prev);
+      if (typeof playLiveShowPostJudgeStorageExits === 'function') {
+        await playLiveShowPostJudgeStorageExits(prev, s, G.playerId);
+      }
     } else if (G._perfSpectacleActive
         && prev?.live_show?.stage
         && prev.live_show.stage !== 'done'
@@ -536,6 +544,9 @@
       // instead of leaving stage=done — close observer chrome stuck from the last beat.
       if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       if (typeof sealLiveShowSpectacleTurn === 'function') sealLiveShowSpectacleTurn(s, prev);
+      if (typeof playLiveShowPostJudgeStorageExits === 'function') {
+        await playLiveShowPostJudgeStorageExits(prev, s, G.playerId);
+      }
     }
 
     if (spectacleGateActive && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {
@@ -818,9 +829,8 @@
           prepareWrPileAnimPending(animPrev, s, moves);
           G.gameState = s;
           renderGame(s, { skipHand: deferHand, skipOppHand: deferOppHand });
-          // The authoritative board is now painted. Departure latches are only
-          // needed to guard stale held snapshots during the flight handoff.
-          if (!G._liveStorageOutcomePending) G._liveStorageDepartedIids = null;
+          // Keep round-scoped departure latches so newer-seq paints cannot invent
+          // ghost Live→WR/Success flights after the first owned handoff.
           const silentWrAdds = animPrev ? wrCardsAddedWithoutAnimMoves(animPrev, s, moves) : [];
           if (silentWrAdds.length) {
             void refreshWaitingRoomPiles(s, G.playerId, {

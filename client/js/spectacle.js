@@ -3660,6 +3660,13 @@ function enteringPerformanceShow(prev, next) {
 
 function rememberPerfSpectacleBaseline(prev, next) {
   if (isSlideshowTutorial() || !prev || !next) return;
+  if (isEnteringLiveSetPhase(prev, next)) {
+    // New Live round — drop prior outcome ownership so exits can animate again.
+    G._liveStorageOutcomesPlayedKey = null;
+    G._liveStorageOutcomesPlayedBluffKey = null;
+    G._liveStorageOutcomesPlayedLiveKey = null;
+    if (typeof resetMovementLedger === 'function') resetMovementLedger();
+  }
   if (isLeavingLiveSetPhase(prev, next)) {
     if (isEmptyLiveSkipTransition(prev, next) || isMemberOnlyLiveStorageRound(prev, next)) {
       G._deferPerfSpectaclePrev = null;
@@ -7604,6 +7611,35 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
   G._deferPerfSpectaclePrev = null;
 }
 
+/**
+ * Live cards move to Success/WR only when the server leaves judge (ack → done).
+ * Play those exits once from the held storage board after spectacle chrome closes.
+ */
+async function playLiveShowPostJudgeStorageExits(fromBoard, toBoard, myId) {
+  if (!fromBoard || !toBoard || typeof playDeferredLiveStorageOutcomes !== 'function') {
+    return false;
+  }
+  if (typeof liveStorageLiveOutcomesAlreadyPlayed === 'function'
+      && liveStorageLiveOutcomesAlreadyPlayed(toBoard)) {
+    return false;
+  }
+  const storageBoard = G._livePostRevealBoard || fromBoard;
+  const ran = await playDeferredLiveStorageOutcomes(storageBoard, toBoard, myId, {
+    kinds: 'live',
+    skipInitialRender: true,
+  });
+  if (ran || (typeof liveStorageLiveOutcomesAlreadyPlayed === 'function'
+      && liveStorageLiveOutcomesAlreadyPlayed(toBoard))) {
+    if (typeof commitLiveRoundAfterOutcomes === 'function') {
+      commitLiveRoundAfterOutcomes(toBoard);
+    } else {
+      G._liveStorageOutcomePending = false;
+      G._livePostRevealBoard = null;
+    }
+  }
+  return ran;
+}
+
 async function fetchLiveShowStateNow(opts = {}) {
   if (!G.roomId || !G.token || typeof parseGameApiResponse !== 'function') return null;
   try {
@@ -7755,15 +7791,19 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     perfClearHeartCheckHold();
     return;
   }
-  // Member bluffs stay through Yell; when outcomes lands they leave storage → WR first.
+  // Member bluffs stay through Yell; when outcomes lands they leave storage → WR.
+  // Live→Success/WR waits until after the judge beat (kinds:'live').
   if (stage === 'outcomes'
-      && typeof collectLiveBluffDiscards === 'function'
-      && typeof playLiveStorageWrDiscards === 'function'
-      && collectLiveBluffDiscards(prev, next).length) {
-    if (G._perfSpectacleActive) perfCloseSpectacle();
-    await playLiveStorageWrDiscards(prev, next, myId, {
-      initialDelayMs: typeof LIVE_BLUFF_WR_DELAY_MS === 'number' ? LIVE_BLUFF_WR_DELAY_MS : 180,
-    });
+      && typeof playDeferredLiveStorageOutcomes === 'function') {
+    if (typeof ensureLivePostRevealBoardSnapshot === 'function') {
+      ensureLivePostRevealBoardSnapshot(prev);
+    }
+    G._liveStorageOutcomePending = true;
+    if (typeof collectLiveBluffDiscards === 'function'
+        && collectLiveBluffDiscards(prev, next).length) {
+      if (G._perfSpectacleActive) perfCloseSpectacle();
+      await playDeferredLiveStorageOutcomes(prev, next, myId, { kinds: 'bluff' });
+    }
   }
   await perfSeekPhase(perfPrev, next, myId, target, { forward: true, animate: true });
   if (liveShowPresentationCancelled()) {
@@ -8012,6 +8052,19 @@ async function presentServerLiveShowStage(prev, next, myId) {
         await perfSleep(1400);
         if (G._perfSpectacleActive) perfCloseSpectacle();
         sealLiveShowSpectacleTurn(board, prior);
+        // Opponent may still be on judge; fetch once so Success/WR flights can start
+        // as soon as winners are applied (stage=done / live_show unset).
+        const afterJudge = await fetchLiveShowStateNow({ allowHeal: true });
+        if (afterJudge && (afterJudge.seq ?? 0) >= (board.seq ?? 0)) {
+          const nextStage = afterJudge.live_show?.stage;
+          if (!nextStage || nextStage === 'done') {
+            await playLiveShowPostJudgeStorageExits(board, afterJudge, myId);
+            prior = board;
+            board = afterJudge;
+            G.gameState = board;
+            G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
+          }
+        }
         break;
       }
 
@@ -8075,6 +8128,9 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
       if (!stage || stage === 'done' || judgePresentedAndAcked) {
         sealLiveShowSpectacleTurn(board || next, prior);
+      }
+      if ((!stage || stage === 'done') && board && prior) {
+        await playLiveShowPostJudgeStorageExits(prior, board, myId);
       }
     }
     releaseLivePollsAndFlush();

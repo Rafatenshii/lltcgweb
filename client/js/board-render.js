@@ -2055,7 +2055,11 @@ function renderLiveSlots(prefix, zone, isMe, pid){
 
     // A held pre-outcome snapshot can be repainted while a newer state is
     // committing. Once a flight has handed off, never recreate that source.
-    if (card?.instance_id && G._liveStorageDepartedIids?.has(card.instance_id)) {
+    if (card?.instance_id && (
+      (typeof liveStorageDepartureLatched === 'function'
+        ? liveStorageDepartureLatched(card.instance_id, s?.turn ?? s?.live_show?.turn)
+        : G._liveStorageDepartedIids?.has(card.instance_id))
+    )) {
       e.innerHTML = '';
       continue;
     }

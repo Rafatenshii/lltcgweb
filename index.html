@@ -2414,7 +2414,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/game-sync.js?v=44"></script>
-<script src="client/js/state-apply.js?v=55"></script>
+<script src="client/js/state-apply.js?v=56"></script>
 <script src="client/js/stamps.js?v=18"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=86"></script>
@@ -5022,6 +5022,10 @@ function prepareClientReconnectState(s) {
   G._deferPerfSpectaclePrev = null;
   G._livePostRevealBoard = null;
   G._liveStorageOutcomePending = false;
+  G._liveStorageOutcomesPlayedKey = null;
+  G._liveStorageOutcomesPlayedBluffKey = null;
+  G._liveStorageOutcomesPlayedLiveKey = null;
+  if (typeof resetMovementLedger === 'function') resetMovementLedger();
   G._livePollHold = false;
   G._liveRoundPlaybackActive = false;
   G._liveRoundPostSpectacleReady = false;
@@ -15444,6 +15448,11 @@ let G = {
   _liveRoundPostSpectacleReady:false,
   _liveStorageOutcomePending:false,
   _liveStorageOutcomesPlayedKey:null,
+  _liveStorageOutcomesPlayedBluffKey:null,
+  _liveStorageOutcomesPlayedLiveKey:null,
+  _liveStorageDepartedIids:null,
+  _liveStorageDepartedRound:null,
+  _movementLedger:null,
   _liveSetStorageBaseline:null,
   _emptyLiveRoundPresentedTurns:null,
   _deferredLiveState:null,
@@ -18378,6 +18387,36 @@ function flightInnerRotation(card, zone, faceDown = false) {
   return 0;
 }
 
+/**
+ * Single visual descriptor for a card move — keeps face/back + orientation
+ * consistent across clone capture and flyCard (no double-rotate ghosts).
+ */
+function buildMovementVisualDescriptor(card, fromZone, toZone, faceDown = false, opts = {}) {
+  const sourceNode = opts.sourceNode || null;
+  const memberWaitUnspin = isMemberStageWaitToWrFlight(card, fromZone, toZone, sourceNode);
+  const memberShellSpin = isMemberLiveToWrFlight(card, fromZone, toZone) || memberWaitUnspin;
+  const memberArtMorph = isMemberStorageCrossFlight(card, fromZone, toZone) && !memberShellSpin;
+  const liveArtMorph = isLiveHandLiveCrossFlight(card, fromZone, toZone) || memberArtMorph;
+  const fromClass = flightOrientClass(card, fromZone);
+  const toClass = flightOrientClass(card, toZone);
+  const startInnerRot = flightInnerRotation(card, fromZone, faceDown);
+  const endInnerRot = flightInnerRotation(card, toZone, faceDown);
+  const innerSpinMorph = !liveArtMorph && !memberShellSpin && startInnerRot !== endInnerRot;
+  return {
+    faceDown: !!faceDown,
+    fromClass,
+    toClass,
+    startInnerRot,
+    endInnerRot,
+    memberShellSpin,
+    memberArtMorph,
+    liveArtMorph,
+    innerSpinMorph,
+    morphClass: memberShellSpin ? ' member-shell-spin'
+      : (liveArtMorph ? ' art-spin-morph' : (innerSpinMorph ? ' card-spin-morph' : '')),
+  };
+}
+
 /** Keep live-card art from stretching when flight crosses portrait ↔ landscape rects. */
 function flightGhostScale(fromW, fromH, toW, toH, card) {
   const sx = toW / fromW;
@@ -19593,16 +19632,122 @@ function isMemberLiveStorageWrMove(prev, move) {
   return (move.to?.zone || '') === 'waiting_room';
 }
 
+function isLiveStorageExitMove(move) {
+  return (move?.from?.zone || '') === 'live'
+    && ((move?.to?.zone || '') === 'waiting_room' || (move?.to?.zone || '') === 'success');
+}
+
+function isHandToLivePlacementMove(move) {
+  return (move?.from?.zone || '') === 'hand' && (move?.to?.zone || '') === 'live';
+}
+
+/** Round identity for Live movement ownership (prefer live_show.turn). */
+function liveMovementRoundId(state, fallback = null) {
+  const showTurn = state?.live_show?.turn ?? fallback?.live_show?.turn;
+  if (showTurn != null && Number.isFinite(Number(showTurn))) return Number(showTurn);
+  if (state?.turn != null && Number.isFinite(Number(state.turn))) return Number(state.turn);
+  if (fallback?.turn != null && Number.isFinite(Number(fallback.turn))) return Number(fallback.turn);
+  return null;
+}
+
+function movementLedgerKey(roundId, move) {
+  const iid = move?.iid || move?.card?.instance_id || '';
+  const from = move?.from?.zone || '';
+  const to = move?.to?.zone || '';
+  const pid = move?.to?.pid || move?.from?.pid || '';
+  const slot = move?.from?.index != null ? move.from.index
+    : (move?.to?.index != null ? move.to.index : '');
+  return `${G.roomId || ''}:${roundId ?? '?'}:${iid}:${from}->${to}:${pid}:${slot}`;
+}
+
+function ensureMovementLedger() {
+  if (!(G._movementLedger instanceof Map)) G._movementLedger = new Map();
+  return G._movementLedger;
+}
+
+function resetMovementLedger() {
+  G._movementLedger = new Map();
+  G._liveStorageDepartedIids = null;
+  G._liveStorageDepartedRound = null;
+}
+
+function latchLiveStorageDeparture(iid, roundId = null) {
+  if (!iid) return;
+  if (!G._liveStorageDepartedIids) G._liveStorageDepartedIids = new Set();
+  G._liveStorageDepartedIids.add(iid);
+  if (roundId != null) G._liveStorageDepartedRound = roundId;
+}
+
+function liveStorageDepartureLatched(iid, roundId = null) {
+  if (!iid || !G._liveStorageDepartedIids?.has(iid)) return false;
+  if (roundId == null || G._liveStorageDepartedRound == null) return true;
+  return Number(G._liveStorageDepartedRound) === Number(roundId);
+}
+
+/**
+ * Reserve exclusive ownership of a logical card move for presentation.
+ * Returns { key, ok }. ok=false means another path already reserved/settled it.
+ */
+function reserveMovementPresentation(roundId, move) {
+  if (!move?.iid && !move?.card?.instance_id) {
+    return { key: null, ok: true };
+  }
+  const key = movementLedgerKey(roundId, move);
+  const ledger = ensureMovementLedger();
+  const cur = ledger.get(key);
+  if (cur === 'reserved' || cur === 'settled') {
+    return { key, ok: false, state: cur };
+  }
+  if (isLiveStorageExitMove(move) && liveStorageDepartureLatched(move.iid, roundId)) {
+    ledger.set(key, 'settled');
+    return { key, ok: false, state: 'settled' };
+  }
+  ledger.set(key, 'reserved');
+  if (isLiveStorageExitMove(move)) latchLiveStorageDeparture(move.iid, roundId);
+  return { key, ok: true };
+}
+
+function settleMovementPresentation(key) {
+  if (!key) return;
+  ensureMovementLedger().set(key, 'settled');
+}
+
+function movementPresentationOwned(roundId, move) {
+  if (!move?.iid) return false;
+  const key = movementLedgerKey(roundId, move);
+  const cur = ensureMovementLedger().get(key);
+  return cur === 'reserved' || cur === 'settled';
+}
+
 function shouldDeferLiveStorageMemberWr(prev, next) {
   if (!prev || !next) return false;
   if (isEmptyLiveSkipTransition(prev, next) || isMemberOnlyLiveStorageRound(prev, next)) return false;
   return liveStorageOutcomePlaybackPending(prev, next);
 }
 
+/** Logical outcome identity (not seq) so newer polls cannot replay the same exits. */
+function liveStorageOutcomesLogicalKey(final, kind = 'all') {
+  if (!final) return null;
+  const turn = liveMovementRoundId(final);
+  return `${final.room_id || G.roomId || ''}:${turn ?? '?'}:outcomes:${kind}`;
+}
+
 function liveStorageOutcomesAlreadyPlayed(final) {
   if (!final) return false;
-  const outcomeKey = `${final.room_id || G.roomId || ''}:${final.turn ?? '?'}:${final.seq ?? 0}:outcomes`;
-  return G._liveStorageOutcomesPlayedKey === outcomeKey;
+  const bluffKey = liveStorageOutcomesLogicalKey(final, 'bluff');
+  const liveKey = liveStorageOutcomesLogicalKey(final, 'live');
+  return (!!bluffKey && G._liveStorageOutcomesPlayedBluffKey === bluffKey)
+    && (!!liveKey && G._liveStorageOutcomesPlayedLiveKey === liveKey);
+}
+
+function liveStorageBluffOutcomesAlreadyPlayed(final) {
+  const bluffKey = liveStorageOutcomesLogicalKey(final, 'bluff');
+  return !!bluffKey && G._liveStorageOutcomesPlayedBluffKey === bluffKey;
+}
+
+function liveStorageLiveOutcomesAlreadyPlayed(final) {
+  const liveKey = liveStorageOutcomesLogicalKey(final, 'live');
+  return !!liveKey && G._liveStorageOutcomesPlayedLiveKey === liveKey;
 }
 
 function filterLiveStorageDeferredMoves(prev, moves, next) {
@@ -19612,10 +19757,13 @@ function filterLiveStorageDeferredMoves(prev, moves, next) {
   // invents an empty-slot from-rect once portrait dests resolve → ghost flights.
   const deferMember = shouldDeferLiveStorageMemberWr(prev, next)
     || liveStorageOutcomePlaybackPending(prev, next)
-    || liveStorageOutcomesAlreadyPlayed(next);
+    || liveStorageOutcomesAlreadyPlayed(next)
+    || !!(next?.live_show?.stage && next.live_show.stage !== 'done');
+  const roundId = liveMovementRoundId(next, prev);
   return (moves || []).filter(m => {
     if (isLiveCardOutcomeMove(prev, m)) return false;
     if (isMemberLiveStorageWrMove(prev, m) && deferMember) return false;
+    if (isLiveStorageExitMove(m) && movementPresentationOwned(roundId, m)) return false;
     return true;
   });
 }
@@ -19647,9 +19795,11 @@ function preLiveRevealMoves(prev, final) {
 }
 
 function postLiveRevealOutcomeMoves(prev, final) {
+  const roundId = liveMovementRoundId(final, prev);
   return diffCardMoves(prev, final).filter(m => {
     if (!isLiveCardOutcomeMove(prev, m)) return false;
-    if (m.iid && G._liveStorageDepartedIids?.has(m.iid)) return false;
+    if (m.iid && liveStorageDepartureLatched(m.iid, roundId)) return false;
+    if (movementPresentationOwned(roundId, m)) return false;
     const pid = m.to?.pid || m.from?.pid;
     const toZone = m.to?.zone || '';
     // Card already sits at the destination on the from-board — re-flying causes ghosts.
@@ -19684,26 +19834,46 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
 }
 
 /** After spectacle: member bluffs → WR, then live cards → success / WR. */
-async function playDeferredLiveStorageOutcomes(fromState, final, myId) {
+async function playDeferredLiveStorageOutcomes(fromState, final, myId, opts = {}) {
   let board = fromState || G.gameState;
   if (!board || !final) return false;
-  if (final.status === 'finished' || G.gameState?.status === 'finished') {
-    // Still fly once into Success for the winning card, but never from a snapshot
-    // that already shows those cards in success_lives (ghost replay).
-  }
-  const outcomeKey = `${final.room_id || G.roomId || ''}:${final.turn ?? '?'}:${final.seq ?? 0}:outcomes`;
-  if (G._liveStorageOutcomesPlayedKey === outcomeKey) return false;
+  const kinds = opts.kinds || 'all'; // 'all' | 'bluff' | 'live'
+  const wantBluff = kinds === 'all' || kinds === 'bluff';
+  const wantLive = kinds === 'all' || kinds === 'live';
   let ran = false;
-  if (collectLiveBluffDiscards(board, final).length) {
-    await playLiveStorageWrDiscards(board, final, myId, {
-      initialDelayMs: LIVE_BLUFF_WR_DELAY_MS,
-      skipInitialRender: true,
-    });
-    board = G.gameState;
-    ran = true;
+  if (wantBluff && !liveStorageBluffOutcomesAlreadyPlayed(final)
+      && collectLiveBluffDiscards(board, final).length) {
+    const bluffKey = liveStorageOutcomesLogicalKey(final, 'bluff');
+    G._liveStorageOutcomesPlayedBluffKey = bluffKey;
+    try {
+      await playLiveStorageWrDiscards(board, final, myId, {
+        initialDelayMs: opts.initialDelayMs ?? LIVE_BLUFF_WR_DELAY_MS,
+        skipInitialRender: opts.skipInitialRender !== false,
+      });
+      board = G.gameState;
+      ran = true;
+    } catch (e) {
+      G._liveStorageOutcomesPlayedBluffKey = null;
+      throw e;
+    }
+  } else if (wantBluff && collectLiveBluffDiscards(board, final).length === 0) {
+    G._liveStorageOutcomesPlayedBluffKey = liveStorageOutcomesLogicalKey(final, 'bluff');
   }
-  if (await playPostLiveRevealOutcomes(board || G.gameState, final, myId)) ran = true;
-  if (ran) G._liveStorageOutcomesPlayedKey = outcomeKey;
+  if (wantLive && !liveStorageLiveOutcomesAlreadyPlayed(final)) {
+    const liveKey = liveStorageOutcomesLogicalKey(final, 'live');
+    const pendingLive = postLiveRevealOutcomeMoves(board || G.gameState, final);
+    if (pendingLive.length) {
+      G._liveStorageOutcomesPlayedLiveKey = liveKey;
+      try {
+        if (await playPostLiveRevealOutcomes(board || G.gameState, final, myId)) ran = true;
+      } catch (e) {
+        G._liveStorageOutcomesPlayedLiveKey = null;
+        throw e;
+      }
+    } else {
+      G._liveStorageOutcomesPlayedLiveKey = liveKey;
+    }
+  }
   return ran;
 }
 
@@ -19980,8 +20150,7 @@ function removeLiveStorageCardFromDomIfDeparted(fromLoc, iid, myId, stateAfter) 
   const stillInLive = (stateAfter.players?.[pid]?.live_zone || [])
     .some(c => c.instance_id === iid);
   if (stillInLive) return;
-  if (!G._liveStorageDepartedIids) G._liveStorageDepartedIids = new Set();
-  G._liveStorageDepartedIids.add(iid);
+  latchLiveStorageDeparture(iid, liveMovementRoundId(stateAfter));
   removeLiveStorageCardFromDom(fromLoc, iid, myId);
 }
 
@@ -20075,7 +20244,8 @@ function holdLiveRoundBoardForPrompts(next, myId) {
 function commitLiveRoundAfterOutcomes(fallback) {
   G._liveStorageOutcomePending = false;
   G._livePostRevealBoard = null;
-  G._liveStorageDepartedIids = null;
+  // Keep round-scoped departure latches until the next Live round starts —
+  // clearing here allowed a newer-seq paint to invent ghost exit flights.
   // Prefer the post-outcome board (empty live_zone). A deferred hold from mid-spectacle
   // still has storage cards and would briefly re-paint them after flights finish.
   if (fallback) G._deferredLiveState = fallback;
@@ -20843,15 +21013,20 @@ async function executeCardMoveAnimation(m, opts) {
   const handSlots = { before: handBefore, after: handAfter || collectHandSlotRects() };
   // Live→WR/Success exits: keep the mat source hidden until DOM remove finishes.
   // Default keepHidden:false races flyCard's async handoff and briefly re-shows storage.
-  const isLiveStorageExit = m.from?.zone === 'live'
-    && (m.to?.zone === 'waiting_room' || m.to?.zone === 'success');
+  const isLiveStorageExit = isLiveStorageExitMove(m);
   const keepHiddenEffective = keepHidden || isLiveStorageExit;
   const hideLiveSource = hideSource || isLiveStorageExit;
   const deferSourceHide = hideLiveSource && keepHiddenEffective;
+  const roundId = liveMovementRoundId(stateAfter, stateBefore);
+  const reservation = reserveMovementPresentation(roundId, m);
 
   // Ghost guard: card already handed off, or already painted at the destination
   // (state-apply renderGame-before-fly). Portrait dest fallbacks made these visible again.
-  if (isLiveStorageExit && m.iid && G._liveStorageDepartedIids?.has(m.iid)) {
+  if (!reservation.ok) {
+    if (isLiveStorageExit) {
+      clearAnimHideIid(m.iid);
+      removeLiveStorageCardFromDomIfDeparted(m.from, m.iid, myId, renderState || stateAfter);
+    }
     return;
   }
 
@@ -20881,6 +21056,7 @@ async function executeCardMoveAnimation(m, opts) {
   if (isLiveStorageExit && cardEl && domCardAtMoveLoc(cardEl, m.to, myId)) {
     // Already at Success/WR in the DOM — do not invent a live-slot ghost flight.
     clearAnimHideIid(m.iid);
+    settleMovementPresentation(reservation.key);
     return;
   }
   let fr = fromRectFromSavedPrev({ iid: m.iid }, m.from, prevRects);
@@ -20951,6 +21127,7 @@ async function executeCardMoveAnimation(m, opts) {
     }
     if (handoffPromise) await handoffPromise;
   } finally {
+    settleMovementPresentation(reservation.key);
     if (!keepHiddenEffective) clearAnimHideIid(m.iid);
   }
 }
@@ -21676,7 +21853,23 @@ function shouldSkipLogSyncLivePlacementAnim(final, spec) {
 
 function filterLogSyncAnimSpecs(specs, final) {
   if (!specs?.length) return specs;
-  return specs.filter(spec => !shouldSkipLogSyncLivePlacementAnim(final, spec));
+  const roundId = liveMovementRoundId(final);
+  const liveShowOwnsExits = !!(final?.live_show?.stage && final.live_show.stage !== 'done');
+  return specs.filter(spec => {
+    if (shouldSkipLogSyncLivePlacementAnim(final, spec)) return false;
+    if (liveShowOwnsExits
+        && spec?.from === 'live'
+        && (spec?.to === 'waiting_room' || spec?.to === 'success')) {
+      return false;
+    }
+    const move = {
+      iid: spec?.iid,
+      from: spec?.from ? { zone: spec.from, pid: spec.pid, index: spec.from_index } : null,
+      to: spec?.to ? { zone: spec.to, pid: spec.pid, index: spec.index } : null,
+    };
+    if (isLiveStorageExitMove(move) && movementPresentationOwned(roundId, move)) return false;
+    return true;
+  });
 }
 
 async function playLogSyncedSequence(prev, final, newEntries, myId) {
@@ -22963,21 +23156,23 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
   const fromZone = opts.fromZone || null;
   const toZone = opts.toZone || null;
   const faceDown = !!opts.faceDown;
-  const fromClass = flightOrientClass(card, fromZone);
-  const toClass = flightOrientClass(card, toZone);
+  const visual = opts.visual
+    || buildMovementVisualDescriptor(card, fromZone, toZone, faceDown, {
+      sourceNode: opts.sourceNode || null,
+    });
+  const fromClass = visual.fromClass;
+  const toClass = visual.toClass;
   const flightMyId = opts.myId || G.playerId;
   const flightSeatClass = (opts.fromPid && flightMyId && opts.fromPid === flightMyId)
     ? ' flight-seat-my'
     : (opts.fromPid && flightMyId && opts.fromPid !== flightMyId ? ' flight-seat-opp' : '');
-  const startInnerRot = flightInnerRotation(card, fromZone, faceDown);
-  const endInnerRot = flightInnerRotation(card, toZone, faceDown);
-  const memberWaitUnspin = isMemberStageWaitToWrFlight(card, fromZone, toZone, opts.sourceNode);
-  const memberShellSpin = isMemberLiveToWrFlight(card, fromZone, toZone) || memberWaitUnspin;
-  const memberArtMorph = isMemberStorageCrossFlight(card, fromZone, toZone) && !memberShellSpin;
-  const liveArtMorph = isLiveHandLiveCrossFlight(card, fromZone, toZone) || memberArtMorph;
-  const innerSpinMorph = !liveArtMorph && !memberShellSpin && startInnerRot !== endInnerRot;
-  const morphClass = memberShellSpin ? ' member-shell-spin'
-    : (liveArtMorph ? ' art-spin-morph' : (innerSpinMorph ? ' card-spin-morph' : ''));
+  const startInnerRot = visual.startInnerRot;
+  const endInnerRot = visual.endInnerRot;
+  const memberShellSpin = visual.memberShellSpin;
+  const memberArtMorph = visual.memberArtMorph;
+  const liveArtMorph = visual.liveArtMorph;
+  const innerSpinMorph = visual.innerSpinMorph;
+  const morphClass = visual.morphClass;
   return new Promise(resolve => {
     setTimeout(async () => {
       const layer = el('card-flight-layer');
@@ -23107,17 +23302,23 @@ async function playCardMoveAnimations(prevState, nextState, prevRects, myId, han
   if (!G._flightHandArtClones?.size && !G._flightLiveArtClones?.size) {
     captureFlightArtClones(moves, myId, prevState);
   }
+  const placements = moves.filter(isHandToLivePlacementMove);
+  const draws = moves.filter(m => isHiddenSourceToHand(m));
+  const other = moves.filter(m => !isHandToLivePlacementMove(m) && !isHiddenSourceToHand(m));
   const sortKey = m => {
     const z = m.from?.zone || '';
     if (z === 'hand' || z === 'stage' || z === 'live') return 0;
     if (z === 'main_deck' || z === 'energy_deck') return 1;
     return 2;
   };
-  const capped = moves.slice(0, 14).sort((a, b) => sortKey(a) - sortKey(b));
-  TCG_DEBUG.log('anim', 'card moves', { total: moves.length, playing: capped.length, ...TCG_DEBUG.trans(prevState, nextState) });
-  if (!G._handDepartPrimed?.size) primeUnifiedHandLayouts(nextState, myId, moves);
-  const handSlotsLive = collectHandSlotRects();
-  try {
+  const playBatch = async (batch) => {
+    if (!batch.length) return;
+    const capped = batch.slice(0, 14).sort((a, b) => sortKey(a) - sortKey(b));
+    TCG_DEBUG.log('anim', 'card moves batch', {
+      total: batch.length, playing: capped.length, ...TCG_DEBUG.trans(prevState, nextState),
+    });
+    if (!G._handDepartPrimed?.size) primeUnifiedHandLayouts(nextState, myId, capped);
+    const handSlotsLive = collectHandSlotRects();
     await Promise.all(capped.map((m, i) => executeCardMoveAnimation(m, {
       myId,
       stateBefore: prevState,
@@ -23128,6 +23329,17 @@ async function playCardMoveAnimations(prevState, nextState, prevRects, myId, han
       delayMs: staggerDelayForDrawMoves(capped, i),
       renderState: nextState,
     })));
+  };
+  try {
+    // Live set: finish storage placements before replacement draws so order
+    // matches the table (place → draw), not parallel ghost overlap.
+    if (placements.length && draws.length) {
+      await playBatch(placements);
+      await playBatch(other);
+      await playBatch(draws);
+    } else {
+      await playBatch(moves);
+    }
   } finally {
     clearWrPileAnimPending();
     clearHandShiftBaselines();
@@ -30815,8 +31027,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=80"></script>
-<script src="client/js/board-render.js?v=23"></script>
+<script src="client/js/spectacle.js?v=81"></script>
+<script src="client/js/board-render.js?v=24"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
