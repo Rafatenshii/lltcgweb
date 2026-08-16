@@ -57,12 +57,29 @@ for (const cls of ['tcg-portrait-square', 'tcg-portrait-tablet', '--p-board-max-
 const shellCss = fs.readFileSync(path.join(root, 'client', 'css', 'shell-all.css'), 'utf8');
 const boardCss = fs.readFileSync(path.join(root, 'client', 'css', 'board.css'), 'utf8');
 for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
-  if (!src.includes('Square / near-square foldables') && !src.includes('aspect-ratio:auto')) {
+  if (!src.includes('Square / near-square foldables') || !src.includes('aspect-ratio:auto')) {
     fail(`${label}.css missing square fold 20:9 soften`);
   } else {
     ok(`${label}.css softens 20:9 on max-aspect-ratio 5/4`);
   }
+
+  const tabletRule = src.match(/html\.tcg-tablet-landscape\.tcg-mobile-viewport #screen-game \.game-viewport-frame \.game-wide-wrap\{([^}]*)\}/)?.[1] || '';
+  if (tabletRule.includes('--mobile-action-dock-h')) {
+    fail(`${label}.css changes the action dock outside the square-fold query`);
+  } else {
+    ok(`${label}.css preserves standard 16:9 tablet dock sizing`);
+  }
+
+  const radioRule = src.match(/html\.tcg-mobile-viewport #screen-game \.game-viewport-frame \.side-panel\.side-right \.tcg-radio-stack:not\(\[hidden\]\)\{([^}]*)\}/)?.[1] || '';
+  if (!radioRule.includes('min-height:186px') || radioRule.includes('clamp(')) {
+    fail(`${label}.css changes the standard 16:9 radio stack sizing`);
+  } else {
+    ok(`${label}.css preserves standard 16:9 radio stack sizing`);
+  }
 }
+
+if ((16 / 9) <= (5 / 4)) fail('16:9 must not match the square-fold aspect query');
+else ok('16:9 is excluded from the square-fold aspect query');
 
 /** Mirror of tcgPortraitSizeClass for fixture checks. */
 function sizeClass(w, h) {

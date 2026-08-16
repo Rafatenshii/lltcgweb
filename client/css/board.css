@@ -1078,7 +1078,6 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
 html.tcg-tablet-landscape.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
   --side-panel-w:21cqw;
   --mobile-hand-card-h:40cqh;
-  --mobile-action-dock-h:9cqh;
 }
 @media (max-aspect-ratio: 5/4) {
   html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
@@ -1180,7 +1179,7 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-righ
   padding:0.22cqw 0.3cqw 0.15cqw;flex:1 1 0;min-height:0;
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-right .tcg-radio-stack:not([hidden]){
-  flex-shrink:0;display:flex;flex-direction:column;min-height:clamp(120px, 22cqh, 186px);overflow:hidden;
+  flex-shrink:0;display:flex;flex-direction:column;min-height:186px;overflow:hidden;
 }
 @media (max-aspect-ratio: 5/4) {
   html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-right .tcg-radio-stack:not([hidden]){
