@@ -237,7 +237,7 @@
     if (screen === 'sticker') {
       return {
         kind: 'sticker',
-        details: 'Browsing the sticker shop',
+        details: 'Browsing the sticker exchange',
         state: 'Sticker shop',
         largeImage: presenceArt('loveca_sticker'),
         joinable: false,
