@@ -1868,6 +1868,7 @@ function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
   const okIds = perfLivePerfSuccessIds(next, pid);
   const yellIds = new Set((perfYellRevealInline(next)?.[pid] || []).map(c => c?.instance_id).filter(Boolean));
   const roundIids = new Set();
+  const performedWrIids = new Set();
   const noteZone = (zone) => {
     for (const c of zone || []) {
       if (c?.instance_id) roundIids.add(c.instance_id);
@@ -1915,15 +1916,21 @@ function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
       }
     });
     if (performed && (logFail > 0 || logSuccess > 0) && byId.size < (logFail + logSuccess)) {
-      collectWrLivesMatchingPerformingLog(next, pid, turn).forEach(add);
+      collectWrLivesMatchingPerformingLog(next, pid, turn).forEach(c => {
+        if (c?.instance_id) performedWrIids.add(c.instance_id);
+        add(c);
+      });
     }
   }
   let cards = [...byId.values()];
-  if (okIds?.size || roundIids.size) {
+  if (okIds?.size || roundIids.size || performedWrIids.size) {
     cards = cards.filter(c =>
       (okIds && okIds.has(c.instance_id))
       || roundIids.has(c.instance_id)
       || yellIds.has(c.instance_id)
+      // A batched poll can clear failed Lives before we captured live_zone.
+      // The round's "is performing" log is authoritative for these WR cards.
+      || performedWrIids.has(c.instance_id)
     );
   }
   return clampLiveZoneCards(cards);

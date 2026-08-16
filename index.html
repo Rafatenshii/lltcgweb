@@ -21182,6 +21182,9 @@ async function playAnimSpec(spec, playback, finalState, myId, delayMs = 0) {
 
 async function playTailMoveAnimations(playback, final, myId, opts = {}) {
   let moves = diffCardMoves(playback, final);
+  if (typeof opts.moveFilter === 'function') {
+    moves = moves.filter(opts.moveFilter);
+  }
   if (opts.deferredDrawIids?.size) {
     moves = filterDeferredHandDrawMoves(moves, opts.deferredDrawIids);
   } else if (G._deferredHandDrawIids?.size) {
@@ -21314,6 +21317,13 @@ async function playTailMoveAnimations(playback, final, myId, opts = {}) {
   }
 }
 
+/** Only turn-prep pile flights belong after a Live round has already settled its outcomes. */
+function isTurnPrepPileMove(move) {
+  if (!move?.from || !move?.to) return false;
+  return (move.from.zone === 'main_deck' && move.to.zone === 'hand')
+    || (move.from.zone === 'energy_deck' && move.to.zone === 'energy');
+}
+
 function playerIdFromLogName(state, name) {
   if (!state?.players || !name) return null;
   const n = String(name).trim();
@@ -21435,7 +21445,7 @@ async function playPostLiveTurnPrepSequence(prev, final, newEntries, myId) {
 
   if (!turnPrepEntries.length) {
     try {
-      await playTailMoveAnimations(playback, final, myId, {});
+      await playTailMoveAnimations(playback, final, myId, { moveFilter: isTurnPrepPileMove });
       G.gameState = final;
       G._prevLogLen = final.log?.length || 0;
       renderGame(final, { skipLog: true });
@@ -21478,7 +21488,7 @@ async function playPostLiveTurnPrepSequence(prev, final, newEntries, myId) {
       }
       await sleep(ANIM_STEP_MS);
     }
-    await playTailMoveAnimations(playback, final, myId, {});
+    await playTailMoveAnimations(playback, final, myId, { moveFilter: isTurnPrepPileMove });
     applyTurnPrepEntriesToState(final, final, turnPrepEntries);
     G.gameState = final;
     G._prevLogLen = final.log?.length || 0;
@@ -30775,7 +30785,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=77"></script>
+<script src="client/js/spectacle.js?v=78"></script>
 <script src="client/js/board-render.js?v=23"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
