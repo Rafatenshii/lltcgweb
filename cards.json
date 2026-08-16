@@ -75761,9 +75761,9 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "hearts_if_min_energy",
+                    "type": "blade_bonus_if_min_energy",
                     "min_energy": 10,
-                    "blade": 3
+                    "amount": 3
                 }
             ],
             "subunit": "KALEIDOSCORE",
@@ -75813,9 +75813,9 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "hearts_if_min_energy",
+                    "type": "blade_bonus_if_min_energy",
                     "min_energy": 10,
-                    "blade": 3
+                    "amount": 3
                 }
             ],
             "subunit": "KALEIDOSCORE",
@@ -75865,9 +75865,9 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "hearts_if_min_energy",
+                    "type": "blade_bonus_if_min_energy",
                     "min_energy": 10,
-                    "blade": 3
+                    "amount": 3
                 }
             ],
             "subunit": "KALEIDOSCORE",
@@ -75917,9 +75917,9 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "hearts_if_min_energy",
+                    "type": "blade_bonus_if_min_energy",
                     "min_energy": 10,
-                    "blade": 3
+                    "amount": 3
                 }
             ],
             "subunit": "KALEIDOSCORE",

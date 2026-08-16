@@ -3503,6 +3503,12 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
                     $blade += intval($ab['amount'] ?? 2);
                 }
             }
+            if (($ab['trigger'] ?? '') === 'continuous'
+                && ($ab['type'] ?? '') === 'blade_bonus_if_min_energy') {
+                if (countEnergyInZone($state['players'][$pid] ?? []) >= intval($ab['min_energy'] ?? 10)) {
+                    $blade += intval($ab['amount'] ?? 3);
+                }
+            }
             if (($ab['type'] ?? '') === 'blade_if_either_stage_cost_min' && empty($ab['hearts'])) {
                 $minCost = intval($ab['min_cost'] ?? 13);
                 $ok = !empty($ab['self_only'])

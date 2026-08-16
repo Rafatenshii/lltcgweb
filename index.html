@@ -25417,6 +25417,16 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
     if (type === 'blade_bonus_per_success_lives') {
       bonus += (p.success_lives || []).length * Number(ab.amount ?? 1);
     }
+    if (type === 'blade_bonus_if_exact_energy') {
+      if ((p.energy_zone || []).length === Number(ab.exact_energy ?? 7)) {
+        bonus += Number(ab.amount ?? 2);
+      }
+    }
+    if (type === 'blade_bonus_if_min_energy') {
+      if ((p.energy_zone || []).length >= Number(ab.min_energy ?? 10)) {
+        bonus += Number(ab.amount ?? 3);
+      }
+    }
     if (type === 'continuous_hearts_in_slot' && (ab.slot || '') === slot) {
       // hearts only — no blade
     }
