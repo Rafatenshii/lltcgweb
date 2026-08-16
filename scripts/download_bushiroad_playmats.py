@@ -159,9 +159,23 @@ def is_ll(text: str) -> bool:
     return any(m.lower() in blob or m in t for m in markers)
 
 
+def _norm_title(title: str) -> str:
+    """Strip spaces / HTML entities so 『高坂 穂乃果』 matches 高坂穂乃果."""
+    s = (
+        str(title or "")
+        .replace("&nbsp;", " ")
+        .replace("&mu;", "μ")
+        .replace("&micro;", "μ")
+        .replace("&#956;", "μ")
+    )
+    return re.sub(r"[\s\u3000]+", "", s)
+
+
 def classify(title: str) -> tuple[str, str]:
     group = "Other"
     blob = title.lower()
+    compact = _norm_title(title)
+    compact_low = compact.lower()
     if "蓮ノ空" in title or "hasunosora" in blob:
         group = "Hasunosora"
     elif "虹ヶ咲" in title or "nijigasaki" in blob:
@@ -170,28 +184,34 @@ def classify(title: str) -> tuple[str, str]:
         group = "Liella"
     elif "サンシャイン" in title or "sunshine" in blob or "aqours" in blob:
         group = "Aqours"
-    elif "ラブライブ" in title or "love live" in blob or "μ's" in title or "µ's" in title:
+    elif "ラブライブ" in title or "love live" in blob or "μ's" in title or "µ's" in title or "μ's" in compact:
         group = "Muse"
 
     idol = "Group"
     # Prefer member names over group labels (titles often include スーパースター / μ's / Aqours).
     member_keys = [(k, g, n) for k, g, n in IDOLS if n != "Group"]
     group_keys = [(k, g, n) for k, g, n in IDOLS if n == "Group"]
-    for key, g, name in sorted(member_keys, key=lambda t: -len(t[0])):
-        if key in title or key.lower() in blob:
+    for key, g, name in sorted(member_keys, key=lambda t: -len(_norm_title(t[0]))):
+        nk = _norm_title(key)
+        if not nk:
+            continue
+        if nk in compact or nk.lower() in compact_low:
             idol = name
             if group == "Other":
                 group = g
             break
     if idol == "Group":
-        for key, g, name in sorted(group_keys, key=lambda t: -len(t[0])):
-            if key in title or key.lower() in blob:
+        for key, g, name in sorted(group_keys, key=lambda t: -len(_norm_title(t[0]))):
+            nk = _norm_title(key)
+            if not nk:
+                continue
+            if nk in compact or nk.lower() in compact_low:
                 idol = name
                 if group == "Other":
                     group = g
                 break
     # Year groups for Sunshine
-    if "『2年生』" in title or "『2年生』" in title:
+    if "『2年生』" in title:
         idol = "2nd Years"
         group = "Aqours"
     elif "『1年生』" in title:

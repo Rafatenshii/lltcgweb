@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -57,6 +58,34 @@ def main() -> int:
         ok = sum(1 for r in m_items if isinstance(r, dict) and r.get("ok"))
         if ok and abs(ok - len(items)) > 5:
             errors.append(f"manifest ok={ok} vs catalog={len(items)} (drift)")
+
+    # Spaced JP idol names in 『…』 must not stay under Group.
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from download_bushiroad_playmats import classify as classify_title  # type: ignore
+    except Exception:
+        classify_title = None  # type: ignore
+    if callable(classify_title):
+        for row in items:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "")
+            m = re.search(r"『([^』]+)』", name)
+            if not m:
+                continue
+            tag = m.group(1)
+            if not re.search(r"[一-龯ぁ-んァ-ン]", tag):
+                continue
+            if re.search(r"ラブライブ|Aqours|μ|µ|Liella|虹|蓮|サンシャイン|スーパースター|[123]年生", tag):
+                continue
+            _g, expect_idol = classify_title(name)
+            got = str(row.get("idol") or "")
+            if expect_idol != "Group" and got == "Group":
+                errors.append(f"{row.get('id')}: idol is Group but title has member {tag!r}")
+            elif expect_idol != "Group" and got != expect_idol:
+                errors.append(
+                    f"{row.get('id')}: idol {got!r} != classified {expect_idol!r} for {tag!r}"
+                )
 
     if errors:
         print(f"FAIL ({len(errors)}):", file=sys.stderr)
