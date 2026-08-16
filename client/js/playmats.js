@@ -57,8 +57,14 @@
   }
 
   function resolvePlaymatSrc(id) {
-    const mat = getPlaymat(id);
-    return mat && mat.src ? mat.src : '';
+    const sid = normalizePlaymatId(id);
+    if (!sid) return '';
+    const mat = getPlaymat(sid);
+    // Match rendering must not depend on the shop catalog request succeeding.
+    // Every owned playmat asset follows this canonical path, so an equipped mat
+    // can paint immediately while the catalog is still loading (or after a
+    // transient catalog fetch failure).
+    return mat && mat.src ? mat.src : ('assets/playmats/' + encodeURIComponent(sid) + '.webp');
   }
 
   function cleanPlaymatDisplayName(name) {
