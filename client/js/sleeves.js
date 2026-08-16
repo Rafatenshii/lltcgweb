@@ -422,24 +422,15 @@
       art.classList.add('deck-sleeve-current__art--none');
       art.style.backgroundImage = cssImageUrl(DEFAULT_BACK);
     }
-    const meta = document.createElement('span');
-    meta.className = 'deck-sleeve-current__meta';
-    const name = document.createElement('span');
-    name.className = 'deck-sleeve-current__name';
     const tFn = typeof global.t === 'function' ? global.t : null;
-    name.textContent = sleeve
+    const label = sleeve
       ? formatSleeveDisplayName(sleeve)
       : ((tFn && tFn('deck.sleeveNone')) || 'None');
-    const hint = document.createElement('span');
-    hint.className = 'deck-sleeve-current__hint';
-    hint.textContent = (tFn && tFn('deck.sleeveChange')) || 'Change';
-    meta.appendChild(name);
-    meta.appendChild(hint);
     btn.appendChild(art);
-    btn.appendChild(meta);
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.setAttribute('aria-controls', 'overlay-deck-sleeve');
-    btn.title = name.textContent;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
     btn.dataset.sleeveId = selectedId || '';
     return btn;
   }

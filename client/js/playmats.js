@@ -220,24 +220,15 @@
       art.classList.add('deck-playmat-current__art--none');
       art.style.backgroundImage = cssImageUrl(DEFAULT_PLAYMAT);
     }
-    const meta = document.createElement('span');
-    meta.className = 'deck-playmat-current__meta';
-    const name = document.createElement('span');
-    name.className = 'deck-playmat-current__name';
     const tFn = typeof global.t === 'function' ? global.t : null;
-    name.textContent = mat
+    const label = mat
       ? formatPlaymatDisplayName(mat)
       : ((tFn && tFn('deck.playmatNone')) || 'Default');
-    const hint = document.createElement('span');
-    hint.className = 'deck-playmat-current__hint';
-    hint.textContent = (tFn && tFn('deck.playmatChange')) || 'Change';
-    meta.appendChild(name);
-    meta.appendChild(hint);
     btn.appendChild(art);
-    btn.appendChild(meta);
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.setAttribute('aria-controls', 'overlay-deck-playmat');
-    btn.title = name.textContent;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
     btn.dataset.playmatId = selectedId || '';
     return btn;
   }

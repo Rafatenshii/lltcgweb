@@ -159,33 +159,39 @@ body.playmat-shop-lightbox-open{overflow:hidden}
 /* Deck builder playmat picker (beside sleeve) */
 .deck-builder-meta__cosmetics{
   display:flex;
-  flex-wrap:wrap;
-  gap:14px 18px;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  gap:10px;
   align-items:flex-start;
 }
+.deck-builder-meta__sleeve,
 .deck-builder-meta__playmat{
-  min-width:min(220px,100%);
-  flex:1 1 200px;
+  min-width:0;
+  flex:0 0 auto;
+  width:auto;
+}
+.deck-builder-meta__playmat .deck-builder-hint--compact{
+  display:none;
+}
+#screen-deck .deck-builder-meta__playmat #deck-playmat-empty-hint:not([hidden]){
+  display:block;
 }
 .deck-playmat-picker{display:block}
 .deck-playmat-current{
-  display:flex;align-items:center;gap:10px;
-  width:100%;max-width:280px;padding:8px 10px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.22);
-  color:inherit;cursor:pointer;text-align:left;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:auto;max-width:100%;padding:6px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.22);
+  color:inherit;cursor:pointer;
 }
-.deck-playmat-current:hover{border-color:rgba(255,200,220,.45)}
+.deck-playmat-current:hover{border-color:rgba(255,200,220,.45);background:rgba(0,0,0,.3)}
 .deck-playmat-current__art{
-  width:72px;height:40px;border-radius:6px;flex:0 0 auto;
+  width:96px;height:auto;aspect-ratio:1024/563;border-radius:6px;flex:0 0 auto;
   background:#111 center/cover no-repeat;box-shadow:0 2px 8px rgba(0,0,0,.35);
 }
 .deck-playmat-current__art--none{opacity:.85}
-.deck-playmat-current__meta{display:flex;flex-direction:column;gap:2px;min-width:0}
-.deck-playmat-current__name{
-  font-size:12px;font-weight:700;line-height:1.25;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;
-}
-.deck-playmat-current__hint{font-size:11px;opacity:.65}
+.deck-playmat-current__meta,
+.deck-playmat-current__name,
+.deck-playmat-current__hint{display:none}
 
 .deck-playmat-overlay .deck-sleeve-overlay__shell,
 .deck-playmat-overlay__shell{

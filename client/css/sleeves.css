@@ -158,27 +158,26 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 .deck-sleeve-current{
   display:inline-flex;
   align-items:center;
-  gap:10px;
+  justify-content:center;
   min-width:0;
-  max-width:100%;
-  padding:8px 12px 8px 8px;
+  padding:6px;
   border-radius:10px;
   border:1px solid rgba(255,255,255,.28);
   background:rgba(0,0,0,.22);
   color:#fff;
   cursor:pointer;
   font:inherit;
-  text-align:left;
 }
 .deck-sleeve-current:hover{
   border-color:rgba(255,107,168,.55);
   background:rgba(0,0,0,.3);
 }
 .deck-sleeve-current__art{
-  width:48px;
-  height:48px;
+  width:52px;
+  height:auto;
+  aspect-ratio:63 / 88;
   flex:0 0 auto;
-  border-radius:3px;
+  border-radius:4px;
   background-position:center;
   background-size:cover;
   background-repeat:no-repeat;
@@ -186,7 +185,7 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 }
 .deck-sleeve-current__art--none{
   border-radius:4px;
-  width:34px;
+  width:40px;
   height:auto;
   aspect-ratio:63/88;
 }
@@ -194,26 +193,10 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
   background-size:contain;
   background-color:rgba(0,0,0,.35);
 }
-.deck-sleeve-current__meta{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  min-width:0;
-}
-.deck-sleeve-current__name{
-  font-size:13px;
-  font-weight:700;
-  line-height:1.25;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  max-width:min(220px,46vw);
-}
+.deck-sleeve-current__meta,
+.deck-sleeve-current__name,
 .deck-sleeve-current__hint{
-  font-size:11px;
-  font-weight:600;
-  color:rgba(255,255,255,.72);
-  letter-spacing:.02em;
+  display:none;
 }
 .deck-sleeve-tile{
   display:flex;
