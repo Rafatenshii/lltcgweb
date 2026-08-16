@@ -192,7 +192,7 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   } else {
     ok(`${label}.css fills 16:9 desktop side space with panels`);
   }
-  const densityTokens = ['--hand-strip-h:96px', '--hand-card-pad:18px', '--playmat-mat-max-h:calc(', 'width:90%', '(max-height:1100px)'];
+  const densityTokens = ['--hand-strip-h:96px', '--hand-card-pad:18px', '--playmat-mat-max-h:calc(', '--side-panel-w:min(440px', 'width:90%', '(max-height:1100px)'];
   for (const token of densityTokens) {
     if (!src.includes(token)) fail(`${label}.css missing 1080p board-density token ${token}`);
   }
@@ -211,6 +211,30 @@ if (new1080MatW < old1080MatW * 1.08) {
   fail(`1080p mat widening is too small (${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)})`);
 } else {
   ok(`1080p mat widens ${old1080MatW.toFixed(1)} → ${new1080MatW.toFixed(1)}px`);
+}
+
+const panel1080W = Math.min(440, Math.max(280, (1920 - new1080MatW) / 2));
+if (panel1080W !== 440) fail(`1080p panels must retain their original 440px width, got ${panel1080W}`);
+else ok('1080p panels retain their original 440px width');
+
+function packedDesktopHandWidth(avail, cardW, count) {
+  let step = cardW * 0.76;
+  if (count > 1 && cardW + step * (count - 1) > avail) {
+    step = Math.max(1, (avail - cardW) / (count - 1));
+  }
+  return cardW + step * Math.max(0, count - 1);
+}
+const packedWidth = packedDesktopHandWidth(new1080MatW - 24, 80, 30);
+if (packedWidth > new1080MatW - 24 + 0.01) {
+  fail(`large desktop hand spills past the playmat (${packedWidth.toFixed(1)}px)`);
+} else {
+  ok('large desktop hand packs inside the playmat borders');
+}
+
+if (!indexSrc.includes(': Math.max(1, (avail - cardW) / (n - 1))')) {
+  fail('desktop hand fan is missing fit-to-playmat packing');
+} else {
+  ok('desktop hand fan uses fit-to-playmat packing');
 }
 
 if (process.exitCode) {

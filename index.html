@@ -101,7 +101,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=54">
+<link rel="stylesheet" href="client/css/shell-all.css?v=55">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 <link rel="stylesheet" href="client/css/portrait.css?v=65">
@@ -17216,7 +17216,11 @@ function layoutHandFan(fanEl, opts = {}) {
   } else {
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
-      step = Math.max((avail - cardW) / (n - 1), cardW * (mobile ? 0.5 : 0.38));
+      // Desktop hands must remain inside the playmat. Keep mobile's readable
+      // overlap floor, but let desktop cards pack as tightly as necessary.
+      step = mobile
+        ? Math.max((avail - cardW) / (n - 1), cardW * 0.5)
+        : Math.max(1, (avail - cardW) / (n - 1));
     }
   }
   let slot = 0;
