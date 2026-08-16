@@ -1893,6 +1893,28 @@ function cpuResolveHangRiskPrompts(pr, cpu, tier, read, s) {
         if (b.card_type === 'メンバー') return 1;
         return (b.score || 0) - (a.score || 0);
       });
+    const need = Math.max(1, Number(pr.pick_count || 1));
+    const distinct = !!(pr.ability?.distinct_groups);
+    if (need > 1 || distinct) {
+      const picked = [];
+      const usedGroups = new Set();
+      for (const c of ranked) {
+        if (picked.length >= need) break;
+        const g = String(c.group || '');
+        if (distinct) {
+          if (!g || usedGroups.has(g)) continue;
+          usedGroups.add(g);
+        }
+        if (c.instance_id) picked.push(c.instance_id);
+      }
+      if (picked.length) {
+        cpuAct('resolve_prompt', picked.length === 1 ? { card_id: picked[0] } : { card_ids: picked });
+        return true;
+      }
+      if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
+      cpuSchedulePromptRetryIfStuck(s, cpu);
+      return true;
+    }
     const id = ranked[0]?.instance_id || eligible[0];
     if (id) { cpuAct('resolve_prompt', { card_id: id }); return true; }
     if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
@@ -5058,6 +5080,28 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
         if (b.card_type === 'メンバー') return 1;
         return (b.score || 0) - (a.score || 0);
       });
+    const need = Math.max(1, Number(pr.pick_count || 1));
+    const distinct = !!(pr.ability?.distinct_groups);
+    if (need > 1 || distinct) {
+      const picked = [];
+      const usedGroups = new Set();
+      for (const c of ranked) {
+        if (picked.length >= need) break;
+        const g = String(c.group || '');
+        if (distinct) {
+          if (!g || usedGroups.has(g)) continue;
+          usedGroups.add(g);
+        }
+        if (c.instance_id) picked.push(c.instance_id);
+      }
+      if (picked.length) {
+        cpuAct('resolve_prompt', picked.length === 1 ? { card_id: picked[0] } : { card_ids: picked });
+        return true;
+      }
+      if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
+      cpuSchedulePromptRetryIfStuck(s, cpu);
+      return true;
+    }
     const id = ranked[0]?.instance_id || eligible[0];
     if (id) { cpuAct('resolve_prompt', { card_id: id }); return true; }
     if (pr.optional) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }

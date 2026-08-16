@@ -307,6 +307,8 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
   const eligible=new Set(pr.eligible_ids||[]);
   const need=pr.pick_count||1;
   const optional=!!pr.optional;
+  const distinctGroups=!!(pr.ability?.distinct_groups);
+  const cardGroup=(c)=>String(c?.group||'');
   const noneEligible=eligible.size===0;
   const singleTap=need===1;
   const skipLabel=noneEligible
@@ -315,7 +317,9 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
   el('pick-ttl').textContent=promptDisplayTitle(pr, 'Choose from deck');
   el('pick-msg').textContent=promptDisplayText(pr, noneEligible
     ? 'No matching cards among these. Confirm to put them into the Waiting Room.'
-    : 'Choose card(s) to add to your hand.');
+    : (distinctGroups
+      ? `Choose up to ${need} card(s) with different group names to add to your hand.`
+      : 'Choose card(s) to add to your hand.'));
   const g=el('pick-grid'); g.innerHTML='';
   g.classList.remove('pick-grid-order');
   const btnOk=el('btn-pick-ok');
@@ -356,6 +360,15 @@ global.openLookedDeckPick = function openLookedDeckPick(pr){
         if(G.pickMarked.has(card.instance_id)) G.pickMarked.delete(card.instance_id);
         else {
           if(G.pickMarked.size>=need){ toast(t('prompt.selectAtMost', { n: need })); return; }
+          if(distinctGroups){
+            const gName=cardGroup(card);
+            if(!gName){ toast(t('prompt.cardNotEligible')||'That card has no group name.'); return; }
+            const clash=[...G.pickMarked].some(id=>{
+              const other=cards.find(c=>c.instance_id===id);
+              return other && cardGroup(other)===gName;
+            });
+            if(clash){ toast(t('prompt.onePerGroup')||'Only 1 card per group name.'); return; }
+          }
           G.pickMarked.add(card.instance_id);
           sfxCardPick();
         }

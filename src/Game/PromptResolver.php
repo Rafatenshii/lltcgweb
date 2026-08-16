@@ -3852,6 +3852,22 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     throw new Exception('Card not eligible to pick');
                 }
             }
+            if (!empty($ability['distinct_groups'])) {
+                $seenGroups = [];
+                foreach ($pickIds as $id) {
+                    foreach ($looked as $c) {
+                        if (($c['instance_id'] ?? '') !== $id) {
+                            continue;
+                        }
+                        $g = (string)($c['group'] ?? '');
+                        if ($g === '' || isset($seenGroups[$g])) {
+                            throw new Exception('Must pick at most 1 card per group name');
+                        }
+                        $seenGroups[$g] = true;
+                        break;
+                    }
+                }
+            }
             $pickedN = count($pickIds);
             if ($destMode === 'hand_or_stage' && $pickedN === 1) {
                 $pickedCard = null;

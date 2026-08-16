@@ -1376,6 +1376,10 @@ function cardMatchesLookPick(array $card, array $cfg): bool {
     if (!empty($names) && !cardMatchesNames($card, $names)) {
         return false;
     }
+    // Mei bp5-007 etc.: reveal by group name — Energy / no-group cards are not eligible.
+    if (!empty($cfg['distinct_groups']) && ($card['group'] ?? '') === '') {
+        return false;
+    }
     return cardMatchesGroup($card, $cfg['group'] ?? '', $cfg['filter'] ?? '');
 }
 
@@ -1395,7 +1399,7 @@ function lookPickIsOptional(array $cfg): bool {
 /** Minimum main-deck cards needed for a discard-then effect to be worth doing (0 = no deck requirement). */
 function optionalThenDeckLookMin(array $then): int {
     $type = $then['type'] ?? '';
-    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named', 'look_reveal_heart_threshold', 'look_reveal_group_bladeless'], true)) {
+    if (in_array($type, ['look_reveal_filter', 'look_reveal_group', 'look_reveal_named', 'look_reveal_heart_threshold', 'look_reveal_group_bladeless', 'look_reveal_distinct_groups'], true)) {
         return max(1, intval($then['look'] ?? 1));
     }
     if ($type === 'look_reveal_live_score_plus') {
@@ -1481,6 +1485,10 @@ function beginLookRevealPick(array $state, string $pid, string $name, array &$p,
         $promptText = $optional
             ? 'Choose 1 Member to add to your hand or play to an empty Stage area (or skip).'
             : 'Choose 1 Member to add to your hand or play to an empty Stage area.';
+    } elseif (!empty($cfg['distinct_groups'])) {
+        $promptText = $optional
+            ? "Choose up to $pickCount card(s) with different group names to add to your hand (or skip)."
+            : "Choose up to $pickCount card(s) with different group names to add to your hand.";
     } else {
         $promptText = $optional
             ? ($pickCount === 1

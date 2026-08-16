@@ -938,6 +938,28 @@ function resolveOptionalDiscardPromptChoice(
                     $state['seq']++;
                     return $state;
                 }
+            } elseif (($then['type'] ?? '') === 'look_reveal_distinct_groups') {
+                // Mei PL!SP-bp5-007 — discard already paid; open shared deck look (1 per group).
+                unset($state['pending_prompt']);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    ' — [' . ($prompt['source_name'] ?? 'Member') . "] discarded $need.");
+                $state = beginLookRevealPick(
+                    $state,
+                    $owner,
+                    $prompt['source_name'] ?? 'Member',
+                    $ownerP,
+                    [
+                        'type'            => 'look_reveal_distinct_groups',
+                        'look'            => intval($then['look'] ?? 5),
+                        'pick'            => intval($then['max_pick'] ?? $then['pick'] ?? 3),
+                        'optional_pick'   => true,
+                        'distinct_groups' => true,
+                    ]
+                );
+                if (!empty($state['pending_prompt'])) {
+                    $state['seq']++;
+                    return $state;
+                }
             } elseif (($then['type'] ?? '') === 'look_reveal_live_score_plus') {
                 // Honoka bp5-001 — discard already paid; run Live score+bonus look.
                 unset($state['pending_prompt']);

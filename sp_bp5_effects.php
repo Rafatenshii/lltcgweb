@@ -409,22 +409,13 @@ function spBp5ResolveEffect(array $state, string $pid, array $source, array $ab,
 
         case 'look_reveal_distinct_groups':
             if (!empty($state['pending_prompt'])) break;
-            $look = intval($ab['look'] ?? 5);
-            $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
-            if (empty($top)) break;
-            $state['pending_prompt'] = [
-                'type'        => 'spbp5_distinct_groups',
-                'owner'       => $pid,
-                'responder'   => $pid,
-                'source_name' => $name,
-                'top_cards'   => array_map('cardPromptSummary', $top),
-                'max_pick'    => intval($ab['max_pick'] ?? 3),
-                'picked_groups' => [],
-                'picked_ids'  => [],
-                'prompt'      => 'Reveal up to 1 card per group name (max 3) to add to hand.',
-                'ability'     => $ab,
-            ];
-            $state['_spbp5_surveil_rest'] = $top;
+            $state = beginLookRevealPick($state, $pid, $name, $p, [
+                'type'             => 'look_reveal_distinct_groups',
+                'look'             => intval($ab['look'] ?? 5),
+                'pick'             => intval($ab['max_pick'] ?? $ab['pick'] ?? 3),
+                'optional_pick'    => true,
+                'distinct_groups'  => true,
+            ]);
             break;
 
         case 'look_reveal_subunit_or_blade_group':
