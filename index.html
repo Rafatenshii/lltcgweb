@@ -6529,11 +6529,19 @@ async function loadBoosterScreen(opts = {}) {
   el('pack-reveal').replaceChildren();
   const daily = await accountGet('daily_status');
   const info = daily.daily || {};
+  if (A.profile) {
+    A.profile.daily = info;
+    if (daily.ranked_pr && typeof daily.ranked_pr === 'object') {
+      A.profile.ranked_pr = daily.ranked_pr;
+    }
+  } else {
+    A.profile = { daily: info, ranked_pr: daily.ranked_pr || undefined };
+  }
   if (daily.star_gems != null) {
     A.starGems = Number(daily.star_gems) || 0;
     if (A.profile) A.profile.star_gems = A.starGems;
   }
-  el('booster-daily-info').textContent = (info.remaining ?? 0) + ' pack(s) left today (JST)';
+  el('booster-daily-info').textContent = t('booster.packsLeft', { n: info.remaining ?? 0 });
   updateStarGemsUI();
   syncBoosterOpenButton(info.remaining ?? 0, !!prevPick || !!A.boxPick);
   if (!A.boxes.length || A.boxes.some(b => /^https?:\/\//i.test(String(b.image || '')))) {
@@ -6932,6 +6940,9 @@ async function openDailyPack() {
     try {
       const daily = await accountGet('daily_status');
       if (daily.star_gems != null) A.starGems = Number(daily.star_gems) || 0;
+      if (daily.daily && A.profile) A.profile.daily = daily.daily;
+      else if (daily.daily) A.profile = { ...(A.profile || {}), daily: daily.daily };
+      if (A.profile && daily.star_gems != null) A.profile.star_gems = A.starGems;
       const remainingNow = daily?.daily?.remaining ?? A.profile?.daily?.remaining ?? 0;
       syncBoosterOpenButton(remainingNow, !!A.boxPick);
       updateStarGemsUI();
@@ -6966,6 +6977,9 @@ async function openBoosterBox() {
     try {
       const daily = await accountGet('daily_status');
       if (daily.star_gems != null) A.starGems = Number(daily.star_gems) || 0;
+      if (daily.daily && A.profile) A.profile.daily = daily.daily;
+      else if (daily.daily) A.profile = { ...(A.profile || {}), daily: daily.daily };
+      if (A.profile && daily.star_gems != null) A.profile.star_gems = A.starGems;
       const remainingNow = daily?.daily?.remaining ?? A.profile?.daily?.remaining ?? 0;
       syncBoosterOpenButton(remainingNow, !!A.boxPick);
       updateStarGemsUI();
