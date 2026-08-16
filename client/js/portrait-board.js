@@ -241,6 +241,15 @@
     document.documentElement.classList.add('tcg-portrait-board-mounted');
     syncHandVars();
     try {
+      // Portrait hides .playmat-img; re-apply so CSS-var ::before mats paint after remount.
+      if (typeof global.LLTCG_PLAYMATS?.applyMatchPlaymats === 'function'
+          && global.G?.gameState) {
+        global.LLTCG_PLAYMATS.applyMatchPlaymats(global.G.gameState, {
+          myId: global.G.playerId,
+        });
+      }
+    } catch (_) { /* ignore */ }
+    try {
       if (typeof global.tcgPortraitEnsurePhaseMenu === 'function') {
         global.tcgPortraitEnsurePhaseMenu();
       }

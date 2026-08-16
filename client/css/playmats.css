@@ -14,6 +14,44 @@
   border-radius:inherit;
 }
 
+/*
+ * Portrait shell hides .playmat-img (display:none). Paint equipped mats on a
+ * ::before layer using the CSS vars set by playmats.js applySeatPlaymat.
+ * Keep filter on the layer only so cards/zones are not dimmed.
+ */
+html.tcg-portrait-play.has-my-playmat #screen-game .my-mat.playmat-frame::before,
+html.tcg-portrait-play #screen-game.has-my-playmat .my-mat.playmat-frame::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background-image:var(--my-playmat-image);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  filter:brightness(var(--my-playmat-brightness, 1));
+}
+html.tcg-portrait-play.has-opp-playmat #screen-game .opp-mat.playmat-frame::before,
+html.tcg-portrait-play #screen-game.has-opp-playmat .opp-mat.playmat-frame::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background-image:var(--opp-playmat-image);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  filter:brightness(var(--opp-playmat-brightness, 1));
+}
+html.tcg-portrait-play #screen-game .playmat-frame > .playmat-overlay,
+html.tcg-portrait-play #screen-game .playmat-frame > .mat-owner-label{
+  z-index:1;
+}
+
 /* Shop hub — thin sleeve tile + wide playmat tile (match art aspect) */
 .shop-hub-grid{
   display:grid;
