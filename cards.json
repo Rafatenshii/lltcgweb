@@ -15715,7 +15715,7 @@
             ],
             "rarity": "PR",
             "text": "[Live Start] You may pay 1 Energy: until this Live ends, you gain +2 Blade.",
-            "text_jp": "[ライブ開始時] エネルギー1支払ってもよい：自分の控え室にあるメンバーカード2枚を好きな順番でデッキの一番上に置く。",
+            "text_jp": "[ライブ開始時] エネルギー1支払ってもよい：ライブ終了時まで、＋2ブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!HS-022-PR.png",
             "subunit": "E del Note",
             "abilities": [
@@ -15755,7 +15755,7 @@
             ],
             "rarity": "PR",
             "text": "[Live Start] You may pay 1 Energy: put 2 Member cards from your Waiting Room on top of your deck in any order.",
-            "text_jp": "[ライブ開始時] エネルギー1支払ってもよい：ライブ終了時まで、＋2ブレードを得る。",
+            "text_jp": "[ライブ開始時] エネルギー1支払ってもよい：自分の控え室にあるメンバーカード2枚を好きな順番でデッキの一番上に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PR/PL!HS-023-PR.png",
             "subunit": "E del Note",
             "abilities": [
