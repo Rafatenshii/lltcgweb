@@ -285,21 +285,30 @@ html.tcg-portrait-play #screen-deck .portrait-deck-preset-wrap select{
   font-size:13px;
   font-weight:700;
 }
-html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host{
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host,
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host{
   flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:40px;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-picker,
-html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host #deck-sleeve-picker{
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host #deck-sleeve-picker,
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-picker,
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host #deck-playmat-picker{
   display:block!important;
 }
-html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current{
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current,
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-current{
   padding:2px;
   gap:0;
   min-width:36px;
   max-width:40px;
   border-radius:8px;
 }
-html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__meta{
+html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__meta,
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-current__meta{
   display:none!important;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__art{
@@ -310,6 +319,22 @@ html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-curr
 html.tcg-portrait-play #screen-deck .portrait-deck-sleeve-host .deck-sleeve-current__art--none{
   width:24px!important;
   height:auto!important;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-current{
+  min-width:40px;
+  max-width:48px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-current__art{
+  width:40px!important;
+  height:auto!important;
+  aspect-ratio:1024 / 563;
+  border-radius:4px;
+}
+html.tcg-portrait-play #screen-deck .portrait-deck-playmat-host .deck-playmat-current__art--none{
+  opacity:.85;
+}
+html.tcg-portrait-play #screen-deck #deck-playmat-empty-hint{
+  display:none!important;
 }
 html.tcg-portrait-play #screen-deck .portrait-deck-view-toggle{
   display:flex;

@@ -108,7 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=4">
-<link rel="stylesheet" href="client/css/portrait.css?v=74">
+<link rel="stylesheet" href="client/css/portrait.css?v=75">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1142,6 +1142,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </div>
         </div>
         <div class="portrait-deck-row portrait-deck-row--tools">
+          <div class="portrait-deck-playmat-host" id="portrait-deck-playmat-host"></div>
           <div class="portrait-deck-search-host" id="portrait-deck-search-host"></div>
           <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-filters" data-i18n="deck.filters.title">Filters</button>
           <button type="button" class="btn-ghost portrait-deck-tool" id="btn-portrait-deck-sort" data-i18n="deck.sort">Sort</button>
@@ -32002,7 +32003,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-loop.js?v=27"></script>
 <script src="client/js/cpu-ai.js?v=10"></script>
 <script src="client/js/portrait-bridge.js?v=24"></script>
-<script src="client/js/portrait-deck.js?v=2"></script>
+<script src="client/js/portrait-deck.js?v=3"></script>
 <script src="client/js/portrait-board.js?v=19"></script>
 <script>void bootApp();</script>
 </body>

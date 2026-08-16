@@ -50,7 +50,7 @@
   }
 
   function restoreAllParked() {
-    ['deck-sleeve-picker', 'deck-pool-search-wrap', 'deck-filter-panel',
+    ['deck-sleeve-picker', 'deck-playmat-picker', 'deck-pool-search-wrap', 'deck-filter-panel',
       'deck-collection-sort-wrap', 'deck-builder-import-search', 'deck-builder-actions',
       'deck-builder-name-wrap', 'btn-deck-seal-batch', 'deck-seal-batch-bar']
       .forEach((id) => restore(el(id)));
@@ -210,6 +210,7 @@
     if (!chrome || !screen) return;
     chrome.hidden = false;
     park(el('deck-sleeve-picker'), el('portrait-deck-sleeve-host'));
+    park(el('deck-playmat-picker'), el('portrait-deck-playmat-host'));
     park(el('deck-pool-search-wrap'), el('portrait-deck-search-host'));
     if (!screen.classList.contains('portrait-deck-view-deck')) {
       screen.classList.add('portrait-deck-view-pool');
