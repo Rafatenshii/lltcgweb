@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-playmat-shop",
+      "date": "2026-08-16",
+      "banner": "assets/playmats/br-rmv2-452.webp",
+      "bannerStyle": "wide",
+      "title": {
+        "en": "Playmats are here!",
+        "ja": "プレイマット機能が追加されました！",
+        "es": "¡Llegaron los playmats!",
+        "ko": "플레이매트 기능이 추가되었습니다!",
+        "zh": "牌桌垫功能上线！",
+        "th": "เพลย์แมตมาแล้ว!"
+      },
+      "body": {
+        "en": "**Playmats** are now in Loveca Web — dress up the board under your cards in every match.\n\n**Playmat Shop**\n- Open **Shop** on the hub, then **Playmat Shop**, and browse by generation / character.\n- Unlock playmats with **Coins** (**3,000** each). Earn Coins by finishing matches.\n\n**Equip & play**\n- In **Deck Builder**, pick a playmat for each saved preset (alongside your sleeve).\n- In matches, that playmat appears under your side of the board.\n\n**Vs CPU**\n- On Unranked **Practice vs CPU**, you can also choose a sleeve and playmat for the CPU — pick one you own, or **random** from your collection.\n\nCollect your favorites and make the table yours!",
+        "ja": "**プレイマット**がLoveca Webに登場。対戦中のボード下をカスタマイズできます。\n\n**プレイマットショップ**\n- ハブの **ショップ** から **プレイマットショップ** を開き、世代／キャラで探せます。\n- **コイン**で解放（各 **3,000**）。コインは対戦を終えると獲得できます。\n\n**装備してプレイ**\n- **デッキビルダー**で、保存済みプリセットごとにプレイマットを選べます（スリーブと一緒に）。\n- 対戦中は自分側のボード下に表示されます。\n\n**CPU戦**\n- アンランクの **CPUと練習** では、CPU用のスリーブ／プレイマットも選べます。所持から指定するか、所持から**ランダム**にできます。\n\nお気に入りを集めて、テーブルを飾りましょう！",
+        "es": "Los **playmats** ya están en Loveca Web: personaliza el tablero bajo tus cartas en cada partida.\n\n**Tienda de playmats**\n- Abre **Tienda** en el hub, luego **Tienda de playmats**, y navega por generación / personaje.\n- Desbloquéalos con **monedas** (**3.000** cada uno). Ganas monedas al terminar partidas.\n\n**Equipar y jugar**\n- En el **Constructor de mazos**, elige un playmat por cada preset guardado (junto con tu funda).\n- En partida, ese playmat aparece bajo tu lado del tablero.\n\n**Vs CPU**\n- En Unranked **Práctica vs CPU**, también puedes elegir funda y playmat para la CPU: uno que tengas, o **al azar** de tu colección.\n\n¡Colecciona tus favoritos y haz tuya la mesa!",
+        "ko": "**플레이매트**가 Loveca Web에 추가되었습니다. 매치마다 보드 아래를 꾸며 보세요.\n\n**플레이매트 샵**\n- 허브의 **샵**에서 **플레이매트 샵**을 열고 세대 / 캐릭터별로 둘러보세요.\n- **코인**으로 해금(**각 3,000**). 코인은 매치를 끝내면 얻을 수 있습니다.\n\n**장착하고 플레이**\n- **덱 빌더**에서 저장된 프리셋마다 플레이매트를 고르세요(슬리브와 함께).\n- 매치에서는 내 보드 쪽에 표시됩니다.\n\n**CPU전**\n- 언랭크 **CPU와 연습**에서 CPU용 슬리브·플레이매트도 고를 수 있습니다. 보유한 것을 지정하거나, 보유 목록에서 **랜덤**으로 고를 수 있습니다.\n\n최애를 모아 테이블을 꾸며 보세요!",
+        "zh": "**牌桌垫**现已加入 Loveca Web——在每场对局中装扮卡牌下方的桌面。\n\n**牌桌垫商店**\n- 从主页打开 **商店**，再进入 **牌桌垫商店**，按世代／角色浏览。\n- 使用 **金币** 解锁（每件 **3,000**）。完成对局可获得金币。\n\n**装备与对战**\n- 在 **牌组构筑** 中为每个已保存预设选择牌桌垫（可与卡套一起设置）。\n- 对局中该牌桌垫会显示在你一侧的桌面下方。\n\n**对战 CPU**\n- 在非排名的 **练习对战 CPU** 中，还可为 CPU 选择卡套与牌桌垫——指定你拥有的一件，或从收藏中 **随机**。\n\n收集喜欢的款式，把桌面打扮成你的风格吧！",
+        "th": "**เพลย์แมต**มาใน Loveca Web แล้ว — แต่งโต๊ะใต้การ์ดในทุกแมตช์ได้\n\n**ร้านเพลย์แมต**\n- เปิด **ร้านค้า** จากฮับ แล้วเข้า **ร้านเพลย์แมต** เลือกตามรุ่น / ตัวละคร\n- ปลดล็อกด้วย **Coins** (**3,000** ต่อชิ้น) ได้ Coins จากจบแมตช์\n\n**ติดตั้งแล้วเล่น**\n- ใน **ตัวสร้างเด็ค** เลือกเพลย์แมตให้แต่ละพรีเซ็ตที่บันทึกไว้ (คู่กับสลีฟได้)\n- ในแมตช์ เพลย์แมตจะโชว์ใต้ฝั่งบอร์ดของคุณ\n\n**ปะทะ CPU**\n- ในอันแรงก์ **ฝึกกับ CPU** เลือกสลีฟกับเพลย์แมตให้ CPU ได้ด้วย — เลือกของที่มี หรือ**สุ่ม**จากคอลเลกชัน\n\nสะสมตัวโปรดแล้วแต่งโต๊ะได้เลย!"
+      }
+    },
+    {
       "id": "2026-08-android-apk",
       "date": "2026-08-15",
       "banner": "downloads/loveca-icon-192.png",
