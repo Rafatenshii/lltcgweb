@@ -9881,15 +9881,64 @@
     var key = '';
     var low = s.toLowerCase();
     if (low === "µ's" || low === "μ's" || low === "mu's" || low === 'muse') key = 'muse';
-    else if (low === 'aqours') key = 'aqours';
+    else if (low === 'aqours' || low === 'sunshine') key = 'aqours';
     else if (low.indexOf('niji') === 0) key = 'nijigasaki';
-    else if (low.indexOf('liella') === 0) key = 'liella';
+    else if (low.indexOf('liella') === 0 || low === 'superstar') key = 'liella';
     else if (low.indexOf('hasu') === 0) key = 'hasunosora';
     else if (low === 'mixed' || low === 'crossover' || low === 'collab' || low === 'multi') key = 'mixed';
     else if (low === 'other') key = 'other';
     if (!key) return s;
     var v = t('sleeveShop.units.' + key);
     return (v && v !== 'sleeveShop.units.' + key) ? v : s;
+  }
+
+  /** Catalog/JP subunit key → player-facing label for the active locale. */
+  var SUBUNIT_EN = {
+    'スリーズブーケ': 'Cerise Bouquet',
+    'Cerise Bouquet': 'Cerise Bouquet',
+    'みらくらぱーく！': 'Mira-Cra Park!',
+    'みらくらぱーく!': 'Mira-Cra Park!',
+    'Mirakuru Park!': 'Mira-Cra Park!',
+    'Mira-Cra Park!': 'Mira-Cra Park!',
+    'プリパラ': 'Printemps',
+    'リリホワ': 'lily white',
+    'バイバイ': 'BiBi',
+    'CYaRon！': 'CYaRon!',
+    'シャロン': 'CYaRon!',
+    'アゼリア': 'AZALEA',
+    'ギルキス': 'Guilty Kiss',
+    'セイントスノー': 'Saint Snow',
+    'ダイバーディーバ': 'DiverDiva',
+    'キャチュー': 'CatChu!'
+  };
+  var SUBUNIT_JA = {
+    'Cerise Bouquet': 'スリーズブーケ',
+    'Mira-Cra Park!': 'みらくらぱーく！',
+    'Printemps': 'Printemps',
+    'lily white': 'lily white',
+    'BiBi': 'BiBi',
+    'CYaRon!': 'CYaRon！',
+    'AZALEA': 'AZALEA',
+    'Guilty Kiss': 'Guilty Kiss',
+    'Saint Snow': 'Saint Snow',
+    'DiverDiva': 'DiverDiva',
+    'CatChu!': 'CatChu!'
+  };
+
+  function subunitLocaleName(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    var en = SUBUNIT_EN[s] || String(s).replace(/！/g, '!');
+    var loc = getLocale();
+    if (loc === 'ja') {
+      if (/[\u3040-\u30ff\u4e00-\u9faf]/.test(s)) return s.replace(/!$/, '！');
+      return SUBUNIT_JA[en] || en;
+    }
+    if (loc === 'ko' || loc === 'zh' || loc === 'th') {
+      var via = cardLocaleName({ name_en: en, name: s });
+      if (via && via !== en && via !== s) return via;
+    }
+    return en;
   }
 
 
@@ -10327,6 +10376,7 @@
     cardLocaleName: cardLocaleName,
     idolLocaleName: idolLocaleName,
     unitLocaleName: unitLocaleName,
+    subunitLocaleName: subunitLocaleName,
     resolveIdolId: resolveIdolId,
     cardLocaleText: cardLocaleText,
     cardLocaleType: cardLocaleType,

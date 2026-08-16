@@ -115,7 +115,11 @@ function tcgMissionPlayDefinitions(): array {
             ];
         }
     }
+    if (!function_exists('subunitDisplayEn')) {
+        require_once __DIR__ . '/subunits.php';
+    }
     foreach ($keys['subunits'] as $subunit) {
+        $subunitLabel = subunitDisplayEn($subunit);
         foreach (TCG_MISSION_PLAY_THRESHOLDS as $threshold => $coins) {
             $out[] = [
                 'id' => 'ms_play_subunit:' . $subunit . ':' . $threshold,
@@ -124,7 +128,7 @@ function tcgMissionPlayDefinitions(): array {
                 'reward_type' => 'coins',
                 'sort' => $sortBase + ($i++),
                 'i18n_key' => 'missions.milestone.playLiveSubunit',
-                'i18n_vars' => ['subunit' => $subunit, 'n' => $threshold],
+                'i18n_vars' => ['subunit' => $subunitLabel, 'n' => $threshold],
                 'threshold' => $threshold,
                 'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
                 'play_dim' => TCG_PLAY_DIM_SUBUNIT,
@@ -213,6 +217,9 @@ function tcgMissionParsePlayDefId(string $missionId): ?array {
         if ($key === '' || !isset(TCG_MISSION_PLAY_THRESHOLDS[$threshold])) {
             return null;
         }
+        if (!function_exists('subunitDisplayEn')) {
+            require_once __DIR__ . '/subunits.php';
+        }
         return [
             'id' => $missionId,
             'type' => 'milestone',
@@ -220,7 +227,7 @@ function tcgMissionParsePlayDefId(string $missionId): ?array {
             'reward_type' => 'coins',
             'sort' => 500,
             'i18n_key' => 'missions.milestone.playLiveSubunit',
-            'i18n_vars' => ['subunit' => $key, 'n' => $threshold],
+            'i18n_vars' => ['subunit' => subunitDisplayEn($key), 'n' => $threshold],
             'threshold' => $threshold,
             'play_tracker' => TCG_PLAY_TRACKER_LIVE_SUCCESS,
             'play_dim' => TCG_PLAY_DIM_SUBUNIT,

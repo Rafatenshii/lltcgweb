@@ -587,6 +587,9 @@ final class MissionProgressTest extends TestCase
         $this->assertArrayHasKey($id100, $byId);
         $this->assertSame(100, $byId[$id100]['progress'] ?? null);
         $this->assertSame('completed', $byId[$id100]['status'] ?? null);
+        $this->assertSame('missions.milestone.playIdol', $byId[$id100]['i18n_key'] ?? null);
+        $this->assertSame($idol, $byId[$id100]['i18n_vars']['idol'] ?? null);
+        $this->assertSame(100, intval($byId[$id100]['i18n_vars']['n'] ?? 0));
         $this->assertArrayHasKey($id500, $byId);
         $this->assertSame('active', $byId[$id500]['status'] ?? null);
 

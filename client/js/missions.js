@@ -22,6 +22,36 @@
     return typeof fn === 'function' ? fn(key, vars || {}) : key;
   }
 
+  /** Localize dynamic play-milestone name slots for the active UI locale. */
+  function localizeMissionVars(vars) {
+    const src = vars && typeof vars === 'object' ? vars : {};
+    const out = Object.assign({}, src);
+    const I18N = global.LLTCG_I18N;
+    if (!I18N) return out;
+    if (out.idol != null && typeof I18N.idolLocaleName === 'function') {
+      out.idol = I18N.idolLocaleName(String(out.idol), { form: 'full' }) || out.idol;
+    }
+    if (out.group != null && typeof I18N.unitLocaleName === 'function') {
+      out.group = I18N.unitLocaleName(String(out.group)) || out.group;
+    }
+    if (out.subunit != null && typeof I18N.subunitLocaleName === 'function') {
+      out.subunit = I18N.subunitLocaleName(String(out.subunit)) || out.subunit;
+    }
+    return out;
+  }
+
+  function missionTitle(i18nKey, i18nVars, fallbackId) {
+    const key = i18nKey || fallbackId || '';
+    const vars = localizeMissionVars(i18nVars || {});
+    const title = t(key, vars);
+    if (title && title !== key) return title;
+    // Fallback if a template key is missing: still show the localized name.
+    if (vars.idol) return String(vars.idol) + (vars.n != null ? (' ×' + vars.n) : '');
+    if (vars.group) return String(vars.group) + (vars.n != null ? (' ×' + vars.n) : '');
+    if (vars.subunit) return String(vars.subunit) + (vars.n != null ? (' ×' + vars.n) : '');
+    return key || fallbackId || '';
+  }
+
   function starGemIconHtml(size) {
     if (typeof global.starGemIconHtml === 'function') {
       return global.starGemIconHtml(size || 18);
@@ -59,7 +89,7 @@
   function onMissionCompletions(completions) {
     if (!Array.isArray(completions) || !completions.length) return;
     completions.forEach((item) => {
-      const title = t(item.i18n_key || item.id || '', item.i18n_vars || {});
+      const title = missionTitle(item.i18n_key, item.i18n_vars, item.id);
       if (typeof global.toastSuccess === 'function') {
         global.toastSuccess(t('missions.completeToast', { title }), 3200);
       } else if (typeof global.toast === 'function') {
@@ -283,7 +313,7 @@
     syncHubBadge(res.claimable_count ?? 0);
     await loadMissions();
     if (typeof global.toastSuccess === 'function') {
-      const title = t(res.mission?.i18n_key || 'missions.claimed', res.mission?.i18n_vars || {});
+      const title = missionTitle(res.mission?.i18n_key, res.mission?.i18n_vars, res.mission?.id);
       if (res.starter_granted && res.starter_granted.label) {
         global.toastSuccess(t('missions.claimedStarterToast', {
           title,
@@ -347,7 +377,7 @@
       body.className = 'llc-menu-item-body';
       const title = document.createElement('span');
       title.className = 'llc-menu-item-title';
-      title.textContent = t(m.i18n_key || m.id, m.i18n_vars || {});
+      title.textContent = missionTitle(m.i18n_key, m.i18n_vars, m.id);
       const sub = document.createElement('span');
       sub.className = 'llc-menu-item-sub';
       sub.innerHTML = rewardSubHtml(m);
@@ -423,6 +453,11 @@
     starterOverlayEl()?.addEventListener('click', (ev) => {
       if (ev.target === starterOverlayEl()) closeStarterPicker();
     });
+    if (global.LLTCG_I18N && typeof global.LLTCG_I18N.onLocaleChange === 'function') {
+      global.LLTCG_I18N.onLocaleChange(() => {
+        if (overlayEl()?.classList.contains('open')) renderList();
+      });
+    }
   }
 
   global.TCGMissions = {
