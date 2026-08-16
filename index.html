@@ -17708,8 +17708,8 @@ function finishStackShiftAnim(node, useTransform = false) {
 }
 
 function playShiftAnimation(nodes, beforeByEl, skipFn) {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  if (!beforeByEl?.size) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
+  if (!beforeByEl?.size) return 0;
   const shifting = [];
   (nodes || []).forEach(node => {
     if (!node || skipFn?.(node)) return;
@@ -17724,7 +17724,7 @@ function playShiftAnimation(nodes, beforeByEl, skipFn) {
     node.style.transform = `translate(${dx}px, ${dy}px)`;
     shifting.push(node);
   });
-  if (!shifting.length) return;
+  if (!shifting.length) return 0;
   void document.documentElement.offsetWidth;
   requestAnimationFrame(() => {
     shifting.forEach(node => {
@@ -17733,6 +17733,7 @@ function playShiftAnimation(nodes, beforeByEl, skipFn) {
       node.style.transform = '';
     });
   });
+  return shifting.length;
 }
 
 function resetHandCardShiftTransform(cardEl) {
@@ -17743,11 +17744,20 @@ function resetHandCardShiftTransform(cardEl) {
 }
 
 function releaseHandFanShiftAnchor(fanEl) {
-  if (!fanEl?.dataset?.shiftAnchor) return;
-  delete fanEl.dataset.shiftAnchor;
-  fanEl.style.justifyContent = '';
+  if (!fanEl) return;
+  const hadAnchor = !!fanEl.dataset?.shiftAnchor;
+  if (hadAnchor) delete fanEl.dataset.shiftAnchor;
+  // Desktop hands must stay centered; clearing to '' alone can leave a stale
+  // inline flex-start from an interrupted draw/play shift.
+  if (!document.documentElement.classList.contains('tcg-portrait-play')
+      && !document.documentElement.classList.contains('tcg-mobile-viewport')
+      && (fanEl.id === 'hand-row' || fanEl.id === 'opp-hand-zone')) {
+    fanEl.style.justifyContent = 'center';
+  } else if (hadAnchor) {
+    fanEl.style.justifyContent = '';
+  }
   // Portrait CSS defaults to center; re-run pack so overflow hands stay correct.
-  if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+  if (hadAnchor && typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
     requestAnimationFrame(() => layoutHandFan(fanEl, { animate: false }));
   }
 }
@@ -17842,10 +17852,11 @@ function layoutHandFan(fanEl, opts = {}) {
   }
   const shiftFromSaved = !!(opts.beforeByKey?.size || beforeByEl?.size);
   const portraitPlay = document.documentElement.classList.contains('tcg-portrait-play');
-  // The interactive player hand may use a stable left anchor while cards shift.
-  // Opponent cards have no selection affordance, so keep that fan centered even
-  // during draws/removals; its saved rects still provide the shift animation.
-  const useShiftAnchor = fanEl.id === 'hand-row';
+  // Keep both desktop hands centered. A temporary flex-start shift-anchor used
+  // to pin the player fan during FLIP draws, but when nothing actually moved
+  // (or the anim was interrupted) the inline flex-start stuck and shoved the
+  // hand to the side. FLIP transforms still smooth draws/removals while centered.
+  const useShiftAnchor = false;
   if (shiftFromSaved && wantShiftAnim && !portraitPlay && useShiftAnchor) {
     fanEl.style.justifyContent = 'flex-start';
     fanEl.dataset.shiftAnchor = '1';
@@ -18035,11 +18046,22 @@ function layoutHandFan(fanEl, opts = {}) {
       else if (sr.right > tr.right - 8) strip.scrollLeft += sr.right - tr.right + 8;
     }
   }
+  let shifted = 0;
   if (opts.beforeByKey?.size) {
     const sel = fanEl.id === 'hand-row' ? '.hcard' : '.opp-hand-card';
     playShiftAnimationByKey(sel, opts.beforeByKey, 'data-iid', skip, fanEl);
+    shifted = fanEl.querySelectorAll('.stack-shift-anim').length;
   } else if (beforeByEl) {
-    playShiftAnimation(cards, beforeByEl, skip);
+    shifted = playShiftAnimation(cards, beforeByEl, skip) || 0;
+  }
+  // If a leftover shift-anchor is still set and nothing is animating, re-center now.
+  if (fanEl.dataset.shiftAnchor && !shifted && !fanEl.querySelector('.stack-shift-anim')) {
+    releaseHandFanShiftAnchor(fanEl);
+  } else if (fanEl.dataset.shiftAnchor && shifted) {
+    const ms = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fan-shift-ms'), 10) + 80 || 360;
+    window.setTimeout(() => {
+      if (!fanEl.querySelector('.stack-shift-anim')) releaseHandFanShiftAnchor(fanEl);
+    }, ms);
   }
   if (fanEl.id === 'hand-row') {
     requestAnimationFrame(() => syncAllMobileHandHuds());
