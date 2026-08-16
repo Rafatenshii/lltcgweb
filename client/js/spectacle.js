@@ -455,6 +455,13 @@ async function awaitLiveStartPromptsIfNeeded(prev, next, myId) {
     G.gameState = next;
     renderGame(next, { skipLog: true, skipPrompt: false });
     if (!G.isSpectator) ensurePendingPromptSurfaced(next, myId);
+    // Soft-merge during this wait returns before the normal doCPU tail — nudge now
+    // so a CPU Live Start skill cannot hang presentLiveRound forever.
+    if (typeof nudgeCpuAfterStatePresentation === 'function') {
+      nudgeCpuAfterStatePresentation(next);
+    } else if (G.isCPU && typeof doCPU === 'function') {
+      doCPU(next);
+    }
     await waitForPipelinePromptResolution(myId, {
       targetState: next,
       isResolved: (s) => {

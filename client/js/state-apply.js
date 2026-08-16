@@ -560,6 +560,17 @@
         if (!replayForward && typeof ensurePendingPromptSurfaced === 'function') {
           ensurePendingPromptSurfaced(s, G.playerId);
         }
+        // Soft-merge returns before the applyStateUpdate doCPU tail — keep CPU Live Start moving.
+        if (!replayForward && G.isCPU && !(G.tutorialLive && G.tutorialHoldCpu)) {
+          const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
+          if (s.pending_prompt?.responder === cpuId && typeof scheduleCpuResolvePrompt === 'function') {
+            scheduleCpuResolvePrompt(s, s.players?.[cpuId]);
+            if (typeof armCpuPromptHangWatch === 'function') armCpuPromptHangWatch(s);
+          } else if (typeof doCPU === 'function') {
+            doCPU(s);
+            if (typeof armWatchdog === 'function') armWatchdog(s);
+          }
+        }
         // Do not re-enter the gate / Main paint path while presentLiveRound owns the show.
         if (G._liveSpectacleGateRunning || G._liveRoundPlaybackActive) return;
       } else if (typeof abortStuckLiveRoundPlayback === 'function') {

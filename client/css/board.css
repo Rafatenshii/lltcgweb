@@ -2328,7 +2328,14 @@ img.card-face-fill,
   box-shadow:0 2px 6px rgba(0,0,0,.4);
   background:rgba(0,0,0,.12);
 }
-.lcard.live-card.live-storage-flip .live-flip-back{transform:rotateY(0deg);background:url('../../lltcg-back.png') center/cover no-repeat}
+.lcard.live-card.live-storage-flip .live-flip-back{
+  transform:rotateY(0deg);
+  /* Portrait backs use .card-portrait-in-landscape; do not also cover-crop here. */
+  background:transparent;
+}
+.lcard.live-card.live-storage-flip .live-flip-back:not(:has(.card-portrait-in-landscape)){
+  background:url('../../lltcg-back.png') center/cover no-repeat;
+}
 .lcard.live-card.live-storage-flip .live-flip-front{transform:rotateY(180deg);background:transparent}
 .lcard.live-card.live-storage-flip .live-flip-back .back.live-back,
 .lcard.live-card.live-storage-flip .live-flip-back .card-back-fill{width:100%;height:100%}
@@ -2387,6 +2394,9 @@ img.card-face-fill,
 }
 .lcard.live-card .live-flip-back{
   transform:rotateY(0deg);
+  background:transparent;
+}
+.lcard.live-card .live-flip-back:not(:has(.card-portrait-in-landscape)){
   background:url('../../lltcg-back.png') center/cover no-repeat;
 }
 .lcard.live-card .live-flip-front{transform:rotateY(180deg)}
