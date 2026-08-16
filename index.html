@@ -101,7 +101,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=51">
+<link rel="stylesheet" href="client/css/shell-all.css?v=52">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 <link rel="stylesheet" href="client/css/portrait.css?v=65">
@@ -16440,6 +16440,11 @@ function syncDesktopUniformScale(w, h, useFixedFrame, portraitBlock, compactDesk
   const refH = 1080;
   const refHandStrip = 132;
   const root = document.documentElement;
+  const dpi = Math.max(1, Number(window.devicePixelRatio || 1));
+  const physicalW = Math.max(w, Math.round(Number(window.screen?.width || 0) * dpi));
+  const physicalH = Math.max(h, Math.round(Number(window.screen?.height || 0) * dpi));
+  let finePointer = false;
+  try { finePointer = window.matchMedia('(any-pointer: fine)').matches; } catch (_) { /* ignore */ }
   const clear = () => {
     root.classList.remove('tcg-desktop-scaled');
     root.style.removeProperty('--desktop-ui-scale');
@@ -16455,7 +16460,10 @@ function syncDesktopUniformScale(w, h, useFixedFrame, portraitBlock, compactDesk
   const scale = Math.min(1, frameW / refW, frameH / refH);
   // 1080p-class desktops (1920×1080, 1600×900, …): innerHeight is often 880–1040
   // because of browser chrome — treat as full layout, not sub-1080 letterbox/scaling.
-  const desktop1080Class = w >= 1600 && h >= 880;
+  // Windows display scaling lowers CSS pixels (for example 1280×720 on a
+  // 1920×1080 screen). Keep a mouse-driven HD desktop in its full layout.
+  const desktop1080Class = (w >= 1600 && h >= 880)
+    || (finePointer && w >= 1000 && h >= 600 && physicalW >= 1600 && physicalH >= 880);
   if (scale >= 0.998 || desktop1080Class) {
     clear();
     return;
@@ -16570,6 +16578,8 @@ function bindMobileViewport() {
     const h = window.innerHeight;
     const landscape = w > h;
     const coarseTouch = window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+    let finePointer = false;
+    try { finePointer = window.matchMedia('(any-pointer: fine)').matches; } catch (_) { /* ignore */ }
     const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const portraitPlay = tcgApplyPortraitPlayState(w, h);
     // Landscape fixed-frame stays on UA/coarse-pointer detection only: a touch-capable
@@ -16584,7 +16594,13 @@ function bindMobileViewport() {
     const portraitBlock = !portraitPlay && mobile && (phone || tablet) && !landscape;
     // Compact only on clearly sub-1080p viewports — never on typical 1080p+ desktops
     // (wide + tall enough keeps the full log / card preview / three-column layout).
-    const fullDesktopLayout = !portraitPlay && w >= 1600 && h >= 880;
+    const dpi = Math.max(1, Number(window.devicePixelRatio || 1));
+    const physicalW = Math.max(w, Math.round(Number(window.screen?.width || 0) * dpi));
+    const physicalH = Math.max(h, Math.round(Number(window.screen?.height || 0) * dpi));
+    const fullDesktopLayout = !portraitPlay && (
+      (w >= 1600 && h >= 880)
+      || (finePointer && w >= 1000 && h >= 600 && physicalW >= 1600 && physicalH >= 880)
+    );
     const compactDesktop = !portraitPlay && !useFixedFrame && !portraitBlock && !fullDesktopLayout
       && (w < 1600 || h < 880);
     root.classList.toggle('tcg-mobile-viewport', useFixedFrame);

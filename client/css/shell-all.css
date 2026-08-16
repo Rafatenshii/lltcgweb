@@ -697,6 +697,14 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
   padding:14px 12px;overflow:hidden;
   box-shadow:var(--ui-panel-glow);
 }
+/* Use 16:9 desktop side space for the panels instead of leaving sky margins.
+   The playmat remains height-fitted so cards never overlap the hand strips. */
+@media (min-width:1000px) and (min-aspect-ratio:16/10) {
+  html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
+    --side-panel-w:min(600px,max(440px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
+    --playmat-gutter:calc(2 * var(--side-panel-w));
+  }
+}
 .side-panel.side-left{padding-bottom:12px}
 .card-hover-panel{
   flex:0 0 auto;flex-shrink:0;

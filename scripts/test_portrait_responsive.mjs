@@ -166,6 +166,34 @@ if (indexSrc.includes('portraitPlay || tcgPortraitTouchPrimary')) {
   ok('landscape mobile gate excludes touch-primary desktops');
 }
 
+/** Mirror of the DPI-aware 1080p desktop gate. */
+function fullHdDesktop(w, h, { dpr = 1, screenW = w, screenH = h, finePointer = false } = {}) {
+  const physicalW = Math.max(w, Math.round(screenW * dpr));
+  const physicalH = Math.max(h, Math.round(screenH * dpr));
+  return (w >= 1600 && h >= 880)
+    || (finePointer && w >= 1000 && h >= 600 && physicalW >= 1600 && physicalH >= 880);
+}
+
+if (!fullHdDesktop(1280, 720, { dpr: 1.5, screenW: 1280, screenH: 720, finePointer: true })) {
+  fail('scaled 1080p desktop must keep the full desktop layout');
+} else {
+  ok('scaled 1080p desktop keeps the full desktop layout');
+}
+
+if (fullHdDesktop(1280, 720, { dpr: 1.5, screenW: 1280, screenH: 720, finePointer: false })) {
+  fail('touch-only scaled viewport must not become a desktop layout');
+} else {
+  ok('touch-only scaled viewport stays out of the desktop layout');
+}
+
+for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
+  if (!src.includes('Use 16:9 desktop side space') || !src.includes('(min-aspect-ratio:16/10)')) {
+    fail(`${label}.css missing full-width 16:9 desktop panel rule`);
+  } else {
+    ok(`${label}.css fills 16:9 desktop side space with panels`);
+  }
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);
