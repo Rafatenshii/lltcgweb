@@ -675,6 +675,11 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
   display:flex;align-items:flex-end;justify-content:center;
   height:100%;min-width:min-content;padding:0 4px;
 }
+/* The component wrapper must not contribute the hand's intrinsic card width.
+   Otherwise large hands widen past the playmat even when .hand-fan is 100%. */
+html:not(.tcg-portrait-play) #screen-game ll-hand-zone{
+  display:block;width:100%;min-width:0;max-width:100%;
+}
 /* Desktop: never let min-content fan width escape the playmat column. */
 html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
   min-width:0;
@@ -727,15 +732,15 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
     --hand-card-pad:18px;
     --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
     --opp-hand-card-h:calc(var(--hand-strip-h) * 1.32);
-    /* Thin gutter: large hands stay bigger and may peek slightly into panels. */
-    --hand-safe-inline:4px;
+    /* Keep both hand edges inside the printed playmat border. */
+    --hand-safe-inline:8px;
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
     --hand-strip-h:96px;
     --hand-card-pad:18px;
     --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
     --opp-hand-card-h:calc(var(--hand-strip-h) * 1.32);
-    --hand-safe-inline:4px;
+    --hand-safe-inline:8px;
     --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2 - 14px);
     --side-panel-w:min(440px,max(280px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
