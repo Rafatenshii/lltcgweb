@@ -20,6 +20,7 @@ function ok(msg) {
 const indexSrc = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const portraitCss = fs.readFileSync(path.join(root, 'client', 'css', 'portrait.css'), 'utf8');
 const boardJs = fs.readFileSync(path.join(root, 'client', 'js', 'portrait-board.js'), 'utf8');
+const bridgeJs = fs.readFileSync(path.join(root, 'client', 'js', 'portrait-bridge.js'), 'utf8');
 
 for (const needle of [
   'tcgResolvePortraitPlayActive',
@@ -47,6 +48,20 @@ if (!boardJs.includes('function unmount') && !boardJs.includes('tcgPortraitUnmou
   fail('portrait-board must export unmount for landscape fallback');
 } else {
   ok('portrait-board unmount present');
+}
+
+if (!portraitCss.includes('#portrait-deck-drawers.pb-deck-drawers')
+    || !portraitCss.includes('display:none!important')
+    || !portraitCss.includes('html.tcg-portrait-play #portrait-deck-drawers.pb-deck-drawers')) {
+  fail('portrait deck drawers must be hidden outside portrait mode');
+} else {
+  ok('portrait deck drawers are CSS-hidden on PC');
+}
+if (!bridgeJs.includes('function removeDeckDrawers')
+    || !boardJs.includes('tcgPortraitRemoveDeckDrawers')) {
+  fail('portrait deck drawers must be removed when portrait unmounts');
+} else {
+  ok('portrait deck drawers are removed on landscape/PC unmount');
 }
 
 for (const cls of ['tcg-portrait-square', 'tcg-portrait-tablet', '--p-board-max-w', '--p-field-min', '--p-hud-max']) {
