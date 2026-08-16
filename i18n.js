@@ -209,6 +209,11 @@
       "cpuNormalShort": "Normal",
       "cpuHardShort": "Hard",
       "cpuExpertShort": "Expert",
+      "cpuSleeve": "CPU sleeve",
+      "cpuPlaymat": "CPU playmat",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Choose a cosmetic you own, or random from your collection.",
       "soloStarting": "Starting vs CPU ({diff})",
       "player1Default": "Player 1",
       "player2Default": "Player 2",
@@ -1573,6 +1578,11 @@
       "cpuNormalShort": "ノーマル",
       "cpuHardShort": "ハード",
       "cpuExpertShort": "エキスパート",
+      "cpuSleeve": "CPUのスリーブ",
+      "cpuPlaymat": "CPUのプレイマット",
+      "cpuCosmeticDefault": "デフォルト",
+      "cpuCosmeticRandom": "ランダム（所持）",
+      "cpuCosmeticsHint": "所持しているコスメを選ぶか、所持からランダムにできます。",
       "soloStarting": "CPU（{diff}）との対戦を開始",
       "player1Default": "プレイヤー1",
       "player2Default": "プレイヤー2",
@@ -2874,6 +2884,11 @@
       "cpuNormalShort": "Normal",
       "cpuHardShort": "Difícil",
       "cpuExpertShort": "Experto",
+      "cpuSleeve": "Funda del CPU",
+      "cpuPlaymat": "Playmat del CPU",
+      "cpuCosmeticDefault": "Predeterminado",
+      "cpuCosmeticRandom": "Aleatorio (propios)",
+      "cpuCosmeticsHint": "Elige un cosmético que tengas, o uno al azar de tu colección.",
       "soloStarting": "Iniciando vs CPU ({diff})",
       "player1Default": "Jugador 1",
       "player2Default": "Jugador 2"
@@ -4234,6 +4249,11 @@
       "cpuNormalShort": "보통",
       "cpuHardShort": "어려움",
       "cpuExpertShort": "전문가",
+      "cpuSleeve": "CPU 슬리브",
+      "cpuPlaymat": "CPU 플레이매트",
+      "cpuCosmeticDefault": "기본",
+      "cpuCosmeticRandom": "랜덤 (보유)",
+      "cpuCosmeticsHint": "보유한 코스메틱을 고르거나, 보유 목록에서 랜덤으로 고를 수 있습니다.",
       "soloStarting": "CPU전 시작 중 ({diff})",
       "player1Default": "플레이어 1",
       "player2Default": "플레이어 2"
@@ -5618,6 +5638,11 @@
       "cpuNormalShort": "普通",
       "cpuHardShort": "困难",
       "cpuExpertShort": "专家",
+      "cpuSleeve": "CPU 卡套",
+      "cpuPlaymat": "CPU 牌桌",
+      "cpuCosmeticDefault": "默认",
+      "cpuCosmeticRandom": "随机（已拥有）",
+      "cpuCosmeticsHint": "选择你拥有的外观，或从收藏中随机挑选。",
       "soloStarting": "正在开始对战 CPU（{diff}）",
       "player1Default": "玩家 1",
       "player2Default": "玩家 2"
@@ -7003,6 +7028,11 @@
       "cpuNormalShort": "ปกติ",
       "cpuHardShort": "ยาก",
       "cpuExpertShort": "ผู้เชี่ยวชาญ",
+      "cpuSleeve": "ซองของ CPU",
+      "cpuPlaymat": "เพลย์แมตของ CPU",
+      "cpuCosmeticDefault": "ค่าเริ่มต้น",
+      "cpuCosmeticRandom": "สุ่ม (ที่มีอยู่)",
+      "cpuCosmeticsHint": "เลือกของที่มีอยู่ หรือสุ่มจากคอลเลกชันของคุณ",
       "soloStarting": "กำลังเริ่มปะทะ CPU ({diff})",
       "player1Default": "ผู้เล่น 1",
       "player2Default": "ผู้เล่น 2"
@@ -8232,6 +8262,13 @@
     if (!loc) return;
     loc.tagline = loc.logo && loc.logo.tagline;
     loc.lang = loc.lang || {};
+    loc.lobby = loc.lobby || {};
+    loc.lobby.cpuSleeve = loc.lobby.cpuSleeve || 'CPU sleeve';
+    loc.lobby.cpuPlaymat = loc.lobby.cpuPlaymat || 'CPU playmat';
+    loc.lobby.cpuCosmeticDefault = loc.lobby.cpuCosmeticDefault || 'Default';
+    loc.lobby.cpuCosmeticRandom = loc.lobby.cpuCosmeticRandom || 'Random (owned)';
+    loc.lobby.cpuCosmeticsHint = loc.lobby.cpuCosmeticsHint
+      || 'Choose a cosmetic you own, or random from your collection.';
     loc.lang.label = (loc.language && loc.language.label) || loc.lang.label;
     loc.auth = loc.auth || {};
     loc.auth.unranked = loc.auth.unranked || {};

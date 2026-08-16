@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=71">
+<link rel="stylesheet" href="client/css/shell-all.css?v=72">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=4">
@@ -1609,6 +1609,17 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
                   </select>
                 </div>
               </div>
+              <div class="field field-cpu-cosmetics" id="cpu-cosmetics-field">
+                <label data-i18n="lobby.cpuSleeve">CPU sleeve</label>
+                <div class="llc-select-wrap">
+                  <select id="sel-cpu-sleeve" aria-label="CPU sleeve"></select>
+                </div>
+                <label class="cpu-cosmetic-label" data-i18n="lobby.cpuPlaymat">CPU playmat</label>
+                <div class="llc-select-wrap">
+                  <select id="sel-cpu-playmat" aria-label="CPU playmat"></select>
+                </div>
+                <p class="cpu-cosmetics-hint" data-i18n="lobby.cpuCosmeticsHint">Choose a cosmetic you own, or random from your collection.</p>
+              </div>
               <button class="btn-solo" id="btn-solo" type="button" data-i18n="lobby.practiceCpu">Practice vs CPU</button>
             </div>
           </div>
@@ -2504,7 +2515,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=131"></script>
+<script src="i18n.js?v=132"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -2871,6 +2882,7 @@ function updateCoinsUI() {
       ? tOr('sleeveShop.freeClaims', `Free picks: ${n}`, { n })
       : '';
   }
+  if (typeof refreshCpuCosmeticSelects === 'function') refreshCpuCosmeticSelects();
 }
 
 function toastCoinGrant(grant) {
@@ -3756,6 +3768,7 @@ function refreshDynamicI18n() {
     renderLeaderboardRows(A.lastLeaderboardData);
   }
   if (el('screen-lobby')?.classList.contains('active')) void refreshCasualQueueStatsQuiet();
+  refreshCpuCosmeticSelects();
   renderLobbyDeckOptions();
   renderRankedDeckOptions();
   updateDeckPrev();
@@ -16405,6 +16418,13 @@ async function bootApp() {
     if (!btn || !el('cpu-diff-pills')?.contains(btn)) return;
     setCpuDifficulty(btn.getAttribute('data-cpu-diff') || 'easy');
   });
+  on('sel-cpu-sleeve', 'change', () => {
+    persistCpuCosmeticChoice('sleeve', el('sel-cpu-sleeve')?.value || '');
+  });
+  on('sel-cpu-playmat', 'change', () => {
+    persistCpuCosmeticChoice('playmat', el('sel-cpu-playmat')?.value || '');
+  });
+  refreshCpuCosmeticSelects();
   on('sel-deck', 'change', () => {
     const v = el('sel-deck')?.value || '';
     if (v) rememberLobbyDeckForMode(currentGameMode(), v);
@@ -18578,11 +18598,124 @@ function cpuJoinPayload(deckChoice) {
   if (dc && dc !== 'random' && !String(dc).startsWith('preset:')) {
     hint = dc;
   }
+  const cosmetics = resolveCpuCosmeticPayload();
   return {
     deck: 'cpu',
     cpu_difficulty: diff,
     ...(hint ? { cpu_group_hint: hint } : {}),
+    ...cosmetics,
   };
+}
+
+const CPU_COSMETIC_LS_SLEEVE = 'tcg_cpu_sleeve';
+const CPU_COSMETIC_LS_PLAYMAT = 'tcg_cpu_playmat';
+
+function tLobbyOr(key, fallback) {
+  const v = (typeof t === 'function') ? t(key) : '';
+  return (v && v !== key) ? v : fallback;
+}
+
+function ownedCpuSleeveOptions() {
+  const owned = new Set((Array.isArray(A.ownedSleeves) ? A.ownedSleeves : []).map(String).filter(Boolean));
+  const catalog = (window.LLTCG_SLEEVES && Array.isArray(LLTCG_SLEEVES.catalog)) ? LLTCG_SLEEVES.catalog : [];
+  return catalog
+    .filter((s) => s && s.id && owned.has(String(s.id)))
+    .map((s) => ({
+      id: String(s.id),
+      label: (LLTCG_SLEEVES.displayName && LLTCG_SLEEVES.displayName(s)) || s.name || s.id,
+    }));
+}
+
+function ownedCpuPlaymatOptions() {
+  const owned = new Set((Array.isArray(A.ownedPlaymats) ? A.ownedPlaymats : []).map(String).filter(Boolean));
+  const catalog = (window.LLTCG_PLAYMATS && Array.isArray(LLTCG_PLAYMATS.catalog)) ? LLTCG_PLAYMATS.catalog : [];
+  return catalog
+    .filter((p) => p && p.id && owned.has(String(p.id)))
+    .map((p) => ({
+      id: String(p.id),
+      label: (LLTCG_PLAYMATS.displayName && LLTCG_PLAYMATS.displayName(p)) || p.name || p.id,
+    }));
+}
+
+function fillCpuCosmeticSelect(sel, kind, options) {
+  if (!sel) return;
+  const prev = String(sel.value || '');
+  let saved = '';
+  try {
+    saved = localStorage.getItem(kind === 'sleeve' ? CPU_COSMETIC_LS_SLEEVE : CPU_COSMETIC_LS_PLAYMAT) || '';
+  } catch (e) { /* ignore */ }
+  const preferred = prev || saved || '';
+  sel.replaceChildren();
+  const optDefault = document.createElement('option');
+  optDefault.value = '';
+  optDefault.textContent = tLobbyOr('lobby.cpuCosmeticDefault', 'Default');
+  sel.appendChild(optDefault);
+  if (options.length) {
+    const optRandom = document.createElement('option');
+    optRandom.value = 'random';
+    optRandom.textContent = tLobbyOr('lobby.cpuCosmeticRandom', 'Random (owned)');
+    sel.appendChild(optRandom);
+    options.forEach((row) => {
+      const o = document.createElement('option');
+      o.value = row.id;
+      o.textContent = row.label;
+      sel.appendChild(o);
+    });
+  }
+  const allowed = new Set(['', 'random', ...options.map((o) => o.id)]);
+  sel.value = allowed.has(preferred) ? preferred : '';
+}
+
+function refreshCpuCosmeticSelects() {
+  fillCpuCosmeticSelect(el('sel-cpu-sleeve'), 'sleeve', ownedCpuSleeveOptions());
+  fillCpuCosmeticSelect(el('sel-cpu-playmat'), 'playmat', ownedCpuPlaymatOptions());
+  const needSleeves = !(window.LLTCG_SLEEVES?.catalog?.length);
+  const needMats = !(window.LLTCG_PLAYMATS?.catalog?.length);
+  if (!needSleeves && !needMats) return;
+  void (async () => {
+    if (needSleeves && window.LLTCG_SLEEVES?.loadCatalog) {
+      try { await window.LLTCG_SLEEVES.loadCatalog(); } catch (e) { /* best effort */ }
+    }
+    if (needMats && window.LLTCG_PLAYMATS?.loadCatalog) {
+      try { await window.LLTCG_PLAYMATS.loadCatalog(); } catch (e) { /* best effort */ }
+    }
+    fillCpuCosmeticSelect(el('sel-cpu-sleeve'), 'sleeve', ownedCpuSleeveOptions());
+    fillCpuCosmeticSelect(el('sel-cpu-playmat'), 'playmat', ownedCpuPlaymatOptions());
+  })();
+}
+
+function persistCpuCosmeticChoice(kind, value) {
+  try {
+    const key = kind === 'sleeve' ? CPU_COSMETIC_LS_SLEEVE : CPU_COSMETIC_LS_PLAYMAT;
+    localStorage.setItem(key, String(value || ''));
+  } catch (e) { /* ignore */ }
+}
+
+function pickOwnedCosmeticId(mode, ownedIds) {
+  const list = (Array.isArray(ownedIds) ? ownedIds : [])
+    .map((id) => String(id || '').trim())
+    .filter(Boolean);
+  const modeStr = String(mode || '').trim();
+  if (!modeStr || modeStr === 'default') return '';
+  if (modeStr === 'random') {
+    if (!list.length) return '';
+    return list[Math.floor(Math.random() * list.length)] || '';
+  }
+  return list.includes(modeStr) ? modeStr : '';
+}
+
+function resolveCpuCosmeticPayload() {
+  const sleeveMode = el('sel-cpu-sleeve')?.value || '';
+  const playmatMode = el('sel-cpu-playmat')?.value || '';
+  const sleeveId = pickOwnedCosmeticId(sleeveMode, A.ownedSleeves || []);
+  const playmatId = pickOwnedCosmeticId(playmatMode, A.ownedPlaymats || []);
+  const out = {};
+  if (sleeveId) out.sleeve_id = sleeveId;
+  if (playmatId) {
+    out.playmat_id = playmatId;
+    out.playmat_brightness = 1;
+  }
+  return out;
 }
 
 // ── LOBBY ────────────────────────────────────────────
@@ -31285,6 +31418,7 @@ function showScr(n){
   if (n === 'lobby') {
     if (prevActive !== 'screen-lobby') void refreshCasualQueueStatsQuiet();
     startCasualLobbyStatsPoll();
+    refreshCpuCosmeticSelects();
   }
   if (n === 'ranked') {
     if (prevActive !== 'screen-ranked') void refreshRankedQueueStatsQuiet();
