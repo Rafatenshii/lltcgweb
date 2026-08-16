@@ -106,7 +106,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=71">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=20">
+<link rel="stylesheet" href="client/css/sleeves.css?v=21">
 <link rel="stylesheet" href="client/css/playmats.css?v=3">
 <link rel="stylesheet" href="client/css/portrait.css?v=74">
 
@@ -2504,7 +2504,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=130"></script>
+<script src="i18n.js?v=131"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -6487,14 +6487,18 @@ function renderSleeveShopGrid(sleeves) {
       owned.textContent = tOr('sleeveShop.owned', 'Owned');
       actions.appendChild(owned);
     } else {
+      const canAfford = Number(A.coins || 0) >= price;
+      const cost = document.createElement('span');
+      cost.className = 'sleeve-shop-price' + (canAfford ? '' : ' is-unaffordable');
+      cost.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> '
+        + Number(price).toLocaleString();
+      actions.appendChild(cost);
       const buy = document.createElement('button');
       buy.type = 'button';
-      const canAfford = Number(A.coins || 0) >= price;
-      // btn-smol is always pink — only use warning red when the player cannot afford it.
       buy.className = 'btn-smol sleeve-shop-buy' + (canAfford ? ' is-affordable' : ' is-unaffordable');
-      buy.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> ' + price;
+      buy.textContent = tOr('sleeveShop.buy', 'Buy');
       buy.disabled = !canAfford;
-      buy.onclick = () => void buySleeveFromShop(s.id);
+      buy.onclick = () => void buySleeveFromShop(s.id, sleeveShopDisplayName(s), price);
       actions.appendChild(buy);
       if (free > 0) {
         const claim = document.createElement('button');
@@ -6512,9 +6516,14 @@ function renderSleeveShopGrid(sleeves) {
   });
 }
 
-async function buySleeveFromShop(sleeveId) {
+async function buySleeveFromShop(sleeveId, displayName, price) {
   const err = el('sleeve-shop-err');
   if (err) err.textContent = '';
+  const name = String(displayName || sleeveId || 'sleeve');
+  const cost = Number(price || A.sleeveShopPrice || 1000);
+  const msg = t('sleeveShop.buyConfirm', { name, price: cost.toLocaleString() })
+    || (`Buy ${name} for ${cost.toLocaleString()} Coins?\n\nThis cannot be undone.`);
+  if (!confirm(msg)) return;
   try {
     const res = await accountPost('sleeve_buy', { sleeve_id: sleeveId });
     syncCoinsFromProfile(res);
@@ -6813,13 +6822,19 @@ function renderPlaymatShopGrid(mats) {
       owned.textContent = tOr('playmatShop.owned', 'Owned');
       actions.appendChild(owned);
     } else {
+      const canAfford = Number(A.coins || 0) >= price;
+      const matName = window.LLTCG_PLAYMATS?.displayName?.(m) || m.name || m.id;
+      const cost = document.createElement('span');
+      cost.className = 'sleeve-shop-price' + (canAfford ? '' : ' is-unaffordable');
+      cost.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> '
+        + Number(price).toLocaleString();
+      actions.appendChild(cost);
       const buy = document.createElement('button');
       buy.type = 'button';
-      const canAfford = Number(A.coins || 0) >= price;
       buy.className = 'btn-smol sleeve-shop-buy' + (canAfford ? ' is-affordable' : ' is-unaffordable');
-      buy.innerHTML = '<img src="assets/ui/llsifas-gold-coin.webp" alt="" width="14" height="14"> ' + price;
+      buy.textContent = tOr('playmatShop.buy', 'Buy');
       buy.disabled = !canAfford;
-      buy.onclick = () => void buyPlaymatFromShop(m.id);
+      buy.onclick = () => void buyPlaymatFromShop(m.id, matName, price);
       actions.appendChild(buy);
     }
     tile.appendChild(art);
@@ -6829,9 +6844,14 @@ function renderPlaymatShopGrid(mats) {
   });
 }
 
-async function buyPlaymatFromShop(playmatId) {
+async function buyPlaymatFromShop(playmatId, displayName, price) {
   const err = el('playmat-shop-err');
   if (err) err.textContent = '';
+  const name = String(displayName || playmatId || 'playmat');
+  const cost = Number(price || A.playmatShopPrice || 3000);
+  const msg = t('playmatShop.buyConfirm', { name, price: cost.toLocaleString() })
+    || (`Buy ${name} for ${cost.toLocaleString()} Coins?\n\nThis cannot be undone.`);
+  if (!confirm(msg)) return;
   try {
     const res = await accountPost('playmat_buy', { playmat_id: playmatId });
     syncCoinsFromProfile(res);

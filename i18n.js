@@ -512,6 +512,8 @@
       "coinsAria": "Coins",
       "freeClaims": "Free picks: {n}",
       "owned": "Owned",
+      "buy": "Buy",
+      "buyConfirm": "Buy {name} for {price} Coins?\n\nThis cannot be undone.",
       "claimFree": "Claim free",
       "hoverEmpty": "Hover a sleeve to preview",
       "bdayName": "{name} Birthday Visual {year}",
@@ -1868,6 +1870,8 @@
       "coinsAria": "コイン",
       "freeClaims": "無料選択: {n}",
       "owned": "所持済み",
+      "buy": "購入",
+      "buyConfirm": "「{name}」を {price} コインで購入しますか？\n\nこの操作は取り消せません。",
       "claimFree": "無料で獲得",
       "hoverEmpty": "スリーブにカーソルを合わせてプレビュー",
       "bdayName": "{name} バースデービジュアル {year}",
@@ -4048,6 +4052,8 @@
       "coinsAria": "Monedas",
       "freeClaims": "Elecciones gratis: {n}",
       "owned": "En posesión",
+      "buy": "Comprar",
+      "buyConfirm": "¿Comprar {name} por {price} monedas?\n\nEsto no se puede deshacer.",
       "claimFree": "Canjear gratis",
       "hoverEmpty": "Pasa el cursor sobre una funda para previsualizar",
       "bdayName": "Visual de cumpleaños de {name} {year}",
@@ -5430,6 +5436,8 @@
       "coinsAria": "코인",
       "freeClaims": "무료 선택: {n}",
       "owned": "보유 중",
+      "buy": "구매",
+      "buyConfirm": "{name}을(를) {price} 코인에 구매할까요?\n\n이 작업은 되돌릴 수 없습니다.",
       "claimFree": "무료 받기",
       "hoverEmpty": "슬리브에 마우스를 올리면 미리보기",
       "bdayName": "{name} 버스데이 비주얼 {year}",
@@ -6813,6 +6821,8 @@
       "coinsAria": "金币",
       "freeClaims": "免费次数：{n}",
       "owned": "已拥有",
+      "buy": "购买",
+      "buyConfirm": "要用 {price} 金币购买「{name}」吗？\n\n此操作无法撤销。",
       "claimFree": "免费领取",
       "hoverEmpty": "将鼠标移到卡套上预览",
       "bdayName": "{name} 生日视觉 {year}",
@@ -8172,6 +8182,8 @@
       "coinsAria": "เหรียญ",
       "freeClaims": "เลือกฟรี: {n}",
       "owned": "มีแล้ว",
+      "buy": "ซื้อ",
+      "buyConfirm": "ซื้อ {name} ในราคา {price} เหรียญ?\n\nการกระทำนี้ย้อนกลับไม่ได้",
       "claimFree": "รับฟรี",
       "hoverEmpty": "ชี้ที่ซองเพื่อดูตัวอย่าง",
       "bdayName": "วิชวลวันเกิด {name} {year}",
@@ -8265,6 +8277,9 @@
       || 'Each playmat costs 3,000 Coins. Filters stay visible even when a member has no mats yet.';
     loc.playmatShop.coinsAria = loc.playmatShop.coinsAria || 'Coins';
     loc.playmatShop.owned = loc.playmatShop.owned || 'Owned';
+    loc.playmatShop.buy = loc.playmatShop.buy || 'Buy';
+    loc.playmatShop.buyConfirm = loc.playmatShop.buyConfirm
+      || 'Buy {name} for {price} Coins?\n\nThis cannot be undone.';
     loc.playmatShop.hoverEmpty = loc.playmatShop.hoverEmpty || 'Hover a playmat to preview';
     loc.playmatShop.previewOpen = loc.playmatShop.previewOpen || 'View full size';
     loc.playmatShop.previewClose = loc.playmatShop.previewClose || 'Playmat preview — tap to close';
@@ -8286,6 +8301,9 @@
     loc.sleeveShop.coinsAria = loc.sleeveShop.coinsAria || 'Coins';
     loc.sleeveShop.freeClaims = loc.sleeveShop.freeClaims || 'Free picks: {n}';
     loc.sleeveShop.owned = loc.sleeveShop.owned || 'Owned';
+    loc.sleeveShop.buy = loc.sleeveShop.buy || 'Buy';
+    loc.sleeveShop.buyConfirm = loc.sleeveShop.buyConfirm
+      || 'Buy {name} for {price} Coins?\n\nThis cannot be undone.';
     loc.sleeveShop.claimFree = loc.sleeveShop.claimFree || 'Claim free';
     loc.sleeveShop.hoverEmpty = loc.sleeveShop.hoverEmpty || 'Hover a sleeve to preview';
     loc.sleeveShop.bdayName = loc.sleeveShop.bdayName || '{name} Birthday Visual {year}';
