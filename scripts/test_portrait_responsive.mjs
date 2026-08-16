@@ -219,22 +219,41 @@ else ok('1080p panels retain their original 440px width');
 
 function packedDesktopHandWidth(avail, cardW, count) {
   let step = cardW * 0.76;
+  let scale = 1;
   if (count > 1 && cardW + step * (count - 1) > avail) {
+    const minStepRatio = 0.45;
+    const packedAtFull = (avail - cardW) / (count - 1);
+    if (packedAtFull < cardW * minStepRatio) {
+      const neededW = avail / (1 + minStepRatio * (count - 1));
+      scale = Math.max(0.58, Math.min(1, neededW / cardW));
+      cardW *= scale;
+    }
     step = Math.max(1, (avail - cardW) / (count - 1));
   }
-  return cardW + step * Math.max(0, count - 1);
+  return { width: cardW + step * Math.max(0, count - 1), scale, stepRatio: step / cardW };
 }
-const packedWidth = packedDesktopHandWidth(new1080MatW - 24, 80, 30);
-if (packedWidth > new1080MatW - 24 + 0.01) {
-  fail(`large desktop hand spills past the playmat (${packedWidth.toFixed(1)}px)`);
+const packed = packedDesktopHandWidth(new1080MatW - 24, 80, 30);
+if (packed.width > new1080MatW - 24 + 0.01) {
+  fail(`large desktop hand spills past the playmat (${packed.width.toFixed(1)}px)`);
 } else {
   ok('large desktop hand packs inside the playmat borders');
 }
-
-if (!indexSrc.includes(': Math.max(1, (avail - cardW) / (n - 1))')) {
-  fail('desktop hand fan is missing fit-to-playmat packing');
+if (!(packed.scale < 0.95 && packed.scale >= 0.58)) {
+  fail(`massive desktop hand should shrink cards a bit, got scale ${packed.scale.toFixed(3)}`);
 } else {
-  ok('desktop hand fan uses fit-to-playmat packing');
+  ok(`massive desktop hand shrinks cards to ${(packed.scale * 100).toFixed(0)}%`);
+}
+const normalPacked = packedDesktopHandWidth(new1080MatW - 24, 80, 8);
+if (normalPacked.scale !== 1) {
+  fail(`normal desktop hand must keep full card size, got scale ${normalPacked.scale}`);
+} else {
+  ok('normal desktop hand keeps full card size');
+}
+
+if (!indexSrc.includes('Massive desktop hands: shrink cards') || !indexSrc.includes('minStepRatio = 0.45')) {
+  fail('desktop hand fan is missing massive-hand size reduction');
+} else {
+  ok('desktop hand fan shrinks massive hands before extreme overlap');
 }
 
 if (process.exitCode) {

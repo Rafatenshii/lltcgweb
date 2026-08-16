@@ -17148,6 +17148,11 @@ function layoutHandFan(fanEl, opts = {}) {
       fanEl.style.width = 'max-content';
       fanEl.style.marginLeft = 'auto';
       fanEl.style.marginRight = 'auto';
+    } else if (!document.documentElement.classList.contains('tcg-mobile-viewport')) {
+      cards.forEach(c => {
+        c.style.removeProperty('height');
+        c.style.removeProperty('width');
+      });
     }
     if (opts.beforeByKey?.size) {
       const sel = fanEl.id === 'hand-row' ? '.hcard' : '.opp-hand-card';
@@ -17199,6 +17204,7 @@ function layoutHandFan(fanEl, opts = {}) {
   let cardW = cardH * (63 / 88);
   const n = cards.filter(c => !skip(c)).length || cards.length;
   let step;
+  let shrinkScale = 1;
   if (portrait) {
     // Keep the large portrait card size, but space six card positions across
     // the viewport. Position 7+ extends off-screen into the scrollable strip.
@@ -17216,15 +17222,35 @@ function layoutHandFan(fanEl, opts = {}) {
   } else {
     step = cardW * (mobile ? 0.84 : 0.76);
     if (n > 1 && cardW + step * (n - 1) > avail) {
-      // Desktop hands must remain inside the playmat. Keep mobile's readable
-      // overlap floor, but let desktop cards pack as tightly as necessary.
-      step = mobile
-        ? Math.max((avail - cardW) / (n - 1), cardW * 0.5)
-        : Math.max(1, (avail - cardW) / (n - 1));
+      if (mobile) {
+        // Keep mobile's readable overlap floor.
+        step = Math.max((avail - cardW) / (n - 1), cardW * 0.5);
+      } else {
+        // Massive desktop hands: shrink cards a bit before packing into
+        // razor-thin overlaps, while still staying inside the playmat.
+        const minStepRatio = 0.45;
+        const packedAtFull = (avail - cardW) / (n - 1);
+        if (packedAtFull < cardW * minStepRatio) {
+          const neededW = avail / (1 + minStepRatio * (n - 1));
+          shrinkScale = Math.max(0.58, Math.min(1, neededW / cardW));
+          cardW *= shrinkScale;
+          cardH *= shrinkScale;
+        }
+        step = Math.max(1, (avail - cardW) / (n - 1));
+      }
     }
   }
   let slot = 0;
   cards.forEach((c) => {
+    if (!mobile && !portrait) {
+      if (shrinkScale < 0.999) {
+        c.style.height = `${cardH.toFixed(1)}px`;
+        c.style.width = 'auto';
+      } else {
+        c.style.removeProperty('height');
+        c.style.removeProperty('width');
+      }
+    }
     if (skip(c)) {
       c.style.marginLeft = '0';
       return;
