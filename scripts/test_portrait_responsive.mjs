@@ -131,7 +131,9 @@ for (const g of gateFixtures) {
 function touchPrimary(w, h, { touchPoints = 0, finePointer = false, coarse = false, hoverNone = false, mobileUa = false, macUa = false } = {}) {
   const iPadOsDesktopUa = touchPoints > 1 && macUa;
   if (mobileUa || iPadOsDesktopUa || coarse || hoverNone) return true;
-  return !!(touchPoints > 0 && !finePointer && Math.min(w, h) <= 920);
+  if (w >= h) return false;
+  if (touchPoints > 0 && Math.min(w, h) <= 920) return true;
+  return !!(finePointer && w <= 1100 && h >= w * 1.2);
 }
 
 /** Mirror of the landscape fixed-frame gate in bindMobileViewport. */
@@ -150,6 +152,15 @@ else ok('touchscreen 1080p desktop is not touch-primary');
 
 if (fixedFrame(1920, 920, desktopTouch)) fail('touchscreen 1080p desktop must keep the desktop board, not the 20:9 frame');
 else ok('touchscreen 1080p desktop keeps the full desktop board');
+
+if (!touchPrimary(800, 1280, desktopTouch)) fail('touchscreen laptop in portrait must use the portrait shell');
+else ok('touchscreen portrait viewport uses the portrait shell');
+
+if (!touchPrimary(1080, 1920, { finePointer: true })) fail('rotated 1080p monitor must use the portrait shell');
+else ok('rotated portrait monitor uses the portrait shell');
+
+if (touchPrimary(1400, 1500, { finePointer: true })) fail('near-square desktop window must stay on the desktop board');
+else ok('near-square desktop window keeps the desktop board');
 
 if (!touchPrimary(390, 844, { touchPoints: 5, coarse: true, hoverNone: true, mobileUa: true })) fail('iPhone must be touch-primary');
 else ok('iPhone stays touch-primary');
