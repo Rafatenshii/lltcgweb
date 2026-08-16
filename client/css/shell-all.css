@@ -625,9 +625,9 @@ body.tutorial-mode #sb-activatable-wrap.tut-show{outline:2px solid rgba(255,107,
 .hand-strip.opp-hand-strip{
   align-items:flex-start;padding-top:10px;
   border-bottom:1px solid var(--ui-panel-border);
-  /* Clip sideways so large fans never paint over side panels; keep Y open for peek. */
-  overflow-x:clip;
-  overflow-y:visible;
+  /* Y open for peek; X stays visible so a thin edge-bleed into panels is allowed.
+     Fan width is still packed to the playmat column (see layoutHandFan). */
+  overflow:visible;
   max-width:100%;
   z-index:25;
 }
@@ -640,8 +640,7 @@ body.tutorial-mode #sb-activatable-wrap.tut-show{outline:2px solid rgba(255,107,
 .hand-strip.my-hand-strip{
   align-items:flex-end;padding-bottom:10px;
   border-top:1px solid var(--ui-panel-border);
-  overflow-x:clip;
-  overflow-y:visible;
+  overflow:visible;
   max-width:100%;
   z-index:25;
 }
@@ -726,14 +725,15 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
     --hand-card-pad:18px;
     --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
     --opp-hand-card-h:calc(var(--hand-strip-h) * 1.32);
-    --hand-safe-inline:24px;
+    /* Thin gutter: large hands stay bigger and may peek slightly into panels. */
+    --hand-safe-inline:4px;
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
     --hand-strip-h:96px;
     --hand-card-pad:18px;
     --my-hand-card-h:calc(var(--hand-strip-h) * 1.5);
     --opp-hand-card-h:calc(var(--hand-strip-h) * 1.32);
-    --hand-safe-inline:24px;
+    --hand-safe-inline:4px;
     --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2 - 14px);
     --side-panel-w:min(440px,max(280px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
