@@ -214,6 +214,8 @@
       "cpuCosmeticDefault": "Default",
       "cpuCosmeticRandom": "Random (owned)",
       "cpuCosmeticsHint": "Choose a cosmetic you own, or random from your collection.",
+      "presetDeckNotLoaded": "Deck preset not loaded — reopen the lobby and try again",
+      "experimentDeckNotLoaded": "Experiment deck not loaded — reopen Free lobby and try again",
       "soloStarting": "Starting vs CPU ({diff})",
       "player1Default": "Player 1",
       "player2Default": "Player 2",
@@ -8269,6 +8271,10 @@
     loc.lobby.cpuCosmeticRandom = loc.lobby.cpuCosmeticRandom || 'Random (owned)';
     loc.lobby.cpuCosmeticsHint = loc.lobby.cpuCosmeticsHint
       || 'Choose a cosmetic you own, or random from your collection.';
+    loc.lobby.presetDeckNotLoaded = loc.lobby.presetDeckNotLoaded
+      || 'Deck preset not loaded — reopen the lobby and try again';
+    loc.lobby.experimentDeckNotLoaded = loc.lobby.experimentDeckNotLoaded
+      || 'Experiment deck not loaded — reopen Free lobby and try again';
     loc.lang.label = (loc.language && loc.language.label) || loc.lang.label;
     loc.auth = loc.auth || {};
     loc.auth.unranked = loc.auth.unranked || {};

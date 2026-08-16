@@ -2550,7 +2550,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=132"></script>
+<script src="i18n.js?v=133"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=29"></script>
@@ -18335,7 +18335,7 @@ function deckPayloadFromChoice(deckSel) {
     if (!token) throw new Error('Sign in to use saved experiment decks');
     const saved = (A.experimentDecks || []).find(d => d.slot === slot);
     if (!saved?.main_deck?.length) {
-      throw new Error(t('lobby.experimentDeckNotLoaded') || ('Experiment deck #' + slot + ' not loaded — reopen Free lobby'));
+      throw new Error(tLobbyOr('lobby.experimentDeckNotLoaded', 'Experiment deck #' + slot + ' not loaded — reopen Free lobby'));
     }
     return {
       ...experimentInlineDeckPayload(
@@ -18387,7 +18387,7 @@ function deckPayloadFromChoice(deckSel) {
     if (!token) throw new Error('Sign in to use saved deck presets');
     const saved = (A.decks || []).find(d => d.slot === slot);
     if (!saved?.main_deck?.length) {
-      throw new Error(t('lobby.presetDeckNotLoaded') || ('Deck preset #' + slot + ' not loaded — reopen the lobby'));
+      throw new Error(tLobbyOr('lobby.presetDeckNotLoaded', 'Deck preset #' + slot + ' not loaded — reopen the lobby'));
     }
     return {
       ...presetInlineDeckPayload(
@@ -18405,7 +18405,7 @@ function deckPayloadFromChoice(deckSel) {
   return payload;
 }
 
-async function ensureLobbyExperimentDeckReady() {
+async function ensureLobbyExperimentDeckReady(preferredChoice) {
   // Cosmetic catalogs need to be warm for first board paint.
   if (window.LLTCG_SLEEVES?.loadCatalog) {
     try { await window.LLTCG_SLEEVES.loadCatalog(); } catch (e) { /* best effort */ }
@@ -18414,14 +18414,14 @@ async function ensureLobbyExperimentDeckReady() {
     try { await window.LLTCG_PLAYMATS.loadCatalog(); } catch (e) { /* best effort */ }
   }
   const mode = currentGameMode();
-  const choice = el('sel-deck')?.value || '';
+  const choice = String(preferredChoice || el('sel-deck')?.value || '').trim();
   // Account presets: refresh Hostinger deck_list so inline lists + sleeves are current for VPS.
   if (choice.startsWith('preset:') && isSignedInAccount()) {
     await ensureDeckList({ force: true });
     const slot = parseInt(choice.slice(7), 10);
     const saved = (A.decks || []).find(d => d.slot === slot);
     if (!saved?.main_deck?.length) {
-      throw new Error(t('lobby.presetDeckNotLoaded') || ('Deck preset #' + slot + ' not loaded — reopen the lobby'));
+      throw new Error(tLobbyOr('lobby.presetDeckNotLoaded', 'Deck preset #' + slot + ' not loaded — reopen the lobby'));
     }
   }
   if (!isFreeGameMode(mode)) return;
@@ -18431,7 +18431,12 @@ async function ensureLobbyExperimentDeckReady() {
     : choice;
   if (!freeChoice) return;
   if (freeChoice.startsWith('experiment_preset:')) {
-    await ensureExperimentDeckList();
+    await ensureExperimentDeckList({ force: true });
+    const slot = parseInt(freeChoice.slice(18), 10);
+    const saved = (A.experimentDecks || []).find(d => d.slot === slot);
+    if (!saved?.main_deck?.length) {
+      throw new Error(tLobbyOr('lobby.experimentDeckNotLoaded', 'Experiment deck #' + slot + ' not loaded — reopen Free lobby'));
+    }
     return;
   }
   if (!freeChoice.startsWith('experiment:')) return;
@@ -18660,10 +18665,10 @@ function cpuOpponentName() {
 
 async function startSoloRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
-  await ensureLobbyExperimentDeckReady();
+  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
+  await ensureLobbyExperimentDeckReady(deckSel);
   applyRematchToLobbyUI(rematch);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
-  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
   noteMatchStartDeckChoice(deckSel);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   setCpuDifficulty(rematch.cpuDifficulty || 'easy');
@@ -18688,10 +18693,10 @@ async function startSoloRematch(rematch) {
 
 async function startUnrankedRematch(rematch) {
   if (rematch.gameMode) persistGameMode(rematch.gameMode);
-  await ensureLobbyExperimentDeckReady();
+  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
+  await ensureLobbyExperimentDeckReady(deckSel);
   applyRematchToLobbyUI(rematch);
   const name = (rematch.name || '').trim() || defaultPlayerName(1);
-  const deckSel = rematch.deckChoice || el('sel-deck')?.value || 'nijigasaki';
   noteMatchStartDeckChoice(deckSel);
   const timerOpts = rematchPhaseTimerOpts(rematch);
   const r = await apiPost('create_room', {
