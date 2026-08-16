@@ -3520,7 +3520,13 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
     }
 
     if (!spectacleFailedOwed) {
-    if (opts.newEntries?.length && !emptySkip) {
+    // Empty-skip already ran playEmptySkipTurnPrepSequence. Non-empty Live→Main
+    // still needs Energy/Draw flights — bare applyTurnPrepEntriesToState only
+    // refreshes Active and then paints the final board with no flights.
+    const willPlayTurnPrep = !emptySkip
+      && typeof batchHasPostLiveTurnPrep === 'function'
+      && batchHasPostLiveTurnPrep(prev, next, opts.newEntries || []);
+    if (opts.newEntries?.length && !emptySkip && !willPlayTurnPrep) {
       applyTurnPrepEntriesToState(G.gameState || next, next, opts.newEntries);
     }
 
@@ -3561,6 +3567,14 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
     } else {
       if (G._liveStorageOutcomePending) commitLiveRoundAfterOutcomes(latest);
       else G._livePostRevealBoard = null;
+    }
+
+    if (willPlayTurnPrep && typeof playPostLiveTurnPrepSequence === 'function') {
+      if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.setStep('turn_prep');
+      await playPostLiveTurnPrepSequence(prev, next, opts.newEntries || [], myId);
+    } else if (willPlayTurnPrep && typeof playEmptySkipTurnPrepSequence === 'function') {
+      if (typeof LiveRoundDirector !== 'undefined') LiveRoundDirector.setStep('turn_prep');
+      await playEmptySkipTurnPrepSequence(prev, next, opts.newEntries || [], myId);
     }
 
     syncLogAfterLivePresentation(next, prev);

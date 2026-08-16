@@ -2554,7 +2554,6 @@ function runPlayerTurnPrep(array $state, string $pid): array {
     $state = addLog($state, "$name — Active Phase: Energy and Members refreshed.");
     $state = doActivePhase($state, $pid);
     $state = doEnergyPhase($state, $pid);
-    $state = addLog($state, "$name — Draw Phase.");
     $state = doDrawPhase($state, $pid);
     return $state;
 }
@@ -2659,14 +2658,22 @@ function doEnergyPhase(array $state, string $pid): array {
 
 function doDrawPhase(array $state, string $pid): array {
     $p = &$state['players'][$pid];
+    $name = $p['name'];
     $drawn = drawMainDeckCards($state, $pid, 1);
     if (!empty($drawn)) {
-        $p['hand'] = array_merge($p['hand'], $drawn);
+        $anims = [];
+        foreach ($drawn as $c) {
+            $p['hand'][] = $c;
+            $anims[] = animSpec($c['instance_id'], 'main_deck', 'hand', $pid, [
+                'index' => count($p['hand']) - 1,
+            ]);
+        }
         // drawMainDeckCards already refreshes when the last card is taken; re-check
         // in case the drawn card was the final one and WR still has cards.
         refreshMainDeckFromWaitingRoom($state, $pid);
+        $state = addLog($state, "$name — Draw Phase.", 'action', $anims);
     } else {
-        $state = addLog($state, $p['name'] . ' — Draw Phase: could not draw (deck and Waiting Room empty).');
+        $state = addLog($state, "$name — Draw Phase: could not draw (deck and Waiting Room empty).");
     }
     return $state;
 }

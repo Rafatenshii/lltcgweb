@@ -107,7 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=63">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
-<link rel="stylesheet" href="client/css/portrait.css?v=72">
+<link rel="stylesheet" href="client/css/portrait.css?v=73">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -20216,6 +20216,7 @@ function applyAnimOnPlayback(playback, finalState, spec, card) {
   const rm = (arr) => (arr || []).filter(c => c?.instance_id !== iid);
   p.hand = rm(p.hand);
   p.main_deck = rm(p.main_deck);
+  p.energy_deck = rm(p.energy_deck);
   p.waiting_room = rm(p.waiting_room);
   p.live_zone = rm(p.live_zone);
   p.energy_zone = rm(p.energy_zone);
@@ -21197,6 +21198,8 @@ async function playTailMoveAnimations(playback, final, myId, opts = {}) {
   const pileMoves = capped.filter(isStaggeredPileMove);
   const otherMoves = capped.filter(m => !isStaggeredPileMove(m));
   prepareWrPileAnimPending(playback, final, capped);
+  // Hide arriving hand cards before priming layout so draw-flip waits for flight handoff.
+  G._animHideIids = animHideIidsForMoves(playback, capped);
 
   try {
   if (pileMoves.length) {
@@ -21306,6 +21309,8 @@ async function playTailMoveAnimations(playback, final, myId, opts = {}) {
   }
   } finally {
     clearWrPileAnimPending();
+    G._animHideIids = null;
+    clearHandArrivingFlags();
   }
 }
 
@@ -21366,6 +21371,11 @@ function isPostEmptySkipTurnPrepLogEntry(entry) {
 }
 
 function collectTurnPrepEntriesAfterEmptySkip(entries) {
+  return collectPostLiveTurnPrepEntries(entries);
+}
+
+/** Active / Energy / Draw (+ turn-begin) after a Live round advances into Main. */
+function collectPostLiveTurnPrepEntries(entries) {
   if (!entries?.length) return [];
   let i = -1;
   for (let j = entries.length - 1; j >= 0; j--) {
@@ -21374,8 +21384,28 @@ function collectTurnPrepEntriesAfterEmptySkip(entries) {
       break;
     }
   }
-  if (i < 0) return [];
-  return entries.slice(i + 1).filter(isPostEmptySkipTurnPrepLogEntry);
+  if (i >= 0) return entries.slice(i + 1).filter(isPostEmptySkipTurnPrepLogEntry);
+  for (let j = entries.length - 1; j >= 0; j--) {
+    if (/^=== Turn \d+ begins ===$/.test(entries[j]?.msg || '')) {
+      return entries.slice(j).filter(isPostEmptySkipTurnPrepLogEntry);
+    }
+  }
+  const filtered = entries.filter(isPostEmptySkipTurnPrepLogEntry);
+  return filtered.some(e => /— Energy Phase:|— Draw Phase/.test(e?.msg || ''))
+    ? filtered
+    : [];
+}
+
+function batchHasPostLiveTurnPrep(prev, final, entries) {
+  if (!final) return false;
+  if (collectPostLiveTurnPrepEntries(entries).length) return true;
+  if (final?.log?.length && collectPostLiveTurnPrepEntries(final.log).length) {
+    const turnAdvanced = (final.turn ?? 0) > (prev?.turn ?? 0);
+    const toMain = !isLiveSetPhase(final.phase)
+      && (final.phase === 'main_first' || final.phase === 'main_second');
+    return turnAdvanced && toMain;
+  }
+  return false;
 }
 
 function isEmptySkipTurnPrepFlightSpec(spec) {
@@ -21385,12 +21415,16 @@ function isEmptySkipTurnPrepFlightSpec(spec) {
   return false;
 }
 
-/** Play turn begin / Active / Energy / Draw after empty LIVE skip (server batches them in one poll). */
+/** Play turn begin / Active / Energy / Draw after Live advances into Main. */
 async function playEmptySkipTurnPrepSequence(prev, final, newEntries, myId) {
-  let turnPrepEntries = collectTurnPrepEntriesAfterEmptySkip(newEntries);
-  // Batched / truncated newEntries may omit the "No Lives" marker — fall back to full log.
+  return playPostLiveTurnPrepSequence(prev, final, newEntries, myId);
+}
+
+async function playPostLiveTurnPrepSequence(prev, final, newEntries, myId) {
+  let turnPrepEntries = collectPostLiveTurnPrepEntries(newEntries);
+  // Batched / truncated newEntries may omit markers — fall back to full log.
   if (!turnPrepEntries.length && final?.log?.length) {
-    turnPrepEntries = collectTurnPrepEntriesAfterEmptySkip(final.log);
+    turnPrepEntries = collectPostLiveTurnPrepEntries(final.log);
   }
   let playback = buildPostEmptyLivePreTurnPrepState(prev, final);
   G.gameState = playback;
@@ -22625,6 +22659,7 @@ function buildLocationMap(state) {
     (p.success_lives || []).forEach((c, i) => put(c, { zone: 'success', index: i }));
     (p.energy_zone || []).forEach((c, i) => put(c, { zone: 'energy', index: i }));
     (p.main_deck || []).forEach(c => put(c, { zone: 'main_deck' }));
+    (p.energy_deck || []).forEach(c => put(c, { zone: 'energy_deck' }));
     (p.waiting_room || []).forEach(c => put(c, { zone: 'waiting_room' }));
   });
   const surveil = state?.surveil_stash || [];
@@ -30740,7 +30775,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=76"></script>
+<script src="client/js/spectacle.js?v=77"></script>
 <script src="client/js/board-render.js?v=23"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
