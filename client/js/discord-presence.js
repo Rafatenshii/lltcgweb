@@ -1,8 +1,7 @@
 /**
- * Discord Rich Presence controller.
- * Android: Capacitor DiscordPresence + Social SDK AAR (opt-in in Options).
- * Desktop / PreMiD: deriveActivity + getSnapshot() with optional presence_action join URLs.
- * Deep-link join/spectate works via App Links / ?presence_action= on all platforms.
+ * Discord Rich Presence controller (Android Loveca shell only).
+ * Browser / desktop: no-op. Requires Capacitor DiscordPresence plugin + Social SDK AAR
+ * for live Discord profile activity; deep-link join/spectate works via App Links anyway.
  */
 (function (global) {
   'use strict';
@@ -13,7 +12,6 @@
   // Prefer a hosted HTTPS image until Rich Presence art keys are uploaded in the portal.
   // Same Honoka art as the Android APK / hub download icon.
   var PRESENCE_ICON_URL = 'https://loveliveradio.ca/tcg/downloads/loveca-icon-192.png';
-  var JOIN_BASE_URL = 'https://loveliveradio.ca/tcg/';
   function presenceArt(_key) {
     return PRESENCE_ICON_URL;
   }
@@ -30,8 +28,6 @@
   var refreshQueuedForce = undefined;
   var mintRetryTimer = null;
   var mintRetryCount = 0;
-  /** Latest PreMiD / desktop snapshot (sync read via getSnapshot). */
-  var lastSnapshot = null;
 
   function isAndroidShell() {
     try {
@@ -336,43 +332,14 @@
     }
   }
 
-  function buildJoinUrl(token) {
-    if (!token) return '';
-    return JOIN_BASE_URL + '?presence_action=' + encodeURIComponent(String(token));
-  }
+  async function publish(act, force) {
+    if (!isAndroidShell() || !isOptedIn()) return;
+    var p = getPlugin();
+    if (!p || typeof p.setActivity !== 'function') return;
 
-  function syncSnapshotFromAct(act, joinSecret) {
     var kind = act.kind || 'menu';
     if (!startedAtByKind[kind]) startedAtByKind[kind] = Date.now();
-    lastSnapshot = {
-      kind: kind,
-      details: act.details || '',
-      state: act.state || '',
-      largeImage: act.largeImage || presenceArt('loveca'),
-      largeText: 'Loveca Sim',
-      joinable: !!act.joinable,
-      actionLabel: act.actionLabel || (act.joinType === 'spectate' ? 'Spectate' : 'Join'),
-      joinUrl: joinSecret ? buildJoinUrl(joinSecret) : '',
-      startTimestampMs: startedAtByKind[kind],
-      applicationId: DISCORD_APP_ID,
-    };
-    return lastSnapshot;
-  }
-
-  /**
-   * Sync snapshot for PreMiD. Prefers last async-refreshed data (with joinUrl when mintable);
-   * falls back to a live derive without joinUrl and kicks a background refresh.
-   */
-  function getSnapshot() {
-    scheduleRefresh(false);
-    if (lastSnapshot) return lastSnapshot;
-    var act = deriveActivity();
-    return syncSnapshotFromAct(act, null);
-  }
-
-  async function prepareSnapshot(act) {
-    var kind = act.kind || 'menu';
-    if (!startedAtByKind[kind]) startedAtByKind[kind] = Date.now();
+    var startMs = startedAtByKind[kind];
 
     if (!act.joinable) {
       clearJoinSecretCache();
@@ -382,31 +349,6 @@
     if (act.joinable) {
       joinSecret = await mintJoinSecret(act);
     }
-
-    syncSnapshotFromAct(act, joinSecret);
-
-    // Mint can fail if we refresh before queue/room is ready — retry a few times.
-    if (act.joinable && !joinSecret && mintRetryCount < 4) {
-      if (mintRetryTimer) clearTimeout(mintRetryTimer);
-      mintRetryTimer = setTimeout(function () {
-        mintRetryTimer = null;
-        mintRetryCount += 1;
-        scheduleRefresh(true);
-      }, 1500);
-    } else if (joinSecret || !act.joinable) {
-      mintRetryCount = 0;
-    }
-
-    return joinSecret;
-  }
-
-  async function publish(act, joinSecret) {
-    if (!isAndroidShell() || !isOptedIn()) return;
-    var p = getPlugin();
-    if (!p || typeof p.setActivity !== 'function') return;
-
-    var kind = act.kind || 'menu';
-    var startMs = startedAtByKind[kind] || Date.now();
 
     var payload = {
       applicationId: DISCORD_APP_ID,
@@ -426,11 +368,22 @@
     try {
       await p.setActivity(payload);
     } catch (e) { /* Discord absent / SDK not linked */ }
+
+    // Mint can fail if we refresh before queue/room is ready — retry a few times.
+    if (act.joinable && !joinSecret && mintRetryCount < 4) {
+      if (mintRetryTimer) clearTimeout(mintRetryTimer);
+      mintRetryTimer = setTimeout(function () {
+        mintRetryTimer = null;
+        mintRetryCount += 1;
+        scheduleRefresh(true);
+      }, 1500);
+    } else if (joinSecret || !act.joinable) {
+      mintRetryCount = 0;
+    }
   }
 
   async function clearActivity() {
     lastKey = '';
-    lastSnapshot = null;
     startedAtByKind = Object.create(null);
     clearJoinSecretCache();
     mintRetryCount = 0;
@@ -440,7 +393,7 @@
   }
 
   function scheduleRefresh(force) {
-    // Android Social SDK + desktop PreMiD snapshot / mint cache.
+    if (!isAndroidShell()) return;
     if (pendingTimer) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -471,6 +424,11 @@
   }
 
   async function refreshNow(force) {
+    if (!isAndroidShell()) return;
+    if (!isOptedIn()) {
+      await clearActivity();
+      return;
+    }
     var act = deriveActivity();
     var key = activityKey(act);
     var now = Date.now();
@@ -481,18 +439,7 @@
     }
     lastKey = key;
     lastSentAt = now;
-
-    var joinSecret = await prepareSnapshot(act);
-
-    if (isAndroidShell() && isOptedIn()) {
-      await publish(act, joinSecret);
-    } else if (isAndroidShell() && !isOptedIn()) {
-      // Clear Social SDK activity but keep PreMiD snapshot available.
-      var p = getPlugin();
-      if (p && typeof p.clearActivity === 'function') {
-        try { await p.clearActivity(); } catch (e) { /* ignore */ }
-      }
-    }
+    await publish(act, force);
   }
 
   async function linkDiscord() {
@@ -700,9 +647,8 @@
   function init() {
     capturePresenceActionFromUrl();
     bindOptionsUi();
-    if (isAndroidShell()) {
-      bindJoinListener();
-    }
+    if (!isAndroidShell()) return;
+    bindJoinListener();
     scheduleRefresh(true);
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') {
@@ -717,7 +663,6 @@
     init: init,
     refresh: function (force) { scheduleRefresh(!!force); },
     clear: clearActivity,
-    getSnapshot: getSnapshot,
     isAndroidShell: isAndroidShell,
     isOptedIn: isOptedIn,
     setOptedIn: setOptedIn,
