@@ -54,6 +54,16 @@ for (const cls of ['tcg-portrait-square', 'tcg-portrait-tablet', '--p-board-max-
   else ok(`css has ${cls}`);
 }
 
+const shellCss = fs.readFileSync(path.join(root, 'client', 'css', 'shell-all.css'), 'utf8');
+const boardCss = fs.readFileSync(path.join(root, 'client', 'css', 'board.css'), 'utf8');
+for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
+  if (!src.includes('Square / near-square foldables') && !src.includes('aspect-ratio:auto')) {
+    fail(`${label}.css missing square fold 20:9 soften`);
+  } else {
+    ok(`${label}.css softens 20:9 on max-aspect-ratio 5/4`);
+  }
+}
+
 /** Mirror of tcgPortraitSizeClass for fixture checks. */
 function sizeClass(w, h) {
   const shortSide = Math.min(w, h);

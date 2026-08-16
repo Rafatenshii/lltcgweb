@@ -1042,6 +1042,16 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame{
   aspect-ratio:20 / 9;
   flex-shrink:0;overflow:hidden;position:relative;
 }
+/* Square / near-square foldables: fill the screen instead of 20:9 letterbox bars. */
+@media (max-aspect-ratio: 5/4) {
+  html.tcg-mobile-viewport #screen-game .game-viewport-frame{
+    width:100vw;
+    height:100dvh;
+    max-width:100vw;
+    max-height:100dvh;
+    aspect-ratio:auto;
+  }
+}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
   width:100%;height:100%;
   align-items:stretch;
@@ -1068,6 +1078,14 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
 html.tcg-tablet-landscape.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
   --side-panel-w:21cqw;
   --mobile-hand-card-h:40cqh;
+  --mobile-action-dock-h:9cqh;
+}
+@media (max-aspect-ratio: 5/4) {
+  html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
+    --mobile-hand-card-h:36cqh;
+    --mobile-action-dock-h:9cqh;
+    --side-panel-w:20cqw;
+  }
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-left{
   height:100%;max-height:100%;min-height:0;align-self:stretch;
@@ -1162,7 +1180,12 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-righ
   padding:0.22cqw 0.3cqw 0.15cqw;flex:1 1 0;min-height:0;
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-right .tcg-radio-stack:not([hidden]){
-  flex-shrink:0;display:flex;flex-direction:column;min-height:186px;overflow:hidden;
+  flex-shrink:0;display:flex;flex-direction:column;min-height:clamp(120px, 22cqh, 186px);overflow:hidden;
+}
+@media (max-aspect-ratio: 5/4) {
+  html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-right .tcg-radio-stack:not([hidden]){
+    min-height:clamp(96px, 16cqh, 140px);
+  }
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .side-panel.side-right .phase-action-bar{
   padding:0.35cqw 0.3cqw 0.3cqw;margin-bottom:0.22cqw;
@@ -1352,6 +1375,14 @@ html.tcg-mobile-viewport #perf-spectacle{
   --perf-col-side-inset:5.4cqw;
   --perf-yell-rail-gap:0.65cqw;
   --perf-rail-slot-w:calc(var(--perf-member-w) * 2.15 + 0.75cqw);
+}
+@media (max-aspect-ratio: 5/4) {
+  html.tcg-mobile-viewport #perf-spectacle{
+    width:100vw;
+    height:100dvh;
+    max-width:100vw;
+    max-height:100dvh;
+  }
 }
 html.tcg-tablet-landscape.tcg-mobile-viewport #perf-spectacle{
   --perf-member-w:6.6cqw;
