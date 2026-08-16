@@ -246,6 +246,12 @@ if (!indexSrc.includes('function resolveHandCssLength(')
 } else {
   ok('desktop hand fan resolves scoped card sizes without border bleed');
 }
+if (!indexSrc.includes('Keep both desktop hands centered')
+    || !indexSrc.includes('const useShiftAnchor = false;')) {
+  fail('desktop hand fan must stay centered (no sticky flex-start shift-anchor)');
+} else {
+  ok('desktop hand fan stays centered without sticky shift-anchor');
+}
 for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   if (!src.includes('#screen-game ll-hand-zone{')
       || !src.includes('display:block;width:100%;min-width:0;max-width:100%')) {
