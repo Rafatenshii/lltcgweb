@@ -107,7 +107,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/shell-all.css?v=71">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=20">
-<link rel="stylesheet" href="client/css/playmats.css?v=1">
+<link rel="stylesheet" href="client/css/playmats.css?v=2">
 <link rel="stylesheet" href="client/css/portrait.css?v=74">
 
 </head>
@@ -666,7 +666,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           </button>
           <button class="llc-menu-item llc-menu-hover llc-menu-item--narrow llc-menu-accent-pink" id="btn-hub-sticker" type="button">
             <span class="llc-menu-item-body">
-              <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Shop</span>
+              <span class="llc-menu-item-title" data-i18n="hub.sticker.title">Sticker Exchange</span>
               <span class="llc-menu-item-sub" data-i18n="hub.sticker.sub">Trade seals for cards from your packs</span>
             </span>
           </button>
@@ -920,7 +920,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     <div class="panel account-panel">
       <div class="account-screen-head">
         <button class="btn-ghost" id="btn-sticker-back" type="button" data-i18n="sticker.backHub">← Hub</button>
-        <h2 id="sticker-screen-title" data-i18n="sticker.title">Sticker Shop</h2>
+        <h2 id="sticker-screen-title" data-i18n="sticker.title">Sticker Exchange</h2>
         <button class="news-fab sticker-info-fab" id="btn-sticker-info" type="button" data-i18n-aria-label="sticker.infoAria" aria-label="Seal guide" aria-haspopup="dialog" aria-controls="modal-sticker-info">
           <span class="news-fab-icon" aria-hidden="true">i</span>
         </button>
@@ -963,12 +963,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
       </div>
       <p class="hub-stat" data-i18n="shop.hint">Choose a cosmetic shop. Prices use Coins earned from matches.</p>
       <div class="shop-hub-grid" id="shop-hub-grid">
-        <button type="button" class="shop-hub-tile" id="btn-shop-sleeves">
+        <button type="button" class="shop-hub-tile shop-hub-tile--sleeve" id="btn-shop-sleeves">
           <span class="shop-hub-tile__art" id="shop-hub-sleeve-art" aria-hidden="true"></span>
           <span class="shop-hub-tile__label" data-i18n="shop.sleevesTitle">Sleeve Shop</span>
           <span class="shop-hub-tile__sub" data-i18n="shop.sleevesSub">Card backs for your decks</span>
         </button>
-        <button type="button" class="shop-hub-tile" id="btn-shop-playmats">
+        <button type="button" class="shop-hub-tile shop-hub-tile--playmat" id="btn-shop-playmats">
           <span class="shop-hub-tile__art is-playmat" id="shop-hub-playmat-art" aria-hidden="true"></span>
           <span class="shop-hub-tile__label" data-i18n="shop.playmatsTitle">Playmat Shop</span>
           <span class="shop-hub-tile__sub" data-i18n="shop.playmatsSub">Board art for your seat</span>
@@ -2504,7 +2504,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=127"></script>
+<script src="i18n.js?v=128"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=28"></script>
@@ -6132,7 +6132,7 @@ function showStickerProductsView() {
   if (cards) cards.hidden = true;
   A.stickerProductId = null;
   const title = el('sticker-screen-title');
-  if (title) title.textContent = t('sticker.title') || 'Sticker Shop';
+  if (title) title.textContent = t('sticker.title') || 'Sticker Exchange';
 }
 
 function showStickerCardsView(productName) {
@@ -6143,7 +6143,7 @@ function showStickerCardsView(productName) {
   const nameEl = el('sticker-product-name');
   if (nameEl) nameEl.textContent = productName || '';
   const title = el('sticker-screen-title');
-  if (title) title.textContent = productName || (t('sticker.title') || 'Sticker Shop');
+  if (title) title.textContent = productName || (t('sticker.title') || 'Sticker Exchange');
 }
 
 async function loadStickerShopScreen() {
@@ -11669,12 +11669,12 @@ function decklogObtainLabel(obtain) {
     return t('deck.decklogObtainStarter', { pack }) || `Starter deck: ${pack}`;
   }
   if (kind === 'pr') {
-    return t('deck.decklogObtainPr') || 'PR Card Pack or Sticker Shop';
+    return t('deck.decklogObtainPr') || 'PR Card Pack or Sticker Exchange';
   }
   if (kind === 'collection') {
     return t('deck.decklogObtainCollection', { pack }) || `Collection: ${pack}`;
   }
-  return pack || (t('deck.decklogObtainUnknown') || 'See card list / Sticker Shop');
+  return pack || (t('deck.decklogObtainUnknown') || 'See card list / Sticker Exchange');
 }
 
 function decklogCardDisplayName(rowOrCard) {

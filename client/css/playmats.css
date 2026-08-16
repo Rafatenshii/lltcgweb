@@ -14,13 +14,14 @@
   border-radius:inherit;
 }
 
-/* Shop hub — two large square choices */
+/* Shop hub — thin sleeve tile + wide playmat tile (match art aspect) */
 .shop-hub-grid{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:minmax(132px,180px) minmax(0,1fr);
   gap:18px;
   margin-top:18px;
-  max-width:720px;
+  max-width:820px;
+  align-items:stretch;
 }
 .shop-hub-tile{
   position:relative;
@@ -47,13 +48,24 @@
 }
 .shop-hub-tile__art{
   width:100%;
-  aspect-ratio:1 / 1;
   border-radius:12px;
   background:#111 center/cover no-repeat;
   box-shadow:0 8px 22px rgba(0,0,0,.4);
 }
+.shop-hub-tile--sleeve{
+  align-items:center;
+  text-align:center;
+}
+.shop-hub-tile--sleeve .shop-hub-tile__art{
+  width:100%;
+  max-width:148px;
+  aspect-ratio:63 / 88;
+  margin-inline:auto;
+}
+.shop-hub-tile--playmat .shop-hub-tile__art,
 .shop-hub-tile__art.is-playmat{
   aspect-ratio:1024 / 563;
+  width:100%;
   background-size:cover;
 }
 .shop-hub-tile__label{
@@ -67,7 +79,14 @@
   line-height:1.35;
 }
 @media (max-width:640px){
-  .shop-hub-grid{grid-template-columns:1fr;max-width:360px;margin-inline:auto}
+  .shop-hub-grid{
+    grid-template-columns:1fr;
+    max-width:420px;
+    margin-inline:auto;
+  }
+  .shop-hub-tile--sleeve .shop-hub-tile__art{
+    max-width:160px;
+  }
 }
 
 /* Reuse sleeve-shop layout classes with playmat aspect tweaks */
