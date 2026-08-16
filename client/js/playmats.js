@@ -29,8 +29,23 @@
     return Math.round(v * 1000) / 1000;
   }
 
-  function cssImageUrl(src) {
+  function resolveAssetUrl(src) {
     const s = String(src || '').trim();
+    if (!s) return '';
+    // Absolute / protocol-relative / data URLs — leave alone.
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|data:)/i.test(s)) return s;
+    try {
+      // Catalog paths are page-relative (e.g. assets/playmats/…). When those
+      // land in CSS custom properties, url() resolves against the stylesheet
+      // href (client/css/…) unless we absolutize against the document first.
+      return new URL(s, global.document?.baseURI || global.location?.href || '').href;
+    } catch (_) {
+      return s.replace(/\\/g, '/');
+    }
+  }
+
+  function cssImageUrl(src) {
+    const s = resolveAssetUrl(src);
     if (!s) return '';
     return 'url("' + s.replace(/\\/g, '/').replace(/"/g, '\\"') + '")';
   }
@@ -112,7 +127,7 @@
       img.dataset.playmatSeat = seat;
       const frame = img.closest('.playmat-frame');
       if (url) {
-        img.src = url;
+        img.src = resolveAssetUrl(url);
         img.style.filter = 'brightness(' + bright + ')';
         frame?.classList.add('has-custom-playmat');
       } else {
