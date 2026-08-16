@@ -192,7 +192,26 @@ function tryResolveAbilityEffectSwitchDeckLook(
             }
             if ($allMatch && count($milled) >= $n) {
                 $cnt = intval($ab['heart_count'] ?? 1);
-                addBonusHeartsToModifier($state, $pid, [['color' => $color, 'count' => $cnt]]);
+                // Ginko / Hime PR: "this Member gains" a heart until this Live
+                // ends.  It must live on the entering Member, rather than in the
+                // player-wide pool, so effects such as Zenhoui Kyun♡ can see that
+                // the particular Mira-Cra Park! Member has extra hearts.
+                $granted = false;
+                $sourceId = (string)($source['instance_id'] ?? '');
+                foreach ($p['stage'] as &$stageMember) {
+                    if (!$stageMember || ($stageMember['instance_id'] ?? '') !== $sourceId) {
+                        continue;
+                    }
+                    addBonusHeartsToMember($stageMember, [['color' => $color, 'count' => $cnt]]);
+                    $granted = true;
+                    break;
+                }
+                unset($stageMember);
+                // Defensive fallback for an unusual effect-resolution path where
+                // the source has already left Stage.
+                if (!$granted) {
+                    addBonusHeartsToModifier($state, $pid, [['color' => $color, 'count' => $cnt]]);
+                }
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] gained $cnt $color heart(s) until this Live ends (all milled Members matched).");
             }
