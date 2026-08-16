@@ -30,6 +30,21 @@ final class PlaymatShopTest extends TestCase
         return (string)$items[0]['id'];
     }
 
+    public function testShopCatalogOmitsEmptyOtherAndMixed(): void
+    {
+        // Catalog has only the five franchise units — shop skips empty Mixed/Other tabs.
+        $catalog = tcgLoadPlaymatCatalog();
+        $units = [];
+        foreach ($catalog as $mat) {
+            $units[tcgSleeveShopUnitForGroup($mat['group'])] = true;
+        }
+        $this->assertArrayNotHasKey('Other', $units);
+        $this->assertArrayNotHasKey('Mixed', $units);
+        foreach (["µ's", 'Aqours', 'Nijigasaki', 'Liella!', 'Hasunosora'] as $u) {
+            $this->assertArrayHasKey($u, $units, "expected unit $u in playmat catalog");
+        }
+    }
+
     public function testNormalizeBrightnessClamp(): void
     {
         $this->assertEqualsWithDelta(1.0, tcgNormalizePlaymatBrightness(null), 0.0001);

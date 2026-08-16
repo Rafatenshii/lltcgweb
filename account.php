@@ -2628,6 +2628,11 @@ function tcgApiPlaymatShopCatalog(array $body): array {
 
     $generations = [];
     foreach (tcgSleeveShopGenerationOrder() as $unit) {
+        // Playmat catalog has no Mixed/Other (and may omit future empty units) —
+        // do not show empty generation tabs the way sleeve shop does.
+        if (empty($byUnit[$unit])) {
+            continue;
+        }
         $chars = [];
         $groupMats = [];
         $seenIdol = [];
@@ -2688,6 +2693,14 @@ function tcgApiPlaymatShopCatalog(array $body): array {
         }
         usort($rest, static fn($a, $b) => strcasecmp($a['name'], $b['name']));
         $chars = array_merge($groupFirst, $rest);
+        $unitPlaymatCount = 0;
+        foreach ($chars as $c) {
+            $unitPlaymatCount += (int)($c['playmat_count'] ?? 0);
+        }
+        // Skip empty gens (e.g. Mixed / Other) — no playmats in catalog for those.
+        if ($unitPlaymatCount < 1) {
+            continue;
+        }
         $generations[] = [
             'id' => $unit,
             'name' => $unit,
