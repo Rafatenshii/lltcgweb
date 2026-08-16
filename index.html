@@ -104,10 +104,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=57">
+<link rel="stylesheet" href="client/css/shell-all.css?v=58">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
-<link rel="stylesheet" href="client/css/portrait.css?v=69">
+<link rel="stylesheet" href="client/css/portrait.css?v=70">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -23809,13 +23809,67 @@ function clearDesktopHandHudPosition(hud) {
   hud.style.removeProperty('transform');
 }
 
+function clearPlayCostHudLiveStoragePosition(hud) {
+  if (!hud) return;
+  hud.classList.remove('pch-over-live');
+  hud.style.removeProperty('--pch-live-x');
+  hud.style.removeProperty('--pch-live-y');
+}
+
+/**
+ * Main-phase cost / "pick a slot" chip: park it over Live card storage on mobile /
+ * portrait. That row is unused in Main, so the chip stays off the raised hand.
+ */
+function syncPlayCostHudToLiveStorage(hud) {
+  if (!hud || hud.id !== 'play-cost-hud') return false;
+  if (!hud.classList.contains('show') || hud.hidden) {
+    clearPlayCostHudLiveStoragePosition(hud);
+    return false;
+  }
+  const root = document.documentElement;
+  const portrait = root.classList.contains('tcg-portrait-play');
+  const mobile = root.classList.contains('tcg-mobile-viewport');
+  if (!portrait && !mobile) {
+    clearPlayCostHudLiveStoragePosition(hud);
+    return false;
+  }
+  let union = null;
+  for (const id of ['my-live-0', 'my-live-1', 'my-live-2']) {
+    const node = el(id);
+    if (!node) continue;
+    const r = node.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) continue;
+    if (!union) union = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    else {
+      union.left = Math.min(union.left, r.left);
+      union.right = Math.max(union.right, r.right);
+      union.top = Math.min(union.top, r.top);
+      union.bottom = Math.max(union.bottom, r.bottom);
+    }
+  }
+  if (!union) {
+    clearPlayCostHudLiveStoragePosition(hud);
+    return false;
+  }
+  const cx = (union.left + union.right) / 2;
+  const cy = (union.top + union.bottom) / 2;
+  hud.style.setProperty('--pch-live-x', `${cx.toFixed(1)}px`);
+  hud.style.setProperty('--pch-live-y', `${cy.toFixed(1)}px`);
+  hud.classList.add('pch-over-live');
+  clearMobileHandHudPosition(hud);
+  clearDesktopHandHudPosition(hud);
+  return true;
+}
+
 /** Desktop: park cost/score bubble over the top of the energy deck (below stage, out of the hand). */
 function syncDesktopHandHudPosition(hud) {
   if (!hud || hud.hidden || !hud.classList.contains('show')) {
     clearDesktopHandHudPosition(hud);
     return;
   }
-  if (document.documentElement.classList.contains('tcg-mobile-viewport')) {
+  if (document.documentElement.classList.contains('tcg-mobile-viewport')
+      || document.documentElement.classList.contains('tcg-portrait-play')
+      || hud.classList.contains('pch-over-live')) {
     clearDesktopHandHudPosition(hud);
     return;
   }
@@ -23863,6 +23917,10 @@ function mobileHudRectsOverlap(a, b, pad = 0) {
 /** Shift cost/score bubble sideways on mobile so it does not cover selected hand cards. */
 function syncMobileHandHudPosition(hud) {
   if (!hud || hud.hidden || !hud.classList.contains('show')) {
+    clearMobileHandHudPosition(hud);
+    return;
+  }
+  if (hud.classList.contains('pch-over-live')) {
     clearMobileHandHudPosition(hud);
     return;
   }
@@ -23924,12 +23982,20 @@ function syncMobileHandHudPosition(hud) {
 }
 
 function syncAllMobileHandHuds() {
-  syncMobileHandHudPosition(el('play-cost-hud'));
+  const pch = el('play-cost-hud');
+  if (!syncPlayCostHudToLiveStorage(pch)) {
+    syncMobileHandHudPosition(pch);
+  }
   syncMobileHandHudPosition(el('live-score-hud'));
 }
 
 function syncAllDesktopHandHuds() {
-  syncDesktopHandHudPosition(el('play-cost-hud'));
+  const pch = el('play-cost-hud');
+  if (pch?.classList.contains('pch-over-live')) {
+    clearDesktopHandHudPosition(pch);
+  } else {
+    syncDesktopHandHudPosition(pch);
+  }
   syncDesktopHandHudPosition(el('live-score-hud'));
 }
 
@@ -23981,6 +24047,7 @@ function updatePlayCostHud(s, myId) {
   hud.setAttribute('aria-hidden', show ? 'false' : 'true');
   col?.classList.toggle('play-selecting', show);
   if (!show) {
+    clearPlayCostHudLiveStoragePosition(hud);
     clearMobileHandHudPosition(hud);
     clearDesktopHandHudPosition(hud);
     return;

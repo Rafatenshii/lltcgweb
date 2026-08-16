@@ -1383,6 +1383,15 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .playmat-column.live-
   z-index:44;
   transition:opacity .16s ease, transform .2s cubic-bezier(.22,1,.36,1), left .22s cubic-bezier(.22,1,.36,1);
 }
+html.tcg-mobile-viewport #screen-game .game-viewport-frame .playmat-column.play-selecting .play-cost-hud.pch-over-live{
+  position:fixed;
+  left:var(--pch-live-x, 50%);
+  top:var(--pch-live-y, 50%);
+  bottom:auto;
+  right:auto;
+  transform:translate(-50%, -50%);
+  z-index:140;
+}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .hand-strip{padding:0.35cqh 0.6cqw}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .hand-fan{padding:0 0.25cqw}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .hand-strip-label{

@@ -2033,6 +2033,15 @@ html.tcg-portrait-play #screen-game .live-score-hud{
   pointer-events:none;
   font-size:11px;
 }
+/* Main-phase cost chip: sit on Live storage (unused in Main) so raised hand stays tappable. */
+html.tcg-portrait-play #screen-game .play-cost-hud.pch-over-live{
+  left:var(--pch-live-x, 50%)!important;
+  top:var(--pch-live-y, 50%)!important;
+  bottom:auto!important;
+  right:auto!important;
+  transform:translate(-50%, -50%)!important;
+  z-index:140!important;
+}
 
 /* Floating Log/Resign chrome replaced by burger menu */
 html.tcg-portrait-play .pb-chrome{
