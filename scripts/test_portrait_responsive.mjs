@@ -223,7 +223,7 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
     '--hand-card-pad:18px',
     '--my-hand-card-h:calc(var(--hand-strip-h) * 1.5)',
     '--opp-hand-card-h:calc(var(--hand-strip-h) * 1.32)',
-    '--hand-safe-inline:4px',
+    '--hand-safe-inline:8px',
     'transform:translateY(26px)',
     'transform:translateY(-26px)',
     '/ 2 - 14px',
@@ -236,6 +236,22 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
   }
   if (densityTokens.every(token => src.includes(token))) {
     ok(`${label}.css widens the 1080p mat and scales its cards`);
+  }
+}
+
+if (!indexSrc.includes('function resolveHandCssLength(')
+    || !indexSrc.includes('resolveHandCssLength(')
+    || !indexSrc.includes('const edgeBleed = 0;')) {
+  fail('desktop hand fan must resolve scoped CSS lengths and stay within mat borders');
+} else {
+  ok('desktop hand fan resolves scoped card sizes without border bleed');
+}
+for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
+  if (!src.includes('#screen-game ll-hand-zone{')
+      || !src.includes('display:block;width:100%;min-width:0;max-width:100%')) {
+    fail(`${label}.css must constrain ll-hand-zone to the playmat width`);
+  } else {
+    ok(`${label}.css constrains ll-hand-zone to the playmat width`);
   }
 }
 
