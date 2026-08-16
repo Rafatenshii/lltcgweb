@@ -222,7 +222,7 @@ for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
     '--hand-strip-h:96px',
     '--hand-card-pad:18px',
     '--my-hand-card-h:calc(var(--hand-strip-h) * 1.5)',
-    '--opp-hand-card-h:calc(var(--hand-strip-h) * 1.5)',
+    '--opp-hand-card-h:calc(var(--hand-strip-h) * 1.32)',
     '--hand-safe-inline:24px',
     'transform:translateY(26px)',
     'transform:translateY(-26px)',
