@@ -101,7 +101,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=55">
+<link rel="stylesheet" href="client/css/shell-all.css?v=56">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=17">
 <link rel="stylesheet" href="client/css/portrait.css?v=65">
@@ -24058,6 +24058,40 @@ function fillMemberPlayActions(container, card, s, myId, { interactive = false, 
   container.style.display = '';
 }
 
+function resetGameCardHoverFit() {
+  const panel = el('card-hover-panel');
+  if (!panel) return;
+  panel.style.removeProperty('transform');
+  panel.style.removeProperty('bottom');
+}
+
+/** Keep the left-rail card info box fully on-screen for long skill text. */
+function syncGameCardHoverFit() {
+  const panel = el('card-hover-panel');
+  if (!panel) return;
+  if (!panel.classList.contains('visible')
+      || document.documentElement.classList.contains('tcg-mobile-viewport')
+      || document.documentElement.classList.contains('tcg-portrait-play')) {
+    resetGameCardHoverFit();
+    return;
+  }
+  ensurePickerHoverResizeSync();
+  panel.style.removeProperty('transform');
+  panel.style.bottom = '12px';
+  panel.scrollTop = 0;
+  const pad = 10;
+  const rect = panel.getBoundingClientRect();
+  const overflowBottom = rect.bottom - (window.innerHeight - pad);
+  if (overflowBottom > 1) {
+    panel.style.transform = `translateY(-${overflowBottom.toFixed(1)}px)`;
+  }
+  const topRect = panel.getBoundingClientRect();
+  if (topRect.top < pad) {
+    const lift = overflowBottom + (pad - topRect.top);
+    panel.style.transform = `translateY(-${Math.max(0, lift).toFixed(1)}px)`;
+  }
+}
+
 function refreshHandPreviewPanel(card, s, myId) {
   if (!card) return;
   if (G.isTutorial && !G.tutorialLive) {
@@ -24073,6 +24107,11 @@ function refreshHandPreviewPanel(card, s, myId) {
   const empty = el('hc-empty');
   if (panel) panel.classList.add('visible');
   if (empty) empty.style.display = 'none';
+  syncGameCardHoverFit();
+  requestAnimationFrame(() => {
+    syncGameCardHoverFit();
+    requestAnimationFrame(syncGameCardHoverFit);
+  });
   syncMyStagePlayHints(s, myId);
 }
 
@@ -24124,6 +24163,7 @@ function clearHoverCardPreview() {
   if (panel) panel.classList.remove('visible');
   if (empty) empty.style.display = '';
   if (actions) { actions.innerHTML = ''; actions.style.display = 'none'; }
+  resetGameCardHoverFit();
   document.querySelectorAll('#hand-row .hcard.hover-sel').forEach(n => n.classList.remove('hover-sel'));
   if (G.gameState) syncMyStagePlayHints(G.gameState, G.playerId);
 }
@@ -24569,6 +24609,11 @@ function showSpectatorCardPreview(card, s) {
   const empty = el('hc-empty');
   if (panel) panel.classList.add('visible');
   if (empty) empty.style.display = 'none';
+  syncGameCardHoverFit();
+  requestAnimationFrame(() => {
+    syncGameCardHoverFit();
+    requestAnimationFrame(syncGameCardHoverFit);
+  });
 }
 
 function clearSpectatorCardPreview() {
@@ -24580,6 +24625,7 @@ function clearSpectatorCardPreview() {
   if (panel) panel.classList.remove('visible');
   if (empty) empty.style.display = '';
   if (actions) { actions.innerHTML = ''; actions.style.display = 'none'; }
+  resetGameCardHoverFit();
 }
 
 function showSpectatorCardDetail(card, s) {
@@ -25907,6 +25953,7 @@ function ensurePickerHoverResizeSync() {
   pickerHoverResizeBound = true;
   window.addEventListener('resize', () => {
     if (el('picker-card-hover-panel')?.classList.contains('visible')) syncPickerCardHoverPosition();
+    if (el('card-hover-panel')?.classList.contains('visible')) syncGameCardHoverFit();
   });
 }
 
@@ -26985,6 +27032,11 @@ function refreshLiveSelPreviewPanel(s, myId) {
   if (panel) panel.classList.add('visible');
   if (empty) empty.style.display = 'none';
   if (actions) { actions.innerHTML = ''; actions.style.display = 'none'; }
+  syncGameCardHoverFit();
+  requestAnimationFrame(() => {
+    syncGameCardHoverFit();
+    requestAnimationFrame(syncGameCardHoverFit);
+  });
   document.querySelectorAll('#hand-row .hcard.hover-sel').forEach(n => n.classList.remove('hover-sel'));
   if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
 }

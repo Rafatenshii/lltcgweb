@@ -256,6 +256,14 @@ if (!indexSrc.includes('Massive desktop hands: shrink cards') || !indexSrc.inclu
   ok('desktop hand fan shrinks massive hands before extreme overlap');
 }
 
+for (const [label, src] of [['shell-all', shellCss], ['board', boardCss]]) {
+  if (!src.includes('#card-hover-panel.visible') || !src.includes('max-height:calc(100% - 24px)')) {
+    fail(`${label}.css missing on-screen card hover info box rule`);
+  } else {
+    ok(`${label}.css keeps the card hover info box on-screen`);
+  }
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);
