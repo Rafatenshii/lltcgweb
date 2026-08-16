@@ -106,7 +106,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=58">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
-<link rel="stylesheet" href="client/css/sleeves.css?v=17">
+<link rel="stylesheet" href="client/css/sleeves.css?v=18">
 <link rel="stylesheet" href="client/css/portrait.css?v=70">
 
 </head>
@@ -6096,7 +6096,7 @@ function clearSleeveShopHover() {
   if (panel) panel.classList.remove('has-preview');
   if (img) {
     img.removeAttribute('src');
-    img.classList.remove('show', 'is-unit', 'is-landscape');
+    img.classList.remove('show', 'is-unit', 'is-landscape', 'is-uncropped-landscape');
   }
 }
 
@@ -6192,6 +6192,7 @@ function showSleeveShopHover(src, opts) {
   }
   img.classList.toggle('is-unit', !!(opts && opts.unit));
   img.classList.toggle('is-landscape', !!(opts && opts.landscape));
+  img.classList.toggle('is-uncropped-landscape', !!(opts && opts.uncroppedLandscape));
   img.src = src;
   img.classList.add('show');
   panel.classList.add('has-preview');
@@ -6342,13 +6343,19 @@ function renderSleeveShopGrid(sleeves) {
     const landscape = String(s.orientation || '').toLowerCase() === 'landscape'
       || !!(window.LLTCG_SLEEVES && LLTCG_SLEEVES.isLandscape && LLTCG_SLEEVES.isLandscape(s.id));
     if (landscape) art.classList.add('is-landscape');
+    const uncroppedLandscape = [
+      'br-hs-2000201700158', // Ginko
+      'br-hs-2000201700110', // Kozue
+      'br-hs-2000201700127', // Tsuzuri
+    ].includes(String(s.id || ''));
+    if (uncroppedLandscape) art.classList.add('is-uncropped-landscape');
     art.style.backgroundImage = 'url("' + src.replace(/"/g, '\\"') + '")';
     art.tabIndex = 0;
     art.setAttribute('role', 'img');
     art.setAttribute('aria-label', sleeveShopDisplayName(s));
-    art.addEventListener('mouseenter', () => showSleeveShopHover(src, { landscape }));
+    art.addEventListener('mouseenter', () => showSleeveShopHover(src, { landscape, uncroppedLandscape }));
     art.addEventListener('mouseleave', () => clearSleeveShopHover());
-    art.addEventListener('focus', () => showSleeveShopHover(src, { landscape }));
+    art.addEventListener('focus', () => showSleeveShopHover(src, { landscape, uncroppedLandscape }));
     art.addEventListener('blur', () => clearSleeveShopHover());
     bindSleeveShopArtHoldPreview(art, src, landscape);
     const label = document.createElement('div');
