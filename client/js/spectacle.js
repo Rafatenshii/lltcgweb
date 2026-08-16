@@ -5057,6 +5057,15 @@ function perfIncrementHeartStat(container, color) {
   return row;
 }
 
+/**
+ * Viewport-fixed flight ghosts must live on document.body.
+ * #perf-spectacle uses transform under tcg-mobile-viewport, which would make
+ * position:fixed resolve against the spectacle box and flash offset art.
+ */
+function perfAppendViewportFlight(node) {
+  document.body.appendChild(node);
+}
+
 /** Landing rect for a yell blade heart fly — panel counts stay stale until the heart arrives. */
 function perfHeartFlyTargetRect(heartsEl, color) {
   const key = perfHeartStatKey(color);
@@ -5107,9 +5116,8 @@ async function perfRevealYellCardFromDeck(chip, deckEl, isMine, pace = 1) {
     chip.classList.add('show');
     return;
   }
-  const layer = el('perf-spectacle');
   const deckRect = deckEl.getBoundingClientRect();
-  if (!layer || deckRect.width < 4) {
+  if (deckRect.width < 4) {
     chip.classList.add('show');
     return;
   }
@@ -5138,7 +5146,7 @@ async function perfRevealYellCardFromDeck(chip, deckEl, isMine, pace = 1) {
   fly.style.transform = 'translate(-50%, -50%) scale(0.42) rotateY(88deg)';
   fly.style.opacity = '0';
   fly.style.transition = `transform ${flyDur}s cubic-bezier(.2,.9,.2,1), opacity ${fadeDur}s ease`;
-  layer.appendChild(fly);
+  perfAppendViewportFlight(fly);
   chip.style.visibility = 'hidden';
   deckEl.classList.add('perf-deck-draw');
   sfxPlayCard('yell_reveal', { volume: 0.38 });
@@ -5169,8 +5177,6 @@ async function perfRevealYellCardFromDeck(chip, deckEl, isMine, pace = 1) {
 async function perfFlyMemberHeartToPanel(fromEl, heartsEl, color, opts = {}) {
   const pace = opts.pace ?? 1;
   if (!heartsEl || G._perfSpectacleAborted) return;
-  const layer = el('perf-spectacle');
-  if (!layer) return;
   let sx;
   let sy;
   if (fromEl) {
@@ -5193,7 +5199,7 @@ async function perfFlyMemberHeartToPanel(fromEl, heartsEl, color, opts = {}) {
   const heartFlyDur = Math.max(0.16, 0.56 * pace);
   const heartFadeDur = Math.max(0.08, 0.1 * pace);
   fly.style.transition = `transform ${heartFlyDur}s ease-out, opacity ${heartFadeDur}s ease`;
-  layer.appendChild(fly);
+  perfAppendViewportFlight(fly);
   fromEl?.classList?.add('perf-member-heart-pulse');
   sfxPlayCard('hearts_gain', { volume: 0.34 });
   await perfSleepYell(40, pace);
@@ -5213,8 +5219,6 @@ async function perfFlyMemberHeartToPanel(fromEl, heartsEl, color, opts = {}) {
 async function perfFlyBladeHeartToPanel(fromEl, heartsEl, color, chip, displayColor = null, opts = {}) {
   const pace = opts.pace ?? 1;
   if (!heartsEl || G._perfSpectacleAborted) return;
-  const layer = el('perf-spectacle');
-  if (!layer) return;
   const origin = perfYellBladeHeartOrigin(fromEl, chip);
   if (!origin) return;
   const sx = origin.x;
@@ -5234,7 +5238,7 @@ async function perfFlyBladeHeartToPanel(fromEl, heartsEl, color, chip, displayCo
   const heartFlyDur = Math.max(0.16, 0.56 * pace);
   const heartFadeDur = Math.max(0.08, 0.1 * pace);
   fly.style.transition = `transform ${heartFlyDur}s ease-out, opacity ${heartFadeDur}s ease`;
-  layer.appendChild(fly);
+  perfAppendViewportFlight(fly);
   const bladeWrap = fromEl?.closest?.('.perf-yell-blade-hearts');
   fromEl?.remove?.();
   sfxPlayCard('hearts_gain', { volume: 0.34 });
@@ -6315,8 +6319,7 @@ async function perfAnimateCount(el, from, to, ms = 420) {
 }
 
 async function perfFlyScoreBadges(sources, targetEl, duration = 340) {
-  const layer = el('perf-judge-fx-layer');
-  if (!layer || !targetEl || !sources.length) return;
+  if (!targetEl || !sources.length) return;
   const tr = targetEl.getBoundingClientRect();
   const tx = tr.left + tr.width / 2;
   const ty = tr.top + tr.height / 2;
@@ -6333,7 +6336,7 @@ async function perfFlyScoreBadges(sources, targetEl, duration = 340) {
     fly.style.top = `${sr.top}px`;
     fly.style.width = `${sr.width}px`;
     fly.style.height = `${sr.height}px`;
-    layer.appendChild(fly);
+    perfAppendViewportFlight(fly);
     src.style.opacity = '0';
     const dx = tx - (sr.left + sr.width / 2);
     const dy = ty - (sr.top + sr.height / 2);
@@ -6402,6 +6405,7 @@ function perfCloseSpectacle() {
   el('perf-fx-toast')?.classList.remove('show');
   el('perf-col-mine')?.classList.remove('in');
   el('perf-col-opp')?.classList.remove('in');
+  document.querySelectorAll('.perf-yell-flying, .perf-heart-fly, .perf-score-fly').forEach(n => n.remove());
   ['perf-stage-row', 'perf-opp-stage', 'perf-mine-deck', 'perf-opp-deck',
     'perf-mine-lives', 'perf-opp-lives', 'perf-mine-outcomes', 'perf-opp-outcomes'].forEach(id => {
     const node = el(id);
