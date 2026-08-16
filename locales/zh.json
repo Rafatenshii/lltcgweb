@@ -389,6 +389,8 @@
     "endMainPhase": "结束主阶段",
     "endLivePhase": "结束直播阶段",
     "setLiveCards": "设置活卡",
+    "placeLiveCard": "放置 Live 卡",
+    "placeLiveCards": "放置 Live 卡",
     "waitingOpponent": "等待对手",
     "resolveSkillFirst": "先解决技能",
     "waitingSkill": "等待技能",

@@ -379,6 +379,8 @@
     "endMainPhase": "จบเฟสหลัก",
     "endLivePhase": "จบเฟส Live",
     "setLiveCards": "วางการ์ด Live",
+    "placeLiveCard": "วางการ์ด Live",
+    "placeLiveCards": "วางการ์ด Live",
     "waitingOpponent": "รอคู่ต่อสู้",
     "resolveSkillFirst": "แก้สกิลก่อน",
     "waitingSkill": "รอสกิล",

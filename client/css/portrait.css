@@ -2185,6 +2185,25 @@ html.tcg-portrait-play #screen-game #hc-actions button{
   font-weight:800;
   border-radius:10px;
 }
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place{
+  display:none;
+  width:100%;
+  max-width:320px;
+  margin:12px auto 0;
+  flex:0 0 auto;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place.show,
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place:not([hidden]){
+  display:block!important;
+}
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place .btn-hc-live-place{
+  width:100%;
+  max-width:none;
+  min-height:48px;
+  font-size:15px;
+  font-weight:800;
+  border-radius:12px;
+}
 /* No dim overlay while picking a hand card — info box alone is enough */
 html.tcg-portrait-play #portrait-play-scrim{
   display:none!important;

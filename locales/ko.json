@@ -388,6 +388,8 @@
     "endMainPhase": "메인 페이즈 종료",
     "endLivePhase": "Live 페이즈 종료",
     "setLiveCards": "Live 카드 세팅",
+    "placeLiveCard": "Live 카드 놓기",
+    "placeLiveCards": "Live 카드 놓기",
     "waitingOpponent": "상대 대기 중",
     "resolveSkillFirst": "먼저 스킬을 해결하세요",
     "waitingSkill": "스킬 대기 중",

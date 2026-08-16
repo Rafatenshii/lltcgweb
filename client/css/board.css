@@ -228,6 +228,23 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game #card-hover-
 .card-hover-panel.live-multi .hc-stats,
 .card-hover-panel.live-multi .hc-text,
 .card-hover-panel.live-multi #hc-actions{display:none!important}
+.card-hover-panel .hc-live-place{
+  display:none;
+  width:100%;
+  margin-top:10px;
+  flex:0 0 auto;
+}
+.card-hover-panel .hc-live-place.show,
+.card-hover-panel .hc-live-place:not([hidden]){
+  display:block;
+}
+.card-hover-panel .hc-live-place .btn-hc-live-place{
+  width:100%;
+  min-height:44px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:800;
+}
 .card-hover-panel .hc-live-multi-thumbs{
   display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;width:100%;
 }

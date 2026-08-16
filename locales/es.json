@@ -378,6 +378,8 @@
     "endMainPhase": "Terminar Fase principal",
     "endLivePhase": "Terminar Fase Live",
     "setLiveCards": "Colocar cartas Live",
+    "placeLiveCard": "Colocar carta Live",
+    "placeLiveCards": "Colocar cartas Live",
     "waitingOpponent": "Esperando al oponente",
     "resolveSkillFirst": "Resuelve primero la habilidad",
     "waitingSkill": "Esperando habilidad",
