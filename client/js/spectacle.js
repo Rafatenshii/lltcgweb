@@ -6379,10 +6379,19 @@ function perfJudgeSoloLine(ctx) {
   return { text: verdict.text, cls: verdict.cls };
 }
 
+function bumpLiveShowRunnerEpoch() {
+  G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+  return G._liveShowRunnerEpoch;
+}
+
 function perfCloseSpectacle() {
+  // Preserve an existing abort latch. Calling the abort hook below always flips
+  // the flag on — without this, tab/softlock aborts cleared the latch and
+  // in-flight yell/heart flies resumed over a visible playmat.
+  const keepAborted = !!G._perfSpectacleAborted;
   G._perfSpectacleAbort?.();
   G._perfSpectacleAbort = null;
-  G._perfSpectacleAborted = false;
+  G._perfSpectacleAborted = keepAborted;
   G._perfCtx = null;
   G._perfLiveReveal = null;
   G._perfSpectaclePhase = 'closed';
@@ -6441,6 +6450,8 @@ function perfOpenSpectacle() {
   if (activeId && activeId !== 'screen-game') return;
   const root = el('perf-spectacle');
   if (!root) return;
+  // Intentional open clears a prior tab/abort latch so the new climb can run.
+  G._perfSpectacleAborted = false;
   G._perfSpectacleActive = true;
   G._skipJudgeOverlay = true;
   document.body.classList.add('perf-spectacle-active');
@@ -7606,6 +7617,47 @@ const LIVE_SHOW_TO_PERF_PHASE = {
   judge: 'judge',
 };
 
+/** True when live_show chrome should stay up (Performance / outcomes / judge). */
+function liveShowSpectacleChromeStage(stage) {
+  return stage === 'performance' || stage === 'outcomes' || stage === 'judge';
+}
+
+/**
+ * After alt-tab catch-up: keep/restore stage chrome at the current cursor without
+ * replaying yell climbs. Closing chrome mid-live_show left body flights over the mat.
+ */
+async function restoreLiveShowSpectacleAfterTabVisible(board, myId) {
+  const stage = board?.live_show?.stage;
+  if (!liveShowSpectacleChromeStage(stage)) {
+    if (G._perfSpectacleActive) perfCloseSpectacle();
+    return;
+  }
+  const target = LIVE_SHOW_TO_PERF_PHASE[stage];
+  if (!target) return;
+  G._perfSpectacleAborted = false;
+  const showTurn = liveShowTurnFromBoards(board, null);
+  if (showTurn != null && typeof markLiveShowPerformancePresented === 'function') {
+    markLiveShowPerformancePresented(showTurn);
+  }
+  const perfPrev = buildPerfSpectaclePrev(board, board) || board;
+  await perfSeekPhase(perfPrev, board, myId, target, { forward: true, animate: false });
+  if (stage === 'performance') {
+    const isObserver = !!G.isSpectator
+      || (typeof isReplayViewing === 'function' && isReplayViewing());
+    if (isObserver || liveShowHeartsResolvedFromBoard(board)) {
+      perfClearHeartCheckHold();
+    } else {
+      perfShowHeartCheckHold();
+    }
+  } else {
+    perfClearHeartCheckHold();
+  }
+  // Re-assert mat hide in case a prior abort stripped the body class.
+  if (!document.body.classList.contains('perf-spectacle-active')) {
+    perfOpenSpectacle();
+  }
+}
+
 function liveShowBeatKey(show) {
   if (!show) return null;
   return `${show.turn}:${show.stage_seq}:${show.stage}`;
@@ -7938,6 +7990,8 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
  */
 async function presentServerLiveShowStage(prev, next, myId) {
   if (G._liveShowRunnerActive) return false;
+  // New intentional run — clear sticky abort from a prior tab catch-up close.
+  G._perfSpectacleAborted = false;
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
     return false;
@@ -7960,6 +8014,7 @@ async function presentServerLiveShowStage(prev, next, myId) {
     return false;
   }
 
+  const runnerEpoch = bumpLiveShowRunnerEpoch();
   G._liveShowRunnerActive = true;
   G._liveRoundPlaybackActive = true;
   holdLivePolls();
@@ -7967,6 +8022,10 @@ async function presentServerLiveShowStage(prev, next, myId) {
   let prior = prev;
   try {
     for (let step = 0; step < 10; step++) {
+      if (runnerEpoch !== G._liveShowRunnerEpoch) {
+        // Tab catch-up / newer runner superseded us — leave chrome alone.
+        break;
+      }
       if (liveShowPresentationCancelled()) {
         if (G._perfSpectacleActive) perfCloseSpectacle();
         break;
@@ -8021,8 +8080,10 @@ async function presentServerLiveShowStage(prev, next, myId) {
       if (!G._liveShowPresentedKeys) G._liveShowPresentedKeys = new Set();
       if (G._liveShowPresentedKey !== key && !G._liveShowPresentedKeys.has(key)) {
         await presentOneLiveShowBeat(prior, board, myId, show.stage);
-        if (liveShowPresentationCancelled()) {
-          if (G._perfSpectacleActive) perfCloseSpectacle();
+        if (runnerEpoch !== G._liveShowRunnerEpoch || liveShowPresentationCancelled()) {
+          if (runnerEpoch === G._liveShowRunnerEpoch && G._perfSpectacleActive) {
+            perfCloseSpectacle();
+          }
           break;
         }
         G._liveShowPresentedKey = key;
@@ -8202,9 +8263,13 @@ async function presentServerLiveShowStage(prev, next, myId) {
       }
     }
   } finally {
-    G._liveShowRunnerActive = false;
-    G._liveRoundPlaybackActive = false;
-    if (liveShowPresentationCancelled()) {
+    if (runnerEpoch === G._liveShowRunnerEpoch) {
+      G._liveShowRunnerActive = false;
+      G._liveRoundPlaybackActive = false;
+    }
+    if (runnerEpoch !== G._liveShowRunnerEpoch) {
+      // Superseded by tab catch-up / a newer runner — leave chrome alone.
+    } else if (liveShowPresentationCancelled()) {
       if (G._perfSpectacleActive) perfCloseSpectacle();
     } else {
       const stage = board?.live_show?.stage;
@@ -8226,7 +8291,9 @@ async function presentServerLiveShowStage(prev, next, myId) {
         await playLiveShowPostJudgeStorageExits(prior, board, myId);
       }
     }
-    releaseLivePollsAndFlush();
+    if (runnerEpoch === G._liveShowRunnerEpoch) {
+      releaseLivePollsAndFlush();
+    }
   }
   return true;
 }

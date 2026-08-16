@@ -766,14 +766,110 @@
     const pollEpoch = G._gameSessionEpoch;
     const pollRoomId = G.roomId;
     try {
+      const liveStage = G.gameState?.live_show?.stage || null;
+      const midSpectacleChrome = !!(G._perfSpectacleActive || document.body.classList.contains('perf-spectacle-active'))
+        && (liveStage === 'performance' || liveStage === 'outcomes' || liveStage === 'judge');
       TCG_DEBUG.warn('poll', 'tab catch-up', {
         spectator: isSpec,
         hiddenMs: opts.hiddenMs || 0,
         wasBusy: !!opts.wasBusy,
         seq: G.lastSeq,
         spectacle: !!G._perfSpectacleActive,
+        midSpectacleChrome,
+        liveStage,
         phase: G.gameState?.phase || null,
       });
+
+      // Mid Performance chrome: never tear down the stage (same rule as
+      // releaseStuckPresentation). Closing body.perf-spectacle-active left yell/
+      // heart flights over the visible playmat after alt-tab.
+      if (midSpectacleChrome) {
+        if (typeof bumpLiveShowRunnerEpoch === 'function') bumpLiveShowRunnerEpoch();
+        else G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+        if (G._perfSpectacleAbort) {
+          G._perfSpectacleAbort();
+          G._perfSpectacleAborted = true;
+        }
+        G._liveShowRunnerActive = false;
+        G.animating = false;
+        G._livePollHold = false;
+        G._liveRoundPlaybackActive = false;
+        G._liveSpectacleGateRunning = false;
+        G._presentationAborted = false;
+        G._pendingStateQueue = [];
+        document.querySelectorAll('.perf-yell-flying, .perf-heart-fly, .perf-score-fly')
+          .forEach((n) => n.remove());
+        if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
+          LiveRoundDirector.abort(isSpec ? 'spectator-tab-visible' : 'tab-visible');
+        }
+
+        global._tcgSyncStats.getState++;
+        const boardSeq = G.gameState?.seq ?? 0;
+        const last = G.lastSeq ?? 0;
+        if (boardSeq < last) G.lastSeq = boardSeq;
+        const r = await fetch(getStateUrl('&force=1'));
+        let d = await parseGameApiResponse(r);
+        if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
+        if (isSpec && !G.isSpectator) return false;
+
+        if (isUnchangedStatePayload(d)) {
+          d = G.gameState;
+        } else {
+          if (isSpec && typeof alignSpectatorStageBoard === 'function') {
+            d = alignSpectatorStageBoard(d) || d;
+          }
+          G.gameState = d;
+          G.lastSeq = d.seq ?? G.lastSeq ?? 0;
+          G._prevLogLen = (d.log || []).length;
+          if (isSpec) {
+            G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
+              ? G.spectatorViewAs
+              : (d.view_as || G.playerId || 'p1');
+          } else {
+            G.playerId = d.my_id || G.playerId;
+          }
+        }
+
+        if (d?.live_show?.stage && d.live_show.stage !== 'done'
+            && d.live_show.turn != null
+            && typeof markLiveShowPerformancePresented === 'function') {
+          markLiveShowPerformancePresented(d.live_show.turn);
+        }
+
+        G._perfSpectacleAborted = false;
+        if (typeof restoreLiveShowSpectacleAfterTabVisible === 'function' && d) {
+          await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId);
+        } else if (typeof perfOpenSpectacle === 'function') {
+          perfOpenSpectacle();
+        }
+
+        if (typeof showScr === 'function') showScr('game');
+        if (typeof renderGame === 'function' && d) renderGame(d, { skipLog: true });
+        if (typeof catchUpGameLog === 'function' && d) catchUpGameLog(d, null);
+
+        if (d?.status === 'finished') {
+          if (typeof stopPoll === 'function') stopPoll();
+          if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();
+          if (typeof showWin === 'function') showWin(d);
+          return true;
+        }
+
+        if (!isSpec && d?.pending_prompt?.responder === G.playerId
+            && typeof ensurePendingPromptSurfaced === 'function') {
+          if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
+          ensurePendingPromptSurfaced(d, G.playerId);
+        }
+        if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId && d) {
+          updateOpponentSkillWaitBanner(d, G.playerId);
+        }
+        if (typeof updatePhaseActionButton === 'function' && G.playerId && d) {
+          updatePhaseActionButton(d, G.playerId);
+        }
+        if (isSpec && typeof saveSpectatorSession === 'function') saveSpectatorSession();
+        else if (!isSpec && typeof saveActiveGameSession === 'function') saveActiveGameSession();
+        resumePollingTick(150);
+        return true;
+      }
 
       if (typeof abortGameplayPresentation === 'function') {
         abortGameplayPresentation({ skipAbortFlag: true });
@@ -847,6 +943,15 @@
           : (d.view_as || G.playerId || 'p1');
       } else {
         G.playerId = d.my_id || G.playerId;
+      }
+
+      // Hard catch-up may have closed chrome while the server is still mid
+      // Performance — restore stage overlay so remaining beats are not over the mat.
+      if (typeof liveShowSpectacleChromeStage === 'function'
+          && liveShowSpectacleChromeStage(d.live_show?.stage)
+          && typeof restoreLiveShowSpectacleAfterTabVisible === 'function') {
+        G._perfSpectacleAborted = false;
+        await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId);
       }
 
       if (typeof showScr === 'function') showScr('game');
