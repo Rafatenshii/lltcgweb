@@ -709,10 +709,17 @@ html:not(.tcg-mobile-viewport) #screen-game .opp-hand-strip .opp-hand-card{
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop){
     --field-card-scale:1.04;
     --pile-fill-scale:1.02;
+    /* 1080p: keep hands near the strip so energy/main decks stay readable. */
+    --hand-strip-h:96px;
+    --hand-card-pad:18px;
+    --my-hand-card-h:calc(var(--hand-strip-h) * 1.06);
+    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.0);
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
     --hand-strip-h:96px;
     --hand-card-pad:18px;
+    --my-hand-card-h:calc(var(--hand-strip-h) * 1.06);
+    --opp-hand-card-h:calc(var(--hand-strip-h) * 1.0);
     --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2);
     --side-panel-w:min(440px,max(280px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
