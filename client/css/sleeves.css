@@ -411,6 +411,13 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 .sleeve-shop-hover-panel .hc-img.is-uncropped-landscape{
   object-fit:contain;
 }
+/* Art stored sideways inside a portrait canvas: keep the portrait box, spin the
+   art upright. The scale factor is the 63/88 box ratio so the rotated art still
+   fits the box width. */
+.sleeve-shop-hover-panel .hc-img.is-rotated-art{
+  object-fit:contain;
+  transform:rotate(-90deg) scale(.71591);
+}
 .sleeve-shop-hover-panel .hc-img.is-unit{
   aspect-ratio:1 / 1;object-fit:contain;background:transparent;border-radius:0;box-shadow:none;
 }
@@ -432,6 +439,10 @@ html.sleeve-conform #screen-game .opp-hand-card::after{
 }
 .sleeve-shop-tile__art.is-uncropped-landscape{
   background-size:contain;
+}
+.sleeve-shop-tile__art.is-rotated-art{
+  background-size:contain;
+  transform:rotate(-90deg) scale(.71591);
 }
 .sleeve-shop-tile__name{
   font-size:11px;font-weight:700;line-height:1.3;
