@@ -1,0 +1,4 @@
+-- Per-preset playmat cosmetics + ownership table.
+-- Applied via tcgDbRunMigrationOnce('playmats_20260816') in db.php on boot.
+-- Do not ALTER here: production DBs already have bootstrap_v2, and a failing
+-- Migrator::exec on this file would 500 every account.php request.
