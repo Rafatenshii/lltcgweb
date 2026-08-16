@@ -127,6 +127,45 @@ for (const g of gateFixtures) {
   else ok(`gate ${g.label}`);
 }
 
+/** Mirror of tcgPortraitTouchPrimary. */
+function touchPrimary(w, h, { touchPoints = 0, finePointer = false, coarse = false, hoverNone = false, mobileUa = false, macUa = false } = {}) {
+  const iPadOsDesktopUa = touchPoints > 1 && macUa;
+  if (mobileUa || iPadOsDesktopUa || coarse || hoverNone) return true;
+  return !!(touchPoints > 0 && !finePointer && Math.min(w, h) <= 920);
+}
+
+/** Mirror of the landscape fixed-frame gate in bindMobileViewport. */
+function fixedFrame(w, h, env = {}) {
+  const mobile = !!(env.mobileUa || (env.coarse && env.hoverNone));
+  const shortSide = Math.min(w, h);
+  const longSide = Math.max(w, h);
+  const phone = mobile && shortSide <= 520 && longSide <= 980;
+  const tablet = mobile && !phone && shortSide <= 920;
+  return mobile && w > h && (phone || tablet);
+}
+
+const desktopTouch = { touchPoints: 10, finePointer: true };
+if (touchPrimary(1920, 920, desktopTouch)) fail('touchscreen 1080p desktop must not count as touch-primary');
+else ok('touchscreen 1080p desktop is not touch-primary');
+
+if (fixedFrame(1920, 920, desktopTouch)) fail('touchscreen 1080p desktop must keep the desktop board, not the 20:9 frame');
+else ok('touchscreen 1080p desktop keeps the full desktop board');
+
+if (!touchPrimary(390, 844, { touchPoints: 5, coarse: true, hoverNone: true, mobileUa: true })) fail('iPhone must be touch-primary');
+else ok('iPhone stays touch-primary');
+
+if (!touchPrimary(1024, 1366, { touchPoints: 5, finePointer: true, macUa: true })) fail('iPadOS desktop UA must be touch-primary');
+else ok('iPadOS desktop UA stays touch-primary');
+
+if (!fixedFrame(844, 390, { mobileUa: true, coarse: true, hoverNone: true })) fail('phone landscape must use the fixed frame');
+else ok('phone landscape keeps the fixed frame');
+
+if (indexSrc.includes('portraitPlay || tcgPortraitTouchPrimary')) {
+  fail('bindMobileViewport must not fold touch-primary into the landscape mobile gate');
+} else {
+  ok('landscape mobile gate excludes touch-primary desktops');
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);

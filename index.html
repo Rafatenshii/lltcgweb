@@ -16494,15 +16494,18 @@ function tcgPortraitTouchPrimary(w = window.innerWidth, h = window.innerHeight) 
   const ua = String(navigator.userAgent || '');
   let coarse = false;
   let hoverNone = false;
+  let finePointer = false;
   try {
     coarse = window.matchMedia('(pointer: coarse)').matches;
     hoverNone = window.matchMedia('(hover: none)').matches;
+    finePointer = window.matchMedia('(any-pointer: fine)').matches;
   } catch (_) { /* ignore */ }
   const touchPoints = Number(navigator.maxTouchPoints || 0);
   const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   const iPadOsDesktopUa = touchPoints > 1 && /Macintosh/i.test(ua);
-  return !!(coarse || hoverNone || mobileUa || iPadOsDesktopUa
-    || (touchPoints > 0 && Math.min(w, h) <= 920));
+  if (mobileUa || iPadOsDesktopUa || coarse || hoverNone) return true;
+  // Touch-capable desktops (touchscreen laptops / monitors) keep a mouse: not touch-primary.
+  return !!(touchPoints > 0 && !finePointer && Math.min(w, h) <= 920);
 }
 
 /** Resolve whether the portrait app shell should be active for this viewport. */
@@ -16569,7 +16572,9 @@ function bindMobileViewport() {
     const coarseTouch = window.matchMedia('(pointer: coarse) and (hover: none)').matches;
     const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const portraitPlay = tcgApplyPortraitPlayState(w, h);
-    const mobile = mobileUa || coarseTouch || portraitPlay || tcgPortraitTouchPrimary(w, h);
+    // Landscape fixed-frame stays on UA/coarse-pointer detection only: a touch-capable
+    // desktop at 1080p must keep the full three-column desktop board.
+    const mobile = mobileUa || coarseTouch || portraitPlay;
     const shortSide = Math.min(w, h);
     const longSide = Math.max(w, h);
     const phone = mobile && shortSide <= 520 && longSide <= 980;
