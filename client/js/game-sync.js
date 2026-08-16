@@ -784,6 +784,22 @@
       // releaseStuckPresentation). Closing body.perf-spectacle-active left yell/
       // heart flights over the visible playmat after alt-tab.
       if (midSpectacleChrome) {
+        const hiddenMs = opts.hiddenMs || 0;
+        // Brief focus blips (notifications, Discord overlay, accidental click-away)
+        // used to kill the yell climb and seal "performance presented" → Checking
+        // hearts with no yell flies. Keep the in-flight runner for short hides.
+        if (hiddenMs < 700
+            && (G._liveShowRunnerActive || G._perfSpectacleActive)
+            && !G._perfSpectacleAborted) {
+          TCG_DEBUG.warn('poll', 'tab catch-up: brief flicker, keep Performance climb', {
+            hiddenMs,
+            phase: G._perfSpectaclePhase || null,
+          });
+          if (typeof perfOpenSpectacle === 'function') perfOpenSpectacle();
+          resumePollingTick(150);
+          return true;
+        }
+
         if (typeof bumpLiveShowRunnerEpoch === 'function') bumpLiveShowRunnerEpoch();
         else G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
         if (G._perfSpectacleAbort) {
@@ -830,15 +846,25 @@
           }
         }
 
-        if (d?.live_show?.stage && d.live_show.stage !== 'done'
-            && d.live_show.turn != null
+        // Only seal yell climbs after a long freeze or once the server is past
+        // Performance — otherwise restore replays the yell animation.
+        const stageNow = d?.live_show?.stage;
+        const forceSkipYells = hiddenMs >= 2800
+          || stageNow === 'outcomes'
+          || stageNow === 'judge'
+          || stageNow === 'done';
+        if (forceSkipYells
+            && d?.live_show?.turn != null
             && typeof markLiveShowPerformancePresented === 'function') {
           markLiveShowPerformancePresented(d.live_show.turn);
         }
 
         G._perfSpectacleAborted = false;
         if (typeof restoreLiveShowSpectacleAfterTabVisible === 'function' && d) {
-          await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId);
+          await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId, {
+            forceSkipYells,
+            hiddenMs,
+          });
         } else if (typeof perfOpenSpectacle === 'function') {
           perfOpenSpectacle();
         }
@@ -923,9 +949,16 @@
         G._liveSpectacleGateRunning = false;
       }
 
-      // Mid live_show: never restart Performance from the beginning after a freeze.
-      if (d.live_show?.stage && d.live_show.stage !== 'done'
-          && d.live_show.turn != null
+      const hardHiddenMs = opts.hiddenMs || 0;
+      const hardStage = d.live_show?.stage;
+      // Long freeze / already past Performance: skip yell replay. Short hides still
+      // mid-performance should re-climb (restoreLiveShowSpectacleAfterTabVisible).
+      const hardForceSkipYells = hardHiddenMs >= 2800
+        || hardStage === 'outcomes'
+        || hardStage === 'judge'
+        || hardStage === 'done';
+      if (hardForceSkipYells
+          && d.live_show?.turn != null
           && typeof markLiveShowPerformancePresented === 'function') {
         markLiveShowPerformancePresented(d.live_show.turn);
       }
@@ -951,7 +984,10 @@
           && liveShowSpectacleChromeStage(d.live_show?.stage)
           && typeof restoreLiveShowSpectacleAfterTabVisible === 'function') {
         G._perfSpectacleAborted = false;
-        await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId);
+        await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId, {
+          forceSkipYells: hardForceSkipYells,
+          hiddenMs: hardHiddenMs,
+        });
       }
 
       if (typeof showScr === 'function') showScr('game');

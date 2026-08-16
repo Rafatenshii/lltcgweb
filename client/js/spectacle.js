@@ -624,6 +624,25 @@ function markLiveShowPerformancePresented(turn) {
   } catch (e) {}
 }
 
+/** Undo an early seal so a still-open Performance can replay yell climbs. */
+function unmarkLiveShowPerformancePresented(turn) {
+  if (turn == null || !Number.isFinite(Number(turn))) return;
+  const t = Number(turn);
+  if (G._liveShowPerfPresentedTurns) G._liveShowPerfPresentedTurns.delete(t);
+  try {
+    const key = typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string'
+      ? LIVE_PERF_PRESENTED_STORAGE_KEY
+      : 'tcg_live_perf_presented';
+    const turns = G._liveShowPerfPresentedTurns
+      ? [...G._liveShowPerfPresentedTurns].sort((a, b) => a - b)
+      : [];
+    if (!turns.length) sessionStorage.removeItem(key);
+    else {
+      sessionStorage.setItem(key, JSON.stringify({ roomId: G.roomId, turns }));
+    }
+  } catch (e) {}
+}
+
 function restoreLiveShowPerformancePresented() {
   if (!G.roomId) return;
   try {
@@ -7623,22 +7642,63 @@ function liveShowSpectacleChromeStage(stage) {
 }
 
 /**
- * After alt-tab catch-up: keep/restore stage chrome at the current cursor without
- * replaying yell climbs. Closing chrome mid-live_show left body flights over the mat.
+ * After alt-tab / focus catch-up: keep stage chrome. Replay yell climbs when they
+ * never finished — sealing "performance presented" too early jumped straight to
+ * Checking hearts on brief visibility flickers (inconsistent skip reports).
+ *
+ * @param {object} board
+ * @param {string} myId
+ * @param {{ forceSkipYells?: boolean, hiddenMs?: number }} [opts]
  */
-async function restoreLiveShowSpectacleAfterTabVisible(board, myId) {
+async function restoreLiveShowSpectacleAfterTabVisible(board, myId, opts = {}) {
   const stage = board?.live_show?.stage;
   if (!liveShowSpectacleChromeStage(stage)) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
     return;
   }
-  const target = LIVE_SHOW_TO_PERF_PHASE[stage];
-  if (!target) return;
   G._perfSpectacleAborted = false;
   const showTurn = liveShowTurnFromBoards(board, null);
-  if (showTurn != null && typeof markLiveShowPerformancePresented === 'function') {
+  const phasePastYells = typeof perfPhaseIdx === 'function'
+    && G._perfSpectaclePhase
+    && G._perfSpectaclePhase !== 'closed'
+    && perfPhaseIdx(G._perfSpectaclePhase) >= perfPhaseIdx('yell_opp');
+  const forceSkipYells = !!opts.forceSkipYells
+    || stage === 'outcomes'
+    || stage === 'judge';
+
+  // Still on Performance and the climb never finished this paint: replay yells.
+  // Ignore a sticky sessionStorage seal from an earlier bad catch-up.
+  if (stage === 'performance' && !phasePastYells && !forceSkipYells) {
+    TCG_DEBUG.log('live', 'tab restore: replay performance yell climb', {
+      showTurn,
+      hiddenMs: opts.hiddenMs || 0,
+      phase: G._perfSpectaclePhase || 'closed',
+      hadSeal: liveShowPerformancePresentedForTurn(showTurn),
+    });
+    if (typeof unmarkLiveShowPerformancePresented === 'function') {
+      unmarkLiveShowPerformancePresented(showTurn);
+    } else if (G._liveShowPerfPresentedTurns && showTurn != null) {
+      G._liveShowPerfPresentedTurns.delete(showTurn);
+    }
+    const key = liveShowBeatKey(board.live_show);
+    if (key && G._liveShowPresentedKeys) G._liveShowPresentedKeys.delete(key);
+    if (G._liveShowPresentedKey === key) G._liveShowPresentedKey = null;
+    G._perfSpectaclePhase = 'closed';
+    await presentOneLiveShowBeat(board, board, myId, 'performance');
+    if (!document.body.classList.contains('perf-spectacle-active')) {
+      perfOpenSpectacle();
+    }
+    return;
+  }
+
+  // Past yells (or intentional long-freeze skip): snap chrome to the cursor.
+  const yellsDone = liveShowPerformancePresentedForTurn(showTurn) || phasePastYells;
+  if ((forceSkipYells || yellsDone) && showTurn != null
+      && typeof markLiveShowPerformancePresented === 'function') {
     markLiveShowPerformancePresented(showTurn);
   }
+  const target = LIVE_SHOW_TO_PERF_PHASE[stage];
+  if (!target) return;
   const perfPrev = buildPerfSpectaclePrev(board, board) || board;
   await perfSeekPhase(perfPrev, board, myId, target, { forward: true, animate: false });
   if (stage === 'performance') {
@@ -7652,7 +7712,6 @@ async function restoreLiveShowSpectacleAfterTabVisible(board, myId) {
   } else {
     perfClearHeartCheckHold();
   }
-  // Re-assert mat hide in case a prior abort stripped the body class.
   if (!document.body.classList.contains('perf-spectacle-active')) {
     perfOpenSpectacle();
   }
