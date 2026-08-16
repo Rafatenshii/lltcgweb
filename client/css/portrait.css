@@ -1072,6 +1072,7 @@ html.tcg-portrait-play{
   --p-live-bg: linear-gradient(180deg, #fff6fa 0%, #efc8db 100%);
   /* Stage outlines smaller than hand cards; hearts/blades stay fixed px below */
   --p-stage-outline-scale: 0.72;
+  --p-live-outline-scale: 0.86;
   /* Defeat landscape hand-strip vars that blow cards past the field */
   --hand-strip-h: var(--p-hand-mine);
   --my-hand-card-h: var(--p-card-h);
@@ -1090,6 +1091,7 @@ html.tcg-portrait-play.tcg-portrait-square{
   --p-field-min: 96px;
   --p-hud-max: 18vh;
   --p-stage-outline-scale: 0.68;
+  --p-live-outline-scale: 0.82;
 }
 
 /* Tablets + mouse-desktop portrait: cap content width and keep stage cells readable. */
@@ -1102,6 +1104,7 @@ html.tcg-portrait-play.tcg-portrait-tablet{
   --p-field-min: 160px;
   --p-hud-max: 22vh;
   --p-stage-outline-scale: 1;
+  --p-live-outline-scale: 1;
 }
 html.tcg-portrait-play #screen-game.active{
   display:flex!important;
@@ -1489,7 +1492,7 @@ html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   align-self: start;
 }
-/* Live storage — landscape (88×63), ~1.2× prior size, packed toward HUD */
+/* Live storage — landscape (88×63); scale via --p-live-outline-scale (tablet = full cell) */
 html.tcg-portrait-play #screen-game .z-opp-live-0,
 html.tcg-portrait-play #screen-game .z-opp-live-1,
 html.tcg-portrait-play #screen-game .z-opp-live-2,
@@ -1497,9 +1500,12 @@ html.tcg-portrait-play #screen-game .z-my-live-0,
 html.tcg-portrait-play #screen-game .z-my-live-1,
 html.tcg-portrait-play #screen-game .z-my-live-2{
   aspect-ratio: 88 / 63;
-  width: min(82%, calc(100cqh * 88 / 63 * 0.86));
+  width: min(
+    calc(100% * var(--p-live-outline-scale)),
+    calc(100cqh * 88 / 63 * var(--p-live-outline-scale))
+  );
   height: auto;
-  max-width: 82%;
+  max-width: calc(100% * var(--p-live-outline-scale));
   max-height: 100%;
   background: var(--p-live-bg);
   justify-self: center;
@@ -3066,8 +3072,9 @@ html.tcg-portrait-play.tcg-portrait-tablet .llc-menu-screen .btn-out{
 }
 html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .mslot,
 html.tcg-portrait-play.tcg-portrait-tablet #portrait-board .lcard{
-  /* Keep stage fill in sync with tablet outline scale */
+  /* Keep stage/live fill in sync with tablet outline scale */
   --p-stage-outline-scale: 1;
+  --p-live-outline-scale: 1;
 }
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-live-0,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-live-1,
@@ -3075,6 +3082,16 @@ html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-live-2,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-live-0,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-live-1,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-live-2{
-  width:100%;
-  max-width:100%;
+  width: 100%;
+  max-width: 100%;
+}
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-stage-left,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-stage-center,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-stage-right,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-left,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-center,
+html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-right{
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
 }
