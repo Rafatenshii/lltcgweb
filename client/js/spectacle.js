@@ -679,20 +679,27 @@ function liveStorageRevealFlipsActive(flipKeys, myId = G.playerId) {
   return false;
 }
 
-/** All opponent flip keys are already face-up in the DOM (animation finished). */
+/** Flip keys are already face-up in the DOM (animation finished). */
 function liveStorageRevealDomComplete(flipKeys, myId = G.playerId) {
-  const oppId = myId === 'p1' ? 'p2' : 'p1';
   if (!flipKeys?.size) return true;
+  const hideBoth = typeof spectatorHandsHidden === 'function' && spectatorHandsHidden();
+  const oppId = myId === 'p1' ? 'p2' : 'p1';
   for (const key of flipKeys) {
-    if (!String(key).startsWith(`${oppId}:`)) continue;
-    const iid = String(key).slice(oppId.length + 1);
+    const keyStr = String(key);
+    let pid = null;
+    if (keyStr.startsWith('p1:')) pid = 'p1';
+    else if (keyStr.startsWith('p2:')) pid = 'p2';
+    if (!pid) continue;
+    if (!hideBoth && pid !== oppId) continue;
+    const iid = keyStr.slice(pid.length + 1);
+    const prefix = pid === myId ? 'my' : 'opp';
     let found = false;
     for (let i = 0; i < 3; i++) {
-      const cardEl = el(`opp-live-${i}`)?.querySelector('.lcard.live-card');
+      const cardEl = el(`${prefix}-live-${i}`)?.querySelector('.lcard.live-card');
       if (cardEl?.dataset?.iid !== iid) continue;
-      // Spectators paint faces without the `.revealed` flip class (broadcast view).
+      // Open spectate paints faces without the `.revealed` flip class (broadcast view).
       if (cardEl.classList.contains('revealed')
-          || (G.isSpectator && typeof liveStorageCardShowsFace === 'function'
+          || (G.isSpectator && !hideBoth && typeof liveStorageCardShowsFace === 'function'
             && liveStorageCardShowsFace(cardEl)
             && !cardEl.classList.contains('live-storage-facedown'))) {
         found = true;
@@ -1382,10 +1389,13 @@ function shouldRevealLiveStorageForRound(prev, next, emptyRound = null) {
   const showTurn = inferLiveShowTurn(prev, next);
   if (liveStorageRevealDoneForTurn(showTurn)) return false;
   const empty = emptyRound ?? isEmptyLiveSkipTransition(prev, next);
-  // Spectators already see Live faces during live_set (broadcast card_no). Requiring
-  // a player-style face-down→flip gate intermittently blocks Performance: DOM never
-  // gets `.revealed`, revealRan stays false, and recovery eventually seals the show.
-  if (G.isSpectator && !empty) return false;
+  // Spectators in open broadcast already see Live faces during live_set. Requiring
+  // a player-style face-down→flip gate intermittently blocks Performance.
+  // Hidden-hand tournament spectate follows the same reveal gate as players.
+  if (G.isSpectator && !empty
+      && !(typeof spectatorHandsHidden === 'function' && spectatorHandsHidden())) {
+    return false;
+  }
   if (empty) {
     // solo-human: own member bluffs were face-up during live_set — skip flip.
     // solo-cpu: opponent bluffs must flip before empty splash / WR.
@@ -3665,6 +3675,7 @@ function rememberPerfSpectacleBaseline(prev, next) {
     G._liveStorageOutcomesPlayedKey = null;
     G._liveStorageOutcomesPlayedBluffKey = null;
     G._liveStorageOutcomesPlayedLiveKey = null;
+    G._spectatorHiddenRevealBeats = null;
     if (typeof resetMovementLedger === 'function') resetMovementLedger();
   }
   if (isLeavingLiveSetPhase(prev, next)) {
@@ -7756,6 +7767,76 @@ async function presentLiveShowOutcomesWhileSuccessPrompt(prior, board, myId) {
   }
 }
 
+/**
+ * Hidden-hand spectators: flip the current performer's Live storage like an
+ * in-game opponent reveal (both seats stay face-down until their turn).
+ */
+async function presentSpectatorHiddenLiveReveal(board, performer, myId) {
+  if (!board?.players?.[performer] || typeof spectatorHandsHidden !== 'function' || !spectatorHandsHidden()) {
+    await perfSleep(700);
+    return;
+  }
+  const show = board.live_show;
+  const beatKey = show
+    ? `${show.turn}:${show.stage_seq}:reveal:${performer}`
+    : `reveal:${performer}`;
+  if (!G._spectatorHiddenRevealBeats) G._spectatorHiddenRevealBeats = new Set();
+  if (G._spectatorHiddenRevealBeats.has(beatKey)) {
+    await perfSleep(400);
+    return;
+  }
+  const zone = board.players[performer].live_zone || [];
+  const flipKeys = new Set();
+  const preload = [];
+  const playback = deepCloneState(board);
+  playback.players[performer].live_zone = zone.map((c) => {
+    if (!c?.instance_id || !isLiveStorageRevealCard(c)) return c ? { ...c } : c;
+    const face = enrichCard({ ...c, revealed: true });
+    flipKeys.add(`${performer}:${c.instance_id}`);
+    preload.push(ensureCardImageLoaded(face));
+    // Force face-down so render builds the flip shell even though the server
+    // already marked these revealed for this performer's beat.
+    return { ...face, revealed: false };
+  });
+  if (!flipKeys.size) {
+    G._spectatorHiddenRevealBeats.add(beatKey);
+    await perfSleep(700);
+    return;
+  }
+  G._liveStorageRevealRunning = true;
+  G._liveFlipScheduled = new Set();
+  G._liveStorageRevealAnimCount = 0;
+  G._liveRevealFlips = flipKeys;
+  const prevState = G.gameState;
+  try {
+    G.gameState = playback;
+    if (typeof renderGame === 'function') {
+      renderGame(playback, { skipLog: true, skipPrompt: true });
+    }
+    if (typeof flushLiveStorageFlipScheduling === 'function') {
+      flushLiveStorageFlipScheduling(myId);
+    }
+    await Promise.all(preload);
+    if (typeof flushLiveStorageFlipScheduling === 'function') {
+      flushLiveStorageFlipScheduling(myId);
+    }
+    const flipWait = (typeof LIVE_STORAGE_FLIP_MS === 'number' ? LIVE_STORAGE_FLIP_MS : 520)
+      + Math.max(0, flipKeys.size - 1)
+      * (typeof LIVE_STORAGE_FLIP_STAGGER_MS === 'number' ? LIVE_STORAGE_FLIP_STAGGER_MS : 90);
+    await perfSleep(Math.max(700, flipWait));
+    if (typeof waitForCardFlipsIdle === 'function') await waitForCardFlipsIdle();
+  } finally {
+    G._liveStorageRevealRunning = false;
+    G._liveRevealFlips = new Set();
+    G._liveFlipScheduled = new Set();
+    G._spectatorHiddenRevealBeats.add(beatKey);
+    G.gameState = board || prevState;
+    if (typeof renderGame === 'function') {
+      renderGame(G.gameState, { skipLog: true, skipPrompt: true });
+    }
+  }
+}
+
 async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (liveShowPresentationCancelled()) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
@@ -7766,7 +7847,11 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     // Per-performer reveal: board-render flips newly revealed storage; short readable beat.
     const who = next?.live_show?.performer;
     TCG_DEBUG.log('live', 'live_show reveal beat', { performer: who || null });
-    await perfSleep(700);
+    if (typeof spectatorHandsHidden === 'function' && spectatorHandsHidden() && who) {
+      await presentSpectatorHiddenLiveReveal(next, who, myId);
+    } else {
+      await perfSleep(700);
+    }
     return;
   }
   if (stage === 'live_start') {

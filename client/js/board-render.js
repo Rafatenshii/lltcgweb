@@ -364,8 +364,10 @@ function isPerfSpectacleLiveSlotCard(c, next, pid) {
 function collectLiveRevealFlips(prev, next, myId = G.playerId) {
   const keys = new Set();
   if (!prev || !next) return keys;
+  const hideBoth = typeof spectatorHandsHidden === 'function' && spectatorHandsHidden();
   for (const pid of ['p1', 'p2']) {
-    if (pid === myId) continue;
+    // Players only flip the opponent; hidden-hand spectators flip both seats.
+    if (pid === myId && !hideBoth) continue;
     const before = prev.players?.[pid]?.live_zone || [];
     const after = next.players?.[pid]?.live_zone || [];
     const beforeById = Object.fromEntries(before.map(c => [c.instance_id, c]));
@@ -429,13 +431,33 @@ function liveStorageFlipKeysForRender(s, rawKeys, myId = G.playerId) {
   }
   // Only keep keys while the reveal sequence is actively running.
   if (!G._liveStorageRevealRunning && !G._liveRoundPlaybackActive) return new Set();
+  const hideBoth = typeof spectatorHandsHidden === 'function' && spectatorHandsHidden();
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   const filtered = new Set();
   for (const key of rawKeys) {
-    if (!String(key).startsWith(`${oppId}:`)) continue;
-    const iid = String(key).slice(oppId.length + 1);
-    const card = findCardInState(s, iid, oppId);
-    if (card?.revealed) continue;
+    const keyStr = String(key);
+    let pid = null;
+    if (keyStr.startsWith('p1:')) pid = 'p1';
+    else if (keyStr.startsWith('p2:')) pid = 'p2';
+    if (!pid) continue;
+    if (!hideBoth && pid !== oppId) continue;
+    const iid = keyStr.slice(pid.length + 1);
+    const card = findCardInState(s, iid, pid);
+    // Normal play drops keys once the server marks revealed. Hidden-hand spectators
+    // keep keys while the DOM is still face-down so the flip can finish.
+    if (card?.revealed && !hideBoth) continue;
+    if (card?.revealed && hideBoth) {
+      const prefix = pid === myId ? 'my' : 'opp';
+      let stillFaceDown = false;
+      for (let i = 0; i < 3; i++) {
+        const cardEl = el(`${prefix}-live-${i}`)?.querySelector('.lcard.live-card');
+        if (cardEl?.dataset?.iid !== iid) continue;
+        stillFaceDown = cardEl.classList.contains('live-storage-facedown')
+          || (cardEl.classList.contains('live-storage-flip') && !cardEl.classList.contains('revealed'));
+        break;
+      }
+      if (!stillFaceDown && !G._liveFlipScheduled?.has(key)) continue;
+    }
     filtered.add(key);
   }
   return filtered;
@@ -729,8 +751,10 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
 
   for (const pid of ['p1', 'p2']) {
     const zone = playback.players?.[pid]?.live_zone || [];
+    const hideBoth = typeof spectatorHandsHidden === 'function' && spectatorHandsHidden();
     playback.players[pid].live_zone = zone.map(c => {
-      if (pid === myId || c.revealed || !isLiveStorageRevealCard(c)) return { ...c };
+      // Owners see their own storage face-up; hidden-hand spectators flip both seats.
+      if ((!hideBoth && pid === myId) || c.revealed || !isLiveStorageRevealCard(c)) return { ...c };
       const merged = mergeLiveCardFromFinal(c, final, pid);
       flipKeys.add(`${pid}:${merged.instance_id}`);
       preload.push(ensureCardImageLoaded(enrichCard({ ...merged, revealed: true })));
@@ -2043,7 +2067,8 @@ function renderLiveSlots(prefix, zone, isMe, pid){
   const flipKeys = liveStorageFlipKeysForRender(G.gameState, G._liveRevealFlips || new Set());
   const s = G.gameState;
   const myId = G.playerId;
-  const stagePreview = isMe && liveStorageUsesBaseScorePreview(s);
+  const hiddenSpectate = typeof spectatorHandsHidden === 'function' && spectatorHandsHidden();
+  const stagePreview = isMe && !hiddenSpectate && liveStorageUsesBaseScorePreview(s);
   const stageBonus = stagePreview ? stageLiveScoreBonusFor(s, pid, myId) : 0;
   const lastScoredLiveSlot = stagePreview && stageBonus > 0 ? liveZoneLastScoredLiveSlotIndex(zone) : -1;
   for(let i=0;i<3;i++){
@@ -2078,12 +2103,28 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     }
 
     const flipKey = `${pid}:${card.instance_id}`;
-    const flipPending = !isMe && flipKeys.has(flipKey)
-      && !(isLiveSetPhase(s?.phase) && liveSetPlacementInProgress(s));
+    const flipPending = flipKeys.has(flipKey)
+      && !(isLiveSetPhase(s?.phase) && liveSetPlacementInProgress(s))
+      && (hiddenSpectate || !isMe);
     const hideOppFace = !isMe && !flipPending && shouldHideOpponentLiveStorageFaces(s);
-    const spectatorBroadcastFace = G.isSpectator && card.card_no && card.card_no !== '?';
-    const showFace = spectatorBroadcastFace || isMe || flipPending || (!hideOppFace && !!card.revealed);
+    // Open spectate broadcasts faces; hidden-hand tournament view follows revealed,
+    // except the current reveal beat stays face-down until the flip animation owns it.
+    const spectatorBroadcastFace = G.isSpectator && !hiddenSpectate
+      && card.card_no && card.card_no !== '?';
+    const revealBeatKey = (hiddenSpectate && s?.live_show?.stage === 'reveal' && s.live_show?.performer)
+      ? `${s.live_show.turn}:${s.live_show.stage_seq}:reveal:${s.live_show.performer}`
+      : null;
+    const pendingHiddenReveal = !!(revealBeatKey
+      && pid === s.live_show.performer
+      && !G._spectatorHiddenRevealBeats?.has(revealBeatKey));
+    const showFace = spectatorBroadcastFace
+      || (!hiddenSpectate && isMe)
+      || flipPending
+      || (hiddenSpectate
+        ? (!pendingHiddenReveal && !!card.revealed)
+        : (!hideOppFace && !!card.revealed));
     const doFlip = flipPending;
+    const canFlipSeat = hiddenSpectate || isOpp;
 
     if (existingCard?.dataset.iid === card.instance_id) {
       if (existingCard.classList.contains('live-storage-flip')) {
@@ -2107,7 +2148,7 @@ function renderLiveSlots(prefix, zone, isMe, pid){
         }
         continue;
       }
-      if (doFlip && isOpp && existingCard.classList.contains('live-storage-facedown')) {
+      if (doFlip && canFlipSeat && existingCard.classList.contains('live-storage-facedown')) {
         upgradeLiveStorageCardForReveal(existingCard, card);
         layoutLiveSlots(prefix);
         ensureLiveStorageFlipScheduled(
@@ -2118,7 +2159,7 @@ function renderLiveSlots(prefix, zone, isMe, pid){
       if (existingCard.classList.contains('card-arriving')) {
         continue;
       }
-      if (doFlip && isOpp && liveStorageCardShowsFace(existingCard)
+      if (doFlip && canFlipSeat && liveStorageCardShowsFace(existingCard)
           && !existingCard.classList.contains('live-storage-flip')) {
         // Face-up outside active reveal playback: do not rebuild a flip shell (causes
         // "already revealed / never-played" cards to flip again during Main).
@@ -2139,7 +2180,12 @@ function renderLiveSlots(prefix, zone, isMe, pid){
         applyCardFoilFx(existingCard, card);
         continue;
       }
-      if (isOpp && !card.revealed && existingCard.classList.contains('live-storage-facedown') && !doFlip) {
+      if (canFlipSeat && !card.revealed && existingCard.classList.contains('live-storage-facedown') && !doFlip) {
+        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+        continue;
+      }
+      // Hidden spectate: keep face-down shell until this performer's reveal.
+      if (hiddenSpectate && !showFace && existingCard.classList.contains('live-storage-facedown') && !doFlip) {
         existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
         continue;
       }
@@ -2173,7 +2219,7 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     d.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
     if(showFace) applyCardFoilFx(d, card);
     outer.appendChild(d);
-    if(showFace && card.score != null && (isMe || card.revealed)){
+    if(showFace && card.score != null && ((!hiddenSpectate && isMe) || card.revealed)){
       const extraBonus = stagePreview && i === lastScoredLiveSlot ? stageBonus : 0;
       appendLiveScoreBadge(outer, card, { baseOnly: stagePreview, extraBonus });
     }
