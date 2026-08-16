@@ -4509,7 +4509,11 @@ function cardYellDrawIconCount(card) {
   (card?.blade_hearts || []).forEach(bh => {
     if (bh === 'draw' || (typeof bh === 'object' && bh?.type === 'draw')) n++;
   });
-  if (card?.yell_draw_icon || card?.special_heart === CARD_SPECIAL_HEART_DRAW) n++;
+  // Prefer the catalog-hydrated flags; fall back to the printed special-heart art.
+  const drawHeart = (typeof CARD_SPECIAL_HEART_DRAW !== 'undefined')
+    ? CARD_SPECIAL_HEART_DRAW
+    : 'icon_draw.png';
+  if (card?.yell_draw_icon || card?.special_heart === drawHeart) n++;
   return n;
 }
 
@@ -4518,7 +4522,10 @@ function cardYellScoreIconCount(card) {
   (card?.blade_hearts || []).forEach(bh => {
     if (bh === 'score' || (typeof bh === 'object' && bh?.type === 'score')) n++;
   });
-  if (card?.yell_score_icon || card?.special_heart === CARD_SPECIAL_HEART_SCORE) n++;
+  const scoreHeart = (typeof CARD_SPECIAL_HEART_SCORE !== 'undefined')
+    ? CARD_SPECIAL_HEART_SCORE
+    : 'icon_score.png';
+  if (card?.yell_score_icon || card?.special_heart === scoreHeart) n++;
   return n;
 }
 
@@ -4530,6 +4537,18 @@ function appendYellSpecialIcons(container, card, { lg = true } = {}) {
   if (cardYellScoreIconCount(card) > 0) {
     container.appendChild(mkGameIcon('sp_score.png', lg ? 'hicon lg' : 'hicon fld', 'Yell score'));
   }
+}
+
+/** Draw/score icons on the yell chip itself (deck +n is the pending hand-draw total). */
+function perfMarkYellSpecialIcons(chip, card) {
+  if (!chip || !card) return null;
+  chip.querySelector('.perf-yell-special-icons')?.remove();
+  if (cardYellDrawIconCount(card) <= 0 && cardYellScoreIconCount(card) <= 0) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'perf-yell-special-icons';
+  appendYellSpecialIcons(wrap, card, { lg: true });
+  chip.appendChild(wrap);
+  return wrap;
 }
 
 function buildHeartPoolFromRows(rows) {
@@ -5039,8 +5058,10 @@ function resolveYellBladeHeartColor(color, ctx, pid, opts = {}) {
 
 function perfMarkYellBladeHearts(chip, card, opts = {}) {
   const entries = cardYellBladeHeartEntries(card, opts);
-  if (!entries.length) return null;
   chip.querySelector('.perf-yell-blade-hearts')?.remove();
+  // Always paint draw/score icons even when the card has no colored blade hearts.
+  perfMarkYellSpecialIcons(chip, card);
+  if (!entries.length) return null;
   const wrap = document.createElement('div');
   wrap.className = 'perf-yell-blade-hearts';
   entries.forEach(({ raw, display }) => {
@@ -6717,7 +6738,9 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
     layoutPerfYellStack(yellRow);
     let yellScoreTotal = 0;
     let yellDrawTotal = 0;
-    yellCards.forEach(c => {
+    // Enrich before counting — yell_reveal rows may omit catalog icon flags.
+    yellCards.forEach(raw => {
+      const c = enrichCard(raw);
       yellScoreTotal += cardYellScoreIconCount(c);
       yellDrawTotal += cardYellDrawIconCount(c);
     });
@@ -7025,16 +7048,17 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
     await perfSleepYell(160, cardPace);
     const scoreIcons = card ? cardYellScoreIconCount(card) : 0;
     const drawIcons = card ? cardYellDrawIconCount(card) : 0;
+    // Paint draw/score icons as soon as the yell card lands (before hearts fly).
+    const bladeEntries = card ? cardYellBladeHeartEntries(card, { yellWildcard }) : [];
+    const bladeWrap = card ? perfMarkYellBladeHearts(chip, card, { yellWildcard }) : null;
     if (scoreIcons > 0) {
       await perfApplyYellScoreBonus(ctx, pid, scoreIcons, { pace: cardPace });
     }
     if (drawIcons > 0 && liveCardsHaveDrawPerYellDraw(liveCards)) {
       perfBumpYellDrawPending(deckEl, pid, drawIcons, { animate: true });
-      await perfSleepYell(120, cardPace);
+      await perfSleepYell(220, cardPace);
     }
-    const bladeEntries = card ? cardYellBladeHeartEntries(card, { yellWildcard }) : [];
     if (bladeEntries.length) {
-      const bladeWrap = perfMarkYellBladeHearts(chip, card, { yellWildcard });
       const icons = bladeWrap ? [...bladeWrap.querySelectorAll('.hicon.bheart')] : [];
       for (let j = 0; j < bladeEntries.length; j++) {
         if (G._perfSpectacleAborted) return;

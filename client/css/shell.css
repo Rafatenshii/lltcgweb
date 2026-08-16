@@ -684,7 +684,7 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-yell-draw-pending{
   position:absolute;left:50%;top:50%;right:auto;bottom:auto;
   display:flex;align-items:center;justify-content:center;gap:clamp(2px,.5vw,4px);
-  z-index:8;pointer-events:none;white-space:nowrap;
+  z-index:40;pointer-events:none;white-space:nowrap;
   opacity:0;transform:translate(-50%,-50%) scale(.72);
   transition:opacity .32s ease,transform .38s cubic-bezier(.2,.9,.2,1);
 }
@@ -742,6 +742,13 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
   gap:2px;z-index:3;pointer-events:none;
 }
 .perf-yell-blade-hearts .hicon.bheart{width:clamp(18px,3.2vw,26px);height:clamp(18px,3.2vw,26px)}
+.perf-yell-special-icons{
+  position:absolute;right:clamp(5px,0.8vw,10px);top:clamp(5px,0.8vw,10px);
+  display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;
+  gap:2px;z-index:4;pointer-events:none;
+}
+.perf-yell-special-icons .hicon{width:clamp(18px,3.2vw,26px);height:clamp(18px,3.2vw,26px);
+  filter:drop-shadow(0 0 4px rgba(0,0,0,.75))}
 .perf-yell-stack-count{
   position:absolute;right:clamp(-6px,-1vw,-2px);top:clamp(-8px,-1.2vw,-4px);
   z-index:40;min-width:1.55em;height:1.55em;padding:0 .35em;
