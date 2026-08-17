@@ -92,6 +92,7 @@
       "officialVideo": "Official 8-min video ↗",
       "backHub": "← Hub",
       "missions": "Missions",
+      "missionsClaimable": "Missions — {n} ready to claim",
       "loginBonus": "Login",
       "apk": {
         "title": "Playing on Android? Get the APK launcher!",
@@ -1465,6 +1466,7 @@
       "officialVideo": "公式8分動画 ↗",
       "backHub": "← ハブ",
       "missions": "ミッション",
+      "missionsClaimable": "ミッション — 受取可能 {n}件",
       "loginBonus": "ログイン",
       "apk": {
         "title": "Androidで遊ぶ？APKランチャーを入手！",
@@ -2815,6 +2817,7 @@
       "officialVideo": "Vídeo oficial de 8 min ↗",
       "backHub": "← Hub",
       "missions": "Misiones",
+      "missionsClaimable": "Misiones — {n} listas para reclamar",
       "loginBonus": "Login",
       "apk": {
         "title": "¿Juegas en Android? ¡Consigue el lanzador APK!",
@@ -4180,6 +4183,7 @@
       "officialVideo": "공식 8분 영상 ↗",
       "backHub": "← 허브",
       "missions": "미션",
+      "missionsClaimable": "미션 — 수령 가능 {n}개",
       "loginBonus": "출석",
       "apk": {
         "title": "Android에서 플레이하나요? APK 런처를 받으세요!",
@@ -5569,6 +5573,7 @@
       "officialVideo": "官方8分钟视频 ↗",
       "backHub": "← 主页",
       "missions": "任务",
+      "missionsClaimable": "任务 — {n} 项可领取",
       "loginBonus": "签到",
       "apk": {
         "title": "在 Android 上玩？获取 APK 启动器！",
@@ -6956,6 +6961,7 @@
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
+      "missionsClaimable": "ภารกิจ — พร้อมรับ {n} รายการ",
       "loginBonus": "ล็อกอิน",
       "apk": {
         "title": "เล่นบน Android ไหม? ดาวน์โหลดตัวเปิด APK!",

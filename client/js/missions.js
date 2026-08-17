@@ -80,8 +80,13 @@
     const badge = el('hub-missions-badge');
     if (!pill) return;
     pill.hidden = !(typeof global.isSignedInAccount === 'function' && global.isSignedInAccount());
+    const hasClaim = state.claimableCount > 0;
+    pill.classList.toggle('has-claim', hasClaim);
+    pill.setAttribute('aria-label', hasClaim
+      ? t('hub.missionsClaimable', { n: state.claimableCount })
+      : t('hub.missions'));
     if (badge) {
-      badge.hidden = state.claimableCount <= 0;
+      badge.hidden = !hasClaim;
       badge.textContent = state.claimableCount > 9 ? '9+' : String(state.claimableCount);
     }
   }

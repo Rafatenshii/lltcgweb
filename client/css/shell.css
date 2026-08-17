@@ -1233,11 +1233,30 @@ body.missions-overlay-open .llc-sky-dim::after{
 .hub-missions-pill{
   position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;
   border:1px solid rgba(120,220,150,.4);background:linear-gradient(135deg,rgba(46,160,90,.35),rgba(32,120,70,.28));
-  font-family:'Libre Baskerville',serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;cursor:pointer}
+  font-family:'Libre Baskerville',serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;cursor:pointer;
+  transition:box-shadow .25s ease,border-color .25s ease,filter .25s ease}
 .hub-missions-pill:hover{border-color:rgba(150,240,180,.55);background:linear-gradient(135deg,rgba(56,180,100,.42),rgba(40,140,80,.34))}
+.hub-missions-pill.has-claim{
+  border-color:rgba(170,255,200,.75);
+  background:linear-gradient(135deg,rgba(64,200,110,.52),rgba(36,150,80,.4));
+  box-shadow:0 0 0 1px rgba(120,255,170,.35),0 0 14px rgba(70,220,130,.55),0 0 28px rgba(40,180,100,.28);
+  animation:hub-missions-claim-glow 1.8s ease-in-out infinite}
+.hub-missions-pill.has-claim:hover{
+  border-color:rgba(190,255,215,.9);
+  box-shadow:0 0 0 1px rgba(140,255,180,.45),0 0 18px rgba(80,235,140,.65),0 0 32px rgba(50,200,110,.34)}
+@keyframes hub-missions-claim-glow{
+  0%,100%{filter:brightness(1);box-shadow:0 0 0 1px rgba(120,255,170,.35),0 0 14px rgba(70,220,130,.55),0 0 28px rgba(40,180,100,.28)}
+  50%{filter:brightness(1.08);box-shadow:0 0 0 1px rgba(150,255,190,.5),0 0 20px rgba(90,240,150,.7),0 0 36px rgba(50,200,110,.4)}
+}
+@media (prefers-reduced-motion:reduce){
+  .hub-missions-pill.has-claim{animation:none}
+}
 .hub-missions-badge{
   position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
-  background:linear-gradient(135deg,#ff6ba8,#d63384);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center}
+  background:linear-gradient(135deg,#ff6ba8,#d63384);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;
+  box-shadow:0 0 8px rgba(255,107,168,.55)}
+.hub-missions-pill.has-claim .hub-missions-badge{
+  box-shadow:0 0 10px rgba(255,107,168,.75),0 0 4px rgba(255,255,255,.35)}
 .hub-login-bonus-pill{
   position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;
   border:1px solid rgba(255,179,209,.42);background:linear-gradient(135deg,rgba(255,107,168,.32),rgba(186,120,255,.22));
