@@ -3061,14 +3061,36 @@ html.tcg-portrait-play .pb-deck-drawer-face{
   height:calc(52px * 88 / 63);
   border-radius:6px;
   box-shadow:0 4px 12px rgba(0,0,0,.4);
-  background:url('../../lltcg-back.png') center/cover no-repeat;
+  /* Match board deck backs: --*-sleeve-image falls back to official back. */
+  background:var(--card-back-default, url('../../lltcg-back.png')) center/cover no-repeat;
   border:1px solid rgba(255,255,255,.18);
+}
+html.tcg-portrait-play .pb-deck-drawer.mine .pb-deck-drawer-face{
+  background:var(--my-sleeve-image, var(--card-back-default, url('../../lltcg-back.png'))) center/cover no-repeat;
+}
+html.tcg-portrait-play .pb-deck-drawer.opp .pb-deck-drawer-face{
+  background:var(--opp-sleeve-image, var(--card-back-default, url('../../lltcg-back.png'))) center/cover no-repeat;
 }
 html.tcg-portrait-play .pb-deck-drawer-item.wr .pb-deck-drawer-face{
   background:
     linear-gradient(135deg,rgba(96,165,250,.22),rgba(8,14,28,.2)),
-    url('../../lltcg-back.png') center/cover no-repeat;
+    var(--card-back-default, url('../../lltcg-back.png')) center/cover no-repeat;
   box-shadow:0 4px 12px rgba(0,0,0,.4),0 0 0 1px rgba(96,165,250,.35);
+}
+html.tcg-portrait-play .pb-deck-drawer.mine .pb-deck-drawer-item.wr .pb-deck-drawer-face{
+  background:
+    linear-gradient(135deg,rgba(96,165,250,.22),rgba(8,14,28,.2)),
+    var(--my-sleeve-image, var(--card-back-default, url('../../lltcg-back.png'))) center/cover no-repeat;
+}
+html.tcg-portrait-play .pb-deck-drawer.opp .pb-deck-drawer-item.wr .pb-deck-drawer-face{
+  background:
+    linear-gradient(135deg,rgba(96,165,250,.22),rgba(8,14,28,.2)),
+    var(--opp-sleeve-image, var(--card-back-default, url('../../lltcg-back.png'))) center/cover no-repeat;
+}
+/* Square sleeve corners on drawer faces (same as board backs). */
+html.tcg-portrait-play:not(.sleeve-conform).has-my-sleeve .pb-deck-drawer.mine .pb-deck-drawer-face,
+html.tcg-portrait-play:not(.sleeve-conform).has-opp-sleeve .pb-deck-drawer.opp .pb-deck-drawer-face{
+  border-radius:var(--sleeve-square-radius, 1px);
 }
 html.tcg-portrait-play .pb-deck-drawer-count{
   position:absolute;
