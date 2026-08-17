@@ -336,13 +336,30 @@ function currentRoundLogHasPerformance(next) {
   return false;
 }
 
+/** True while this board is still resolving Live Start skills (any performer). */
+function isLiveStartPromptResolutionActive(s) {
+  if (!s) return false;
+  if (s.phase === 'live_start_effects') return true;
+  return s.live_show?.stage === 'live_start';
+}
+
 function liveStartPromptNeedsWait(next, myId) {
   if (!next) return false;
+  // Sequential live_show: the 1st performer may already have "performed Live!"
+  // before the 2nd performer's Live Start prompts. Still wait while the server
+  // is in live_start_effects / live_show.stage=live_start.
+  if (isLiveStartPromptResolutionActive(next)) {
+    if (G.isSpectator) return true;
+    if (!next.pending_prompt) return true;
+    const pr = next.pending_prompt;
+    if (PERF_SPECTACLE_DEFERRED_PROMPTS.has(pr.type)) return false;
+    return true;
+  }
   // Spectators never receive pending_prompt (only pending_prompt_meta). Still wait
   // out live_start_effects so we do not skip/seal Performance while players choose.
   if (G.isSpectator) {
     if (currentRoundLogHasPerformance(next)) return false;
-    return next.phase === 'live_start_effects';
+    return false;
   }
   if (!next.pending_prompt) return false;
   const pr = next.pending_prompt;
@@ -351,10 +368,9 @@ function liveStartPromptNeedsWait(next, myId) {
   // Only bail once THIS round has actually performed — pre-performance Live Start
   // skills (e.g. optional [Live Start] choices) must resolve before the spectacle.
   if (currentRoundLogHasPerformance(next)) return false;
-  if (next.phase === 'live_start_effects') return true;
   const from = next.log?.length ? Math.max(0, next.log.length - 24) : 0;
   const slice = (next.log || []).slice(from);
-  if (!slice.some(e => e.msg === '=== Live Start Effects ===')) return false;
+  if (!slice.some(e => /^=== Live Start Effects/.test(e.msg || ''))) return false;
   return pr.responder === myId || pr.responder === (myId === 'p1' ? 'p2' : 'p1');
 }
 
@@ -417,7 +433,10 @@ async function waitForPipelinePromptResolution(myId, opts = {}) {
           || pr.type === 'pick_judge_success_live'
           || isMidSpectacleYellRetryPrompt(cur)
           || isPostLiveSkillPrompt(cur)
-          || isDeferredLiveSuccessPrompt(cur))) {
+          || isDeferredLiveSuccessPrompt(cur)
+          || isLiveStartPromptResolutionActive(cur)
+          || pr.type === 'optional_live_start'
+          || (typeof pr.type === 'string' && pr.type.startsWith('live_start_')))) {
         ensurePendingPromptSurfaced(cur, myId);
       }
       if (!isMyBlockingPromptOpen(cur)) await pullPromptResolutionState();
@@ -466,9 +485,12 @@ async function awaitLiveStartPromptsIfNeeded(prev, next, myId) {
       targetState: next,
       isResolved: (s) => {
         if (!s) return true;
-        if (currentRoundLogHasPerformance(s)) return true;
-        // Spectators: wait until the server leaves Live Start (prompts are stripped).
-        if (G.isSpectator) return s.phase !== 'live_start_effects';
+        // Spectators: wait until the server leaves the Live Start window.
+        if (G.isSpectator) return !isLiveStartPromptResolutionActive(s);
+        // Keep waiting while a Live Start skill is still pending (do not use
+        // currentRoundLogHasPerformance — 1st performer may already have yelled).
+        if (s.pending_prompt && isLiveStartPromptResolutionActive(s)) return false;
+        if (s.pending_prompt && s.phase === 'live_start_effects') return false;
         return !s.pending_prompt || s.phase !== 'live_start_effects';
       },
     });
@@ -483,9 +505,10 @@ async function presentSkippedLiveStartBanners(prev, next, myId) {
   if (liveStartPromptNeedsWait(next, myId)) return;
   const logFrom = prev.log?.length || 0;
   const slice = (next.log || []).slice(logFrom);
-  if (!slice.some(e => e.msg === '=== Live Start Effects ===')) return;
+  if (!slice.some(e => /^=== Live Start Effects/.test(e.msg || ''))) return;
   if (G._liveStartBannerPresentedSeq === (next.seq ?? 0)) return;
-  const banner = parseLogToBanner('=== Live Start Effects ===', 'live', next, myId, prev, logFrom);
+  const liveStartEntry = slice.find(e => /^=== Live Start Effects/.test(e.msg || ''));
+  const banner = parseLogToBanner(liveStartEntry?.msg || '=== Live Start Effects ===', 'live', next, myId, prev, logFrom);
   if (!banner) return;
   G._liveStartBannerPresentedSeq = next.seq ?? 0;
   queueCenterBanner(banner);
@@ -1867,7 +1890,7 @@ function pendingPromptBlocksPerfSpectacle(next) {
 function shouldSuppressLivePipelineBanner(msg, prev, next, logFrom) {
   if (!msg || msg === 'No Lives played this turn.') return false;
   if (!isLivePipelineLogBanner(msg) && msg !== '=== Performance Phase ==='
-      && msg !== '=== Live Start Effects ===' && msg !== '=== Live Win/Loss Check Phase ===') {
+      && !/^=== Live Start Effects/.test(msg) && msg !== '=== Live Win/Loss Check Phase ===') {
     return false;
   }
   if (isEmptyLiveSkipTransition(prev, next)) return true;
@@ -2432,7 +2455,7 @@ function playerNameMatches(name, s, myId) {
 function isLivePipelineLogBanner(msg) {
   if (!msg) return false;
   if (msg === '=== Performance Phase ===') return true;
-  if (msg === '=== Live Start Effects ===') return true;
+  if (/^=== Live Start Effects/.test(msg)) return true;
   if (msg === '=== Live Win/Loss Check Phase ===') return true;
   if (msg === '=== LIVE Phase ===') return true;
   if (/attempts the Live performance!/.test(msg)) return true;
@@ -2553,7 +2576,7 @@ function parseLogToBanner(msg, kind, s, myId, prev = null, logFrom = 0) {
     });
   }
   if (msg === '=== Live Round ===') return null;
-  if (msg === '=== Live Start Effects ===') {
+  if (/^=== Live Start Effects/.test(msg)) {
     if (!liveRoundHasLiveCards(s)) return null;
     if (G._liveStartBannerPresentedSeq === (s?.seq ?? 0)) return null;
     return splashBanner({
@@ -2922,7 +2945,7 @@ function isPostSpectacleLogSplash(msg) {
   if (isPostLivePipelineLogBanner(msg)) return false;
   if (/ wins this Live!/.test(msg)) return true;
   if (msg === '=== Live Win/Loss Check Phase ===') return true;
-  if (msg === '=== Live Start Effects ===') return true;
+  if (/^=== Live Start Effects/.test(msg)) return true;
   if (isLivePipelineLogBanner(msg)) return true;
   return false;
 }
@@ -4233,9 +4256,33 @@ function shouldHoldStateForLocalPrompt(incoming) {
     el('overlay-prompt')?.classList.remove('open');
     return false;
   }
-  if (inPr.type !== pr.type) return true;
   const inSrc = inPr.source_id || inPr.card_instance_id || inPr.source_instance_id || '';
   const curSrc = pr.source_id || pr.card_instance_id || pr.source_instance_id || '';
+  const chainedLiveStart = isLiveStartPromptResolutionActive(cur)
+    || isLiveStartPromptResolutionActive(incoming)
+    || cur.phase === 'live_success_effects'
+    || incoming.phase === 'live_success_effects';
+  // Multi-skill Live Start / Live Success: never hold the next skill behind the
+  // previous overlay (esp. surveil staying open while submitting) — that softlocks
+  // until refresh (BE3FA0).
+  if (chainedLiveStart && (
+    inPr.type !== pr.type
+    || inSrc !== curSrc
+    || (inPr.step || '') !== (pr.step || '')
+    || (inPr.ability_index ?? '') !== (pr.ability_index ?? '')
+  )) {
+    closeM('overlay-surveil');
+    closeM('overlay-hand-pick');
+    closeM('overlay-pick');
+    closeM('overlay-heart');
+    el('overlay-prompt')?.classList.remove('open');
+    G._promptSubmitKey = null;
+    G._resolvePromptSentKey = null;
+    G._lastResolvedPromptKey = null;
+    G._lastSurfacedPromptKey = null;
+    return false;
+  }
+  if (inPr.type !== pr.type) return true;
   if (inSrc !== curSrc) return true;
   if ((inPr.ability_index ?? '') !== (pr.ability_index ?? '')) return true;
   if (incoming.phase !== cur.phase) return true;
@@ -4325,11 +4372,15 @@ function ensurePendingPromptSurfaced(s, myId) {
       && (G._liveRoundPostSpectacleReady || currentRoundLogHasPerformance(live || s))) {
     return;
   }
-  // Live Start family must not reopen once this round has already performed.
+  // Live Start family must not reopen once this round has already performed —
+  // except while the server is still in Live Start for another performer
+  // (1st Yell can log "performed Live!" before 2nd Live Start prompts).
   if ((s.phase === 'live_start_effects' || pr.type === 'optional_live_start'
       || (typeof pr.type === 'string' && pr.type.startsWith('live_start_')))
       && currentRoundLogHasPerformance(live || s)
-      && !G._perfSpectacleActive && !G._liveRoundPlaybackActive) {
+      && !G._perfSpectacleActive && !G._liveRoundPlaybackActive
+      && !isLiveStartPromptResolutionActive(s)
+      && !isLiveStartPromptResolutionActive(live)) {
     return;
   }
   if (typeof isPromptSubmitting === 'function' && isPromptSubmitting(s)) return;
@@ -5778,7 +5829,10 @@ function currentPerformanceRoundLogStart(next) {
   const log = next?.log || [];
   for (let i = log.length - 1; i >= 0; i--) {
     const msg = log[i]?.msg || '';
-    if (msg === '=== Performance Phase ===' || msg === '=== Live Start Effects ===') return i;
+    // Per-performer Live Start uses "=== Live Start Effects (Name) ===".
+    // Matching only the bare marker left the 2nd performer's window anchored at
+    // the 1st Live Start, so "performed Live!" from the 1st suppressed prompts.
+    if (msg === '=== Performance Phase ===' || /^=== Live Start Effects/.test(msg)) return i;
   }
   for (let i = log.length - 1; i >= 0; i--) {
     if ((log[i]?.msg || '') === '=== LIVE Phase ===') return i + 1;

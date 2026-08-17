@@ -509,6 +509,18 @@
       if (G._liveShowRunnerActive) {
         G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
         G.gameState = s;
+        // Chained Live Start skills arrive while the runner owns the cursor —
+        // paint + surface the next prompt (soft-assign alone softlocks until refresh).
+        if (!replayForward && typeof renderGame === 'function') {
+          renderGame(s, {
+            skipLog: true,
+            skipPrompt: skipPromptForLive || replayForward,
+          });
+        }
+        if (!replayForward && s.pending_prompt?.responder === G.playerId
+            && typeof ensurePendingPromptSurfaced === 'function') {
+          ensurePendingPromptSurfaced(s, G.playerId);
+        }
         return;
       }
       // Paint only the board-safe state first. Judge chrome remains gated by
