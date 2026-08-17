@@ -2550,7 +2550,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=133"></script>
+<script src="i18n.js?v=134"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=16"></script>
 <script src="client/js/news.js?v=29"></script>
@@ -18230,10 +18230,28 @@ function renderLobbyDeckOptions(opts = {}) {
 
     if (expGroup.children.length) {
       sel.appendChild(expGroup);
-    } else {
+    }
+
+    if (!guest) {
+      const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      if (saved.length) {
+        const presetGroup = document.createElement('optgroup');
+        presetGroup.label = t('deck.savedPresets') || 'Saved presets';
+        saved.forEach(d => {
+          const o = document.createElement('option');
+          o.value = 'preset:' + d.slot;
+          o.textContent = (d.name || ('Deck #' + d.slot)) + (d.equipped ? ' ★' : '');
+          presetGroup.appendChild(o);
+        });
+        sel.appendChild(presetGroup);
+      }
+    }
+
+    if (!sel.options.length) {
       const o = document.createElement('option');
       o.value = '';
-      o.textContent = t('lobby.experimentDeckEmpty') || 'Enter a password or save an experiment deck';
+      o.textContent = t('lobby.freeDeckEmpty')
+        || 'Enter an experiment password, or save a deck / experiment preset';
       o.disabled = true;
       sel.appendChild(o);
     }
@@ -18397,9 +18415,6 @@ function deckPayloadFromChoice(deckSel) {
       experiment_password: password,
     };
   }
-  if (isFreeGameMode()) {
-    throw new Error(t('lobby.freeModeNeedsExperiment') || 'Free requires a Deck Experiment deck');
-  }
   if (deckSel.startsWith('preset:')) {
     const slot = parseInt(deckSel.slice(7), 10);
     if (!Number.isFinite(slot) || slot < 1 || slot > 10) {
@@ -18423,6 +18438,12 @@ function deckPayloadFromChoice(deckSel) {
       ),
       token,
     };
+  }
+  if (isFreeGameMode()) {
+    throw new Error(tLobbyOr(
+      'lobby.freeModeNeedsDeck',
+      'Free requires a Deck Experiment deck or a saved account deck',
+    ));
   }
   return payload;
 }
@@ -18481,7 +18502,10 @@ function lobbyDeckPayload() {
   } else {
     const choice = el('sel-deck')?.value || (isFreeGameMode(mode) ? '' : 'nijigasaki');
     if (!choice) {
-      throw new Error(t('lobby.freeModeNeedsExperiment') || 'Pick a Deck Experiment deck or enter a password');
+      throw new Error(tLobbyOr(
+        'lobby.freeModeNeedsDeck',
+        'Pick a Deck Experiment deck, a saved account deck, or enter a password',
+      ));
     }
     deckPart = deckPayloadFromChoice(choice);
   }

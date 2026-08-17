@@ -1,7 +1,7 @@
 <?php
 /**
  * PvP game mode IDs (ranked + casual queues / ranked ELO boards).
- * Free Mode is unranked-only (Deck Experiment decks; no leaderboards).
+ * Free Mode is unranked-only (Deck Experiment and/or saved account decks; no leaderboards).
  * Randomized Decks: full-pool random legal decks; ranked + casual + own ELO board.
  */
 

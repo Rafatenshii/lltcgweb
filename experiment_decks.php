@@ -55,9 +55,15 @@ function tcgBodyUsesExperimentDeck(array $body): bool {
     return $slot >= 1;
 }
 
+/** True when the join/create body selects a saved account deck preset. */
+function tcgBodyUsesAccountPresetDeck(array $body): bool {
+    $deck = trim((string)($body['deck'] ?? ''));
+    return $deck === 'preset' || str_starts_with($deck, 'preset:');
+}
+
 /**
- * Experiment decks are Free Mode only. CPU seats are exempt.
- * Call before resolving player decks for unranked create/join/casual.
+ * Experiment decks are Free Mode only. Free also allows saved account presets.
+ * CPU seats are exempt. Call before resolving player decks for unranked create/join/casual.
  */
 function tcgAssertUnrankedDeckForGameMode(array $body): void {
     $deck = trim((string)($body['deck'] ?? ''));
@@ -66,6 +72,7 @@ function tcgAssertUnrankedDeckForGameMode(array $body): void {
     }
     $mode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $usesExp = tcgBodyUsesExperimentDeck($body);
+    $usesPreset = tcgBodyUsesAccountPresetDeck($body);
     if (tcgIsRandomizedGameMode($mode)) {
         if ($usesExp) {
             throw new Exception('Randomized Decks mode assigns a random legal deck automatically', 400);
@@ -74,8 +81,8 @@ function tcgAssertUnrankedDeckForGameMode(array $body): void {
         return;
     }
     if (tcgIsFreeGameMode($mode)) {
-        if (!$usesExp) {
-            throw new Exception('Free requires a Deck Experiment deck (saved or password)', 400);
+        if (!$usesExp && !$usesPreset) {
+            throw new Exception('Free requires a Deck Experiment deck or a saved account deck', 400);
         }
         return;
     }

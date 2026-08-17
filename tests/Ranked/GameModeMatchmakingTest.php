@@ -16,6 +16,7 @@ final class GameModeMatchmakingTest extends TestCase
         require_once dirname(__DIR__, 2) . '/matchmaking.php';
         require_once dirname(__DIR__, 2) . '/casual_matchmaking.php';
         require_once dirname(__DIR__, 2) . '/game_mode.php';
+        require_once dirname(__DIR__, 2) . '/experiment_decks.php';
         if (!defined('TCG_ACCOUNT_LIB_ONLY')) {
             define('TCG_ACCOUNT_LIB_ONLY', true);
         }
@@ -208,6 +209,34 @@ final class GameModeMatchmakingTest extends TestCase
             null,
             ['cards' => []]
         );
+    }
+
+    public function testCasualFreeModeAllowsAccountPreset(): void
+    {
+        tcgValidateCasualFreeModeDeck(['deck' => 'preset', 'deck_slot' => 2]);
+        tcgValidateCasualFreeModeDeck(['deck' => 'preset:3']);
+        $this->assertTrue(true);
+    }
+
+    public function testCasualFreeModeRejectsStarterDeck(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Free requires a Deck Experiment deck or a saved account deck');
+        tcgValidateCasualFreeModeDeck(['deck' => 'nijigasaki']);
+    }
+
+    public function testUnrankedFreeModeAllowsPresetOrExperiment(): void
+    {
+        tcgAssertUnrankedDeckForGameMode([
+            'game_mode' => TCG_GAME_MODE_FREE,
+            'deck' => 'preset',
+            'deck_slot' => 1,
+        ]);
+        tcgAssertUnrankedDeckForGameMode([
+            'game_mode' => TCG_GAME_MODE_FREE,
+            'deck' => 'experiment:ABCDEFGH',
+        ]);
+        $this->assertTrue(true);
     }
 
     public function testCasualQueueStatsArePerMode(): void

@@ -231,9 +231,11 @@
       "experimentDeckPassword": "Experiment deck password",
       "experimentPasswordPlaceholder": "8-letter code",
       "experimentDeckBtn": "Deck Experiment",
-      "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved deck below.",
+      "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved experiment / account deck below.",
       "experimentDeckEmpty": "Enter a password or save an experiment deck",
-      "freeModeNeedsExperiment": "Free requires a Deck Experiment deck (saved or password)",
+      "freeDeckEmpty": "Enter an experiment password, or save a deck / experiment preset",
+      "freeModeNeedsExperiment": "Free requires a Deck Experiment deck or a saved account deck",
+      "freeModeNeedsDeck": "Free requires a Deck Experiment deck or a saved account deck",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} waiting · {inGame} in casual games",
       "otherModesQueuedLead": "Players are queued in other modes:",
@@ -576,7 +578,7 @@
       },
       "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
       "startersDesc": "Only starter decks you've unlocked. Official starter lists stay playable even if you exchanged those cards away.",
-      "freeDesc": "Use decks from Deck Experiment, with any card from the game! (You don't have to own them). This mode does not have leaderboards.",
+      "freeDesc": "Use Deck Experiment decks (any card — ownership not required) or your saved account decks with their sleeves and playmats. This mode does not have leaderboards.",
       "randomizedDesc": "Both players get a random legal deck from the full card pool (ownership not required). Ranked has its own leaderboard."
     },
     "ranked": {

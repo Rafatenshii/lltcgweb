@@ -187,12 +187,13 @@ function tcgValidateCasualStartersModeDeck(array $body, ?string $discordId, arra
     }
 }
 
-/** Free Mode: Deck Experiment password or account experiment preset only. */
+/** Free Mode: Deck Experiment (password / experiment preset) or saved account preset. */
 function tcgValidateCasualFreeModeDeck(array $body): void {
     require_once __DIR__ . '/experiment_decks.php';
-    if (!tcgBodyUsesExperimentDeck($body)) {
-        throw new Exception('Free requires a Deck Experiment deck (saved or password)');
+    if (tcgBodyUsesExperimentDeck($body) || tcgBodyUsesAccountPresetDeck($body)) {
+        return;
     }
+    throw new Exception('Free requires a Deck Experiment deck or a saved account deck');
 }
 
 function tcgCasualQueueLeave(string $queueKey, ?string $discordId = null): array {
