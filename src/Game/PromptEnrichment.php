@@ -301,6 +301,10 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
         case 'mandatory_discard_color_threshold_reveal5':
         case 'sbp5_draw_deck_bottom':
         case 'sbp6_discard_after_draw':
+        case 'bp5_discard_pay_wr_live_score':
+            if ($type === 'bp5_discard_pay_wr_live_score' && ($prompt['step'] ?? '') === 'pick_live') {
+                return ['choice' => 'skip'];
+            }
             $need = intval($prompt['count'] ?? $prompt['bottom_count'] ?? $prompt['discard_count'] ?? 1);
             $ids = array_slice(array_column($ownerP['hand'] ?? [], 'instance_id'), 0, $need);
             return ['discard_ids' => $ids];
@@ -674,6 +678,7 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
         'mandatory_discard_after_draw',
         'mandatory_discard_look_reveal',
         'effect_discard_hand',
+        'bp5_discard_pay_wr_live_score',
     ];
     if (in_array($prompt['type'] ?? '', $handPickTypes, true)) {
         try {

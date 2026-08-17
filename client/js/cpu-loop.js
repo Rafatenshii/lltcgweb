@@ -963,7 +963,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'sbp6_swap_pick_wr_member', 'sbp6_swap_pick_stage_member', 'sbp6_live_zone_deck_top_hearts',
   'sbp6_leave_play_wr_slot', 'hs_leave_play_wr_slot', 'hs_pick_wr_live_to_zone', 'sbp6_pick_members_live_score',
   'sbp5_pick_yell_members', 'sbp5_wr_lives_deck_top',
-  'spbp5_wait_discard_surveil', 'bp5_wait_discard_look_reveal',
+  'spbp5_wait_discard_surveil', 'bp5_wait_discard_look_reveal', 'bp5_discard_pay_wr_live_score',
   'optional_wait_self_look_reveal',
   'optional_wait_group_member_blade', 'optional_wait_up_to_group_live_score',
   'activate_members_pick', 'auto_on_ally_wait_activate_blade',
@@ -3808,7 +3808,29 @@ function cpuResolveStepPrompt(pr, cpu, tier, winPressure, read) {
       return true;
     }
   }
-  if (pr.type === 'spbp5_wait_discard_surveil' || pr.type === 'bp5_wait_discard_look_reveal') {
+  if (pr.type === 'spbp5_wait_discard_surveil' || pr.type === 'bp5_wait_discard_look_reveal'
+      || pr.type === 'bp5_discard_pay_wr_live_score') {
+    if (pr.type === 'bp5_discard_pay_wr_live_score') {
+      if (pr.step === 'discard') {
+        const need = pr.discard_count || 1;
+        const ids = (cpu.hand || []).slice(0, need).map(c => c.instance_id).filter(Boolean);
+        if (ids.length >= need) {
+          cpuAct('resolve_prompt', { discard_ids: ids.slice(0, need) });
+          return true;
+        }
+        cpuAct('resolve_prompt', { choice: 'skip' });
+        return true;
+      }
+      if (pr.step === 'pick_live') {
+        const id = pr.candidates?.[0]?.instance_id;
+        if (id && tier !== 'easy') {
+          cpuAct('resolve_prompt', { card_id: id });
+          return true;
+        }
+        cpuAct('resolve_prompt', { choice: 'skip' });
+        return true;
+      }
+    }
     return cpuResolveWaitDiscardLookReveal(pr, cpu, tier, winPressure, read);
   }
   if (pr.type === 'optional_wait_group_member_draw_discard') {

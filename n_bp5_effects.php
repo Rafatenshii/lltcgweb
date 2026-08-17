@@ -542,33 +542,76 @@ function nBp5ResolveActivatedAbility(
     $name = $member['name_en'] ?? $member['name'] ?? 'Member';
 
     if ($type === 'activated_discard_pay_wr_live_score') {
-        $liveId = $data['wr_live_id'] ?? '';
-        $discardIds = $data['discard_ids'] ?? [];
-        if (count($discardIds) !== intval($ab['discard'] ?? 1)) {
-            throw new Exception('Must discard exactly ' . intval($ab['discard'] ?? 1) . ' card(s)');
+        $need = intval($ab['discard'] ?? 1);
+        if (count($p['hand'] ?? []) < $need) {
+            throw new Exception("Need at least $need card(s) in hand");
         }
-        $liveCard = null;
-        foreach ($p['waiting_room'] as $c) {
-            if (($c['instance_id'] ?? '') === $liveId && ($c['card_type'] ?? '') === 'ライブ') {
-                $liveCard = $c;
-                break;
+        $discardIds = array_values(array_filter(array_map('strval', $data['discard_ids'] ?? [])));
+        $liveId = (string)($data['wr_live_id'] ?? '');
+
+        // Audit / pre-filled clients: discard (+ optional Live pay) in one shot.
+        if (count($discardIds) === $need && $liveId !== '') {
+            $liveCard = null;
+            foreach ($p['waiting_room'] as $c) {
+                if (($c['instance_id'] ?? '') === $liveId && ($c['card_type'] ?? '') === 'ライブ') {
+                    $liveCard = $c;
+                    break;
+                }
             }
+            if (!$liveCard) {
+                throw new Exception('Choose a Live from Waiting Room');
+            }
+            $payScore = intval($liveCard['score'] ?? 0);
+            if ($payScore > 0 && !payEnergyCost($p, $payScore)) {
+                throw new Exception("Need $payScore active Energy (Live score)");
+            }
+            discardFromHandByIds($p, $discardIds, $state, $pid);
+            $p['waiting_room'] = array_values(array_filter(
+                $p['waiting_room'],
+                fn($c) => ($c['instance_id'] ?? '') !== $liveId
+            ));
+            $p['hand'][] = $liveCard;
+            markAbilityUsed($member, $abilityIdx);
+            $p['stage'][$slot] = $member;
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] paid $payScore Energy, discarded, added Live to hand.");
+            return $state;
         }
-        if (!$liveCard) throw new Exception('Choose a Live from Waiting Room');
-        $payScore = intval($liveCard['score'] ?? 0);
-        if (!payEnergyCost($p, $payScore)) {
-            throw new Exception("Need $payScore active Energy (Live score)");
+
+        // Normal UI: open hand discard, then optional WR Live + pay.
+        if (count($discardIds) === $need) {
+            return nBp5AdvanceDiscardPayWrLiveScoreAfterDiscard(
+                $state,
+                $pid,
+                $p,
+                $member,
+                $slot,
+                $ab,
+                $abilityIdx,
+                $name,
+                $discardIds
+            );
         }
-        discardFromHandByIds($p, $discardIds);
-        $p['waiting_room'] = array_values(array_filter(
-            $p['waiting_room'],
-            fn($c) => ($c['instance_id'] ?? '') !== $liveId
-        ));
-        $p['hand'][] = $liveCard;
-        markAbilityUsed($member, $abilityIdx);
+        if (count($discardIds) !== 0) {
+            throw new Exception('Must discard exactly ' . $need . ' card(s)');
+        }
+
         $p['stage'][$slot] = $member;
+        $state['pending_prompt'] = [
+            'type'          => 'bp5_discard_pay_wr_live_score',
+            'step'          => 'discard',
+            'owner'         => $pid,
+            'responder'     => $pid,
+            'source_id'     => $member['instance_id'] ?? '',
+            'source_slot'   => $slot,
+            'ability_index' => $abilityIdx,
+            'source_name'   => $name,
+            'discard_count' => $need,
+            'prompt'        => 'Put 1 card from your hand into the Waiting Room.',
+            'ability'       => $ab,
+        ];
         $state = addLog($state, $state['players'][$pid]['name'] .
-            " — [$name] paid $payScore Energy, discarded, added Live to hand.");
+            " — [$name] activated: discard $need from hand.");
         return $state;
     }
 
@@ -689,10 +732,162 @@ function memberHasWildHeart(array $member): bool {
     return false;
 }
 
+/**
+ * After Shizuku (bp5-003) pays the hand discard cost: mark used, then optional
+ * WR Live pick (pay Energy = that Live's score to add it to hand).
+ */
+function nBp5AdvanceDiscardPayWrLiveScoreAfterDiscard(
+    array $state,
+    string $pid,
+    array &$p,
+    array &$member,
+    $slot,
+    array $ab,
+    int|string $abilityIdx,
+    string $name,
+    array $discardIds
+): array {
+    $need = count($discardIds);
+    $moved = discardFromHandByIds($p, $discardIds, $state, $pid);
+    if ($moved !== $need) {
+        throw new Exception('Must discard exactly ' . $need . ' card(s)');
+    }
+    markAbilityUsed($member, $abilityIdx);
+    if ($slot !== null && $slot !== '') {
+        $p['stage'][$slot] = $member;
+    }
+
+    $activeEnergy = countActiveEnergyInZone($p);
+    $candidates = [];
+    foreach ($p['waiting_room'] ?? [] as $c) {
+        if (($c['card_type'] ?? '') !== 'ライブ') {
+            continue;
+        }
+        $score = intval($c['score'] ?? 0);
+        if ($score > $activeEnergy) {
+            continue;
+        }
+        $candidates[] = $c;
+    }
+
+    if ($candidates === []) {
+        unset($state['pending_prompt']);
+        $state = addLog($state, $state['players'][$pid]['name'] .
+            " — [$name] discarded $need; no affordable Live in Waiting Room.");
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        return finishPromptEffects($state);
+    }
+
+    $state['pending_prompt'] = [
+        'type'          => 'bp5_discard_pay_wr_live_score',
+        'step'          => 'pick_live',
+        'owner'         => $pid,
+        'responder'     => $pid,
+        'source_id'     => $member['instance_id'] ?? '',
+        'source_slot'   => $slot,
+        'ability_index' => $abilityIdx,
+        'source_name'   => $name,
+        'candidates'    => array_map('cardPromptSummary', $candidates),
+        'prompt'        => 'You may pay Energy equal to a Live\'s score in your Waiting Room to add that Live to your hand.',
+        'choices'       => ['skip'],
+        'choice_labels' => ['Skip'],
+        'ability'       => $ab,
+    ];
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        " — [$name] discarded $need; choose a Live to pay for (or skip).");
+    $state['seq'] = intval($state['seq'] ?? 0) + 1;
+    return $state;
+}
+
 function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $choice, array $data): ?array {
     $promptType = $prompt['type'] ?? '';
     $ownerP = &$state['players'][$owner];
     $ability = $prompt['ability'] ?? [];
+
+    if ($promptType === 'bp5_discard_pay_wr_live_score') {
+        $step = $prompt['step'] ?? 'discard';
+        $ab = $ability;
+        $need = intval($prompt['discard_count'] ?? $ab['discard'] ?? 1);
+        $srcName = $prompt['source_name'] ?? 'Member';
+        $slot = $prompt['source_slot'] ?? '';
+        $abilityIdx = intval($prompt['ability_index'] ?? 0);
+        $srcId = (string)($prompt['source_id'] ?? '');
+
+        if ($step === 'discard') {
+            $ids = array_values(array_filter(array_map('strval', $data['discard_ids'] ?? [])));
+            if (count($ids) !== $need) {
+                throw new Exception('Must discard exactly ' . $need . ' card(s)');
+            }
+            $member = null;
+            if ($slot !== '' && !empty($ownerP['stage'][$slot])
+                && (($ownerP['stage'][$slot]['instance_id'] ?? '') === $srcId || $srcId === '')) {
+                $member = &$ownerP['stage'][$slot];
+            } else {
+                foreach ($ownerP['stage'] as $s => &$mbr) {
+                    if ($mbr && ($mbr['instance_id'] ?? '') === $srcId) {
+                        $member = &$mbr;
+                        $slot = $s;
+                        break;
+                    }
+                }
+                unset($mbr);
+            }
+            if (!$member) {
+                throw new Exception('Source Member not found on Stage');
+            }
+            return nBp5AdvanceDiscardPayWrLiveScoreAfterDiscard(
+                $state,
+                $owner,
+                $ownerP,
+                $member,
+                $slot,
+                $ab,
+                $abilityIdx,
+                $srcName,
+                $ids
+            );
+        }
+
+        if ($step === 'pick_live') {
+            if ($choice === 'no' || $choice === 'skip' || $choice === 'cancel') {
+                unset($state['pending_prompt']);
+                $state = addLog($state, $state['players'][$owner]['name'] .
+                    " — [$srcName] skipped paying for a Waiting Room Live.");
+                $state['seq']++;
+                return finishPromptEffects($state);
+            }
+            $liveId = (string)($data['card_id'] ?? $data['wr_live_id'] ?? '');
+            if ($liveId === '') {
+                throw new Exception('Choose a Live from Waiting Room');
+            }
+            $liveCard = null;
+            foreach ($ownerP['waiting_room'] as $c) {
+                if (($c['instance_id'] ?? '') === $liveId && ($c['card_type'] ?? '') === 'ライブ') {
+                    $liveCard = $c;
+                    break;
+                }
+            }
+            if (!$liveCard) {
+                throw new Exception('Choose a Live from Waiting Room');
+            }
+            $payScore = intval($liveCard['score'] ?? 0);
+            if ($payScore > 0 && !payEnergyCost($ownerP, $payScore)) {
+                throw new Exception("Need $payScore active Energy (Live score)");
+            }
+            $ownerP['waiting_room'] = array_values(array_filter(
+                $ownerP['waiting_room'],
+                fn($c) => ($c['instance_id'] ?? '') !== $liveId
+            ));
+            $ownerP['hand'][] = $liveCard;
+            unset($state['pending_prompt']);
+            $state = addLog($state, $state['players'][$owner]['name'] .
+                " — [$srcName] paid $payScore Energy; added Live to hand.");
+            $state['seq']++;
+            return finishPromptEffects($state);
+        }
+
+        return null;
+    }
 
     if ($promptType === 'bp5_wait_self_opp_exact_blade') {
         if ($choice === 'no') {

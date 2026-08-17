@@ -3538,7 +3538,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
-  if((pr?.type==='bp5_wr_live_deck_position'||pr?.type==='bp5_pick_kasumi_reveal'||pr?.type==='sbp5_pick_revealed_member'||pr?.type==='sbp5_pick_yell_members'||pr?.type==='sbp5_wr_lives_deck_top'||pr?.type==='sbp6_pick_revealed_member'||pr?.type==='sbp6_swap_pick_wr_member'||pr?.type==='sbp6_live_zone_deck_top_hearts'||pr?.type==='sbp6_swap_pick_stage_member'||pr?.type==='ssd1_play_wr_empty'&&pr.step==='pick_wr'||pr?.type==='both_wr_member_to_empty_stage'&&pr.step==='pick_wr'||pr?.type==='ssd1_reveal_group_deck'&&pr.step==='pick_hand'||pr?.type==='spbp5_distinct_groups'||pr?.type==='spbp5_subunit_blade_pick'||pr?.type==='spbp5_pick_wr_live'||pr?.type==='spbp5_wait_discard_surveil'&&pr.step==='pick')&&pr.responder===myId){
+  if((pr?.type==='bp5_wr_live_deck_position'||pr?.type==='bp5_pick_kasumi_reveal'||pr?.type==='bp5_discard_pay_wr_live_score'&&pr.step==='pick_live'||pr?.type==='sbp5_pick_revealed_member'||pr?.type==='sbp5_pick_yell_members'||pr?.type==='sbp5_wr_lives_deck_top'||pr?.type==='sbp6_pick_revealed_member'||pr?.type==='sbp6_swap_pick_wr_member'||pr?.type==='sbp6_live_zone_deck_top_hearts'||pr?.type==='sbp6_swap_pick_stage_member'||pr?.type==='ssd1_play_wr_empty'&&pr.step==='pick_wr'||pr?.type==='both_wr_member_to_empty_stage'&&pr.step==='pick_wr'||pr?.type==='ssd1_reveal_group_deck'&&pr.step==='pick_hand'||pr?.type==='spbp5_distinct_groups'||pr?.type==='spbp5_subunit_blade_pick'||pr?.type==='spbp5_pick_wr_live'||pr?.type==='spbp5_wait_discard_surveil'&&pr.step==='pick')&&pr.responder===myId){
     ovl.classList.remove('open');
     const mandatoryBothWr = pr.type === 'both_wr_member_to_empty_stage';
     openHandPick({
@@ -3587,7 +3587,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     });
     return;
   }
-  if((pr?.type==='bp5_wait_discard_look_reveal'||pr?.type==='sbp5_discard_bladeless_wr_live'||pr?.type==='sbp5_live_start_discard_heart'||pr?.type==='spbp5_wait_draw_discard'||pr?.type==='spbp5_wait_discard_surveil'||pr?.type==='spbp5_wait_or_discard_activate')&&pr.step==='discard'&&pr.responder===myId){
+  if((pr?.type==='bp5_wait_discard_look_reveal'||pr?.type==='bp5_discard_pay_wr_live_score'||pr?.type==='sbp5_discard_bladeless_wr_live'||pr?.type==='sbp5_live_start_discard_heart'||pr?.type==='spbp5_wait_draw_discard'||pr?.type==='spbp5_wait_discard_surveil'||pr?.type==='spbp5_wait_or_discard_activate')&&pr.step==='discard'&&pr.responder===myId){
     ovl.classList.remove('open');
     const me=s.players?.[myId];
     openHandPick({
