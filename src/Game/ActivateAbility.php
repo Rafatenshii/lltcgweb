@@ -1289,6 +1289,12 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             persistActivatedMemberAfterUse($p, $member, $slot, $zone, $wrIndex);
         }
     } elseif (($ab['type'] ?? '') === 'optional_discard_prompt') {
+        if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+            if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                throw new Exception('Need ' . optionalAbilityEnergyCost($ab) . ' active Energy');
+            }
+            throw new Exception('No legal targets for this effect');
+        }
         $state = resolveAbilityEffect($state, $pid, $member, $ab, [
             'slot'          => $slot ?? '',
             'phase'         => 'activated',
@@ -1304,6 +1310,13 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
     } elseif (($ab['type'] ?? '') === 'optional_pay_energy') {
         // As an [Activated] ability the opt-in is the activation itself, so the
         // Energy is paid up front rather than behind a yes/no prompt.
+        if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+            $cost = optionalAbilityEnergyCost($ab);
+            if ($cost > 0 && countActiveEnergyInZone($p) < $cost) {
+                throw new Exception("Need $cost active Energy");
+            }
+            throw new Exception('No legal targets for this effect');
+        }
         $cost = intval($ab['cost'] ?? $ab['energy_cost'] ?? 0);
         if ($cost > 0 && !payEnergyCost($p, $cost)) {
             throw new Exception("Need $cost active Energy");

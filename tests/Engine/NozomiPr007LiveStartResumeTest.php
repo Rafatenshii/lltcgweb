@@ -163,4 +163,17 @@ final class NozomiPr007LiveStartResumeTest extends TestCase
         $this->assertNotSame('live_start_effects', $state['phase'] ?? null);
         $this->assertNull($state['pending_prompt'] ?? null);
     }
+
+    public function testLiveStartSkippedWhenNoLegalOppTargets(): void
+    {
+        $state = $this->baseState([
+            'left' => $this->member('opp_high', 9),
+            'center' => null,
+            'right' => null,
+        ]);
+        $state = \resolveLiveStartAbilities($state, 'p1');
+        $this->assertNotSame('optional_wait_self', $state['pending_prompt']['type'] ?? null);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertFalse(\memberIsInWait($state['players']['p1']['stage']['center']));
+    }
 }

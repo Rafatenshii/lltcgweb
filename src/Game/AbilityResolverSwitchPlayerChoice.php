@@ -55,6 +55,32 @@ function tryResolveAbilityEffectSwitchPlayerChoice(
 
         case 'player_choice':
             if (!empty($state['pending_prompt'])) break;
+            $viableChoices = filterPlayerChoiceViableChoices($state, $pid, $ab);
+            if ($viableChoices === []) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] choice skipped (no legal targets).');
+                break;
+            }
+            $ab = array_merge($ab, ['choices' => $viableChoices]);
+            if (count($viableChoices) === 1) {
+                $only = reset($viableChoices);
+                $effect = is_array($only) ? ($only['effect'] ?? []) : [];
+                if (!is_array($effect) || ($effect['type'] ?? '') === '') {
+                    break;
+                }
+                $isLiveStart = ($ctx['phase'] ?? '') === 'live_start'
+                    || ($state['phase'] ?? '') === 'live_start_effects';
+                $state = applyChoiceEffect($state, $pid, $p, $effect, [
+                    'source_id'   => $source['instance_id'] ?? '',
+                    'source_name' => $name,
+                    'live_start'  => $isLiveStart,
+                ]);
+                if (empty($state['pending_prompt'])) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        ' — [' . $name . '] applied the only remaining choice.');
+                }
+                break;
+            }
             $choiceFields = buildPlayerChoicePromptFields($ab);
             $isLiveStart = ($ctx['phase'] ?? '') === 'live_start'
                 || ($state['phase'] ?? '') === 'live_start_effects';

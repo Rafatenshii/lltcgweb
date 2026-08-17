@@ -129,4 +129,53 @@ final class KanonSpBp5001OnEnterChoiceTest extends TestCase
         $this->assertTrue(\memberIsInWait($state['players']['p2']['stage']['left']));
         $this->assertNull($state['pending_prompt'] ?? null);
     }
+
+    public function testOnEnterPaySkippedWithoutActiveEnergy(): void
+    {
+        $kanon = $this->cardByNo('PL!SP-bp5-001-R＋', 'kanon_oe');
+        $opp = $this->cardByNo('PL!SP-sd1-002-SD', 'kanon_opp');
+        $opp['cost'] = 3;
+        $draw = ['instance_id' => 'kanon_draw', 'card_type' => 'メンバー', 'name' => 'DrawTarget'];
+
+        $state = $this->baseState();
+        $state['players']['p1']['hand'] = [$kanon];
+        $state['players']['p1']['main_deck'] = [$draw];
+        // Kanon costs 10 — leftover active Energy is 0, so the optional pay must not open.
+        $state['players']['p1']['energy_zone'] = $this->activeEnergy(10);
+        $state['players']['p2']['stage']['left'] = $opp;
+
+        $state = \actionPlayMember($state, 'p1', [
+            'card_id' => 'kanon_oe',
+            'slot' => 'center',
+        ]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertSame(0, \countActiveEnergyInZone($state['players']['p1']));
+        $this->assertSame([], $state['players']['p1']['hand']);
+    }
+
+    public function testOnEnterPayStillOpensWhenWaitHasNoTargetsThenDraws(): void
+    {
+        $kanon = $this->cardByNo('PL!SP-bp5-001-R＋', 'kanon_oe');
+        $oppHigh = $this->cardByNo('PL!HS-pb1-007-R', 'kanon_opp_high');
+        $draw = ['instance_id' => 'kanon_draw', 'card_type' => 'メンバー', 'name' => 'DrawTarget'];
+        $filler = ['instance_id' => 'kanon_f1', 'card_type' => 'メンバー', 'name' => 'Filler'];
+
+        $state = $this->baseState();
+        $state['players']['p1']['hand'] = [$kanon];
+        $state['players']['p1']['main_deck'] = [$draw, $filler];
+        $state['players']['p1']['energy_zone'] = $this->activeEnergy(15);
+        $state['players']['p2']['stage']['left'] = $oppHigh;
+
+        $state = \actionPlayMember($state, 'p1', [
+            'card_id' => 'kanon_oe',
+            'slot' => 'center',
+        ]);
+        $this->assertSame('optional_pay_energy_on_enter', $state['pending_prompt']['type'] ?? null);
+
+        $state = \actionResolvePrompt($state, 'p1', ['choice' => 'yes']);
+        $handIds = array_column($state['players']['p1']['hand'], 'instance_id');
+        $this->assertContains('kanon_draw', $handIds);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertFalse(\memberIsInWait($state['players']['p2']['stage']['left']));
+    }
 }

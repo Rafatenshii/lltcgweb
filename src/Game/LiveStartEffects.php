@@ -378,6 +378,9 @@ function optionalLiveStartAbilityEligible(array $state, string $pid, array $card
             return false;
         }
     }
+    if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+        return false;
+    }
     return true;
 }
 

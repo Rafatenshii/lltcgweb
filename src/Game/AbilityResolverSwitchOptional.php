@@ -76,6 +76,14 @@ function tryResolveAbilityEffectSwitchOptional(
         case 'optional_pay_energy':
             if (($ctx['phase'] ?? '') === 'on_enter' && empty($ctx['pay']) && empty($ctx['confirm'])) {
                 if (!empty($state['pending_prompt'])) break;
+                if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+                    if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                        $need = optionalAbilityEnergyCost($ab);
+                        $state = addLog($state, $state['players'][$pid]['name'] .
+                            " — [$name] could not pay $need Energy; effect skipped.");
+                    }
+                    break;
+                }
                 $state['pending_prompt'] = [
                     'type'          => 'optional_pay_energy_on_enter',
                     'owner'         => $pid,
@@ -178,6 +186,11 @@ function tryResolveAbilityEffectSwitchOptional(
 
         case 'optional_wait_self_wait_opp':
             if (!empty($state['pending_prompt'])) break;
+            if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] optional Wait skipped (no legal targets).');
+                break;
+            }
             $state['pending_prompt'] = [
                 'type'          => 'optional_wait_self',
                 'owner'         => $pid,
@@ -306,6 +319,12 @@ function tryResolveAbilityEffectSwitchOptional(
 
         case 'optional_pay_energy_if_baton':
             if (!empty($state['pending_prompt'])) break;
+            if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                $need = optionalAbilityEnergyCost($ab);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] could not pay $need Energy; effect skipped.");
+                break;
+            }
             $state['pending_prompt'] = [
                 'type'          => 'optional_pay_energy_if_baton',
                 'owner'         => $pid,
@@ -360,47 +379,26 @@ function tryResolveAbilityEffectSwitchOptional(
             if (!empty($ab['requires_subunit_in_hand'])) {
                 if (!handHasSubunitCard($p, $ab['requires_subunit_in_hand'])) break;
             }
-            $then = $ab['then'] ?? [];
-            if (!optionalDiscardThenViable($p, $then)) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . $name . '] optional On Enter skipped (no cards left in deck).');
-                break;
-            }
-            $discardFilter = (string)($ab['filter'] ?? '');
-            if ($discardFilter === 'live' || $discardFilter === 'member') {
-                $hasMatch = false;
-                foreach ($p['hand'] ?? [] as $hc) {
-                    if (!$hc) {
-                        continue;
-                    }
-                    if ($discardFilter === 'live' && isLiveTypeCard($hc)) {
-                        $hasMatch = true;
-                        break;
-                    }
-                    if ($discardFilter === 'member' && isMemberCard($hc)) {
-                        $hasMatch = true;
-                        break;
-                    }
+            // Always defer Energy until Yes. Skip opening when the cost cannot be
+            // paid or the follow-up has no legal targets (do not discard for nothing).
+            if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+                $then = $ab['then'] ?? [];
+                if (!is_array($then)) {
+                    $then = [];
                 }
-                if (!$hasMatch) {
-                    break;
-                }
-            }
-            $energyCost = intval($ab['energy_cost'] ?? 0);
-            // Always defer Energy until the player confirms Yes. Prepaid On Enter
-            // costs (e.g. Ceras pb1-007) charged players who declined the optional effect.
-            if ($energyCost > 0) {
-                $activeEnergy = 0;
-                foreach ($p['energy_zone'] ?? [] as $e) {
-                    if (!empty($e['active'])) {
-                        $activeEnergy++;
-                    }
-                }
-                if ($activeEnergy < $energyCost) {
+                if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                    $need = optionalAbilityEnergyCost($ab);
                     $state = addLog($state, $state['players'][$pid]['name'] .
-                        " — [$name] could not pay $energyCost Energy; effect skipped.");
-                    break;
+                        " — [$name] could not pay $need Energy; effect skipped.");
+                } elseif (!optionalDiscardThenViable($p, $then)) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        ' — [' . $name . '] optional On Enter skipped (no cards left in deck).');
+                } elseif (!optionalDiscardPromptHandViable($p, $ab)
+                    || !optionalThenEffectViable($state, $pid, $then)) {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        ' — [' . $name . '] optional On Enter skipped (no legal targets).');
                 }
+                break;
             }
             if (!empty($ctx['confirm']) || !empty($ctx['discard_ids'])) {
                 return resolveOptionalDiscardPromptChoice($state, $pid, [
@@ -1001,6 +999,14 @@ function tryResolveAbilityEffectSwitchOptional(
 
         case 'optional_pay_energy_on_enter':
             if (!empty($state['pending_prompt'])) break;
+            if (!optionalCostAbilityShouldOpen($state, $pid, $ab)) {
+                if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                    $need = optionalAbilityEnergyCost($ab);
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] could not pay $need Energy; effect skipped.");
+                }
+                break;
+            }
             $state['pending_prompt'] = [
                 'type'          => 'optional_pay_energy_on_enter',
                 'owner'         => $pid,
@@ -1036,6 +1042,12 @@ function tryResolveAbilityEffectSwitchOptional(
 
         case 'optional_pay_energy_live_success':
             if (!empty($state['pending_prompt'])) break;
+            if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+                $need = optionalAbilityEnergyCost($ab);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] could not pay $need Energy; effect skipped.");
+                break;
+            }
             $state['pending_prompt'] = [
                 'type'          => 'optional_pay_energy_live_success',
                 'owner'         => $pid,

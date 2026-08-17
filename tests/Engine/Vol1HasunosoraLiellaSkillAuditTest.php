@@ -417,7 +417,7 @@ final class Vol1HasunosoraLiellaSkillAuditTest extends TestCase
         $card = $this->cardByNo('PL!SP-bp1-002-P', 'vol1_sp002');
         $state = $this->baseState();
         $state['players']['p1']['stage']['center'] = $card;
-        $state['players']['p1']['energy_zone'] = $this->activeEnergy(1);
+        $state['players']['p1']['energy_zone'] = $this->activeEnergy(2);
         $state = \resolveOnEnterAbilities($state, 'p1', $card, 'center');
         $this->assertSame('optional_pay_energy_on_enter', $state['pending_prompt']['type'] ?? null);
     }

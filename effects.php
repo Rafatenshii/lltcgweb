@@ -1430,6 +1430,178 @@ function optionalDiscardThenViable(array $p, array $then): bool {
     return count($p['waiting_room'] ?? []) >= 1;
 }
 
+/**
+ * Opponent Stage Members a wait-opp-by-cost/blade/hearts effect can still hit.
+ *
+ * @return list<array>
+ */
+function listWaitOpponentStageTargets(array $state, string $owner, array $effect): array {
+    $opp = ($owner === 'p1') ? 'p2' : 'p1';
+    $oppStage = $state['players'][$opp]['stage'] ?? [];
+    if (!is_array($oppStage) || $oppStage === []) {
+        return [];
+    }
+    $activeOnly = !empty($effect['active_only']);
+    if (array_key_exists('max_original_blade', $effect) || isset($effect['max_original_blades'])) {
+        $maxBlade = intval($effect['max_original_blade'] ?? $effect['max_original_blades'] ?? 2);
+        return listOppStageMembersByMaxOriginalBlade($state, $opp, $maxBlade, $activeOnly);
+    }
+    if (isset($effect['max_original_hearts'])) {
+        $maxHearts = intval($effect['max_original_hearts']);
+        $out = [];
+        foreach ($oppStage as $slot => $mbr) {
+            if (!$mbr) {
+                continue;
+            }
+            if (memberIsInWait($mbr)) {
+                continue;
+            }
+            if ($activeOnly && !memberIsActiveForGame($mbr)) {
+                continue;
+            }
+            if (memberHeartCount($mbr) > $maxHearts) {
+                continue;
+            }
+            $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+        }
+        return $out;
+    }
+    $defaultMax = (($effect['type'] ?? '') === 'optional_wait_self_wait_opp') ? 4 : 9;
+    $maxCost = intval($effect['max_cost'] ?? $defaultMax);
+    return listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
+}
+
+function waitOpponentStageEffectHasTargets(array $state, string $owner, array $effect): bool {
+    return listWaitOpponentStageTargets($state, $owner, $effect) !== [];
+}
+
+/** True when a nested then-effect can still do something (or is not target-gated). */
+function optionalThenEffectViable(array $state, string $pid, array $effect): bool {
+    $type = (string)($effect['type'] ?? '');
+    if ($type === '') {
+        return true;
+    }
+    if ($type === 'wait_opponent_stage_max_cost') {
+        return waitOpponentStageEffectHasTargets($state, $pid, $effect);
+    }
+    if ($type === 'wait_opp_max_original_blade_if_stage_group') {
+        $p = $state['players'][$pid] ?? [];
+        if (!stageAllMembersInGroup($p, $effect['group'] ?? '')) {
+            return false;
+        }
+        return waitOpponentStageEffectHasTargets($state, $pid, $effect);
+    }
+    if ($type === 'player_choice') {
+        foreach ($effect['choices'] ?? [] as $choice) {
+            $child = is_array($choice) ? ($choice['effect'] ?? []) : [];
+            if (!is_array($child)) {
+                $child = [];
+            }
+            if (optionalThenEffectViable($state, $pid, $child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return true;
+}
+
+function filterPlayerChoiceViableChoices(array $state, string $pid, array $ab): array {
+    $out = [];
+    foreach ($ab['choices'] ?? [] as $key => $choice) {
+        $child = is_array($choice) ? ($choice['effect'] ?? []) : [];
+        if (!is_array($child)) {
+            $child = [];
+        }
+        if (optionalThenEffectViable($state, $pid, $child)) {
+            $out[$key] = $choice;
+        }
+    }
+    return $out;
+}
+
+function optionalAbilityEnergyCost(array $ab): int {
+    $type = (string)($ab['type'] ?? '');
+    $cost = intval($ab['energy_cost'] ?? 0);
+    if (in_array($type, [
+        'optional_pay_energy',
+        'optional_pay_energy_on_enter',
+        'optional_pay_energy_if_baton',
+        'optional_pay_energy_live_success',
+        'optional_pay_energy_add_from_wr',
+    ], true)) {
+        $cost = max($cost, intval($ab['cost'] ?? 0));
+    }
+    return $cost;
+}
+
+function optionalAbilityHasAffordableEnergy(array $p, array $ab): bool {
+    $cost = optionalAbilityEnergyCost($ab);
+    if ($cost <= 0) {
+        return true;
+    }
+    return countActiveEnergyInZone($p) >= $cost;
+}
+
+function optionalDiscardPromptHandViable(array $p, array $ab): bool {
+    $need = max(0, intval($ab['discard'] ?? 1));
+    if ($need <= 0) {
+        return true;
+    }
+    $filter = (string)($ab['filter'] ?? '');
+    $n = 0;
+    foreach ($p['hand'] ?? [] as $hc) {
+        if (!$hc) {
+            continue;
+        }
+        if ($filter === 'live' && !isLiveTypeCard($hc)) {
+            continue;
+        }
+        if ($filter === 'member' && !isMemberCard($hc)) {
+            continue;
+        }
+        $n++;
+    }
+    return $n >= $need;
+}
+
+/**
+ * True when an optional cost ability should be offered: the player can pay,
+ * and at least one follow-up can still resolve (e.g. a legal opp Wait target,
+ * or a player_choice branch such as Draw when Wait has none).
+ */
+function optionalCostAbilityShouldOpen(array $state, string $pid, array $ab): bool {
+    $p = $state['players'][$pid] ?? [];
+    $type = (string)($ab['type'] ?? '');
+    if (!optionalAbilityHasAffordableEnergy($p, $ab)) {
+        return false;
+    }
+    if ($type === 'optional_discard_prompt') {
+        if (!optionalDiscardPromptHandViable($p, $ab)) {
+            return false;
+        }
+        $then = $ab['then'] ?? [];
+        if (!is_array($then)) {
+            $then = [];
+        }
+        if (!optionalDiscardThenViable($p, $then)) {
+            return false;
+        }
+        return optionalThenEffectViable($state, $pid, $then);
+    }
+    if ($type === 'optional_wait_self_wait_opp') {
+        return waitOpponentStageEffectHasTargets($state, $pid, $ab);
+    }
+    if (in_array($type, ['optional_pay_energy', 'optional_pay_energy_on_enter'], true)) {
+        $then = $ab['then'] ?? [];
+        if (is_array($then) && ($then['type'] ?? '') !== '') {
+            return optionalThenEffectViable($state, $pid, $then);
+        }
+        return true;
+    }
+    return true;
+}
+
 function applyLookPickHand(array &$p, array $looked, array $pickIds): array {
     $pickSet = array_flip(array_values(array_filter($pickIds)));
     $rest = [];

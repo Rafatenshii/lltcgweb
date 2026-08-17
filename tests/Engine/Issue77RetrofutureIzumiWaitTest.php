@@ -97,6 +97,77 @@ final class Issue77RetrofutureIzumiWaitTest extends TestCase
         $this->assertFalse(memberIsInWait($state['players']['p2']['stage']['right']));
     }
 
+    public function testIzumiOnEnterSkippedWhenNoLegalOppTargets(): void {
+        $izumi = $this->cardByNo('PL!HS-bp5-016-N', 'izumi');
+        $handCard = $this->cardByNo('PL!HS-sd1-015-SD', 'hand_discard');
+        $oppHigh = $this->cardByNo('PL!HS-pb1-007-R', 'opp_high'); // cost 11
+
+        $p1 = $this->emptyPlayer('p1', 'P1');
+        $p1['hand'] = [$izumi, $handCard];
+        $p1['energy_zone'] = array_map(
+            static fn(int $i): array => ['instance_id' => "e$i", 'active' => true],
+            range(0, 11)
+        );
+
+        $p2 = $this->emptyPlayer('p2', 'P2');
+        $p2['stage']['center'] = $oppHigh;
+
+        $state = [
+            'room_id' => 'ISSUE77NOTARGET',
+            'status' => 'playing',
+            'seq' => 1,
+            'turn' => 1,
+            'phase' => 'main_first',
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => ['p1' => $p1, 'p2' => $p2],
+        ];
+
+        $state = applyAction($state, 'p1', 'play_member', [
+            'card_id' => 'izumi',
+            'slot' => 'center',
+        ]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $handIds = array_column($state['players']['p1']['hand'] ?? [], 'instance_id');
+        $this->assertContains('hand_discard', $handIds);
+        $this->assertFalse(memberIsInWait($state['players']['p2']['stage']['center']));
+    }
+
+    public function testIzumiOnEnterSkippedWhenHandEmpty(): void {
+        $izumi = $this->cardByNo('PL!HS-bp5-016-N', 'izumi');
+        $oppLow = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_low');
+
+        $p1 = $this->emptyPlayer('p1', 'P1');
+        $p1['hand'] = [$izumi];
+        $p1['energy_zone'] = array_map(
+            static fn(int $i): array => ['instance_id' => "e$i", 'active' => true],
+            range(0, 11)
+        );
+
+        $p2 = $this->emptyPlayer('p2', 'P2');
+        $p2['stage']['left'] = $oppLow;
+
+        $state = [
+            'room_id' => 'ISSUE77NOHAND',
+            'status' => 'playing',
+            'seq' => 1,
+            'turn' => 1,
+            'phase' => 'main_first',
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => ['p1' => $p1, 'p2' => $p2],
+        ];
+
+        $state = applyAction($state, 'p1', 'play_member', [
+            'card_id' => 'izumi',
+            'slot' => 'center',
+        ]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertFalse(memberIsInWait($state['players']['p2']['stage']['left']));
+    }
+
     public function testRetrofuturePlayChoiceOpensWrMemberPick(): void {
         $live = $this->cardByNo('PL!HS-bp5-022-L', 'retro');
         $wrMember = $this->cardByNo('PL!HS-bp5-008-R', 'wr_edel_4'); // Edel Note cost 4
