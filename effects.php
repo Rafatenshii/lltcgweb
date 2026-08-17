@@ -6011,8 +6011,8 @@ function beginWaitOpponentStagePick(
         ]);
     }
     $pickCount = max(1, $pickCount);
-    // Exactly one legal target and pick 1 → auto-resolve.
-    if ($pickCount === 1 && count($members) === 1) {
+    // Exactly one legal target → auto-resolve (including "up to N" picks like Eli / Izumi).
+    if (count($members) === 1) {
         waitOpponentMemberAtSlot($state, $opp, $members[0]['slot'], $owner);
         $state = logOpponentMembersWaitedOutcome(
             $state,

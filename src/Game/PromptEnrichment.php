@@ -904,7 +904,8 @@ function resolveOptionalDiscardPromptChoice(
                     !empty($prompt['live_start'])
                         || ($state['phase'] ?? '') === 'live_start_effects'
                 );
-                if (!empty($state['pending_prompt'])) {
+                // Only stop when a new wait pick opened; auto-wait leaves the answered discard shell.
+                if (($state['pending_prompt']['type'] ?? '') === 'wait_opponent_stage_pick') {
                     return $state;
                 }
             } elseif (($then['type'] ?? '') === 'look_reveal_group_bladeless') {

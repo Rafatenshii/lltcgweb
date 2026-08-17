@@ -470,11 +470,23 @@ global.openStageSlotPick = function openStageSlotPick(pr){
   const maxPick = Number(pr.pick_count || 1);
   const upTo = !!pr.up_to || maxPick > 1;
   if(upTo && maxPick > 1){
+    // One legal target for an "up to N" wait — resolve immediately (Eli discard→wait chain).
+    if (cards.length === 1) {
+      sendAct('resolve_prompt', { slots: [cards[0].slot] });
+      return;
+    }
+    if (cards.length === 0) {
+      sendAct('resolve_prompt', { slots: [] });
+      return;
+    }
     G.pickMarked.clear();
     const slotById = new Map(cards.map(c=>[c.instance_id, c.slot]));
+    const isOppWaitPick = pr.type === 'wait_opponent_stage_pick';
+    // When targets exist, Confirm must pick ≥1; use Cancel for "wait none" (min 0 alone allowed empty Confirm).
+    const minSel = isOppWaitPick ? 1 : 0;
     G.pickCtx={
       count: maxPick,
-      min: 0,
+      min: minSel,
       onConfirm: (ids)=>{
         const slots = ids.map(id=>slotById.get(id)).filter(Boolean);
         sendAct('resolve_prompt',{slots});
@@ -3160,6 +3172,10 @@ global.renderPrompt = function renderPrompt(s, myId){
   if((pr?.type==='optional_wr_member_deck_top_blade'||pr?.type==='live_start_center_cost_choice'||pr?.type==='wait_opponent_stage_pick')
     &&(pr.step==='pick_stage_blade'||pr.step==='pick_opp_wait')&&pr.responder===myId){
     ovl.classList.remove('open');
+    // Discard→wait chains latch submit keys on the prior optional_discard_prompt step.
+    G._promptSubmitKey = null;
+    G._resolvePromptSentKey = null;
+    G._lastResolvedPromptKey = null;
     openStageSlotPick(pr);
     return;
   }
