@@ -35,6 +35,7 @@
     G._liveStorageOutcomesPlayedKey = null;
     G._liveStorageOutcomesPlayedBluffKey = null;
     G._liveStorageOutcomesPlayedLiveKey = null;
+    G._liveShowPlayedIids = null;
     if (typeof resetMovementLedger === 'function') resetMovementLedger();
     G._liveRoundPlaybackActive = false;
     G._liveRoundPostSpectacleReady = false;
@@ -539,6 +540,17 @@
       if (typeof playLiveShowPostJudgeStorageExits === 'function') {
         await playLiveShowPostJudgeStorageExits(prev, s, G.playerId);
       }
+      commitServerBoardToUi(s);
+      const live = G.gameState || s;
+      if (!replayForward && live.pending_prompt?.responder === G.playerId
+          && typeof ensurePendingPromptSurfaced === 'function') {
+        ensurePendingPromptSurfaced(live, G.playerId);
+      }
+      if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
+        doCPU(live);
+        armWatchdog(live);
+      }
+      return;
     } else if (G._perfSpectacleActive
         && prev?.live_show?.stage
         && prev.live_show.stage !== 'done'
@@ -550,6 +562,17 @@
       if (typeof playLiveShowPostJudgeStorageExits === 'function') {
         await playLiveShowPostJudgeStorageExits(prev, s, G.playerId);
       }
+      commitServerBoardToUi(s);
+      const live = G.gameState || s;
+      if (!replayForward && live.pending_prompt?.responder === G.playerId
+          && typeof ensurePendingPromptSurfaced === 'function') {
+        ensurePendingPromptSurfaced(live, G.playerId);
+      }
+      if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
+        doCPU(live);
+        armWatchdog(live);
+      }
+      return;
     }
 
     if (spectacleGateActive && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {

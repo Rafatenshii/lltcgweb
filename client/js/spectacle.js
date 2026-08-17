@@ -666,6 +666,84 @@ function liveShowTurnFromBoards(board, prior = null) {
     ?? inferLiveShowTurn(prior, board);
 }
 
+function liveShowPlayedIidsFromBoard(board, pid) {
+  const fromShow = board?.live_show?.played_lives?.[pid];
+  if (Array.isArray(fromShow) && fromShow.length) return fromShow.filter(Boolean);
+  const snap = board?._live_played_snapshot?.[pid];
+  if (Array.isArray(snap) && snap.length) return snap.filter(Boolean);
+  return [];
+}
+
+function rememberLiveShowPlayedLives(board, prior = null) {
+  const turn = liveShowTurnFromBoards(board, prior);
+  if (turn == null) return;
+  if (!G._liveShowPlayedIids) G._liveShowPlayedIids = {};
+  if (G._liveShowPlayedIids[turn]?.p1?.length || G._liveShowPlayedIids[turn]?.p2?.length) {
+    return;
+  }
+  const out = { p1: [], p2: [] };
+  for (const pid of ['p1', 'p2']) {
+    const fromBoard = liveShowPlayedIidsFromBoard(board, pid);
+    if (fromBoard.length) {
+      out[pid] = fromBoard;
+      continue;
+    }
+    const fromPrior = liveShowPlayedIidsFromBoard(prior, pid);
+    if (fromPrior.length) {
+      out[pid] = fromPrior;
+      continue;
+    }
+    const zone = prior?.players?.[pid]?.live_zone || board?.players?.[pid]?.live_zone || [];
+    out[pid] = zone
+      .filter(c => c && (typeof isLiveTypeCard === 'function' ? isLiveTypeCard(c) : c.card_type === 'ライブ'))
+      .map(c => c.instance_id)
+      .filter(Boolean);
+  }
+  if (out.p1.length || out.p2.length) G._liveShowPlayedIids[turn] = out;
+}
+
+function liveShowPlayedIidsForPid(board, pid, prior = null) {
+  rememberLiveShowPlayedLives(board, prior);
+  const turn = liveShowTurnFromBoards(board, prior);
+  const mem = turn != null ? G._liveShowPlayedIids?.[turn]?.[pid] : null;
+  if (Array.isArray(mem) && mem.length) return mem;
+  const fromBoard = liveShowPlayedIidsFromBoard(board, pid);
+  if (fromBoard.length) return fromBoard;
+  return liveShowPlayedIidsFromBoard(prior, pid);
+}
+
+function hydratePlayedLiveCard(state, pid, iid, extraBoards = []) {
+  if (!iid) return null;
+  const boards = [state, G._deferPerfSpectaclePrev, G._livePostRevealBoard, ...extraBoards];
+  for (const board of boards) {
+    if (!board?.players?.[pid]) continue;
+    const pools = [
+      board.players[pid].live_zone,
+      board.players[pid].success_lives,
+      board.players[pid].waiting_room,
+    ];
+    for (const pool of pools) {
+      for (const c of pool || []) {
+        if (c?.instance_id !== iid) continue;
+        let card = c;
+        if (typeof isLiveTypeCard === 'function' && !isLiveTypeCard(card)
+            && typeof hydrateSpectacleLiveCard === 'function') {
+          card = hydrateSpectacleLiveCard(state || board, pid, c) || card;
+        }
+        if (typeof isLiveTypeCard === 'function' && !isLiveTypeCard(card)) continue;
+        return { ...card, revealed: true };
+      }
+    }
+  }
+  if (typeof perfFindRevealedLiveMeta === 'function') {
+    for (const board of boards) {
+      const meta = perfFindRevealedLiveMeta(board, pid, iid);
+      if (meta) return { ...meta, instance_id: iid, revealed: true };
+    }
+  }
+  return null;
+}
+
 function liveStorageRevealDoneForTurn(turn) {
   return turn != null && !!G._liveStorageRevealDoneTurns?.has(turn);
 }
@@ -1918,6 +1996,15 @@ function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
   if (!next?.players?.[pid]) return [];
   if (isLiveSetPlacementOnly(prev, next)) return [];
   const turn = showTurn ?? inferLiveShowTurn(prev, next);
+  const lockIds = typeof liveShowPlayedIidsForPid === 'function'
+    ? liveShowPlayedIidsForPid(next, pid, prev)
+    : [];
+  if (lockIds?.length) {
+    const cards = lockIds
+      .map(iid => hydratePlayedLiveCard(next, pid, iid, [prev]))
+      .filter(Boolean);
+    if (cards.length) return clampLiveZoneCards(cards);
+  }
   if (!playerHadLivePerformance(next, pid, prev, turn)) return [];
   const deferred = G._deferPerfSpectaclePrev;
   const okIds = perfLivePerfSuccessIds(next, pid);
@@ -1957,11 +2044,10 @@ function collectPerfRoundLiveCards(next, pid, prev = null, showTurn = null) {
   const shouldScanSettled = !!(okIds?.size || yellIds.size || roundIids.size
     || (performed && (logSuccess > 0 || logFail > 0 || playerLiveRoundSucceeded(next, pid))));
   if (shouldScanSettled) {
-    const allowSettled = (c) => !c?.instance_id
-      || !okIds?.size
-      || okIds.has(c.instance_id)
-      || roundIids.has(c.instance_id)
-      || yellIds.has(c.instance_id);
+    const allowSettled = (c) => !!c?.instance_id
+      && (!!(okIds?.has(c.instance_id))
+        || roundIids.has(c.instance_id)
+        || yellIds.has(c.instance_id));
     (next.players[pid].success_lives || []).forEach(c => {
       if (allowSettled(c)) add(c);
     });
@@ -3295,6 +3381,15 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
   let needsLiveReveal = plan.needsLiveReveal;
   let wantsSpectacle = plan.wantsSpectacle;
   const showTurnForReveal = opts.forceSpectacleTurn ?? plan.showTurn ?? inferLiveShowTurn(prev, next);
+  rememberLiveShowPlayedLives(next, prev);
+  // Sealed Main poll must not replay Performance splash + Live-storage flips.
+  if (typeof isMainOrActivePhase === 'function' && isMainOrActivePhase(next?.phase)
+      && showTurnForReveal != null
+      && (liveShowPerformancePresentedForTurn(showTurnForReveal) || liveSpectacleDoneForTurn(showTurnForReveal))
+      && !G._liveStorageOutcomePending && !G._liveWrDiscardInProgress) {
+    TCG_DEBUG.log('live', 'presentLiveRound skip (Main after sealed show)', { showTurn: showTurnForReveal });
+    return { reveal: false, spectacle: false, empty: false };
+  }
   // Match the gate: if reveal was falsely sealed but opp storage is still face-down, re-arm flips
   // BEFORE the no-plan early return (otherwise sealed turns never recover).
   if (showTurnForReveal != null
@@ -3748,6 +3843,7 @@ function rememberPerfSpectacleBaseline(prev, next) {
     G._liveStorageOutcomesPlayedBluffKey = null;
     G._liveStorageOutcomesPlayedLiveKey = null;
     G._spectatorHiddenRevealBeats = null;
+    G._liveShowPlayedIids = null;
     if (typeof resetMovementLedger === 'function') resetMovementLedger();
   }
   if (isLeavingLiveSetPhase(prev, next)) {
@@ -4270,7 +4366,9 @@ function ensurePendingPromptSurfaced(s, myId) {
   }
   G._lastSurfacedPromptKey = surfKey;
   if (isLiveSuccessDiscardPrompt(s)) clearLiveSuccessHandDeferral(s);
-  if (pr.type === 'pick_judge_success_live') G._deferPerfSpectaclePrev = null;
+  if (pr.type === 'pick_judge_success_live') {
+    rememberLiveShowPlayedLives(s, G.gameState);
+  }
   // Never downgrade G.gameState to an older seq.
   if ((G.gameState?.seq ?? 0) > snapSeq) {
     renderPrompt(G.gameState, myId);
@@ -6651,6 +6749,14 @@ function perfFindRevealedLiveMeta(state, pid, instanceId) {
 function perfSpectacleLiveCards(prev, next, pid) {
   perfCacheLiveReveal(next);
   perfCacheLiveReveal(prev);
+  rememberLiveShowPlayedLives(next, prev);
+  const lockIds = liveShowPlayedIidsForPid(next, pid, prev);
+  if (lockIds?.length) {
+    const locked = lockIds
+      .map(iid => hydratePlayedLiveCard(next, pid, iid, [prev]))
+      .filter(Boolean);
+    if (locked.length) return clampLiveZoneLive(locked);
+  }
   const perfPrev = buildPerfSpectaclePrev(prev, next);
   const lockCards = perfMergedLiveZone(perfPrev, next, pid)
     .filter(c => isPerfSpectacleLiveSlotCard(c, next, pid));
@@ -7801,6 +7907,7 @@ function liveShowBeatKey(show) {
 
 function sealLiveShowSpectacleTurn(board, prior = null) {
   // Prefer live_show.turn (incl. prior) — board.turn is often already advanced after unset(live_show).
+  rememberLiveShowPlayedLives(board, prior);
   const turn = liveShowTurnFromBoards(board, prior);
   if (turn == null) return;
   markLiveShowPerformancePresented(turn);
@@ -7812,6 +7919,7 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
 
 /** Preserve pre-outcome storage before painting a server board that removed cards. */
 function holdLiveShowStorageBeforeOutcomePaint(prior, board) {
+  rememberLiveShowPlayedLives(board, prior);
   const stage = board?.live_show?.stage;
   if (!['outcomes', 'judge', 'done'].includes(stage)) return;
   if (!prior || typeof liveStorageHasCards !== 'function' || !liveStorageHasCards(prior)) return;

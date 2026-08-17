@@ -2266,6 +2266,7 @@ function beginPerformancePhase(array $state): array {
             'started_at' => time(),
             'stage_seq' => 1,
             'acks' => [],
+            'played_lives' => snapshotLiveShowPlayedLives($state),
         ];
         if ($revealPid) {
             $state = revealLiveStorageForPlayer($state, $revealPid);
@@ -2311,6 +2312,38 @@ function playerAttemptingLivePerformance(array $state, string $pid): bool {
         }
     }
     return false;
+}
+
+/** Instance ids of Live cards in storage — frozen for spectacle / Live Judge rows. */
+function snapshotLiveShowPlayedLives(array $state): array {
+    $out = ['p1' => [], 'p2' => []];
+    foreach (['p1', 'p2'] as $pid) {
+        foreach ($state['players'][$pid]['live_zone'] ?? [] as $c) {
+            if (!$c || !isLiveTypeCard($c)) {
+                continue;
+            }
+            $iid = (string)($c['instance_id'] ?? '');
+            if ($iid !== '') {
+                $out[$pid][] = $iid;
+            }
+        }
+    }
+    return $out;
+}
+
+function ensureLiveShowPlayedLives(array $state): array {
+    if (empty($state['live_show']) || !is_array($state['live_show'])) {
+        return $state;
+    }
+    $have = $state['live_show']['played_lives'] ?? null;
+    if (is_array($have) && (!empty($have['p1']) || !empty($have['p2']))) {
+        return $state;
+    }
+    $snap = snapshotLiveShowPlayedLives($state);
+    if ($snap['p1'] !== [] || $snap['p2'] !== []) {
+        $state['live_show']['played_lives'] = $snap;
+    }
+    return $state;
 }
 
 /**
@@ -2402,6 +2435,7 @@ function setLiveShowStage(array $state, string $stage): array {
             'stage_seq' => 0,
         ];
     }
+    $state = ensureLiveShowPlayedLives($state);
     $state['live_show']['stage'] = $stage;
     $state['live_show']['started_at'] = time();
     $state['live_show']['stage_seq'] = intval($state['live_show']['stage_seq'] ?? 0) + 1;
@@ -3654,6 +3688,12 @@ function completeLiveRoundTurnAdvance(array $state, array $meta): array {
     $kind = $meta['kind'] ?? 'judge';
     $attempting = $meta['attempting'] ?? ['p1', 'p2'];
     $successPlacedBy = $meta['success_placed_by'] ?? [];
+    $playedLives = $state['live_show']['played_lives']
+        ?? $state['_live_played_snapshot']
+        ?? null;
+    if (is_array($playedLives) && ($playedLives['p1'] ?? []) === [] && ($playedLives['p2'] ?? []) === []) {
+        $playedLives = null;
+    }
     unset($state['live_show']);
 
     if ($kind === 'empty') {
@@ -3663,6 +3703,9 @@ function completeLiveRoundTurnAdvance(array $state, array $meta): array {
     } else {
         $state['_live_perf_snapshot'] = $state['live_perf_success'] ?? ['p1' => [], 'p2' => []];
         $state['_live_round_success_snapshot'] = $state['live_round_success'] ?? [];
+        if (is_array($playedLives)) {
+            $state['_live_played_snapshot'] = $playedLives;
+        }
         // Stage + Live-Start bonus hearts for spectacle after clearLiveModifiers (#73).
         $state['_stage_hearts_snapshot'] = [
             'p1' => mergeHeartColorCounts(
@@ -5262,6 +5305,10 @@ function filterStateForPlayer(array $state, string $token): array {
         $filtered['_live_perf_snapshot'] = $state['_live_perf_snapshot'];
     }
 
+    if ($exposePerfCarryover && !empty($state['_live_played_snapshot'])) {
+        $filtered['_live_played_snapshot'] = $state['_live_played_snapshot'];
+    }
+
     if ($exposePerfCarryover && !empty($state['_live_round_success_snapshot'])) {
         $filtered['_live_round_success_snapshot'] = $state['_live_round_success_snapshot'];
     }
@@ -5275,6 +5322,7 @@ function filterStateForPlayer(array $state, string $token): array {
             $filtered['live_perf_success'],
             $filtered['live_round_success'],
             $filtered['_live_perf_snapshot'],
+            $filtered['_live_played_snapshot'],
             $filtered['_live_round_success_snapshot'],
             $filtered['_yell_reveal_snapshot'],
             $filtered['_yell_blade_snapshot'],

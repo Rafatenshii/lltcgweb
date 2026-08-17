@@ -618,6 +618,9 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
     if ($exposePerfCarryover && !empty($state['_live_perf_snapshot'])) {
         $filtered['_live_perf_snapshot'] = $state['_live_perf_snapshot'];
     }
+    if ($exposePerfCarryover && !empty($state['_live_played_snapshot'])) {
+        $filtered['_live_played_snapshot'] = $state['_live_played_snapshot'];
+    }
     if ($exposePerfCarryover && !empty($state['_live_round_success_snapshot'])) {
         $filtered['_live_round_success_snapshot'] = $state['_live_round_success_snapshot'];
     }
@@ -629,6 +632,7 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
             $filtered['live_perf_success'],
             $filtered['live_round_success'],
             $filtered['_live_perf_snapshot'],
+            $filtered['_live_played_snapshot'],
             $filtered['_live_round_success_snapshot'],
             $filtered['_yell_reveal_snapshot'],
             $filtered['_yell_blade_snapshot'],

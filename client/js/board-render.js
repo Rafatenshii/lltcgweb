@@ -757,6 +757,14 @@ async function runLiveStorageRevealSequence(prev, final, myId, opts = {}) {
     TCG_DEBUG.log('live', 'reveal sequence skip (already done for turn)', { showTurn });
     return true;
   }
+  if (typeof isMainOrActivePhase === 'function' && isMainOrActivePhase(final?.phase)
+      && showTurn != null
+      && ((typeof liveSpectacleDoneForTurn === 'function' && liveSpectacleDoneForTurn(showTurn))
+          || (typeof liveShowPerformancePresentedForTurn === 'function' && liveShowPerformancePresentedForTurn(showTurn)))
+      && !G._liveStorageOutcomePending) {
+    TCG_DEBUG.log('live', 'reveal sequence skip (Main after sealed show)', { showTurn });
+    return true;
+  }
   if (!liveRoundHasLiveCards(prev) && !liveRoundHasLiveCards(final) && !liveStorageHasCards(prev)) return false;
   const playback = deepCloneState(prev);
   const flipKeys = new Set();

@@ -65,6 +65,8 @@ final class SequentialLiveShowTest extends TestCase
 
         $this->assertSame('reveal', $state['live_show']['stage'] ?? null);
         $this->assertSame('p1', $state['live_show']['performer'] ?? null);
+        $this->assertSame(['p1-live'], $state['live_show']['played_lives']['p1'] ?? null);
+        $this->assertSame(['p2-live'], $state['live_show']['played_lives']['p2'] ?? null);
         $this->assertSame('live_start_effects', $state['phase'] ?? null);
         $this->assertTrue(!empty($state['players']['p1']['live_zone'][0]['revealed']));
         $this->assertFalse(!empty($state['players']['p2']['live_zone'][0]['revealed']));
@@ -78,6 +80,22 @@ final class SequentialLiveShowTest extends TestCase
         );
         // Live Start skills must not run until the reveal beat is acknowledged.
         $this->assertNull($state['pending_prompt'] ?? null);
+    }
+
+    public function testPlayedLivesSnapshotIgnoresMemberBluffs(): void
+    {
+        $state = $this->state();
+        $state['players']['p1']['live_zone'][] = [
+            'instance_id' => 'p1-bluff',
+            'card_type' => 'メンバー',
+            'card_type_en' => 'Member',
+            'group' => 'Nijigasaki',
+            'name_en' => 'Bluff',
+            'revealed' => false,
+        ];
+        $state = \beginPerformancePhase($state);
+        $this->assertSame(['p1-live'], $state['live_show']['played_lives']['p1'] ?? null);
+        $this->assertNotContains('p1-bluff', $state['live_show']['played_lives']['p1'] ?? []);
     }
 
     public function testSecondPerformerStaysFaceDownUntilAfterFirstYell(): void
