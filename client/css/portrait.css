@@ -8,9 +8,9 @@
 html.tcg-portrait-play,
 html.tcg-portrait-play body{
   width:100%;
-  height:100%;
-  min-height:100dvh;
-  max-height:100dvh;
+  height:var(--tcg-vv-height, 100dvh);
+  min-height:var(--tcg-vv-height, 100dvh);
+  max-height:var(--tcg-vv-height, 100dvh);
   overflow:hidden;
   overscroll-behavior:none;
   -webkit-text-size-adjust:100%;
@@ -42,6 +42,8 @@ html.tcg-portrait-play.tcg-mobile-portrait #opp-skill-wait-banner{
   pointer-events:auto!important;
 }
 html.tcg-portrait-play #tcg-phone-fs-btn{display:none!important}
+html.tcg-portrait-play.tcg-phone-device #tcg-phone-fs-btn.show,
+html.tcg-portrait-play #tcg-phone-fs-btn.show{display:block!important}
 html.tcg-portrait-play #llc-sky-bg{opacity:.55}
 
 /* ═══════════════════════════════════════════
@@ -1168,8 +1170,8 @@ html.tcg-portrait-play #screen-game.active{
   display:flex!important;
   flex-direction:column;
   width:100%;
-  height:100%;
-  max-height:100dvh;
+  height:var(--tcg-vv-height, 100dvh);
+  max-height:var(--tcg-vv-height, 100dvh);
   overflow:hidden;
   padding:0;
   box-sizing:border-box;
@@ -2158,14 +2160,18 @@ html.tcg-portrait-play #screen-game #card-hover-panel{
   display:none!important;
   position:fixed!important;
   left:50%!important;
-  /* Below opp hand; grow with content — do not stretch to the floor */
-  top: calc(var(--p-hand-opp, 72px) + 12px)!important;
+  /* Stay inside the visible viewport (Safari toolbars shrink visualViewport). */
+  top: calc(var(--p-hand-opp, 72px) + 10px + var(--tcg-chrome-top, 0px))!important;
   bottom:auto!important;
   transform:translateX(-50%)!important;
   width:min(94vw,400px)!important;
   height:auto!important;
-  /* Cap just above the hand; scroll only if skill text would cover it */
-  max-height: calc(100dvh - var(--p-hand-opp, 72px) - var(--p-hand-mine, 90px) - 52px)!important;
+  max-height: calc(
+    var(--tcg-vv-height, 100svh)
+    - var(--p-hand-opp, 72px)
+    - var(--p-hand-mine, 90px)
+    - 20px
+  )!important;
   z-index:93000!important;
   overflow-x:hidden!important;
   overflow-y:auto!important;
@@ -2189,8 +2195,8 @@ html.tcg-portrait-play #screen-game.portrait-play-selecting .card-hover-panel{
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-img{
   display:block;
-  max-width:min(200px,52vw);
-  max-height:min(30vh,260px);
+  max-width:min(180px,48vw);
+  max-height:min(22vh,200px);
   width:auto;
   margin:0 auto 6px;
   flex:0 0 auto;
@@ -2206,8 +2212,9 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-stats{
   flex:0 0 auto;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-text{
-  flex:0 1 auto;
-  overflow:visible!important;
+  flex:1 1 auto;
+  overflow-y:auto!important;
+  min-height:0;
   max-height:none!important;
   font-size:12px;
   line-height:1.35;
@@ -2249,6 +2256,12 @@ html.tcg-portrait-play #screen-game #hc-actions{
   max-width:320px;
   flex:0 0 auto;
   box-sizing:border-box;
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  padding-top:8px;
+  padding-bottom:max(4px, var(--tcg-chrome-bottom, 0px));
+  background:rgba(8,12,24,.97);
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow .btn-smol,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow button,
@@ -2267,6 +2280,11 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place{
   max-width:320px;
   margin:12px auto 0;
   flex:0 0 auto;
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  padding-bottom:max(4px, var(--tcg-chrome-bottom, 0px));
+  background:rgba(8,12,24,.97);
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place.show,
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place:not([hidden]){
@@ -2285,6 +2303,13 @@ html.tcg-portrait-play #portrait-play-scrim{
   display:none!important;
   pointer-events:none!important;
   background:transparent!important;
+}
+
+/* Inspect must not cover discard / Confirm on skill and hand-pick overlays. */
+html.tcg-portrait-play body:has(#overlay-hand-pick.open) #screen-game #card-hover-panel,
+html.tcg-portrait-play body:has(#overlay-prompt.open) #screen-game #card-hover-panel,
+html.tcg-portrait-play body:has(#overlay-pick.open) #screen-game #card-hover-panel{
+  display:none!important;
 }
 html.tcg-portrait-play #screen-game.portrait-play-selecting #portrait-play-scrim{
   display:none!important;
@@ -2623,7 +2648,9 @@ html.tcg-portrait-play .overlay.open.hand-pick-overlay{
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px))!important;
+  z-index:96000;
+  padding:max(12px,env(safe-area-inset-top,0px),var(--tcg-chrome-top,0px)) 12px
+    max(12px,env(safe-area-inset-bottom,0px),var(--tcg-chrome-bottom,0px))!important;
   box-sizing:border-box;
 }
 html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open,
@@ -2637,10 +2664,10 @@ html.tcg-portrait-play .overlay.open .prompt-branch-box,
 html.tcg-portrait-play .overlay.open .coin-mbox{
   width:min(92vw,420px);
   max-width:min(92vw,420px);
-  max-height:min(82dvh,720px);
+  max-height:min(82dvh, var(--tcg-vv-height, 720px), 720px);
   margin:0 auto!important;
   border-radius:16px!important;
-  padding:16px 16px max(16px,env(safe-area-inset-bottom,0px));
+  padding:16px 16px max(16px,env(safe-area-inset-bottom,0px),var(--tcg-chrome-bottom,0px));
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   box-sizing:border-box;
@@ -2653,6 +2680,18 @@ html.tcg-portrait-play #overlay-mull.open .mbox,
 html.tcg-portrait-play .overlay.open .hand-pick-shell{
   width:min(96vw,520px);
   max-width:min(96vw,520px);
+}
+html.tcg-portrait-play .hand-pick-actions{
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding-top:10px;
+  padding-bottom:max(8px, var(--tcg-chrome-bottom, 0px));
+  background:rgba(8,12,24,.97);
 }
 html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox,
 html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell{

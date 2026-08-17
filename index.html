@@ -108,7 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
-<link rel="stylesheet" href="client/css/portrait.css?v=78">
+<link rel="stylesheet" href="client/css/portrait.css?v=79">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -17266,6 +17266,7 @@ function tcgApplyPortraitPlayState(w = window.innerWidth, h = window.innerHeight
 function bindMobileViewport() {
   const hint = el('tcg-mobile-rotate-hint');
   const sync = () => {
+    tcgSyncVisualViewportChrome();
     const root = document.documentElement;
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -17331,12 +17332,41 @@ function bindMobileViewport() {
   window.addEventListener('orientationchange', sync, { passive: true });
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', sync, { passive: true });
+    window.visualViewport.addEventListener('scroll', sync, { passive: true });
   }
 }
 
 function tcgPortraitPlayActive() {
   return document.documentElement.classList.contains('tcg-portrait-play')
     || document.documentElement.dataset.tcgPortraitPlay === '1';
+}
+
+/** Map the visible viewport (Safari / Chrome toolbars) into CSS vars. */
+function tcgSyncVisualViewportChrome() {
+  const root = document.documentElement;
+  const vv = window.visualViewport;
+  const layoutW = Math.max(1, window.innerWidth || 0);
+  const layoutH = Math.max(1, window.innerHeight || 0);
+  if (!vv) {
+    root.style.setProperty('--tcg-vv-top', '0px');
+    root.style.setProperty('--tcg-vv-left', '0px');
+    root.style.setProperty('--tcg-vv-width', layoutW + 'px');
+    root.style.setProperty('--tcg-vv-height', layoutH + 'px');
+    root.style.setProperty('--tcg-chrome-top', '0px');
+    root.style.setProperty('--tcg-chrome-bottom', '0px');
+    return;
+  }
+  const top = Math.max(0, vv.offsetTop || 0);
+  const left = Math.max(0, vv.offsetLeft || 0);
+  const height = Math.max(1, Math.round(vv.height || layoutH));
+  const width = Math.max(1, Math.round(vv.width || layoutW));
+  const chromeBottom = Math.max(0, Math.round(layoutH - top - height));
+  root.style.setProperty('--tcg-vv-top', Math.round(top) + 'px');
+  root.style.setProperty('--tcg-vv-left', Math.round(left) + 'px');
+  root.style.setProperty('--tcg-vv-width', width + 'px');
+  root.style.setProperty('--tcg-vv-height', height + 'px');
+  root.style.setProperty('--tcg-chrome-top', Math.round(top) + 'px');
+  root.style.setProperty('--tcg-chrome-bottom', chromeBottom + 'px');
 }
 
 function tcgIsSmallPhone() {
@@ -17353,8 +17383,11 @@ function tcgFullscreenActive() {
 }
 
 async function tcgRequestFullscreen() {
-  if (!tcgIsSmallPhone() || !tcgFullscreenSupported() || tcgFullscreenActive()) {
+  if (!tcgFullscreenSupported() || tcgFullscreenActive()) {
     return tcgFullscreenActive();
+  }
+  if (!tcgIsSmallPhone() && !tcgPortraitPlayActive()) {
+    return false;
   }
   const root = document.documentElement;
   try {
@@ -17374,11 +17407,13 @@ function tcgUpdatePhoneFsUI() {
   if (!btn) return;
   const gameActive = el('screen-game')?.classList.contains('active');
   const landscapeGame = root.classList.contains('tcg-phone-landscape');
-  const show = tcgIsSmallPhone()
-    && tcgFullscreenSupported()
+  const portraitGame = tcgPortraitPlayActive();
+  const canFs = tcgFullscreenSupported();
+  const show = canFs
     && !native
-    && (gameActive || landscapeGame);
-  btn.hidden = !tcgIsSmallPhone() || !tcgFullscreenSupported();
+    && gameActive
+    && (tcgIsSmallPhone() || landscapeGame || portraitGame);
+  btn.hidden = !canFs || !(tcgIsSmallPhone() || portraitGame);
   btn.classList.toggle('show', show);
 }
 
@@ -17610,7 +17645,9 @@ function bindPhoneFullscreen() {
   document.addEventListener('webkitfullscreenchange', onFsChange);
   btn?.addEventListener('click', () => { tcgRequestFullscreen(); });
   document.addEventListener('pointerdown', (e) => {
-    if (G._phoneFsAutoAttempted || !tcgIsSmallPhone() || tcgFullscreenActive()) return;
+    if (G._phoneFsAutoAttempted || tcgFullscreenActive()) return;
+    if (!tcgIsSmallPhone() && !tcgPortraitPlayActive()) return;
+    if (!tcgFullscreenSupported()) return;
     if (!el('screen-game')?.classList.contains('active')) return;
     if (e.target?.closest?.('#tcg-phone-fs-btn, .overlay.open, .mbox')) return;
     G._phoneFsAutoAttempted = true;
