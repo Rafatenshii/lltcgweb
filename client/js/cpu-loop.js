@@ -966,6 +966,7 @@ const CPU_NO_GENERIC_YESNO = new Set([
   'spbp5_wait_discard_surveil', 'bp5_wait_discard_look_reveal', 'bp5_discard_pay_wr_live_score',
   'optional_wait_self_look_reveal',
   'optional_wait_group_member_blade', 'optional_wait_up_to_group_live_score',
+  'wait_other_group_draw', 'optional_wait_group_member_draw_discard',
   'activate_members_pick', 'auto_on_ally_wait_activate_blade',
   'spbp5_wait_draw_discard', 'spbp5_wait_or_discard_activate',
   'sbp5_discard_bladeless_wr_live', 'sbp5_live_start_discard_heart',
@@ -3832,6 +3833,15 @@ function cpuResolveStepPrompt(pr, cpu, tier, winPressure, read) {
       }
     }
     return cpuResolveWaitDiscardLookReveal(pr, cpu, tier, winPressure, read);
+  }
+  if (pr.type === 'wait_other_group_draw') {
+    const id = pr.stage_members?.[0]?.instance_id;
+    if (id) {
+      cpuAct('resolve_prompt', { member_id: id });
+      return true;
+    }
+    cpuAct('resolve_prompt', { choice: 'skip' });
+    return true;
   }
   if (pr.type === 'optional_wait_group_member_draw_discard') {
     if (pr.step === 'pick_member') {

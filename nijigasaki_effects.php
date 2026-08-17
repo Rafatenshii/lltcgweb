@@ -269,22 +269,17 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
             break;
 
         case 'wait_other_group_draw':
-            $group = $ab['group'] ?? 'Nijigasaki';
-            $srcId = $source['instance_id'] ?? '';
-            $waited = false;
-            foreach ($p['stage'] as &$mbr) {
-                if (!$mbr || ($mbr['instance_id'] ?? '') === $srcId) continue;
-                if (($mbr['group'] ?? '') !== $group) continue;
-                waitMember($mbr, $state);
-                $waited = true;
-                break;
-            }
-            unset($mbr);
-            if ($waited) {
-                $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] Waited other $group Member; drew $drawn.");
-            }
+            // resolveAbilityEffect path (non-activated); activated uses nijiResolveActivatedEffectBody.
+            $state = nijiBeginWaitOtherGroupDraw(
+                $state,
+                $pid,
+                $p,
+                $source,
+                null,
+                $ab,
+                intval($ctx['ability_index'] ?? 0),
+                $name
+            );
             break;
 
         case 'optional_discard_activate_wait_blade':
@@ -782,23 +777,8 @@ function nijiResolveActivatedEffectBody(
         return $state;
     }
     if ($type === 'wait_other_group_draw') {
-        $group = $ab['group'] ?? 'Nijigasaki';
-        $srcId = $member['instance_id'] ?? '';
-        $waited = false;
-        foreach ($p['stage'] as &$mbr) {
-            if (!$mbr || ($mbr['instance_id'] ?? '') === $srcId) continue;
-            if (($mbr['group'] ?? '') !== $group) continue;
-            waitMember($mbr, $state);
-            $waited = true;
-            break;
-        }
-        unset($mbr);
-        if ($waited) {
-            $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
-            $p['stage'][$slot] = $member;
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                " — [" . ($member['name_en'] ?? $member['name']) . "] Waited other $group Member; drew $drawn.");
-        }
+        $name = $member['name_en'] ?? $member['name'] ?? 'Member';
+        $state = nijiBeginWaitOtherGroupDraw($state, $pid, $p, $member, $slot, $ab, $abilityIdx, $name);
         return $state;
     }
     if ($type === 'discard_member_add_lower_wr_member') {
@@ -1027,10 +1007,127 @@ function nijiApplyPositionChangeOffCenter(array &$p, string $sourceId): bool {
     return false;
 }
 
+/**
+ * Emma BP3-008 etc.: put 1 other Active group Member into Wait, then draw.
+ * Official rules: cannot "Wait" a Member already in Wait — waitMember() is a no-op
+ * for those, so candidates must exclude Wait Members and the player must pick.
+ *
+ * @param mixed $slot Stage slot of the source Member, or null for resolveAbilityEffect path
+ */
+function nijiBeginWaitOtherGroupDraw(
+    array $state,
+    string $pid,
+    array &$p,
+    array $source,
+    $slot,
+    array $ab,
+    int|string $abilityIdx,
+    string $name
+): array {
+    $group = $ab['group'] ?? 'Nijigasaki';
+    $srcId = (string)($source['instance_id'] ?? '');
+    $cands = listOtherGroupStageMembersNotWaiting($p, $group, $srcId);
+    if ($cands === []) {
+        throw new Exception("No other Active $group Member on Stage to put into Wait");
+    }
+    if (count($cands) === 1) {
+        return nijiApplyWaitOtherGroupDraw(
+            $state,
+            $pid,
+            [
+                'source_id'     => $srcId,
+                'source_slot'   => $slot,
+                'source_name'   => $name,
+                'ability_index' => $abilityIdx,
+                'ability'       => $ab,
+                'group'         => $group,
+            ],
+            (string)($cands[0]['instance_id'] ?? '')
+        );
+    }
+    if ($slot !== null && isset($p['stage'][$slot])) {
+        $p['stage'][$slot] = $source;
+    }
+    $state['pending_prompt'] = [
+        'type'          => 'wait_other_group_draw',
+        'step'          => 'pick_member',
+        'owner'         => $pid,
+        'responder'     => $pid,
+        'source_id'     => $srcId,
+        'source_slot'   => $slot,
+        'source_name'   => $name,
+        'ability_index' => $abilityIdx,
+        'group'         => $group,
+        'stage_members' => $cands,
+        'prompt'        => "Choose 1 other Active $group Member to put into Wait: draw 1.",
+        'ability'       => $ab,
+    ];
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        " — [$name] choose another Active $group Member to put into Wait.");
+    $state['seq'] = intval($state['seq'] ?? 0) + 1;
+    return $state;
+}
+
+function nijiApplyWaitOtherGroupDraw(array $state, string $pid, array $prompt, string $memberId): array {
+    if ($memberId === '') {
+        throw new Exception('Choose a Member on Stage to put into Wait');
+    }
+    $p = &$state['players'][$pid];
+    $ability = $prompt['ability'] ?? [];
+    $group = $prompt['group'] ?? $ability['group'] ?? 'Nijigasaki';
+    $srcId = (string)($prompt['source_id'] ?? '');
+    $name = $prompt['source_name'] ?? 'Member';
+    $drawN = intval($ability['draw'] ?? 1);
+    $abilityIdx = $prompt['ability_index'] ?? $prompt['ability_idx'] ?? 0;
+
+    $waited = false;
+    foreach ($p['stage'] as &$mbr) {
+        if (!$mbr || ($mbr['instance_id'] ?? '') !== $memberId) {
+            continue;
+        }
+        if (($mbr['instance_id'] ?? '') === $srcId) {
+            throw new Exception('Cannot put this Member into Wait for its own ability');
+        }
+        if (($mbr['group'] ?? '') !== $group) {
+            throw new Exception("Choose a $group Member");
+        }
+        if (memberIsInWait($mbr)) {
+            throw new Exception('That Member is already in Wait');
+        }
+        waitMember($mbr, $state);
+        $waited = true;
+        break;
+    }
+    unset($mbr);
+    if (!$waited) {
+        throw new Exception('Member not on Stage');
+    }
+
+    $drawn = drawCardsForPlayer($state, $pid, $drawN);
+    $srcSlot = $prompt['source_slot'] ?? findMemberSlot($p, $srcId);
+    if ($srcSlot !== null && !empty($p['stage'][$srcSlot])) {
+        markAbilityUsed($p['stage'][$srcSlot], $abilityIdx);
+    }
+    unset($state['pending_prompt']);
+    $state = addLog($state, $state['players'][$pid]['name'] .
+        " — [$name] Waited other $group Member; drew $drawn.");
+    $state['seq'] = intval($state['seq'] ?? 0) + 1;
+    return $state;
+}
+
 function nijiHandlePrompt(array $state, string $promptType, array $prompt, string $choice, array $data): ?array {
     $owner = $prompt['owner'] ?? '';
     $ownerP = &$state['players'][$owner];
     $ability = $prompt['ability'] ?? [];
+
+    if ($promptType === 'wait_other_group_draw') {
+        $mid = (string)($data['member_id'] ?? $data['card_id'] ?? '');
+        if ($mid === '' && !empty($data['slot'])) {
+            $mid = trim((string)($ownerP['stage'][$data['slot']]['instance_id'] ?? ''));
+        }
+        $state = nijiApplyWaitOtherGroupDraw($state, $owner, $prompt, $mid);
+        return finishPromptEffects($state);
+    }
 
     if ($promptType === 'activate_wr_member_pick') {
         $step = $prompt['step'] ?? 'pick_member';

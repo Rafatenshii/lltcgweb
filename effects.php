@@ -3802,6 +3802,18 @@ function listGroupStageMembersNotWaiting(array $p, string $group): array {
     return $out;
 }
 
+/** Active (not Wait) Members of $group on Stage, excluding $excludeId (Emma etc.). */
+function listOtherGroupStageMembersNotWaiting(array $p, string $group, string $excludeId = ''): array {
+    $out = [];
+    foreach (listGroupStageMembersNotWaiting($p, $group) as $row) {
+        if ($excludeId !== '' && ($row['instance_id'] ?? '') === $excludeId) {
+            continue;
+        }
+        $out[] = $row;
+    }
+    return $out;
+}
+
 function listActiveStageMembers(array $p): array {
     $out = [];
     foreach ($p['stage'] as $slot => $mbr) {

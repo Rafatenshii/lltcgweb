@@ -2268,6 +2268,20 @@ global.renderPrompt = function renderPrompt(s, myId){
   }
   closeM('overlay-surveil');
   if (renderPromptBp7Pick(s, myId, pr)) return;
+  if (pr?.type === 'wait_other_group_draw' && pr.responder === myId) {
+    ovl.classList.remove('open');
+    const members = pr.stage_members || [];
+    if (!members.length) {
+      sendAct('resolve_prompt', { choice: 'skip' });
+      return;
+    }
+    openOppActiveMemberPick({
+      ...pr,
+      stage_members: members,
+      prompt: promptDisplayText(pr, `Choose 1 other Active ${pr.group || 'Nijigasaki'} Member to put into Wait.`, s),
+    });
+    return;
+  }
   if (pr?.type === 'optional_wait_group_member_draw_discard' && pr.step === 'pick_member' && pr.responder === myId) {
     ovl.classList.remove('open');
     const members = pr.stage_members || [];

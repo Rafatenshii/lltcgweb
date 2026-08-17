@@ -163,6 +163,7 @@ function isSelfActivationPromptType(string $type): bool {
         'optional_wait_group_member_draw_discard',
         'optional_wait_group_member_blade',
         'optional_wait_up_to_group_live_score',
+        'wait_other_group_draw',
         'auto_on_ally_wait_activate_blade',
         'optional_position_change_all_muse',
         'optional_formation_change_group',
@@ -286,6 +287,10 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
                 return $id !== '' ? ['member_id' => $id] : ['choice' => 'no'];
             }
             return ['choice' => 'no'];
+
+        case 'wait_other_group_draw':
+            $id = $prompt['stage_members'][0]['instance_id'] ?? '';
+            return $id !== '' ? ['member_id' => $id] : ['choice' => 'skip'];
 
         case 'effect_discard_hand':
             $need = intval($prompt['count'] ?? 1);

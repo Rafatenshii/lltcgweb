@@ -287,4 +287,105 @@ final class NijiWaitActivateAndLiveBugsTest extends TestCase
         $this->assertTrue(!empty($state['players']['p1']['_niji_turn_flags']['activated_wait_member']));
         $this->assertCount(2, $state['players']['p1']['waiting_room']);
     }
+
+    public function testEmmaBp3008ActivatedWaitsActiveMemberNotAlreadyWaiting(): void
+    {
+        $emma = $this->cardByNo('PL!N-bp3-008-SEC', 'emma_sec');
+        $kanata = $this->cardByNo('PL!N-pb1-006-R', 'kanata1');
+        $mia = $this->cardByNo('PL!N-pb1-011-R', 'mia1');
+        $mia['abilities'] = [];
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 3,
+            'active_player' => 'p1',
+            'first_player' => 'p1',
+            'players' => $this->basePlayers(),
+        ];
+        waitMember($kanata, $state);
+        $state['players']['p1']['stage']['center'] = $emma;
+        $state['players']['p1']['stage']['left'] = $kanata;
+        $state['players']['p1']['stage']['right'] = $mia;
+        $state['players']['p1']['main_deck'] = [
+            ['instance_id' => 'draw1', 'card_type' => 'メンバー', 'name_en' => 'Draw'],
+        ];
+        $handBefore = count($state['players']['p1']['hand'] ?? []);
+
+        $state = applyAction($state, 'p1', 'activate_ability', [
+            'card_id' => 'emma_sec',
+            'ability_index' => 0,
+        ]);
+
+        // Only Mia is Active — auto-resolve without a pick prompt.
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertTrue(memberIsInWait($state['players']['p1']['stage']['left']));
+        $this->assertTrue(memberIsInWait($state['players']['p1']['stage']['right']), 'Mia must be put into Wait');
+        $this->assertSame($handBefore + 1, count($state['players']['p1']['hand']));
+    }
+
+    public function testEmmaBp3008ActivatedCannotTargetAlreadyWaitingWhenOnlyWaitTargets(): void
+    {
+        $emma = $this->cardByNo('PL!N-bp3-008-SEC', 'emma_sec');
+        $kanata = $this->cardByNo('PL!N-pb1-006-R', 'kanata1');
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 3,
+            'active_player' => 'p1',
+            'first_player' => 'p1',
+            'players' => $this->basePlayers(),
+        ];
+        waitMember($kanata, $state);
+        $state['players']['p1']['stage']['center'] = $emma;
+        $state['players']['p1']['stage']['left'] = $kanata;
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/No other Active/');
+        applyAction($state, 'p1', 'activate_ability', [
+            'card_id' => 'emma_sec',
+            'ability_index' => 0,
+        ]);
+    }
+
+    public function testEmmaBp3008ActivatedPromptsWhenMultipleActiveTargets(): void
+    {
+        $emma = $this->cardByNo('PL!N-bp3-008-SEC', 'emma_sec');
+        $a = $this->cardByNo('PL!N-bp3-009-P', 'rina1');
+        $b = $this->cardByNo('PL!N-pb1-011-R', 'mia1');
+        $b['abilities'] = [];
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 3,
+            'active_player' => 'p1',
+            'first_player' => 'p1',
+            'players' => $this->basePlayers(),
+        ];
+        $state['players']['p1']['stage']['center'] = $emma;
+        $state['players']['p1']['stage']['left'] = $a;
+        $state['players']['p1']['stage']['right'] = $b;
+        $state['players']['p1']['main_deck'] = [
+            ['instance_id' => 'draw1', 'card_type' => 'メンバー', 'name_en' => 'Draw'],
+        ];
+
+        $state = applyAction($state, 'p1', 'activate_ability', [
+            'card_id' => 'emma_sec',
+            'ability_index' => 0,
+        ]);
+        $this->assertSame('wait_other_group_draw', $state['pending_prompt']['type'] ?? null);
+        $this->assertCount(2, $state['pending_prompt']['stage_members'] ?? []);
+
+        $state = applyAction($state, 'p1', 'resolve_prompt', [
+            'member_id' => 'mia1',
+        ]);
+        $this->assertNull($state['pending_prompt'] ?? null);
+        $this->assertFalse(memberIsInWait($state['players']['p1']['stage']['left']));
+        $this->assertTrue(memberIsInWait($state['players']['p1']['stage']['right']));
+        $this->assertCount(1, $state['players']['p1']['hand']);
+    }
 }
