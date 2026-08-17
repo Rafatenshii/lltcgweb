@@ -706,6 +706,10 @@ function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
     if (id) { cpuAct('resolve_prompt', { pick_id: id }); return true; }
     if (pr.choices?.includes('skip')) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
   }
+  if (pr.type === 'optional_stage_reposition') {
+    const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
+    if (cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read, ae)) return true;
+  }
   const slotCands = pr.self_candidates || pr.candidates || pr.stage_members || [];
   const slotPick = slotCands.find(c => c?.slot)?.slot
     || pr.target_slots?.[0] || pr.slots?.[0];
@@ -3783,11 +3787,69 @@ function cpuResolveOptionalSuccessWrLiveSwap(pr, cpu, tier) {
   return true;
 }
 
+/** Rurino PL!HS-bp5-003 leave → optional Position Change (yes/no → member → dest). */
+function cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read, ae) {
+  if (pr?.type !== 'optional_stage_reposition') return false;
+  const activeEnergy = ae ?? (cpu.energy_zone || []).filter(energyChipActive).length;
+  const hand = cpu.hand || [];
+  const step = pr.step || '';
+  const cands = (pr.candidates || []).filter(c => c && c.slot);
+
+  if (step === 'pick_member') {
+    const sorted = [...cands].sort((a, b) =>
+      (a.cost || 0) - (b.cost || 0) || (a.blade || 0) - (b.blade || 0));
+    const pick = sorted[0];
+    if (!pick) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { card_id: pick.instance_id, slot: pick.slot });
+    return true;
+  }
+
+  if (step === 'pick_dest') {
+    const from = pr.from_slot || 'center';
+    const dest = cpuPickPositionSlot(
+      { ...pr, source_slot: from, choices: pr.target_slots || ['left', 'center', 'right'] },
+      cpu, read, tier
+    ) || (pr.target_slots || [])[0];
+    if (!dest) {
+      cpuAct('resolve_prompt', { choice: 'no' });
+      return true;
+    }
+    cpuAct('resolve_prompt', { slot: dest });
+    return true;
+  }
+
+  if (!cands.length) {
+    cpuAct('resolve_prompt', { choice: 'no' });
+    return true;
+  }
+  const ab = pr.ability || { type: 'optional_stage_reposition' };
+  const score = cpuScoreOptionalAbility(ab, cpu, tier, activeEnergy, hand, winPressure, read);
+  if (score < cpuOptionalYesThreshold(tier)) {
+    cpuAct('resolve_prompt', { choice: 'no' });
+    return true;
+  }
+  if (cands.length === 1) {
+    const only = cands[0];
+    cpuAct('resolve_prompt', {
+      choice: 'yes',
+      card_id: only.instance_id,
+      slot: only.slot,
+    });
+    return true;
+  }
+  cpuAct('resolve_prompt', { choice: 'yes' });
+  return true;
+}
+
 /** Step-aware resolver for multi-part skill prompts (surveil chains, discard steps, etc.). */
 function cpuResolveStepPrompt(pr, cpu, tier, winPressure, read) {
   if (pr.type === 'optional_success_wr_live_swap') {
     return cpuResolveOptionalSuccessWrLiveSwap(pr, cpu, tier);
   }
+  if (cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read)) return true;
   if (cpuResolveHandPickPrompt(pr, cpu, tier, winPressure, read)) return true;
   if (pr.type === 'ssd1_live_start_draw') {
     if ((pr.step || '') === 'confirm' || !pr.step) {
@@ -4065,6 +4127,10 @@ function cpuResolvePromptBody(s, cpu, pr) {
     }
     cpuAct('resolve_prompt', { choice: 'no' });
     return;
+  }
+  if (pr.type === 'optional_stage_reposition') {
+    const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
+    if (cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read, ae)) return;
   }
   if(pr.type==='spbp5_repeat_mill_blade'||pr.type==='spbp5_energy_wait_opp_draw'||pr.type==='spbp5_wr_pay_add_hand'){
     const ctx = cpuAbilityCtx(cpu, tier, read, winPressure, (cpu.energy_zone || []).filter(energyChipActive).length,
@@ -5201,26 +5267,7 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
     cpuAct('resolve_prompt', { card_id: c.instance_id, slot: c.slot || '' });
     return true;
   }
-  if (pr.type === 'optional_stage_reposition') {
-    if (pr.step === 'pick_member') {
-      const c = (pr.candidates || []).find((x) => x && (x.slot || x.instance_id));
-      if (!c) {
-        cpuAct('resolve_prompt', { choice: 'no' });
-        return true;
-      }
-      cpuAct('resolve_prompt', { card_id: c.instance_id, slot: c.slot || '' });
-      return true;
-    }
-    if (pr.step === 'pick_dest') {
-      const dest = (pr.target_slots || [])[0];
-      if (!dest) {
-        cpuAct('resolve_prompt', { choice: 'no' });
-        return true;
-      }
-      cpuAct('resolve_prompt', { slot: dest });
-      return true;
-    }
-  }
+  if (cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read, ae)) return true;
   if (pr.type === 'optional_formation_change_group' && pr.step === 'assign') {
     const slots = pr.target_slots || [];
     const cur = (pr.assign_queue || [])[pr.assign_index || 0] || {};
@@ -5404,6 +5451,7 @@ async function cpuAct(type,data) {
     if (type === 'anti_softlock_skip') {
       G._cpuResolveBusy = null;
     } else if (key && G._cpuResolveBusy === key) {
+      cpuSchedule(() => cpuAct(type, data), 200);
       return;
     }
     if (key) G._cpuResolveBusy = key;
