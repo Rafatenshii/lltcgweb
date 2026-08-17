@@ -5695,7 +5695,8 @@ function maybeRecoverUnappliedRankedFinish(string $roomId, array &$state): void 
     }
     $ranked = is_array($state['ranked'] ?? null) ? $state['ranked'] : [];
     $needsElo = empty($ranked['applied']);
-    $needsPr = !empty($ranked['applied']) && empty($ranked['pr_reward_applied']);
+    require_once __DIR__ . '/ranked_pr_rewards.php';
+    $needsPr = tcgRankedPrRewardNeedsHostingerRetry($state);
     if (!$needsElo && !$needsPr) {
         return;
     }
@@ -5703,7 +5704,7 @@ function maybeRecoverUnappliedRankedFinish(string $roomId, array &$state): void 
     maybeApplyRankedFinish($state);
     if (intval($state['seq'] ?? 0) !== $seqBefore
         || ($needsElo && !empty($state['ranked']['applied']))
-        || ($needsPr && !empty($state['ranked']['pr_reward_applied']))) {
+        || ($needsPr && !tcgRankedPrRewardNeedsHostingerRetry($state))) {
         saveGame($roomId, $state);
     }
 }

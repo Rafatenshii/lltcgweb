@@ -357,20 +357,25 @@ function tcgPostRankedApplyResultToHostinger(array &$state): bool {
             ? tcgPlayStatDeltasExport($state)
             : (is_array($state['_play_stat_deltas'] ?? null) ? $state['_play_stat_deltas'] : []),
     ];
-    $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 15);
+    $res = tcgMatchBridgeHttpPostJson(tcgEloApplyUrl(), $payload, 30);
     if (!is_array($res) || empty($res['success']) || !empty($res['error'])) {
         return false;
     }
     // Hostinger grants the pack; stash on VPS room so the winner's client can show it.
     $mergedPr = false;
-    if (!empty($res['pr_reward_applied']) && is_array($res['pr_reward'] ?? null)) {
+    if (is_array($res['pr_reward'] ?? null)) {
         if (!isset($state['ranked']) || !is_array($state['ranked'])) {
             $state['ranked'] = [];
         }
-        $hadPr = !empty($state['ranked']['pr_reward_applied']);
-        $state['ranked']['pr_reward_applied'] = true;
+        require_once __DIR__ . '/ranked_pr_rewards.php';
+        $prevEntry = is_array($state['ranked']['pr_reward'] ?? null) ? $state['ranked']['pr_reward'] : [];
+        $prevReward = is_array($prevEntry['reward'] ?? null) ? $prevEntry['reward'] : [];
+        $hadGrant = tcgRankedPrRewardIsGranted($prevReward);
         $state['ranked']['pr_reward'] = $res['pr_reward'];
-        $mergedPr = !$hadPr;
+        $newReward = is_array($res['pr_reward']['reward'] ?? null) ? $res['pr_reward']['reward'] : [];
+        $applied = !empty($res['pr_reward_applied']) || tcgRankedPrRewardShouldPersistApplied($newReward);
+        $state['ranked']['pr_reward_applied'] = $applied;
+        $mergedPr = !$hadGrant && tcgRankedPrRewardIsGranted($newReward);
     }
     // Late PR merge must bump seq or get_state clients stay on unchanged:true and never
     // see ranked_pr_reward — cards land in collection with no hub popup.

@@ -132,9 +132,14 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
     try {
         $pack = tcgGrantPrPackCards($discordId);
     } catch (Throwable $e) {
+        $msg = trim($e->getMessage());
+        $reason = (stripos($msg, 'pool empty') !== false || stripos($msg, 'unavailable') !== false)
+            ? 'empty_pool'
+            : 'grant_failed';
+        error_log('tcgGrantRankedWinPrReward ' . $reason . ': ' . $msg);
         return [
             'skipped' => true,
-            'reason' => 'empty_pool',
+            'reason' => $reason,
             'daily' => $allow,
         ];
     }
@@ -144,6 +149,68 @@ function tcgGrantRankedWinPrReward(string $discordId): array {
     return array_merge($pack, [
         'daily' => tcgRankedPrDailyAllowance($discordId),
     ]);
+}
+
+/** True when the winner actually received pack cards (or gem conversions). */
+function tcgRankedPrRewardIsGranted(array $reward): bool {
+    if (!empty($reward['skipped'])) {
+        return false;
+    }
+    if (!empty($reward['cards']) && is_array($reward['cards'])) {
+        return true;
+    }
+    return trim((string)($reward['card_no'] ?? '')) !== '';
+}
+
+/**
+ * Persist "this room is done for PR" only for a real grant or a terminal skip
+ * (daily cap). Retryable failures must not lock the match.
+ */
+function tcgRankedPrRewardShouldPersistApplied(array $reward): bool {
+    if (tcgRankedPrRewardIsGranted($reward)) {
+        return true;
+    }
+    return !empty($reward['skipped']) && (($reward['reason'] ?? '') === 'daily_cap');
+}
+
+/** @param array<string,mixed> $state */
+function tcgStoreRankedPrRewardOnState(array &$state, string $winnerPid, array $reward): void {
+    if (!isset($state['ranked']) || !is_array($state['ranked'])) {
+        $state['ranked'] = [];
+    }
+    $state['ranked']['pr_reward'] = [
+        'player_id' => $winnerPid,
+        'reward' => $reward,
+    ];
+    $state['ranked']['pr_reward_applied'] = tcgRankedPrRewardShouldPersistApplied($reward);
+}
+
+/**
+ * Overflow rooms that stored a retryable skip as applied still need another Hostinger POST.
+ *
+ * @param array<string,mixed> $state
+ */
+function tcgRankedPrRewardNeedsHostingerRetry(array $state): bool {
+    if (($state['mode'] ?? '') !== 'ranked' || ($state['status'] ?? '') !== 'finished') {
+        return false;
+    }
+    $winnerPid = $state['winner'] ?? null;
+    if (!is_string($winnerPid) || !in_array($winnerPid, ['p1', 'p2'], true)) {
+        return false;
+    }
+    $ranked = is_array($state['ranked'] ?? null) ? $state['ranked'] : [];
+    if (empty($ranked['applied'])) {
+        return false;
+    }
+    $entry = is_array($ranked['pr_reward'] ?? null) ? $ranked['pr_reward'] : [];
+    $reward = is_array($entry['reward'] ?? null) ? $entry['reward'] : [];
+    if (empty($ranked['pr_reward_applied'])) {
+        return true;
+    }
+    if (tcgRankedPrRewardIsGranted($reward) || tcgRankedPrRewardShouldPersistApplied($reward)) {
+        return false;
+    }
+    return !empty($reward['skipped']);
 }
 
 function tcgRankedPrRewardForPlayer(array $state, string $playerId): ?array {
@@ -180,12 +247,5 @@ function tcgApplyRankedPrRewardOnFinish(array &$state): void {
     }
 
     $reward = tcgGrantRankedWinPrReward($discordId);
-    if (!isset($state['ranked']) || !is_array($state['ranked'])) {
-        $state['ranked'] = [];
-    }
-    $state['ranked']['pr_reward_applied'] = true;
-    $state['ranked']['pr_reward'] = [
-        'player_id' => $winnerPid,
-        'reward' => $reward,
-    ];
+    tcgStoreRankedPrRewardOnState($state, $winnerPid, $reward);
 }

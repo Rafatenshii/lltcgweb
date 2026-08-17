@@ -407,9 +407,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         } else {
             tcgApplyRankResult($p1Id, $p2Id, true, $gameMode);
         }
-        tcgCompleteRankedMatch($roomId, is_string($winnerPid) ? $winnerPid : null, false);
+        tcgCompleteRankedMatch($roomId, is_string($winnerPid) ? $winnerPid : null);
     } elseif ($winnerPid && empty($row['winner_pid'])) {
-        tcgCompleteRankedMatch($roomId, $winnerPid, false);
+        tcgCompleteRankedMatch($roomId, $winnerPid);
     }
 
     $prEntry = null;
@@ -421,9 +421,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
         } else {
             // status=finished is required by tcgApplyRankedPrRewardOnFinish (overflow bug: was omitted).
             tcgApplyRankedPrRewardOnFinish($fakeState);
+            $prEntry = $fakeState['ranked']['pr_reward'] ?? null;
             if (!empty($fakeState['ranked']['pr_reward_applied'])) {
-                $prEntry = $fakeState['ranked']['pr_reward'] ?? null;
-                // Mark whether granted or skipped (daily cap / empty pool) so we do not retry forever.
+                // Grant or daily_cap only — retryable empty_pool/grant_failed stays unmarked.
                 tcgMarkRankedMatchPrRewarded($roomId);
             }
         }
@@ -453,7 +453,9 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     }
     if (is_array($prEntry)) {
         $out['pr_reward'] = $prEntry;
-        $out['pr_reward_applied'] = true;
+        if (!empty($fakeState['ranked']['pr_reward_applied'])) {
+            $out['pr_reward_applied'] = true;
+        }
     }
     if ($missionCompletions !== []) {
         $out['mission_completions'] = $missionCompletions;

@@ -223,6 +223,7 @@ final class RankedPrRewardTest extends TestCase
         ]);
 
         $this->assertTrue($out['success'] ?? false);
+        $this->assertTrue($out['pr_reward_applied'] ?? false);
         $this->assertArrayHasKey('pr_reward', $out);
         $this->assertSame('p1', $out['pr_reward']['player_id'] ?? null);
         $reward = $out['pr_reward']['reward'] ?? [];
@@ -358,6 +359,82 @@ final class RankedPrRewardTest extends TestCase
 
         $this->assertTrue($out['already_applied'] ?? false);
         $this->assertArrayHasKey('pr_reward', $out);
+        $this->assertTrue($out['pr_reward_applied'] ?? false);
         $this->assertSame($before['awarded_today'] + 1, tcgRankedPrDailyAllowance($winnerId)['awarded_today']);
+    }
+
+    public function testRetryableSkipDoesNotPersistApplied(): void
+    {
+        $state = [
+            'mode' => 'ranked',
+            'status' => 'finished',
+            'winner' => 'p2',
+            'ranked' => ['applied' => true],
+        ];
+        tcgStoreRankedPrRewardOnState($state, 'p2', [
+            'skipped' => true,
+            'reason' => 'empty_pool',
+        ]);
+        $this->assertFalse($state['ranked']['pr_reward_applied'] ?? true);
+        $this->assertTrue(tcgRankedPrRewardNeedsHostingerRetry($state));
+
+        tcgStoreRankedPrRewardOnState($state, 'p2', [
+            'skipped' => true,
+            'reason' => 'grant_failed',
+        ]);
+        $this->assertFalse($state['ranked']['pr_reward_applied'] ?? true);
+        $this->assertTrue(tcgRankedPrRewardNeedsHostingerRetry($state));
+    }
+
+    public function testDailyCapSkipPersistsAppliedAndDoesNotRetry(): void
+    {
+        $state = [
+            'mode' => 'ranked',
+            'status' => 'finished',
+            'winner' => 'p2',
+            'ranked' => ['applied' => true],
+        ];
+        tcgStoreRankedPrRewardOnState($state, 'p1', [
+            'skipped' => true,
+            'reason' => 'daily_cap',
+        ]);
+        $this->assertTrue($state['ranked']['pr_reward_applied'] ?? false);
+        $this->assertFalse(tcgRankedPrRewardNeedsHostingerRetry($state));
+    }
+
+    public function testStuckEmptyPoolFlagStillRetries(): void
+    {
+        $state = [
+            'mode' => 'ranked',
+            'status' => 'finished',
+            'winner' => 'p2',
+            'ranked' => [
+                'applied' => true,
+                'pr_reward_applied' => true,
+                'pr_reward' => [
+                    'player_id' => 'p2',
+                    'reward' => ['skipped' => true, 'reason' => 'empty_pool'],
+                ],
+            ],
+        ];
+        $this->assertTrue(tcgRankedPrRewardNeedsHostingerRetry($state));
+
+        $state['ranked']['pr_reward']['reward'] = [
+            'pack_size' => 3,
+            'cards' => [['card_no' => 'PL!N-PR-001-PR']],
+            'card_no' => 'PL!N-PR-001-PR',
+        ];
+        $this->assertFalse(tcgRankedPrRewardNeedsHostingerRetry($state));
+    }
+
+    public function testDrawDoesNotRequestPrRetry(): void
+    {
+        $state = [
+            'mode' => 'ranked',
+            'status' => 'finished',
+            'winner' => null,
+            'ranked' => ['applied' => true],
+        ];
+        $this->assertFalse(tcgRankedPrRewardNeedsHostingerRetry($state));
     }
 }
