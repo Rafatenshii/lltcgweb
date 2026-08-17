@@ -125,6 +125,8 @@ function tryResolveAbilityEffectSwitchScore(
 
         case 'score_per_distinct_heart_colors':
             // e.g. Solitude Rain: +N score per distinct heart color among group Members on Stage.
+            // Use memberPerformanceHeartsFlat so bp7_hearts_override / replaced_hearts /
+            // bonus_hearts (Shizuku N-bp7-003 copy-under hearts, Lanzhu, etc.) count.
             $colors = [];
             $group = $ab['group'] ?? '';
             $filter = $ab['filter'] ?? 'member';
@@ -135,15 +137,8 @@ function tryResolveAbilityEffectSwitchScore(
                 if ($group !== '' && !cardMatchesGroup($mbr, $group, $filter)) {
                     continue;
                 }
-                foreach ($mbr['hearts'] ?? [] as $h) {
-                    $color = (string)($h['color'] ?? '');
-                    if ($color === '' || $color === 'any') {
-                        continue;
-                    }
-                    $colors[$color] = true;
-                }
-                foreach ($mbr['bonus_hearts'] ?? [] as $bh) {
-                    $color = is_array($bh) ? (string)($bh['color'] ?? '') : (string)$bh;
+                foreach (memberPerformanceHeartsFlat($mbr) as $color) {
+                    $color = normalizeHeartColor((string)$color);
                     if ($color === '' || $color === 'any') {
                         continue;
                     }
