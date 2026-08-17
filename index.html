@@ -25048,7 +25048,13 @@ function fillCardDetailPanel(prefix, card, s, myId) {
     ? memberModifierHeartGroups(stageCtx.member, s, stageCtx.pid, stageCtx.slot)
     : [];
   if (isLiveCard(card)) {
-    const req = card.required_hearts?.length ? card.required_hearts : card.hearts;
+    let req = card.required_hearts?.length ? card.required_hearts : card.hearts;
+    // Match spectacle HUD: show Live Start / aura reductions, not only printed hearts.
+    if (req?.length && typeof effectiveLiveRequiredHearts === 'function' && s && myId) {
+      req = effectiveLiveRequiredHearts(card, s, myId);
+    } else if (req?.length && typeof applyClientLiveHeartReductions === 'function') {
+      req = applyClientLiveHeartReductions(req, card);
+    }
     if (req?.length) {
       appendHeartStatCounts(addBox(t('card.requiredHearts'), 'sv heart-stat'), req);
     }

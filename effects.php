@@ -2208,11 +2208,17 @@ function getEffectiveMemberCost(array $member): int {
     return intval($member['cost'] ?? 0) + intval($member['live_cost_bonus'] ?? 0);
 }
 
+/**
+ * Count other matching-group Live cards in storage.
+ * Member bluffs stay through Live Start spectacle (#45) but must not inflate
+ * zone-count skills such as Hanamusubi (reduce_hearts_per_live_zone_group).
+ */
 function countOtherLiveZoneGroup(array $p, string $group, string $excludeId = ''): int {
     $n = 0;
     foreach ($p['live_zone'] ?? [] as $lc) {
         if (!$lc) continue;
         if ($excludeId !== '' && ($lc['instance_id'] ?? '') === $excludeId) continue;
+        if (!isLiveTypeCard($lc)) continue;
         if (($lc['group'] ?? '') === $group) $n++;
     }
     return $n;
