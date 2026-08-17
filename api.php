@@ -1911,6 +1911,19 @@ function isLiveSetPhase(string $phase): bool {
  * live_zone and get ADDED to by set_live_cards — ghost Lives the player never chose.
  */
 function clearLiveStorageBeforeLiveSet(array $state): array {
+    // A stuck live_show (e.g. softlocked Live Start) must not survive into the next
+    // LIVE Phase — clients would keep presenting the prior round's played Lives.
+    if (!empty($state['live_show'])) {
+        unset($state['live_show']);
+    }
+    unset(
+        $state['_live_played_snapshot'],
+        $state['_live_perf_snapshot'],
+        $state['_live_round_success_snapshot'],
+        $state['_yell_reveal_snapshot'],
+        $state['_yell_blade_snapshot'],
+        $state['_stage_hearts_snapshot']
+    );
     $anims = [];
     $moved = 0;
     foreach (['p1', 'p2'] as $pid) {
@@ -2268,6 +2281,12 @@ function beginPerformancePhase(array $state): array {
             'acks' => [],
             'played_lives' => snapshotLiveShowPlayedLives($state),
         ];
+        // Drop prior-round carryover so clients cannot hydrate ghost Lives.
+        unset(
+            $state['_live_played_snapshot'],
+            $state['_live_perf_snapshot'],
+            $state['_live_round_success_snapshot']
+        );
         if ($revealPid) {
             $state = revealLiveStorageForPlayer($state, $revealPid);
             $state = logPerformerLiveReveal($state, $revealPid);

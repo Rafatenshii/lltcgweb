@@ -631,6 +631,19 @@ function liveShowPerformancePresentedForTurn(turn) {
   return false;
 }
 
+/** Same-turn second LIVE must not inherit the first show's "already presented" seal. */
+function liveShowPerformancePresentedForBoard(board, prior = null) {
+  const roundKey = liveShowRoundKey(board, prior);
+  if (roundKey != null && G._liveShowPerfPresentedRounds?.has(roundKey)) return true;
+  const show = board?.live_show || prior?.live_show;
+  if (show?.started_at != null) {
+    // Active/new show with its own started_at: turn-only seals do not apply.
+    return false;
+  }
+  const turn = liveShowTurnFromBoards(board, prior);
+  return liveShowPerformancePresentedForTurn(turn);
+}
+
 function markLiveShowPerformancePresented(turn) {
   if (turn == null || !Number.isFinite(Number(turn))) return;
   const t = Number(turn);
@@ -645,6 +658,15 @@ function markLiveShowPerformancePresented(turn) {
       turns: [...G._liveShowPerfPresentedTurns].sort((a, b) => a - b),
     }));
   } catch (e) {}
+}
+
+function markLiveShowPerformancePresentedForBoard(board, prior = null) {
+  const roundKey = liveShowRoundKey(board, prior);
+  if (roundKey != null) {
+    if (!G._liveShowPerfPresentedRounds) G._liveShowPerfPresentedRounds = new Set();
+    G._liveShowPerfPresentedRounds.add(roundKey);
+  }
+  markLiveShowPerformancePresented(liveShowTurnFromBoards(board, prior));
 }
 
 /** Undo an early seal so a still-open Performance can replay yell climbs. */
@@ -689,30 +711,49 @@ function liveShowTurnFromBoards(board, prior = null) {
     ?? inferLiveShowTurn(prior, board);
 }
 
+/** Stable id for one Live show (same turn can host multiple LIVE rounds). */
+function liveShowRoundKey(board, prior = null) {
+  const show = board?.live_show || prior?.live_show;
+  const turn = liveShowTurnFromBoards(board, prior);
+  if (turn == null && !show) return null;
+  if (show?.started_at != null) return `${turn ?? '?'}:s${show.started_at}`;
+  const pl = show?.played_lives;
+  if (pl && (pl.p1?.length || pl.p2?.length)) {
+    const fp = ['p1', 'p2']
+      .map((pid) => (pl[pid] || []).slice().filter(Boolean).sort().join(','))
+      .join('|');
+    return `${turn}:${fp}`;
+  }
+  return turn != null ? String(turn) : null;
+}
+
 function liveShowPlayedIidsFromBoard(board, pid) {
-  const fromShow = board?.live_show?.played_lives?.[pid];
-  if (Array.isArray(fromShow) && fromShow.length) return fromShow.filter(Boolean);
-  const snap = board?._live_played_snapshot?.[pid];
+  if (!board) return [];
+  // Active show: trust its freeze exclusively (empty = members-only that side).
+  // Falling through to _live_played_snapshot reanimated the prior round's Live
+  // (BE3FA0: Just Believe/Love U ghosted into the next same-turn Performance).
+  if (board.live_show && Object.prototype.hasOwnProperty.call(board.live_show, 'played_lives')) {
+    const fromShow = board.live_show.played_lives?.[pid];
+    return Array.isArray(fromShow) ? fromShow.filter(Boolean) : [];
+  }
+  const snap = board._live_played_snapshot?.[pid];
   if (Array.isArray(snap) && snap.length) return snap.filter(Boolean);
   return [];
 }
 
 function rememberLiveShowPlayedLives(board, prior = null) {
-  const turn = liveShowTurnFromBoards(board, prior);
-  if (turn == null) return;
+  const roundKey = liveShowRoundKey(board, prior);
+  if (roundKey == null) return;
   if (!G._liveShowPlayedIids) G._liveShowPlayedIids = {};
-  if (G._liveShowPlayedIids[turn]?.p1?.length || G._liveShowPlayedIids[turn]?.p2?.length) {
-    return;
-  }
   const out = { p1: [], p2: [] };
   for (const pid of ['p1', 'p2']) {
     const fromBoard = liveShowPlayedIidsFromBoard(board, pid);
-    if (fromBoard.length) {
+    if (fromBoard.length || (board?.live_show && Object.prototype.hasOwnProperty.call(board.live_show, 'played_lives'))) {
       out[pid] = fromBoard;
       continue;
     }
     const fromPrior = liveShowPlayedIidsFromBoard(prior, pid);
-    if (fromPrior.length) {
+    if (fromPrior.length || (prior?.live_show && Object.prototype.hasOwnProperty.call(prior.live_show, 'played_lives'))) {
       out[pid] = fromPrior;
       continue;
     }
@@ -722,15 +763,27 @@ function rememberLiveShowPlayedLives(board, prior = null) {
       .map(c => c.instance_id)
       .filter(Boolean);
   }
-  if (out.p1.length || out.p2.length) G._liveShowPlayedIids[turn] = out;
+  const prev = G._liveShowPlayedIids[roundKey];
+  const same = prev
+    && (prev.p1 || []).join(',') === out.p1.join(',')
+    && (prev.p2 || []).join(',') === out.p2.join(',');
+  if (same) return;
+  if (out.p1.length || out.p2.length
+      || (board?.live_show && Object.prototype.hasOwnProperty.call(board.live_show, 'played_lives'))) {
+    G._liveShowPlayedIids[roundKey] = out;
+  }
 }
 
 function liveShowPlayedIidsForPid(board, pid, prior = null) {
-  rememberLiveShowPlayedLives(board, prior);
-  const turn = liveShowTurnFromBoards(board, prior);
-  const mem = turn != null ? G._liveShowPlayedIids?.[turn]?.[pid] : null;
-  if (Array.isArray(mem) && mem.length) return mem;
+  // Server freeze always wins when present.
   const fromBoard = liveShowPlayedIidsFromBoard(board, pid);
+  if (board?.live_show && Object.prototype.hasOwnProperty.call(board.live_show, 'played_lives')) {
+    return fromBoard;
+  }
+  rememberLiveShowPlayedLives(board, prior);
+  const roundKey = liveShowRoundKey(board, prior);
+  const mem = roundKey != null ? G._liveShowPlayedIids?.[roundKey]?.[pid] : null;
+  if (Array.isArray(mem) && mem.length) return mem;
   if (fromBoard.length) return fromBoard;
   return liveShowPlayedIidsFromBoard(prior, pid);
 }
@@ -2772,6 +2825,8 @@ function clearPerfSpectacleDoneStorage() {
   clearPerfSpectacleDoneKeysOnly();
   G._liveStorageRevealDoneTurns = null;
   G._liveShowPerfPresentedTurns = null;
+  G._liveShowPerfPresentedRounds = null;
+  G._liveShowOutcomesPresentedRounds = null;
   G._liveShowPresentedKeys = null;
   try {
     if (typeof LIVE_PERF_PRESENTED_STORAGE_KEY === 'string') {
@@ -3867,6 +3922,8 @@ function rememberPerfSpectacleBaseline(prev, next) {
     G._liveStorageOutcomesPlayedLiveKey = null;
     G._spectatorHiddenRevealBeats = null;
     G._liveShowPlayedIids = null;
+    G._liveShowPerfPresentedRounds = null;
+    G._liveShowOutcomesPresentedRounds = null;
     if (typeof resetMovementLedger === 'function') resetMovementLedger();
   }
   if (isLeavingLiveSetPhase(prev, next)) {
@@ -7963,8 +8020,8 @@ function sealLiveShowSpectacleTurn(board, prior = null) {
   // Prefer live_show.turn (incl. prior) — board.turn is often already advanced after unset(live_show).
   rememberLiveShowPlayedLives(board, prior);
   const turn = liveShowTurnFromBoards(board, prior);
-  if (turn == null) return;
-  markLiveShowPerformancePresented(turn);
+  if (turn == null && !liveShowRoundKey(board, prior)) return;
+  markLiveShowPerformancePresentedForBoard(board, prior);
   savePerfSpectacleDoneKey(prior || board, board, turn);
   G._liveRoundPostSpectacleReady = true;
   // Drop prior-round Live boards so Main baton/play cannot re-arm ghost Performance (#105).
@@ -8088,10 +8145,27 @@ function liveShowOutcomesPresentedForTurn(turn) {
   return !!G._liveShowOutcomesPresentedTurns?.has(Number(turn));
 }
 
+function liveShowOutcomesPresentedForBoard(board, prior = null) {
+  const roundKey = liveShowRoundKey(board, prior);
+  if (roundKey != null && G._liveShowOutcomesPresentedRounds?.has(roundKey)) return true;
+  const show = board?.live_show || prior?.live_show;
+  if (show?.started_at != null) return false;
+  return liveShowOutcomesPresentedForTurn(liveShowTurnFromBoards(board, prior));
+}
+
 function markLiveShowOutcomesPresented(turn) {
   if (turn == null || !Number.isFinite(Number(turn))) return;
   if (!G._liveShowOutcomesPresentedTurns) G._liveShowOutcomesPresentedTurns = new Set();
   G._liveShowOutcomesPresentedTurns.add(Number(turn));
+}
+
+function markLiveShowOutcomesPresentedForBoard(board, prior = null) {
+  const roundKey = liveShowRoundKey(board, prior);
+  if (roundKey != null) {
+    if (!G._liveShowOutcomesPresentedRounds) G._liveShowOutcomesPresentedRounds = new Set();
+    G._liveShowOutcomesPresentedRounds.add(roundKey);
+  }
+  markLiveShowOutcomesPresented(liveShowTurnFromBoards(board, prior));
 }
 
 /**
@@ -8101,9 +8175,9 @@ function markLiveShowOutcomesPresented(turn) {
 async function presentLiveShowOutcomesWhileSuccessPrompt(prior, board, myId) {
   const showTurn = liveShowTurnFromBoards(board, prior);
   perfClearHeartCheckHold();
-  if (!liveShowOutcomesPresentedForTurn(showTurn)) {
+  if (!liveShowOutcomesPresentedForBoard(board, prior)) {
     await presentOneLiveShowBeat(prior, board, myId, 'outcomes');
-    markLiveShowOutcomesPresented(showTurn);
+    markLiveShowOutcomesPresentedForBoard(board, prior);
   } else {
     const perfPrev = buildPerfSpectaclePrev(prior, board) || prior || board;
     await perfSeekPhase(perfPrev, board, myId, 'outcomes', { forward: true, animate: false });
@@ -8234,8 +8308,8 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   if (liveShowPresentationCancelled()) return;
   const showTurn = liveShowTurnFromBoards(next, prev);
   const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
-  // Performance yell/hearts: once per turn. Later outcomes/judge still animate.
-  if (stage === 'performance' && liveShowPerformancePresentedForTurn(showTurn)) {
+  // Performance yell/hearts: once per show. Later outcomes/judge still animate.
+  if (stage === 'performance' && liveShowPerformancePresentedForBoard(next, prev)) {
     TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
     await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
     // Hearts may already be logged (Live Success prompt parked on performance).
@@ -8250,7 +8324,7 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     return;
   }
   // Outcomes already shown while a Live Success prompt held stage=performance.
-  if (stage === 'outcomes' && liveShowOutcomesPresentedForTurn(showTurn)) {
+  if (stage === 'outcomes' && liveShowOutcomesPresentedForBoard(next, prev)) {
     TCG_DEBUG.log('live', 'skip duplicate outcomes beat', { showTurn });
     await perfSeekPhase(perfPrev, next, myId, 'outcomes', { forward: true, animate: false });
     perfClearHeartCheckHold();
@@ -8271,7 +8345,7 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
     return;
   }
   if (stage === 'performance') {
-    markLiveShowPerformancePresented(showTurn);
+    markLiveShowPerformancePresentedForBoard(next, prev);
     // Heart resolution happens on the server only after this beat is acked — keep
     // the spectacle alive with a readable "Checking hearts…" hold so the gap
     // before success/fail (and PvP opponent-ack wait) isn't dead air.
@@ -8286,7 +8360,7 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   }
   if (stage === 'outcomes') {
     perfClearHeartCheckHold();
-    markLiveShowOutcomesPresented(showTurn);
+    markLiveShowOutcomesPresentedForBoard(next, prev);
   }
   if (stage === 'judge') {
     perfClearHeartCheckHold();

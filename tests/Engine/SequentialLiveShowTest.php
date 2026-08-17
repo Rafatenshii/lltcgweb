@@ -270,4 +270,39 @@ final class SequentialLiveShowTest extends TestCase
         $this->assertNotEmpty($filtered['yell_reveal']['p1'] ?? []);
         $this->assertSame('yell1', $filtered['yell_reveal']['p1'][0]['instance_id'] ?? null);
     }
+
+    public function testClearLiveStorageBeforeLiveSetDropsStuckShowAndPriorPlayedSnapshot(): void
+    {
+        $state = $this->state();
+        $state['live_show'] = [
+            'turn' => 5,
+            'stage' => 'live_start',
+            'started_at' => time() - 60,
+            'stage_seq' => 5,
+            'acks' => [],
+            'played_lives' => [
+                'p1' => ['stale-p1-live'],
+                'p2' => ['stale-p2-live'],
+            ],
+        ];
+        $state['_live_played_snapshot'] = $state['live_show']['played_lives'];
+        $state['players']['p1']['live_zone'][] = [
+            'instance_id' => 'p1-bluff',
+            'card_no' => 'm1',
+            'card_type' => 'メンバー',
+            'card_type_en' => 'Member',
+            'name_en' => 'Bluff',
+            'revealed' => true,
+        ];
+
+        $state = \clearLiveStorageBeforeLiveSet($state);
+
+        $this->assertArrayNotHasKey('live_show', $state);
+        $this->assertArrayNotHasKey('_live_played_snapshot', $state);
+        $this->assertSame([], $state['players']['p1']['live_zone']);
+        $this->assertSame([], $state['players']['p2']['live_zone']);
+        $wrNos = array_column($state['players']['p1']['waiting_room'], 'instance_id');
+        $this->assertContains('p1-live', $wrNos);
+        $this->assertContains('p1-bluff', $wrNos);
+    }
 }
