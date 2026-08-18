@@ -2593,7 +2593,8 @@ function bp7ResolveOnLeaveAbilities(array $state, string $pid, array $leaving, a
         }
         if ($type === 'auto_on_leave_baton_stack_self_under'
             || $type === 'auto_on_leave_baton_energy_deck_stack') {
-            // Needs the incoming Member on Stage — defer until actionPlayMember placed it.
+            // Incoming is already on Stage when leave runs after place; queue then
+            // apply in actionPlayMember (after this on-leave), not before.
             if (empty($ctx['baton_incoming'])) continue;
             $state['_bp7_baton_stack_pending'][] = [
                 'kind'      => $type,

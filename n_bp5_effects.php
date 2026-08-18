@@ -302,16 +302,10 @@ function nBp5ResolveEffect(array $state, string $pid, array $source, array $ab, 
             $color = $ab['color'] ?? 'yellow';
             $minHearts = intval($ab['min_hearts'] ?? 4);
             $found = false;
-            foreach ($p['stage'] as $mbr) {
+            foreach ($p['stage'] as $slot => $mbr) {
                 if (!$mbr) continue;
-                $cnt = 0;
-                foreach ($mbr['hearts'] ?? [] as $h) {
-                    if (($h['color'] ?? '') === $color) $cnt += intval($h['count'] ?? 1);
-                }
-                foreach ($mbr['bonus_hearts'] ?? [] as $c) {
-                    if ($c === $color) $cnt++;
-                }
-                if ($cnt >= $minHearts) {
+                // Include [Always] grants (e.g. PL!N-bp7-007 stacked Energy / Energy above 6).
+                if (stageMemberHeartColorCount($state, $pid, $mbr, (string)$slot, $color) >= $minHearts) {
                     $found = true;
                     break;
                 }

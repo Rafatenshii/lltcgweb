@@ -1832,10 +1832,10 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             'slot' => $targetSlot,
             'from_index' => $cardIdx,
         ]]));
-    // BP07 [On Leave] stacks (self / Energy deck) wait for the incoming Member to land.
-    $state = bp7ApplyPendingBatonStacks($state, $pid, $targetSlot);
 
     // On Leave after place: Stage includes the replacement for Position Change (#104).
+    // BP07 Baton stacks (019 Energy-deck / SP-bp7-001 self) queue during on-leave,
+    // so apply them after each leave — not before, when the pending list is still empty.
     $p = &$state['players'][$pid];
     foreach ($onLeavePending as $pending) {
         $wrIdx = intval($pending['wr_idx'] ?? -1);
@@ -1850,6 +1850,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
             continue;
         }
         $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, $pending['ctx'] ?? []);
+        $state = bp7ApplyPendingBatonStacks($state, $pid, $targetSlot);
         $p = &$state['players'][$pid];
         if ($wrIdx >= 0 && isset($p['waiting_room'][$wrIdx])) {
             $p['waiting_room'][$wrIdx] = $leaving;

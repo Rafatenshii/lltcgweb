@@ -2879,6 +2879,35 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
     return $grants;
 }
 
+/**
+ * Printed + bonus + [Always] hearts of one color on a Stage Member.
+ * Live Start checks (CHASE!) must match the Performance HUD, not printed hearts only.
+ */
+function stageMemberHeartColorCount(array $state, string $pid, array $member, string $slot, string $color): int {
+    $color = normalizeHeartColor($color);
+    $n = 0;
+    foreach (memberPerformanceHeartsFlat($member) as $c) {
+        if (normalizeHeartColor((string)$c) === $color) {
+            $n++;
+        }
+    }
+    $iid = (string)($member['instance_id'] ?? '');
+    foreach (collectContinuousPerformanceHeartGrants($state, $pid) as $grant) {
+        if ($iid !== '' && (string)($grant['instance_id'] ?? '') !== $iid) {
+            continue;
+        }
+        if ($iid === '' && (string)($grant['slot'] ?? '') !== (string)$slot) {
+            continue;
+        }
+        foreach ($grant['hearts'] ?? [] as $c) {
+            if (normalizeHeartColor((string)$c) === $color) {
+                $n++;
+            }
+        }
+    }
+    return $n;
+}
+
 function aggregateFlatHeartColors(array $hearts): array {
     $map = [];
     foreach ($hearts as $color) {
