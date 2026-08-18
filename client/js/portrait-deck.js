@@ -9,7 +9,7 @@
     filters: { overlay: 'overlay-portrait-deck-filters', host: 'portrait-deck-filters-host', source: 'deck-filter-panel' },
     sort: { overlay: 'overlay-portrait-deck-sort', host: 'portrait-deck-sort-host', source: 'deck-collection-sort-wrap' },
     import: { overlay: 'overlay-portrait-deck-import', host: 'portrait-deck-import-host', source: 'deck-builder-import-search' },
-    more: { overlay: 'overlay-portrait-deck-more', host: 'portrait-deck-more-host', source: 'deck-builder-actions' },
+    more: { overlay: 'overlay-portrait-deck-more', host: 'portrait-deck-more-host', source: 'deck-builder-name-wrap' },
   };
 
   function portraitActive() {
@@ -51,7 +51,7 @@
 
   function restoreAllParked() {
     ['deck-sleeve-picker', 'deck-playmat-picker', 'deck-pool-search-wrap', 'deck-filter-panel',
-      'deck-collection-sort-wrap', 'deck-builder-import-search', 'deck-builder-actions',
+      'deck-collection-sort-wrap', 'deck-builder-import-search',
       'deck-builder-name-wrap', 'btn-deck-seal-batch', 'deck-seal-batch-bar']
       .forEach((id) => restore(el(id)));
   }
@@ -126,7 +126,6 @@
     }
     park(source, host);
     if (name === 'more') {
-      park(el('deck-builder-name-wrap'), host);
       park(el('btn-deck-seal-batch'), host);
     }
     overlay.classList.add('open');

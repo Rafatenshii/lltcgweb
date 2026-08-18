@@ -247,7 +247,6 @@ html.tcg-portrait-play #screen-deck .account-panel{
 html.tcg-portrait-play #screen-deck .logo,
 html.tcg-portrait-play #screen-deck .deck-builder-hint,
 html.tcg-portrait-play #screen-deck .deck-builder-meta,
-html.tcg-portrait-play #screen-deck .deck-builder-actions,
 html.tcg-portrait-play #screen-deck #deck-sleeve-empty-hint,
 html.tcg-portrait-play #screen-deck .deck-builder-hint--compact,
 html.tcg-portrait-play #screen-deck #deck-starter-hint{
@@ -555,7 +554,51 @@ html.tcg-portrait-play #screen-deck .menu-card{
 html.tcg-portrait-play #screen-deck #deck-err{
   flex:0 0 auto;
   font-size:12px;
-  margin:4px 0 0;
+  margin:0 0 6px;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-dock{
+  position:fixed;
+  left:max(8px,env(safe-area-inset-left,0px));
+  right:max(8px,env(safe-area-inset-right,0px));
+  bottom:max(8px,env(safe-area-inset-bottom,0px),var(--tcg-safe-bottom-fallback,0px));
+  z-index:60;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin:0;
+  padding:10px 10px 8px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.32);
+  background:rgba(8,18,40,.94);
+  box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+html.tcg-portrait-play #screen-deck .deck-builder-actions{
+  display:flex!important;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0;
+  overflow:visible;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-actions button{
+  min-height:44px;
+  flex:1 1 120px;
+}
+html.tcg-portrait-play #screen-deck .deck-builder-actions #btn-deck-save{
+  flex:1 1 100%;
+  min-height:48px;
+  font-weight:800;
+}
+html.tcg-portrait-play #screen-deck .account-panel{
+  padding-bottom:calc(168px + env(safe-area-inset-bottom,0px) + var(--tcg-safe-bottom-fallback,0px));
+}
+html.tcg-portrait-play #screen-deck.portrait-deck-batch-mode .deck-builder-dock,
+html.tcg-portrait-play body:has(.overlay.portrait-deck-sheet.open) #screen-deck .deck-builder-dock,
+html.tcg-portrait-play body:has(#overlay-deck-sleeve.open) #screen-deck .deck-builder-dock,
+html.tcg-portrait-play body:has(#overlay-deck-playmat.open) #screen-deck .deck-builder-dock{
+  visibility:hidden;
+  pointer-events:none;
 }
 html.tcg-portrait-play #screen-deck #deck-card-hover-panel{
   position:fixed;

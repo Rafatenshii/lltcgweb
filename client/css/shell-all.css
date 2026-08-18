@@ -7614,17 +7614,24 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
   padding:6px 10px;
   font-size:12px;
 }
+#screen-deck .deck-builder-dock{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  flex-shrink:0;
+  margin-top:6px;
+}
 #screen-deck .deck-builder-actions{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   gap:8px;
-  margin-top:6px;
+  margin-top:0;
   flex-shrink:0;
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
 }
-#screen-deck #deck-err{flex-shrink:0;margin:4px 0 0}
+#screen-deck #deck-err{flex-shrink:0;margin:0}
 #screen-deck .deck-builder-actions .btn-grad,
 #screen-deck .deck-builder-actions .btn-out,
 #screen-deck .deck-builder-actions .btn-ghost{
@@ -7646,6 +7653,67 @@ body.tcg-spectator-mode #btn-stamp{display:none!important}
 #screen-deck .deck-builder-actions .btn-out:hover:not(:disabled),
 #screen-deck .deck-builder-actions .btn-ghost:hover:not(:disabled){
   transform:none;
+}
+#screen-deck .deck-builder-actions #btn-deck-save{
+  order:-1;
+  flex:1 1 140px;
+  font-weight:800;
+}
+html.tcg-compact-desktop #screen-deck.active .deck-builder-dock,
+html.tcg-mobile-viewport #screen-deck.active .deck-builder-dock{
+  position:fixed;
+  left:max(8px,env(safe-area-inset-left,0px));
+  right:max(8px,env(safe-area-inset-right,0px));
+  bottom:max(8px,env(safe-area-inset-bottom,0px));
+  z-index:60;
+  margin:0;
+  padding:8px 10px;
+  border-radius:14px;
+  border:1px solid rgba(186,228,255,.32);
+  background:rgba(8,18,40,.94);
+  box-shadow:0 12px 32px rgba(0,0,0,.45);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+html.tcg-compact-desktop #screen-deck.active .account-panel,
+html.tcg-mobile-viewport #screen-deck.active .account-panel{
+  padding-bottom:calc(156px + env(safe-area-inset-bottom,0px));
+}
+html.tcg-compact-desktop #screen-deck.active .deck-builder-actions,
+html.tcg-mobile-viewport #screen-deck.active .deck-builder-actions{
+  overflow:visible;
+}
+html.tcg-compact-desktop #screen-deck.active .deck-builder-actions #btn-deck-save,
+html.tcg-mobile-viewport #screen-deck.active .deck-builder-actions #btn-deck-save{
+  flex:1 1 100%;
+  min-height:44px;
+}
+@media(max-width:900px){
+  #screen-deck.active .deck-builder-dock{
+    position:fixed;
+    left:max(8px,env(safe-area-inset-left,0px));
+    right:max(8px,env(safe-area-inset-right,0px));
+    bottom:max(8px,env(safe-area-inset-bottom,0px));
+    z-index:60;
+    margin:0;
+    padding:8px 10px;
+    border-radius:14px;
+    border:1px solid rgba(186,228,255,.32);
+    background:rgba(8,18,40,.94);
+    box-shadow:0 12px 32px rgba(0,0,0,.45);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  #screen-deck.active .account-panel{
+    padding-bottom:calc(156px + env(safe-area-inset-bottom,0px));
+  }
+  #screen-deck.active .deck-builder-actions{
+    overflow:visible;
+  }
+  #screen-deck.active .deck-builder-actions #btn-deck-save{
+    flex:1 1 100%;
+    min-height:44px;
+  }
 }
 @media(max-height:820px){
   #screen-deck .logo-img{max-width:min(168px,44vw)}
