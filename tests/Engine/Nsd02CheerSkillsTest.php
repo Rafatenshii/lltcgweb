@@ -336,6 +336,37 @@ final class Nsd02CheerSkillsTest extends TestCase
         $this->assertContains('optional_pay_energy', $types);
     }
 
+    public function testFireBirdGrantsTwoRedHeartsNotPink(): void
+    {
+        foreach (['PL!N-sd2-026-P', 'PL!N-sd2-026-SD2'] as $no) {
+            $live = $this->cardByNo($no, 'fb_' . $no);
+            $ab = $live['abilities'][0] ?? [];
+            $this->assertSame('pick_group_member_grant_hearts', $ab['type'] ?? null);
+            $this->assertSame('red', $ab['hearts'][0]['color'] ?? null, $no . ' official heart02 is Red');
+            $this->assertSame(2, intval($ab['hearts'][0]['count'] ?? 0));
+            $this->assertStringContainsString('Red hearts', (string)($live['text'] ?? ''));
+            $this->assertStringNotContainsString('Pink hearts', (string)($live['text'] ?? ''));
+        }
+
+        $fire = $this->cardByNo('PL!N-sd2-026-P', 'fire_bird');
+        $setsu = $this->cardByNo('PL!N-bp7-007-SEC', 'setsu_blade4');
+        $state = $this->baseState();
+        $state['phase'] = 'live_start_effects';
+        $state['players']['p1']['stage']['center'] = $setsu;
+        $state['players']['p1']['live_zone'] = [$fire];
+
+        $GLOBALS['TUT_PERF_MANUAL_PHASES'] = true;
+        try {
+            $state = \resolveLiveStartAbilities($state, 'p1');
+        } finally {
+            unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
+        }
+
+        $bonus = $state['players']['p1']['stage']['center']['bonus_hearts'] ?? [];
+        $this->assertSame(['red', 'red'], array_values($bonus));
+        $this->assertNotContains('pink', $bonus);
+    }
+
     public function testRegistryKnowsNsd02AbilityTypes(): void
     {
         $known = \LLTCG\Game\EffectRegistry::knownAbilityTypes();

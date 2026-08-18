@@ -52595,7 +52595,7 @@
                 "red"
             ],
             "rarity": "P",
-            "text": "[Live Start] Until this Live ends, 1 Nijigasaki Member on your Stage with Blade 4 or more gains 2 Pink hearts.",
+            "text": "[Live Start] Until this Live ends, 1 Nijigasaki Member on your Stage with Blade 4 or more gains 2 Red hearts.",
             "text_jp": "[ライブ開始時] 自分のステージにいる＋1ブレードを4つ以上持つ『虹ヶ咲』のメンバー1人は、ライブ終了時まで、赤ハート2つを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/NSD02/PL!N-sd2-026-P.png",
             "abilities": [
@@ -52606,7 +52606,7 @@
                     "min_blade": 4,
                     "hearts": [
                         {
-                            "color": "pink",
+                            "color": "red",
                             "count": 2
                         }
                     ]
@@ -52629,10 +52629,10 @@
                     "count": 4
                 }
             ],
-            "text_es": "[Inicio del directo] Hasta que finalice este directo, 1 miembro de Nijigasaki en tu escenario con Blade 4 o más gana 2 corazones rosas.",
-            "text_ko": "[라이브 시작] 이번 라이브가 종료될 때까지 블레이드 4 이상을 보유한 니지가사키 멤버 1명이 핑크 하트 2개를 얻습니다.",
-            "text_zh": "[Live开始]直到本Live结束为止，我方舞台上1名持有刀刃4以上的虹崎成员获得2颗粉红心。",
-            "text_th": "[เริ่มถ่ายทอดสด] จนกว่าการถ่ายทอดสดนี้จะสิ้นสุดลง สมาชิก Nijigasaki 1 คนที่อยู่บนเวทีของคุณด้วย Blade 4 ขึ้นไป จะได้รับหัวใจสีชมพู 2 ดวง"
+            "text_es": "[Inicio del directo] Hasta que finalice este directo, 1 miembro de Nijigasaki en tu escenario con Blade 4 o más gana 2 corazones rojos.",
+            "text_ko": "[라이브 시작] 이번 라이브가 종료될 때까지 블레이드 4 이상을 보유한 니지가사키 멤버 1명이 빨간 하트 2개를 얻습니다.",
+            "text_zh": "[Live开始]直到本Live结束为止，我方舞台上1名持有刀刃4以上的虹崎成员获得2颗红心。",
+            "text_th": "[เริ่มถ่ายทอดสด] จนกว่าการถ่ายทอดสดนี้จะสิ้นสุดลง สมาชิก Nijigasaki 1 คนที่อยู่บนเวทีของคุณด้วย Blade 4 ขึ้นไป จะได้รับหัวใจสีแดง 2 ดวง"
         },
         {
             "card_no": "PL!N-sd2-026-SD2",
@@ -52660,7 +52660,7 @@
                 "red"
             ],
             "rarity": "SD2",
-            "text": "[Live Start] Until this Live ends, 1 Nijigasaki Member on your Stage with Blade 4 or more gains 2 Pink hearts.",
+            "text": "[Live Start] Until this Live ends, 1 Nijigasaki Member on your Stage with Blade 4 or more gains 2 Red hearts.",
             "text_jp": "[ライブ開始時] 自分のステージにいる＋1ブレードを4つ以上持つ『虹ヶ咲』のメンバー1人は、ライブ終了時まで、赤ハート2つを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/NSD02/PL!N-sd2-026-SD2.png",
             "abilities": [
@@ -52671,7 +52671,7 @@
                     "min_blade": 4,
                     "hearts": [
                         {
-                            "color": "pink",
+                            "color": "red",
                             "count": 2
                         }
                     ]
@@ -52694,10 +52694,10 @@
                     "count": 4
                 }
             ],
-            "text_es": "[Inicio del directo] Hasta que finalice este directo, 1 miembro de Nijigasaki en tu escenario con Blade 4 o más gana 2 corazones rosas.",
-            "text_ko": "[라이브 시작] 이번 라이브가 종료될 때까지 블레이드 4 이상을 보유한 니지가사키 멤버 1명이 핑크 하트 2개를 얻습니다.",
-            "text_zh": "[Live开始]直到本Live结束为止，我方舞台上1名持有刀刃4以上的虹崎成员获得2颗粉红心。",
-            "text_th": "[เริ่มถ่ายทอดสด] จนกว่าการถ่ายทอดสดนี้จะสิ้นสุดลง สมาชิก Nijigasaki 1 คนที่อยู่บนเวทีของคุณด้วย Blade 4 ขึ้นไป จะได้รับหัวใจสีชมพู 2 ดวง"
+            "text_es": "[Inicio del directo] Hasta que finalice este directo, 1 miembro de Nijigasaki en tu escenario con Blade 4 o más gana 2 corazones rojos.",
+            "text_ko": "[라이브 시작] 이번 라이브가 종료될 때까지 블레이드 4 이상을 보유한 니지가사키 멤버 1명이 빨간 하트 2개를 얻습니다.",
+            "text_zh": "[Live开始]直到本Live结束为止，我方舞台上1名持有刀刃4以上的虹崎成员获得2颗红心。",
+            "text_th": "[เริ่มถ่ายทอดสด] จนกว่าการถ่ายทอดสดนี้จะสิ้นสุดลง สมาชิก Nijigasaki 1 คนที่อยู่บนเวทีของคุณด้วย Blade 4 ขึ้นไป จะได้รับหัวใจสีแดง 2 ดวง"
         },
         {
             "card_no": "PL!N-sd2-027-P",
