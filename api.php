@@ -3202,17 +3202,13 @@ function resolvePerformanceHeartCheck(array $state, string $pid, bool $continueA
     }
 
     $yellWildcard = liveCardsGrantYellHeartsWildcard($liveCards);
-    $drawPerYellHeart = false;
-    $drawPerYellCard = false;
     foreach ($liveCards as $lc) {
         mergeCardCatalogFields($lc);
-        foreach ($lc['abilities'] ?? [] as $ab) {
-            if (($ab['trigger'] ?? '') !== 'continuous') continue;
-            if (($ab['type'] ?? '') === 'draw_per_yell_heart') $drawPerYellHeart = true;
-            if (($ab['type'] ?? '') === 'draw_per_yell_card') $drawPerYellCard = true;
-        }
     }
-    // Yell draw icons always apply (official rule) — not gated on Live continuous abilities.
+    // Official reminder on draw-icon Lives: after all Yells, draw 1 per DRAW ICON
+    // revealed (「エールで出たドロー」). Always counted here — not gated on Live IR.
+    // Older catalog encoded that reminder as draw_per_yell_card / draw_per_yell_heart
+    // (mistranslating ドロー as "card" / "heart"). Do not extra-draw those.
     $yellDrawIcons = countYellDrawIcons($yellCards);
     $drawBonus += $yellDrawIcons;
     $yellScoreIcons = countYellScoreIcons($yellCards);
@@ -3227,12 +3223,6 @@ function resolvePerformanceHeartCheck(array $state, string $pid, bool $continueA
             $state,
             $pid
         );
-    }
-    if ($drawPerYellHeart && count($yellHearts) > 0) {
-        $drawBonus += count($yellHearts);
-    }
-    if ($drawPerYellCard) {
-        $drawBonus += count($yellCards);
     }
 
     if ($drawBonus > 0) {

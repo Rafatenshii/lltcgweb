@@ -33633,7 +33633,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_card"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "special_heart": "icon_draw.png",
@@ -33665,7 +33665,7 @@
                 "purple"
             ],
             "rarity": "L",
-            "text": "[Live Start] You may pay 2 Energy: if you have a Nijigasaki Member on your Stage, this card's score +1.\n(After all Yell steps, draw 1 card for each card revealed for Yell.)",
+            "text": "[Live Start] You may pay 2 Energy: if you have a Nijigasaki Member on your Stage, this card's score +1.",
             "text_jp": "[ライブ開始時] エネルギー2支払ってもよい：自分のステージに『虹ヶ咲』のメンバーがいる場合、このカードのスコアを＋１する。\n\n(エールをすべて行った後、エールで出たドロー1つにつき、カードを1枚引く。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP01/PL!N-bp1-028-L.png",
             "score": 5,
@@ -33692,7 +33692,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_card"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "special_heart": "icon_draw.png",
@@ -33747,7 +33747,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_card"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "special_heart": "icon_draw.png",
@@ -51174,7 +51174,7 @@
                 "pink"
             ],
             "rarity": "SD",
-            "text": "[Live Start] If total Blade on your Stage is 10 or more, this card's score +1.\n(After completing all Yell reveals, draw 1 card for each heart revealed for Yell.)",
+            "text": "[Live Start] If total Blade on your Stage is 10 or more, this card's score +1.",
             "text_jp": "[ライブ開始時] 自分のステージにいるメンバーが持つブレードの合計が10以上の場合、このカードのスコアを＋１する。\n\n(エールをすべて行った後、エールで出たドロー1つにつき、カードを1枚引く。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/NSD01/PL!N-sd1-028-SD.png",
             "abilities": [
@@ -51186,7 +51186,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_heart"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "score": 4,
@@ -72294,7 +72294,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_card"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "special_heart": "icon_draw.png",
@@ -72346,7 +72346,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_card"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "score": 6,
@@ -91708,7 +91708,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "draw_per_yell_heart"
+                    "type": "draw_per_yell_draw"
                 }
             ],
             "score": 4,

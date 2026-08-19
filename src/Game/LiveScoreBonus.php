@@ -37,8 +37,8 @@ function continuousEffectDescription(array $ab, ?int $stackedEnergyCount = null)
         'live_score_bonus_if_min_entered'     => "+{$amount} Live Score (Members entered this turn)",
         'grant_live_success_yell_live_score_if_full_stage' => 'Bonus Live Score from Yell Lives (full stage)',
         'draw_per_yell_draw'                  => 'Draw 1 per Yell draw icon revealed',
-        'draw_per_yell_card'                  => 'Draw 1 per card revealed by Yell',
-        'draw_per_yell_heart'                 => 'Draw 1 per heart revealed by Yell',
+        'draw_per_yell_card'                  => 'Draw 1 per Yell draw icon revealed',
+        'draw_per_yell_heart'                 => 'Draw 1 per Yell draw icon revealed',
         'hand_cost_reduction'                 => 'Hand cost reduction',
         'cannot_success_live'               => 'Cannot be placed in Success Live',
     ];
