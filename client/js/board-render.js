@@ -577,6 +577,9 @@ function liveStorageRevealBypassOk(prev, next, showTurn, myId = G.playerId) {
 /** Prev for live-round spectacle when polls batch reveal + performance into one update. */
 function effectiveLiveRoundPrev(prev, next) {
   if (!prev || !next) return prev;
+  if (typeof settledMainBlocksLiveSpectacle === 'function' && settledMainBlocksLiveSpectacle(prev, next)) {
+    return prev;
+  }
   if (shouldPresentEmptyLiveRound(prev, next) || emptyLiveRoundPresentationPending(prev, next)) {
     return effectiveEmptyLiveRoundPrev(prev, next);
   }

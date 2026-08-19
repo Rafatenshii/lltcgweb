@@ -366,6 +366,11 @@
     const prev = G.gameState;
     restorePerfSpectacleDoneKey();
     markSpectacleDoneFromState(s, prev);
+    if (typeof settledMainBlocksLiveSpectacle === 'function'
+        && settledMainBlocksLiveSpectacle(prev, s)
+        && typeof dropStaleLiveRoundPlaybackBoards === 'function') {
+      dropStaleLiveRoundPlaybackBoards('applyState: settled Main (On Enter / baton / play)');
+    }
     if (prev && !isLiveSetPhase(prev.phase) && isLiveSetPhase(s.phase)) {
       G._perfYellRevealCache = null;
       G._deferPerfSpectaclePrev = null;
@@ -629,7 +634,7 @@
       }
     }
 
-    if (await runLiveSpectacleGate(livePrev, s, newEntries, G.playerId)) {
+    if (await runLiveSpectacleGate(prev, s, newEntries, G.playerId)) {
       if (replayForward) commitServerBoardToUi(s);
       const live = G.gameState || s;
       if (!replayForward && live.pending_prompt?.responder === G.playerId
@@ -666,10 +671,10 @@
       if (!replayPastLiveGate) {
         if (!replayForward && !G.animating && !G._liveSpectacleGateRunning
             && typeof shouldRecoverMissedLiveSpectacle === 'function'
-            && shouldRecoverMissedLiveSpectacle(livePrev ?? prev, s)) {
+            && shouldRecoverMissedLiveSpectacle(prev, s)) {
           G.animating = true;
           try {
-            await runLiveSpectacleGate(livePrev ?? prev, s, newEntries, G.playerId);
+            await runLiveSpectacleGate(prev, s, newEntries, G.playerId);
           } finally {
             G.animating = false;
             releaseLivePollsAndFlush();

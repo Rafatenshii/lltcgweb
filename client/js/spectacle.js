@@ -1009,6 +1009,9 @@ function detectPendingLiveSpectacleTurn(prev, next) {
   if (!next || isSlideshowTutorial() || G._perfSpectacleActive) return null;
   const ph = next.phase;
   if (ph === 'coin_flip' || ph === 'setup' || ph === 'waiting') return null;
+  if (typeof settledMainBlocksLiveSpectacle === 'function' && settledMainBlocksLiveSpectacle(prev, next)) {
+    return null;
+  }
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return null;
   if (isEmptyLiveSkipTransition(prev, next) || shouldPresentEmptyLiveRound(prev, next)) return null;
 
@@ -1084,6 +1087,7 @@ function ensurePerfSpectacleNotStaleDone(prev, next) {
 
 function shouldRecoverMissedLiveSpectacle(prev, next) {
   if (!next || isSlideshowTutorial()) return false;
+  if (settledMainBlocksLiveSpectacle(prev, next)) return false;
   if (isLiveSetPlacementOnly(prev, next) || liveSetPlacementInProgress(next)) return false;
   if (!spectacleRecoveryContext(prev, next)) return false;
   const showTurn = detectPendingLiveSpectacleTurn(prev, next)
@@ -1114,6 +1118,42 @@ function shouldIgnoreStaleLivePerfSignals(prev, next) {
     return false;
   }
   return isMainOrActivePhase(prev?.phase) && isMainOrActivePhase(next?.phase);
+}
+
+/**
+ * Settled Main/Active with no live_show cursor — On Enter, baton, play Member.
+ * Performance splash / yell / storage flips must never start from these polls,
+ * even if a leftover live_set defer board makes the transition look like leaving LIVE.
+ */
+function settledMainBlocksLiveSpectacle(prev, next) {
+  if (!next || isSlideshowTutorial()) return false;
+  if (!isMainOrActivePhase(next.phase)) return false;
+  const show = next.live_show;
+  if (show?.stage && show.stage !== 'done') return false;
+  // In-flight show is legal only while the server is still in the live pipeline.
+  if ((G._liveShowRunnerActive || G._perfSpectacleActive || G._liveRoundPlaybackActive)
+      && isLiveSpectaclePipelinePhase(next.phase)) {
+    return false;
+  }
+  if (isLeavingLiveSetPhase(prev, next)) return false;
+  if (isLiveSpectaclePipelinePhase(prev?.phase) && prev.phase !== 'live_set') return false;
+  const slice = newLogEntries(prev, next);
+  if (logSliceHasLivePipelineSignals(slice) || newLogHasLivePerformance(prev, next)) return false;
+  return isMainOrActivePhase(prev?.phase) || !isLiveSpectaclePipelinePhase(prev?.phase);
+}
+
+function dropStaleLiveRoundPlaybackBoards(reason) {
+  TCG_DEBUG.log('live', 'drop stale live-round playback boards', { reason });
+  G._deferPerfSpectaclePrev = null;
+  G._liveSetStorageBaseline = null;
+  if (!G._liveWrDiscardInProgress) {
+    G._livePostRevealBoard = null;
+    G._liveStorageOutcomePending = false;
+  }
+  G._spectacleRecoveryPending = null;
+  G._spectacleRecoveryAttempts = 0;
+  cancelStalePerformancePhaseSplash();
+  el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
 }
 
 function liveStorageFlipPlaybackActive(flipKeys, flipKey) {
@@ -1311,6 +1351,10 @@ function shouldResetLiveStorageRevealDone(prev, next, showTurn, myId) {
 
 async function runLiveSpectacleGate(prev, s, newEntries, myId) {
   if (isLiveSetPlacementOnly(prev, s) || liveSetPlacementInProgress(s)) return false;
+  if (settledMainBlocksLiveSpectacle(prev, s)) {
+    dropStaleLiveRoundPlaybackBoards('gate: settled Main (On Enter / baton / play)');
+    return false;
+  }
   const gatePrev = effectiveLiveRoundPrev(prev, s);
   const showTurn = detectPendingLiveSpectacleTurn(gatePrev, s)
     ?? detectPendingLiveSpectacleTurn(prev, s);
@@ -3445,6 +3489,11 @@ async function playLiveSuccessDeferredEffects(prev, final, myId, newEntries) {
 
 /** Orchestrate live storage reveal, WR discards, and Performance spectacle for one round. */
 async function presentLiveRound(prev, next, myId, opts = {}) {
+  if (settledMainBlocksLiveSpectacle(prev, next)) {
+    TCG_DEBUG.log('live', 'presentLiveRound skip (settled Main — no Performance outside Performance)');
+    dropStaleLiveRoundPlaybackBoards('presentLiveRound: settled Main');
+    return { reveal: false, spectacle: false, empty: false };
+  }
   if (isLeavingLiveSetPhase(prev, next) && liveStorageHasCards(prev)) {
     refreshLiveSetStorageBaseline(prev);
   }
@@ -4016,6 +4065,9 @@ function performanceSpectacleReady(prev, next) {
 /** Main gate: should this poll update run the full Performance show animation? */
 function shouldTriggerPerfSpectacle(prev, next) {
   if (!prev || !next || G._perfSpectacleActive || isSlideshowTutorial()) {
+    return false;
+  }
+  if (settledMainBlocksLiveSpectacle(prev, next)) {
     return false;
   }
   if (spectacleDoneForTransition(prev, next)) {
@@ -9023,6 +9075,7 @@ function centerBannerForPhase(phase, copy) {
 function queuePerformancePhaseBanner(showTurn, prev, next) {
   const p = prev ?? G.gameState;
   const n = next ?? G.gameState;
+  if (settledMainBlocksLiveSpectacle(p, n)) return;
   const turn = showTurn ?? primaryLiveShowTurn(p, n) ?? inferLiveShowTurn(p, n);
   if (perfSplashAlreadyShown(turn, p, n)) return;
   if (performancePhaseBannerShowing() || performancePhaseBannerQueued()) return;
