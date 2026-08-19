@@ -117,6 +117,63 @@
     }
   }
 
+  function isSettledPlayPhase(ph) {
+    return ph === 'main_first' || ph === 'main_second'
+      || ph === 'active_first' || ph === 'active_second'
+      || ph === 'live_set';
+  }
+
+  function incomingLiveShowInFlight(s) {
+    const stage = s?.live_show?.stage;
+    return !!(stage && stage !== 'done');
+  }
+
+  function applyTurnAdvanceNow(s) {
+    TCG_DEBUG.warn('state', 'apply turn-advance despite presentation hold', {
+      seq: s.seq,
+      from: G.gameState?.phase,
+      to: s.phase,
+      active: s.active_player,
+    });
+    G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (s.seq ?? 0));
+    if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
+      LiveRoundDirector.abort('turn-advance');
+    }
+    G.animating = false;
+    G._liveRoundPlaybackActive = false;
+    G._liveSpectacleGateRunning = false;
+    G._liveShowRunnerActive = false;
+    G._presentationAborted = false;
+    if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
+      dropStaleLiveRoundPlaybackBoards('turn-advance');
+    }
+    if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+    applyStateUpdate(s);
+  }
+
+  function isTurnAdvanceSnapshot(prev, next) {
+    if (!prev || !next) return false;
+    if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
+    if (incomingLiveShowInFlight(next)) return false;
+    const nph = next.phase || '';
+    if (nph === 'live_start_effects' || nph === 'live_performance_first'
+        || nph === 'live_performance_second' || nph === 'live_judge'
+        || nph === 'live_success_effects') {
+      return false;
+    }
+    if (prev.phase !== nph) return isSettledPlayPhase(prev.phase);
+    if ((prev.phase === 'main_first' || prev.phase === 'main_second')
+        && prev.active_player !== next.active_player) {
+      return true;
+    }
+    if (prev.phase === 'live_set' && nph === 'live_set') {
+      return prev.active_player !== next.active_player
+        || (prev.live_set_player || prev.active_player) !== (next.live_set_player || next.active_player)
+        || JSON.stringify(prev.live_ready || {}) !== JSON.stringify(next.live_ready || {});
+    }
+    return false;
+  }
+
   global.onState = function onState(s) {
     if (G.isTutorial && !G.tutorialLive) return;
     // Keep reconnect credentials fresh while the match is live, and through the
@@ -188,6 +245,14 @@
       G.rematchWaiting = false;
       G.rematchRequested = false;
       global.el?.('overlay-win')?.classList.remove('open');
+    }
+    if (isTurnAdvanceSnapshot(G.gameState, s)
+        && (G.animating || G._perfSpectacleActive || G._liveSpectacleGateRunning
+          || G._liveRoundPlaybackActive
+          || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active)
+          || shouldHoldStateForLocalPrompt(s))) {
+      applyTurnAdvanceNow(s);
+      return;
     }
     if (shouldHoldStateForLocalPrompt(s)) {
       TCG_DEBUG.log('state', 'queue (local prompt open)', { seq: s.seq, phase: s.phase, q: (G._pendingStateQueue?.length || 0) + 1 });

@@ -2564,8 +2564,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/game-sync.js?v=47"></script>
-<script src="client/js/state-apply.js?v=61"></script>
+<script src="client/js/game-sync.js?v=48"></script>
+<script src="client/js/state-apply.js?v=62"></script>
 <script src="client/js/stamps.js?v=19"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -23307,8 +23307,9 @@ function clearPvPWatchdog() {
 
 /** Unblock polls/animations without discarding queued server snapshots. */
 function releaseStuckPresentation() {
+  const directorHeld = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
   if (!G.animating && !G._livePollHold && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
-      && !G._liveShowRunnerActive && !G._liveRoundPlaybackActive) return;
+      && !G._liveShowRunnerActive && !G._liveRoundPlaybackActive && !directorHeld) return;
   const liveShowInFlight = !!G.gameState?.live_show?.stage
     && G.gameState.live_show.stage !== 'done';
   TCG_DEBUG.warn('pvp', 'release stuck presentation', {
@@ -23341,6 +23342,9 @@ function releaseStuckPresentation() {
     return;
   }
   // Close chrome first — leaving _perfSpectacleActive true kept polls blocked.
+  if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
+    LiveRoundDirector.abort('release-stuck');
+  }
   if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
   else G._perfSpectacleActive = false;
   G._liveShowRunnerActive = false;
@@ -31614,6 +31618,8 @@ async function sendAct(type,data){
   if (G.isSpectator) return;
   if (isReplayViewing()) return;
   if(!G.roomId||!G.token) return;
+  const phaseAdvance = type === 'end_main' || type === 'end_live_set';
+  if (phaseAdvance && G._phaseAdvanceInFlight) return;
   if (type === 'resign') abortGameplayPresentation();
   if ((type === 'end_main' || type === 'end_live_set' || type === 'play_member'
       || type === 'activate_ability') && hasOpenSkillPrompt(G.gameState)) {
@@ -31636,8 +31642,11 @@ async function sendAct(type,data){
   }
   tcgDebugRecordAction(type, data, 'player');
   TCG_DEBUG.log('action', 'sendAct →', type, data);
+  if (phaseAdvance) G._phaseAdvanceInFlight = true;
   try {
-    const res = await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, { silent: type === 'send_stamp' });
+    const res = await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, {
+      silent: type === 'send_stamp' || phaseAdvance,
+    });
     // Duplicate resolve_prompt that the server treated as a no-op must not latch
     // the client into a permanently unclickable prompt.
     if (type === 'resolve_prompt' && res && res.noop) {
@@ -31653,6 +31662,9 @@ async function sendAct(type,data){
     if (G.polling) {
       if (type === 'resolve_prompt' || type === 'anti_softlock_skip' || type === 'force_own_timeout') {
         await pullPromptResolutionState();
+      } else if (phaseAdvance) {
+        if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
+        await pullLatestState(true, { silent: true });
       } else {
         await pullLatestState(false, { silent: type === 'send_stamp' });
       }
@@ -31699,6 +31711,17 @@ async function sendAct(type,data){
     TCG_DEBUG.warn('action', 'sendAct failed', type, e.message);
     const msg = e.message || '';
     const status = e.httpStatus || 0;
+    const staleTurn = phaseAdvance && /not your turn/i.test(msg);
+    if (staleTurn) {
+      // First click already advanced the server; the board never caught up.
+      if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
+      try { if (G.polling) await pullLatestState(true, { silent: true }); } catch (_) {}
+      flushPendingState();
+      return;
+    }
+    if (phaseAdvance && typeof reportApiError === 'function') {
+      reportApiError(e, { source: 'sendAct:' + type });
+    }
     if (type === 'resign') { /* toasted above */ }
     else if (/no matching/i.test(msg) && /waiting room/i.test(msg)) toast(msg, 3200);
     else if (
@@ -31710,6 +31733,8 @@ async function sendAct(type,data){
     ) {
       toast('Error: ' + msg, 6000);
     }
+  } finally {
+    if (phaseAdvance) G._phaseAdvanceInFlight = false;
   }
 }
 

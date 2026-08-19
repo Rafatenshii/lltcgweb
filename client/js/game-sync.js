@@ -135,6 +135,29 @@
       TCG_DEBUG.warn('poll', 'clear stuck LiveRoundDirector.active');
       LiveRoundDirector.end('poll-soft-heal');
     }
+    // End Main can succeed on the server while G.animating stays true (stuck On Enter
+    // flight). With no clones left, drop the latch so polls apply the new turn.
+    const flightCount = document.querySelectorAll('#card-flight-layer .card-flight').length;
+    if (!serverLiveShowInFlight && mainStable && !G._liveShowRunnerActive
+        && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
+        && flightCount === 0
+        && (G.animating || G._liveRoundPlaybackActive
+          || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active))) {
+      TCG_DEBUG.warn('poll', 'clear stuck Main presentation (no flights)', {
+        phase: ph,
+        animating: !!G.animating,
+        playback: !!G._liveRoundPlaybackActive,
+      });
+      if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
+        LiveRoundDirector.abort('poll: stuck Main');
+      }
+      G.animating = false;
+      G._liveRoundPlaybackActive = false;
+      if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
+        dropStaleLiveRoundPlaybackBoards('poll: stuck Main');
+      }
+      if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+    }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances
     // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.
     if (typeof ensureBannerPumpNotStuck === 'function') ensureBannerPumpNotStuck('poll-gate');
