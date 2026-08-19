@@ -42,6 +42,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Presentation heal / Live Win-Loss contracts
+        run: node scripts/test_presentation_guards.mjs
+
       - name: CPU prompt / scorer contracts
         run: |
           node scripts/audit_card_interactions.mjs --write=reports/card_interaction_matrix.json
