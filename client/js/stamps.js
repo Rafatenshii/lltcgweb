@@ -287,7 +287,8 @@
       voiceAudio.pause();
       voiceAudio.src = src;
       voiceAudio.volume = getStampVoiceVolume();
-      void voiceAudio.play();
+      var p = voiceAudio.play();
+      if (p && typeof p.catch === 'function') p.catch(function () {});
     } catch (e) {}
   }
 

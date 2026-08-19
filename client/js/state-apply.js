@@ -1016,12 +1016,69 @@
     q.sort((a, b) => a.seq - b.seq);
   };
 
+  const LIVE_POLL_HOLD_WATCHDOG_MS = 10000;
+
+  function livePollHoldWatchdogMayRelease() {
+    const s = G.gameState;
+    if (!s) return false;
+    const stage = s.live_show?.stage;
+    // Legal live_show ack wait (reveal through judge) — do not break the hold.
+    if (stage && stage !== 'done') return false;
+    const ph = s.phase;
+    if (ph === 'live_start_effects' || ph === 'live_performance_first' || ph === 'live_performance_second'
+        || ph === 'live_judge' || ph === 'live_success_effects' || ph === 'live_set') {
+      return false;
+    }
+    return ph === 'main_first' || ph === 'main_second'
+      || ph === 'active_first' || ph === 'active_second';
+  }
+
+  function clearLivePollHoldWatchdog() {
+    if (G._livePollHoldWatchdog) {
+      clearTimeout(G._livePollHoldWatchdog);
+      G._livePollHoldWatchdog = null;
+    }
+  }
+
+  function armLivePollHoldWatchdog() {
+    clearLivePollHoldWatchdog();
+    G._livePollHoldWatchdog = setTimeout(function livePollHoldWatchdogTick() {
+      G._livePollHoldWatchdog = null;
+      if (!G._livePollHold) return;
+      if (!livePollHoldWatchdogMayRelease()) {
+        G._livePollHoldWatchdog = setTimeout(livePollHoldWatchdogTick, LIVE_POLL_HOLD_WATCHDOG_MS);
+        return;
+      }
+      TCG_DEBUG.warn('poll', 'live poll hold watchdog — release on settled Main');
+      if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
+        dropStaleLiveRoundPlaybackBoards('poll-hold-watchdog');
+      }
+      if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
+        LiveRoundDirector.abort('poll-hold-watchdog');
+      }
+      G._liveShowRunnerActive = false;
+      G._liveRoundPlaybackActive = false;
+      G._liveSpectacleGateRunning = false;
+      G.animating = false;
+      if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') {
+        perfCloseSpectacle();
+      } else {
+        G._perfSpectacleActive = false;
+      }
+      releaseLivePolls();
+    }, LIVE_POLL_HOLD_WATCHDOG_MS);
+  }
+
   global.holdLivePolls = function holdLivePolls() {
     if (!G._livePollHold) TCG_DEBUG.log('poll', 'holdLivePolls');
     G._livePollHold = true;
+    G._livePollHoldAt = Date.now();
+    armLivePollHoldWatchdog();
   };
 
   global.releaseLivePolls = function releaseLivePolls() {
+    clearLivePollHoldWatchdog();
+    G._livePollHoldAt = 0;
     if (!G._livePollHold) return;
     TCG_DEBUG.log('poll', 'releaseLivePolls');
     G._livePollHold = false;

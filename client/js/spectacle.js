@@ -1142,6 +1142,12 @@ function settledMainBlocksLiveSpectacle(prev, next) {
   return isMainOrActivePhase(prev?.phase) || !isLiveSpectaclePipelinePhase(prev?.phase);
 }
 
+function sweepStaleCardFlights() {
+  const layer = typeof el === 'function' ? el('card-flight-layer') : document.getElementById('card-flight-layer');
+  if (!layer) return;
+  layer.querySelectorAll('.card-flight').forEach((n) => n.remove());
+}
+
 function dropStaleLiveRoundPlaybackBoards(reason) {
   TCG_DEBUG.log('live', 'drop stale live-round playback boards', { reason });
   G._deferPerfSpectaclePrev = null;
@@ -1154,6 +1160,7 @@ function dropStaleLiveRoundPlaybackBoards(reason) {
   G._spectacleRecoveryAttempts = 0;
   cancelStalePerformancePhaseSplash();
   el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
+  sweepStaleCardFlights();
 }
 
 function liveStorageFlipPlaybackActive(flipKeys, flipKey) {

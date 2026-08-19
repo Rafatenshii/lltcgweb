@@ -25,6 +25,8 @@
     card_to_wr: true,
     card_play: true,
   };
+  var unlocked = false;
+  var unlockBound = false;
 
   function enabled() {
     try { return localStorage.getItem(SFX_KEY) !== '0'; } catch (e) { return true; }
@@ -120,8 +122,41 @@
     return DEFAULT_GAP_MS;
   }
 
+  function swallowPlay(p) {
+    if (p && typeof p.catch === 'function') p.catch(function () { /* autoplay */ });
+  }
+
+  function unlockFromGesture() {
+    if (unlocked) return;
+    unlocked = true;
+    try {
+      var files = Object.keys(pool);
+      if (files.length) {
+        var probe = pool[files[0]].cloneNode();
+        probe.muted = true;
+        probe.volume = 0;
+        swallowPlay(probe.play());
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function bindUnlock() {
+    if (unlockBound || typeof document === 'undefined') return;
+    unlockBound = true;
+    var once = function () {
+      unlockFromGesture();
+      document.removeEventListener('pointerdown', once, true);
+      document.removeEventListener('keydown', once, true);
+      document.removeEventListener('touchend', once, true);
+    };
+    document.addEventListener('pointerdown', once, true);
+    document.addEventListener('keydown', once, true);
+    document.addEventListener('touchend', once, true);
+  }
+
   function play(id, opts) {
     if (!enabled()) return;
+    if (!unlocked) return;
     var pick = pickVariant(id);
     if (!pick || !pick.file) return;
     var now = Date.now();
@@ -140,11 +175,12 @@
       warmFile(pick.file);
       var node = pool[pick.file].cloneNode();
       node.volume = vol;
-      void node.play();
+      swallowPlay(node.play());
     } catch (e) { /* autoplay / missing file */ }
   }
 
   function init() {
+    bindUnlock();
     return loadManifest().then(function (m) {
       [
         'menu_tap', 'menu_confirm', 'card_draw', 'card_slide', 'card_hover', 'card_pick', 'card_flip',
@@ -159,6 +195,8 @@
     });
   }
 
+  bindUnlock();
+
   window.LLTCG_SFX = {
     SFX_KEY: SFX_KEY,
     SFX_VOLUME_KEY: SFX_VOLUME_KEY,
@@ -171,5 +209,6 @@
     play: play,
     warm: warm,
     init: init,
+    unlock: unlockFromGesture,
   };
 })();

@@ -809,6 +809,7 @@
         G._liveShowRunnerActive = false;
         G.animating = false;
         G._livePollHold = false;
+        if (typeof releaseLivePolls === 'function') releaseLivePolls();
         G._liveRoundPlaybackActive = false;
         G._liveSpectacleGateRunning = false;
         G._presentationAborted = false;
@@ -945,6 +946,7 @@
         G.animating = false;
         G._perfSpectacleActive = false;
         G._livePollHold = false;
+        if (typeof releaseLivePolls === 'function') releaseLivePolls();
         G._liveRoundPlaybackActive = false;
         G._liveSpectacleGateRunning = false;
       }
