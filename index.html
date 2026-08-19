@@ -2564,8 +2564,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/game-sync.js?v=48"></script>
-<script src="client/js/state-apply.js?v=62"></script>
+<script src="client/js/game-sync.js?v=49"></script>
+<script src="client/js/state-apply.js?v=63"></script>
 <script src="client/js/stamps.js?v=19"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -22092,8 +22092,8 @@ async function executeCardMoveAnimation(m, opts) {
   // Ghost guard: card already handed off, or already painted at the destination
   // (state-apply renderGame-before-fly). Portrait dest fallbacks made these visible again.
   if (!reservation.ok) {
+    clearAnimHideIid(m.iid);
     if (isLiveStorageExit) {
-      clearAnimHideIid(m.iid);
       removeLiveStorageCardFromDomIfDeparted(m.from, m.iid, myId, renderState || stateAfter);
     }
     return;
@@ -23353,6 +23353,8 @@ function releaseStuckPresentation() {
   G._liveRoundPlaybackActive = false;
   G._liveSpectacleGateRunning = false;
   G._animHideIids = null;
+  G._logSyncInFlight = false;
+  if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
   // Do not leave _presentationAborted set — flushPendingState refuses to apply when true.
   G._presentationAborted = false;
   clearDeferredPromptState();
@@ -23360,20 +23362,9 @@ function releaseStuckPresentation() {
   if (G.playerId && G.gameState) {
     updateOpponentSkillWaitBanner(G.gameState, G.playerId);
     updatePhaseActionButton(G.gameState, G.playerId);
+    if (typeof renderGame === 'function') renderGame(G.gameState, { skipLog: true });
   }
   releaseLivePolls();
-  if (G._logSyncInFlight) {
-    const q = G._pendingStateQueue;
-    if (q?.length) {
-      const snap = q[q.length - 1];
-      G._pendingStateQueue = [];
-      G.gameState = snap;
-      G.lastSeq = snap.seq ?? G.lastSeq;
-      G._prevLogLen = snap.log?.length || 0;
-      renderGame(snap);
-    }
-    return;
-  }
   flushPendingState();
 }
 
@@ -31619,6 +31610,7 @@ async function sendAct(type,data){
   if (isReplayViewing()) return;
   if(!G.roomId||!G.token) return;
   const phaseAdvance = type === 'end_main' || type === 'end_live_set';
+  const boardCatchup = type === 'play_member' || type === 'activate_ability';
   if (phaseAdvance && G._phaseAdvanceInFlight) return;
   if (type === 'resign') abortGameplayPresentation();
   if ((type === 'end_main' || type === 'end_live_set' || type === 'play_member'
@@ -31662,7 +31654,7 @@ async function sendAct(type,data){
     if (G.polling) {
       if (type === 'resolve_prompt' || type === 'anti_softlock_skip' || type === 'force_own_timeout') {
         await pullPromptResolutionState();
-      } else if (phaseAdvance) {
+      } else if (phaseAdvance || boardCatchup) {
         if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
         await pullLatestState(true, { silent: true });
       } else {

@@ -141,7 +141,7 @@
     if (!serverLiveShowInFlight && mainStable && !G._liveShowRunnerActive
         && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
         && flightCount === 0
-        && (G.animating || G._liveRoundPlaybackActive
+        && (G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight
           || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active))) {
       TCG_DEBUG.warn('poll', 'clear stuck Main presentation (no flights)', {
         phase: ph,
@@ -156,7 +156,13 @@
       if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
         dropStaleLiveRoundPlaybackBoards('poll: stuck Main');
       }
+      G._animHideIids = null;
+      G._logSyncInFlight = false;
+      if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (G.gameState && typeof renderGame === 'function') {
+        renderGame(G.gameState, { skipLog: true });
+      }
     }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances
     // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.

@@ -147,6 +147,9 @@
     if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
       dropStaleLiveRoundPlaybackBoards('turn-advance');
     }
+    G._animHideIids = null;
+    G._logSyncInFlight = false;
+    if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
     if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     applyStateUpdate(s);
   }
@@ -172,6 +175,29 @@
         || JSON.stringify(prev.live_ready || {}) !== JSON.stringify(next.live_ready || {});
     }
     return false;
+  }
+
+  function stageOccupancyKey(state, pid) {
+    const stage = state?.players?.[pid]?.stage || {};
+    return ['left', 'center', 'right'].map(slot => stage[slot]?.instance_id || '').join(',');
+  }
+
+  /** Play / baton / energy spend on Main must not sit behind a stuck empty-slot flight. */
+  function isMainBoardCatchupSnapshot(prev, next) {
+    if (!prev || !next) return false;
+    if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
+    if (incomingLiveShowInFlight(next)) return false;
+    if (prev.phase !== next.phase) return false;
+    if (prev.phase !== 'main_first' && prev.phase !== 'main_second') return false;
+    const pid = next.active_player || prev.active_player;
+    if (!pid) return false;
+    if (stageOccupancyKey(prev, pid) !== stageOccupancyKey(next, pid)) return true;
+    const ph = prev.players?.[pid]?.hand?.length ?? -1;
+    const nh = next.players?.[pid]?.hand?.length ?? -1;
+    if (ph !== nh) return true;
+    const pe = (prev.players?.[pid]?.energy_zone || []).length;
+    const ne = (next.players?.[pid]?.energy_zone || []).length;
+    return pe !== ne;
   }
 
   global.onState = function onState(s) {
@@ -246,9 +272,9 @@
       G.rematchRequested = false;
       global.el?.('overlay-win')?.classList.remove('open');
     }
-    if (isTurnAdvanceSnapshot(G.gameState, s)
+    if ((isTurnAdvanceSnapshot(G.gameState, s) || isMainBoardCatchupSnapshot(G.gameState, s))
         && (G.animating || G._perfSpectacleActive || G._liveSpectacleGateRunning
-          || G._liveRoundPlaybackActive
+          || G._liveRoundPlaybackActive || G._logSyncInFlight
           || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active)
           || shouldHoldStateForLocalPrompt(s))) {
       applyTurnAdvanceNow(s);
