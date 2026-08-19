@@ -646,9 +646,40 @@
     }
   }
 
+  /** Desktop Stamps lives in the sidebar; portrait chrome hides it — expose via burger. */
+  function ensurePortraitStampMenuItem() {
+    const pop = global.document.getElementById('portrait-menu-pop');
+    if (!pop || global.document.getElementById('btn-portrait-menu-stamps')) return;
+    const btn = global.document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pb-menu-item';
+    btn.id = 'btn-portrait-menu-stamps';
+    btn.setAttribute('role', 'menuitem');
+    btn.hidden = true;
+    const refreshItem = global.document.getElementById('btn-portrait-menu-refresh');
+    if (refreshItem && refreshItem.parentElement === pop) {
+      pop.insertBefore(btn, refreshItem);
+    } else {
+      const logItem = global.document.getElementById('btn-portrait-menu-log');
+      if (logItem && logItem.parentElement === pop) pop.insertBefore(btn, logItem);
+      else pop.appendChild(btn);
+    }
+  }
+
   /** Refresh burger items for play vs spectate (POV / hidden hands / Leave). */
+  function stampMenuAvailable() {
+    if (global.G && global.G.isSpectator) return false;
+    const stamps = global.TCG_STAMPS;
+    if (stamps && typeof stamps.isStampMatch === 'function') {
+      return !!stamps.isStampMatch(global.G?.gameState);
+    }
+    const btn = global.document.getElementById('btn-stamp');
+    return !!(btn && !btn.hidden && !btn.disabled);
+  }
+
   function syncPortraitMenuForMode() {
     ensurePortraitRefreshMenuItem();
+    ensurePortraitStampMenuItem();
     ensurePortraitPhaseTimerSlot();
     const spectating = !!(global.G && global.G.isSpectator);
     const pov = global.document.getElementById('btn-portrait-menu-pov');
@@ -656,8 +687,15 @@
     const resignItem = global.document.getElementById('btn-portrait-menu-resign');
     const logItem = global.document.getElementById('btn-portrait-menu-log');
     const refreshItem = global.document.getElementById('btn-portrait-menu-refresh');
+    const stampItem = global.document.getElementById('btn-portrait-menu-stamps');
     if (logItem) logItem.textContent = t('mobile.openLog', 'Log');
     if (refreshItem) refreshItem.textContent = t('mobile.refresh', 'Refresh');
+    if (stampItem) {
+      const show = stampMenuAvailable();
+      stampItem.hidden = !show;
+      stampItem.disabled = !show;
+      stampItem.textContent = t('mobile.stamps', 'Stamps');
+    }
     if (pov) {
       pov.hidden = !spectating;
       pov.textContent = t('spectate.switchPerspective', 'Switch perspective');
@@ -684,7 +722,7 @@
     }
   }
 
-  /** Burger menu beside End Main Phase — Refresh / Log / Resign; spectate adds POV / hands. */
+  /** Burger menu beside End Main Phase — Stamps / Refresh / Log / Resign; spectate adds POV / hands. */
   function ensurePhaseMenu() {
     if (!global.document.getElementById('portrait-board')) return;
     bindZonePreviewTargets();
@@ -722,6 +760,7 @@
       '<div class="pb-menu-pop" id="portrait-menu-pop" hidden role="menu">' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-pov" role="menuitem" hidden></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-hidden-hands" role="menuitem" hidden aria-pressed="false"></button>' +
+        '<button type="button" class="pb-menu-item" id="btn-portrait-menu-stamps" role="menuitem" hidden></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-refresh" role="menuitem"></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-log" role="menuitem"></button>' +
         '<button type="button" class="pb-menu-item pb-menu-danger" id="btn-portrait-menu-resign" role="menuitem"></button>' +
@@ -960,7 +999,12 @@
     }
     const stamp = global.document.getElementById('stamp-picker');
     if (stamp && !stamp.hidden) {
-      stamp.hidden = true;
+      if (global.TCG_STAMPS && typeof global.TCG_STAMPS.closePicker === 'function') {
+        global.TCG_STAMPS.closePicker();
+      } else {
+        stamp.classList.remove('open');
+        stamp.hidden = true;
+      }
       return true;
     }
     const openOverlay = global.document.querySelector('.overlay.open');
@@ -1080,6 +1124,18 @@
             global.document.getElementById('btn-spectate-hidden-hands')?.click();
           }
           syncPortraitMenuForMode();
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-stamps')) {
+          e.preventDefault();
+          e.stopPropagation();
+          closePortraitMenu();
+          if (!stampMenuAvailable()) return;
+          if (global.TCG_STAMPS && typeof global.TCG_STAMPS.openPicker === 'function') {
+            global.TCG_STAMPS.openPicker();
+          } else {
+            global.document.getElementById('btn-stamp')?.click();
+          }
           return;
         }
         if (t.closest('#btn-portrait-menu-refresh')) {

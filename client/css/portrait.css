@@ -2821,6 +2821,8 @@ html.tcg-portrait-play .stamp-picker{
   left:0;right:0;bottom:0;
   border-radius:16px 16px 0 0;
   max-height:70dvh;
+  z-index:96000;
+  padding-bottom:max(10px, env(safe-area-inset-bottom, 0px));
 }
 html.tcg-portrait-play .stamp-picker-grid{
   max-height:48dvh;

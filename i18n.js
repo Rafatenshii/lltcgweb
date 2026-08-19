@@ -1300,6 +1300,7 @@
       "rotateSub": "Rotate your device to continue.",
       "openLog": "Log",
       "refresh": "Refresh",
+      "stamps": "Stamps",
       "offlineNeedNetwork": "No network — reconnect to play.",
       "portraitHint": "Portrait mode for phones",
       "deckInspectHint": "Tap a card to preview"
@@ -2664,6 +2665,7 @@
       "rotateSub": "デバイスを回転して続行してください。",
       "openLog": "ログ",
       "refresh": "更新",
+      "stamps": "スタンプ",
       "offlineNeedNetwork": "ネットワークがありません — 再接続してプレイしてください。",
       "portraitHint": "スマホ向け縦画面モード",
       "deckInspectHint": "カードをタップしてプレビュー"
@@ -3864,6 +3866,7 @@
       "rotateSub": "Gira tu dispositivo para continuar.",
       "openLog": "Registro",
       "refresh": "Actualizar",
+      "stamps": "Sellos",
       "offlineNeedNetwork": "Sin red — vuelve a conectar para jugar.",
       "portraitHint": "Modo vertical para móviles",
       "deckInspectHint": "Toca una carta para verla"
@@ -5254,6 +5257,7 @@
       "rotateSub": "계속하려면 기기를 회전하세요.",
       "openLog": "로그",
       "refresh": "새로고침",
+      "stamps": "스탬프",
       "offlineNeedNetwork": "네트워크 없음 — 다시 연결한 뒤 플레이하세요.",
       "portraitHint": "휴대폰용 세로 모드",
       "deckInspectHint": "카드를 탭하여 미리보기"
@@ -6645,6 +6649,7 @@
       "rotateSub": "旋转您的设备以继续。",
       "openLog": "日志",
       "refresh": "刷新",
+      "stamps": "贴纸",
       "offlineNeedNetwork": "无网络 — 请重新连接后再游玩。",
       "portraitHint": "手机竖屏模式",
       "deckInspectHint": "点按卡牌预览"
@@ -8012,6 +8017,7 @@
       "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ",
       "openLog": "บันทึก",
       "refresh": "รีเฟรช",
+      "stamps": "แสตมป์",
       "offlineNeedNetwork": "ไม่มีเครือข่าย — เชื่อมต่อใหม่เพื่อเล่น",
       "portraitHint": "โหมดแนวตั้งสำหรับมือถือ",
       "deckInspectHint": "แตะการ์ดเพื่อดูตัวอย่าง"

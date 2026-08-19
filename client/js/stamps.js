@@ -420,6 +420,7 @@
     btn.hidden = !show;
     btn.disabled = global.G?.isSpectator || !show;
     if (show) syncStampLayerPositions();
+    if (typeof global.tcgPortraitSyncMenu === 'function') global.tcgPortraitSyncMenu();
   }
 
   function isProfileFavorite(id) {
@@ -709,8 +710,9 @@
       const pop = el('stamp-picker');
       const btn = el('btn-stamp');
       const editBtn = el('btn-options-stamps-edit');
+      const portraitStamp = e.target?.closest?.('#btn-portrait-menu-stamps');
       if (!state.pickerOpen || !pop) return;
-      if (pop.contains(e.target) || btn?.contains(e.target) || editBtn?.contains(e.target)) return;
+      if (pop.contains(e.target) || btn?.contains(e.target) || editBtn?.contains(e.target) || portraitStamp) return;
       closePicker();
     });
 
