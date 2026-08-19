@@ -64,6 +64,25 @@ if (!bridgeJs.includes('function removeDeckDrawers')
   ok('portrait deck drawers are removed on landscape/PC unmount');
 }
 
+if (!indexSrc.includes('id="deck-builder-dock"')
+    || !indexSrc.includes('id="deck-builder-actions"')) {
+  fail('deck builder save dock needs ids for mobile/portrait pinning');
+} else {
+  ok('deck builder save dock ids present');
+}
+if (/html\.tcg-portrait-play #screen-deck \.deck-builder-actions,\s*[\s\S]{0,80}display:none!important/.test(portraitCss)
+    || /html\.tcg-portrait-play #screen-deck \.deck-builder-actions\{[^}]*display:none!important/.test(portraitCss)) {
+  fail('portrait deck builder must not hide the save action bar');
+} else {
+  ok('portrait deck builder does not hide save actions');
+}
+if (!portraitCss.includes('html.tcg-portrait-play #screen-deck .deck-builder-dock')
+    || !portraitCss.includes('position:fixed')) {
+  fail('portrait deck builder save dock must be pinned to the viewport');
+} else {
+  ok('portrait deck builder save dock is pinned');
+}
+
 for (const cls of ['tcg-portrait-square', 'tcg-portrait-tablet', '--p-board-max-w', '--p-field-min', '--p-hud-max']) {
   if (!portraitCss.includes(cls)) fail(`portrait.css missing ${cls}`);
   else ok(`css has ${cls}`);
@@ -395,6 +414,21 @@ if (!indexSrc.includes('syncPlayCostHudToLiveStorage')
   fail('main-phase play-cost HUD must park over live storage on mobile/portrait');
 } else {
   ok('play-cost HUD parks over live storage on mobile/portrait');
+}
+
+if (!bridgeJs.includes('btn-portrait-menu-stamps')
+    || !bridgeJs.includes('TCG_STAMPS.openPicker')
+    || !bridgeJs.includes('ensurePortraitStampMenuItem')) {
+  fail('portrait burger must include a Stamps item that opens the stamp picker');
+} else {
+  ok('portrait burger exposes Stamps via the stamp picker');
+}
+
+if (!portraitCss.includes('html.tcg-portrait-play .stamp-picker')
+    || !portraitCss.includes('z-index:96000')) {
+  fail('portrait stamp picker must sit above the board as a bottom sheet');
+} else {
+  ok('portrait stamp picker is a high-z bottom sheet');
 }
 
 if (process.exitCode) {
