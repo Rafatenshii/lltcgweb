@@ -28,6 +28,7 @@ function nBp5EffectTypes(): array {
         'live_start_score_if_all_six_hearts_stage',
         'live_success_add_wr_if_live_score',
         'live_start_score_if_success_zone_and_names',
+        'live_start_heart_member_buff',
         'live_start_yellow_heart_member_buff',
         'live_start_reveal_pick_named_hearts',
         'auto_grant_wild_on_member_live_start',
@@ -298,9 +299,17 @@ function nBp5ResolveEffect(array $state, string $pid, array $source, array $ab, 
                 ' — [' . $name . '] score +' . intval($ab['amount'] ?? 1) . '.');
             break;
 
+        case 'live_start_heart_member_buff':
         case 'live_start_yellow_heart_member_buff':
-            $color = $ab['color'] ?? 'yellow';
+            // Official heart_02 is Red (CHASE! PL!N-bp5-028-L). Legacy type name kept as alias.
+            $color = function_exists('normalizeHeartColor')
+                ? normalizeHeartColor((string)($ab['color'] ?? 'red'))
+                : (string)($ab['color'] ?? 'red');
+            if ($color === '') {
+                $color = 'red';
+            }
             $minHearts = intval($ab['min_hearts'] ?? 4);
+            $bonus = intval($ab['score_bonus'] ?? 2);
             $found = false;
             foreach ($p['stage'] as $slot => $mbr) {
                 if (!$mbr) continue;
@@ -311,16 +320,32 @@ function nBp5ResolveEffect(array $state, string $pid, array $source, array $ab, 
                 }
             }
             if (!$found) break;
-            bumpLiveCardScore($state, $pid, $source['instance_id'] ?? '', intval($ab['score_bonus'] ?? 2));
+            $iid = (string)($source['instance_id'] ?? '');
+            $sourceNo = (string)($source['card_no'] ?? '');
+            if ($iid !== '') {
+                bumpLiveCardScore($state, $pid, $iid, $bonus);
+            }
+            $req = $ab['required_hearts'] ?? [['color' => $color, 'count' => 5]];
+            $p = &$state['players'][$pid];
             foreach ($p['live_zone'] as &$lc) {
-                if ($lc && ($lc['instance_id'] ?? '') === ($source['instance_id'] ?? '')) {
-                    $lc['required_hearts'] = $ab['required_hearts'] ?? [];
-                    break;
+                if (!$lc) continue;
+                $lcIid = (string)($lc['instance_id'] ?? '');
+                $match = ($iid !== '' && $lcIid === $iid)
+                    || ($iid === '' && $sourceNo !== '' && (string)($lc['card_no'] ?? '') === $sourceNo);
+                if (!$match) continue;
+                $lc['required_hearts'] = $req;
+                if ($iid === '') {
+                    $lc['_effect_score_bonus'] = intval($lc['_effect_score_bonus'] ?? 0) + $bonus;
+                    $lc['score'] = intval($lc['score'] ?? 0) + $bonus;
                 }
+                break;
             }
             unset($lc);
+            if (function_exists('spBp2RefreshLiveZoneScores')) {
+                spBp2RefreshLiveZoneScores($state, $pid);
+            }
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] score +' . intval($ab['score_bonus'] ?? 2) . ', required hearts modified.');
+                ' — [' . $name . '] score +' . $bonus . ', required hearts modified.');
             break;
 
         case 'live_success_add_wr_if_live_score':

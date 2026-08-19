@@ -69,6 +69,7 @@ final class ChaseBp5028RedHeartsTest extends TestCase
         $chase = $this->cardByNo('PL!N-bp5-028-L', 'chase');
         $ab = $chase['abilities'][0] ?? [];
         $this->assertSame('red', $ab['color'] ?? null);
+        $this->assertSame('live_start_heart_member_buff', $ab['type'] ?? null);
         $this->assertSame('red', $ab['required_hearts'][0]['color'] ?? null);
         $this->assertStringContainsString('Red', $chase['text'] ?? '');
         $this->assertStringNotContainsString('Yellow', $chase['text'] ?? '');
@@ -122,8 +123,13 @@ final class ChaseBp5028RedHeartsTest extends TestCase
             $state = \resolveLiveStartAbilities($state, 'p1');
             $lc = $state['players']['p1']['live_zone'][0];
             $this->assertSame($printedScore + 2, intval($lc['score'] ?? 0));
+            $this->assertSame(2, intval($lc['_effect_score_bonus'] ?? 0));
             $this->assertSame('red', $lc['required_hearts'][0]['color'] ?? null);
             $this->assertSame(5, intval($lc['required_hearts'][0]['count'] ?? 0));
+            \spBp2RefreshLiveZoneScores($state, 'p1');
+            $lc = $state['players']['p1']['live_zone'][0];
+            $this->assertSame($printedScore + 2, \liveCardScoreForJudge($lc), 'CHASE itself must keep +2 after live-zone score refresh');
+            $this->assertSame($printedScore + 2, \getLiveTotalScore($state, 'p1'));
         } finally {
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }

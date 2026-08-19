@@ -42077,7 +42077,7 @@
             "abilities": [
                 {
                     "trigger": "live_start",
-                    "type": "live_start_yellow_heart_member_buff",
+                    "type": "live_start_heart_member_buff",
                     "color": "red",
                     "min_hearts": 4,
                     "score_bonus": 2,
