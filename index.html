@@ -2564,8 +2564,9 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/game-sync.js?v=49"></script>
-<script src="client/js/state-apply.js?v=63"></script>
+<script src="client/js/presentation-guards.js?v=1"></script>
+<script src="client/js/game-sync.js?v=50"></script>
+<script src="client/js/state-apply.js?v=64"></script>
 <script src="client/js/stamps.js?v=19"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -23312,6 +23313,13 @@ function releaseStuckPresentation() {
       && !G._liveShowRunnerActive && !G._liveRoundPlaybackActive && !directorHeld) return;
   const liveShowInFlight = !!G.gameState?.live_show?.stage
     && G.gameState.live_show.stage !== 'done';
+  const winLossChrome = typeof LLTCG_PRESENTATION_GUARDS !== 'undefined'
+    && LLTCG_PRESENTATION_GUARDS.liveWinLossPresentationActive(G.gameState, {
+      heartCheckHold: !!G._perfHeartCheckHold,
+      liveShowRunner: !!G._liveShowRunnerActive,
+      perfSpectacle: !!G._perfSpectacleActive,
+    })
+    && (liveShowInFlight || G._liveShowRunnerActive || G._perfHeartCheckHold || G._perfSpectacleActive);
   TCG_DEBUG.warn('pvp', 'release stuck presentation', {
     animating: G.animating,
     pollHold: G._livePollHold,
@@ -23322,9 +23330,9 @@ function releaseStuckPresentation() {
     queued: G._pendingStateQueue?.length || 0,
     logSync: G._logSyncInFlight,
   });
-  // Mid live_show: never close chrome — that resets the seek cursor to closed and
-  // the next outcomes/judge poll re-flies Performance yells in a loop.
-  if (liveShowInFlight) {
+  // Mid live_show / heart check / Win/Loss: never close chrome — that resets the
+  // seek cursor and parks both players on Checking hearts until refresh.
+  if (liveShowInFlight || winLossChrome) {
     const turn = G.gameState.live_show.turn;
     const phase = G._perfSpectaclePhase || 'closed';
     if (typeof perfPhaseIdx === 'function' && typeof markLiveShowPerformancePresented === 'function'

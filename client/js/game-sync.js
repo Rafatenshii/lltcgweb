@@ -66,27 +66,28 @@
       G._liveRoundPlaybackActive = false;
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     }
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const flags = {
+      animating: !!G.animating,
+      perfSpectacle: !!G._perfSpectacleActive,
+      heartCheckHold: !!G._perfHeartCheckHold,
+      spectacleGate: !!G._liveSpectacleGateRunning,
+      liveRoundPlayback: !!G._liveRoundPlaybackActive,
+      liveShowRunner: !!G._liveShowRunnerActive,
+      logSync: !!G._logSyncInFlight,
+      directorActive,
+      postSpectacleReady: !!G._liveRoundPostSpectacleReady,
+      isSpectator: !!G.isSpectator,
+    };
     // Stuck Performance chrome after the round already reached Main / judge pick softlocks sync.
     const ph = G.gameState?.phase;
     const prType = G.gameState?.pending_prompt?.type;
     const mainStable = ph === 'main_first' || ph === 'main_second'
       || ph === 'active_first' || ph === 'active_second';
-    const metaType = G.gameState?.pending_prompt_meta?.type || null;
-    const judgePickReady = ph === 'live_judge'
-      && (prType === 'pick_judge_success_live' || prType === 'replace_success_with_wr_live' || prType === 'sbp6_live_wr_deck_position'
-        || metaType === 'pick_judge_success_live' || metaType === 'replace_success_with_wr_live' || metaType === 'sbp6_live_wr_deck_position')
-      && !!G._liveRoundPostSpectacleReady;
-    // Spectators never receive full pending_prompt — live_judge must not softlock polls.
-    // Do not special-case spectators beyond missing prompts: a broader live_judge clear
-    // used to abort Performance mid-show when animating briefly dropped.
-    const judgeWaitNoLocalPrompt = ph === 'live_judge' && !prType;
     const spectatorHeartCheckStuck = !!G.isSpectator && !!G._perfHeartCheckHold
       && (mainStable || !serverLiveShowInFlight);
-    if (!directorActive
-        && (!serverLiveShowInFlight || spectatorHeartCheckStuck)
-        && G._perfSpectacleActive && !G.animating && !G._liveSpectacleGateRunning
-        && !G._liveRoundPlaybackActive
-        && (mainStable || judgePickReady || judgeWaitNoLocalPrompt || spectatorHeartCheckStuck)) {
+    if (spectatorHeartCheckStuck
+        || (guards ? guards.mayClearStuckPerfSpectacle(G.gameState, flags) : false)) {
       TCG_DEBUG.warn('poll', 'clear stuck perfSpectacleActive', { phase: ph, prType, spectator: !!G.isSpectator });
       if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       else G._perfSpectacleActive = false;
@@ -131,18 +132,18 @@
     // Soft-heal a director lock left behind after empty LIVE / aborted presentLiveRound.
     if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active
         && !G._liveRoundPlaybackActive && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
-        && !G._liveShowRunnerActive && !G.animating) {
+        && !G._liveShowRunnerActive && !G.animating && !G._perfHeartCheckHold
+        && !serverLiveShowInFlight
+        && !(guards && guards.isLiveWinLossPipelinePhase(ph))) {
       TCG_DEBUG.warn('poll', 'clear stuck LiveRoundDirector.active');
       LiveRoundDirector.end('poll-soft-heal');
     }
     // End Main can succeed on the server while G.animating stays true (stuck On Enter
     // flight). With no clones left, drop the latch so polls apply the new turn.
-    const flightCount = document.querySelectorAll('#card-flight-layer .card-flight').length;
-    if (!serverLiveShowInFlight && mainStable && !G._liveShowRunnerActive
-        && !G._perfSpectacleActive && !G._liveSpectacleGateRunning
-        && flightCount === 0
-        && (G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight
-          || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active))) {
+    const flightCount = typeof document !== 'undefined'
+      ? document.querySelectorAll('#card-flight-layer .card-flight').length
+      : 0;
+    if (guards && guards.mayUnstickStuckMainPresentation(G.gameState, flags, flightCount)) {
       TCG_DEBUG.warn('poll', 'clear stuck Main presentation (no flights)', {
         phase: ph,
         animating: !!G.animating,
@@ -162,6 +163,19 @@
       if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
       if (G.gameState && typeof renderGame === 'function') {
         renderGame(G.gameState, { skipLog: true });
+      }
+    }
+    if (guards && guards.shouldResumeLiveShowRunner(G.gameState, flags)
+        && typeof presentServerLiveShowStage === 'function') {
+      const now = Date.now();
+      if (!G._liveShowResumeAt || now - G._liveShowResumeAt > 900) {
+        G._liveShowResumeAt = now;
+        TCG_DEBUG.warn('poll', 'resume live_show runner (Win/Loss ack)', {
+          stage: G.gameState?.live_show?.stage,
+          phase: ph,
+        });
+        const myId = G.playerId || G.gameState?.my_id || 'p1';
+        void presentServerLiveShowStage(null, G.gameState, myId);
       }
     }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances

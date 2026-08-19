@@ -117,15 +117,19 @@
     }
   }
 
-  function isSettledPlayPhase(ph) {
-    return ph === 'main_first' || ph === 'main_second'
-      || ph === 'active_first' || ph === 'active_second'
-      || ph === 'live_set';
-  }
-
-  function incomingLiveShowInFlight(s) {
-    const stage = s?.live_show?.stage;
-    return !!(stage && stage !== 'done');
+  function presentationFlagsFromG() {
+    return {
+      animating: !!G.animating,
+      perfSpectacle: !!G._perfSpectacleActive,
+      heartCheckHold: !!G._perfHeartCheckHold,
+      spectacleGate: !!G._liveSpectacleGateRunning,
+      liveRoundPlayback: !!G._liveRoundPlaybackActive,
+      liveShowRunner: !!G._liveShowRunnerActive,
+      logSync: !!G._logSyncInFlight,
+      directorActive: typeof LiveRoundDirector !== 'undefined' && !!LiveRoundDirector.active,
+      postSpectacleReady: !!G._liveRoundPostSpectacleReady,
+      isSpectator: !!G.isSpectator,
+    };
   }
 
   function applyTurnAdvanceNow(s) {
@@ -152,52 +156,6 @@
     if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
     if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
     applyStateUpdate(s);
-  }
-
-  function isTurnAdvanceSnapshot(prev, next) {
-    if (!prev || !next) return false;
-    if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
-    if (incomingLiveShowInFlight(next)) return false;
-    const nph = next.phase || '';
-    if (nph === 'live_start_effects' || nph === 'live_performance_first'
-        || nph === 'live_performance_second' || nph === 'live_judge'
-        || nph === 'live_success_effects') {
-      return false;
-    }
-    if (prev.phase !== nph) return isSettledPlayPhase(prev.phase);
-    if ((prev.phase === 'main_first' || prev.phase === 'main_second')
-        && prev.active_player !== next.active_player) {
-      return true;
-    }
-    if (prev.phase === 'live_set' && nph === 'live_set') {
-      return prev.active_player !== next.active_player
-        || (prev.live_set_player || prev.active_player) !== (next.live_set_player || next.active_player)
-        || JSON.stringify(prev.live_ready || {}) !== JSON.stringify(next.live_ready || {});
-    }
-    return false;
-  }
-
-  function stageOccupancyKey(state, pid) {
-    const stage = state?.players?.[pid]?.stage || {};
-    return ['left', 'center', 'right'].map(slot => stage[slot]?.instance_id || '').join(',');
-  }
-
-  /** Play / baton / energy spend on Main must not sit behind a stuck empty-slot flight. */
-  function isMainBoardCatchupSnapshot(prev, next) {
-    if (!prev || !next) return false;
-    if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
-    if (incomingLiveShowInFlight(next)) return false;
-    if (prev.phase !== next.phase) return false;
-    if (prev.phase !== 'main_first' && prev.phase !== 'main_second') return false;
-    const pid = next.active_player || prev.active_player;
-    if (!pid) return false;
-    if (stageOccupancyKey(prev, pid) !== stageOccupancyKey(next, pid)) return true;
-    const ph = prev.players?.[pid]?.hand?.length ?? -1;
-    const nh = next.players?.[pid]?.hand?.length ?? -1;
-    if (ph !== nh) return true;
-    const pe = (prev.players?.[pid]?.energy_zone || []).length;
-    const ne = (next.players?.[pid]?.energy_zone || []).length;
-    return pe !== ne;
   }
 
   global.onState = function onState(s) {
@@ -272,10 +230,11 @@
       G.rematchRequested = false;
       global.el?.('overlay-win')?.classList.remove('open');
     }
-    if ((isTurnAdvanceSnapshot(G.gameState, s) || isMainBoardCatchupSnapshot(G.gameState, s))
-        && (G.animating || G._perfSpectacleActive || G._liveSpectacleGateRunning
-          || G._liveRoundPlaybackActive || G._logSyncInFlight
-          || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active)
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const holdFlags = presentationFlagsFromG();
+    if (guards && guards.mayForceApplyHeldSnapshot(G.gameState, s, holdFlags)
+        && (G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight
+          || holdFlags.directorActive
           || shouldHoldStateForLocalPrompt(s))) {
       applyTurnAdvanceNow(s);
       return;
