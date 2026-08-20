@@ -2564,8 +2564,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/presentation-guards.js?v=5"></script>
-<script src="client/js/game-sync.js?v=57"></script>
+<script src="client/js/presentation-guards.js?v=6"></script>
+<script src="client/js/game-sync.js?v=58"></script>
 <script src="client/js/state-apply.js?v=69"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -23381,7 +23381,7 @@ function releaseStuckPresentation() {
   });
   // Mid live_show / heart check / Win/Loss: never close chrome — that resets the
   // seek cursor and parks both players on Checking hearts until refresh.
-  // Match-end (finished / promptless post-cursor live_judge) must clear into showWin.
+  // Match-end (status=finished) must clear into showWin.
   const finishedUnblock = typeof LLTCG_PRESENTATION_GUARDS !== 'undefined'
     && LLTCG_PRESENTATION_GUARDS.mayUnblockPollsForFinishedMatch?.(G.gameState);
   if ((liveShowInFlight || winLossChrome) && !finishedUnblock) {
@@ -32270,7 +32270,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=96"></script>
+<script src="client/js/spectacle.js?v=97"></script>
 <script src="client/js/board-render.js?v=30"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>

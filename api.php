@@ -2572,8 +2572,10 @@ function advanceLiveShowStage(array $state): array {
 }
 
 function actionLiveShowAck(array $state, string $pid, array $data): array {
+    // Idempotent: client may ack after the server already cleared live_show
+    // (opponent finished judge / timeout advance). Throwing softlocked the UI.
     if (empty($state['live_show']) || !is_array($state['live_show'])) {
-        throw new Exception('No Live show is active');
+        return $state;
     }
     $stageSeq = intval($data['stage_seq'] ?? -1);
     if ($stageSeq !== intval($state['live_show']['stage_seq'] ?? 0)) {

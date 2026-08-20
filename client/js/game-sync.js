@@ -65,7 +65,7 @@
     // live_show unset — clear leftover Checking hearts / spectacle so showWin can run.
     if (finishedUnblock) {
       if (G._perfSpectacleActive || G._perfHeartCheckHold) {
-        TCG_DEBUG.warn('poll', 'clear leftover chrome for finished / post-cursor live_judge');
+        TCG_DEBUG.warn('poll', 'clear leftover chrome for finished match');
         if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
         else G._perfSpectacleActive = false;
         if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();

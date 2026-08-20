@@ -69,19 +69,19 @@
 
   /**
    * Match-ending 3rd Success leaves phase=live_judge with live_show unset.
-   * Treat as clearable so leftover Checking hearts / spectacle cannot block showWin.
+   * Only treat as clearable when there is truly no pending skill/pick (e.g. not
+   * START:DASH Live Success surveil_arrange sitting after the show cursor).
    */
   function isPromptlessPostCursorLiveJudge(state) {
     if (!state || state.phase !== 'live_judge') return false;
     if (liveShowInFlight(state)) return false;
-    if (isJudgePickPrompt(judgePickPromptType(state))) return false;
+    if (state.pending_prompt || state.pending_prompt_meta) return false;
     return true;
   }
 
+  /** Aggressive poll/chrome unblock — finished matches only (not mid Success skills). */
   function mayUnblockPollsForFinishedMatch(state) {
-    if (!state) return false;
-    if (state.status === 'finished') return true;
-    return isPromptlessPostCursorLiveJudge(state);
+    return !!(state && state.status === 'finished');
   }
 
   function liveWinLossPresentationActive(state, flags) {
@@ -173,8 +173,9 @@
   }
 
   /**
-   * Closing leftover Performance chrome. Allow match-end finished and promptless
-   * post-cursor live_judge (3rd Success). Never while live_show is in flight.
+   * Closing leftover Performance chrome. Allow match-end finished and truly
+   * promptless post-cursor live_judge. Never while live_show is in flight or
+   * any pending skill (Live Success surveil, Success pick, etc.) is open.
    */
   function mayClearStuckPerfSpectacle(state, flags) {
     flags = flags || {};
@@ -183,17 +184,19 @@
       return false;
     }
     if (liveShowInFlight(state)) return false;
+    if (state?.pending_prompt || state?.pending_prompt_meta) {
+      const pr = judgePickPromptType(state);
+      if (isJudgePickPrompt(pr) && flags.postSpectacleReady) return true;
+      return false;
+    }
     if (flags.heartCheckHold && state?.status !== 'finished' && !isPromptlessPostCursorLiveJudge(state)) {
       return false;
     }
     if (mayUnblockPollsForFinishedMatch(state)) return true;
+    if (isPromptlessPostCursorLiveJudge(state)) return true;
     const ph = state?.phase;
     if (isLiveWinLossPipelinePhase(ph) && ph !== 'live_judge') return false;
-    if (ph === 'live_judge') {
-      const pr = judgePickPromptType(state);
-      const pickReady = isJudgePickPrompt(pr);
-      return !!(pickReady && flags.postSpectacleReady);
-    }
+    if (ph === 'live_judge') return false;
     return isMainStablePhase(ph);
   }
 

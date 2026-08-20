@@ -3331,6 +3331,14 @@ function shouldDeferPromptForLivePresentation(s, myId) {
     if (G._perfSpectacleActive && !G._liveRoundPostSpectacleReady) return true;
     return false;
   }
+  // START:DASH / other Live Success surveil — same rule: never park forever on a
+  // leftover _liveRoundPlaybackActive after the show cursor already advanced.
+  if (pr.type === 'surveil_arrange'
+      || pr.type === 'surveil_pick_one'
+      || pr.type === 'surveil_pick_one_hand_rest_wr') {
+    if (G._perfSpectacleActive && !G._liveRoundPostSpectacleReady) return true;
+    return false;
+  }
   // Aqours leftover Live → deck place after judge: also must surface.
   if (pr.type === 'sbp6_live_wr_deck_position') {
     if (G._perfSpectacleActive && !G._liveRoundPostSpectacleReady) return true;
@@ -8679,8 +8687,22 @@ async function presentServerLiveShowStage(prev, next, myId) {
           token: G.token,
           type: 'live_show_ack',
           data: { stage_seq: show.stage_seq },
-        });
+        }, { silent: true });
       } catch (e) {
+        const msg = String(e?.message || e || '');
+        // Stale ack after server cleared live_show — pull and continue (no error popup).
+        if (/no live show is active/i.test(msg)) {
+          TCG_DEBUG.warn('live', 'live_show_ack stale — already cleared', e);
+          const healed = await fetchLiveShowStateNow({ allowHeal: true });
+          if (healed && (healed.seq ?? 0) >= (board.seq ?? 0)) {
+            prior = board;
+            board = healed;
+            G.gameState = board;
+            G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
+          }
+          G._liveShowAckedKey = null;
+          break;
+        }
         TCG_DEBUG.warn('live', 'live_show_ack failed', e);
         G._liveShowAckedKey = null;
         break;

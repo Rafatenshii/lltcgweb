@@ -114,11 +114,18 @@ check('may close spectacle for Success-Live pick after show', g.mayClearStuckPer
   { phase: 'live_judge', pending_prompt: { type: 'pick_judge_success_live' } },
   { perfSpectacle: true, postSpectacleReady: true },
 ));
+check('do not close spectacle during Live Success surveil (START:DASH)', !g.mayClearStuckPerfSpectacle(
+  { phase: 'live_judge', pending_prompt: { type: 'surveil_arrange' } },
+  { perfSpectacle: true, postSpectacleReady: true },
+));
 check('finished match unblocks polls', g.mayUnblockPollsForFinishedMatch(
   { status: 'finished', phase: 'live_judge' },
 ));
-check('promptless post-cursor live_judge unblocks polls', g.mayUnblockPollsForFinishedMatch(
+check('promptless mid-match live_judge does not unblock polls', !g.mayUnblockPollsForFinishedMatch(
   { phase: 'live_judge' },
+));
+check('surveil pending does not unblock as finished', !g.mayUnblockPollsForFinishedMatch(
+  { phase: 'live_judge', pending_prompt: { type: 'surveil_arrange' } },
 ));
 check('in-flight judge does not unblock as finished', !g.mayUnblockPollsForFinishedMatch(
   { phase: 'live_judge', live_show: { stage: 'judge' } },
