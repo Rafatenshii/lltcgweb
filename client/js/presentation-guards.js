@@ -1,6 +1,7 @@
 /**
  * Pure presentation-heal guards (browser + Node).
  * Never unstick Main / abort spectacle while Live Win/Loss (heart check / judge) is live.
+ * Match-end (status=finished) and promptless post-cursor live_judge are clearable.
  */
 (function (root, factory) {
   const api = factory();
@@ -34,6 +35,9 @@
     active_second: true,
   };
 
+  /** Default ms before Main "no flights" heal may clear healthy baton / log-sync. */
+  const MAIN_UNSTICK_HYSTERESIS_MS = 1800;
+
   function liveShowInFlight(state) {
     const stage = state?.live_show?.stage;
     return !!(stage && stage !== 'done');
@@ -51,8 +55,39 @@
     return !!MAIN_STABLE_PHASES[ph];
   }
 
+  function judgePickPromptType(state) {
+    return state?.pending_prompt?.type
+      || state?.pending_prompt_meta?.type
+      || null;
+  }
+
+  function isJudgePickPrompt(pr) {
+    return pr === 'pick_judge_success_live'
+      || pr === 'replace_success_with_wr_live'
+      || pr === 'sbp6_live_wr_deck_position';
+  }
+
+  /**
+   * Match-ending 3rd Success leaves phase=live_judge with live_show unset.
+   * Treat as clearable so leftover Checking hearts / spectacle cannot block showWin.
+   */
+  function isPromptlessPostCursorLiveJudge(state) {
+    if (!state || state.phase !== 'live_judge') return false;
+    if (liveShowInFlight(state)) return false;
+    if (isJudgePickPrompt(judgePickPromptType(state))) return false;
+    return true;
+  }
+
+  function mayUnblockPollsForFinishedMatch(state) {
+    if (!state) return false;
+    if (state.status === 'finished') return true;
+    return isPromptlessPostCursorLiveJudge(state);
+  }
+
   function liveWinLossPresentationActive(state, flags) {
     flags = flags || {};
+    // Finished / post-cursor match-end is not sacred Win/Loss chrome.
+    if (mayUnblockPollsForFinishedMatch(state)) return false;
     if (flags.heartCheckHold || flags.liveShowRunner) return true;
     if (liveShowInFlight(state)) return true;
     if (isLiveWinLossPipelinePhase(state?.phase)) return true;
@@ -81,7 +116,7 @@
     if (!prev || !next) return false;
     if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
     if (liveShowInFlight(next)) return false;
-    if (isLiveWinLossPipelinePhase(next.phase)) return false;
+    if (isLiveWinLossPipelinePhase(next.phase) && next.status !== 'finished') return false;
     if (prev.phase !== next.phase) return isSettledPlayPhase(prev.phase);
     if ((prev.phase === 'main_first' || prev.phase === 'main_second')
         && prev.active_player !== next.active_player) {
@@ -117,19 +152,29 @@
     return pe !== ne;
   }
 
-  /** Poll heal that clears G.animating on Main. False during Win/Loss / live_show. */
+  /**
+   * Poll heal that clears G.animating on Main. False during Win/Loss / live_show.
+   * Requires hysteresisMs so baton / log-sync gaps between flight clones are not aborted.
+   */
   function mayUnstickStuckMainPresentation(state, flags, flightCount) {
     flags = flags || {};
     if (liveWinLossPresentationActive(state, flags)) return false;
     if (flags.perfSpectacle || flags.spectacleGate || flags.liveShowRunner) return false;
     if (!isMainStablePhase(state?.phase)) return false;
     if ((flightCount || 0) > 0) return false;
-    return !!(flags.animating || flags.liveRoundPlayback || flags.logSync || flags.directorActive);
+    const busy = !!(flags.animating || flags.liveRoundPlayback || flags.logSync || flags.directorActive);
+    if (!busy) return false;
+    const hysteresis = Number.isFinite(flags.hysteresisMs)
+      ? flags.hysteresisMs
+      : MAIN_UNSTICK_HYSTERESIS_MS;
+    const zeroFlightMs = Number(flags.zeroFlightMs || 0);
+    if (zeroFlightMs < hysteresis) return false;
+    return true;
   }
 
   /**
-   * Closing leftover Performance chrome. Never on live_judge without a pick, and
-   * never while live_show is still presenting hearts / outcomes / judge.
+   * Closing leftover Performance chrome. Allow match-end finished and promptless
+   * post-cursor live_judge (3rd Success). Never while live_show is in flight.
    */
   function mayClearStuckPerfSpectacle(state, flags) {
     flags = flags || {};
@@ -138,16 +183,15 @@
       return false;
     }
     if (liveShowInFlight(state)) return false;
-    if (flags.heartCheckHold) return false;
+    if (flags.heartCheckHold && state?.status !== 'finished' && !isPromptlessPostCursorLiveJudge(state)) {
+      return false;
+    }
+    if (mayUnblockPollsForFinishedMatch(state)) return true;
     const ph = state?.phase;
     if (isLiveWinLossPipelinePhase(ph) && ph !== 'live_judge') return false;
     if (ph === 'live_judge') {
-      const pr = state?.pending_prompt?.type
-        || state?.pending_prompt_meta?.type
-        || null;
-      const pickReady = pr === 'pick_judge_success_live'
-        || pr === 'replace_success_with_wr_live'
-        || pr === 'sbp6_live_wr_deck_position';
+      const pr = judgePickPromptType(state);
+      const pickReady = isJudgePickPrompt(pr);
       return !!(pickReady && flags.postSpectacleReady);
     }
     return isMainStablePhase(ph);
@@ -158,39 +202,50 @@
     flags = flags || {};
     if (!state || flags.liveShowRunner || flags.isSpectator) return false;
     if (state.pending_prompt) return false;
+    if (state.status === 'finished') return false;
     const stage = state.live_show?.stage;
     return !!(stage && stage !== 'done');
   }
 
   /**
-   * Tab catch-up must not abortGameplayPresentation while Live Start / Win-Loss
-   * owns presentLiveRound. Hard abort cleared playback flags mid-wait and could
-   * thrash the main thread (Page Unresponsive) while the opp skill banner was up.
-   * Performance/outcomes/judge keep their own mid-spectacle catch-up branch.
+   * Soft tab catch-up only while Live Start wait owns presentLiveRound.
+   * Bare livePollHold / liveRoundPlayback on Main must hard-catch-up (Aug 18).
    */
   function shouldSoftTabCatchUpPreserveLivePipeline(state, flags) {
     flags = flags || {};
-    if (flags.awaitingLiveStart || flags.liveRoundPlayback || flags.livePollHold
-        || flags.spectacleGate || flags.directorActive || flags.liveShowRunner) {
-      return true;
-    }
+    if (flags.awaitingLiveStart) return true;
     const stage = state?.live_show?.stage;
     if (stage === 'reveal' || stage === 'live_start') return true;
     if (state?.phase === 'live_start_effects') return true;
-    if (liveWinLossPresentationActive(state, flags)
-        && stage !== 'performance'
-        && stage !== 'outcomes'
-        && stage !== 'judge') {
+    return false;
+  }
+
+  /** Soft catch-up should escalate to hard when the fetched board left Live Start. */
+  function shouldEscalateSoftTabCatchUpToHard(fetched, opts) {
+    opts = opts || {};
+    if (!fetched) return false;
+    if (fetched.status === 'finished') return true;
+    if ((opts.hiddenMs || 0) >= 2800 && (opts.seqGap || 0) > 0) return true;
+    const stage = fetched.live_show?.stage;
+    if (stage && stage !== 'done' && stage !== 'reveal' && stage !== 'live_start') {
+      return true;
+    }
+    if (isMainStablePhase(fetched.phase) || fetched.phase === 'live_set') return true;
+    if (fetched.phase === 'live_performance_first' || fetched.phase === 'live_performance_second'
+        || fetched.phase === 'live_judge' || fetched.phase === 'live_success_effects') {
       return true;
     }
     return false;
   }
 
   return {
+    MAIN_UNSTICK_HYSTERESIS_MS,
     liveShowInFlight,
     isLiveWinLossPipelinePhase,
     isSettledPlayPhase,
     isMainStablePhase,
+    isPromptlessPostCursorLiveJudge,
+    mayUnblockPollsForFinishedMatch,
     liveWinLossPresentationActive,
     isTurnAdvanceSnapshot,
     isMainBoardCatchupSnapshot,
@@ -199,5 +254,6 @@
     mayClearStuckPerfSpectacle,
     shouldResumeLiveShowRunner,
     shouldSoftTabCatchUpPreserveLivePipeline,
+    shouldEscalateSoftTabCatchUpToHard,
   };
 });

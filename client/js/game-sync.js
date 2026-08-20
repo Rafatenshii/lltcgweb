@@ -58,15 +58,35 @@
     const directorActive = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
     const serverLiveShowInFlight = !!G.gameState?.live_show?.stage
       && G.gameState.live_show.stage !== 'done';
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const finishedUnblock = !!(guards?.mayUnblockPollsForFinishedMatch?.(G.gameState));
+
+    // Match-ending 3rd Success: status=finished but phase may stay live_judge with
+    // live_show unset — clear leftover Checking hearts / spectacle so showWin can run.
+    if (finishedUnblock) {
+      if (G._perfSpectacleActive || G._perfHeartCheckHold) {
+        TCG_DEBUG.warn('poll', 'clear leftover chrome for finished / post-cursor live_judge');
+        if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+        else G._perfSpectacleActive = false;
+        if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
+      }
+      G.animating = false;
+      G._liveRoundPlaybackActive = false;
+      G._liveSpectacleGateRunning = false;
+      G._liveShowRunnerActive = false;
+      if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+      else G._livePollHold = false;
+      return !!(G._replaySeekInFlight || G._replayForwardApply);
+    }
+
     if (G._liveShowRunnerActive) return true;
     if (!directorActive
         && !serverLiveShowInFlight
         && G._liveRoundPlaybackActive && !G.animating && !G._perfSpectacleActive && !G._liveSpectacleGateRunning) {
       TCG_DEBUG.warn('poll', 'clear stale liveRoundPlaybackActive');
       G._liveRoundPlaybackActive = false;
-      if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
     }
-    const guards = global.LLTCG_PRESENTATION_GUARDS;
     const flags = {
       animating: !!G.animating,
       perfSpectacle: !!G._perfSpectacleActive,
@@ -92,7 +112,7 @@
       if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
       else G._perfSpectacleActive = false;
       if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
-      if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
     }
     // Spectators stuck mid Win/Loss with playback held but no animation — release
     // only after the show finished or never started (postSpectacleReady / no defer).
@@ -108,7 +128,7 @@
       TCG_DEBUG.warn('poll', 'clear stale spectator liveRoundPlaybackActive on live_judge');
       G._liveRoundPlaybackActive = false;
       G._liveRoundPostSpectacleReady = true;
-      if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
     }
     // Spectators cannot ack a beat: if the server's live_show cursor stops moving
     // (stalled room, slow players), drop the chrome instead of freezing the view
@@ -125,7 +145,7 @@
         TCG_DEBUG.warn('poll', 'spectator live_show beat stalled — close spectacle', { beat });
         if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
         if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
-        if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+        if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
         G._spectatorBeatSince = Date.now();
       }
     }
@@ -139,15 +159,26 @@
       LiveRoundDirector.end('poll-soft-heal');
     }
     // End Main can succeed on the server while G.animating stays true (stuck On Enter
-    // flight). With no clones left, drop the latch so polls apply the new turn.
+    // flight). Require hysteresis so healthy baton / log-sync gaps are not aborted.
     const flightCount = typeof document !== 'undefined'
       ? document.querySelectorAll('#card-flight-layer .card-flight').length
       : 0;
+    const mainBusy = !!(G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight || directorActive);
+    if (mainStable && flightCount === 0 && mainBusy) {
+      if (!G._mainZeroFlightSince) G._mainZeroFlightSince = Date.now();
+    } else {
+      G._mainZeroFlightSince = 0;
+    }
+    flags.zeroFlightMs = G._mainZeroFlightSince ? (Date.now() - G._mainZeroFlightSince) : 0;
+    if (G._logSyncStartedAt && G._logSyncInFlight) {
+      flags.zeroFlightMs = Math.max(flags.zeroFlightMs, Date.now() - G._logSyncStartedAt);
+    }
     if (guards && guards.mayUnstickStuckMainPresentation(G.gameState, flags, flightCount)) {
       TCG_DEBUG.warn('poll', 'clear stuck Main presentation (no flights)', {
         phase: ph,
         animating: !!G.animating,
         playback: !!G._liveRoundPlaybackActive,
+        zeroFlightMs: flags.zeroFlightMs,
       });
       if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
         LiveRoundDirector.abort('poll: stuck Main');
@@ -159,8 +190,10 @@
       }
       G._animHideIids = null;
       G._logSyncInFlight = false;
+      G._logSyncStartedAt = 0;
+      G._mainZeroFlightSince = 0;
       if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
-      if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
+      if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
       if (G.gameState && typeof renderGame === 'function') {
         renderGame(G.gameState, { skipLog: true });
       }
@@ -867,33 +900,26 @@
     const guards = global.LLTCG_PRESENTATION_GUARDS;
     const flags = {
       awaitingLiveStart: !!G._awaitingLiveStartPrompts,
-      liveRoundPlayback: !!G._liveRoundPlaybackActive,
-      livePollHold: !!G._livePollHold,
-      spectacleGate: !!G._liveSpectacleGateRunning,
-      directorActive: !!(typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active),
-      heartCheckHold: !!G._perfHeartCheckHold,
-      liveShowRunner: !!G._liveShowRunnerActive,
     };
     if (typeof guards?.shouldSoftTabCatchUpPreserveLivePipeline === 'function') {
       return !!guards.shouldSoftTabCatchUpPreserveLivePipeline(G.gameState, flags);
     }
     const s = G.gameState;
     const stage = s?.live_show?.stage;
-    return !!(flags.awaitingLiveStart || flags.liveRoundPlayback || flags.livePollHold
-      || flags.spectacleGate || flags.directorActive || flags.liveShowRunner
+    return !!(flags.awaitingLiveStart
       || s?.phase === 'live_start_effects'
       || stage === 'reveal'
       || stage === 'live_start');
   }
 
-  /** Soft resync: advance observed board without aborting or full re-paint thrash. */
+  /** Soft resync: advance observed board without aborting or full re-paint thrash.
+   *  Returns true/false when done, or 'escalate' to fall through to hard catch-up. */
   async function softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs) {
     TCG_DEBUG.warn('poll', 'tab catch-up: soft preserve Live pipeline', {
       hiddenMs,
       phase: G.gameState?.phase || null,
       stage: G.gameState?.live_show?.stage || null,
       awaitingLiveStart: !!G._awaitingLiveStartPrompts,
-      playback: !!G._liveRoundPlaybackActive,
     });
     global._tcgSyncStats.getState++;
     const boardSeq = G.gameState?.seq ?? 0;
@@ -905,7 +931,6 @@
     if (isSpec && !G.isSpectator) return false;
 
     if (isUnchangedStatePayload(d)) {
-      // Mid Live wait: do not full renderGame — wait loop already paints.
       if (G.playerId && typeof updateOpponentSkillWaitBanner === 'function' && G.gameState) {
         updateOpponentSkillWaitBanner(G.gameState, G.playerId);
       }
@@ -915,6 +940,31 @@
     if (isSpec && typeof alignSpectatorStageBoard === 'function') {
       d = alignSpectatorStageBoard(d) || d;
     }
+
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const seqGap = (d.seq ?? 0) - boardSeq;
+    if (typeof guards?.shouldEscalateSoftTabCatchUpToHard === 'function'
+        && guards.shouldEscalateSoftTabCatchUpToHard(d, { hiddenMs, seqGap })) {
+      TCG_DEBUG.warn('poll', 'tab catch-up: escalate soft → hard', {
+        phase: d.phase,
+        stage: d.live_show?.stage || null,
+        status: d.status,
+        hiddenMs,
+        seqGap,
+      });
+      G.gameState = d;
+      G.lastSeq = d.seq ?? G.lastSeq ?? 0;
+      G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d.seq ?? 0));
+      if (isSpec) {
+        G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
+          ? G.spectatorViewAs
+          : (d.view_as || G.playerId || 'p1');
+      } else {
+        G.playerId = d.my_id || G.playerId;
+      }
+      return 'escalate';
+    }
+
     // Keep playback flags — only advance the observed board for the wait loop.
     G.gameState = d;
     G.lastSeq = d.seq ?? G.lastSeq ?? 0;
@@ -974,7 +1024,10 @@
       });
 
       if (preserveLivePipeline) {
-        return await softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs);
+        const soft = await softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs);
+        if (soft !== 'escalate') return soft;
+        // Soft saw a board that left Live Start — fall through to hard abort + paint.
+        TCG_DEBUG.warn('poll', 'tab catch-up: hard path after soft escalate');
       }
 
       // Mid Performance chrome: never tear down the stage (same rule as

@@ -68,25 +68,38 @@ check('never force-apply while prev is live_judge', !g.mayForceApplyHeldSnapshot
 
 check('allow Main catch-up with only leftover G.animating', g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { animating: true }));
 
-check('do not unstick Main during live_judge', !g.mayUnstickStuckMainPresentation(liveJudge, { animating: true }, 0));
+check('do not unstick Main during live_judge', !g.mayUnstickStuckMainPresentation(liveJudge, { animating: true, zeroFlightMs: 9999 }, 0));
 check('do not unstick Main during Checking hearts', !g.mayUnstickStuckMainPresentation(
   { phase: 'main_first' },
-  { heartCheckHold: true, animating: true },
+  { heartCheckHold: true, animating: true, zeroFlightMs: 9999 },
   0,
 ));
 check('do not unstick Main while live_show in flight', !g.mayUnstickStuckMainPresentation(
   { phase: 'main_first', live_show: { stage: 'performance' } },
-  { animating: true },
+  { animating: true, zeroFlightMs: 9999 },
   0,
 ));
-check('unstick Main when no flights and leftover animating', g.mayUnstickStuckMainPresentation(
+check('do not unstick Main during fresh baton / log-sync gap', !g.mayUnstickStuckMainPresentation(
   { phase: 'main_first' },
-  { animating: true },
+  { animating: true, zeroFlightMs: 100 },
+  0,
+));
+check('unstick Main after hysteresis with no flights', g.mayUnstickStuckMainPresentation(
+  { phase: 'main_first' },
+  { animating: true, zeroFlightMs: 2000 },
   0,
 ));
 
-check('do not close spectacle on live_judge without a pick', !g.mayClearStuckPerfSpectacle(
+check('may clear spectacle on finished match-end live_judge', g.mayClearStuckPerfSpectacle(
+  { status: 'finished', phase: 'live_judge' },
+  { perfSpectacle: true },
+));
+check('may clear spectacle on promptless post-cursor live_judge', g.mayClearStuckPerfSpectacle(
   { phase: 'live_judge' },
+  { perfSpectacle: true },
+));
+check('do not close spectacle during in-flight live_show judge', !g.mayClearStuckPerfSpectacle(
+  { phase: 'live_judge', live_show: { stage: 'judge' } },
   { perfSpectacle: true },
 ));
 check('do not close spectacle during performance live_show', !g.mayClearStuckPerfSpectacle(
@@ -100,6 +113,15 @@ check('may close leftover spectacle on settled Main', g.mayClearStuckPerfSpectac
 check('may close spectacle for Success-Live pick after show', g.mayClearStuckPerfSpectacle(
   { phase: 'live_judge', pending_prompt: { type: 'pick_judge_success_live' } },
   { perfSpectacle: true, postSpectacleReady: true },
+));
+check('finished match unblocks polls', g.mayUnblockPollsForFinishedMatch(
+  { status: 'finished', phase: 'live_judge' },
+));
+check('promptless post-cursor live_judge unblocks polls', g.mayUnblockPollsForFinishedMatch(
+  { phase: 'live_judge' },
+));
+check('in-flight judge does not unblock as finished', !g.mayUnblockPollsForFinishedMatch(
+  { phase: 'live_judge', live_show: { stage: 'judge' } },
 ));
 
 check('resume runner when live_show judge and runner died', g.shouldResumeLiveShowRunner(
@@ -184,13 +206,28 @@ check('soft preserve Live Start wait / live_start stage',
     { phase: 'main_first' },
     { awaitingLiveStart: true },
   )
-  && g.shouldSoftTabCatchUpPreserveLivePipeline(
+  && !g.shouldSoftTabCatchUpPreserveLivePipeline(
     { phase: 'main_first' },
     { liveRoundPlayback: true },
   )
   && !g.shouldSoftTabCatchUpPreserveLivePipeline(
     { phase: 'main_first' },
+    { livePollHold: true },
+  )
+  && !g.shouldSoftTabCatchUpPreserveLivePipeline(
+    { phase: 'main_first' },
     {},
+  ));
+check('soft catch-up escalates when server left Live Start',
+  g.shouldEscalateSoftTabCatchUpToHard({ phase: 'main_first' }, {})
+  && g.shouldEscalateSoftTabCatchUpToHard({ status: 'finished', phase: 'live_judge' }, {})
+  && g.shouldEscalateSoftTabCatchUpToHard(
+    { phase: 'live_start_effects' },
+    { hiddenMs: 3000, seqGap: 5 },
+  )
+  && !g.shouldEscalateSoftTabCatchUpToHard(
+    { phase: 'live_start_effects', live_show: { stage: 'live_start' } },
+    { hiddenMs: 100, seqGap: 0 },
   ));
 check('visibility uses Aug18 gated catch-up (not always)',
   /presentationBusy \|\| hiddenMs >= 1200/.test(indexSrc)
@@ -202,6 +239,12 @@ check('poll-hold watchdog soft-releases without aborting director',
   && !/LiveRoundDirector\.abort\('poll-hold-watchdog'\)/.test(applySrc));
 check('abortGameplayPresentation resumes polls via releaseLivePolls',
   /releaseLivePolls\(\{ forceResume: true \}\)/.test(indexSrc));
+check('poll gate clears chrome for finished match',
+  /mayUnblockPollsForFinishedMatch/.test(syncSrc)
+  && /clear leftover chrome for finished/.test(syncSrc));
+check('dropStale skips flight sweep on settled Main',
+  /skipFlightSweep/.test(spectacleSrc)
+  || /Never sweep card flights for settled-Main/.test(spectacleSrc));
 check('soft catch-up avoids full paintMatchHud thrash',
   /Light HUD only/.test(syncSrc)
   && (() => {
@@ -210,6 +253,9 @@ check('soft catch-up avoids full paintMatchHud thrash',
     );
     return !!m && !/paintMatchHudAfterTabCatchUp/.test(m[0]);
   })());
+check('soft catch-up can escalate to hard',
+  /return 'escalate'/.test(syncSrc)
+  && /soft !== 'escalate'/.test(syncSrc));
 check('matched status keeps search float until enter',
   /Do not clear the float here/.test(indexSrc)
   && /Keep float until enterCasualMatch/.test(indexSrc));

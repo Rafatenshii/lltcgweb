@@ -2564,8 +2564,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/presentation-guards.js?v=4"></script>
-<script src="client/js/game-sync.js?v=56"></script>
+<script src="client/js/presentation-guards.js?v=5"></script>
+<script src="client/js/game-sync.js?v=57"></script>
 <script src="client/js/state-apply.js?v=69"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -11579,11 +11579,11 @@ function abortStuckLiveRoundPlayback(reason) {
   G._liveRoundPlaybackActive = false;
   G._liveRoundPostSpectacleReady = false;
   G._liveSpectacleGateRunning = false;
-  G._livePollHold = false;
   G.animating = false;
   // Keep _spectacleRecoveryPending so a later poll/flush can still play the owed show.
   clearLiveRoundTransientCaches();
-  if (typeof releaseLivePolls === 'function') releaseLivePolls();
+  if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+  else G._livePollHold = false;
   return true;
 }
 
@@ -23059,6 +23059,7 @@ async function playLogSyncedSequence(prev, final, newEntries, myId) {
   let logIdx = (prev.log || []).length;
 
   G._logSyncInFlight = true;
+  G._logSyncStartedAt = Date.now();
   try {
     for (const entry of newEntries) {
       if (isPresentationSuperseded()) break;
@@ -23150,6 +23151,7 @@ async function playLogSyncedSequence(prev, final, newEntries, myId) {
     }
   } finally {
     G._logSyncInFlight = false;
+    G._logSyncStartedAt = 0;
     clearDeferredPromptState();
     if (isLiveSuccessDiscardPrompt(final) || !shouldDeferHandDrawsForPrompt(final, myId)) {
       G._deferredHandDrawIids = null;
@@ -23379,21 +23381,26 @@ function releaseStuckPresentation() {
   });
   // Mid live_show / heart check / Win/Loss: never close chrome — that resets the
   // seek cursor and parks both players on Checking hearts until refresh.
-  if (liveShowInFlight || winLossChrome) {
-    const turn = G.gameState.live_show.turn;
+  // Match-end (finished / promptless post-cursor live_judge) must clear into showWin.
+  const finishedUnblock = typeof LLTCG_PRESENTATION_GUARDS !== 'undefined'
+    && LLTCG_PRESENTATION_GUARDS.mayUnblockPollsForFinishedMatch?.(G.gameState);
+  if ((liveShowInFlight || winLossChrome) && !finishedUnblock) {
+    const turn = G.gameState.live_show?.turn;
     const phase = G._perfSpectaclePhase || 'closed';
-    if (typeof perfPhaseIdx === 'function' && typeof markLiveShowPerformancePresented === 'function'
+    if (turn != null && typeof perfPhaseIdx === 'function' && typeof markLiveShowPerformancePresented === 'function'
         && perfPhaseIdx(phase) >= perfPhaseIdx('yell_opp')) {
       markLiveShowPerformancePresented(turn);
     }
     G._liveShowRunnerActive = false;
     G.animating = false;
-    G._livePollHold = false;
     G._liveRoundPlaybackActive = false;
     G._liveSpectacleGateRunning = false;
     G._presentationAborted = false;
-    releaseLivePolls();
-    resumePollingTick(200);
+    if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+    else {
+      G._livePollHold = false;
+      resumePollingTick(200);
+    }
     return;
   }
   // Close chrome first — leaving _perfSpectacleActive true kept polls blocked.
@@ -23402,9 +23409,9 @@ function releaseStuckPresentation() {
   }
   if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
   else G._perfSpectacleActive = false;
+  if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
   G._liveShowRunnerActive = false;
   G.animating = false;
-  G._livePollHold = false;
   G._liveRoundPlaybackActive = false;
   G._liveSpectacleGateRunning = false;
   G._animHideIids = null;
@@ -23423,8 +23430,12 @@ function releaseStuckPresentation() {
     updatePhaseActionButton(G.gameState, G.playerId);
     if (typeof renderGame === 'function') renderGame(G.gameState, { skipLog: true });
   }
-  releaseLivePolls();
+  if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+  else G._livePollHold = false;
   flushPendingState();
+  if (finishedUnblock && G.gameState?.status === 'finished' && typeof showWin === 'function') {
+    showWin(G.gameState);
+  }
 }
 
 function pvpWaitingOnOpponentTurn(live, myId, oppId) {
@@ -32259,7 +32270,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=95"></script>
+<script src="client/js/spectacle.js?v=96"></script>
 <script src="client/js/board-render.js?v=30"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>

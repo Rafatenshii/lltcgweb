@@ -1160,7 +1160,11 @@ function dropStaleLiveRoundPlaybackBoards(reason) {
   G._spectacleRecoveryAttempts = 0;
   cancelStalePerformancePhaseSplash();
   el('perf-splash')?.classList.remove('show', 'live-start', 'heart-check');
-  sweepStaleCardFlights();
+  // Never sweep card flights for settled-Main / baton heals — that aborted healthy
+  // baton legs between sequential clones (post-0343150 regression).
+  const r = String(reason || '');
+  const skipFlightSweep = /settled Main|On Enter \/ baton|poll: stuck Main/i.test(r);
+  if (!skipFlightSweep) sweepStaleCardFlights();
 }
 
 function liveStorageFlipPlaybackActive(flipKeys, flipKey) {
