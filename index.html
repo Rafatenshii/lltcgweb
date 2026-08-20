@@ -2566,7 +2566,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=2"></script>
 <script src="client/js/game-sync.js?v=51"></script>
-<script src="client/js/state-apply.js?v=66"></script>
+<script src="client/js/state-apply.js?v=67"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -17240,13 +17240,13 @@ function tcgPortraitSizeClass(w = window.innerWidth, h = window.innerHeight) {
   const shortSide = Math.min(w, h);
   const longSide = Math.max(w, h);
   const aspect = shortSide > 0 ? w / h : 1;
-  // Unfolded foldables are near-square; keep them out of phone hand rails.
-  if (aspect >= 0.78 && aspect <= 1.18 && shortSide >= 480) return 'square';
-  // Mouse / trackpad desktop resized tall: never use phone hand rails — those
-  // blow up hand cards and crush stage outlines into tiny pink boxes.
   let finePointer = false;
   try { finePointer = window.matchMedia('(any-pointer: fine)').matches; } catch (_) { /* ignore */ }
+  // Mouse/trackpad desktop (incl. DevTools docked → near-square viewport): never use
+  // phone/square rails — those crush live-storage outlines into tiny pink boxes.
   if (finePointer && shortSide >= 360) return 'tablet';
+  // Unfolded foldables are near-square; keep them out of phone hand rails.
+  if (aspect >= 0.78 && aspect <= 1.18 && shortSide >= 480) return 'square';
   if (shortSide >= 600 || (shortSide >= 520 && longSide >= 900)) return 'tablet';
   return 'phone';
 }
@@ -21977,7 +21977,8 @@ function openBlockingOverlayId() {
 
 function hasAntiSoftlockTarget(s, myId) {
   if (!s || !myId || G.isTutorial || !G.roomId) return false;
-  if (s.status !== 'playing') return false;
+  // Matches stay on status=setup until startTurn sets playing (and older rooms never flipped).
+  if (s.status === 'finished' || s.status === 'waiting') return false;
   const pr = s.pending_prompt;
   if (pr && pr.responder === myId) return true;
   if (el('screen-game')?.classList.contains('active') && isBlockingOverlayOpen()) return true;
@@ -22037,7 +22038,7 @@ function canForceOwnTimeout(s, myId) {
   if (!s || !myId || G.isSpectator || G.isTutorial || !G.roomId) return false;
   if (typeof isReplayViewing === 'function' && isReplayViewing()) return false;
   if (!el('screen-game')?.classList.contains('active')) return false;
-  if (s.status !== 'playing') return false;
+  if (s.status === 'finished' || s.status === 'waiting') return false;
   const pr = s.pending_prompt;
   if (pr && pr.responder === myId) return true;
   const ph = s.phase || '';
@@ -32223,7 +32224,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=94"></script>
+<script src="client/js/spectacle.js?v=95"></script>
 <script src="client/js/board-render.js?v=30"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>

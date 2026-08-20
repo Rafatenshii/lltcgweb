@@ -4351,7 +4351,7 @@ function dismissLocalPromptChrome(reason) {
   if (typeof clearPickerCardHover === 'function') clearPickerCardHover();
   G._promptSubmitKey = null;
   G._resolvePromptSentKey = null;
-  G._lastResolvedPromptKey = null;
+  // Keep _lastResolvedPromptKey — clearing it reopened the same skill after force-apply.
   G._lastSurfacedPromptKey = null;
   if (typeof clearDeferredPromptState === 'function') {
     clearDeferredPromptState({ skipBannerRefresh: true });
@@ -4562,20 +4562,9 @@ function ensurePendingPromptSurfaced(s, myId) {
   // still waits; Live Start / Live Success only resurface via sendAct error / noop
   // (which clears _lastResolvedPromptKey), never after a successful resolve ack.
   if (G._lastResolvedPromptKey === surfKey) {
-    const wrPickStep = typeof pr.step === 'string' && /^pick_wr/.test(pr.step);
-    // Never resurface while this exact prompt was just submitted — that reopened
-    // pick_judge_success_live in a loop and hid the win screen after a 3rd Success.
-    if (G._resolvePromptSentKey && G._resolvePromptSentKey === surfKey) return;
-    if (G._promptSubmitKey && G._promptSubmitKey === surfKey) return;
-    if ((G.gameState?.status === 'finished') || s.status === 'finished') return;
-    const needsResurface = (pr.type === 'pick_judge_success_live'
-        || pr.type === 'sbp6_live_wr_deck_position'
-        || wrPickStep)
-      && !el('overlay-pick')?.classList.contains('open')
-      && !el('overlay-prompt')?.classList.contains('open')
-      && !el('overlay-hand-pick')?.classList.contains('open');
-    if (!needsResurface) return;
-    G._lastResolvedPromptKey = null;
+    // Already answered this identity — never reopen (double prompts / softlocks).
+    // Mid-step WR picks advance step on the server and get a new surfKey.
+    return;
   }
   G._lastSurfacedPromptKey = surfKey;
   if (isLiveSuccessDiscardPrompt(s)) clearLiveSuccessHandDeferral(s);

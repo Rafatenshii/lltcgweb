@@ -86,6 +86,23 @@ final class ForceOwnTimeoutTest extends TestCase
         $this->assertTrue($found);
     }
 
+    public function testForceOwnTimeoutWorksOnLegacySetupStatus(): void {
+        $state = $this->baseState();
+        $state['status'] = 'setup';
+        $state['pending_prompt'] = [
+            'type' => 'optional_discard_prompt',
+            'owner' => 'p1',
+            'responder' => 'p1',
+            'source_name' => 'Stuck Card',
+            'choices' => ['yes', 'no'],
+            'choice_labels' => ['Yes', 'No — Skip'],
+            'ability' => ['discard' => 1],
+        ];
+        $after = applyAction($state, 'p1', 'force_own_timeout', []);
+        $this->assertNull($after['pending_prompt'] ?? null);
+        $this->assertSame('playing', $after['status']);
+    }
+
     public function testForceOwnTimeoutRejectsWhenNotYourClock(): void {
         $state = $this->baseState();
         $state['active_player'] = 'p2';

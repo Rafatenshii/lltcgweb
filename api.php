@@ -1412,6 +1412,11 @@ function addSecondPlayer(array $state, array $p2, ?string $firstPlayerOverride =
 // Action Application (Game Rules Engine)
 // ─────────────────────────────────────────────
 function applyAction(array $state, string $playerId, string $type, array $data): array {
+    // Heal rooms that never flipped setup→playing (softlock skip / Shift+T / client gates).
+    if (function_exists('tcgMatchInProgress') && tcgMatchInProgress($state)
+        && ($state['status'] ?? '') === 'setup') {
+        $state['status'] = 'playing';
+    }
     switch ($type) {
 
         // ── SETUP ──────────────────────────
@@ -2605,6 +2610,8 @@ function possessiveName(string $name): string {
 
 function startTurn(array $state): array {
     unset($state['block_effect_member_activate']);
+    // Mulligan / coin-flip leave status=setup; softlock skip + Shift+T require playing.
+    $state['status'] = 'playing';
     $state['phase'] = 'active_first';
     $first = $state['first_player'];
     $state['active_player'] = $first;
@@ -4831,8 +4838,12 @@ function dismissPendingPromptBeforePhaseTimeout(array $state, string $pid): arra
  * timer-expiry pass — so skipping a bugged skill does not also end Main.
  */
 function actionForceOwnTimeout(array $state, string $pid): array {
-    if (($state['status'] ?? '') !== 'playing') {
+    if (!tcgMatchInProgress($state)) {
         throw new Exception('Game is not in progress');
+    }
+    // Heal legacy rooms that never flipped setup→playing.
+    if (($state['status'] ?? '') === 'setup') {
+        $state['status'] = 'playing';
     }
     if (!in_array($pid, ['p1', 'p2'], true)) {
         throw new Exception('Invalid player');

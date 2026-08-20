@@ -143,6 +143,13 @@ check('state-apply softlock uses maySurfaceDeferredPromptState',
   /maySurfaceDeferredPromptState/.test(applySrc));
 check('live_start/success not in needsResurface after resolve',
   !/needsResurface = \(pr\.type === 'pick_judge_success_live'[\s\S]*s\.phase === 'live_start_effects'/.test(spectacleSrc));
+check('resolved prompt identity never resurfaces',
+  /_lastResolvedPromptKey === surfKey[\s\S]{0,200}return;/.test(spectacleSrc)
+  && !/needsResurface = \(pr\.type === 'pick_judge_success_live'/.test(spectacleSrc));
+check('dismissLocalPromptChrome keeps lastResolvedPromptKey',
+  /function dismissLocalPromptChrome\([\s\S]*?Keep _lastResolvedPromptKey/.test(spectacleSrc)
+  || (/function dismissLocalPromptChrome\(/.test(spectacleSrc)
+    && !/function dismissLocalPromptChrome\([\s\S]{0,800}G\._lastResolvedPromptKey = null/.test(spectacleSrc)));
 check('game-sync has action apply epoch',
   /beginActionApplyEpoch/.test(syncSrc) && /endActionApplyEpoch/.test(syncSrc)
   && /_actionApplyEpoch/.test(syncSrc));

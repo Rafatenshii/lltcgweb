@@ -629,10 +629,29 @@ function playerLooksLikeCpu(array $player): bool {
     return str_contains($name, 'CPU') || str_contains($name, '🤖');
 }
 
+/**
+ * True when a seat may use softlock skip / force timeout.
+ * New matches set status=playing in startTurn; older Redis rooms stayed on setup.
+ */
+function tcgMatchInProgress(array $state): bool {
+    $st = (string)($state['status'] ?? '');
+    if ($st === 'playing') {
+        return true;
+    }
+    if ($st === 'finished' || $st === 'waiting') {
+        return false;
+    }
+    $ph = (string)($state['phase'] ?? '');
+    return $ph !== '' && !in_array($ph, ['setup', 'coin_flip', 'choose_first', 'waiting'], true);
+}
+
 /** Anti-softlock: skip the current skill prompt without applying its effect. */
 function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
-    if (($state['status'] ?? '') !== 'playing') {
+    if (!tcgMatchInProgress($state)) {
         throw new Exception('Game is not in progress');
+    }
+    if (($state['status'] ?? '') === 'setup') {
+        $state['status'] = 'playing';
     }
     $prompt = $state['pending_prompt'] ?? null;
     if (!$prompt || ($prompt['responder'] ?? '') !== $pid) {

@@ -333,7 +333,16 @@
         playedFinalLiveRound = await maybePlayFinalLiveRoundPresentation(prev, s, newEntries);
       }
       if (typeof waitForLivePresentationIdle === 'function') {
-        await waitForLivePresentationIdle();
+        const idle = await waitForLivePresentationIdle(12000);
+        if (!idle) {
+          if (typeof abortGameplayPresentation === 'function') {
+            abortGameplayPresentation({ skipAbortFlag: true });
+          }
+          G.animating = false;
+          G._perfSpectacleActive = false;
+          G._liveRoundPlaybackActive = false;
+          G._liveSpectacleGateRunning = false;
+        }
       }
 
       abortGameplayPresentation();
@@ -374,8 +383,19 @@
     if (!resigned) {
       playedFinalLiveRound = await maybePlayFinalLiveRoundPresentation(prev, s, newEntries);
     }
+    // Cap wait so a stuck spectacle cannot delay the win/loss screen until refresh.
     if (typeof waitForLivePresentationIdle === 'function') {
-      await waitForLivePresentationIdle();
+      const idle = await waitForLivePresentationIdle(12000);
+      if (!idle) {
+        TCG_DEBUG.warn('state', 'finished: presentation still busy — forcing win overlay');
+        if (typeof abortGameplayPresentation === 'function') {
+          abortGameplayPresentation({ skipAbortFlag: true });
+        }
+        G.animating = false;
+        G._perfSpectacleActive = false;
+        G._liveRoundPlaybackActive = false;
+        G._liveSpectacleGateRunning = false;
+      }
     }
 
     abortGameplayPresentation();
