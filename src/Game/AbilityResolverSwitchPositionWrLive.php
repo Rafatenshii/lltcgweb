@@ -50,9 +50,11 @@ function tryResolveAbilityEffectSwitchPositionWrLive(
 
         case 'position_change_off_center':
             $group = $ab['group'] ?? 'μ\'s';
-            $minBlades = intval($ab['min_original_blades'] ?? 0);
+            // Official text uses blade icons (current Blade). Prefer min_blades;
+            // min_original_blades is a legacy IR key kept for older cards.json.
+            $minBlades = intval($ab['min_blades'] ?? $ab['min_original_blades'] ?? 0);
             $hasMin = $minBlades > 0
-                ? stageHasGroupMemberMinBlades($p, $group, $minBlades)
+                ? stageHasGroupMemberMinBlades($p, $group, $minBlades, $state, $pid)
                 : stageHasGroupMemberMinHearts($p, $group, intval($ab['min_hearts'] ?? 5));
             if (!$hasMin) {
                 if (positionChangeOffCenter($p, $source['instance_id'] ?? '')) {

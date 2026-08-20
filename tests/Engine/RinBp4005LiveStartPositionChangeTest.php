@@ -138,4 +138,37 @@ final class RinBp4005LiveStartPositionChangeTest extends TestCase
         $this->assertSame('rin_keep', $state['players']['p1']['stage']['center']['instance_id'] ?? null);
         $this->assertSame('honoka5', $state['players']['p1']['stage']['left']['instance_id'] ?? null);
     }
+
+    /** Official blade icons = current Blade (grants), not printed-only. */
+    public function testLiveStartSkipsWhenModifiedBladeReachesFive(): void
+    {
+        $rin = $this->cardByNo('PL!-bp4-005-R＋', 'rin_rplus');
+        $this->assertSame(5, intval($rin['abilities'][2]['min_blades'] ?? 0));
+        $this->assertArrayNotHasKey('min_original_blades', $rin['abilities'][2]);
+        $this->assertStringContainsString('5 or more Blade icons', $rin['text'] ?? '');
+        $this->assertStringNotContainsString('original Blade icons', $rin['text'] ?? '');
+
+        $umi = [
+            'instance_id' => 'umi4',
+            'card_no' => 'PL!-sd1-003-SD',
+            'name_en' => 'Umi Sonoda',
+            'card_type' => 'メンバー',
+            'group' => "μ's",
+            'cost' => 5,
+            'blade' => 4,
+            'active' => true,
+            'abilities' => [],
+            'live_blade_bonus' => 1,
+        ];
+
+        $state = $this->baseState();
+        $state['players']['p1']['stage']['center'] = $rin;
+        $state['players']['p1']['stage']['left'] = $umi;
+
+        // Without effective Blade, printed 4 would force Rin off Center.
+        $this->assertSame(5, \getMemberBlade($umi, $state, 'p1', 'left'));
+        $state = \resolveLiveStartAbilities($state, 'p1');
+        $this->assertSame('rin_rplus', $state['players']['p1']['stage']['center']['instance_id'] ?? null);
+        $this->assertSame('umi4', $state['players']['p1']['stage']['left']['instance_id'] ?? null);
+    }
 }

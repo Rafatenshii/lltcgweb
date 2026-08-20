@@ -4457,8 +4457,8 @@
                 "pink"
             ],
             "rarity": "P",
-            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more original Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
-            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージに＋1ブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
+            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
+            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージにブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!-bp4-005-P.png",
             "abilities": [
                 {
@@ -4478,13 +4478,13 @@
                     "trigger": "live_start",
                     "type": "position_change_off_center",
                     "group": "μ's",
-                    "min_original_blades": 5
+                    "min_blades": 5
                 }
             ],
-            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade originales, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
-            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 원래의 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
-            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多原始Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
-            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลดดั้งเดิม 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
+            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
+            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
+            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
+            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลด 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
         },
         {
             "card_no": "PL!-bp4-005-P＋",
@@ -4514,8 +4514,8 @@
                 "pink"
             ],
             "rarity": "P+",
-            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more original Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
-            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージに＋1ブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
+            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
+            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージにブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!-bp4-005-P2.png",
             "abilities": [
                 {
@@ -4535,13 +4535,13 @@
                     "trigger": "live_start",
                     "type": "position_change_off_center",
                     "group": "μ's",
-                    "min_original_blades": 5
+                    "min_blades": 5
                 }
             ],
-            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade originales, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
-            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 원래의 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
-            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多原始Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
-            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลดดั้งเดิม 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
+            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
+            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
+            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
+            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลด 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
         },
         {
             "card_no": "PL!-bp4-005-R＋",
@@ -4571,8 +4571,8 @@
                 "pink"
             ],
             "rarity": "R+",
-            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more original Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
-            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージに＋1ブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
+            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
+            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージにブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!-bp4-005-R2.png",
             "abilities": [
                 {
@@ -4592,13 +4592,13 @@
                     "trigger": "live_start",
                     "type": "position_change_off_center",
                     "group": "μ's",
-                    "min_original_blades": 5
+                    "min_blades": 5
                 }
             ],
-            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade originales, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
-            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 원래의 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
-            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多原始Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
-            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลดดั้งเดิม 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
+            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
+            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
+            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
+            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลด 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
         },
         {
             "card_no": "PL!-bp4-005-SEC",
@@ -4628,8 +4628,8 @@
                 "pink"
             ],
             "rarity": "SEC",
-            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more original Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
-            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージに＋1ブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
+            "text": "[On Enter] Add 1 Member card with cost 2 or less from your Waiting Room to your hand.\n[Always] [Center] Your Live total score +1.\n[Live Start] If you have no μ's Member on your Stage with 5 or more Blade icons, this Member position-changes to a non-Center area (swap with any Member already there).",
+            "text_jp": "[登場時] 自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。\n\n[常時] [センター] ライブの合計スコアを＋１する。\n\n[ライブ開始時] 自分のステージにブレードを5つ以上持つ『μ's』のメンバーがいない場合、このメンバーはセンターエリア以外にポジションチェンジする。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP04/PL!-bp4-005-SEC.png",
             "abilities": [
                 {
@@ -4649,13 +4649,13 @@
                     "trigger": "live_start",
                     "type": "position_change_off_center",
                     "group": "μ's",
-                    "min_original_blades": 5
+                    "min_blades": 5
                 }
             ],
-            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade originales, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
-            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 원래의 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
-            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多原始Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
-            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลดดั้งเดิม 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
+            "text_es": "[Al entrar] Añade 1 carta de Miembro con costo 2 o menos de tu Sala de espera a tu mano.\n[Siempre] [Centro] Tu puntuación total de Live +1.\n[Inicio de Live] Si no tienes un Miembro de μ's en tu Escenario con 5 o más iconos de Blade, este Miembro cambia de posición a un área que no sea Centro (intercámbialo con cualquier Miembro que ya esté allí).",
+            "text_ko": "[등장 시] 더한다 1 멤버 카드 와 함께 코스트 2 이하 자신의 대기실에서 패에.\n[상시] [센터] 자신의 총 Live 스코어 +1.\n[라이브 개시] 만약 자신에게 no μ의 멤버 자신의 스테이지에 와 함께 5 이상 Blade icons, 이 멤버 위치-changes 에 non-센터 영역 (swap 와 함께 임의의 멤버 이미 there).",
+            "text_zh": "[入场时] 将自己的等候室中的1张费用2以下的成员卡加入手牌。\n[永续] [中央] 您的实时总分+1。\n[Live开始] 如果您的舞台上没有 μ's 成员且拥有 5 个或更多Blade图标，则该成员位置将更改为非中心区域（与已存在的任何成员交换）。",
+            "text_th": "[เมื่อเข้าสนาม] เพิ่มบัตรสมาชิก 1 ใบที่มีค่าใช้จ่าย 2 หรือน้อยกว่าจากห้องรอของคุณถึงมือคุณ\n[ต่อเนื่อง] [เซ็นเตอร์] คะแนนรวมสดของคุณ +1\n[เริ่ม Live] หากคุณไม่มีสมาชิกของ μ บนเวทีของคุณที่มีไอคอนเบลด 5 อันขึ้นไป ตำแหน่งสมาชิกนี้จะเปลี่ยนเป็นพื้นที่ที่ไม่ใช่ศูนย์กลาง (สลับกับสมาชิกคนใดก็ได้ที่มีอยู่แล้ว)"
         },
         {
             "card_no": "PL!-bp4-006-P",

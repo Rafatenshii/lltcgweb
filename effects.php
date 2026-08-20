@@ -1984,10 +1984,22 @@ function stageHasGroupMemberMinHearts(array $p, string $group, int $minHearts): 
     return false;
 }
 
-function stageHasGroupMemberMinBlades(array $p, string $group, int $minBlades): bool {
-    foreach ($p['stage'] as $m) {
-        if (!$m || ($m['group'] ?? '') !== $group) continue;
-        if (intval($m['blade'] ?? 0) >= $minBlades) return true;
+function stageHasGroupMemberMinBlades(
+    array $p,
+    string $group,
+    int $minBlades,
+    ?array $state = null,
+    ?string $pid = null
+): bool {
+    foreach ($p['stage'] as $slot => $m) {
+        if (!$m || !cardMatchesGroup($m, $group, 'member')) continue;
+        // Official blade-icon checks use current Blade (grants / Always), not printed only.
+        if ($state !== null && $pid !== null) {
+            $blade = getMemberBlade($m, $state, $pid, is_string($slot) ? $slot : '');
+        } else {
+            $blade = intval($m['blade'] ?? 0);
+        }
+        if ($blade >= $minBlades) return true;
     }
     return false;
 }
