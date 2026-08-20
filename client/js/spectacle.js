@@ -4331,6 +4331,55 @@ function shouldHideOpponentLiveStorageFaces(s) {
   return false;
 }
 
+/**
+ * Close skill/pick overlays and clear submit latches before a force-apply or stuck
+ * release so an old picker cannot stay open while a newer seq paints (double prompt).
+ */
+function dismissLocalPromptChrome(reason) {
+  if (typeof el === 'function') {
+    if (el('overlay-prompt')?.classList.contains('open')) {
+      if (typeof closeM === 'function') closeM('overlay-prompt');
+      else el('overlay-prompt').classList.remove('open');
+    }
+  }
+  if (typeof closeM === 'function') {
+    closeM('overlay-hand-pick');
+    closeM('overlay-pick');
+    closeM('overlay-heart');
+    closeM('overlay-surveil');
+  }
+  if (typeof clearPickerCardHover === 'function') clearPickerCardHover();
+  G._promptSubmitKey = null;
+  G._resolvePromptSentKey = null;
+  G._lastResolvedPromptKey = null;
+  G._lastSurfacedPromptKey = null;
+  if (typeof clearDeferredPromptState === 'function') {
+    clearDeferredPromptState({ skipBannerRefresh: true });
+  }
+  if (reason && typeof TCG_DEBUG !== 'undefined') {
+    TCG_DEBUG.log('prompt', 'dismissLocalPromptChrome', reason);
+  }
+}
+
+/** Deferred softlock snapshots must not resurrect after live board cleared the prompt. */
+function maySurfaceDeferredPromptState(def, live) {
+  if (!def?.pending_prompt) return false;
+  const liveSeq = live?.seq ?? 0;
+  const defSeq = def.seq ?? 0;
+  if (defSeq < liveSeq) return false;
+  const livePr = live?.pending_prompt;
+  if (!livePr) {
+    // Live already advanced past this prompt — never reopen from deferred.
+    return false;
+  }
+  if (typeof promptIdentityKey === 'function') {
+    return promptIdentityKey(def) === promptIdentityKey(live);
+  }
+  return livePr.type === def.pending_prompt.type
+    && (livePr.responder || '') === (def.pending_prompt.responder || '')
+    && (livePr.step || '') === (def.pending_prompt.step || '');
+}
+
 function shouldHoldStateForLocalPrompt(incoming) {
   if (G.isSpectator) return false;
   const cur = G.gameState;
@@ -4509,10 +4558,9 @@ function ensurePendingPromptSurfaced(s, myId) {
     || el('overlay-pick')?.classList.contains('open')
   )) return;
   // Same identity already answered this round — do not reopen after overlay close.
-  // Exception: Success-Live / leftover Live place UI closed while the server still waits.
-  // Also Live Success / Live Start: players often dismiss overlays without a successful
-  // resolve_prompt ack; must resurface so the phase banner is not a softlock.
-  // Also multi-step WR picks (Ginko pick_wr_live): a latched submit key must not hide the picker.
+  // pick_judge_success_live / WR multi-step may close the overlay while the server
+  // still waits; Live Start / Live Success only resurface via sendAct error / noop
+  // (which clears _lastResolvedPromptKey), never after a successful resolve ack.
   if (G._lastResolvedPromptKey === surfKey) {
     const wrPickStep = typeof pr.step === 'string' && /^pick_wr/.test(pr.step);
     // Never resurface while this exact prompt was just submitted — that reopened
@@ -4522,8 +4570,6 @@ function ensurePendingPromptSurfaced(s, myId) {
     if ((G.gameState?.status === 'finished') || s.status === 'finished') return;
     const needsResurface = (pr.type === 'pick_judge_success_live'
         || pr.type === 'sbp6_live_wr_deck_position'
-        || s.phase === 'live_success_effects'
-        || s.phase === 'live_start_effects'
         || wrPickStep)
       && !el('overlay-pick')?.classList.contains('open')
       && !el('overlay-prompt')?.classList.contains('open')

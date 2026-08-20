@@ -188,6 +188,8 @@ function cacheCardImageFromUrl(string $cardNo, string $url): array {
 
     $existing = localCardImageFile($cardNo);
     if ($existing) {
+        // Warm board/grid thumbs even when full art was already on disk.
+        tcgPrebuildCardImageThumbs($cardNo, $existing);
         return [
             'ok'      => true,
             'cached'  => true,
@@ -225,9 +227,25 @@ function cacheCardImageFromUrl(string $cardNo, string $url): array {
         throw new RuntimeException('Could not write card image cache');
     }
 
+    tcgPrebuildCardImageThumbs($cardNo, $dest);
+
     return [
         'ok'      => true,
         'cached'  => false,
         'path'    => 'cardimg/' . basename($dest),
     ];
+}
+
+/** Build common board/grid WebP thumbs so first paint is not a cold GD hit. */
+function tcgPrebuildCardImageThumbs(string $cardNo, string $source): void {
+    if ($cardNo === '' || !is_file($source)) {
+        return;
+    }
+    foreach ([180, 256] as $width) {
+        try {
+            ensureCardImageVariant($cardNo, $source, $width);
+        } catch (Throwable $e) {
+            // Thumb build is best-effort; full art remains usable.
+        }
+    }
 }

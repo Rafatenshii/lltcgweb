@@ -143,6 +143,18 @@
     if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
       LiveRoundDirector.abort('turn-advance');
     }
+    // Force-apply must not leave an old picker open while the new board paints.
+    if (typeof global.dismissLocalPromptChrome === 'function') {
+      global.dismissLocalPromptChrome('turn-advance');
+    } else {
+      G._promptSubmitKey = null;
+      G._resolvePromptSentKey = null;
+      G._lastResolvedPromptKey = null;
+      G._lastSurfacedPromptKey = null;
+      if (typeof clearDeferredPromptState === 'function') {
+        clearDeferredPromptState({ skipBannerRefresh: true });
+      }
+    }
     G.animating = false;
     G._liveRoundPlaybackActive = false;
     G._liveSpectacleGateRunning = false;
@@ -1033,12 +1045,16 @@
             || (s.phase === 'live_judge' && s.pending_prompt?.type === 'pick_judge_success_live'))) {
       ensurePendingPromptSurfaced(s, G.playerId);
     }
-    // Softlock heal: Live Success banner with nothing to click — server should have advanced;
-    // if a deferred prompt still exists for us, force surface it.
+    // Softlock heal only when deferred still matches live pending_prompt.
+    // Never resurrect a resolved picker when live already cleared the prompt.
     if (!replayForward && !G.animating && !G._perfSpectacleActive
-        && s.phase === 'live_success_effects' && !s.pending_prompt
         && G._deferredPromptState?.pending_prompt?.responder === G.playerId) {
-      ensurePendingPromptSurfaced(G._deferredPromptState, G.playerId);
+      if (typeof maySurfaceDeferredPromptState === 'function'
+          && maySurfaceDeferredPromptState(G._deferredPromptState, s)) {
+        ensurePendingPromptSurfaced(G._deferredPromptState, G.playerId);
+      } else if (!s.pending_prompt && typeof clearDeferredPromptState === 'function') {
+        clearDeferredPromptState({ skipBannerRefresh: true });
+      }
     }
     clearStaleCpuPromptBusyIfResolved(G.gameState || s);
     if (G.playerId) updateOpponentSkillWaitBanner(G.gameState || s, G.playerId);

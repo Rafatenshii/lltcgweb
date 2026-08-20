@@ -192,9 +192,18 @@
     clearTimeout(G._syncPullTimer);
     if (isReplayViewingSync()) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.syncEnabled) return;
+    // Action-ack owns the next apply — coalesce SSE pulls until the epoch ends.
+    if (G._actionApplyEpoch) {
+      G._actionApplyEpochNeedsFollowUp = true;
+      return;
+    }
     G._syncPullTimer = setTimeout(async () => {
       G._syncPullTimer = null;
       if (!G.polling || (G.isTutorial && !G.tutorialLive)) return;
+      if (G._actionApplyEpoch) {
+        G._actionApplyEpochNeedsFollowUp = true;
+        return;
+      }
       if (pollPresentationBlocked()) {
         // Re-arm once presentation frees — avoid a tight timer spin while blocked.
         const spins = (G._syncPullBlockedSpins || 0) + 1;
@@ -205,6 +214,26 @@
       G._syncPullBlockedSpins = 0;
       await pullLatestState();
     }, delayMs);
+  };
+
+  /**
+   * Serialize sendAct force-pull / prompt resolution against SSE get_state so the
+   * same prompt transition is not applied twice with different deferred/submit latches.
+   */
+  global.beginActionApplyEpoch = function beginActionApplyEpoch(reason) {
+    G._actionApplyEpoch = reason || 'action';
+    G._actionApplyEpochNeedsFollowUp = false;
+    clearTimeout(G._syncPullTimer);
+    G._syncPullTimer = null;
+  };
+
+  global.endActionApplyEpoch = function endActionApplyEpoch() {
+    const needsFollow = !!G._actionApplyEpochNeedsFollowUp;
+    G._actionApplyEpoch = null;
+    G._actionApplyEpochNeedsFollowUp = false;
+    if (needsFollow && G.polling && G.syncEnabled && G.syncTicket) {
+      scheduleDeferredSyncPull(global.TCG_SYNC_SSE_DEBOUNCE_MS || 220);
+    }
   };
 
   global.resumePollingTick = function resumePollingTick(delayMs = 200) {
@@ -696,6 +725,11 @@
   global.pullLatestState = async function pullLatestState(force, opts = {}) {
     if (isReplayViewingSync() && !opts.allowReplayPull) return;
     if (!G.polling || (G.isTutorial && !G.tutorialLive) || !G.roomId || !G.token) return;
+    // Non-owning SSE/safety polls wait for sendAct's apply epoch.
+    if (!force && !opts.actionEpoch && G._actionApplyEpoch) {
+      G._actionApplyEpochNeedsFollowUp = true;
+      return;
+    }
     if (!force && pollPresentationBlocked()) {
       if (G.syncEnabled && G.syncTicket) scheduleDeferredSyncPull(500);
       else resumePollingTick(500);

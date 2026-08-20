@@ -2564,9 +2564,9 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/presentation-guards.js?v=1"></script>
-<script src="client/js/game-sync.js?v=50"></script>
-<script src="client/js/state-apply.js?v=64"></script>
+<script src="client/js/presentation-guards.js?v=2"></script>
+<script src="client/js/game-sync.js?v=51"></script>
+<script src="client/js/state-apply.js?v=65"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -15818,6 +15818,9 @@ function ensureCardImageLoaded(card) {
   return preloadCardFaceImage(card).then(() => {});
 }
 
+/** Max wait so cold Hostinger/CDN misses cannot hold G.animating / defer prompts forever. */
+const CARD_IMAGE_PRELOAD_TIMEOUT_MS = 2500;
+
 /** Preload card face with Hostinger thumb→full fallback; returns the URL that loaded. */
 function preloadCardFaceImage(card, thumbWidth) {
   card = enrichCard(card);
@@ -15828,11 +15831,19 @@ function preloadCardFaceImage(card, thumbWidth) {
   if (!official && !remote && !cached) return Promise.resolve('');
 
   return new Promise(resolve => {
+    let settled = false;
     const finish = (url) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       // Only persist full official art when we actually fetched it (not a thumb hit).
       if (url && url === official) queuePersistCardImage(card);
       resolve(url || '');
     };
+    const timer = setTimeout(() => {
+      // Prefer whatever we were aiming for so paint can continue with a late load.
+      finish(cached || official || remote || '');
+    }, CARD_IMAGE_PRELOAD_TIMEOUT_MS);
     const tryCached = () => {
       if (!cached) return finish(remote || '');
       const probe = new Image();
@@ -23365,7 +23376,11 @@ function releaseStuckPresentation() {
   if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
   // Do not leave _presentationAborted set — flushPendingState refuses to apply when true.
   G._presentationAborted = false;
-  clearDeferredPromptState();
+  if (typeof dismissLocalPromptChrome === 'function') {
+    dismissLocalPromptChrome('release-stuck');
+  } else {
+    clearDeferredPromptState();
+  }
   clearOpponentSkillWaitLogKey();
   if (G.playerId && G.gameState) {
     updateOpponentSkillWaitBanner(G.gameState, G.playerId);
@@ -31643,6 +31658,11 @@ async function sendAct(type,data){
   tcgDebugRecordAction(type, data, 'player');
   TCG_DEBUG.log('action', 'sendAct →', type, data);
   if (phaseAdvance) G._phaseAdvanceInFlight = true;
+  const ownsApplyEpoch = type === 'resolve_prompt' || type === 'anti_softlock_skip'
+    || type === 'force_own_timeout' || phaseAdvance || boardCatchup;
+  if (ownsApplyEpoch && typeof beginActionApplyEpoch === 'function') {
+    beginActionApplyEpoch(type);
+  }
   try {
     const res = await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, {
       silent: type === 'send_stamp' || phaseAdvance,
@@ -31664,7 +31684,7 @@ async function sendAct(type,data){
         await pullPromptResolutionState();
       } else if (phaseAdvance || boardCatchup) {
         if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
-        await pullLatestState(true, { silent: true });
+        await pullLatestState(true, { silent: true, actionEpoch: true });
       } else {
         await pullLatestState(false, { silent: type === 'send_stamp' });
       }
@@ -31715,7 +31735,7 @@ async function sendAct(type,data){
     if (staleTurn) {
       // First click already advanced the server; the board never caught up.
       if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
-      try { if (G.polling) await pullLatestState(true, { silent: true }); } catch (_) {}
+      try { if (G.polling) await pullLatestState(true, { silent: true, actionEpoch: true }); } catch (_) {}
       flushPendingState();
       return;
     }
@@ -31735,6 +31755,9 @@ async function sendAct(type,data){
     }
   } finally {
     if (phaseAdvance) G._phaseAdvanceInFlight = false;
+    if (ownsApplyEpoch && typeof endActionApplyEpoch === 'function') {
+      endActionApplyEpoch();
+    }
   }
 }
 
@@ -32129,7 +32152,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=93"></script>
+<script src="client/js/spectacle.js?v=94"></script>
 <script src="client/js/board-render.js?v=29"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
