@@ -2456,6 +2456,7 @@ function tcgApiSleeveShopCatalog(array $body): array {
             'orientation' => ($sleeve['orientation'] ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait',
             'owned' => isset($owned[$sleeve['id']]),
             'price' => TCG_SLEEVE_SHOP_PRICE,
+            'added_at' => (string)($sleeve['added_at'] ?? ''),
         ];
     }
 
@@ -2628,6 +2629,7 @@ function tcgApiPlaymatShopCatalog(array $body): array {
             'vol' => $mat['vol'] ?? null,
             'owned' => isset($owned[$mat['id']]),
             'price' => TCG_PLAYMAT_SHOP_PRICE,
+            'added_at' => (string)($mat['added_at'] ?? ''),
         ];
     }
 

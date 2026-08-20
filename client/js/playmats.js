@@ -410,6 +410,7 @@
             group: String(row.group || ''),
             idol: String(row.idol || ''),
             vol: row.vol == null ? null : Number(row.vol),
+            added_at: String(row.added_at || row.addedAt || ''),
           }))
           .filter((p) => p.id && p.src);
         global.LLTCG_PLAYMATS.catalog = PLAYMAT_CATALOG;

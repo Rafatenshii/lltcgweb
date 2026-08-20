@@ -5116,6 +5116,30 @@ html[lang="ko"] .news-fab-badge{text-transform:none;letter-spacing:.02em;font-si
   border:1px solid rgba(255,255,255,.4)}
 html[lang="ja"] #overlay-news .news-list-item-new-tag,
 html[lang="ko"] #overlay-news .news-list-item-new-tag{text-transform:none;letter-spacing:.02em}
+
+/* Shop cosmetics "New" (playmats / sleeves) — mirrors news FAB highlight */
+.shop-new-badge{
+  position:absolute;top:6px;right:6px;z-index:3;padding:2px 7px;border-radius:999px;
+  font-size:9px;font-weight:900;letter-spacing:.04em;line-height:1.2;text-transform:uppercase;
+  color:#fff;background:linear-gradient(135deg,var(--pink),var(--pink-d));
+  border:1px solid rgba(255,255,255,.55);box-shadow:0 2px 10px rgba(255,107,168,.45);
+  pointer-events:none}
+#btn-hub-shop.is-shop-new,
+.shop-hub-tile.is-shop-new,
+.sleeve-shop-gen.is-shop-new,
+.sleeve-shop-char.is-shop-new{
+  position:relative;
+  box-shadow:0 0 0 2px rgba(255,107,168,.45),0 0 18px rgba(255,107,168,.35)}
+#btn-hub-shop.is-shop-new{animation:newsFabGlow 1.6s ease-in-out infinite}
+.sleeve-shop-tile.is-shop-new{position:relative;outline:2px solid rgba(255,107,168,.65)}
+.sleeve-shop-tile.is-shop-new > .shop-new-badge{top:4px;right:4px}
+.sleeve-shop-gen.is-shop-new > .shop-new-badge,
+.sleeve-shop-char.is-shop-new > .shop-new-badge{top:4px;right:4px}
+.shop-hub-tile{position:relative}
+.shop-hub-tile.is-shop-new > .shop-new-badge{top:10px;right:10px}
+html[lang="ja"] .shop-new-badge,
+html[lang="ko"] .shop-new-badge{text-transform:none;letter-spacing:.02em;font-size:10px}
+
 body.news-overlay-open{overflow:hidden}
 #overlay-news.llc-menu-screen{
   position:fixed;inset:0;z-index:8750;display:none;align-items:center;justify-content:center;

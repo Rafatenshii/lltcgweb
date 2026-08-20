@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=75">
+<link rel="stylesheet" href="client/css/shell-all.css?v=76">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
@@ -2559,7 +2559,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/runtime-flags.js?v=2"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script src="client/js/sleeves.js?v=12"></script>
-<script src="client/js/playmats.js?v=4"></script>
+<script src="client/js/playmats.js?v=5"></script>
+<script src="client/js/shop-new.js?v=1"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -6099,6 +6100,11 @@ function enterHub(me) {
     ensureDeckList().catch(() => {});
   }
   showScr('hub');
+  if (typeof prefetchShopCatalogsForNewBadges === 'function') {
+    void prefetchShopCatalogsForNewBadges().then(() => {
+      if (typeof refreshShopNewHubBadges === 'function') refreshShopNewHubBadges();
+    });
+  }
   if (typeof schedulePendingRankedPrReward === 'function') schedulePendingRankedPrReward();
   if (window.TCGLoginBonus?.scheduleHubLoginBonus) window.TCGLoginBonus.scheduleHubLoginBonus();
   if (window.TCGLoginBonus?.syncHubButton) window.TCGLoginBonus.syncHubButton();
@@ -6226,12 +6232,20 @@ let _sleeveShopGenId = null;
 let _sleeveShopChar = null;
 
 function showSleeveShopCharsView() {
+  if (_sleeveShopChar && window.LLTCG_SHOP_NEW) {
+    LLTCG_SHOP_NEW.markCharacterSeen('sleeves', _sleeveShopChar);
+    refreshShopNewHubBadges();
+  }
   const sleevesView = el('sleeve-shop-sleeves-view');
   const chars = el('sleeve-shop-chars');
   if (sleevesView) sleevesView.hidden = true;
   if (chars) chars.hidden = false;
   _sleeveShopChar = null;
   clearSleeveShopHover();
+  if (_sleeveShopData) {
+    renderSleeveShopGens(_sleeveShopData.generations || []);
+    renderSleeveShopChars();
+  }
 }
 
 function sleeveShopDisplayName(sleeve) {
@@ -6385,6 +6399,7 @@ async function loadSleeveShopScreen() {
     _sleeveShopGenId = gens[0]?.id || null;
     renderSleeveShopGens(gens);
     renderSleeveShopChars();
+    refreshShopNewHubBadges();
   } catch (e) {
     if (err) err.textContent = e.message || t('toast.sleeveShopLoadFailed') || 'Failed to load sleeve shop';
   }
@@ -6416,10 +6431,13 @@ function renderSleeveShopGens(gens) {
   const host = el('sleeve-shop-gens');
   if (!host) return;
   host.replaceChildren();
+  const SN = window.LLTCG_SHOP_NEW;
   (gens || []).forEach((g) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'sleeve-shop-gen' + (g.id === _sleeveShopGenId ? ' is-active' : '');
+    const isNew = !!(SN && SN.genHasNew('sleeves', g));
+    b.className = 'sleeve-shop-gen' + (g.id === _sleeveShopGenId ? ' is-active' : '')
+      + (isNew ? ' is-shop-new' : '');
     const iconUrl = g.icon || sleeveShopUnitIcon(g.id || g.name);
     if (iconUrl) {
       const img = document.createElement('img');
@@ -6435,6 +6453,7 @@ function renderSleeveShopGens(gens) {
     label.className = 'sleeve-shop-gen__label';
     label.textContent = sleeveShopUnitLabel(g.name || g.id);
     b.appendChild(label);
+    if (isNew && SN) b.appendChild(SN.newBadgeEl());
     b.onclick = () => {
       _sleeveShopGenId = g.id;
       showSleeveShopCharsView();
@@ -6450,12 +6469,15 @@ function renderSleeveShopChars() {
   if (!host) return;
   host.replaceChildren();
   host.hidden = false;
+  const SN = window.LLTCG_SHOP_NEW;
   const gen = (_sleeveShopData?.generations || []).find((g) => g.id === _sleeveShopGenId);
   (gen?.characters || []).forEach((c) => {
     const isGroup = !!c.is_group;
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '');
+    const isNew = !!(SN && SN.charHasNew('sleeves', c));
+    b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '')
+      + (isNew ? ' is-shop-new' : '');
     const name = document.createElement('span');
     name.className = 'sleeve-shop-char__name';
     name.textContent = isGroup
@@ -6476,6 +6498,7 @@ function renderSleeveShopChars() {
     b.appendChild(name);
     b.appendChild(count);
     b.appendChild(img);
+    if (isNew && SN) b.appendChild(SN.newBadgeEl());
     b.onclick = () => openSleeveShopCharacter(c);
     host.appendChild(b);
   });
@@ -6505,7 +6528,10 @@ function renderSleeveShopGrid(sleeves) {
   const free = Number(A.freeSleeveClaims || 0);
   (sleeves || []).forEach((s) => {
     const tile = document.createElement('div');
-    tile.className = 'sleeve-shop-tile' + (s.owned ? ' is-owned' : '');
+    const SN = window.LLTCG_SHOP_NEW;
+    const isNew = !!(SN && SN.itemIsNew('sleeves', s));
+    tile.className = 'sleeve-shop-tile' + (s.owned ? ' is-owned' : '') + (isNew ? ' is-shop-new' : '');
+    if (isNew && SN) tile.appendChild(SN.newBadgeEl());
     const art = document.createElement('div');
     art.className = 'sleeve-shop-tile__art';
     const src = String(s.src || '');
@@ -6613,12 +6639,20 @@ let _playmatShopGenId = null;
 let _playmatShopChar = null;
 
 function showPlaymatShopCharsView() {
+  if (_playmatShopChar && window.LLTCG_SHOP_NEW) {
+    LLTCG_SHOP_NEW.markCharacterSeen('playmats', _playmatShopChar);
+    refreshShopNewHubBadges();
+  }
   const matsView = el('playmat-shop-mats-view');
   const chars = el('playmat-shop-chars');
   if (matsView) matsView.hidden = true;
   if (chars) chars.hidden = false;
   _playmatShopChar = null;
   clearPlaymatShopHover();
+  if (_playmatShopData) {
+    renderPlaymatShopGens();
+    renderPlaymatShopChars();
+  }
 }
 
 function clearPlaymatShopHover() {
@@ -6706,6 +6740,7 @@ async function loadShopHubScreen() {
     await Promise.all([
       window.LLTCG_SLEEVES?.loadCatalog?.(),
       window.LLTCG_PLAYMATS?.loadCatalog?.(),
+      prefetchShopCatalogsForNewBadges(),
     ]);
   } catch (e) { /* ignore */ }
   const sleeveArt = el('shop-hub-sleeve-art');
@@ -6722,6 +6757,31 @@ async function loadShopHubScreen() {
       : (mats[0]?.src || 'playmat.png');
     playmatArt.style.backgroundImage = 'url("' + String(src).replace(/"/g, '\\"') + '")';
   }
+  refreshShopNewHubBadges();
+}
+
+function refreshShopNewHubBadges() {
+  const SN = window.LLTCG_SHOP_NEW;
+  if (!SN) return;
+  SN.refreshHubShopBadges({
+    playmats: SN.catalogHasNew('playmats', _playmatShopData?.generations),
+    sleeves: SN.catalogHasNew('sleeves', _sleeveShopData?.generations),
+  });
+}
+
+async function prefetchShopCatalogsForNewBadges() {
+  const tasks = [];
+  if (!_playmatShopData && typeof accountGet === 'function') {
+    tasks.push(accountGet('playmat_shop_catalog').then((res) => {
+      if (res?.generations) _playmatShopData = res;
+    }).catch(() => {}));
+  }
+  if (!_sleeveShopData && typeof accountGet === 'function') {
+    tasks.push(accountGet('sleeve_shop_catalog').then((res) => {
+      if (res?.generations) _sleeveShopData = res;
+    }).catch(() => {}));
+  }
+  if (tasks.length) await Promise.all(tasks);
 }
 
 async function loadPlaymatShopScreen() {
@@ -6746,6 +6806,7 @@ async function loadPlaymatShopScreen() {
     renderPlaymatShopChars();
     const coinsEl = el('playmat-shop-coins');
     if (coinsEl) coinsEl.textContent = String(A.coins || 0);
+    refreshShopNewHubBadges();
   } catch (e) {
     if (err) err.textContent = e.message || 'Failed to load playmat shop';
   }
@@ -6755,10 +6816,13 @@ function renderPlaymatShopGens() {
   const host = el('playmat-shop-gens');
   if (!host) return;
   host.replaceChildren();
+  const SN = window.LLTCG_SHOP_NEW;
   (_playmatShopData?.generations || []).forEach((g) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'sleeve-shop-gen' + (g.id === _playmatShopGenId ? ' is-active' : '');
+    const isNew = !!(SN && SN.genHasNew('playmats', g));
+    b.className = 'sleeve-shop-gen' + (g.id === _playmatShopGenId ? ' is-active' : '')
+      + (isNew ? ' is-shop-new' : '');
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', g.id === _playmatShopGenId ? 'true' : 'false');
     if (g.icon) {
@@ -6772,6 +6836,7 @@ function renderPlaymatShopGens() {
     label.className = 'sleeve-shop-gen__label';
     label.textContent = sleeveShopUnitLabel(g.name || g.id);
     b.appendChild(label);
+    if (isNew && SN) b.appendChild(SN.newBadgeEl());
     b.onclick = () => {
       _playmatShopGenId = g.id;
       showPlaymatShopCharsView();
@@ -6787,12 +6852,15 @@ function renderPlaymatShopChars() {
   if (!host) return;
   host.replaceChildren();
   host.hidden = false;
+  const SN = window.LLTCG_SHOP_NEW;
   const gen = (_playmatShopData?.generations || []).find((g) => g.id === _playmatShopGenId);
   (gen?.characters || []).forEach((c) => {
     const isGroup = !!c.is_group;
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '');
+    const isNew = !!(SN && SN.charHasNew('playmats', c));
+    b.className = 'sleeve-shop-char' + (isGroup ? ' sleeve-shop-char--group' : '')
+      + (isNew ? ' is-shop-new' : '');
     const name = document.createElement('span');
     name.className = 'sleeve-shop-char__name';
     name.textContent = isGroup
@@ -6810,6 +6878,7 @@ function renderPlaymatShopChars() {
     b.appendChild(name);
     b.appendChild(count);
     b.appendChild(img);
+    if (isNew && SN) b.appendChild(SN.newBadgeEl());
     b.onclick = () => openPlaymatShopCharacter(c);
     host.appendChild(b);
   });
@@ -6838,7 +6907,10 @@ function renderPlaymatShopGrid(mats) {
   const price = Number(A.playmatShopPrice || 3000);
   (mats || []).forEach((m) => {
     const tile = document.createElement('div');
-    tile.className = 'sleeve-shop-tile' + (m.owned ? ' is-owned' : '');
+    const SN = window.LLTCG_SHOP_NEW;
+    const isNew = !!(SN && SN.itemIsNew('playmats', m));
+    tile.className = 'sleeve-shop-tile' + (m.owned ? ' is-owned' : '') + (isNew ? ' is-shop-new' : '');
+    if (isNew && SN) tile.appendChild(SN.newBadgeEl());
     const art = document.createElement('div');
     art.className = 'sleeve-shop-tile__art is-playmat playmat-shop-tile__art';
     const src = String(m.src || '');

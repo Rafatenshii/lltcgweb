@@ -481,6 +481,17 @@
       "src": "assets/playmats/br-rmv2-1543.webp"
     },
     {
+      "id": "liella-aniart-arma-bianca-chisato",
+      "name": "Ani-Art ver. Arma Bianca 『嵐 千砂都』",
+      "group": "Liella",
+      "idol": "Chisato",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-chisato.webp",
+      "added_at": "2026-08-20"
+    },
+    {
       "id": "br-rmv2-183",
       "name": "Vol.183 ラブライブ！スーパースター!! 『嵐 千砂都』",
       "group": "Liella",
@@ -511,6 +522,17 @@
       "src": "assets/playmats/br-rmv2-455.webp"
     },
     {
+      "id": "liella-aniart-arma-bianca-kanon",
+      "name": "Ani-Art ver. Arma Bianca 『澁谷かのん』",
+      "group": "Liella",
+      "idol": "Kanon",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-kanon.webp",
+      "added_at": "2026-08-20"
+    },
+    {
       "id": "br-rmv2-181",
       "name": "Vol.181 ラブライブ！スーパースター!! 『澁谷かのん』",
       "group": "Liella",
@@ -529,6 +551,17 @@
       "line": "ex_rm_v2",
       "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
       "src": "assets/playmats/br-rmv2-578.webp"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-keke",
+      "name": "Ani-Art ver. Arma Bianca 『唐 可可』",
+      "group": "Liella",
+      "idol": "Keke",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-keke.webp",
+      "added_at": "2026-08-20"
     },
     {
       "id": "br-rmv2-182",
@@ -551,6 +584,17 @@
       "src": "assets/playmats/br-rmv2-579.webp"
     },
     {
+      "id": "liella-aniart-arma-bianca-kinako",
+      "name": "Ani-Art ver. Arma Bianca 『桜小路きな子』",
+      "group": "Liella",
+      "idol": "Kinako",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-kinako.webp",
+      "added_at": "2026-08-20"
+    },
+    {
       "id": "br-rmv2-583",
       "name": "Vol.583 ラブライブ！スーパースター!! 『桜小路きな子』 夏服ver.",
       "group": "Liella",
@@ -559,6 +603,28 @@
       "line": "ex_rm_v2",
       "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
       "src": "assets/playmats/br-rmv2-583.webp"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-margarete",
+      "name": "Ani-Art ver. Arma Bianca 『ウィーン・マルガレーテ』",
+      "group": "Liella",
+      "idol": "Margarete",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-margarete.webp",
+      "added_at": "2026-08-20"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-mei",
+      "name": "Ani-Art ver. Arma Bianca 『米女メイ』",
+      "group": "Liella",
+      "idol": "Mei",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-mei.webp",
+      "added_at": "2026-08-20"
     },
     {
       "id": "br-rmv2-584",
@@ -571,6 +637,17 @@
       "src": "assets/playmats/br-rmv2-584.webp"
     },
     {
+      "id": "liella-aniart-arma-bianca-natsumi",
+      "name": "Ani-Art ver. Arma Bianca 『鬼塚夏美』",
+      "group": "Liella",
+      "idol": "Natsumi",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-natsumi.webp",
+      "added_at": "2026-08-20"
+    },
+    {
       "id": "br-rmv2-586",
       "name": "Vol.586 ラブライブ！スーパースター!! 『鬼塚夏美』 夏服ver.",
       "group": "Liella",
@@ -579,6 +656,17 @@
       "line": "ex_rm_v2",
       "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
       "src": "assets/playmats/br-rmv2-586.webp"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-ren",
+      "name": "Ani-Art ver. Arma Bianca 『葉月 恋』",
+      "group": "Liella",
+      "idol": "Ren",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-ren.webp",
+      "added_at": "2026-08-20"
     },
     {
       "id": "br-rmv2-185",
@@ -601,6 +689,17 @@
       "src": "assets/playmats/br-rmv2-582.webp"
     },
     {
+      "id": "liella-aniart-arma-bianca-shiki",
+      "name": "Ani-Art ver. Arma Bianca 『若菜四季』",
+      "group": "Liella",
+      "idol": "Shiki",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-shiki.webp",
+      "added_at": "2026-08-20"
+    },
+    {
       "id": "br-rmv2-585",
       "name": "Vol.585 ラブライブ！スーパースター!! 『若菜四季』 夏服ver.",
       "group": "Liella",
@@ -609,6 +708,17 @@
       "line": "ex_rm_v2",
       "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
       "src": "assets/playmats/br-rmv2-585.webp"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-sumire",
+      "name": "Ani-Art ver. Arma Bianca 『平安名すみれ』",
+      "group": "Liella",
+      "idol": "Sumire",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-sumire.webp",
+      "added_at": "2026-08-20"
     },
     {
       "id": "br-rmv2-184",
@@ -629,6 +739,17 @@
       "line": "ex_rm_v2",
       "listing_url": "https://bushiroad.com/products/ex_rm_v2/1801",
       "src": "assets/playmats/br-rmv2-581.webp"
+    },
+    {
+      "id": "liella-aniart-arma-bianca-tomari",
+      "name": "Ani-Art ver. Arma Bianca 『鬼塚冬毬』",
+      "group": "Liella",
+      "idol": "Tomari",
+      "vol": null,
+      "line": "aniart_arma_bianca",
+      "listing_url": "",
+      "src": "assets/playmats/liella-aniart-arma-bianca-tomari.webp",
+      "added_at": "2026-08-20"
     },
     {
       "id": "br-rm-38",

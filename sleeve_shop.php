@@ -68,6 +68,7 @@ function tcgLoadSleeveCatalog(): array {
             'idol' => (string)($row['idol'] ?? 'Other'),
             'orientation' => $orient,
             'src' => (string)($row['src'] ?? ('assets/sleeves/' . $id . '.webp')),
+            'added_at' => (string)($row['added_at'] ?? $row['addedAt'] ?? ''),
         ];
     }
     $cache = $out;

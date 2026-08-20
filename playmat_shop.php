@@ -56,6 +56,7 @@ function tcgLoadPlaymatCatalog(): array {
             'src' => (string)($row['src'] ?? ('assets/playmats/' . $id . '.webp')),
             'vol' => isset($row['vol']) ? intval($row['vol']) : null,
             'line' => (string)($row['line'] ?? ''),
+            'added_at' => (string)($row['added_at'] ?? $row['addedAt'] ?? ''),
         ];
     }
     $cache = $out;
