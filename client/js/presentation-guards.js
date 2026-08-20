@@ -170,7 +170,10 @@
    */
   function shouldSoftTabCatchUpPreserveLivePipeline(state, flags) {
     flags = flags || {};
-    if (flags.awaitingLiveStart) return true;
+    if (flags.awaitingLiveStart || flags.liveRoundPlayback || flags.livePollHold
+        || flags.spectacleGate || flags.directorActive || flags.liveShowRunner) {
+      return true;
+    }
     const stage = state?.live_show?.stage;
     if (stage === 'reveal' || stage === 'live_start') return true;
     if (state?.phase === 'live_start_effects') return true;

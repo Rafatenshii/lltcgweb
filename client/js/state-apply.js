@@ -1127,21 +1127,6 @@
 
   const LIVE_POLL_HOLD_WATCHDOG_MS = 10000;
 
-  function livePollHoldWatchdogMayRelease() {
-    const s = G.gameState;
-    if (!s) return false;
-    const stage = s.live_show?.stage;
-    // Legal live_show ack wait (reveal through judge) — do not break the hold.
-    if (stage && stage !== 'done') return false;
-    const ph = s.phase;
-    if (ph === 'live_start_effects' || ph === 'live_performance_first' || ph === 'live_performance_second'
-        || ph === 'live_judge' || ph === 'live_success_effects' || ph === 'live_set') {
-      return false;
-    }
-    return ph === 'main_first' || ph === 'main_second'
-      || ph === 'active_first' || ph === 'active_second';
-  }
-
   function clearLivePollHoldWatchdog() {
     if (G._livePollHoldWatchdog) {
       clearTimeout(G._livePollHoldWatchdog);
@@ -1149,32 +1134,35 @@
     }
   }
 
+  /**
+   * Soft Main heal only: clear a stuck poll hold when playback is already idle.
+   * Never abort LiveRoundDirector / close spectacle (0343150 watchdog did that
+   * and skipped Live animations / desynced clients until refresh).
+   */
   function armLivePollHoldWatchdog() {
     clearLivePollHoldWatchdog();
     G._livePollHoldWatchdog = setTimeout(function livePollHoldWatchdogTick() {
       G._livePollHoldWatchdog = null;
       if (!G._livePollHold) return;
-      if (!livePollHoldWatchdogMayRelease()) {
+      const s = G.gameState;
+      const ph = s?.phase;
+      const stage = s?.live_show?.stage;
+      const onSettledMain = ph === 'main_first' || ph === 'main_second'
+        || ph === 'active_first' || ph === 'active_second';
+      const liveBusy = !!(stage && stage !== 'done')
+        || ph === 'live_start_effects' || ph === 'live_performance_first'
+        || ph === 'live_performance_second' || ph === 'live_judge'
+        || ph === 'live_success_effects' || ph === 'live_set'
+        || G._liveRoundPlaybackActive || G._liveSpectacleGateRunning
+        || G._liveShowRunnerActive || G._perfSpectacleActive
+        || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active);
+      if (!onSettledMain || liveBusy) {
+        // Still in a legal hold window — check again later, do not nuke presentation.
         G._livePollHoldWatchdog = setTimeout(livePollHoldWatchdogTick, LIVE_POLL_HOLD_WATCHDOG_MS);
         return;
       }
-      TCG_DEBUG.warn('poll', 'live poll hold watchdog — release on settled Main');
-      if (typeof dropStaleLiveRoundPlaybackBoards === 'function') {
-        dropStaleLiveRoundPlaybackBoards('poll-hold-watchdog');
-      }
-      if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
-        LiveRoundDirector.abort('poll-hold-watchdog');
-      }
-      G._liveShowRunnerActive = false;
-      G._liveRoundPlaybackActive = false;
-      G._liveSpectacleGateRunning = false;
-      G.animating = false;
-      if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') {
-        perfCloseSpectacle();
-      } else {
-        G._perfSpectacleActive = false;
-      }
-      releaseLivePolls();
+      TCG_DEBUG.warn('poll', 'live poll hold watchdog — soft release on idle Main');
+      releaseLivePolls({ forceResume: true });
     }, LIVE_POLL_HOLD_WATCHDOG_MS);
   }
 
@@ -1185,12 +1173,13 @@
     armLivePollHoldWatchdog();
   };
 
-  global.releaseLivePolls = function releaseLivePolls() {
+  global.releaseLivePolls = function releaseLivePolls(opts = {}) {
     clearLivePollHoldWatchdog();
     G._livePollHoldAt = 0;
-    if (!G._livePollHold) return;
-    TCG_DEBUG.log('poll', 'releaseLivePolls');
+    const wasHeld = !!G._livePollHold;
     G._livePollHold = false;
+    if (!wasHeld && !opts.forceResume) return;
+    TCG_DEBUG.log('poll', 'releaseLivePolls', { forceResume: !!opts.forceResume, wasHeld });
     if (!G.polling) return;
     // Always re-arm sync. Spectacle chrome may still be up while waiting on the
     // opponent's live_show ack — polls are allowed then, and skipping resume left

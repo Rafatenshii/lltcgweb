@@ -865,28 +865,35 @@
 
   function tabCatchUpShouldPreserveLivePipeline() {
     const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const flags = {
+      awaitingLiveStart: !!G._awaitingLiveStartPrompts,
+      liveRoundPlayback: !!G._liveRoundPlaybackActive,
+      livePollHold: !!G._livePollHold,
+      spectacleGate: !!G._liveSpectacleGateRunning,
+      directorActive: !!(typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active),
+      heartCheckHold: !!G._perfHeartCheckHold,
+      liveShowRunner: !!G._liveShowRunnerActive,
+    };
     if (typeof guards?.shouldSoftTabCatchUpPreserveLivePipeline === 'function') {
-      return !!guards.shouldSoftTabCatchUpPreserveLivePipeline(G.gameState, {
-        awaitingLiveStart: !!G._awaitingLiveStartPrompts,
-        heartCheckHold: !!G._perfHeartCheckHold,
-        liveShowRunner: !!G._liveShowRunnerActive,
-      });
+      return !!guards.shouldSoftTabCatchUpPreserveLivePipeline(G.gameState, flags);
     }
     const s = G.gameState;
     const stage = s?.live_show?.stage;
-    return !!(G._awaitingLiveStartPrompts
+    return !!(flags.awaitingLiveStart || flags.liveRoundPlayback || flags.livePollHold
+      || flags.spectacleGate || flags.directorActive || flags.liveShowRunner
       || s?.phase === 'live_start_effects'
       || stage === 'reveal'
       || stage === 'live_start');
   }
 
-  /** Soft resync: refresh board/HUD without aborting presentLiveRound / Live Start wait. */
+  /** Soft resync: advance observed board without aborting or full re-paint thrash. */
   async function softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs) {
     TCG_DEBUG.warn('poll', 'tab catch-up: soft preserve Live pipeline', {
       hiddenMs,
       phase: G.gameState?.phase || null,
       stage: G.gameState?.live_show?.stage || null,
       awaitingLiveStart: !!G._awaitingLiveStartPrompts,
+      playback: !!G._liveRoundPlaybackActive,
     });
     global._tcgSyncStats.getState++;
     const boardSeq = G.gameState?.seq ?? 0;
@@ -898,7 +905,10 @@
     if (isSpec && !G.isSpectator) return false;
 
     if (isUnchangedStatePayload(d)) {
-      if (G.gameState) paintMatchHudAfterTabCatchUp(G.gameState, isSpec);
+      // Mid Live wait: do not full renderGame — wait loop already paints.
+      if (G.playerId && typeof updateOpponentSkillWaitBanner === 'function' && G.gameState) {
+        updateOpponentSkillWaitBanner(G.gameState, G.playerId);
+      }
       resumePollingTick(200);
       return true;
     }
@@ -916,7 +926,16 @@
     } else {
       G.playerId = d.my_id || G.playerId;
     }
-    paintMatchHudAfterTabCatchUp(d, isSpec);
+    // Light HUD only — full paintMatchHud thrash re-entered renderGame under
+    // presentLiveRound and caused Chrome lag / razor hand fans.
+    if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId) {
+      updateOpponentSkillWaitBanner(d, G.playerId);
+    }
+    if (!isSpec && d.pending_prompt?.responder === G.playerId
+        && typeof ensurePendingPromptSurfaced === 'function') {
+      if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
+      ensurePendingPromptSurfaced(d, G.playerId);
+    }
     if (d.status === 'finished') {
       if (typeof stopPoll === 'function') stopPoll();
       if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();

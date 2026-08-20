@@ -184,13 +184,32 @@ check('soft preserve Live Start wait / live_start stage',
     { phase: 'main_first' },
     { awaitingLiveStart: true },
   )
+  && g.shouldSoftTabCatchUpPreserveLivePipeline(
+    { phase: 'main_first' },
+    { liveRoundPlayback: true },
+  )
   && !g.shouldSoftTabCatchUpPreserveLivePipeline(
     { phase: 'main_first' },
     {},
   ));
-check('visibility always catch-up in match',
-  /catchUp\(\{ wasBusy: presentationBusy, hiddenMs: Math\.max\(hiddenMs, 1\) \}\)/.test(indexSrc)
-  || /Math\.max\(hiddenMs, 1\)/.test(indexSrc));
+check('visibility uses Aug18 gated catch-up (not always)',
+  /presentationBusy \|\| hiddenMs >= 1200/.test(indexSrc)
+  && /void catchUp\(\{ wasBusy: presentationBusy, hiddenMs \}\)/.test(indexSrc)
+  && !/Math\.max\(hiddenMs, 1\)/.test(indexSrc));
+check('poll-hold watchdog soft-releases without aborting director',
+  /soft release on idle Main/.test(applySrc)
+  && /releaseLivePolls\(\{ forceResume: true \}\)/.test(applySrc)
+  && !/LiveRoundDirector\.abort\('poll-hold-watchdog'\)/.test(applySrc));
+check('abortGameplayPresentation resumes polls via releaseLivePolls',
+  /releaseLivePolls\(\{ forceResume: true \}\)/.test(indexSrc));
+check('soft catch-up avoids full paintMatchHud thrash',
+  /Light HUD only/.test(syncSrc)
+  && (() => {
+    const m = syncSrc.match(
+      /async function softCatchUpPreserveLivePipeline[\s\S]*?\n  global\.catchUpMatchAfterTabVisible/,
+    );
+    return !!m && !/paintMatchHudAfterTabCatchUp/.test(m[0]);
+  })());
 check('matched status keeps search float until enter',
   /Do not clear the float here/.test(indexSrc)
   && /Keep float until enterCasualMatch/.test(indexSrc));

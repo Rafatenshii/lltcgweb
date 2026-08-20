@@ -2564,9 +2564,9 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/presentation-guards.js?v=3"></script>
-<script src="client/js/game-sync.js?v=54"></script>
-<script src="client/js/state-apply.js?v=68"></script>
+<script src="client/js/presentation-guards.js?v=4"></script>
+<script src="client/js/game-sync.js?v=55"></script>
+<script src="client/js/state-apply.js?v=69"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -11610,7 +11610,13 @@ function abortGameplayPresentation(opts = {}) {
   G._liveRevealFlips = new Set();
   G._liveStorageRevealRunning = false;
   G.animating = false;
-  G._livePollHold = false;
+  // Must go through releaseLivePolls so SSE/poll resume — clearing the flag alone
+  // left clients stuck until safety poll / refresh (post-0343150 catch-up bug).
+  if (typeof releaseLivePolls === 'function') {
+    releaseLivePolls({ forceResume: true });
+  } else {
+    G._livePollHold = false;
+  }
   G._liveRoundPlaybackActive = false;
   G._liveRoundPostSpectacleReady = false;
   G._liveSpectacleGateRunning = false;
@@ -16566,9 +16572,9 @@ async function bootApp() {
       finishCoinFlipAnimation(s, myId);
     }
     if (G.polling && G.roomId && G.token && !G.isTutorial) {
-      // Background tabs freeze spectacle timers/rAF and throttle polls/SSE.
-      // Always hard-resync — brief alt-tabs (<1.2s) still left phase HUD / turn
-      // banners on the previous player while the log advanced.
+      // Background tabs freeze spectacle timers/rAF. Resync when presentation is
+      // busy or the tab was hidden ≥1.2s — brief focus blips use a light pull so
+      // we do not abort Live Start / thrash renderGame (Aug 19–20 regression).
       const catchUp = typeof catchUpMatchAfterTabVisible === 'function'
         ? catchUpMatchAfterTabVisible
         : (typeof catchUpSpectatorAfterTabVisible === 'function' ? catchUpSpectatorAfterTabVisible : null);
@@ -16576,10 +16582,15 @@ async function bootApp() {
         const presentationBusy = !!(G.animating || G._perfSpectacleActive || G._liveRoundPlaybackActive
           || G._liveSpectacleGateRunning || G._livePollHold || G._liveShowRunnerActive
           || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active));
-        void catchUp({ wasBusy: presentationBusy, hiddenMs: Math.max(hiddenMs, 1) });
-        return;
+        if (presentationBusy || hiddenMs >= 1200) {
+          void catchUp({ wasBusy: presentationBusy, hiddenMs });
+          return;
+        }
       }
-      void pullLatestState(true, { silent: true });
+      const oppWait = el('opp-skill-wait')?.classList.contains('show');
+      if (oppWait || (!G.animating && !G._perfSpectacleActive)) {
+        void pullLatestState(!!oppWait);
+      }
     }
   });
   on('modal-card','click', e => { if(e.target===el('modal-card')) closeM('modal-card'); });
