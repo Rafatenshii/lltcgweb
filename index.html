@@ -23577,6 +23577,14 @@ async function cpuHandleResolvePromptError() {
   const cpuId = cpuOpponentId();
   const cpu = live?.players?.[cpuId];
   if (live?.pending_prompt?.responder !== cpuId || !cpu) return;
+  const pr = live.pending_prompt;
+  const tier = cpuDiff();
+  const read = tier === 'easy' ? null : cpuReadOpponent(live, cpuId);
+  // Cycle next payload on every failed resolve; anti_softlock when exhausted.
+  if (typeof cpuTryCyclingPromptResolve === 'function'
+      && cpuTryCyclingPromptResolve(pr, cpu, tier, cpuWinPressure(cpu), read, live)) {
+    return;
+  }
   const retries = cpuBumpPromptRetry(live);
   if (retries >= 3) {
     cpuResetPromptRetry();
@@ -23627,13 +23635,9 @@ async function cpuAutoSkipHungPrompt() {
   clearCpuPromptHangWatch();
   G._cpuResolveBusy = null;
   G._cpuPromptScheduled = null;
-  const tier = cpuDiff();
-  const read = tier === 'easy' ? null : cpuReadOpponent(s, cpuId);
-  const cpu = s.players?.[cpuId];
-  if (cpu && cpuGenericPromptFallback(pr, cpu, tier, cpuWinPressure(cpu), read, s)) {
-    return;
-  }
+  if (typeof cpuResetPromptAttempts === 'function') cpuResetPromptAttempts();
   try {
+    // Server cycles every legal choice/candidate, then force-dismisses the dialogue.
     await cpuAct('anti_softlock_skip', {});
     toast('CPU skipped a stuck skill — see game log.', 3600);
   } catch (e) {
@@ -32276,8 +32280,8 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=30"></script>
-<script src="client/js/cpu-ai.js?v=10"></script>
+<script src="client/js/cpu-loop.js?v=31"></script>
+<script src="client/js/cpu-ai.js?v=11"></script>
 <script src="client/js/portrait-bridge.js?v=25"></script>
 <script src="client/js/portrait-deck.js?v=4"></script>
 <script src="client/js/portrait-board.js?v=20"></script>

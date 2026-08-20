@@ -666,16 +666,25 @@ function cpuRandomLegalChoice(choices) {
 }
 
 /**
- * Last-resort CPU prompt resolver: pick any legal option (heuristic first, random fallback).
- * Returns true when an action was submitted.
+ * Ordered resolve payloads for unknown / stuck prompts — cycle on failures
+ * before anti_softlock_skip force-dismisses the skill dialogue.
  */
-function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
-  const cpuId = cpuOpponentId();
-  if (!pr || pr.responder !== cpuId) return false;
+function cpuEnumeratePromptResolvePayloads(pr, cpu, tier, winPressure, read) {
+  const payloads = [];
+  const seen = new Set();
+  const push = (data) => {
+    if (!data || typeof data !== 'object') return;
+    const key = JSON.stringify(data);
+    if (seen.has(key)) return;
+    seen.add(key);
+    payloads.push(data);
+  };
   const hand = cpuLiveHand(cpu);
   const discardNeed = pr.discard_count || pr.count || pr.bottom_count
     || (pr.step === 'discard' || pr.step === 'discard_hand' || pr.step === 'pick_discard'
-      ? (pr.ability?.discard || pr.ability?.max_discard || 1) : 0);
+      ? (pr.ability?.discard || pr.ability?.max_discard || 1) : 0)
+    || (pr.ability?.discard || pr.ability?.max_discard || 0);
+
   if (discardNeed > 0) {
     let pool = hand;
     if (pr.ability?.filter === 'live') pool = hand.filter(c => isCpuLiveCard(c));
@@ -684,98 +693,123 @@ function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
     if (ids.length < discardNeed) ids = cpuHandDiscardFallback(pool, discardNeed);
     if (ids.length >= discardNeed) {
       const slice = ids.slice(0, discardNeed);
-      const payload = (pr.pick_mode === 'deck_top')
-        ? { card_ids: slice }
-        : (pr.type === 'optional_live_start' || pr.type === 'optional_discard_prompt')
-          ? { choice: 'yes', discard_ids: slice }
-          : { discard_ids: slice };
-      cpuAct('resolve_prompt', payload);
-      return true;
-    }
-    if (!hand.length || (pr.ability?.filter && !pool.length)) {
-      if (pr.choices?.includes('no')) {
-        cpuAct('resolve_prompt', { choice: 'no' });
-        return true;
+      if (pr.pick_mode === 'deck_top') push({ card_ids: slice });
+      else {
+        push({ discard_ids: slice });
+        if (pr.choices?.includes('yes')) push({ choice: 'yes', discard_ids: slice });
       }
-      cpuAct('anti_softlock_skip', {});
-      return true;
     }
   }
-  if (pr.type === 'spbp2_stack_wr_member' || pr.type === 'batch99_stack_wr_member') {
-    const id = pr.candidates?.[0]?.instance_id;
-    if (id) { cpuAct('resolve_prompt', { pick_id: id }); return true; }
-    if (pr.choices?.includes('skip')) { cpuAct('resolve_prompt', { choice: 'skip' }); return true; }
+
+  if (pr.type === 'surveil_arrange' || String(pr.type || '').startsWith('surveil_')) {
+    try {
+      push(typeof cpuSurveilConfirmPayload === 'function'
+        ? cpuSurveilConfirmPayload(pr, cpu, tier)
+        : null);
+    } catch (e) { /* ignore */ }
+    const looked = pr.looked_cards || pr.look_cards || [];
+    const allIds = looked.map(c => c?.instance_id).filter(Boolean);
+    if (allIds.length) push({ choice: 'confirm', top_ids: allIds, wr_ids: [] });
   }
-  if (pr.type === 'optional_stage_reposition') {
-    const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
-    if (cpuResolveOptionalStageReposition(pr, cpu, tier, winPressure, read, ae)) return true;
+
+  for (const prefer of ['skip', 'no', 'cancel', 'confirm']) {
+    if (pr.choices?.includes(prefer)) push({ choice: prefer });
   }
+  for (const choice of (pr.choices || [])) {
+    if (choice == null || choice === '') continue;
+    push({ choice });
+  }
+
   const slotCands = pr.self_candidates || pr.candidates || pr.stage_members || [];
-  const slotPick = slotCands.find(c => c?.slot)?.slot
-    || pr.target_slots?.[0] || pr.slots?.[0];
-  if (slotPick) {
-    if (pr.type === 'spbp2_center_move_position' && pr.choices?.includes('yes')) {
-      cpuAct('resolve_prompt', { choice: 'yes', target_slot: slotPick });
-    } else {
-      cpuAct('resolve_prompt', { slot: slotPick });
+  for (const c of slotCands) {
+    const slot = c?.slot;
+    const id = c?.instance_id;
+    if (slot) {
+      push({ slot });
+      push({ target_slot: slot });
+      if (pr.choices?.includes('yes')) push({ choice: 'yes', target_slot: slot });
     }
-    return true;
+    if (id) {
+      const payload = { card_id: id };
+      if (slot) payload.slot = slot;
+      push(payload);
+      push({ member_id: id });
+      push({ pick_id: id });
+    }
   }
-  const cardCands = pr.candidates || pr.look_cards || pr.looked_cards || [];
-  if (cardCands.length) {
-    const need = Math.max(1, pr.pick_count || pr.max_pick || pr.count || 1);
-    const ranked = [...cardCands].sort((a, b) => {
-      const sa = cpuPickBestCandidate([a], cpu, hand, tier, read) ? 1 : 0;
-      const sb = cpuPickBestCandidate([b], cpu, hand, tier, read) ? 1 : 0;
-      return (cpuScoreSurveilCandidate(b, cpu, hand, tier, read) || 0)
-        - (cpuScoreSurveilCandidate(a, cpu, hand, tier, read) || 0)
-        || sb - sa;
+  for (const c of (pr.look_cards || pr.looked_cards || pr.candidates || [])) {
+    const id = c?.instance_id;
+    if (!id) continue;
+    push({ card_id: id });
+  }
+  const pickNeed = Math.max(0, pr.pick_count || pr.max_pick || 0);
+  if (pickNeed > 1) {
+    const ids = (pr.candidates || pr.look_cards || [])
+      .map(c => c?.instance_id).filter(Boolean).slice(0, pickNeed);
+    if (ids.length) push({ card_ids: ids, card_id: ids[0] });
+  }
+  for (const id of (pr.eligible_ids || [])) {
+    if (id) push({ card_id: id });
+  }
+  for (const slot of (pr.target_slots || pr.slots || [])) {
+    if (slot) push({ slot });
+  }
+  return payloads;
+}
+
+function cpuPromptAttemptIndex(key) {
+  if (!key) return 0;
+  if (!G._cpuPromptAttemptByKey) G._cpuPromptAttemptByKey = Object.create(null);
+  return G._cpuPromptAttemptByKey[key] || 0;
+}
+
+function cpuBumpPromptAttempt(key) {
+  if (!key) return 0;
+  if (!G._cpuPromptAttemptByKey) G._cpuPromptAttemptByKey = Object.create(null);
+  const next = (G._cpuPromptAttemptByKey[key] || 0) + 1;
+  G._cpuPromptAttemptByKey[key] = next;
+  return next;
+}
+
+function cpuResetPromptAttempts(key) {
+  if (!G._cpuPromptAttemptByKey) return;
+  if (key) delete G._cpuPromptAttemptByKey[key];
+  else G._cpuPromptAttemptByKey = Object.create(null);
+}
+
+/**
+ * Submit the next unused payload for this prompt key, or anti_softlock_skip.
+ * Returns true when an action was submitted.
+ */
+function cpuTryCyclingPromptResolve(pr, cpu, tier, winPressure, read, s) {
+  const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
+  if (!pr || pr.responder !== cpuId) return false;
+  const key = typeof cpuPromptKey === 'function' ? cpuPromptKey(s || G.gameState) : '';
+  const payloads = cpuEnumeratePromptResolvePayloads(pr, cpu, tier, winPressure, read);
+  const idx = cpuPromptAttemptIndex(key);
+  if (idx < payloads.length) {
+    const data = payloads[idx];
+    cpuBumpPromptAttempt(key);
+    TCG_DEBUG.warn('cpu', 'cycle prompt resolve', {
+      type: pr.type, step: pr.step, attempt: idx + 1, of: payloads.length, data,
     });
-    const ids = ranked.map(c => c?.instance_id).filter(Boolean).slice(0, need);
-    if (ids.length) {
-      const payload = need > 1 ? { card_ids: ids, card_id: ids[0] } : { card_id: ids[0] };
-      if (ids[0] && ranked[0]?.slot) payload.slot = ranked[0].slot;
-      cpuAct('resolve_prompt', payload);
-      return true;
-    }
-  }
-  const eligible = pr.eligible_ids || [];
-  if (eligible.length) {
-    cpuAct('resolve_prompt', { card_id: eligible[0] });
+    cpuAct('resolve_prompt', data);
     return true;
   }
-  if (pr.choices?.length) {
-    if (pr.choices.includes('yes') && pr.choices.includes('no') && pr.ability) {
-      const ae = (cpu.energy_zone || []).filter(energyChipActive).length;
-      const payCost = pr.pay_cost || pr.ability?.cost || 0;
-      const score = cpuScoreOptionalAbility(
-        pr.ability, cpu, tier, ae, hand, winPressure, read
-      );
-      const yes = score >= cpuOptionalYesThreshold(tier)
-        && (!payCost || ae >= payCost);
-      cpuAct('resolve_prompt', { choice: yes ? 'yes' : 'no' });
-      return true;
-    }
-    const ctx = cpuAbilityCtx(cpu, tier, read, winPressure, (cpu.energy_zone || []).filter(energyChipActive).length,
-      read ? { mustCatchUp: winPressure >= 0.45, behind: read.behind } : null);
-    if (cpuResolveScoredChoicePrompt(pr, cpu, tier, ctx)) return true;
-    const pick = cpuRandomLegalChoice(pr.choices);
-    if (pick != null) {
-      cpuAct('resolve_prompt', { choice: pick });
-      return true;
-    }
-  }
-  if (pr.choices?.includes('skip')) {
-    cpuAct('resolve_prompt', { choice: 'skip' });
-    return true;
-  }
-  if (pr.choices?.includes('no')) {
-    cpuAct('resolve_prompt', { choice: 'no' });
-    return true;
-  }
-  TCG_DEBUG.warn('cpu', 'generic prompt fallback → anti_softlock_skip', { type: pr.type, step: pr.step });
+  TCG_DEBUG.warn('cpu', 'cycle exhausted → anti_softlock_skip', {
+    type: pr.type, step: pr.step, tried: payloads.length,
+  });
+  if (key) cpuResetPromptAttempts(key);
   cpuAct('anti_softlock_skip', {});
   return true;
+}
+
+/**
+ * Last-resort CPU prompt resolver: pick any legal option (heuristic first, then cycle).
+ * Returns true when an action was submitted.
+ */
+function cpuGenericPromptFallback(pr, cpu, tier, winPressure, read, s) {
+  return cpuTryCyclingPromptResolve(pr, cpu, tier, winPressure, read, s);
 }
 
 /**
@@ -925,13 +959,13 @@ function cpuSchedulePromptRetryIfStuck(s, cpu) {
   if (!key) return;
   const retries = cpuBumpPromptRetry(s);
   const cpuId = cpuOpponentId();
-  if (retries >= 2) {
+  // After one failed/empty attempt, start cycling payloads immediately.
+  if (retries >= 1) {
     const pr = s?.pending_prompt;
     if (pr?.responder === cpuId) {
       const tier = cpuDiff();
       const read = tier === 'easy' ? null : cpuReadOpponent(s, cpuId);
-      if (cpuGenericPromptFallback(pr, cpu, tier, cpuWinPressure(cpu), read, s)) {
-        cpuResetPromptRetry();
+      if (cpuTryCyclingPromptResolve(pr, cpu, tier, cpuWinPressure(cpu), read, s)) {
         return;
       }
     }
@@ -4848,17 +4882,9 @@ function cpuResolvePromptBody(s, cpu, pr) {
       read ? { mustCatchUp: winPressure >= 0.45, behind: read.behind } : null);
     if (pr.choices?.length && cpuResolveScoredChoicePrompt(pr, cpu, tier, ctx)) return;
   }
-  const choice=pr.choices?.includes('no')?'no':'yes';
-  const data={choice};
-  if(choice==='yes'){
-    const need=pr.discard_count||pr.ability?.discard||pr.ability?.max_discard||0;
-    if(need>0){
-      const n=pr.ability?.max_discard?Math.min(need,(cpu.hand||[]).length):need;
-      data.discard_ids=(cpu.hand||[]).slice(0,n).map(c=>c.instance_id).filter(Boolean);
-    }
-    if(pr.needs_pay) data.pay=true;
-  }
-  cpuAct('resolve_prompt', data);
+  // Unknown / unhandled shape — cycle legal payloads instead of bare yes/no softlock.
+  if (cpuTryCyclingPromptResolve(pr, cpu, tier, winPressure, read, s)) return;
+  cpuSchedulePromptRetryIfStuck(s, cpu);
 }
 
 function cpuResolvePromptSmart(s, cpu, pr, tier) {
@@ -5565,6 +5591,7 @@ async function cpuAct(type,data) {
     if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
       clearCpuPromptTracking();
       cpuResetPromptRetry();
+      if (typeof cpuResetPromptAttempts === 'function') cpuResetPromptAttempts();
       if (typeof d.seq === 'number' && G.gameState && d.seq >= (G.gameState.seq ?? 0)) {
         // Clear local pending_prompt immediately so Live Start wait / hang UI does not
         // spin on a stale choose-Live prompt while pullSkillResolutionState catches up.

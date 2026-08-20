@@ -559,6 +559,27 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             return ['choice' => 'confirm'];
 
         default:
+            // Shape-based defaults for unknown / new prompt types (CPU + PvP timer).
+            $needDiscard = intval(
+                $prompt['count']
+                ?? $prompt['bottom_count']
+                ?? $prompt['discard_count']
+                ?? $prompt['ability']['discard']
+                ?? $prompt['ability']['max_discard']
+                ?? 0
+            );
+            if ($needDiscard > 0) {
+                $ids = array_slice(array_column($ownerP['hand'] ?? [], 'instance_id'), 0, $needDiscard);
+                if (($prompt['pick_mode'] ?? '') === 'deck_top') {
+                    return ['card_ids' => $ids];
+                }
+                return ['discard_ids' => $ids];
+            }
+            $looked = $prompt['looked_cards'] ?? $prompt['look_cards'] ?? [];
+            if (($type === 'surveil_arrange' || str_starts_with((string)$type, 'surveil_')) && !empty($looked)) {
+                $ids = array_values(array_filter(array_column($looked, 'instance_id')));
+                return ['choice' => 'confirm', 'top_ids' => $ids, 'wr_ids' => []];
+            }
             if (!isMandatorySkillPrompt($prompt)) {
                 $choices = $prompt['choices'] ?? [];
                 if (in_array('skip', $choices, true)) {
@@ -572,17 +593,189 @@ function buildTimeoutPromptResolution(array $state, string $pid, array $prompt):
             if (!empty($choices)) {
                 return ['choice' => $choices[0]];
             }
+            $pickNeed = intval($prompt['pick_count'] ?? $prompt['max_pick'] ?? 0);
+            if ($pickNeed > 1) {
+                $ids = [];
+                foreach ($prompt['candidates'] ?? $prompt['look_cards'] ?? [] as $cand) {
+                    if (count($ids) >= $pickNeed) {
+                        break;
+                    }
+                    $cid = (string)($cand['instance_id'] ?? '');
+                    if ($cid !== '') {
+                        $ids[] = $cid;
+                    }
+                }
+                if ($ids !== []) {
+                    return ['card_ids' => $ids, 'card_id' => $ids[0]];
+                }
+            }
             if (!empty($prompt['eligible_ids'][0])) {
                 return ['card_id' => $prompt['eligible_ids'][0]];
             }
             if (!empty($prompt['candidates'][0]['instance_id'])) {
-                return ['card_id' => $prompt['candidates'][0]['instance_id']];
+                $cand = $prompt['candidates'][0];
+                $payload = ['card_id' => $cand['instance_id']];
+                if (!empty($cand['slot'])) {
+                    $payload['slot'] = $cand['slot'];
+                }
+                return $payload;
+            }
+            if (!empty($prompt['self_candidates'][0]['slot'])) {
+                return ['slot' => $prompt['self_candidates'][0]['slot']];
+            }
+            if (!empty($prompt['target_slots'][0])) {
+                return ['slot' => $prompt['target_slots'][0]];
             }
             if (!empty($prompt['stage_members'][0]['instance_id'])) {
                 return ['member_id' => $prompt['stage_members'][0]['instance_id']];
             }
             return ['choice' => 'confirm'];
     }
+}
+
+/**
+ * Ordered resolve payloads to try when the CPU (or anti-softlock) does not know
+ * a prompt type — cycle choices/candidates before force-dismiss.
+ *
+ * @return list<array<string,mixed>>
+ */
+function enumerateSoftlockPromptPayloads(array $state, string $pid, array $prompt): array {
+    $out = [];
+    $seen = [];
+    $push = static function (array $data) use (&$out, &$seen): void {
+        if ($data === []) {
+            return;
+        }
+        $key = json_encode($data);
+        if ($key === false || isset($seen[$key])) {
+            return;
+        }
+        $seen[$key] = true;
+        $out[] = $data;
+    };
+
+    try {
+        $push(buildTimeoutPromptResolution($state, $pid, $prompt));
+    } catch (Throwable $ignored) {
+    }
+
+    $choices = $prompt['choices'] ?? [];
+    foreach (['skip', 'no', 'cancel', 'confirm'] as $prefer) {
+        if (in_array($prefer, $choices, true)) {
+            $push(['choice' => $prefer]);
+        }
+    }
+    foreach ($choices as $choice) {
+        if ($choice === null || $choice === '') {
+            continue;
+        }
+        $push(['choice' => $choice]);
+    }
+
+    $needDiscard = intval(
+        $prompt['count']
+        ?? $prompt['bottom_count']
+        ?? $prompt['discard_count']
+        ?? $prompt['ability']['discard']
+        ?? $prompt['ability']['max_discard']
+        ?? 0
+    );
+    if ($needDiscard > 0) {
+        $owner = $prompt['owner'] ?? $pid;
+        $hand = $state['players'][$owner]['hand'] ?? $state['players'][$pid]['hand'] ?? [];
+        $ids = array_values(array_filter(array_column($hand, 'instance_id')));
+        if (count($ids) >= $needDiscard) {
+            $slice = array_slice($ids, 0, $needDiscard);
+            if (($prompt['pick_mode'] ?? '') === 'deck_top') {
+                $push(['card_ids' => $slice]);
+            } else {
+                $push(['discard_ids' => $slice]);
+            }
+            if (in_array('yes', $choices, true)) {
+                $push(['choice' => 'yes', 'discard_ids' => $slice]);
+            }
+        }
+    }
+
+    $candLists = [
+        $prompt['candidates'] ?? [],
+        $prompt['look_cards'] ?? [],
+        $prompt['looked_cards'] ?? [],
+        $prompt['self_candidates'] ?? [],
+        $prompt['stage_members'] ?? [],
+    ];
+    foreach ($candLists as $list) {
+        foreach ($list as $cand) {
+            if (!is_array($cand)) {
+                continue;
+            }
+            $id = (string)($cand['instance_id'] ?? '');
+            $slot = (string)($cand['slot'] ?? '');
+            if ($id !== '') {
+                $payload = ['card_id' => $id];
+                if ($slot !== '') {
+                    $payload['slot'] = $slot;
+                }
+                $push($payload);
+                $push(['member_id' => $id]);
+                $push(['pick_id' => $id]);
+            }
+            if ($slot !== '') {
+                $push(['slot' => $slot]);
+                $push(['target_slot' => $slot]);
+            }
+        }
+    }
+    foreach ($prompt['eligible_ids'] ?? [] as $eid) {
+        if ($eid !== '' && $eid !== null) {
+            $push(['card_id' => (string)$eid]);
+        }
+    }
+    foreach ($prompt['target_slots'] ?? $prompt['slots'] ?? [] as $slot) {
+        if ($slot !== '' && $slot !== null) {
+            $push(['slot' => (string)$slot]);
+        }
+    }
+
+    $looked = $prompt['looked_cards'] ?? $prompt['look_cards'] ?? [];
+    if (!empty($looked)) {
+        $ids = array_values(array_filter(array_column($looked, 'instance_id')));
+        if ($ids !== []) {
+            $push(['choice' => 'confirm', 'top_ids' => $ids, 'wr_ids' => []]);
+            $push(['card_ids' => $ids, 'card_id' => $ids[0]]);
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Try each softlock payload until the prompt clears or changes for this responder.
+ */
+function tryResolvePromptPayloadsUntilCleared(array $state, string $pid, array $prompt, array $payloads): ?array {
+    $type = (string)($prompt['type'] ?? '');
+    $step = (string)($prompt['step'] ?? '');
+    $src = (string)($prompt['source_id'] ?? '');
+    foreach ($payloads as $data) {
+        if (!is_array($data) || $data === []) {
+            continue;
+        }
+        try {
+            $next = actionResolvePrompt($state, $pid, $data);
+            $np = $next['pending_prompt'] ?? null;
+            if (!$np || ($np['responder'] ?? '') !== $pid) {
+                return $next;
+            }
+            // Advanced to a different step/type — treat as progress.
+            if ((string)($np['type'] ?? '') !== $type
+                || (string)($np['step'] ?? '') !== $step
+                || (string)($np['source_id'] ?? '') !== $src) {
+                return $next;
+            }
+        } catch (Throwable $ignored) {
+        }
+    }
+    return null;
 }
 
 function autoResolvePendingPromptForTimeout(array $state, string $pid): array {
@@ -645,7 +838,7 @@ function tcgMatchInProgress(array $state): bool {
     return $ph !== '' && !in_array($ph, ['setup', 'coin_flip', 'choose_first', 'waiting'], true);
 }
 
-/** Anti-softlock: skip the current skill prompt without applying its effect. */
+/** Anti-softlock: cycle legal resolutions, then force-dismiss the skill dialogue. */
 function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
     if (!tcgMatchInProgress($state)) {
         throw new Exception('Game is not in progress');
@@ -659,6 +852,19 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
     }
     $isCpu = playerLooksLikeCpu($state['players'][$pid] ?? []);
     $dismissLabel = $isCpu ? 'CPU hung on skill; auto-skipped' : 'Anti-softlock';
+
+    // Universal: try timeout defaults + every choice/candidate before dismissing.
+    $payloads = enumerateSoftlockPromptPayloads($state, $pid, $prompt);
+    $resolved = tryResolvePromptPayloadsUntilCleared($state, $pid, $prompt, $payloads);
+    if ($resolved !== null) {
+        $src = $prompt['source_name'] ?? ($prompt['type'] ?? 'effect');
+        return addLog($resolved, ($resolved['players'][$pid]['name'] ?? $pid) .
+            ($isCpu
+                ? " — CPU hung on skill; auto-resolved [{$src}]."
+                : " — Anti-softlock: auto-resolved [{$src}]."), 'info');
+    }
+
+    // Legacy targeted attempts (kept as extra coverage for known hang-prone types).
     if (($prompt['type'] ?? '') === 'opp_pick_stage_active') {
         try {
             $data = buildTimeoutPromptResolution($state, $pid, $prompt);
@@ -694,8 +900,6 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
             }
         }
     }
-    // Mandatory hand picks (Ruby draw→deck bottom, discard-after-draw, etc.): prefer a legal
-    // timeout resolution over force-dismiss so the board stays consistent.
     $handPickTypes = [
         'sbp5_draw_deck_bottom',
         'sbp6_discard_after_draw',
@@ -715,20 +919,19 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
             );
             $ids = $data['discard_ids'] ?? $data['card_ids'] ?? [];
             if ($need <= 0 || count($ids) >= $need) {
-                $resolved = actionResolvePrompt($state, $pid, $data);
-                if (empty($resolved['pending_prompt'])
-                    || ($resolved['pending_prompt']['responder'] ?? '') !== $pid) {
-                    $resolved = addLog($resolved, ($resolved['players'][$pid]['name'] ?? $pid) .
+                $handResolved = actionResolvePrompt($state, $pid, $data);
+                if (empty($handResolved['pending_prompt'])
+                    || ($handResolved['pending_prompt']['responder'] ?? '') !== $pid) {
+                    $handResolved = addLog($handResolved, ($handResolved['players'][$pid]['name'] ?? $pid) .
                         ($isCpu
                             ? ' — CPU hung on skill; auto-resolved hand pick.'
                             : ' — Anti-softlock: auto-resolved hand pick.'), 'info');
-                    return $resolved;
+                    return $handResolved;
                 }
             }
         } catch (Throwable $ignored) {
         }
     }
-    // Optional pick/skip prompts (e.g. Kaho Live Success) — prefer skip over force-dismiss.
     $choices = $prompt['choices'] ?? [];
     $skipChoices = [];
     if (in_array('skip', $choices, true)) {
@@ -766,6 +969,7 @@ function actionAntiSoftlockSkipPrompt(array $state, string $pid): array {
         } catch (Throwable $ignored) {
         }
     }
+    // Last resort: close the skill dialogue without applying the effect.
     return forceDismissPendingPromptForPlayer($state, $pid, $dismissLabel);
 }
 
