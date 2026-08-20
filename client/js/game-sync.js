@@ -1004,8 +1004,8 @@
         }
         G._liveShowRunnerActive = false;
         G.animating = false;
-        G._livePollHold = false;
-        if (typeof releaseLivePolls === 'function') releaseLivePolls();
+        if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+        else G._livePollHold = false;
         G._liveRoundPlaybackActive = false;
         G._liveSpectacleGateRunning = false;
         G._presentationAborted = false;
@@ -1133,8 +1133,8 @@
       } else {
         G.animating = false;
         G._perfSpectacleActive = false;
-        G._livePollHold = false;
-        if (typeof releaseLivePolls === 'function') releaseLivePolls();
+        if (typeof releaseLivePolls === 'function') releaseLivePolls({ forceResume: true });
+        else G._livePollHold = false;
         G._liveRoundPlaybackActive = false;
         G._liveSpectacleGateRunning = false;
       }
