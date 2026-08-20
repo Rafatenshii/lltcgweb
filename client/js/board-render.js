@@ -249,6 +249,7 @@ function renderGame(s, opts = {}) {
   } else {
     G.liveSel = [];
     G._liveSetLockPid = null;
+    G._liveSetHealEndSent = false;
     setLiveSelMultiPreviewVisible(false);
     if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
     el('overlay-live')?.classList.remove('open');

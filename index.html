@@ -2566,7 +2566,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=2"></script>
 <script src="client/js/game-sync.js?v=51"></script>
-<script src="client/js/state-apply.js?v=65"></script>
+<script src="client/js/state-apply.js?v=66"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=89"></script>
@@ -28407,9 +28407,59 @@ function confirmMull(){
 // --- LIVE Phase hand selection (live_set) --------------------------------------
 // Tap hand cards to raise/lower; confirm via button below log (updateLiveSetButton).
 
+/** Non-preplaced cards already moved into Live storage this LIVE Phase. */
+function liveZonePlacedThisSetCount(s, myId) {
+  const zone = s?.players?.[myId]?.live_zone || [];
+  return zone.filter((c) => c && !c.preplaced_live_zone).length;
+}
+
+/** Server or local lock-in for this player's LIVE selection. */
+function isLiveSetLockedIn(s, myId) {
+  if (!myId) return false;
+  if (G._liveSetLockPid === myId) return true;
+  if (s?.live_ready?.[myId]) return true;
+  // set_live_cards can land without live_ready; cards in storage still mean locked-in.
+  if (s?.phase === 'live_set' && s?.active_player === myId
+      && liveZonePlacedThisSetCount(s, myId) > 0) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * If cards are already in Live storage but live_ready never stuck, finish end_live_set
+ * once and keep the End LIVE Phase button hidden.
+ */
+function maybeHealStuckLiveSetPlacement(s, myId) {
+  if (!s || !myId || s.phase !== 'live_set') return;
+  if (s.active_player !== myId) return;
+  if (s.live_ready?.[myId]) return;
+  if (liveZonePlacedThisSetCount(s, myId) <= 0) return;
+  G._liveSetLockPid = myId;
+  s.live_ready = { ...(s.live_ready || {}), [myId]: true };
+  if (G._liveSetHealEndSent) return;
+  G._liveSetHealEndSent = true;
+  Promise.resolve().then(async () => {
+    try {
+      await sendAct('end_live_set', {});
+    } catch (_) {
+      /* sendAct usually swallows; Already locked is soft-recovered there */
+    } finally {
+      const cur = G.gameState;
+      if (cur?.phase === 'live_set' && !cur?.live_ready?.[myId]
+          && liveZonePlacedThisSetCount(cur, myId) > 0
+          && G._liveSetLockPid !== myId) {
+        G._liveSetHealEndSent = false;
+      }
+    }
+  });
+}
+
 function isLiveSetSelecting(s, myId) {
-  if (G._liveSetLockPid === myId) return false;
-  return s?.phase === 'live_set' && s.active_player === myId && !s.live_ready?.[myId];
+  if (!s || s.phase !== 'live_set') return false;
+  // Never re-open End LIVE Phase after lock-in / in-flight confirm.
+  if (isLiveSetLockedIn(s, myId)) return false;
+  return s.active_player === myId;
 }
 
 function isLiveHandSelectable(card) {
@@ -28881,7 +28931,16 @@ function updatePhaseActionButton(s, myId) {
       label = t('game.endMainPhase');
     }
   } else if (ph === 'live_set') {
-    if (isLiveSetSelecting(s, myId)) {
+    maybeHealStuckLiveSetPlacement(s, myId);
+    const myReady = isLiveSetLockedIn(s, myId);
+    if (myReady) {
+      const oppId = myId === 'p1' ? 'p2' : 'p1';
+      if (!s.live_ready?.[oppId]) {
+        show = true;
+        label = t('game.waitingOpponent');
+        waiting = true;
+      }
+    } else if (isLiveSetSelecting(s, myId)) {
       const n = G.liveSel.length;
       // Android: when cards are raised, Place lives in the info panel footer.
       if (android && n > 0) {
@@ -28889,13 +28948,6 @@ function updatePhaseActionButton(s, myId) {
       } else {
         show = true;
         label = n > 0 ? t('game.setLiveCards') : t('game.endLivePhase');
-      }
-    } else if (s.live_ready?.[myId]) {
-      const oppId = myId === 'p1' ? 'p2' : 'p1';
-      if (!s.live_ready?.[oppId]) {
-        show = true;
-        label = t('game.waitingOpponent');
-        waiting = true;
       }
     }
   }
@@ -28968,6 +29020,8 @@ async function confirmLiveSetFromHand() {
   if (typeof tcgPortraitSyncLiveSelSheet === 'function') tcgPortraitSyncLiveSelSheet(s, myId);
   else clearHoverCardPreview();
   syncHandSelectionClasses(s, myId);
+  // Hold lock for the whole set+end round-trip so End LIVE Phase cannot reappear
+  // after cards are already in storage (set_live_cards does not set live_ready).
   G._liveSetLockPid = myId;
   const cur = G.gameState;
   const before = deepCloneState(cur);
@@ -29000,13 +29054,28 @@ async function confirmLiveSetFromHand() {
       syncHandDomAfterDeferredLayout(settled, myId);
     }
   }
-  if (ids.length) {
-    await sendAct('set_live_cards', { card_ids: ids });
-    if (G.gameState?.phase === 'live_set' && liveStorageHasCards(G.gameState)) {
-      refreshLiveSetStorageBaseline(G.gameState);
+  try {
+    if (ids.length) {
+      await sendAct('set_live_cards', { card_ids: ids });
+      if (G.gameState?.phase === 'live_set') {
+        // set_live_cards response is not locked yet — keep optimistic ready + lock.
+        G._liveSetLockPid = myId;
+        G.gameState.live_ready = { ...(G.gameState.live_ready || {}), [myId]: true };
+        updateLiveSetButton(G.gameState, myId);
+        if (liveStorageHasCards(G.gameState)) {
+          refreshLiveSetStorageBaseline(G.gameState);
+        }
+      }
+    }
+    await sendAct('end_live_set', {});
+  } catch (e) {
+    // sendAct usually swallows; keep this for direct throws.
+    if (G._liveSetLockPid === myId && G.gameState?.phase === 'live_set'
+        && !G.gameState?.live_ready?.[myId]) {
+      G._liveSetLockPid = null;
+      updateLiveSetButton(G.gameState, myId);
     }
   }
-  await sendAct('end_live_set', {});
 }
 
 // ── ZONE VIEWER ──────────────────────────────────────
@@ -31732,11 +31801,13 @@ async function sendAct(type,data){
     const msg = e.message || '';
     const status = e.httpStatus || 0;
     const staleTurn = phaseAdvance && /not your turn/i.test(msg);
-    if (staleTurn) {
+    const alreadyLiveLocked = type === 'end_live_set' && /already locked/i.test(msg);
+    if (staleTurn || alreadyLiveLocked) {
       // First click already advanced the server; the board never caught up.
       if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
       try { if (G.polling) await pullLatestState(true, { silent: true, actionEpoch: true }); } catch (_) {}
       flushPendingState();
+      if (G.gameState && G.playerId) updatePhaseActionButton(G.gameState, G.playerId);
       return;
     }
     if (phaseAdvance && typeof reportApiError === 'function') {
@@ -32153,7 +32224,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=94"></script>
-<script src="client/js/board-render.js?v=29"></script>
+<script src="client/js/board-render.js?v=30"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

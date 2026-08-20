@@ -1000,7 +1000,18 @@
       }
     }
 
-    if (G._liveSetLockPid && (s.live_ready?.[G._liveSetLockPid] || s.phase !== 'live_set')) {
+    if (G._liveSetLockPid && s.phase === 'live_set') {
+      const lockPid = G._liveSetLockPid;
+      // set_live_cards responses omit live_ready — keep optimistic lock-in so the
+      // End LIVE Phase button cannot reappear while end_live_set is still in flight.
+      if (!s.live_ready?.[lockPid]) {
+        s.live_ready = { ...(s.live_ready || {}), [lockPid]: true };
+      }
+    }
+    if (G._liveSetLockPid && s.phase !== 'live_set') {
+      G._liveSetLockPid = null;
+    } else if (G._liveSetLockPid && s.live_ready?.[G._liveSetLockPid]
+        && s.active_player && s.active_player !== G._liveSetLockPid) {
       G._liveSetLockPid = null;
     }
     if (liveSetPlacementInProgress(s)
