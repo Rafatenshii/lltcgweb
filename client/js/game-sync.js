@@ -863,6 +863,71 @@
     }
   }
 
+  function tabCatchUpShouldPreserveLivePipeline() {
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    if (typeof guards?.shouldSoftTabCatchUpPreserveLivePipeline === 'function') {
+      return !!guards.shouldSoftTabCatchUpPreserveLivePipeline(G.gameState, {
+        awaitingLiveStart: !!G._awaitingLiveStartPrompts,
+        heartCheckHold: !!G._perfHeartCheckHold,
+        liveShowRunner: !!G._liveShowRunnerActive,
+      });
+    }
+    const s = G.gameState;
+    const stage = s?.live_show?.stage;
+    return !!(G._awaitingLiveStartPrompts
+      || s?.phase === 'live_start_effects'
+      || stage === 'reveal'
+      || stage === 'live_start');
+  }
+
+  /** Soft resync: refresh board/HUD without aborting presentLiveRound / Live Start wait. */
+  async function softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs) {
+    TCG_DEBUG.warn('poll', 'tab catch-up: soft preserve Live pipeline', {
+      hiddenMs,
+      phase: G.gameState?.phase || null,
+      stage: G.gameState?.live_show?.stage || null,
+      awaitingLiveStart: !!G._awaitingLiveStartPrompts,
+    });
+    global._tcgSyncStats.getState++;
+    const boardSeq = G.gameState?.seq ?? 0;
+    const last = G.lastSeq ?? 0;
+    if (boardSeq < last || hiddenMs >= 400) G.lastSeq = boardSeq;
+    const r = await fetch(getStateUrl('&force=1'));
+    let d = await parseGameApiResponse(r);
+    if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
+    if (isSpec && !G.isSpectator) return false;
+
+    if (isUnchangedStatePayload(d)) {
+      if (G.gameState) paintMatchHudAfterTabCatchUp(G.gameState, isSpec);
+      resumePollingTick(200);
+      return true;
+    }
+    if (isSpec && typeof alignSpectatorStageBoard === 'function') {
+      d = alignSpectatorStageBoard(d) || d;
+    }
+    // Keep playback flags — only advance the observed board for the wait loop.
+    G.gameState = d;
+    G.lastSeq = d.seq ?? G.lastSeq ?? 0;
+    if (isSpec) {
+      G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
+        ? G.spectatorViewAs
+        : (d.view_as || G.playerId || 'p1');
+    } else {
+      G.playerId = d.my_id || G.playerId;
+    }
+    paintMatchHudAfterTabCatchUp(d, isSpec);
+    if (d.status === 'finished') {
+      if (typeof stopPoll === 'function') stopPoll();
+      if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();
+      if (typeof showWin === 'function') showWin(d);
+      return true;
+    }
+    if (isSpec && typeof saveSpectatorSession === 'function') saveSpectatorSession();
+    else if (!isSpec && typeof saveActiveGameSession === 'function') saveActiveGameSession();
+    resumePollingTick(150);
+    return true;
+  }
+
   global.catchUpMatchAfterTabVisible = async function catchUpMatchAfterTabVisible(opts = {}) {
     if (!G.polling || !G.roomId || !G.token || G.isTutorial) return false;
     if (G._tabCatchUpBusy) return false;
@@ -875,6 +940,7 @@
       const midSpectacleChrome = !!(G._perfSpectacleActive || document.body.classList.contains('perf-spectacle-active'))
         && (liveStage === 'performance' || liveStage === 'outcomes' || liveStage === 'judge');
       const hiddenMs = opts.hiddenMs || 0;
+      const preserveLivePipeline = !midSpectacleChrome && tabCatchUpShouldPreserveLivePipeline();
       TCG_DEBUG.warn('poll', 'tab catch-up', {
         spectator: isSpec,
         hiddenMs,
@@ -882,9 +948,14 @@
         seq: G.lastSeq,
         spectacle: !!G._perfSpectacleActive,
         midSpectacleChrome,
+        preserveLivePipeline,
         liveStage,
         phase: G.gameState?.phase || null,
       });
+
+      if (preserveLivePipeline) {
+        return await softCatchUpPreserveLivePipeline(isSpec, pollEpoch, pollRoomId, hiddenMs);
+      }
 
       // Mid Performance chrome: never tear down the stage (same rule as
       // releaseStuckPresentation). Closing body.perf-spectacle-active left yell/

@@ -162,6 +162,27 @@
     return !!(stage && stage !== 'done');
   }
 
+  /**
+   * Tab catch-up must not abortGameplayPresentation while Live Start / Win-Loss
+   * owns presentLiveRound. Hard abort cleared playback flags mid-wait and could
+   * thrash the main thread (Page Unresponsive) while the opp skill banner was up.
+   * Performance/outcomes/judge keep their own mid-spectacle catch-up branch.
+   */
+  function shouldSoftTabCatchUpPreserveLivePipeline(state, flags) {
+    flags = flags || {};
+    if (flags.awaitingLiveStart) return true;
+    const stage = state?.live_show?.stage;
+    if (stage === 'reveal' || stage === 'live_start') return true;
+    if (state?.phase === 'live_start_effects') return true;
+    if (liveWinLossPresentationActive(state, flags)
+        && stage !== 'performance'
+        && stage !== 'outcomes'
+        && stage !== 'judge') {
+      return true;
+    }
+    return false;
+  }
+
   return {
     liveShowInFlight,
     isLiveWinLossPipelinePhase,
@@ -174,5 +195,6 @@
     mayUnstickStuckMainPresentation,
     mayClearStuckPerfSpectacle,
     shouldResumeLiveShowRunner,
+    shouldSoftTabCatchUpPreserveLivePipeline,
   };
 });

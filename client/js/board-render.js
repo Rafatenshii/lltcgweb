@@ -2277,8 +2277,11 @@ function renderLog(log, prevLen = 0){
   let matchedLen = e.children.length - clientTail;
 
   if (matchedLen > logArr.length) {
-    while (e.children.length > logArr.length + clientTail) {
-      e.children[logArr.length]?.remove();
+    let guard = e.children.length + 2;
+    while (e.children.length > logArr.length + clientTail && guard-- > 0) {
+      const node = e.children[logArr.length];
+      if (!node) break;
+      node.remove();
     }
     clientTail = countClientOnlyTailAfterState(e, logArr.length);
     matchedLen = e.children.length - clientTail;
@@ -2290,8 +2293,11 @@ function renderLog(log, prevLen = 0){
       if (logDomMatchesEntry(e.children[i], logArr[i])) syncAt = i + 1;
       else break;
     }
-    while (e.children.length > syncAt + clientTail) {
-      e.children[syncAt]?.remove();
+    let guard = e.children.length + 2;
+    while (e.children.length > syncAt + clientTail && guard-- > 0) {
+      const node = e.children[syncAt];
+      if (!node) break;
+      node.remove();
     }
     clientTail = countClientOnlyTailAfterState(e, logArr.length);
     matchedLen = syncAt;
