@@ -157,6 +157,40 @@ final class HeartResolutionTest extends TestCase
         $this->assertLessThan(0.05, $elapsed, 'undersized pool must not combinatorial-explode');
     }
 
+    /** 19-heart PvP pools + mixed color/"any" must not DFS into nginx 504s. */
+    public function testCheckHeartsLargeWildPoolFailsFastWhenLastColorMissing(): void {
+        $required = [
+            ['color' => 'red', 'count' => 15],
+            ['color' => 'pink', 'count' => 1],
+        ];
+        // 15 wilds cover reds; leftover greens cannot pay pink. Old index DFS was 15!.
+        $owned = array_merge(array_fill(0, 15, 'any'), array_fill(0, 4, 'green'));
+        $t0 = microtime(true);
+        [$ok] = checkHearts($owned, $required);
+        $elapsed = microtime(true) - $t0;
+        $this->assertFalse($ok);
+        $this->assertLessThan(0.05, $elapsed, 'wild-heavy miss must not factorial-explode');
+    }
+
+    public function testCheckHeartsLargeMixedPoolSucceedsQuickly(): void {
+        $required = [
+            ['color' => 'pink', 'count' => 1],
+            ['color' => 'green', 'count' => 1],
+            ['color' => 'blue', 'count' => 7],
+            ['color' => 'any', 'count' => 7],
+        ];
+        $owned = array_merge(
+            ['pink', 'green'],
+            array_fill(0, 10, 'blue'),
+            array_fill(0, 7, 'red')
+        );
+        $t0 = microtime(true);
+        [$ok] = checkHearts($owned, $required);
+        $elapsed = microtime(true) - $t0;
+        $this->assertTrue($ok);
+        $this->assertLessThan(0.05, $elapsed);
+    }
+
     public function testPoppinUpAllBladeReminderIsNotYellWildcard(): void
     {
         $data = json_decode((string) file_get_contents((string) constant('CARDS_FILE')), true);

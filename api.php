@@ -3945,6 +3945,82 @@ function mergeColoredHeartDemand(array $a, array $b): array {
     return $a;
 }
 
+/**
+ * Pay colored slots by counts (exact, then wilds). Index-by-index DFS treated
+ * identical hearts as distinct and could run for minutes (nginx 504 + lock held)
+ * when a late colored slot failed after many wild/"any" prefixes.
+ */
+function consumeColoredHeartSlotsByCount(array $pool, array $coloredSlots): ?array {
+    if (empty($coloredSlots)) {
+        return array_values($pool);
+    }
+    $need = [];
+    foreach ($coloredSlots as $color) {
+        $need[$color] = ($need[$color] ?? 0) + 1;
+    }
+    $exactHave = [];
+    $wildCount = 0;
+    foreach ($pool as $h) {
+        if (isWildcardHeartColor((string)$h)) {
+            $wildCount++;
+        } else {
+            $exactHave[$h] = ($exactHave[$h] ?? 0) + 1;
+        }
+    }
+    $exactUsed = [];
+    $wildUsed = 0;
+    foreach ($need as $color => $n) {
+        $have = intval($exactHave[$color] ?? 0);
+        $takeExact = min($have, $n);
+        $exactUsed[$color] = $takeExact;
+        $short = $n - $takeExact;
+        if ($short > 0) {
+            if ($wildCount - $wildUsed < $short) {
+                return null;
+            }
+            $wildUsed += $short;
+        }
+    }
+    $remaining = [];
+    foreach ($pool as $h) {
+        if (isWildcardHeartColor((string)$h)) {
+            if ($wildUsed > 0) {
+                $wildUsed--;
+                continue;
+            }
+            $remaining[] = $h;
+            continue;
+        }
+        $left = intval($exactUsed[$h] ?? 0);
+        if ($left > 0) {
+            $exactUsed[$h] = $left - 1;
+            continue;
+        }
+        $remaining[] = $h;
+    }
+    return $remaining;
+}
+
+function consumeAnyHeartSlotsGreedy(array $pool, int $anyCount, array $reservedColored = []): ?array {
+    if ($anyCount <= 0) {
+        return array_values($pool);
+    }
+    $order = heartSlotCandidateIndices($pool, 'any', $reservedColored);
+    if (count($order) < $anyCount) {
+        return null;
+    }
+    $remove = array_fill_keys(array_slice($order, 0, $anyCount), true);
+    $remaining = [];
+    foreach ($pool as $i => $h) {
+        if (isset($remove[$i])) {
+            unset($remove[$i]);
+            continue;
+        }
+        $remaining[] = $h;
+    }
+    return $remaining;
+}
+
 function tryConsumeHeartsForRequirementSlots(array $pool, array $slots, array $reservedColored = []): ?array {
     if (empty($slots)) {
         return array_values($pool);
@@ -3954,42 +4030,20 @@ function tryConsumeHeartsForRequirementSlots(array $pool, array $slots, array $r
     if (count($pool) < count($slots)) {
         return null;
     }
-    // Once only "any" slots remain, assignment order cannot fail if the count fits.
-    // Consume in surplus→wild→reserved preference (issue #66) without backtracking.
-    $allAny = true;
+    $coloredSlots = [];
+    $anyCount = 0;
     foreach ($slots as $slotColor) {
-        if ($slotColor !== 'any') {
-            $allAny = false;
-            break;
+        if ($slotColor === 'any') {
+            $anyCount++;
+        } else {
+            $coloredSlots[] = $slotColor;
         }
     }
-    if ($allAny) {
-        $order = heartSlotCandidateIndices($pool, 'any', $reservedColored);
-        if (count($order) < count($slots)) {
-            return null;
-        }
-        $remove = array_fill_keys(array_slice($order, 0, count($slots)), true);
-        $remaining = [];
-        foreach ($pool as $i => $h) {
-            if (isset($remove[$i])) {
-                unset($remove[$i]);
-                continue;
-            }
-            $remaining[] = $h;
-        }
-        return $remaining;
+    $remaining = consumeColoredHeartSlotsByCount($pool, $coloredSlots);
+    if ($remaining === null) {
+        return null;
     }
-    $need = $slots[0];
-    $rest = array_slice($slots, 1);
-    foreach (heartSlotCandidateIndices($pool, $need, $reservedColored) as $idx) {
-        $nextPool = $pool;
-        array_splice($nextPool, $idx, 1);
-        $result = tryConsumeHeartsForRequirementSlots(array_values($nextPool), $rest, $reservedColored);
-        if ($result !== null) {
-            return $result;
-        }
-    }
-    return null;
+    return consumeAnyHeartSlotsGreedy($remaining, $anyCount, $reservedColored);
 }
 
 function checkHearts(array $available, array $required, array $reservedColored = []): array {
