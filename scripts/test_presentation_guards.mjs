@@ -158,6 +158,17 @@ check('sendAct owns apply epoch for resolve/end_main/play',
   && /ownsApplyEpoch/.test(indexSrc));
 check('SSE deferred pull respects action apply epoch',
   /_actionApplyEpochNeedsFollowUp/.test(syncSrc));
+check('tab catch-up paints HUD helper',
+  /function paintMatchHudAfterTabCatchUp/.test(syncSrc)
+  && /clearPlaySelection/.test(syncSrc));
+check('visibility always catch-up in match',
+  /catchUp\(\{ wasBusy: presentationBusy, hiddenMs: Math\.max\(hiddenMs, 1\) \}\)/.test(indexSrc)
+  || /Math\.max\(hiddenMs, 1\)/.test(indexSrc));
+check('matched status keeps search float until enter',
+  /Do not clear the float here/.test(indexSrc)
+  && /Keep float until enterCasualMatch/.test(indexSrc));
+check('resumeQueue re-polls ranked after focus',
+  /Signed-in players: always re-check ranked_status/.test(indexSrc));
 check('card image preload has timeout',
   /CARD_IMAGE_PRELOAD_TIMEOUT_MS/.test(indexSrc));
 check('cache_card_image prebuilds board thumbs',

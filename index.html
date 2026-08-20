@@ -2565,7 +2565,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=2"></script>
-<script src="client/js/game-sync.js?v=51"></script>
+<script src="client/js/game-sync.js?v=52"></script>
 <script src="client/js/state-apply.js?v=67"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -13422,17 +13422,36 @@ function isCasualSearchUiActive() {
 /**
  * Background tabs freeze setTimeout (~minutes) and pagehide used to leave the queue
  * + kill poll — match-found SFX never played until refresh. Wake the poll immediately.
+ * Also re-poll when the float was already cleared by a background matched response
+ * that never finished enterRankedMatch / enterCasualMatch.
  */
 function resumeQueueAfterForeground() {
-  if (G.roomId && el('screen-game')?.classList.contains('active')
-      && G.gameState?.status && G.gameState.status !== 'finished') {
-    return;
+  const inLiveGame = !!(G.roomId && el('screen-game')?.classList.contains('active')
+    && G.gameState?.status && G.gameState.status !== 'finished');
+  if (inLiveGame) return;
+
+  // Credentials landed but game screen never opened (background match-found race).
+  if (G.roomId && G.token && !el('screen-game')?.classList.contains('active')) {
+    try { showScr('game'); } catch (_) { /* ignore */ }
+    if (!G.polling && typeof startPoll === 'function') startPoll();
   }
-  if (isRankedSearchUiActive() && typeof pollRankedStatus === 'function') {
+
+  const rankedMaybe = isRankedSearchUiActive()
+    || (typeof isRankedSearchActiveLocally === 'function' && isRankedSearchActiveLocally());
+  const casualMaybe = isCasualSearchUiActive()
+    || (typeof isCasualSearchActiveLocally === 'function' && isCasualSearchActiveLocally());
+
+  // Signed-in players: always re-check ranked_status after focus — searching UI may
+  // already be cleared while the seat is still waiting on enterRankedMatch.
+  if (typeof isSignedInAccount === 'function' && isSignedInAccount()
+      && typeof pollRankedStatus === 'function') {
+    if (rankedMaybe && !A.rankedPollScheduled) startRankedPoll();
+    void pollRankedStatus();
+  } else if (rankedMaybe && typeof pollRankedStatus === 'function') {
     if (!A.rankedPollScheduled) startRankedPoll();
     void pollRankedStatus();
   }
-  if (isCasualSearchUiActive() && typeof pollCasualStatus === 'function') {
+  if (casualMaybe && typeof pollCasualStatus === 'function') {
     if (!A.casualPollScheduled) startCasualPoll();
     void pollCasualStatus();
   }
@@ -13679,7 +13698,8 @@ function applyRankedStatusResponse(res) {
     return 'searching';
   }
   if (st.status === 'matched') {
-    setRankedSearchingUI(false);
+    // Do not clear the float here — enterRankedMatch clears it after seating.
+    // Background tabs used to clear the timer then fail/hang before enter.
     return 'matched';
   }
   setRankedSearchingUI(false);
@@ -14268,6 +14288,9 @@ async function pollRankedStatus() {
             || G.gameState?.status === 'setup')) {
         setRankedSearchingUI(false);
         stopRankedPoll();
+        // Background match-found sometimes set credentials without opening #screen-game.
+        if (!el('screen-game')?.classList.contains('active')) showScr('game');
+        if (!G.polling && typeof startPoll === 'function') startPoll();
         return;
       }
       // Confirm the room is not already finished. A slow/failed overflow probe
@@ -14565,7 +14588,7 @@ function applyCasualStatusResponse(res) {
     return 'searching';
   }
   if (st.status === 'matched') {
-    setCasualSearchingUI(false);
+    // Keep float until enterCasualMatch seats the player (see ranked matched).
     return 'matched';
   }
   setCasualSearchingUI(false);
@@ -16543,8 +16566,9 @@ async function bootApp() {
       finishCoinFlipAnimation(s, myId);
     }
     if (G.polling && G.roomId && G.token && !G.isTutorial) {
-      // Background tabs freeze spectacle timers/rAF. Resync to live match state
-      // instead of resuming a frozen Performance mid-animation.
+      // Background tabs freeze spectacle timers/rAF and throttle polls/SSE.
+      // Always hard-resync — brief alt-tabs (<1.2s) still left phase HUD / turn
+      // banners on the previous player while the log advanced.
       const catchUp = typeof catchUpMatchAfterTabVisible === 'function'
         ? catchUpMatchAfterTabVisible
         : (typeof catchUpSpectatorAfterTabVisible === 'function' ? catchUpSpectatorAfterTabVisible : null);
@@ -16552,15 +16576,10 @@ async function bootApp() {
         const presentationBusy = !!(G.animating || G._perfSpectacleActive || G._liveRoundPlaybackActive
           || G._liveSpectacleGateRunning || G._livePollHold || G._liveShowRunnerActive
           || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active));
-        if (presentationBusy || hiddenMs >= 1200) {
-          void catchUp({ wasBusy: presentationBusy, hiddenMs });
-          return;
-        }
+        void catchUp({ wasBusy: presentationBusy, hiddenMs: Math.max(hiddenMs, 1) });
+        return;
       }
-      const oppWait = el('opp-skill-wait')?.classList.contains('show');
-      if (oppWait || (!G.animating && !G._perfSpectacleActive)) {
-        void pullLatestState(!!oppWait);
-      }
+      void pullLatestState(true, { silent: true });
     }
   });
   on('modal-card','click', e => { if(e.target===el('modal-card')) closeM('modal-card'); });

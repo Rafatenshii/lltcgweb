@@ -835,6 +835,34 @@
    * resuming mid-animation minutes behind the live match.
    * Works for spectators and active players.
    */
+  function paintMatchHudAfterTabCatchUp(d, isSpec) {
+    if (!d) return;
+    // Stale Main Phase "PICK A SLOT" / baton chrome must not survive a Live advance.
+    try {
+      if (typeof clearPlaySelection === 'function') clearPlaySelection();
+    } catch (_) { /* ignore */ }
+    G.selCard = null;
+    G.drag = null;
+    G.liveSel = Array.isArray(G.liveSel) ? [] : G.liveSel;
+    if (typeof showScr === 'function') showScr('game');
+    if (typeof renderGame === 'function') renderGame(d, { skipLog: true });
+    if (typeof catchUpGameLog === 'function') catchUpGameLog(d, null);
+    if (!isSpec && d.pending_prompt?.responder === G.playerId
+        && typeof ensurePendingPromptSurfaced === 'function') {
+      if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
+      ensurePendingPromptSurfaced(d, G.playerId);
+    }
+    if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId) {
+      updateOpponentSkillWaitBanner(d, G.playerId);
+    }
+    if (typeof updatePhaseActionButton === 'function' && G.playerId) {
+      updatePhaseActionButton(d, G.playerId);
+    }
+    if (typeof updateLiveSetButton === 'function' && G.playerId) {
+      updateLiveSetButton(d, G.playerId);
+    }
+  }
+
   global.catchUpMatchAfterTabVisible = async function catchUpMatchAfterTabVisible(opts = {}) {
     if (!G.polling || !G.roomId || !G.token || G.isTutorial) return false;
     if (G._tabCatchUpBusy) return false;
@@ -846,9 +874,10 @@
       const liveStage = G.gameState?.live_show?.stage || null;
       const midSpectacleChrome = !!(G._perfSpectacleActive || document.body.classList.contains('perf-spectacle-active'))
         && (liveStage === 'performance' || liveStage === 'outcomes' || liveStage === 'judge');
+      const hiddenMs = opts.hiddenMs || 0;
       TCG_DEBUG.warn('poll', 'tab catch-up', {
         spectator: isSpec,
-        hiddenMs: opts.hiddenMs || 0,
+        hiddenMs,
         wasBusy: !!opts.wasBusy,
         seq: G.lastSeq,
         spectacle: !!G._perfSpectacleActive,
@@ -861,7 +890,6 @@
       // releaseStuckPresentation). Closing body.perf-spectacle-active left yell/
       // heart flights over the visible playmat after alt-tab.
       if (midSpectacleChrome) {
-        const hiddenMs = opts.hiddenMs || 0;
         // Brief focus blips (notifications, Discord overlay, accidental click-away)
         // used to kill the yell climb and seal "performance presented" → Checking
         // hearts with no yell flies. Keep the in-flight runner for short hides.
@@ -900,7 +928,8 @@
         global._tcgSyncStats.getState++;
         const boardSeq = G.gameState?.seq ?? 0;
         const last = G.lastSeq ?? 0;
-        if (boardSeq < last) G.lastSeq = boardSeq;
+        // Always rewind so force=1 cannot short-circuit as unchanged while HUD is stale.
+        G.lastSeq = Math.min(boardSeq, last);
         const r = await fetch(getStateUrl('&force=1'));
         let d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
@@ -947,9 +976,7 @@
           perfOpenSpectacle();
         }
 
-        if (typeof showScr === 'function') showScr('game');
-        if (typeof renderGame === 'function' && d) renderGame(d, { skipLog: true });
-        if (typeof catchUpGameLog === 'function' && d) catchUpGameLog(d, null);
+        paintMatchHudAfterTabCatchUp(d, isSpec);
 
         if (d?.status === 'finished') {
           if (typeof stopPoll === 'function') stopPoll();
@@ -958,17 +985,6 @@
           return true;
         }
 
-        if (!isSpec && d?.pending_prompt?.responder === G.playerId
-            && typeof ensurePendingPromptSurfaced === 'function') {
-          if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
-          ensurePendingPromptSurfaced(d, G.playerId);
-        }
-        if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId && d) {
-          updateOpponentSkillWaitBanner(d, G.playerId);
-        }
-        if (typeof updatePhaseActionButton === 'function' && G.playerId && d) {
-          updatePhaseActionButton(d, G.playerId);
-        }
         if (isSpec && typeof saveSpectatorSession === 'function') saveSpectatorSession();
         else if (!isSpec && typeof saveActiveGameSession === 'function') saveActiveGameSession();
         resumePollingTick(150);
@@ -987,22 +1003,26 @@
 
       global._tcgSyncStats.getState++;
       // Hung presentation can advance lastSeq before committing gameState.
-      // Rewind since_seq so a same-seq unchanged reply cannot hide a stale board.
+      // Always rewind to the painted board so force=1 cannot return unchanged
+      // while phase / active_player HUD is still on the previous turn.
       const boardSeq = G.gameState?.seq ?? 0;
       const last = G.lastSeq ?? 0;
-      if (boardSeq < last) {
-        TCG_DEBUG.warn('poll', 'tab catch-up: rewind since_seq to board', { boardSeq, last });
+      if (boardSeq < last || hiddenMs >= 400) {
+        TCG_DEBUG.warn('poll', 'tab catch-up: rewind since_seq to board', { boardSeq, last, hiddenMs });
         G.lastSeq = boardSeq;
       }
+      // Long background freezes: request a full snapshot even if seq matches.
+      if (hiddenMs >= 2500) G.lastSeq = 0;
       const r = await fetch(getStateUrl('&force=1'));
       let d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return false;
       if (isSpec && !G.isSpectator) return false;
 
-      // Same seq: presentation already aborted above — keep the local board.
-      // (Do not assign the tiny unchanged payload to gameState.)
+      // Same seq: presentation already aborted above — keep the local board but
+      // still re-paint HUD (stale Main Phase banner / PICK A SLOT after Live).
       if (isUnchangedStatePayload(d)) {
         if (G.gameState) {
+          paintMatchHudAfterTabCatchUp(G.gameState, isSpec);
           resumePollingTick(200);
           return true;
         }
@@ -1028,7 +1048,7 @@
         G._liveSpectacleGateRunning = false;
       }
 
-      const hardHiddenMs = opts.hiddenMs || 0;
+      const hardHiddenMs = hiddenMs;
       const hardStage = d.live_show?.stage;
       // Long freeze / already past Performance: skip yell replay. Short hides still
       // mid-performance should re-climb (restoreLiveShowSpectacleAfterTabVisible).
@@ -1069,9 +1089,7 @@
         });
       }
 
-      if (typeof showScr === 'function') showScr('game');
-      if (typeof renderGame === 'function') renderGame(d, { skipLog: true });
-      if (typeof catchUpGameLog === 'function') catchUpGameLog(d, null);
+      paintMatchHudAfterTabCatchUp(d, isSpec);
 
       if (d.status === 'finished') {
         // Skip final-LIVE spectacle replay after a tab freeze — jump straight to results.
@@ -1081,18 +1099,6 @@
         return true;
       }
 
-      if (!isSpec && d.pending_prompt?.responder === G.playerId
-          && typeof ensurePendingPromptSurfaced === 'function') {
-        if (typeof clearLiveSuccessHandDeferral === 'function') clearLiveSuccessHandDeferral(d);
-        ensurePendingPromptSurfaced(d, G.playerId);
-      }
-
-      if (typeof updateOpponentSkillWaitBanner === 'function' && G.playerId) {
-        updateOpponentSkillWaitBanner(d, G.playerId);
-      }
-      if (typeof updatePhaseActionButton === 'function' && G.playerId) {
-        updatePhaseActionButton(d, G.playerId);
-      }
       if (isSpec && typeof saveSpectatorSession === 'function') saveSpectatorSession();
       else if (!isSpec && typeof saveActiveGameSession === 'function') saveActiveGameSession();
       resumePollingTick(150);
