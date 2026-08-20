@@ -9825,9 +9825,10 @@
       given: { en: "Natsumi", ja: "夏美", es: "Natsumi", ko: "나츠미", zh: "夏美", th: "นัตสึมิ" },
       full: { en: "Natsumi Onitsuka", ja: "鬼塚夏美", es: "Natsumi Onitsuka", ko: "오니츠카 나츠미", zh: "鬼冢夏美", th: "นัตสึมิ โอนิสึกะ" }
     },
-    "Wien": {
+    "Margarete": {
       enFull: "Wien Margarete",
-      given: { en: "Wien", ja: "マルガレーテ", es: "Wien", ko: "빈", zh: "玛格丽特", th: "เวียน" },
+      aliases: ["Wien", "Wien Margarete"],
+      given: { en: "Margarete", ja: "マルガレーテ", es: "Margarete", ko: "마르가레테", zh: "玛格丽特", th: "มาร์กาเรเต" },
       full: { en: "Wien Margarete", ja: "ウィーン・マルガレーテ", es: "Wien Margarete", ko: "빈 마르가레테", zh: "薇恩·玛格丽特", th: "วีน มาร์กาเรเต" }
     },
     "Tomari": {
@@ -9908,6 +9909,7 @@
       var keys = [id, row.enFull];
       Object.keys(row.given || {}).forEach(function (loc) { keys.push(row.given[loc]); });
       Object.keys(row.full || {}).forEach(function (loc) { keys.push(row.full[loc]); });
+      (row.aliases || []).forEach(function (a) { keys.push(a); });
       if (row.full && row.full.ja) {
         var ja = row.full.ja;
         if (ja.indexOf('・') === -1 && ja.length >= 3) {
