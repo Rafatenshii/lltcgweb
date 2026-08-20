@@ -1108,9 +1108,21 @@
 
   global.enqueuePendingState = function enqueuePendingState(s) {
     if (!s || s.seq <= G.lastSeq) return;
-    const q = G._pendingStateQueue || (G._pendingStateQueue = []);
-    q.push(s);
-    q.sort((a, b) => a.seq - b.seq);
+    const q = G._pendingStateQueue || [];
+    const seq = s.seq ?? 0;
+    const last = G.lastSeq ?? 0;
+    // Full get_state boards are large (log + zones). During Live Start / spectacle
+    // holds every seq used to push another snapshot → Chrome memory spikes /
+    // Page Unresponsive. Keep only the oldest still-owed board (transition prev)
+    // and the newest (authoritative catch-up).
+    let oldest = null;
+    for (let i = 0; i < q.length; i++) {
+      const st = q[i];
+      const stSeq = st?.seq ?? 0;
+      if (stSeq <= last || stSeq >= seq) continue;
+      if (!oldest || stSeq < (oldest.seq ?? 0)) oldest = st;
+    }
+    G._pendingStateQueue = oldest ? [oldest, s] : [s];
   };
 
   const LIVE_POLL_HOLD_WATCHDOG_MS = 10000;

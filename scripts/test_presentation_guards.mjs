@@ -161,12 +161,20 @@ check('SSE deferred pull respects action apply epoch',
 check('tab catch-up paints HUD helper',
   /function paintMatchHudAfterTabCatchUp/.test(syncSrc)
   && /clearPlaySelection/.test(syncSrc));
+check('state-apply coalesces pending queue (memory)',
+  /Keep only the oldest still-owed board/.test(applySrc)
+  && /G\._pendingStateQueue = oldest \? \[oldest, s\] : \[s\]/.test(applySrc));
 check('tab catch-up soft-preserves Live Start pipeline',
   /shouldSoftTabCatchUpPreserveLivePipeline/.test(syncSrc)
   && /softCatchUpPreserveLivePipeline/.test(syncSrc)
   && /shouldSoftTabCatchUpPreserveLivePipeline/.test(
     fs.readFileSync(path.join(root, 'client/js/presentation-guards.js'), 'utf8'),
   ));
+check('soft catch-up drops superseded pending queue',
+  /softCatchUpPreserveLivePipeline[\s\S]*?_pendingStateQueue = \(_pendingStateQueue \|\| \[\]\)\.filter/.test(
+    syncSrc.replace(/G\./g, ''),
+  )
+  || /G\._pendingStateQueue = \(G\._pendingStateQueue \|\| \[\]\)\.filter\(st => \(st\.seq \?\? 0\) > \(d\.seq \?\? 0\)\)/.test(syncSrc));
 check('soft preserve Live Start wait / live_start stage',
   g.shouldSoftTabCatchUpPreserveLivePipeline(
     { phase: 'live_start_effects', live_show: { stage: 'live_start' } },

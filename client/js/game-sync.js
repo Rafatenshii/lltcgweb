@@ -908,6 +908,7 @@
     // Keep playback flags — only advance the observed board for the wait loop.
     G.gameState = d;
     G.lastSeq = d.seq ?? G.lastSeq ?? 0;
+    G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d.seq ?? 0));
     if (isSpec) {
       G.playerId = (G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2')
         ? G.spectatorViewAs
