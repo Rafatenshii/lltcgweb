@@ -4201,7 +4201,7 @@ function findLiveStartSourceCard(array $state, string $pid, string $instanceId):
 function countStageSubunitMembers(array $p, string $subunit): int {
     $n = 0;
     foreach ($p['stage'] as $mbr) {
-        if ($mbr && ($mbr['subunit'] ?? '') === $subunit) {
+        if ($mbr && cardMatchesSubunit($mbr, $subunit)) {
             $n++;
         }
     }
@@ -4211,7 +4211,7 @@ function countStageSubunitMembers(array $p, string $subunit): int {
 function stageHasOtherSubunitMember(array $p, string $subunit, string $excludeId): bool {
     foreach ($p['stage'] as $mbr) {
         if (!$mbr || ($mbr['instance_id'] ?? '') === $excludeId) continue;
-        if (($mbr['subunit'] ?? '') === $subunit) return true;
+        if (cardMatchesSubunit($mbr, $subunit)) return true;
     }
     return false;
 }
@@ -4652,7 +4652,9 @@ function countOtherSubunitOnStage(array $p, string $subunit, string $excludeId =
     foreach ($p['stage'] as $mbr) {
         if (!$mbr) continue;
         if ($excludeId !== '' && ($mbr['instance_id'] ?? '') === $excludeId) continue;
-        if (($mbr['subunit'] ?? '') === $subunit) $n++;
+        // Use cardMatchesSubunit — catalog mixes half-width ! and full-width ！
+        // on Mira-Cra Park! (Megumi bp2-006 Always would otherwise never count).
+        if (cardMatchesSubunit($mbr, $subunit)) $n++;
     }
     return $n;
 }
