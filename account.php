@@ -233,6 +233,7 @@ function tcgApiMe(array $body): array {
         'preferred_timezone' => tcgNormalizePreferredTimezone($user['preferred_timezone'] ?? null),
         'starter_options' => tcgStarterDecks(),
         'missions' => tcgMissionSummaryForUser($uid),
+        'tournament_enabled' => tcgUserMayUseTournaments($uid),
     ];
 }
 

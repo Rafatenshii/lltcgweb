@@ -78,20 +78,28 @@
   async function refreshServerFlag() {
     try {
       const res = await global.accountGet('tournament_enabled');
-      const on = !!(res && res.enabled);
-      // Server allowlist unlocks UI even when client default is off (production preview).
-      if (on) {
-        global.TCG_TOURNAMENTS_ENABLED = true;
-      } else if (!clientEnabled()) {
-        setHubButtons(false);
-        return false;
-      }
-      setHubButtons(on);
-      return on;
+      return applyEnabled(!!(res && res.enabled));
     } catch (e) {
       setHubButtons(false);
       return false;
     }
+  }
+
+  /** Apply server allowlist / me.tournament_enabled (unlocks Hub even when client default is off). */
+  function applyEnabled(on) {
+    on = !!on;
+    if (on) {
+      global.TCG_TOURNAMENTS_ENABLED = true;
+      setHubButtons(true);
+      return true;
+    }
+    if (!clientEnabled()) {
+      setHubButtons(false);
+      return false;
+    }
+    // Local ?tournaments=1 / localStorage override still on — keep UI unlocked for testing.
+    setHubButtons(true);
+    return true;
   }
 
   function screenActive() {
@@ -1041,6 +1049,7 @@
       setSky(false);
     },
     refreshFlag: refreshServerFlag,
+    applyEnabled: applyEnabled,
     onAvatarError: onAvatarError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
