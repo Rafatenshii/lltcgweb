@@ -361,13 +361,43 @@ function tcgListCasualSpectatableMatches(): array {
         if (!is_array($state)) {
             continue;
         }
-        if (($state['mode'] ?? '') === 'ranked') {
+        $mode = (string)($state['mode'] ?? '');
+        if ($mode === 'ranked' || $mode === 'tournament') {
             continue;
         }
         if (!tcgIsSpectatableHumanGame($state, $roomId)) {
             continue;
         }
         $matches[] = tcgSpectatableMatchRow($roomId, $state, 'casual');
+    }
+    return $matches;
+}
+
+/** Tournament rooms live on Hostinger GameStore (not VPS match-primary). */
+function tcgListTournamentSpectatableMatches(): array {
+    if (!defined('TCG_API_LIB_ONLY')) {
+        define('TCG_API_LIB_ONLY', true);
+    }
+    require_once __DIR__ . '/api.php';
+
+    $matches = [];
+    $seen = [];
+    foreach (tcgListActiveRoomIdsForSpectate() as $roomId) {
+        if ($roomId === '' || isset($seen[$roomId])) {
+            continue;
+        }
+        $seen[$roomId] = true;
+        if (!tcgSpectateRoomHasFreshPresence($roomId)) {
+            continue;
+        }
+        $state = loadGame($roomId);
+        if (!is_array($state) || ($state['mode'] ?? '') !== 'tournament') {
+            continue;
+        }
+        if (!tcgIsSpectatableHumanGame($state, $roomId)) {
+            continue;
+        }
+        $matches[] = tcgSpectatableMatchRow($roomId, $state, 'tournament');
     }
     return $matches;
 }
@@ -381,8 +411,11 @@ function tcgSpectateListCacheFile(string $category): string {
 
 function tcgListSpectatableMatches(string $category): array {
     $category = strtolower(trim($category));
-    if ($category !== 'ranked' && $category !== 'casual' && $category !== 'unranked') {
-        throw new Exception('category must be ranked or casual');
+    if ($category === 'unranked') {
+        $category = 'casual';
+    }
+    if ($category !== 'ranked' && $category !== 'casual' && $category !== 'tournament') {
+        throw new Exception('category must be ranked, casual, or tournament');
     }
     $cacheFile = tcgSpectateListCacheFile($category);
     $cacheAge = is_file($cacheFile) ? (time() - (int)@filemtime($cacheFile)) : null;
@@ -394,6 +427,8 @@ function tcgListSpectatableMatches(string $category): array {
     }
     if ($category === 'ranked') {
         $matches = tcgListRankedSpectatableMatches();
+    } elseif ($category === 'tournament') {
+        $matches = tcgListTournamentSpectatableMatches();
     } else {
         $matches = tcgListCasualSpectatableMatches();
     }
@@ -432,12 +467,18 @@ function tcgJoinSpectator(string $roomId): array {
     $now = time();
     $spectators[$token] = ['joined_at' => $now, 'last_seen' => $now];
     tcgWriteSpectators($roomId, $spectators);
+    $hiddenHands = !empty($state['spectate_hidden_hands']);
+    if (($state['mode'] ?? '') === 'tournament' && !array_key_exists('spectate_hidden_hands', $state)) {
+        $hiddenHands = true;
+    }
     return [
         'room_id' => $roomId,
         'spectator_token' => $token,
         'category' => $category,
         'p1_name' => (string)($state['players']['p1']['name'] ?? 'Player 1'),
         'p2_name' => (string)($state['players']['p2']['name'] ?? 'Player 2'),
+        'spectate_hidden_hands' => $hiddenHands,
+        'mode' => (string)($state['mode'] ?? ''),
     ];
 }
 
@@ -457,6 +498,12 @@ function filterStateForSpectator(array $state, string $roomId, string $spectator
         throw new Exception('Spectator session expired');
     }
     tcgTouchSpectatorPresence($roomId, $spectatorToken);
+
+    if (($state['mode'] ?? '') === 'tournament') {
+        require_once __DIR__ . '/tournament_spectate.php';
+        $delayed = tcgTournamentApplyStreamDelay($roomId, $state);
+        $state = $delayed['state'];
+    }
 
     $filtered = $state;
     foreach (['p1', 'p2'] as $pid) {

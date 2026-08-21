@@ -5539,6 +5539,10 @@ function loadGame(string $roomId): ?array {
 
 function saveGame(string $roomId, array $state): void {
     tcgResolveGameStore()->save($roomId, $state);
+    if (($state['mode'] ?? '') === 'tournament') {
+        require_once __DIR__ . '/tournament_spectate.php';
+        tcgTournamentRecordDelayedSnapshot($roomId, $state);
+    }
     if (!isPvpMatch($state)) {
         return;
     }

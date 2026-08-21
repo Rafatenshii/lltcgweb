@@ -108,7 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
-<link rel="stylesheet" href="client/css/tournament.css?v=6">
+<link rel="stylesheet" href="client/css/tournament.css?v=7">
 <link rel="stylesheet" href="client/css/portrait.css?v=81">
 
 </head>
@@ -2139,6 +2139,33 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
                 <option value="randomized">Randomized</option>
               </select>
             </label>
+            <label>Format
+              <select id="tournament-create-format">
+                <option value="single_elim">Single elimination</option>
+              </select>
+            </label>
+            <label>Fog of war
+              <select id="tournament-create-fog">
+                <option value="hidden_hands">Hidden hands (spectators)</option>
+                <option value="open_hands">Open hands</option>
+              </select>
+            </label>
+            <label>Rules template
+              <select id="tournament-create-rules">
+                <option value="standard">Standard</option>
+                <option value="starters_only">Starters only</option>
+                <option value="pauper">Pauper (N/R)</option>
+                <option value="highlander">Highlander (1-of)</option>
+              </select>
+            </label>
+            <label>Stream delay (spectate)
+              <select id="tournament-create-delay">
+                <option value="0">None</option>
+                <option value="15">15 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+            </label>
             <button type="submit" class="btn-grad">Schedule</button>
           </form>
         </div>
@@ -2681,7 +2708,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/runtime-flags.js?v=4"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script src="client/js/local-dev-auth.js?v=2"></script>
-<script src="client/js/tournament.js?v=4"></script>
+<script src="client/js/tournament.js?v=5"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=2"></script>
@@ -14052,34 +14079,42 @@ async function enterTournamentMatch(st) {
     return;
   }
   try { stopPoll(); } catch (e) { /* ignore */ }
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin('hostinger');
+  }
   G.roomId = st.room_id;
   G.token = st.player_token;
   G.playerId = st.player_id || 'p1';
   G.isCPU = false;
-  if (typeof tcgLockApiOrigin === 'function') {
-    tcgLockApiOrigin('hostinger');
-  }
+  G.isSpectator = false;
   try { saveActiveGameSession(); } catch (e) { /* ignore */ }
-  setSpectateHiddenHands(true);
   showScr('game');
   startPoll();
 }
 window.tcgEnterTournamentMatch = enterTournamentMatch;
 
+/** Tournament Spec — rooms on Hostinger; lock origin before spectate_join. */
 async function spectateTournamentRoom(roomId) {
   const id = String(roomId || '').toUpperCase();
   if (!id) return;
   try {
-    const r = await apiPost('spectate_join', { room_id: id });
-    G.isSpectator = true;
-    G.roomId = r.room_id || id;
-    G.token = r.spectator_token;
-    G.playerId = null;
     if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
-    setSpectateHiddenHands(true);
-    showScr('game');
-    startPoll();
+    G._spectateReturnScreen = 'tournament';
+    const r = await apiPost('spectate_join', { room_id: id });
+    // Default hidden for tournament; open_hands rooms send spectate_hidden_hands:false.
+    if (typeof r.spectate_hidden_hands === 'boolean') {
+      setSpectateHiddenHands(!!r.spectate_hidden_hands);
+    } else {
+      setSpectateHiddenHands(true);
+    }
+    await bootSpectatorSession({
+      roomId: r.room_id || id,
+      token: r.spectator_token,
+      p1Name: r.p1_name,
+      p2Name: r.p2_name,
+    });
   } catch (e) {
+    if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
     toast(e.message || String(e), 3200);
   }
 }
@@ -31836,31 +31871,50 @@ function renderSpectateMatchList(matches) {
 }
 
 async function openSpectateList(category) {
-  G._spectateReturnScreen = category === 'ranked' ? 'ranked' : 'lobby';
+  const cat = category === 'ranked' ? 'ranked'
+    : (category === 'tournament' ? 'tournament' : 'casual');
+  G._spectateReturnScreen = cat === 'ranked' ? 'ranked'
+    : (cat === 'tournament' ? 'tournament' : 'lobby');
   const errEl = el('spectate-list-err');
   if (errEl) errEl.textContent = '';
   const titleEl = el('spectate-list-title');
   if (titleEl) {
-    titleEl.textContent = category === 'ranked' ? t('spectate.listTitleRanked') : t('spectate.listTitleCasual');
+    titleEl.textContent = cat === 'ranked'
+      ? t('spectate.listTitleRanked')
+      : (cat === 'tournament'
+        ? (t('spectate.listTitleTournament') || 'Spectate tournament')
+        : t('spectate.listTitleCasual'));
   }
   const list = el('spectate-match-list');
   if (list) list.innerHTML = '<p class="hub-stat">' + t('spectate.loading') + '</p>';
   openM('overlay-spectate-list');
   try {
-    const res = await apiPost('spectate_list', { category: category === 'ranked' ? 'ranked' : 'casual' });
+    if (cat === 'tournament' && typeof tcgLockApiOrigin === 'function') {
+      tcgLockApiOrigin('hostinger');
+    }
+    const res = await apiPost('spectate_list', { category: cat });
     renderSpectateMatchList(res.matches || []);
   } catch (e) {
     if (errEl) errEl.textContent = e.message || String(e);
     if (list) list.innerHTML = '';
   }
 }
+window.openSpectateList = openSpectateList;
 
 async function joinSpectateMatch(roomId) {
   const errEl = el('spectate-list-err');
   if (errEl) errEl.textContent = '';
   try {
+    if (G._spectateReturnScreen === 'tournament' && typeof tcgLockApiOrigin === 'function') {
+      tcgLockApiOrigin('hostinger');
+    }
     const res = await apiPost('spectate_join', { room_id: roomId });
     captureSyncMeta(res);
+    if (typeof res.spectate_hidden_hands === 'boolean') {
+      setSpectateHiddenHands(!!res.spectate_hidden_hands);
+    } else if (res.mode === 'tournament' || res.category === 'tournament') {
+      setSpectateHiddenHands(true);
+    }
     await bootSpectatorSession({
       roomId: res.room_id,
       token: res.spectator_token,
@@ -32073,7 +32127,14 @@ async function leaveSpectatorMode(opts = {}) {
   G.lastSeq = 0;
   abortGameplayPresentation();
   if (opts.toastMsg) toast(opts.toastMsg, 3200);
-  showScr(G._spectateReturnScreen === 'ranked' ? 'ranked' : 'lobby');
+  const ret = G._spectateReturnScreen || 'lobby';
+  if (ret === 'tournament' && window.TCGTournamentUI?.open) {
+    window.TCGTournamentUI.open();
+  } else if (ret === 'ranked') {
+    showScr('ranked');
+  } else {
+    showScr('lobby');
+  }
 }
 
 // ── ACTIONS ──────────────────────────────────────────

@@ -300,11 +300,58 @@
       const res = await global.accountPost('tournament_list', body);
       state.list = (res && res.tournaments) || [];
       renderList();
+      maybeRemindCheckins(state.list, res && res.server_now);
     } catch (e) {
       setErr(e.message || String(e));
     } finally {
       state.loading = false;
     }
+  }
+
+  const REMIND_KEY = 'tcg_tournament_remind_dismissed';
+
+  function readRemindDismissed() {
+    try {
+      const raw = localStorage.getItem(REMIND_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeRemindDismissed(map) {
+    try {
+      localStorage.setItem(REMIND_KEY, JSON.stringify(map || {}));
+    } catch (e) { /* ignore */ }
+  }
+
+  function maybeRemindCheckins(list, serverNow) {
+    const now = Number(serverNow) || Math.floor(Date.now() / 1000);
+    const dismissed = readRemindDismissed();
+    (list || []).forEach((row) => {
+      const id = String(row.id || '');
+      if (!id || dismissed[id]) return;
+      const opens = Number(row.checkin_opens_at) || (
+        Number(row.start_at) - (Number(row.checkin_mins) || 10) * 60
+      );
+      const inWindow = (opens - now) <= 15 * 60 && now < Number(row.start_at);
+      const justOpen = row.status === 'checkin' && (now - opens) < 120;
+      if (!inWindow && !justOpen) return;
+      const msg = (row.status === 'checkin')
+        ? ('Check-in open: ' + (row.title || id))
+        : ('Check-in soon: ' + (row.title || id));
+      if (typeof global.toast === 'function') global.toast(msg, 4500);
+      try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('LLTCG Tournament', { body: msg });
+        } else if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+          Notification.requestPermission().catch(function () {});
+        }
+      } catch (e) { /* ignore */ }
+      dismissed[id] = now;
+      writeRemindDismissed(dismissed);
+    });
   }
 
   function renderList() {
@@ -318,13 +365,22 @@
       const fee = Number(row.entry_fee_coins) || 0;
       const count = Number(row.entrant_count) || 0;
       const max = Number(row.max_players) || 0;
+      const specs = Number(row.spectator_count) || 0;
+      const fog = (row.settings && row.settings.fog) || 'hidden_hands';
       return (
         '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
         + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
         + '<div class="tournament-card-meta">'
         + escapeHtml(String(row.status)) + ' · ' + escapeHtml(String(row.game_mode))
         + ' · ' + count + '/' + max
-        + ' · fee ' + fee + ' · starts ' + escapeHtml(fmtWhen(row.start_at))
+        + ' · fee ' + fee
+        + (specs ? (' · ' + specs + ' watching') : '')
+        + ' · starts ' + escapeHtml(fmtWhen(row.start_at))
+        + '</div>'
+        + '<div class="tournament-card-meta tournament-card-settings">'
+        + escapeHtml(String((row.settings && row.settings.rules_template) || 'standard'))
+        + ' · fog ' + escapeHtml(String(fog))
+        + ' · delay ' + String((row.settings && row.settings.stream_delay_secs) || 0) + 's'
         + '</div></button>'
       );
     }).join('');
@@ -414,7 +470,14 @@
         + '<p class="tournament-muted">'
         + escapeHtml(trow.status)
         + ' · prize ' + (Number(trow.prize_pool_coins) || 0)
+        + ' · watching ' + (Number(trow.spectator_count) || 0)
         + ' · starts ' + escapeHtml(fmtWhen(trow.start_at))
+        + '</p>'
+        + '<p class="tournament-muted">'
+        + 'rules ' + escapeHtml(String((trow.settings && trow.settings.rules_template) || 'standard'))
+        + ' · fog ' + escapeHtml(String((trow.settings && trow.settings.fog) || 'hidden_hands'))
+        + ' · stream delay ' + String((trow.settings && trow.settings.stream_delay_secs) || 0) + 's'
+        + ' · format ' + escapeHtml(String((trow.settings && trow.settings.format) || 'single_elim'))
         + '</p>';
     }
     wireAvatarFallbacks(head);
@@ -439,6 +502,9 @@
       }
       bits.push('<button type="button" class="btn-out" data-act="tick">Refresh / tick</button>');
       bits.push('<button type="button" class="btn-grad" data-act="join">Join my match</button>');
+      if (trow.status === 'running') {
+        bits.push('<button type="button" class="btn-out" data-act="spectate-list">Spectate matches</button>');
+      }
       actions.innerHTML = bits.join('');
       actions.querySelectorAll('[data-act]').forEach((btn) => {
         btn.addEventListener('click', () => onDetailAction(btn.getAttribute('data-act')));
@@ -562,6 +628,11 @@
         }
         setErr('Join helper missing');
         return;
+      } else if (act === 'spectate-list') {
+        if (typeof global.openSpectateList === 'function') {
+          void global.openSpectateList('tournament');
+        }
+        return;
       }
       await openDetail(tid);
     } catch (e) {
@@ -677,6 +748,12 @@
       max_players: Number((el('tournament-create-max') || {}).value || 8),
       entry_fee_coins: Number((el('tournament-create-fee') || {}).value || 0),
       game_mode: (el('tournament-create-mode') || {}).value || 'standard',
+      settings: {
+        format: (el('tournament-create-format') || {}).value || 'single_elim',
+        fog: (el('tournament-create-fog') || {}).value || 'hidden_hands',
+        rules_template: (el('tournament-create-rules') || {}).value || 'standard',
+        stream_delay_secs: Number((el('tournament-create-delay') || {}).value || 0),
+      },
     };
     try {
       const res = await global.accountPost('tournament_create', body);

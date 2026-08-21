@@ -40,6 +40,7 @@ function tcgTournamentTickOne(string $id): array {
             $events[] = 'entered_checkin';
             $status = 'checkin';
             $row = tcgTournamentFetch($id) ?: $row;
+            tcgTournamentNotifyWebhook('entered_checkin', $row);
         }
     }
 
@@ -47,6 +48,9 @@ function tcgTournamentTickOne(string $id): array {
         $started = tcgTournamentStartBracket($id);
         $events[] = $started ? 'bracket_started' : 'start_deferred';
         $row = tcgTournamentFetch($id) ?: $row;
+        if ($started) {
+            tcgTournamentNotifyWebhook('bracket_started', $row);
+        }
         $status = (string)$row['status'];
     }
 
@@ -57,6 +61,8 @@ function tcgTournamentTickOne(string $id): array {
         tcgTournamentAdvanceCompletedRounds($id);
         if (tcgTournamentTryFinish($id)) {
             $events[] = 'finished';
+            $row = tcgTournamentFetch($id) ?: $row;
+            tcgTournamentNotifyWebhook('finished', $row);
         }
         $row = tcgTournamentFetch($id) ?: $row;
     }
@@ -390,6 +396,11 @@ function tcgTournamentCreateRoomPair(
             'energy_nos' => $deck1['energy_nos'] ?? [],
         ],
     ]);
+    $tRow = tcgTournamentFetch($tournamentId);
+    $tSettings = tcgTournamentDecodeSettings($tRow['settings_json'] ?? '{}');
+    $fogHidden = (($tSettings['fog'] ?? 'hidden_hands') !== 'open_hands');
+    $streamDelay = (int)($tSettings['stream_delay_secs'] ?? 0);
+
     $state['mode'] = 'tournament';
     $state['game_mode'] = $gameMode;
     $state['tournament'] = [
@@ -397,8 +408,11 @@ function tcgTournamentCreateRoomPair(
         'match_id' => $matchId,
         'p1_discord_id' => $p1DiscordId,
         'p2_discord_id' => $p2DiscordId,
+        'stream_delay_secs' => $streamDelay,
+        'fog' => $fogHidden ? 'hidden_hands' : 'open_hands',
     ];
-    $state['spectate_hidden_hands'] = true;
+    $state['spectate_hidden_hands'] = $fogHidden;
+    $state['spectate_stream_delay_secs'] = $streamDelay;
 
     $main2 = buildDeck($allCards, $deck2['main_nos'] ?? []);
     $energy2 = buildDeck($allCards, $deck2['energy_nos'] ?? []);

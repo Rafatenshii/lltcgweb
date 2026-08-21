@@ -184,6 +184,11 @@ function tcgApiTournamentJoinMatch(array $body): array {
         throw new Exception('No joinable match', 404);
     }
     $isP1 = (string)($m['p1_discord_id'] ?? '') === $uid;
+    if ((string)($m['status'] ?? '') === 'ready') {
+        tcgDb()->prepare(
+            'UPDATE tcg_tournament_matches SET status = "live", updated_at = ? WHERE id = ? AND status = "ready"'
+        )->execute([time(), (string)$m['id']]);
+    }
     return [
         'success' => true,
         'room_id' => (string)$m['room_id'],

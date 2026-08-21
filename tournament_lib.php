@@ -92,12 +92,164 @@ function tcgTournamentMatchNewId(): string {
 /** @return array<string,mixed> */
 function tcgTournamentDecodeSettings(?string $json): array {
     $raw = json_decode((string)$json, true);
-    return is_array($raw) ? $raw : [];
+    return tcgTournamentNormalizeSettings(is_array($raw) ? $raw : []);
 }
 
 /** @param array<string,mixed>|null $settings */
 function tcgTournamentEncodeSettings(?array $settings): string {
-    return json_encode($settings ?: new stdClass(), JSON_UNESCAPED_UNICODE) ?: '{}';
+    return json_encode(tcgTournamentNormalizeSettings($settings ?: []), JSON_UNESCAPED_UNICODE) ?: '{}';
+}
+
+/**
+ * Normalize tournament settings_json (Phase 2+ fields).
+ *
+ * @param array<string,mixed> $settings
+ * @return array<string,mixed>
+ */
+function tcgTournamentNormalizeSettings(array $settings): array {
+    $fog = (string)($settings['fog'] ?? 'hidden_hands');
+    if ($fog !== 'open_hands') {
+        $fog = 'hidden_hands';
+    }
+    $delay = (int)($settings['stream_delay_secs'] ?? 0);
+    if (!in_array($delay, [0, 15, 30, 60], true)) {
+        $delay = 0;
+    }
+    $rules = (string)($settings['rules_template'] ?? 'standard');
+    if (!in_array($rules, ['standard', 'starters_only', 'pauper', 'highlander'], true)) {
+        $rules = 'standard';
+    }
+    // Phase 3 stub — only single_elim for now.
+    $format = (string)($settings['format'] ?? 'single_elim');
+    if ($format !== 'single_elim') {
+        $format = 'single_elim';
+    }
+    return [
+        'connect_secs' => max(30, (int)($settings['connect_secs'] ?? TCG_TOURNAMENT_CONNECT_SECS)),
+        'fog' => $fog,
+        'stream_delay_secs' => $delay,
+        'rules_template' => $rules,
+        'format' => $format,
+    ];
+}
+
+/**
+ * Optional Discord incoming webhook (Hostinger env TCG_TOURNAMENT_WEBHOOK_URL).
+ *
+ * @param array<string,mixed> $row tournament DB row
+ */
+function tcgTournamentNotifyWebhook(string $event, array $row): void {
+    $url = getenv('TCG_TOURNAMENT_WEBHOOK_URL');
+    if (!is_string($url) || trim($url) === '') {
+        return;
+    }
+    $url = trim($url);
+    if (!preg_match('#^https://(discord(?:app)?\.com|canary\.discord\.com)/api/webhooks/#i', $url)) {
+        return;
+    }
+    $title = (string)($row['title'] ?? 'Tournament');
+    $id = (string)($row['id'] ?? '');
+    $start = (int)($row['start_at'] ?? 0);
+    $link = 'https://loveliveradio.ca/tcg/';
+    $lines = [
+        'entered_checkin' => '**Check-in open** — ' . $title,
+        'bracket_started' => '**Bracket started** — ' . $title,
+        'finished' => '**Tournament finished** — ' . $title,
+    ];
+    $content = $lines[$event] ?? ('**Tournament update** (' . $event . ') — ' . $title);
+    if ($id !== '') {
+        $content .= "\nID `" . $id . "`";
+    }
+    if ($start > 0) {
+        $content .= "\nStarts <t:" . $start . ":f>";
+    }
+    $content .= "\n" . $link;
+    $payload = json_encode([
+        'content' => $content,
+        'allowed_mentions' => ['parse' => []],
+    ], JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        return;
+    }
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\n",
+            'content' => $payload,
+            'timeout' => 3,
+            'ignore_errors' => true,
+        ],
+    ]);
+    @file_get_contents($url, false, $ctx);
+}
+
+/** Sum live spectators across seeded tournament rooms. */
+function tcgTournamentSpectatorCount(string $tournamentId): int {
+    if (!function_exists('tcgLiveSpectatorCount')) {
+        require_once __DIR__ . '/spectate.php';
+    }
+    $n = 0;
+    foreach (tcgTournamentFetchMatches($tournamentId) as $m) {
+        $rid = trim((string)($m['room_id'] ?? ''));
+        if ($rid === '') {
+            continue;
+        }
+        $n += tcgLiveSpectatorCount($rid);
+    }
+    return $n;
+}
+
+/**
+ * Enforce rules_template against a locked deck snapshot.
+ *
+ * @param array<string,mixed> $snap
+ * @throws Exception
+ */
+function tcgTournamentAssertRulesTemplate(string $template, array $snap, string $gameMode): void {
+    $template = (string)$template;
+    if ($template === '' || $template === 'standard') {
+        return;
+    }
+    if ($template === 'starters_only') {
+        $src = (string)($snap['source'] ?? '');
+        $starter = trim((string)($snap['starter_key'] ?? ''));
+        if ($src !== 'starter' && $starter === '') {
+            throw new Exception('This event requires an official starter deck', 400);
+        }
+        return;
+    }
+    require_once __DIR__ . '/cards_data.php';
+    require_once __DIR__ . '/deck_validate.php';
+    $main = is_array($snap['main_nos'] ?? null) ? $snap['main_nos'] : [];
+    $energy = is_array($snap['energy_nos'] ?? null) ? $snap['energy_nos'] : [];
+    $allNos = array_merge($main, $energy);
+    if ($template === 'highlander') {
+        $counts = [];
+        foreach ($allNos as $no) {
+            $no = (string)$no;
+            $counts[$no] = ($counts[$no] ?? 0) + 1;
+            if ($counts[$no] > 1) {
+                throw new Exception('Highlander: only 1 copy of each card allowed (' . $no . ')', 400);
+            }
+        }
+        return;
+    }
+    $cards = tcgLoadCardsData();
+    $map = tcgBuildCardMap($cards);
+    foreach ($allNos as $no) {
+        $no = (string)$no;
+        $card = $map[$no] ?? null;
+        if (!$card) {
+            throw new Exception('Unknown card in deck: ' . $no, 400);
+        }
+        $rarity = strtoupper(trim((string)($card['rarity'] ?? $card['rarity_en'] ?? '')));
+        if ($template === 'pauper') {
+            // Allow N / R / C / U / CL; reject SR+ / SEC / etc.
+            if ($rarity !== '' && !in_array($rarity, ['N', 'R', 'C', 'U', 'CL'], true)) {
+                throw new Exception('Pauper: card ' . $no . ' rarity ' . $rarity . ' not allowed', 400);
+            }
+        }
+    }
 }
 
 function tcgTournamentBracketSize(int $n): int {

@@ -55,6 +55,7 @@ function tcgApiTournamentList(array $body): array {
         ]);
         $pub['checkin_opens_at'] = (int)$row['start_at'] - ((int)$row['checkin_mins'] * 60);
         $pub['server_now'] = $now;
+        $pub['spectator_count'] = tcgTournamentSpectatorCount((string)$row['id']);
         $list[] = $pub;
     }
     return ['success' => true, 'tournaments' => $list, 'server_now' => $now];
@@ -89,6 +90,7 @@ function tcgApiTournamentGet(array $body): array {
     }
     $pub = tcgTournamentPublicRow($row, ['total' => count($entrants), 'checked_in' => $checked]);
     $pub['checkin_opens_at'] = (int)$row['start_at'] - ((int)$row['checkin_mins'] * 60);
+    $pub['spectator_count'] = tcgTournamentSpectatorCount($id);
     $stmt = tcgDb()->prepare('SELECT username, avatar_url FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([(string)$row['host_discord_id']]);
     $hostRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -132,8 +134,8 @@ function tcgApiTournamentCreate(array $body): array {
     }
     $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $settings = is_array($body['settings'] ?? null) ? $body['settings'] : [];
+    $settings = tcgTournamentNormalizeSettings($settings);
     $settings['connect_secs'] = TCG_TOURNAMENT_CONNECT_SECS;
-    $settings['stream_delay_secs'] = max(0, (int)($settings['stream_delay_secs'] ?? 0));
 
     $id = tcgTournamentNewId();
     $now = time();
@@ -191,6 +193,7 @@ function tcgApiTournamentUpdate(array $body): array {
     if (is_array($body['settings'] ?? null)) {
         $settings = array_merge($settings, $body['settings']);
     }
+    $settings = tcgTournamentNormalizeSettings($settings);
 
     tcgDb()->prepare(
         'UPDATE tcg_tournaments SET title=?, start_at=?, checkin_mins=?, min_players=?, max_players=?,

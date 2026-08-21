@@ -1365,6 +1365,7 @@
       "listTitle": "Spectate match",
       "listTitleRanked": "Spectate ranked match",
       "listTitleCasual": "Spectate unranked match",
+      "listTitleTournament": "Spectate tournament match",
       "lead": "Watch an ongoing match — view only, no interaction.",
       "barReadOnly": "Spectating — read only",
       "barNames": "Spectating {p1} vs {p2}",

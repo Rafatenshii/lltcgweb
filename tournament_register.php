@@ -97,6 +97,12 @@ function tcgApiTournamentRegister(array $body): array {
         $choice = ['slot' => (int)$body['deck_slot']];
     }
     $snap = tcgTournamentDeckSnapshotForUser($uid, (string)$row['game_mode'], $choice);
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    tcgTournamentAssertRulesTemplate(
+        (string)($settings['rules_template'] ?? 'standard'),
+        $snap,
+        (string)$row['game_mode']
+    );
     $now = time();
     $ledgerKey = 'entry:' . $id . ':' . $uid;
 
