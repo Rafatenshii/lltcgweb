@@ -5282,7 +5282,8 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-item.llc-menu-accent-green,
 .llc-menu-item.llc-menu-accent-blue,
 .llc-menu-item.llc-menu-accent-sky,
-.llc-menu-item.llc-menu-accent-purple{
+.llc-menu-item.llc-menu-accent-purple,
+.llc-menu-item.llc-menu-accent-violet{
   border-width:1px;
   box-shadow:none;
 }
@@ -5325,6 +5326,15 @@ body.locale-th .llc-menu-item-title{font-family:'Noto Sans Thai','Nunito',sans-s
 .llc-menu-item.llc-menu-accent-purple:hover:not(:disabled){
   border-color:rgba(210,200,255,.75);
   background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(139,92,246,.50);
+}
+/* Tournament — deeper pastel violet than Replay / How to Play purple */
+.llc-menu-item.llc-menu-accent-violet{
+  border-color:rgba(165,145,230,.58);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(78,48,158,.46);
+}
+.llc-menu-item.llc-menu-accent-violet:hover:not(:disabled){
+  border-color:rgba(190,175,245,.78);
+  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(98,62,185,.56);
 }
 a.llc-apk-promo{
   text-decoration:none;

@@ -16,9 +16,8 @@ const TCG_TOURNAMENT_MIN_PLAYERS = 2;
 const TCG_TOURNAMENT_MAX_PLAYERS_CAP = 32;
 
 /**
- * Discord IDs that may use Tournament Mode while it stays Coming Soon for others.
- * Override with TCG_TOURNAMENT_ALLOWLIST (comma-separated). Use "*" to clear
- * (public when TCG_TOURNAMENTS_ENABLED=1).
+ * Optional Discord ID allowlist. Empty = open to everyone when tournaments are enabled.
+ * Override with TCG_TOURNAMENT_ALLOWLIST (comma-separated). Use "*" / "none" / "-" for open.
  *
  * @return list<string>
  */
@@ -33,14 +32,14 @@ function tcgTournamentAllowlist(): array {
             return array_values(array_filter(array_map('trim', explode(',', $env)), static fn($id) => $id !== ''));
         }
     }
-    // Preview allowlist until public launch.
-    return ['213038604975472640'];
+    return [];
 }
 
+/** Public by default; set TCG_TOURNAMENTS_ENABLED=0 to disable. */
 function tcgTournamentsEnvEnabled(): bool {
     $env = getenv('TCG_TOURNAMENTS_ENABLED');
     if ($env === false || $env === '') {
-        return false;
+        return true;
     }
     $v = strtolower(trim((string)$env));
     return $v === '1' || $v === 'true' || $v === 'yes' || $v === 'on';

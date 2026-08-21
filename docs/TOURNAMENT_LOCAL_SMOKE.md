@@ -1,9 +1,7 @@
 # Tournament Mode — local smoke checklist
 
-Feature stays **off** unless both are set:
-
-- Server: `TCG_TOURNAMENTS_ENABLED=1` (e.g. in `.env` / shell)
-- Client: `localStorage.tcg_tournaments_enabled = '1'` or `?tournaments=1`
+Tournaments are **on by default** (client + server). Kill switch: `TCG_TOURNAMENTS_ENABLED=0`.
+Optional restrict: `TCG_TOURNAMENT_ALLOWLIST=id1,id2`. Client override: `?tournaments=0|1` or `localStorage.tcg_tournaments_enabled`.
 
 **Local Docker fake login:** `compose.yaml` sets `TCG_LOCAL_FAKE_AUTH=1`. Opening localhost auto-signs in as **LocalDev1** (Nijigasaki starter + 10k Coins). Use `?local_user=2` for a second account.
 

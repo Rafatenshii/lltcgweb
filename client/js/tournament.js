@@ -63,12 +63,14 @@
       if (enabled) {
         btn.disabled = false;
         btn.removeAttribute('aria-disabled');
-        btn.classList.add('llc-menu-hover', 'llc-menu-accent-gold');
+        btn.classList.add('llc-menu-hover', 'llc-menu-accent-violet');
+        btn.classList.remove('llc-menu-accent-gold', 'llc-menu-accent-purple');
         const sub = btn.querySelector('.llc-menu-item-sub');
         if (sub) sub.textContent = t('hub.tournament.subLive', 'Events & brackets');
       } else {
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
+        btn.classList.remove('llc-menu-hover', 'llc-menu-accent-violet', 'llc-menu-accent-gold');
         const sub = btn.querySelector('.llc-menu-item-sub');
         if (sub) sub.textContent = t('hub.tournament.sub', 'Coming Soon');
       }

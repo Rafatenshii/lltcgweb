@@ -8,16 +8,15 @@
  *  3. Committed default below
  *
  * Tournaments:
- *  Client default stays off (Coming Soon). Server allowlist / tournament_enabled
- *  unlocks the Hub button for preview accounts after login.
- *  Local override: ?tournaments=1 or localStorage.tcg_tournaments_enabled
+ *  Client default on (public). Override: ?tournaments=0|1 or localStorage.tcg_tournaments_enabled
+ *  Server may still gate via tournament_enabled / me after login.
  */
 (function (global) {
   'use strict';
 
   /** Production: VPS match-primary cutover (operator-approved). */
   var DEFAULT_MATCH_API_PRIMARY = true;
-  var DEFAULT_TOURNAMENTS_ENABLED = false;
+  var DEFAULT_TOURNAMENTS_ENABLED = true;
 
   function parseBool(raw, fallback) {
     if (raw == null || raw === '') return fallback;
