@@ -53,7 +53,9 @@ require_once __DIR__ . '/missions.php';
 require_once __DIR__ . '/login_bonus.php';
 require_once __DIR__ . '/presence_actions.php';
 require_once __DIR__ . '/tournament.php';
-require_once __DIR__ . '/local_dev_auth.php';
+if (is_file(__DIR__ . '/local_dev_auth.php')) {
+    require_once __DIR__ . '/local_dev_auth.php';
+}
 if (!defined('TCG_API_LIB_ONLY')) {
     define('TCG_API_LIB_ONLY', true);
 }
@@ -145,8 +147,18 @@ try {
         case 'tournament_join_match': echo json_encode(tcgApiTournamentJoinMatch($body)); break;
         case 'tournament_eligible_decks': echo json_encode(tcgApiTournamentEligibleDecks($body)); break;
         case 'timezone_set':          echo json_encode(tcgApiTimezoneSet($body)); break;
-        case 'local_dev_status':     echo json_encode(tcgApiLocalDevStatus($body)); break;
-        case 'local_dev_login':      echo json_encode(tcgApiLocalDevLogin($body)); break;
+        case 'local_dev_status':
+            if (!function_exists('tcgApiLocalDevStatus')) {
+                throw new Exception('Local fake auth unavailable', 404);
+            }
+            echo json_encode(tcgApiLocalDevStatus($body));
+            break;
+        case 'local_dev_login':
+            if (!function_exists('tcgApiLocalDevLogin')) {
+                throw new Exception('Local fake auth unavailable', 404);
+            }
+            echo json_encode(tcgApiLocalDevLogin($body));
+            break;
         default:
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Unknown action']);
