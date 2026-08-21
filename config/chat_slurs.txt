@@ -1,0 +1,85 @@
+# One phrase per line (matched case-insensitively as substring). Lines starting with # are ignored.
+# Mirrored from Chiichan radio/chat_slurs.txt for tournament title filters (chat_moderation.php).
+# Covers obvious misspellings / leetspeak where listed below.
+#
+# LIMITATION: naive substring matching can snag innocent words (e.g. "rape" ↔ "grape", "rape" ↔ "therapy"
+# fragments in rare cases depending on wording; "coon" ↔ "raccoon"). Tightening requires word-boundary
+# matching in cogs/radio_chat.py (`text_contains_slur`) if this becomes noisy.
+#
+# LLR letter emotes: before matching, `text_contains_slur` collapses <:LLR_x:id> / :LLR_x: (single x) so
+# spell-with-emotes cannot bypass the list.
+
+# ── Provided list ─────────────────────────────────────────────────────────────
+
+get aids
+give aids
+giving aids
+
+autist
+
+beaner
+
+get cancer
+give cancer
+is cancer
+got cancer
+getting cancer
+
+ching chong
+chink
+
+clit
+
+coon
+
+faggot
+faggit
+
+fat fuck
+
+fuck your mom
+fuckyourmom
+
+gook
+
+heil hitler
+
+jigaboo
+
+kike
+
+kys
+
+midget
+
+molest
+
+nigger
+n1gger
+nigg3r
+n-i-g-g-e-r
+
+get raped
+got raped
+getting raped
+rape
+raped
+raping
+rapist
+
+retarded
+
+tranny
+
+whore
+
+# ── Extra spellings / variants from your notes ───────────────────────────────
+
+cancr
+kancer
+
+g00k
+
+fa99ot
+
+catch aids
