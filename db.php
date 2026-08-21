@@ -189,11 +189,12 @@ function tcgDbMigrate(PDO $db): void {
         $appliedFingerprint = $stmt->fetchColumn() ?: null;
     } catch (Throwable $e) { /* bootstrap path handles a missing meta table */ }
 
-    if ($migrationFingerprint !== $appliedFingerprint && is_file(__DIR__ . '/vendor/autoload.php')) {
-        require_once __DIR__ . '/vendor/autoload.php';
-        \LLTCG\Db\Migrator::run($db);
-        $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
-            ->execute(['migration_fingerprint', $migrationFingerprint]);
+    if ($migrationFingerprint !== $appliedFingerprint) {
+        if (tcgDbLoadMigrator()) {
+            \LLTCG\Db\Migrator::run($db);
+            $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
+                ->execute(['migration_fingerprint', $migrationFingerprint]);
+        }
     }
 
     tcgDbRunMigrationOnce($db, 'replay_preserved_backfill_20260712', function (PDO $db): void {
@@ -287,6 +288,17 @@ function tcgDbMigrate(PDO $db): void {
         )');
     });
 
+    // Tournament Mode tables (017). Hostinger has no Composer vendor/, so SQL migrator
+    // used to no-op; keep an explicit once-migration as the production guarantee.
+    tcgDbRunMigrationOnce($db, 'tournaments_20260821', function (PDO $db): void {
+        tcgDbEnsureTournamentSchema($db);
+    });
+
+    // Account timezone for tournament scheduling UI (was only in full bootstrap).
+    tcgDbRunMigrationOnce($db, 'preferred_timezone_20260821', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");
+    });
+
     $done = true;
 }
 
@@ -302,8 +314,8 @@ function tcgDbMigrationFingerprint(): string {
 
 /** One-time full schema create + column ensures (skipped once bootstrap_v2 is set). */
 function tcgDbMigrateBootstrap(PDO $db): void {
-    if (is_file(__DIR__ . '/vendor/autoload.php')) {
-        require_once __DIR__ . '/vendor/autoload.php';
+    tcgDbLoadMigrator();
+    if (class_exists(\LLTCG\Db\Migrator::class, false)) {
         \LLTCG\Db\Migrator::run($db);
     }
 
@@ -615,6 +627,94 @@ function tcgDbRunMigrationOnce(PDO $db, string $key, callable $fn): void {
     $fn($db);
     $db->prepare('INSERT INTO tcg_schema_meta (key, value) VALUES (?, ?)')
         ->execute([$key, (string) time()]);
+}
+
+/** Load Migrator without requiring a full Composer vendor tree (Hostinger). */
+function tcgDbLoadMigrator(): bool {
+    if (class_exists(\LLTCG\Db\Migrator::class, false)) {
+        return true;
+    }
+    $autoload = __DIR__ . '/vendor/autoload.php';
+    if (is_file($autoload)) {
+        require_once $autoload;
+    }
+    $migratorFile = __DIR__ . '/src/Db/Migrator.php';
+    if (!class_exists(\LLTCG\Db\Migrator::class, false) && is_file($migratorFile)) {
+        require_once $migratorFile;
+    }
+    return class_exists(\LLTCG\Db\Migrator::class, false);
+}
+
+/** Create Tournament Mode tables (mirrors migrations/017_tournaments.sql). */
+function tcgDbEnsureTournamentSchema(PDO $db): void {
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournaments (
+        id TEXT PRIMARY KEY,
+        host_discord_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT \'open\',
+        game_mode TEXT NOT NULL DEFAULT \'standard\',
+        start_at INTEGER NOT NULL,
+        checkin_mins INTEGER NOT NULL DEFAULT 10,
+        min_players INTEGER NOT NULL DEFAULT 2,
+        max_players INTEGER NOT NULL DEFAULT 16,
+        entry_fee_coins INTEGER NOT NULL DEFAULT 0,
+        prize_pool_coins INTEGER NOT NULL DEFAULT 0,
+        settings_json TEXT NOT NULL DEFAULT \'{}\',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (host_discord_id) REFERENCES tcg_users(discord_id)
+    )');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournaments_status_start
+        ON tcg_tournaments(status, start_at)');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_entrants (
+        tournament_id TEXT NOT NULL,
+        discord_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT \'registered\',
+        seed INTEGER,
+        deck_snapshot TEXT NOT NULL,
+        paid_coins INTEGER NOT NULL DEFAULT 0,
+        registered_at INTEGER NOT NULL,
+        checked_in_at INTEGER,
+        PRIMARY KEY (tournament_id, discord_id),
+        FOREIGN KEY (tournament_id) REFERENCES tcg_tournaments(id) ON DELETE CASCADE,
+        FOREIGN KEY (discord_id) REFERENCES tcg_users(discord_id)
+    )');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_entrants_status
+        ON tcg_tournament_entrants(tournament_id, status)');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_matches (
+        id TEXT PRIMARY KEY,
+        tournament_id TEXT NOT NULL,
+        round INTEGER NOT NULL,
+        bracket_slot INTEGER NOT NULL,
+        p1_discord_id TEXT,
+        p2_discord_id TEXT,
+        room_id TEXT,
+        p1_token TEXT,
+        p2_token TEXT,
+        status TEXT NOT NULL DEFAULT \'pending\',
+        winner_discord_id TEXT,
+        connect_deadline_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (tournament_id) REFERENCES tcg_tournaments(id) ON DELETE CASCADE
+    )');
+    $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_tournament_matches_slot
+        ON tcg_tournament_matches(tournament_id, round, bracket_slot)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_matches_room
+        ON tcg_tournament_matches(room_id)');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tournament_id TEXT NOT NULL,
+        discord_id TEXT,
+        kind TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        idempotency_key TEXT NOT NULL UNIQUE,
+        meta_json TEXT NOT NULL DEFAULT \'{}\',
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (tournament_id) REFERENCES tcg_tournaments(id) ON DELETE CASCADE
+    )');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_ledger_tid
+        ON tcg_tournament_ledger(tournament_id)');
 }
 
 function tcgDbEnsureColumn(PDO $db, string $table, string $column, string $definition): void {
