@@ -16,6 +16,7 @@
     filterMode: '',
     timezone: 'Asia/Tokyo',
     registerTid: null,
+    registerOpts: null,
   };
 
   const TIMEZONE_OPTIONS = [
@@ -43,13 +44,114 @@
     return document.getElementById(id);
   }
 
-  function t(key, fallback) {
+  function t(key, fallback, vars) {
     const fn = global.LLTCG_I18N && global.LLTCG_I18N.t;
     if (typeof fn === 'function') {
-      const v = fn(key);
+      const v = fn(key, vars);
       if (v && v !== key) return v;
     }
-    return fallback || key;
+    let out = fallback != null ? String(fallback) : key;
+    if (vars && typeof out === 'string') {
+      out = out.replace(/\{([^}]+)\}/g, (m, name) =>
+        vars[name] != null ? String(vars[name]) : m);
+    }
+    return out;
+  }
+
+  function labelStatus(raw) {
+    const k = String(raw || '').toLowerCase();
+    const map = {
+      open: ['tournament.status.open', 'Open'],
+      checkin: ['tournament.status.checkin', 'Check-in'],
+      running: ['tournament.status.running', 'Running'],
+      finished: ['tournament.status.finished', 'Finished'],
+      cancelled: ['tournament.status.cancelled', 'Cancelled'],
+    };
+    const hit = map[k];
+    return hit ? t(hit[0], hit[1]) : String(raw || '');
+  }
+
+  function labelMode(raw) {
+    const k = String(raw || '').toLowerCase();
+    const map = {
+      standard: ['tournament.mode.standard', 'Standard'],
+      starters: ['tournament.mode.starters', 'Starters'],
+      randomized: ['tournament.mode.randomized', 'Randomized'],
+      free: ['tournament.mode.free', 'Free'],
+    };
+    const hit = map[k];
+    return hit ? t(hit[0], hit[1]) : String(raw || '');
+  }
+
+  function labelFormat(raw) {
+    const k = String(raw || 'single_elim').toLowerCase();
+    const map = {
+      single_elim: ['tournament.format.single_elim', 'Single elimination'],
+      double_elim_bracket: ['tournament.format.double_elim_bracket', 'Double elim (Winners/Losers)'],
+      double_elim: ['tournament.format.double_elim', 'Double elim (2 lives)'],
+      swiss: ['tournament.format.swiss', 'Swiss'],
+    };
+    const hit = map[k];
+    return hit ? t(hit[0], hit[1]) : String(raw || '');
+  }
+
+  function labelFog(raw, short) {
+    const k = String(raw || 'hidden_hands').toLowerCase();
+    if (k === 'open_hands') {
+      return short
+        ? t('tournament.fog.openHandsShort', 'open hands')
+        : t('tournament.fog.openHands', 'Open hands');
+    }
+    return short
+      ? t('tournament.fog.hiddenHandsShort', 'hidden hands')
+      : t('tournament.fog.hiddenHands', 'Hidden hands (spectators)');
+  }
+
+  function labelRules(raw) {
+    return rulesTemplateInfo(raw).label;
+  }
+
+  function labelEntrantStatus(raw) {
+    const k = String(raw || '').toLowerCase();
+    const map = {
+      registered: ['tournament.entrant.registered', 'Registered'],
+      checked_in: ['tournament.entrant.checked_in', 'Checked in'],
+      no_show: ['tournament.entrant.no_show', 'No-show'],
+      eliminated: ['tournament.entrant.eliminated', 'Eliminated'],
+      active: ['tournament.entrant.active', 'Active'],
+    };
+    const hit = map[k];
+    return hit ? t(hit[0], hit[1]) : String(raw || '');
+  }
+
+  function metaSep() {
+    return ' ' + t('tournament.card.metaSep', '·') + ' ';
+  }
+
+  function applyTournamentStaticI18n() {
+    if (global.LLTCG_I18N && typeof global.LLTCG_I18N.applyI18n === 'function') {
+      global.LLTCG_I18N.applyI18n(el('screen-tournament'));
+    }
+    ensureTimezoneSelect();
+    const delay = el('tournament-create-delay');
+    if (delay) {
+      Array.from(delay.options).forEach((opt) => {
+        const n = Number(opt.value) || 0;
+        if (n === 0) opt.textContent = t('tournament.delay.none', 'None');
+        else opt.textContent = t('tournament.delay.secs', '{n} seconds', { n: n });
+      });
+    }
+    syncCreateRulesOptions();
+    updateTimezoneHint();
+    const note = el('tournament-create-tz-note');
+    if (note) {
+      note.textContent = t(
+        'tournament.createTzNote',
+        'Start time uses {tz}.',
+        { tz: timezoneLabel(state.timezone) }
+      );
+    }
+    syncStartLabel();
   }
 
   function clientEnabled() {
@@ -57,8 +159,11 @@
   }
 
   function setHubButtons(enabled) {
-    ['btn-hub-tournament', 'btn-auth-tournament'].forEach((id) => {
-      const btn = el(id);
+    [
+      { id: 'btn-hub-tournament', live: 'hub.tournament.subLive', soon: 'hub.tournament.sub' },
+      { id: 'btn-auth-tournament', live: 'auth.tournament.subLive', soon: 'auth.tournament.sub' },
+    ].forEach((cfg) => {
+      const btn = el(cfg.id);
       if (!btn) return;
       if (enabled) {
         btn.disabled = false;
@@ -66,13 +171,19 @@
         btn.classList.add('llc-menu-hover', 'llc-menu-accent-violet');
         btn.classList.remove('llc-menu-accent-gold', 'llc-menu-accent-purple');
         const sub = btn.querySelector('.llc-menu-item-sub');
-        if (sub) sub.textContent = t('hub.tournament.subLive', 'Events & brackets');
+        if (sub) {
+          sub.setAttribute('data-i18n', cfg.live);
+          sub.textContent = t(cfg.live, 'Events & brackets');
+        }
       } else {
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
         btn.classList.remove('llc-menu-hover', 'llc-menu-accent-violet', 'llc-menu-accent-gold');
         const sub = btn.querySelector('.llc-menu-item-sub');
-        if (sub) sub.textContent = t('hub.tournament.sub', 'Coming Soon');
+        if (sub) {
+          sub.setAttribute('data-i18n', cfg.soon);
+          sub.textContent = t(cfg.soon, 'Coming Soon');
+        }
       }
     });
   }
@@ -155,6 +266,7 @@
     setSky(true);
     ensureTimezoneSelect();
     syncTimezoneFromProfile();
+    applyTournamentStaticI18n();
     startTickLoop();
     if (typeof global.showScr === 'function') {
       global.showScr('tournament');
@@ -313,9 +425,10 @@
   }
 
   function timezoneLabel(id) {
-    const hit = TIMEZONE_OPTIONS.find((z) => z.id === id);
-    const base = hit ? hit.label : (id || 'UTC');
-    const off = formatUtcOffsetBracket(id);
+    const tzId = id || 'UTC';
+    const hit = TIMEZONE_OPTIONS.find((z) => z.id === tzId);
+    const base = t('tournament.tz.' + tzId, hit ? hit.label : tzId);
+    const off = formatUtcOffsetBracket(tzId);
     return off ? (base + ' ' + off) : base;
   }
 
@@ -355,12 +468,24 @@
     }
     updateTimezoneHint();
     const note = el('tournament-create-tz-note');
-    if (note) note.textContent = 'Start time uses ' + timezoneLabel(tz) + '.';
+    if (note) {
+      note.textContent = t(
+        'tournament.createTzNote',
+        'Start time uses {tz}.',
+        { tz: timezoneLabel(tz) }
+      );
+    }
   }
 
   function updateTimezoneHint() {
     const hint = el('tournament-tz-hint');
-    if (hint) hint.textContent = 'Times shown in ' + timezoneLabel(state.timezone);
+    if (hint) {
+      hint.textContent = t(
+        'tournament.tzHint',
+        'Times shown in {tz}',
+        { tz: timezoneLabel(state.timezone) }
+      );
+    }
   }
 
   async function onTimezoneChange() {
@@ -370,7 +495,13 @@
     state.timezone = tz;
     updateTimezoneHint();
     const note = el('tournament-create-tz-note');
-    if (note) note.textContent = 'Start time uses ' + timezoneLabel(tz) + '.';
+    if (note) {
+      note.textContent = t(
+        'tournament.createTzNote',
+        'Start time uses {tz}.',
+        { tz: timezoneLabel(tz) }
+      );
+    }
     if (state.view === 'list') renderList();
     if (state.view === 'detail') renderDetail();
     if (datePicker.open) renderCalendarGrid();
@@ -430,13 +561,14 @@
       const inWindow = (opens - now) <= 15 * 60 && now < Number(row.start_at);
       const justOpen = row.status === 'checkin' && (now - opens) < 120;
       if (!inWindow && !justOpen) return;
+      const title = row.title || id;
       const msg = (row.status === 'checkin')
-        ? ('Check-in open: ' + (row.title || id))
-        : ('Check-in soon: ' + (row.title || id));
+        ? t('tournament.notify.checkinOpen', 'Check-in open: {title}', { title: title })
+        : t('tournament.notify.checkinSoon', 'Check-in soon: {title}', { title: title });
       if (typeof global.toast === 'function') global.toast(msg, 4500);
       try {
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          new Notification('LLTCG Tournament', { body: msg });
+          new Notification(t('tournament.notify.title', 'LLTCG Tournament'), { body: msg });
         } else if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
           Notification.requestPermission().catch(function () {});
         }
@@ -450,29 +582,34 @@
     const root = el('tournament-list');
     if (!root) return;
     if (!state.list.length) {
-      root.innerHTML = '<p class="tournament-muted">No open tournaments yet. Create one to get started.</p>';
+      root.innerHTML = '<p class="tournament-muted">'
+        + escapeHtml(t('tournament.listEmpty', 'No open tournaments yet. Create one to get started.'))
+        + '</p>';
       return;
     }
+    const sep = metaSep();
     root.innerHTML = state.list.map((row) => {
       const fee = Number(row.entry_fee_coins) || 0;
       const count = Number(row.entrant_count) || 0;
       const max = Number(row.max_players) || 0;
       const specs = Number(row.spectator_count) || 0;
       const fog = (row.settings && row.settings.fog) || 'hidden_hands';
+      const delay = Number((row.settings && row.settings.stream_delay_secs) || 0);
+      const rulesKey = (row.settings && row.settings.rules_template) || 'standard';
       return (
         '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
         + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
         + '<div class="tournament-card-meta">'
-        + escapeHtml(String(row.status)) + ' · ' + escapeHtml(String(row.game_mode))
-        + ' · ' + count + '/' + max
-        + ' · fee ' + fee
-        + (specs ? (' · ' + specs + ' watching') : '')
-        + ' · starts ' + escapeHtml(fmtWhen(row.start_at))
+        + escapeHtml(labelStatus(row.status)) + sep + escapeHtml(labelMode(row.game_mode))
+        + sep + count + '/' + max
+        + sep + escapeHtml(t('tournament.card.fee', 'fee {n}', { n: fee }))
+        + (specs ? (sep + escapeHtml(t('tournament.card.watching', '{n} watching', { n: specs }))) : '')
+        + sep + escapeHtml(t('tournament.card.starts', 'starts {when}', { when: fmtWhen(row.start_at) }))
         + '</div>'
         + '<div class="tournament-card-meta tournament-card-settings">'
-        + escapeHtml(String((row.settings && row.settings.rules_template) || 'standard'))
-        + ' · fog ' + escapeHtml(String(fog))
-        + ' · delay ' + String((row.settings && row.settings.stream_delay_secs) || 0) + 's'
+        + escapeHtml(labelRules(rulesKey))
+        + sep + escapeHtml(t('tournament.card.fog', 'fog {fog}', { fog: labelFog(fog, true) }))
+        + sep + escapeHtml(t('tournament.card.delay', 'delay {n}s', { n: delay }))
         + '</div></button>'
       );
     }).join('');
@@ -487,7 +624,7 @@
     try {
       const res = await global.accountPost('tournament_get', { tournament_id: id });
       if (res && res.tournament && res.tournament.status === 'cancelled') {
-        returnToBulletin('This tournament was cancelled.');
+        returnToBulletin(t('tournament.err.cancelled', 'This tournament was cancelled.'));
         return;
       }
       state.detail = res;
@@ -496,7 +633,7 @@
     } catch (e) {
       const msg = e.message || String(e);
       if (/not found/i.test(msg) || /404/.test(msg)) {
-        returnToBulletin('That tournament is no longer available.');
+        returnToBulletin(t('tournament.err.unavailable', 'That tournament is no longer available.'));
         return;
       }
       setErr(msg);
@@ -564,24 +701,30 @@
     return (
       '<span class="tournament-person">'
       + avatarHtml(userId, avatarUrl, username)
-      + '<span class="tournament-person-name">' + escapeHtml(username || 'Player') + '</span>'
+      + '<span class="tournament-person-name">'
+      + escapeHtml(username || t('tournament.person.playerFallback', 'Player'))
+      + '</span>'
       + '</span>'
     );
   }
 
-  const ACTION_TOOLTIPS = {
-    register: 'Lock in a deck and enter this event. Pays the entry fee into the prize pool if one is set.',
-    checkin: 'Confirm you are present before the bracket starts. Missing check-in marks you as a no-show.',
-    unregister: 'Leave the event before it starts and refund your entry fee.',
-    deposit: 'Add Coins from your balance to this event’s prize pool (host only).',
-    cancel: 'Cancel the tournament and refund entry fees plus remaining host prize deposits.',
-    tick: 'Refresh this event and advance server timers (check-in window, bracket, room seeding).',
-    join: 'Enter your ready tournament match room when your bracket game is available.',
-    'spectate-list': 'Browse and watch live matches from this tournament as a spectator.',
-  };
+  function actionTip(act) {
+    const map = {
+      register: ['tournament.action.registerTip', 'Lock in a deck and enter this event. Pays the entry fee into the prize pool if one is set.'],
+      checkin: ['tournament.action.checkinTip', 'Confirm you are present before the bracket starts. Missing check-in marks you as a no-show.'],
+      unregister: ['tournament.action.unregisterTip', 'Leave the event before it starts and refund your entry fee.'],
+      deposit: ['tournament.action.depositTip', 'Add Coins from your balance to this event’s prize pool (host only).'],
+      cancel: ['tournament.action.cancelTip', 'Cancel the tournament and refund entry fees plus remaining host prize deposits.'],
+      tick: ['tournament.action.tickTip', 'Refresh this event and advance server timers (check-in window, bracket, room seeding).'],
+      join: ['tournament.action.joinTip', 'Enter your ready tournament match room when your bracket game is available.'],
+      'spectate-list': ['tournament.action.spectateListTip', 'Browse and watch live matches from this tournament as a spectator.'],
+    };
+    const hit = map[act];
+    return hit ? t(hit[0], hit[1]) : '';
+  }
 
   function actionButtonHtml(cls, act, label) {
-    const tip = ACTION_TOOLTIPS[act] || '';
+    const tip = actionTip(act);
     return (
       '<button type="button" class="' + cls + '" data-act="' + escapeAttr(act) + '"'
       + (tip ? ' title="' + escapeAttr(tip) + '"' : '')
@@ -593,30 +736,40 @@
     const res = state.detail;
     if (!res || !res.tournament) return;
     const trow = res.tournament;
+    const sep = metaSep();
     const head = el('tournament-detail-head');
     if (head) {
+      const fog = (trow.settings && trow.settings.fog) || 'hidden_hands';
+      const rulesKey = (trow.settings && trow.settings.rules_template) || 'standard';
+      const format = (trow.settings && trow.settings.format) || 'single_elim';
+      const bestOf = Number((trow.settings && trow.settings.best_of) || 1);
+      const delay = Number((trow.settings && trow.settings.stream_delay_secs) || 0);
       head.innerHTML =
         '<h3 class="tournament-subhead">' + escapeHtml(trow.title) + '</h3>'
         + '<div class="tournament-host-row">'
-        + '<span class="tournament-muted">Host</span> '
-        + personChipHtml(res.host_discord_id, res.host_username || 'Host', res.host_avatar_url)
+        + '<span class="tournament-muted">' + escapeHtml(t('tournament.detail.host', 'Host')) + '</span> '
+        + personChipHtml(
+          res.host_discord_id,
+          res.host_username || t('tournament.detail.hostFallback', 'Host'),
+          res.host_avatar_url
+        )
         + '</div>'
         + '<p class="tournament-muted">'
-        + escapeHtml(trow.status)
-        + ' · prize ' + (Number(trow.prize_pool_coins) || 0)
-        + ' · watching ' + (Number(trow.spectator_count) || 0)
-        + ' · starts ' + escapeHtml(fmtWhen(trow.start_at))
+        + escapeHtml(labelStatus(trow.status))
+        + sep + escapeHtml(t('tournament.detail.prize', 'prize {n}', { n: Number(trow.prize_pool_coins) || 0 }))
+        + sep + escapeHtml(t('tournament.detail.watching', 'watching {n}', { n: Number(trow.spectator_count) || 0 }))
+        + sep + escapeHtml(t('tournament.detail.starts', 'starts {when}', { when: fmtWhen(trow.start_at) }))
         + '</p>'
         + '<p class="tournament-muted">'
-        + 'mode ' + escapeHtml(String(trow.game_mode || 'standard'))
-        + ' · rules ' + escapeHtml(rulesTemplateInfo((trow.settings && trow.settings.rules_template) || 'standard').label)
-        + ' · fog ' + escapeHtml(String((trow.settings && trow.settings.fog) || 'hidden_hands'))
-        + ' · stream delay ' + String((trow.settings && trow.settings.stream_delay_secs) || 0) + 's'
-        + ' · ' + escapeHtml(String((trow.settings && trow.settings.format) || 'single_elim'))
-        + ' · Bo' + String((trow.settings && trow.settings.best_of) || 1)
+        + escapeHtml(t('tournament.detail.mode', 'mode {mode}', { mode: labelMode(trow.game_mode || 'standard') }))
+        + sep + escapeHtml(t('tournament.detail.rules', 'rules {rules}', { rules: labelRules(rulesKey) }))
+        + sep + escapeHtml(t('tournament.detail.fog', 'fog {fog}', { fog: labelFog(fog, true) }))
+        + sep + escapeHtml(t('tournament.detail.streamDelay', 'stream delay {n}s', { n: delay }))
+        + sep + escapeHtml(labelFormat(format))
+        + sep + escapeHtml(t('tournament.detail.bestOfShort', 'Bo{n}', { n: bestOf }))
         + '</p>'
         + '<p class="tournament-rules-blurb">'
-        + escapeHtml(rulesTemplateInfo((trow.settings && trow.settings.rules_template) || 'standard').help)
+        + escapeHtml(rulesTemplateInfo(rulesKey).help)
         + '</p>';
     }
     wireAvatarFallbacks(head);
@@ -626,23 +779,27 @@
       const isHost = !!res.is_host;
       const bits = [];
       if (!me && (trow.status === 'open' || trow.status === 'checkin')) {
-        bits.push(actionButtonHtml('btn-grad', 'register', 'Register'));
+        bits.push(actionButtonHtml('btn-grad', 'register', t('tournament.action.register', 'Register')));
       }
       if (me && (trow.status === 'open' || trow.status === 'checkin') && me.status === 'registered') {
-        bits.push(actionButtonHtml('btn-grad', 'checkin', 'Check in'));
-        bits.push(actionButtonHtml('btn-ghost', 'unregister', 'Unregister'));
+        bits.push(actionButtonHtml('btn-grad', 'checkin', t('tournament.action.checkin', 'Check in')));
+        bits.push(actionButtonHtml('btn-ghost', 'unregister', t('tournament.action.unregister', 'Unregister')));
       }
       if (me && me.status === 'checked_in') {
-        bits.push('<span class="tournament-muted" title="You are checked in and waiting for the bracket to start.">Checked in</span>');
+        bits.push(
+          '<span class="tournament-muted" title="'
+          + escapeAttr(t('tournament.action.checkedInTip', 'You are checked in and waiting for the bracket to start.'))
+          + '">' + escapeHtml(t('tournament.action.checkedIn', 'Checked in')) + '</span>'
+        );
       }
       if (isHost && (trow.status === 'open' || trow.status === 'checkin' || trow.status === 'running')) {
-        bits.push(actionButtonHtml('btn-out', 'deposit', 'Deposit prize'));
-        bits.push(actionButtonHtml('btn-ghost', 'cancel', 'Cancel (refund)'));
+        bits.push(actionButtonHtml('btn-out', 'deposit', t('tournament.action.deposit', 'Deposit prize')));
+        bits.push(actionButtonHtml('btn-ghost', 'cancel', t('tournament.action.cancel', 'Cancel (refund)')));
       }
-      bits.push(actionButtonHtml('btn-out', 'tick', 'Refresh / tick'));
-      bits.push(actionButtonHtml('btn-grad', 'join', 'Join my match'));
+      bits.push(actionButtonHtml('btn-out', 'tick', t('tournament.action.tick', 'Refresh / tick')));
+      bits.push(actionButtonHtml('btn-grad', 'join', t('tournament.action.join', 'Join my match')));
       if (trow.status === 'running') {
-        bits.push(actionButtonHtml('btn-out', 'spectate-list', 'Spectate matches'));
+        bits.push(actionButtonHtml('btn-out', 'spectate-list', t('tournament.action.spectateList', 'Spectate matches')));
       }
       actions.innerHTML = bits.join('');
       actions.querySelectorAll('[data-act]').forEach((btn) => {
@@ -658,9 +815,9 @@
         + personChipHtml(e.discord_id, e.username || e.discord_id, e.avatar_url)
         + (e.seed != null ? '<span class="tournament-seed">#' + e.seed + '</span>' : '')
         + '</span>'
-        + '<span class="tournament-entrant-status">' + escapeHtml(e.status) + '</span>'
+        + '<span class="tournament-entrant-status">' + escapeHtml(labelEntrantStatus(e.status)) + '</span>'
         + '</li>'
-      )).join('') || '<li class="tournament-muted">No entrants</li>';
+      )).join('') || '<li class="tournament-muted">' + escapeHtml(t('tournament.entrantsEmpty', 'No entrants')) + '</li>';
       wireAvatarFallbacks(list);
     }
     renderBracket(res.matches || [], res.bracket_preview || []);
@@ -687,13 +844,16 @@
     const isBye = !!opts.bye;
     const isWinner = !!opts.winner;
     if (placeholder) {
-      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">TBD</span></div>';
+      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">'
+        + escapeHtml(t('tournament.bracket.tbd', 'TBD')) + '</span></div>';
     }
     if (isBye) {
-      return '<div class="tournament-match-seat tournament-match-seat--bye"><span class="tournament-match-seat-name">Bye</span></div>';
+      return '<div class="tournament-match-seat tournament-match-seat--bye"><span class="tournament-match-seat-name">'
+        + escapeHtml(t('tournament.bracket.bye', 'Bye')) + '</span></div>';
     }
     if (!discordId) {
-      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">Waiting…</span></div>';
+      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">'
+        + escapeHtml(t('tournament.bracket.waiting', 'Waiting…')) + '</span></div>';
     }
     const ent = entrantById(discordId);
     const name = (ent && ent.username) || nameFor(discordId);
@@ -707,29 +867,39 @@
 
   function formatCaption(format) {
     const f = String(format || 'single_elim');
-    if (f === 'swiss') return 'Swiss rounds';
-    if (f === 'double_elim') return 'Double elim (2 lives)';
-    if (f === 'double_elim_bracket') return 'Double elim (Winners/Losers)';
-    return 'Single elimination';
+    if (f === 'swiss') return t('tournament.formatCaption.swiss', 'Swiss rounds');
+    if (f === 'double_elim') return t('tournament.formatCaption.doubleElimLives', 'Double elim (2 lives)');
+    if (f === 'double_elim_bracket') {
+      return t('tournament.formatCaption.doubleElimBracket', 'Double elim (Winners/Losers)');
+    }
+    return t('tournament.formatCaption.singleElim', 'Single elimination');
   }
 
   function roundLabel(side, round, slotCount, isPreview) {
     const s = String(side || 'winners');
     const r = Number(round) || 1;
-    if (s === 'swiss') return 'Swiss · Round ' + r;
-    if (s === 'losers') return slotCount === 1 ? 'Losers Final' : ('Losers · R' + r);
-    if (s === 'grand_final') return r >= 2 ? 'Grand Final (Reset)' : 'Grand Final';
-    if (slotCount === 1) return 'Winners Final';
-    if (slotCount === 2) return 'Semifinals';
-    return 'Round of ' + (slotCount * 2);
+    if (s === 'swiss') return t('tournament.round.swiss', 'Swiss · Round {n}', { n: r });
+    if (s === 'losers') {
+      return slotCount === 1
+        ? t('tournament.round.losersFinal', 'Losers Final')
+        : t('tournament.round.losers', 'Losers · R{n}', { n: r });
+    }
+    if (s === 'grand_final') {
+      return r >= 2
+        ? t('tournament.round.grandFinalReset', 'Grand Final (Reset)')
+        : t('tournament.round.grandFinal', 'Grand Final');
+    }
+    if (slotCount === 1) return t('tournament.round.winnersFinal', 'Winners Final');
+    if (slotCount === 2) return t('tournament.round.semifinals', 'Semifinals');
+    return t('tournament.round.roundOf', 'Round of {n}', { n: slotCount * 2 });
   }
 
   function statusLabel(m) {
     const st = String(m.status || 'pending');
-    if (st === 'live') return 'Live';
-    if (st === 'ready') return 'Ready';
-    if (st === 'done') return 'Done';
-    if (st === 'pending') return 'Upcoming';
+    if (st === 'live') return t('tournament.matchStatus.live', 'Live');
+    if (st === 'ready') return t('tournament.matchStatus.ready', 'Ready');
+    if (st === 'done') return t('tournament.matchStatus.done', 'Done');
+    if (st === 'pending') return t('tournament.matchStatus.pending', 'Upcoming');
     return st;
   }
 
@@ -757,13 +927,17 @@
     }
     box.hidden = false;
     box.innerHTML =
-      '<h4 class="tournament-standings-title">Standings</h4>'
+      '<h4 class="tournament-standings-title">' + escapeHtml(t('tournament.standingsHeading', 'Standings')) + '</h4>'
       + '<ol class="tournament-standings-list">'
       + rows.map((r, i) => (
         '<li><span class="tournament-standings-rank">#' + (i + 1) + '</span> '
         + escapeHtml(r.username || r.discord_id)
-        + ' <span class="tournament-muted">' + r.wins + 'W–' + r.losses + 'L'
-        + (r.status ? ' · ' + escapeHtml(r.status) : '')
+        + ' <span class="tournament-muted">'
+        + escapeHtml(t('tournament.standings.record', '{wins}W–{losses}L', {
+          wins: r.wins,
+          losses: r.losses,
+        }))
+        + (r.status ? (' · ' + escapeHtml(labelEntrantStatus(r.status))) : '')
         + '</span></li>'
       )).join('')
       + '</ol>';
@@ -781,7 +955,9 @@
     const source = isPreview ? prev : live;
 
     if (!source.length) {
-      root.innerHTML = '<p class="tournament-muted">Bracket layout appears once max players / format is set.</p>';
+      root.innerHTML = '<p class="tournament-muted">'
+        + escapeHtml(t('tournament.bracket.empty', 'Bracket layout appears once max players / format is set.'))
+        + '</p>';
       return;
     }
 
@@ -809,11 +985,18 @@
       return ga.round - gb.round;
     });
 
+    const sep = metaSep();
     let html = '<div class="tournament-bracket-board' + (isPreview ? ' tournament-bracket-board--preview' : '') + '">';
     html += '<div class="tournament-bracket-caption">'
       + escapeHtml(formatCaption(format))
-      + (bestOf === 3 ? ' · Best of 3' : ' · Best of 1')
-      + (isPreview ? ' · Preview (names fill in after check-in)' : '')
+      + sep + escapeHtml(
+        bestOf === 3
+          ? t('tournament.bestOf.3', 'Best of 3')
+          : t('tournament.bestOf.1', 'Best of 1')
+      )
+      + (isPreview
+        ? (sep + escapeHtml(t('tournament.bracket.previewSuffix', 'Preview (names fill in after check-in)')))
+        : '')
       + '</div>';
     html += '<div class="tournament-bracket-rounds">';
 
@@ -832,7 +1015,9 @@
         html += '<article class="tournament-match-card tournament-match-card--' + escapeAttr(status)
           + (isPreview ? ' tournament-match-card--skeleton' : '') + '">';
         html += '<div class="tournament-match-card-head">';
-        html += '<span class="tournament-match-status">' + escapeHtml(isPreview ? 'Slot' : statusLabel(m)) + '</span>';
+        html += '<span class="tournament-match-status">'
+          + escapeHtml(isPreview ? t('tournament.bracket.slot', 'Slot') : statusLabel(m))
+          + '</span>';
         if (showSeries) {
           html += '<span class="tournament-match-series">' + p1w + '–' + p2w + '</span>';
         }
@@ -856,12 +1041,17 @@
         html += '<div class="tournament-match-card-foot">';
         if (canSpec) {
           html += '<button type="button" class="tournament-spec-btn" data-spec="' + escapeAttr(m.room_id) + '"'
-            + ' title="Watch this match as a spectator (non-players welcome)">'
-            + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> Spectate</button>';
+            + ' title="' + escapeAttr(t('tournament.bracket.spectateTip', 'Watch this match as a spectator (non-players welcome)')) + '">'
+            + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> '
+            + escapeHtml(t('tournament.bracket.spectate', 'Spectate')) + '</button>';
         } else if (!isPreview && status === 'done' && m.winner_discord_id) {
-          html += '<span class="tournament-muted">Winner: ' + escapeHtml(nameFor(m.winner_discord_id)) + '</span>';
+          html += '<span class="tournament-muted">'
+            + escapeHtml(t('tournament.bracket.winner', 'Winner: {name}', { name: nameFor(m.winner_discord_id) }))
+            + '</span>';
         } else if (isPreview) {
-          html += '<span class="tournament-muted">Names lock in at bracket start</span>';
+          html += '<span class="tournament-muted">'
+            + escapeHtml(t('tournament.bracket.namesLock', 'Names lock in at bracket start'))
+            + '</span>';
         } else {
           html += '<span class="tournament-muted">' + escapeHtml(statusLabel(m)) + '</span>';
         }
@@ -891,7 +1081,10 @@
       } else if (act === 'checkin') {
         await global.accountPost('tournament_checkin', { tournament_id: tid });
       } else if (act === 'deposit') {
-        const raw = global.prompt('Coins to deposit into prize vault:', '1000');
+        const raw = global.prompt(
+          t('tournament.prompt.deposit', 'Coins to deposit into prize vault:'),
+          t('tournament.prompt.depositDefault', '1000')
+        );
         const amount = Number(raw);
         if (!amount || amount <= 0) return;
         const dep = await global.accountPost('tournament_deposit_prize', { tournament_id: tid, amount: amount });
@@ -899,9 +1092,9 @@
           global.syncCoinsFromProfile(dep);
         }
       } else if (act === 'cancel') {
-        if (!global.confirm('Cancel tournament and refund entrants?')) return;
+        if (!global.confirm(t('tournament.confirm.cancel', 'Cancel tournament and refund entrants?'))) return;
         await global.accountPost('tournament_cancel', { tournament_id: tid });
-        returnToBulletin('Tournament cancelled — entrants refunded.');
+        returnToBulletin(t('tournament.err.cancelRefunded', 'Tournament cancelled — entrants refunded.'));
         return;
       } else if (act === 'tick') {
         await global.accountPost('tournament_tick', { tournament_id: tid });
@@ -914,7 +1107,7 @@
           await global.tcgEnterTournamentMatch(join);
           return;
         }
-        setErr('Join helper missing');
+        setErr(t('tournament.err.joinHelperMissing', 'Join helper missing'));
         return;
       } else if (act === 'spectate-list') {
         if (typeof global.openSpectateList === 'function') {
@@ -939,12 +1132,14 @@
     try {
       const opts = await global.accountPost('tournament_eligible_decks', { tournament_id: tid });
       if (opts && opts.randomized) {
+        state.registerOpts = null;
         await global.accountPost('tournament_register', { tournament_id: tid });
         await openDetail(tid);
         return;
       }
+      state.registerOpts = opts || { decks: [], needs_deck_builder: true };
       showView('register');
-      renderRegisterPicker(opts || { decks: [], needs_deck_builder: true });
+      renderRegisterPicker(state.registerOpts);
     } catch (e) {
       setErr(e.message || String(e));
     }
@@ -959,30 +1154,35 @@
     if (lead) {
       if (isFree) {
         lead.textContent = decks.length
-          ? 'Pick a Deck Experiment preset, a saved account deck, or enter an experiment password.'
-          : 'No saved Free decks yet — open Deck Experiment, save a preset (or use a share password), then come back.';
+          ? t('tournament.register.leadFreePick', 'Pick a Deck Experiment preset, a saved account deck, or enter an experiment password.')
+          : t('tournament.register.leadFreeEmpty', 'No saved Free decks yet — open Deck Experiment, save a preset (or use a share password), then come back.');
       } else {
         lead.textContent = decks.length
-          ? 'Pick a legal deck to lock in for this event.'
-          : 'No eligible deck yet — build one in Deck Builder, then come back.';
+          ? t('tournament.register.leadPick', 'Pick a legal deck to lock in for this event.')
+          : t('tournament.register.leadEmpty', 'No eligible deck yet — build one in Deck Builder, then come back.');
       }
     }
     if (root) {
       let html = '';
       if (!decks.length) {
         html += '<p class="tournament-muted">'
-          + (isFree
-            ? 'No experiment presets or owned account decks found.'
-            : 'No eligible decks for this game mode.')
+          + escapeHtml(isFree
+            ? t('tournament.register.noFreeDecks', 'No experiment presets or owned account decks found.')
+            : t('tournament.register.noEligible', 'No eligible decks for this game mode.'))
           + '</p>';
       } else {
         html += decks.map((d, i) => {
-          const title = escapeHtml(d.name || d.label || 'Deck');
-          let meta = 'Preset slot ' + (d.slot || '?') + (d.equipped ? ' · equipped' : '');
+          const title = escapeHtml(d.name || d.label || t('tournament.register.deckFallback', 'Deck'));
+          let meta = escapeHtml(t('tournament.register.metaPreset', 'Preset slot {slot}', { slot: d.slot || '?' }))
+            + (d.equipped ? (' ' + escapeHtml(t('tournament.register.metaEquipped', '· equipped'))) : '');
           if (d.type === 'starter') {
-            meta = 'Starter · ' + escapeHtml(d.label || d.starter || '');
+            meta = escapeHtml(t('tournament.register.metaStarter', 'Starter · {label}', {
+              label: d.label || d.starter || '',
+            }));
           } else if (d.type === 'experiment_preset') {
-            meta = 'Deck Experiment · slot ' + (d.slot || '?');
+            meta = escapeHtml(t('tournament.register.metaExperiment', 'Deck Experiment · slot {slot}', {
+              slot: d.slot || '?',
+            }));
           }
           return (
             '<button type="button" class="tournament-deck-pick" data-idx="' + i + '">'
@@ -994,10 +1194,13 @@
       }
       if (isFree) {
         html += '<div class="tournament-register-password">'
-          + '<label>Experiment password'
-          + '<input type="text" id="tournament-experiment-pwd" maxlength="16" autocomplete="off" placeholder="Shared Deck Experiment code">'
+          + '<label>' + escapeHtml(t('tournament.register.passwordLabel', 'Experiment password'))
+          + '<input type="text" id="tournament-experiment-pwd" maxlength="16" autocomplete="off" placeholder="'
+          + escapeAttr(t('tournament.register.passwordPlaceholder', 'Shared Deck Experiment code')) + '">'
           + '</label>'
-          + '<button type="button" class="btn-grad" id="btn-tournament-register-pwd">Register with password</button>'
+          + '<button type="button" class="btn-grad" id="btn-tournament-register-pwd">'
+          + escapeHtml(t('tournament.register.withPassword', 'Register with password'))
+          + '</button>'
           + '</div>';
       }
       root.innerHTML = html;
@@ -1013,7 +1216,7 @@
           const inp = el('tournament-experiment-pwd');
           const pw = (inp && inp.value) ? String(inp.value).trim() : '';
           if (!pw) {
-            setErr('Enter an experiment password');
+            setErr(t('tournament.err.experimentPassword', 'Enter an experiment password'));
             return;
           }
           void confirmRegisterWithDeck({ type: 'experiment_password', password: pw });
@@ -1022,11 +1225,15 @@
     }
     if (actions) {
       if (isFree) {
-        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-experiment">Open Deck Experiment</button>';
+        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-experiment">'
+          + escapeHtml(t('tournament.register.openDeckExperiment', 'Open Deck Experiment'))
+          + '</button>';
         const go = el('btn-tournament-goto-experiment');
         if (go) go.addEventListener('click', openDeckExperimentFromTournament);
       } else {
-        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-deck">Open Deck Builder</button>';
+        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-deck">'
+          + escapeHtml(t('tournament.register.openDeckBuilder', 'Open Deck Builder'))
+          + '</button>';
         const go = el('btn-tournament-goto-deck');
         if (go) go.addEventListener('click', openDeckBuilderFromTournament);
       }
@@ -1074,8 +1281,8 @@
     openDeckBuilderFromTournament();
   }
 
-  /** Extra deck rules — labels + short help (create form + detail). */
-  const RULES_TEMPLATE_INFO = {
+  /** Extra deck rules — English fallbacks (labels + help via i18n). */
+  const RULES_TEMPLATE_FALLBACK = {
     standard: {
       label: 'Standard',
       help: 'No extra deck limits beyond the selected game mode. Full rarity and normal copy limits apply.',
@@ -1092,7 +1299,12 @@
 
   function rulesTemplateInfo(key) {
     const k = String(key || 'standard').toLowerCase();
-    return RULES_TEMPLATE_INFO[k] || RULES_TEMPLATE_INFO.standard;
+    const id = RULES_TEMPLATE_FALLBACK[k] ? k : 'standard';
+    const fb = RULES_TEMPLATE_FALLBACK[id];
+    return {
+      label: t('tournament.rules.' + id + '.label', fb.label),
+      help: t('tournament.rules.' + id + '.help', fb.help),
+    };
   }
 
   /** Rules templates that apply for a given game mode (mirrors server). */
@@ -1111,7 +1323,10 @@
     const modeEl = el('tournament-create-mode');
     const mode = modeEl ? modeEl.value : 'standard';
     if (rulesTemplatesForMode(mode).length <= 1) {
-      text = 'Game mode already sets deck rules — only Standard applies here. ' + info.help;
+      text = t(
+        'tournament.rulesHelp.modeLockedPrefix',
+        'Game mode already sets deck rules — only Standard applies here.'
+      ) + ' ' + info.help;
     }
     helpEl.textContent = text;
   }
@@ -1123,9 +1338,9 @@
     const allowed = rulesTemplatesForMode(modeEl.value);
     const prev = rulesEl.value;
     const labels = {
-      standard: 'Standard (no extra limits)',
-      pauper: 'Pauper (N/R)',
-      highlander: 'Highlander (1-of)',
+      standard: t('tournament.rules.standardOption', 'Standard (no extra limits)'),
+      pauper: t('tournament.rules.pauperOption', 'Pauper (N/R)'),
+      highlander: t('tournament.rules.highlanderOption', 'Highlander (1-of)'),
     };
     rulesEl.innerHTML = '';
     allowed.forEach((v) => {
@@ -1147,11 +1362,11 @@
     const startLocal = (el('tournament-create-start') || {}).value || '';
     const startAt = parseLocalDateTimeValue(startLocal);
     if (!startAt) {
-      setErr('Pick a start date and time');
+      setErr(t('tournament.err.pickStart', 'Pick a start date and time'));
       return;
     }
     if (startAt < Math.floor(Date.now() / 1000) + 60) {
-      setErr('Start time must be at least 1 minute from now');
+      setErr(t('tournament.err.startTooSoon', 'Start time must be at least 1 minute from now'));
       return;
     }
     const body = {
@@ -1232,7 +1447,7 @@
     if (!label) return;
     const val = hidden && hidden.value;
     if (!val) {
-      label.textContent = 'Pick date & time';
+      label.textContent = t('tournament.cal.pickDateTime', 'Pick date & time');
       return;
     }
     const m = val.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
@@ -1409,7 +1624,7 @@
       min
     );
     if (unix < Math.floor(Date.now() / 1000) + 60) {
-      setErr('Pick a start time at least 1 minute from now');
+      setErr(t('tournament.err.pickStartSoon', 'Pick a start time at least 1 minute from now'));
       return;
     }
     const val = formatLocalDateTimeValue(
@@ -1443,7 +1658,7 @@
       global.tcgSpectateTournamentRoom(roomId);
       return;
     }
-    setErr('Spectate helper missing');
+    setErr(t('tournament.err.spectateHelperMissing', 'Spectate helper missing'));
   }
 
   function startTickLoop() {
@@ -1455,14 +1670,14 @@
       const st = state.detail.tournament.status;
       if (st === 'finished') return;
       if (st === 'cancelled') {
-        returnToBulletin('This tournament was cancelled.');
+        returnToBulletin(t('tournament.err.cancelled', 'This tournament was cancelled.'));
         return;
       }
       try {
         await global.accountPost('tournament_tick', { tournament_id: tid });
         const res = await global.accountPost('tournament_get', { tournament_id: tid });
         if (res && res.tournament && res.tournament.status === 'cancelled') {
-          returnToBulletin('This tournament was cancelled.');
+          returnToBulletin(t('tournament.err.cancelled', 'This tournament was cancelled.'));
           return;
         }
         state.detail = res;
@@ -1470,7 +1685,7 @@
       } catch (e) {
         const msg = (e && e.message) ? String(e.message) : '';
         if (/not found/i.test(msg)) {
-          returnToBulletin('That tournament is no longer available.');
+          returnToBulletin(t('tournament.err.unavailable', 'That tournament is no longer available.'));
         }
       }
     }, 8000);
@@ -1552,9 +1767,26 @@
     if (node) node.addEventListener('click', fn);
   }
 
+  function refreshActiveView() {
+    if (state.view === 'list') renderList();
+    else if (state.view === 'detail') renderDetail();
+    else if (state.view === 'register' && state.registerOpts) renderRegisterPicker(state.registerOpts);
+    else if (state.view === 'create') {
+      syncCreateRulesOptions();
+      syncStartLabel();
+    }
+  }
+
   function boot() {
     wire();
     refreshServerFlag();
+    if (global.LLTCG_I18N && typeof global.LLTCG_I18N.onLocaleChange === 'function') {
+      global.LLTCG_I18N.onLocaleChange(() => {
+        if (!screenActive()) return;
+        applyTournamentStaticI18n();
+        refreshActiveView();
+      });
+    }
     global.addEventListener('tcg:auth-ready', () => {
       refreshServerFlag();
       syncTimezoneFromProfile();

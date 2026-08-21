@@ -29,15 +29,10 @@
     "auth": {
       "checking": "Checking Discord sign-in…",
       "signingIn": "Signing in…",
-      "reconnecting": "Reconnecting to match…",
-      "reconnectingTry": "Reconnecting to match… (try {n})",
-      "reconnectingWaiting": "Still waiting on server… (try {n})",
-      "leavingMatch": "Leaving match…",
       "signInDiscord": "Sign in with Discord",
       "guestPrompt": "Sign in with Discord to save your collection and play ranked.",
       "guestPlayHint": "Play unranked without an account, or sign in for ranked.",
       "sessionExpired": "Session expired — sign in again, or play unranked without an account.",
-      "serverBusy": "Server is busy — your sign-in was kept. Wait a moment and refresh, or play unranked.",
       "loadError": "Could not load account — you can still play unranked.",
       "guestTimeout": "Sign-in check timed out — play unranked, or retry Discord sign-in."
     },
@@ -45,10 +40,9 @@
       "unrankedPlay": "Unranked Play",
       "unrankedSub": "Rooms, friends, or practice vs CPU",
       "deckExperiment": "Deck Experiment",
-      "deckExperimentSub": "Build with every card — Free only, unranked",
+      "deckExperimentSub": "Build with every card — guests only, unranked",
       "howToPlay": "How to Play",
-      "howToPlaySub": "Hands-on beginner lesson with Kanon",
-      "officialVideo": "Official 8-min video ↗"
+      "howToPlaySub": "Hands-on beginner lesson with Kanon"
     },
     "hub": {
       "signedIn": "Signed in",
@@ -59,26 +53,16 @@
       "daily": "Daily boosters: {remaining} / {limit} remaining today (JST)",
       "dailyBonus": " (welcome bonus!)",
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "Ranked PR packs remaining today: {remaining} / {limit} (JST · 3 cards each)",
+      "rankedPrTitle": "Ranked PR rewards remaining today: {remaining} / {limit} (JST)",
       "rankLine": "ELO {elo} · {wins}W-{losses}L · {winPct}% win",
       "options": "Options",
       "signOut": "Sign out",
       "openBoosters": "Open Boosters",
       "openBoostersSub": "Open card booster packs",
-      "stickerShop": "Sticker Exchange",
+      "stickerShop": "Sticker Shop",
       "stickerShopSub": "Trade seals for cards from your packs",
-      "sleeveShop": { "title": "Sleeve Shop", "sub": "Spend Coins on card sleeves" },
-      "shop": { "title": "Shop", "sub": "Sleeves and playmats" },
       "deckBuilder": "Deck Builder",
       "deckBuilderSub": "Edit presets and ranked loadout",
-      "experiment": {
-        "title": "Deck Experiment",
-        "sub": "Any card — Free only"
-      },
-      "cardList": {
-        "title": "Card List",
-        "sub": "Browse every card"
-      },
       "rankedPvp": "Ranked PvP",
       "rankedPvpSub": "Climb ELO in matchmade games",
       "leaderboard": "Leaderboard",
@@ -89,15 +73,9 @@
       "tournamentModeSub": "Coming Soon",
       "howToPlay": "How to Play",
       "howToPlaySub": "Hands-on beginner lesson with Kanon",
-      "officialVideo": "Official 8-min video ↗",
       "backHub": "← Hub",
       "missions": "Missions",
-      "missionsClaimable": "Missions — {n} ready to claim",
-      "loginBonus": "Login",
-      "apk": {
-        "title": "Playing on Android? Get the APK launcher!",
-        "sub": "Download Loveca v1.1, allow installs from unknown sources, then open the APK."
-      }
+      "tournamentModeSubLive": "Events & brackets"
     },
     "missions": {
       "title": "Missions",
@@ -130,55 +108,35 @@
         "ranked100": "Play 100 ranked matches",
         "ranked500": "Play 500 ranked matches",
         "ranked1000": "Play 1,000 ranked matches",
-        "sticker1": "Exchanged seals in the sticker exchange",
-        "sticker10": "Exchanged seals in the sticker exchange 10 times",
-        "sticker50": "Exchanged seals in the sticker exchange 50 times",
-        "sticker100": "Exchanged seals in the sticker exchange 100 times",
+        "sticker1": "Exchanged seals in the sticker shop",
+        "sticker10": "Exchanged seals in the sticker shop 10 times",
+        "sticker50": "Exchanged seals in the sticker shop 50 times",
+        "sticker100": "Exchanged seals in the sticker shop 100 times",
         "winMuse": "Win with a μ's-only main deck",
         "winAqours": "Win with an Aqours-only main deck",
         "winLiella": "Win with a Liella!-only main deck",
         "winHasunosora": "Win with a Hasunosora-only main deck",
         "winNijigasaki": "Win with a Nijigasaki-only main deck",
-        "winTurn3": "Win a game on your 3rd turn",
-        "yellScore20": "Achieve a Yell score of 20 or more",
-        "liveScore15": "Achieve a Live score of 15 or more points in a single round",
-        "loginDays10": "Log in on 10 different days (JST)",
         "cards400": "Own 400 cards",
         "cards800": "Own 800 cards",
         "cards1200": "Own 1,200 cards",
         "cards1600": "Own 1,600 cards",
         "cards2000": "Own 2,000 cards",
         "cards2400": "Own 2,400 cards",
-        "playIdol": "Played a {idol} card {n} times",
-        "playLiveGroup": "Played a {group} Live card {n} times",
-        "playLiveSubunit": "Played a {subunit} Live card {n} times"
+        "winTurn3": "Win a game on your 3rd turn",
+        "yellScore20": "Achieve a Yell score of 20 or more",
+        "liveScore15": "Achieve a Live score of 15 or more points in a single round"
       },
       "rewardStarter": "Choose a starter deck",
       "rewardStarterOwned": "Already owned",
-      "rewardFreeSleeve": "Free sleeve claim",
-      "rewardCoinsAndPrPack": "+{coins} Coins · PR Pack",
       "claimedStarterToast": "Claimed {title} — unlocked {deck}",
-      "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
-      "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)",
       "starterPickTitle": "Choose a starter deck",
       "starterPickConfirm": "Unlock starter",
-      "starterPickCancel": "Cancel"
-    },
-    "loginBonus": {
-      "title": "Login Bonus",
-      "lead": "Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.",
-      "day": "Day {day}",
-      "reward": {
-        "gems": "{amount} Gems",
-        "nSeals": "{amount} N Seals",
-        "srSeal": "{amount} SR Seal",
-        "prPack": "PR Pack"
-      },
-      "gotGems": "Received {amount} Star Gems!",
-      "gotNSeals": "Received {amount} N Seals!",
-      "gotSrSeal": "Received {amount} SR Seal!",
-      "gotPrPack": "Received a PR pack! Opening…"
+      "starterPickCancel": "Cancel",
+      "rewardCoinsAndPrPack": "+{coins} Coins · PR Pack",
+      "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
+      "rewardFreeSleeve": "Free sleeve claim",
+      "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop"
     },
     "language": {
       "label": "Language",
@@ -210,13 +168,6 @@
       "cpuNormalShort": "Normal",
       "cpuHardShort": "Hard",
       "cpuExpertShort": "Expert",
-      "cpuSleeve": "CPU sleeve",
-      "cpuPlaymat": "CPU playmat",
-      "cpuCosmeticDefault": "Default",
-      "cpuCosmeticRandom": "Random (owned)",
-      "cpuCosmeticsHint": "Choose a cosmetic you own, or random from your collection.",
-      "presetDeckNotLoaded": "Deck preset not loaded — reopen the lobby and try again",
-      "experimentDeckNotLoaded": "Experiment deck not loaded — reopen Free lobby and try again",
       "soloStarting": "Starting vs CPU ({diff})",
       "player1Default": "Player 1",
       "player2Default": "Player 2",
@@ -232,14 +183,9 @@
       "experimentDeckPassword": "Experiment deck password",
       "experimentPasswordPlaceholder": "8-letter code",
       "experimentDeckBtn": "Deck Experiment",
-      "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved experiment / account deck below.",
-      "experimentDeckEmpty": "Enter a password or save an experiment deck",
-      "freeDeckEmpty": "Enter an experiment password, or save a deck / experiment preset",
-      "freeModeNeedsExperiment": "Free requires a Deck Experiment deck or a saved account deck",
-      "freeModeNeedsDeck": "Free requires a Deck Experiment deck or a saved account deck",
+      "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved deck below.",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} waiting · {inGame} in casual games",
-      "otherModesQueuedLead": "Players are queued in other modes:",
       "casualSearching": "Searching for opponent… ({seconds}s)"
     },
     "deck": {
@@ -251,21 +197,10 @@
         "hasunosora": "Hasunosora Start Deck",
         "sunshine": "Sunshine!! Start Deck"
       },
-
       "title": "Deck Builder",
       "experimentTitle": "Deck Experiment",
       "deckName": "Deck name",
       "presetSlot": "Preset slot (max 10)",
-      "sleeve": "Sleeve",
-      "sleeveNone": "None",
-      "sleeveChange": "Change",
-      "sleevePickTitle": "Choose sleeve",
-      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
-      "sleevePickClose": "Close",
-      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
-      "sleeveEmpty": "No sleeves available yet.",
-      "sleeveEmptyHint": "Buy sleeves in the Sleeve Shop.",
-      "sleeveOwnedHint": "Owned sleeves from the Sleeve Shop.",
       "search": "Search cards",
       "searchPlaceholder": "Name, ID, or rules text…",
       "collection": "Collection",
@@ -280,48 +215,6 @@
       "backMenu": "← Menu",
       "deckPassword": "Deck password",
       "deckPasswordPlaceholder": "Enter password to load",
-      "decklogCode": "deck log code",
-      "decklogCodePlaceholder": "Code OR URL",
-      "decklogImport": "Import",
-      "decklogHint": "Paste a deck log code or JP/EN view URL — loads the recipe and saves an experiment password.",
-      "decklogNeedCode": "Enter a deck log code or URL.",
-      "decklogImporting": "Importing from deck log…",
-      "decklogImportingShort": "Importing…",
-      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
-      "decklogImported": "Imported {code}.",
-      "decklogAccountHint": "Paste a deck log code or JP/EN view URL — loads into this preset if you own the cards.",
-      "decklogMissingTitle": "The following cards are missing to create this deck",
-      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
-      "decklogNeedHave": "Need {need} · Own {have}",
-      "decklogObtainBooster": "Obtain from: {pack} (Booster)",
-      "decklogObtainStarter": "Obtain from: {pack} (starter / Sticker Exchange)",
-      "decklogObtainPr": "Obtain from: PR Card Pack or Sticker Exchange",
-      "decklogObtainCollection": "Obtain from: {pack}",
-      "decklogObtainUnknown": "Obtain from the card list or Sticker Exchange",
-      "decklogSubstitute": "Substitute",
-      "decklogSubNone": "No substitute chosen",
-      "decklogSubNoneCount": "Choose {n} substitutes",
-      "decklogChooseSub": "Choose substitutes",
-      "decklogChangeSub": "Change substitutes",
-      "decklogSubPicked": "Substitute: {name}",
-      "decklogSubPickedCount": "Substitutes ({n})",
-      "decklogSubPickTitle": "Choose substitutes",
-      "decklogSubPickTitleFor": "Choose {n} for {name}",
-      "decklogSubPickLead": "Right-click or tap to add one copy at a time. When full, right-click a card to remove one. Confirm when ready.",
-      "decklogSubPickCount": "Choose {n} cards",
-      "decklogSubPickCountReady": "Selection complete — confirm to apply",
-      "decklogSubPickConfirm": "Confirm substitutes",
-      "decklogSubPickRemoveHint": "Remove",
-      "decklogSubPickReplacing": "Replacing",
-      "decklogSubPickShortfall": "{n} to replace",
-      "decklogSubNoneAvailable": "No substitutes owned",
-      "decklogAutoSubs": "Auto-pick substitutes",
-      "decklogApplySubs": "Replace & add deck",
-      "decklogNeedAllSubs": "Choose enough substitutes for every missing card, or cancel.",
-      "decklogSubsStillShort": "Still short on copies — pick different substitutes or cancel.",
-      "decklogImportedAccount": "Imported {code}. Save the preset when ready.",
-      "decklogNeedSignIn": "Sign in to import a deck log into your collection deck.",
-      "decklogAutoEnergy": "Auto-replace missing Energy",
       "load": "Load",
       "savedPassword": "Saved password:",
       "copy": "Copy",
@@ -332,10 +225,6 @@
       "updateSavedDeck": "Update saved deck",
       "generatePassword": "Generate password",
       "experimentHint": "Full card pool · build a legal deck to generate a password · point total must be 9 or below · hold or right-click cards for details",
-      "experimentHintSignedIn": "Full card pool · save to your account for Free · optional password to share · point total must be 9 or below",
-      "experimentSlot": "Experiment slot (max 10)",
-      "saveExperiment": "Save experiment deck",
-      "experimentSaved": "Experiment deck saved to your account.",
       "collectionOwned": "Total cards owned · {count}",
       "collectionLoading": "Full card pool · loading…",
       "collectionMatch": "Collection · {match} match",
@@ -480,11 +369,10 @@
       "ratesLoading": "Loading rates…",
       "duplicatesConverted": "Duplicates converted",
       "migrationText": "Extra Member/Live copies beyond 4 per card and Energy copies beyond 12 per card were converted into {gems}.",
-      "convertedToGems": " · {n} converted to Star Gems",
-
+      "convertedToGems": " · {n} converted to Star Gems"
     },
     "sticker": {
-      "title": "Sticker Exchange",
+      "title": "Sticker Shop",
       "backHub": "← Hub",
       "backProducts": "← Products",
       "hint": "Convert spare gacha cards in Deck Builder to seals, then exchange seals for cards here.",
@@ -494,93 +382,15 @@
       "convertConfirm": "Convert 1 spare copy of {name} into 1 {seal} seal?\n\nThis cannot be undone.",
       "convertOk": "Converted to 1 {tier} seal",
       "convertOkBalance": "Converted · {tier} seals: {n}",
-      "batchConvert": "Batch convert",
-      "batchConvertActive": "Selecting…",
-      "batchSelected": "Selected for conversion",
-      "batchSelectedCount": "Selected · {n} card(s)",
-      "batchEmpty": "Tap a spare card to add 1 copy; tap again to add more.",
-      "batchConfirm": "Convert selected",
-      "batchConfirmMsg": "Convert {cards} spare card(s) into seals ({seals})?\n\nThis cannot be undone.",
-      "batchOk": "Converted {n} → {seals}",
-      "batchNotConvertible": "This card cannot be converted to seals",
-      "batchNoSpare": "No spare copies available to convert",
       "yourSeals": "Your seals",
       "spareCopies": "{n} spare",
       "reservedCopies": "Reserved by saved decks ({n})",
       "sealsAria": "Seals",
       "infoAria": "Seal guide",
       "infoTitle": "Seal guide",
-      "infoLead": "Convert 1 spare booster, PR, or owned-starter card into 1 matching seal. Exchange seals for cards at the costs below (PR seals cost 20, same as N).",
+      "infoLead": "Convert 1 spare booster or owned-starter card into 1 matching seal. Exchange seals for cards at the costs below.",
       "infoRarities": "Rarities",
       "infoCost": "Exchange cost"
-    },
-    "sleeveShop": {
-      "title": "Sleeve Shop",
-      "backHub": "← Hub",
-      "backChars": "← Characters",
-      "hint": "Earn Coins by finishing matches. Pick a generation, then a character.",
-      "coinsAria": "Coins",
-      "freeClaims": "Free picks: {n}",
-      "owned": "Owned",
-      "buy": "Buy",
-      "buyConfirm": "Buy {name} for {price} Coins?\n\nThis cannot be undone.",
-      "claimFree": "Claim free",
-      "hoverEmpty": "Hover a sleeve to preview",
-      "bdayName": "{name} Birthday Visual {year}",
-      "hgVolName": "Sleeve Collection HG Vol.{vol}: {title}",
-      "extraVolName": "Sleeve Collection Extra Vol.{vol}: {title}",
-      "extraName": "Sleeve Collection Extra: {title}",
-      "rebirthDeluxeName": "ReBirth for you Sleeve & Card Deluxe Set: {title}",
-      "rebirthVer": "ReBirth ver.",
-      "units": {
-        "muse": "µ's",
-        "aqours": "Aqours",
-        "nijigasaki": "Nijigasaki",
-        "liella": "Liella!",
-        "hasunosora": "Hasunosora",
-        "mixed": "Mixed",
-        "other": "Other"
-      },
-      "series": {
-        "lovelive": "Love Live!",
-        "sunshine": "Love Live! Sunshine!!",
-        "nijigasaki": "Love Live! Nijigasaki High School Idol Club",
-        "superstar": "Love Live! Superstar!!",
-        "hasunosora": "Love Live! Hasunosora Girls' High School Idol Club",
-        "hasunosoraShort": "Hasunosora Girls' High School Idol Club",
-        "muse": "µ's",
-        "sukufesuThanks": "Sukufesu Series Thanksgiving",
-        "loveliveSeries": "Love Live! Series",
-        "hasunosoraSchool": "Hasunosora Girls' High School"
-      }
-    },
-    "cardList": {
-      "title": "Card List",
-      "hubSub": "Browse every card",
-      "backHub": "← Hub",
-      "lead": "Browse every card by product. Cards you own appear in full color.",
-      "collection": "Collection",
-      "ownedProgress": "{owned}/{total}",
-      "notOwned": "Not owned",
-      "prCards": "PR Cards",
-      "other": "Other"
-    },
-    "gameMode": {
-      "label": "Game mode",
-      "standard": "Standard",
-      "starters": "Starter decks only",
-      "free": "Free",
-      "randomized": "Randomized Decks",
-      "short": {
-        "standard": "Standard",
-        "starters": "Starters",
-        "free": "Free",
-        "randomized": "Randomized"
-      },
-      "standardDesc": "The standard TCG mode. Use decks you've built with owned cards against other players.",
-      "startersDesc": "Only starter decks you've unlocked. Official starter lists stay playable even if you exchanged those cards away.",
-      "freeDesc": "Use Deck Experiment decks (any card — ownership not required) or your saved account decks with their sleeves and playmats. This mode does not have leaderboards.",
-      "randomizedDesc": "Both players get a random legal deck from the full card pool (ownership not required). Ranked has its own leaderboard."
     },
     "ranked": {
       "title": "Ranked PvP",
@@ -614,7 +424,6 @@
       "bannerNoMatch": "No cards match your search.",
       "bannerPreview": "Preview",
       "saveBanner": "Save banner",
-      "bannerSaved": "Banner saved",
       "profileFlag": "Profile flag",
       "flagLead": "Choose a flag to show next to your name on the leaderboard.",
       "flagSearchPlaceholder": "Search flags…",
@@ -625,7 +434,6 @@
       "flagLoading": "Loading flags…",
       "selectCardFirst": "Select a card first",
       "yourRank": "Your rank: #{rank}",
-      "yourRankNotPlayed": "Your rank: not played",
       "jumpToYou": "Jump to my entry"
     },
     "stamps": {
@@ -653,19 +461,10 @@
     "options": {
       "title": "Options",
       "enhancedTextures": "Enhanced textures on high rarity cards",
-      "sleeveConform": "Fit sleeves to card shape (rounded backs, no square peek)",
       "soundEffects": "Sound effects",
-      "discordPresence": "Discord Rich Presence (Android)",
-      "discordPresenceOff": "Off — enable to share menus, matches, and queue status on Discord.",
-      "discordPresenceOn": "On — Discord can show what you are doing in Loveca when Discord is open.",
-      "discordPresenceLink": "Link Discord for Presence",
       "sfxVolume": "SFX volume",
-      "textScale": "Text & UI scale",
-      "textScaleExp": "Experimental",
-      "textScaleLead": "Enlarge or shrink menu text and buttons. Larger sizes use more scrolling so nothing overlaps. Match side panels stay on-screen; the board stays fitted on mobile.",
       "stuckTitle": "Stuck in a match?",
-      "stuckLead": "If you are stuck in a broken, finished, or missing match, leave it here. This counts as a resign if the game is still in progress.",
-      "leaveActiveConfirm": "Leave the active match? If it is still in progress, this counts as a resign.",
+      "stuckLead": "If ranked reconnects you to a broken or finished game, leave the active match record here. This counts as a resign if the game is still in progress.",
       "resetTitle": "Reset account",
       "resetLead": "Delete all collection cards, deck presets, ranked stats, and booster progress. You will choose a new starter deck and begin again. This cannot be undone.",
       "resetAccount": "Reset account",
@@ -695,9 +494,7 @@
       "enableRadio": "📻 Enable Radio",
       "endMainPhase": "End Main Phase",
       "endLivePhase": "End LIVE Phase",
-      "setLiveCards": "Place Cards",
-      "placeLiveCard": "Place card",
-      "placeLiveCards": "Place cards",
+      "setLiveCards": "Set Live Cards",
       "waitingOpponent": "Waiting for Opponent",
       "resolveSkillFirst": "Resolve skill first",
       "waitingSkill": "Waiting for skill",
@@ -734,8 +531,7 @@
       "perfYou": "You",
       "perfOpp": "Opponent",
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>Phase: {phase}<span class=\"turn-sep\">·</span>Active: {active}<span class=\"turn-sep\">·</span>First: {first}",
-      "deckTopLabel": "Deck top",
-
+      "deckTopLabel": "Deck top"
     },
     "slot": {
       "left": "Left",
@@ -784,10 +580,6 @@
     "phaseBar": {
       "spectating": "Spectating — {p1} vs {p2} (read only)",
       "setupWaitMulligan": "Waiting for opponent to finish mulligan…",
-      "setupWaitMulliganYou": "You redrew {n}. Waiting for opponent to finish mulligan…",
-      "setupWaitMulliganYouKept": "You kept your hand. Waiting for opponent to finish mulligan…",
-      "setupMulliganPlayerN": "{name} redrew {n}",
-      "setupMulliganPlayerKept": "{name} kept hand",
       "setupMulligan": "Preparation — review your opening hand, mulligan any cards, then confirm.",
       "coinFlip": "Coin flip — winner chooses who goes first…",
       "mainYour": "Your Main Phase — play Members ({energy} available). End Main Phase when ready.",
@@ -861,7 +653,6 @@
       "bothWait": "Both Players Wait",
       "bothWaitSub": "Live cards remain in storage",
       "liveStartFlash": "LIVE START",
-      "heartCheck": "Checking hearts…",
       "liveJudgeTieCappedBoth": "Tie on Live Score — neither adds a Success Live (both already at 2)",
       "liveJudgeTieYouCappedWin": "Tie — you are capped at 2 Success Lives",
       "liveJudgeTieOppEarns": "Tie — opponent earns a Success Live",
@@ -879,9 +670,7 @@
       "tutorialReplaceHint": "Tap the highlighted card to mark it for replacement, then confirm.",
       "keepHand": "Keep Hand",
       "replaceCard": "Replace {n} card",
-      "replaceCards": "Replace {n} cards",
-      "declareTitle": "Mulligan",
-      "declareSub": "{a}: {aN} · {b}: {bN}"
+      "replaceCards": "Replace {n} cards"
     },
     "coin": {
       "title": "First Player",
@@ -906,8 +695,6 @@
       "inStorage": "In storage",
       "liveScore": "Live score",
       "combinedHearts": "Combined required hearts",
-      "combinedScore": "Score {score}",
-      "combinedScoreBonus": "Score {base} +{bonus}",
       "livesSelected": "{n} Lives",
       "livesSelectedOne": "1 Live",
       "plusMembers": "+{n} Members",
@@ -983,8 +770,7 @@
       "noLiveInHand": "No Live card in hand",
       "noMemberInHand": "No Member card in hand",
       "enterNumber0to99": "Enter a number from 0 to 99",
-      "noYellMill": "No Yell cards available to mill.",
-
+      "noYellMill": "No Yell cards available to mill."
     },
     "skill": {
       "alreadyUsed": "Already used this turn",
@@ -1020,10 +806,6 @@
         "title": "Once per turn",
         "body": "You can only use this effect one time each turn."
       },
-      "twicePerTurn": {
-        "title": "Twice per turn",
-        "body": "You can use this effect up to two times each turn."
-      },
       "automatic": {
         "title": "Automatic",
         "body": "Fires by itself when the listed condition happens — no activation required."
@@ -1039,6 +821,10 @@
       "wait": {
         "title": "Wait (ウェイト)",
         "body": "A Member put into Wait cannot contribute its Blade that turn — its Blade does not increase cards revealed for Yell during Live Performance. This is not the Waiting Room."
+      },
+      "twicePerTurn": {
+        "title": "Twice per turn",
+        "body": "You can use this effect up to two times each turn."
       }
     },
     "heart": {
@@ -1062,7 +848,6 @@
       "requiredHearts": "Required hearts",
       "hearts": "Hearts",
       "bladeHearts": "Blade hearts",
-      "allBladeHeartsTip": "When checking required hearts, ALL blade hearts revealed for Yell count as any color.",
       "yellIcons": "Yell icons",
       "playToSlot": "Play to slot:",
       "needEnergy": "Need",
@@ -1125,18 +910,14 @@
       "debugSaveLog": "💾 Save debug log",
       "debugCopyLog": "📋 Copy log",
       "debugSaveBundle": "📦 Export debug bundle",
-      "rankedPrNew": "Ranked win: PR pack — open it from the main menu",
-      "rankedPrDupe": "Ranked win: PR pack — open it from the main menu",
-      "rankedPrDailyCap": "Daily ranked PR packs used ({limit}/day JST)",
-      "rankedPrPopupTitle": "Ranked PR pack!",
-      "rankedPrPackWon": "Ranked win: PR pack ×{count} — open it from the main menu",
-      "rankedPrPackPopupTitle": "Ranked PR pack ×{count}!",
-      "rankedPrPackSummary": "{count} cards",
-      "rankedPrPackDupes": "{count} duplicate(s) → {gems} Star Gems"
+      "rankedPrNew": "Ranked win reward: {name}",
+      "rankedPrDupe": "{name} converted to {gems} Star Gems (over copy limit)",
+      "rankedPrDailyCap": "Daily ranked PR rewards used ({limit}/day JST)",
+      "rankedPrPopupTitle": "Ranked win reward!"
     },
     "replay": {
       "menuTitle": "Replay Viewer",
-      "menuSubAuth": "Load a saved match replay — play, pause, or step action by action",
+      "menuSubAuth": "Load a saved match replay and watch it in realtime",
       "menuSubHub": "Watch saved match replays from your library",
       "title": "Replay Viewer",
       "back": "← Back",
@@ -1156,15 +937,10 @@
       "noFileSelected": "No file selected.",
       "startImported": "Start imported replay",
       "playPause": "Play / Pause",
-      "first": "First action",
-      "prev": "Previous action",
-      "next": "Next action",
-      "last": "Last action",
-      "startStep": "start",
       "positionAria": "Replay position",
       "handoffNote": "Replay complete — you have control. CPU plays the opponent.",
       "exitReplay": "Exit Replay",
-      "phaseBarHint": "Replay {step} / {total} — back/next steps one recorded action; the bar still seeks.",
+      "phaseBarHint": "Replay {step} / {total} — use the replay bar below to step through recorded actions.",
       "signInLibrary": "Sign in to save and view replays in your library.",
       "emptyLibrary": "No saved replays yet. Finish a match — it will autosave to Recent.",
       "watch": "Watch",
@@ -1297,13 +1073,7 @@
     },
     "mobile": {
       "rotateTitle": "This game is played in landscape",
-      "rotateSub": "Rotate your device to continue.",
-      "openLog": "Log",
-      "refresh": "Refresh",
-      "stamps": "Stamps",
-      "offlineNeedNetwork": "No network — reconnect to play.",
-      "portraitHint": "Portrait mode for phones",
-      "deckInspectHint": "Tap a card to preview"
+      "rotateSub": "Rotate your device to continue."
     },
     "common": {
       "loading": "Loading…",
@@ -1321,21 +1091,14 @@
     "toast": {
       "reconnected": "Reconnected to your game",
       "leftActiveMatch": "Left active match",
-      "leftDeadMatch": "That match no longer exists — returned to the menu.",
       "noActiveMatch": "No active match found",
       "noCardId": "No card ID to copy",
       "cardIdCopied": "Card ID copied",
       "couldNotCopyCardId": "Could not copy card ID",
       "signInDeckBuilder": "Sign in to use the Deck Builder.",
       "cardsLoadFailed": "Could not load the card catalog. Check your connection and try again.",
-      "signInStickerShop": "Sign in to use Sticker Exchange.",
-      "signInSleeveShop": "Sign in to use the Sleeve Shop.",
-      "sleeveShopLoadFailed": "Failed to load sleeve shop",
-      "sleeveBought": "Sleeve unlocked!",
-      "playmatBought": "Playmat unlocked!",
-      "sleeveClaimedFree": "Free sleeve claimed!",
-      "coinsEarned": "+{n} Coins",
-      "stickerLoadFailed": "Failed to load sticker exchange",
+      "signInStickerShop": "Sign in to use the Sticker Shop.",
+      "stickerLoadFailed": "Failed to load sticker shop",
       "stickerCardsLoadFailed": "Failed to load cards",
       "stickerExchangeFailed": "Exchange failed",
       "stickerConvertFailed": "Convert failed",
@@ -1365,7 +1128,6 @@
       "listTitle": "Spectate match",
       "listTitleRanked": "Spectate ranked match",
       "listTitleCasual": "Spectate unranked match",
-      "listTitleTournament": "Spectate tournament match",
       "lead": "Watch an ongoing match — view only, no interaction.",
       "barReadOnly": "Spectating — read only",
       "barNames": "Spectating {p1} vs {p2}",
@@ -1378,11 +1140,9 @@
       "sessionEnded": "Spectator session ended.",
       "count": "Spectators: {n}",
       "switchPerspective": "Switch perspective",
-      "hiddenHands": "Hidden hands",
-      "hiddenHandsTitle": "Hidden hands (tournament view)",
-      "hiddenHandsOnTitle": "Hidden hands on — tap to show hands",
       "waitingJudgePick": "Live Win/Loss — waiting for {name} to choose a Success Live…",
-      "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…"
+      "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…",
+      "listTitleTournament": "Spectate tournament"
     },
     "ui": {
       "fullscreen": "Full screen",
@@ -1390,14 +1150,283 @@
       "casualSearch": "Casual search",
       "skipToResults": "Skip to results",
       "clickToOpen": "Click to open"
-    }
-
-  ,
+    },
     "cardType": {
       "member": "Member",
       "live": "Live",
       "energy": "Energy"
-    }},
+    },
+    "tournament": {
+      "backHub": "← Hub",
+      "title": "Tournament Mode",
+      "lead": "Schedule events, lock decks, check in, and run a single-elim bracket.",
+      "timezoneLabel": "Timezone",
+      "timezoneAria": "Display timezone",
+      "tzHint": "Times shown in {tz}",
+      "tzHintJstFallback": "Times shown in JST",
+      "createEvent": "Create event",
+      "refresh": "Refresh",
+      "filterMode": "Mode",
+      "mode": {
+        "all": "All",
+        "standard": "Standard",
+        "starters": "Starters",
+        "randomized": "Randomized",
+        "free": "Free",
+        "freeDeckExperiment": "Free (Deck Experiment)"
+      },
+      "listEmpty": "No open tournaments yet. Create one to get started.",
+      "card": {
+        "fee": "fee {n}",
+        "watching": "{n} watching",
+        "starts": "starts {when}",
+        "fog": "fog {fog}",
+        "delay": "delay {n}s",
+        "metaSep": "·"
+      },
+      "backBulletin": "← Bulletin",
+      "notify": {
+        "title": "LLTCG Tournament",
+        "checkinOpen": "Check-in open: {title}",
+        "checkinSoon": "Check-in soon: {title}"
+      },
+      "createHeading": "Create tournament",
+      "createTzNote": "Start time uses {tz}.",
+      "createTzNoteFallback": "Start time uses your selected timezone.",
+      "field": {
+        "title": "Title",
+        "titlePlaceholder": "Friday Night Bracket",
+        "startLocal": "Start (local)",
+        "checkinMins": "Check-in minutes",
+        "minPlayers": "Min players",
+        "maxPlayers": "Max players",
+        "entryFee": "Entry fee (Coins)",
+        "gameMode": "Game mode",
+        "format": "Format",
+        "matchLength": "Match length",
+        "fog": "Fog of war",
+        "rules": "Rules template",
+        "rulesTitle": "Extra deck rules; only Standard applies for Starters / Randomized",
+        "streamDelay": "Stream delay (spectate)"
+      },
+      "format": {
+        "singleElim": "Single elimination",
+        "doubleElimBracket": "Double elim (Winners/Losers)",
+        "doubleElimLives": "Double elim (2 lives)",
+        "swiss": "Swiss",
+        "single_elim": "Single elimination",
+        "double_elim_bracket": "Double elim (Winners/Losers)",
+        "double_elim": "Double elim (2 lives)"
+      },
+      "bestOf": {
+        "1": "Best of 1",
+        "3": "Best of 3"
+      },
+      "fog": {
+        "hiddenHands": "Hidden hands (spectators)",
+        "openHands": "Open hands",
+        "hiddenHandsShort": "hidden hands",
+        "openHandsShort": "open hands"
+      },
+      "rules": {
+        "standardOption": "Standard (no extra limits)",
+        "pauperOption": "Pauper (N/R)",
+        "highlanderOption": "Highlander (1-of)",
+        "standard": {
+          "label": "Standard",
+          "help": "No extra deck limits beyond the selected game mode. Full rarity and normal copy limits apply."
+        },
+        "pauper": {
+          "label": "Pauper (N/R)",
+          "help": "Only lower rarities: N, R, C, U, and CL. Higher rarities (SR+, SEC, etc.) are not allowed."
+        },
+        "highlander": {
+          "label": "Highlander (1-of)",
+          "help": "At most one copy of each card in the whole deck (main + energy). No duplicates of any card number."
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "Game mode already sets deck rules — only Standard applies here."
+      },
+      "delay": {
+        "none": "None",
+        "secs": "{n} seconds"
+      },
+      "schedule": "Schedule",
+      "detail": {
+        "host": "Host",
+        "hostFallback": "Host",
+        "prize": "prize {n}",
+        "watching": "watching {n}",
+        "starts": "starts {when}",
+        "mode": "mode {mode}",
+        "rules": "rules {rules}",
+        "fog": "fog {fog}",
+        "streamDelay": "stream delay {n}s",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "Entrants",
+      "bracketHeading": "Bracket",
+      "entrantsEmpty": "No entrants",
+      "person": {
+        "playerFallback": "Player"
+      },
+      "standingsHeading": "Standings",
+      "standings": {
+        "record": "{wins}W–{losses}L"
+      },
+      "action": {
+        "register": "Register",
+        "registerTip": "Lock in a deck and enter this event. Pays the entry fee into the prize pool if one is set.",
+        "checkin": "Check in",
+        "checkinTip": "Confirm you are present before the bracket starts. Missing check-in marks you as a no-show.",
+        "unregister": "Unregister",
+        "unregisterTip": "Leave the event before it starts and refund your entry fee.",
+        "checkedIn": "Checked in",
+        "checkedInTip": "You are checked in and waiting for the bracket to start.",
+        "deposit": "Deposit prize",
+        "depositTip": "Add Coins from your balance to this event’s prize pool (host only).",
+        "cancel": "Cancel (refund)",
+        "cancelTip": "Cancel the tournament and refund entry fees plus remaining host prize deposits.",
+        "tick": "Refresh / tick",
+        "tickTip": "Refresh this event and advance server timers (check-in window, bracket, room seeding).",
+        "join": "Join my match",
+        "joinTip": "Enter your ready tournament match room when your bracket game is available.",
+        "spectateList": "Spectate matches",
+        "spectateListTip": "Browse and watch live matches from this tournament as a spectator."
+      },
+      "prompt": {
+        "deposit": "Coins to deposit into prize vault:",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "Cancel tournament and refund entrants?"
+      },
+      "bracket": {
+        "empty": "Bracket layout appears once max players / format is set.",
+        "previewSuffix": "Preview (names fill in after check-in)",
+        "slot": "Slot",
+        "tbd": "TBD",
+        "bye": "Bye",
+        "waiting": "Waiting…",
+        "spectate": "Spectate",
+        "spectateTip": "Watch this match as a spectator (non-players welcome)",
+        "winner": "Winner: {name}",
+        "namesLock": "Names lock in at bracket start"
+      },
+      "formatCaption": {
+        "swiss": "Swiss rounds",
+        "doubleElimLives": "Double elim (2 lives)",
+        "doubleElimBracket": "Double elim (Winners/Losers)",
+        "singleElim": "Single elimination"
+      },
+      "round": {
+        "swiss": "Swiss · Round {n}",
+        "losersFinal": "Losers Final",
+        "losers": "Losers · R{n}",
+        "grandFinal": "Grand Final",
+        "grandFinalReset": "Grand Final (Reset)",
+        "winnersFinal": "Winners Final",
+        "semifinals": "Semifinals",
+        "roundOf": "Round of {n}"
+      },
+      "matchStatus": {
+        "live": "Live",
+        "ready": "Ready",
+        "done": "Done",
+        "pending": "Upcoming"
+      },
+      "register": {
+        "backEvent": "← Event",
+        "heading": "Choose deck to lock in",
+        "leadDefault": "This deck is locked for the tournament when you register.",
+        "leadPick": "Pick a legal deck to lock in for this event.",
+        "leadEmpty": "No eligible deck yet — build one in Deck Builder, then come back.",
+        "leadFreePick": "Pick a Deck Experiment preset, a saved account deck, or enter an experiment password.",
+        "leadFreeEmpty": "No saved Free decks yet — open Deck Experiment, save a preset (or use a share password), then come back.",
+        "noEligible": "No eligible decks for this game mode.",
+        "noFreeDecks": "No experiment presets or owned account decks found.",
+        "deckFallback": "Deck",
+        "metaPreset": "Preset slot {slot}",
+        "metaEquipped": "· equipped",
+        "metaStarter": "Starter · {label}",
+        "metaExperiment": "Deck Experiment · slot {slot}",
+        "passwordLabel": "Experiment password",
+        "passwordPlaceholder": "Shared Deck Experiment code",
+        "withPassword": "Register with password",
+        "openDeckBuilder": "Open Deck Builder",
+        "openDeckExperiment": "Open Deck Experiment"
+      },
+      "status": {
+        "open": "Open",
+        "checkin": "Check-in",
+        "running": "Running",
+        "finished": "Finished",
+        "cancelled": "Cancelled"
+      },
+      "entrant": {
+        "registered": "Registered",
+        "checked_in": "Checked in",
+        "no_show": "No-show",
+        "eliminated": "Eliminated",
+        "active": "Active"
+      },
+      "err": {
+        "cancelled": "This tournament was cancelled.",
+        "unavailable": "That tournament is no longer available.",
+        "cancelRefunded": "Tournament cancelled — entrants refunded.",
+        "pickStart": "Pick a start date and time",
+        "startTooSoon": "Start time must be at least 1 minute from now",
+        "pickStartSoon": "Pick a start time at least 1 minute from now",
+        "experimentPassword": "Enter an experiment password",
+        "joinHelperMissing": "Join helper missing",
+        "spectateHelperMissing": "Spectate helper missing"
+      },
+      "toast": {
+        "noMatchReady": "No tournament match ready"
+      },
+      "cal": {
+        "pickDateTime": "Pick date & time",
+        "dialogAria": "Pick start date and time",
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "monthFallback": "Month",
+        "dow": {
+          "su": "Su",
+          "mo": "Mo",
+          "tu": "Tu",
+          "we": "We",
+          "th": "Th",
+          "fr": "Fr",
+          "sa": "Sa"
+        },
+        "hour": "Hour",
+        "min": "Min",
+        "cancel": "Cancel",
+        "apply": "Apply"
+      },
+      "tz": {
+        "Asia/Tokyo": "Japan (JST)",
+        "America/New_York": "US Eastern",
+        "America/Chicago": "US Central",
+        "America/Denver": "US Mountain",
+        "America/Los_Angeles": "US Pacific",
+        "America/Toronto": "Canada Eastern",
+        "America/Vancouver": "Canada Pacific",
+        "Europe/London": "UK (London)",
+        "Europe/Paris": "Central Europe",
+        "Europe/Berlin": "Berlin",
+        "Australia/Sydney": "Sydney",
+        "Asia/Singapore": "Singapore",
+        "Asia/Seoul": "Korea (KST)",
+        "Asia/Shanghai": "China",
+        "Asia/Hong_Kong": "Hong Kong",
+        "Asia/Bangkok": "Bangkok",
+        "Pacific/Auckland": "Auckland",
+        "UTC": "UTC"
+      }
+    }
+  },
   "ja": {
     "logo": {
       "tagline": "非公式ウェブプレイヤー"
@@ -1452,7 +1481,10 @@
       "openBoostersSub": "カードパックを開封",
       "stickerShop": "シール交換",
       "stickerShopSub": "シールで所持パックのカードを交換",
-      "sleeveShop": { "title": "スリーブショップ", "sub": "コインでスリーブを購入" },
+      "sleeveShop": {
+        "title": "スリーブショップ",
+        "sub": "コインでスリーブを購入"
+      },
       "deckBuilder": "デッキビルダー",
       "deckBuilderSub": "プリセットとランク用デッキを編集",
       "rankedPvp": "ランクPvP",
@@ -1473,7 +1505,8 @@
       "apk": {
         "title": "Androidで遊ぶ？APKランチャーを入手！",
         "sub": "Loveca v1.1をダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
-      }
+      },
+      "tournamentModeSubLive": "イベント＆ブラケット"
     },
     "missions": {
       "title": "ミッション",
@@ -1621,7 +1654,6 @@
         "hasunosora": "蓮ノ空女学院スクールアイドルクラブスタートデッキ",
         "sunshine": "サンシャイン!!スタートデッキ"
       },
-
       "title": "デッキビルダー",
       "experimentTitle": "デッキ実験",
       "deckName": "デッキ名",
@@ -1846,8 +1878,7 @@
       "ratesLoading": "排出率を読み込み中…",
       "duplicatesConverted": "重複を変換しました",
       "migrationText": "カード4枚・エネルギー12枚を超える重複は {gems} に変換されました。",
-      "convertedToGems": " · {n} をスタージェムに変換",
-
+      "convertedToGems": " · {n} をスタージェムに変換"
     },
     "sticker": {
       "title": "シール交換",
@@ -2098,8 +2129,7 @@
       "perfYou": "あなた",
       "perfOpp": "相手",
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>フェイズ：{phase}<span class=\"turn-sep\">·</span>アクティブ：{active}<span class=\"turn-sep\">·</span>先攻：{first}",
-      "deckTopLabel": "デッキトップ",
-
+      "deckTopLabel": "デッキトップ"
     },
     "slot": {
       "left": "左",
@@ -2347,8 +2377,7 @@
       "noLiveInHand": "手札にライブカードがありません",
       "noMemberInHand": "手札にメンバーカードがありません",
       "enterNumber0to99": "0〜99の数字を入力してください",
-      "noYellMill": "ミルできるエールカードがありません。",
-
+      "noYellMill": "ミルできるエールカードがありません。"
     },
     "skill": {
       "alreadyUsed": "このターンは使用済み",
@@ -2739,7 +2768,8 @@
       "hiddenHandsTitle": "手札非公開（大会観戦）",
       "hiddenHandsOnTitle": "手札非公開中 — タップで表示",
       "waitingJudgePick": "ライブ勝敗判定 — {name} の成功ライブ選択を待っています…",
-      "waitingJudgeResolve": "ライブ勝敗判定 — {name} の操作待ち…"
+      "waitingJudgeResolve": "ライブ勝敗判定 — {name} の操作待ち…",
+      "listTitleTournament": "トーナメントを観戦"
     },
     "ui": {
       "fullscreen": "全画面",
@@ -2747,14 +2777,283 @@
       "casualSearch": "カジュアル検索",
       "skipToResults": "結果へスキップ",
       "clickToOpen": "クリックして開く"
-    }
-
-  ,
+    },
     "cardType": {
       "member": "メンバー",
       "live": "ライブ",
       "energy": "エネルギー"
-    }},
+    },
+    "tournament": {
+      "backHub": "← ハブ",
+      "title": "トーナメントモード",
+      "lead": "イベントを作成し、デッキをロック、チェックインしてシングルエリムのブラケットを進行します。",
+      "timezoneLabel": "タイムゾーン",
+      "timezoneAria": "表示タイムゾーン",
+      "tzHint": "時刻は{tz}で表示",
+      "tzHintJstFallback": "時刻はJSTで表示",
+      "createEvent": "イベント作成",
+      "refresh": "更新",
+      "filterMode": "モード",
+      "mode": {
+        "all": "すべて",
+        "standard": "スタンダード",
+        "starters": "スターター",
+        "randomized": "ランダム",
+        "free": "フリー",
+        "freeDeckExperiment": "フリー（デッキ実験）"
+      },
+      "listEmpty": "開催中のトーナメントはまだありません。作成してみましょう。",
+      "card": {
+        "fee": "参加費 {n}",
+        "watching": "観戦 {n}",
+        "starts": "開始 {when}",
+        "fog": "フォグ {fog}",
+        "delay": "遅延 {n}秒",
+        "metaSep": "·"
+      },
+      "backBulletin": "← 掲示板",
+      "notify": {
+        "title": "LLTCG トーナメント",
+        "checkinOpen": "チェックイン開始: {title}",
+        "checkinSoon": "まもなくチェックイン: {title}"
+      },
+      "createHeading": "トーナメント作成",
+      "createTzNote": "開始時刻は{tz}を使います。",
+      "createTzNoteFallback": "開始時刻は選択したタイムゾーンを使います。",
+      "field": {
+        "title": "タイトル",
+        "titlePlaceholder": "金曜夜ブラケット",
+        "startLocal": "開始（ローカル）",
+        "checkinMins": "チェックイン分数",
+        "minPlayers": "最少人数",
+        "maxPlayers": "最大人数",
+        "entryFee": "参加費（コイン）",
+        "gameMode": "ゲームモード",
+        "format": "形式",
+        "matchLength": "マッチ形式",
+        "fog": "フォグ・オブ・ウォー",
+        "rules": "ルールテンプレ",
+        "rulesTitle": "追加デッキ制限。スターター／ランダムではスタンダードのみ適用",
+        "streamDelay": "配信遅延（観戦）"
+      },
+      "format": {
+        "singleElim": "シングルエリミネーション",
+        "doubleElimBracket": "ダブルエリム（勝者／敗者）",
+        "doubleElimLives": "ダブルエリム（2ライフ）",
+        "swiss": "スイス",
+        "single_elim": "シングルエリミネーション",
+        "double_elim_bracket": "ダブルエリム（勝者／敗者）",
+        "double_elim": "ダブルエリム（2ライフ）"
+      },
+      "bestOf": {
+        "1": "ベストオブ1",
+        "3": "ベストオブ3"
+      },
+      "fog": {
+        "hiddenHands": "手札非公開（観戦者）",
+        "openHands": "手札公開",
+        "hiddenHandsShort": "手札非公開",
+        "openHandsShort": "手札公開"
+      },
+      "rules": {
+        "standardOption": "スタンダード（追加制限なし）",
+        "pauperOption": "ポーパー（N/R）",
+        "highlanderOption": "ハイランダー（1枚制限）",
+        "standard": {
+          "label": "スタンダード",
+          "help": "選択したゲームモード以外の追加デッキ制限はありません。通常のレアリティと枚数制限が適用されます。"
+        },
+        "pauper": {
+          "label": "ポーパー（N/R）",
+          "help": "低いレアリティのみ：N・R・C・U・CL。SR+やSECなど高レアは不可。"
+        },
+        "highlander": {
+          "label": "ハイランダー（1枚制限）",
+          "help": "メイン＋エネルギー全体で各カード1枚まで。同番号の重複不可。"
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "ゲームモード側でデッキ制限が決まっているため、ここではスタンダードのみです。"
+      },
+      "delay": {
+        "none": "なし",
+        "secs": "{n}秒"
+      },
+      "schedule": "スケジュール",
+      "detail": {
+        "host": "主催",
+        "hostFallback": "主催",
+        "prize": "賞金 {n}",
+        "watching": "観戦 {n}",
+        "starts": "開始 {when}",
+        "mode": "モード {mode}",
+        "rules": "ルール {rules}",
+        "fog": "フォグ {fog}",
+        "streamDelay": "配信遅延 {n}秒",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "参加者",
+      "bracketHeading": "ブラケット",
+      "entrantsEmpty": "参加者なし",
+      "person": {
+        "playerFallback": "プレイヤー"
+      },
+      "standingsHeading": "順位表",
+      "standings": {
+        "record": "{wins}勝–{losses}敗"
+      },
+      "action": {
+        "register": "登録",
+        "registerTip": "デッキをロックして参加。参加費がある場合は賞金プールへ支払います。",
+        "checkin": "チェックイン",
+        "checkinTip": "ブラケット開始前に出席確認。未チェックインはノーショーになります。",
+        "unregister": "登録取消",
+        "unregisterTip": "開始前に退出して参加費を返金します。",
+        "checkedIn": "チェックイン済",
+        "checkedInTip": "チェックイン済み。ブラケット開始を待っています。",
+        "deposit": "賞金を預ける",
+        "depositTip": "残高からこのイベントの賞金プールへコインを追加（主催のみ）。",
+        "cancel": "キャンセル（返金）",
+        "cancelTip": "トーナメントを中止し、参加費と残りの主催賞金を返金します。",
+        "tick": "更新／進行",
+        "tickTip": "イベントを更新し、サーバー側のタイマー（チェックイン・ブラケット・部屋作成）を進めます。",
+        "join": "自分の試合に入る",
+        "joinTip": "ブラケットの試合が準備できたらトーナメント部屋に入ります。",
+        "spectateList": "試合を観戦",
+        "spectateListTip": "このトーナメントの進行中マッチを観戦者として見ます。"
+      },
+      "prompt": {
+        "deposit": "賞金プールに預けるコイン:",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "トーナメントを中止して参加者に返金しますか？"
+      },
+      "bracket": {
+        "empty": "最大人数／形式が決まるとブラケットが表示されます。",
+        "previewSuffix": "プレビュー（チェックイン後に名前が入る）",
+        "slot": "枠",
+        "tbd": "未定",
+        "bye": "不戦勝",
+        "waiting": "待機中…",
+        "spectate": "観戦",
+        "spectateTip": "観戦者としてこの試合を見る（非参加者もOK）",
+        "winner": "勝者: {name}",
+        "namesLock": "名前はブラケット開始時に確定"
+      },
+      "formatCaption": {
+        "swiss": "スイスラウンド",
+        "doubleElimLives": "ダブルエリム（2ライフ）",
+        "doubleElimBracket": "ダブルエリム（勝者／敗者）",
+        "singleElim": "シングルエリミネーション"
+      },
+      "round": {
+        "swiss": "スイス · ラウンド{n}",
+        "losersFinal": "敗者決勝",
+        "losers": "敗者 · R{n}",
+        "grandFinal": "グランドファイナル",
+        "grandFinalReset": "グランドファイナル（リセット）",
+        "winnersFinal": "勝者決勝",
+        "semifinals": "準決勝",
+        "roundOf": "{n}人ラウンド"
+      },
+      "matchStatus": {
+        "live": "進行中",
+        "ready": "準備完了",
+        "done": "終了",
+        "pending": "予定"
+      },
+      "register": {
+        "backEvent": "← イベント",
+        "heading": "ロックするデッキを選ぶ",
+        "leadDefault": "登録するとこのデッキがトーナメント用にロックされます。",
+        "leadPick": "このイベント用に合法デッキを選んでロックしてください。",
+        "leadEmpty": "まだ対象デッキがありません — デッキビルダーで作ってから戻ってください。",
+        "leadFreePick": "デッキ実験のプリセット、保存済みデッキ、または実験パスワードを入力。",
+        "leadFreeEmpty": "フリーデッキがまだありません — デッキ実験でプリセットを保存（または共有パスワード）してから戻ってください。",
+        "noEligible": "このゲームモード用の対象デッキがありません。",
+        "noFreeDecks": "実験プリセットや所持デッキが見つかりません。",
+        "deckFallback": "デッキ",
+        "metaPreset": "プリセット枠 {slot}",
+        "metaEquipped": "· 装備中",
+        "metaStarter": "スターター · {label}",
+        "metaExperiment": "デッキ実験 · 枠 {slot}",
+        "passwordLabel": "実験パスワード",
+        "passwordPlaceholder": "共有デッキ実験コード",
+        "withPassword": "パスワードで登録",
+        "openDeckBuilder": "デッキビルダーを開く",
+        "openDeckExperiment": "デッキ実験を開く"
+      },
+      "status": {
+        "open": "募集中",
+        "checkin": "チェックイン",
+        "running": "進行中",
+        "finished": "終了",
+        "cancelled": "中止"
+      },
+      "entrant": {
+        "registered": "登録済",
+        "checked_in": "チェックイン済",
+        "no_show": "ノーショー",
+        "eliminated": "敗退",
+        "active": "出場中"
+      },
+      "err": {
+        "cancelled": "このトーナメントは中止されました。",
+        "unavailable": "そのトーナメントはもう利用できません。",
+        "cancelRefunded": "トーナメント中止 — 参加者へ返金しました。",
+        "pickStart": "開始日時を選んでください",
+        "startTooSoon": "開始は現在から1分以上先にしてください",
+        "pickStartSoon": "開始時刻は現在から1分以上先を選んでください",
+        "experimentPassword": "実験パスワードを入力してください",
+        "joinHelperMissing": "参加ヘルパーがありません",
+        "spectateHelperMissing": "観戦ヘルパーがありません"
+      },
+      "toast": {
+        "noMatchReady": "トーナメント試合の準備ができていません"
+      },
+      "cal": {
+        "pickDateTime": "日時を選択",
+        "dialogAria": "開始日時を選択",
+        "prevMonth": "前の月",
+        "nextMonth": "次の月",
+        "monthFallback": "月",
+        "dow": {
+          "su": "日",
+          "mo": "月",
+          "tu": "火",
+          "we": "水",
+          "th": "木",
+          "fr": "金",
+          "sa": "土"
+        },
+        "hour": "時",
+        "min": "分",
+        "cancel": "キャンセル",
+        "apply": "適用"
+      },
+      "tz": {
+        "Asia/Tokyo": "日本（JST）",
+        "America/New_York": "米国東部",
+        "America/Chicago": "米国中部",
+        "America/Denver": "米国山地",
+        "America/Los_Angeles": "米国太平洋",
+        "America/Toronto": "カナダ東部",
+        "America/Vancouver": "カナダ太平洋",
+        "Europe/London": "英国（ロンドン）",
+        "Europe/Paris": "中央ヨーロッパ",
+        "Europe/Berlin": "ベルリン",
+        "Australia/Sydney": "シドニー",
+        "Asia/Singapore": "シンガポール",
+        "Asia/Seoul": "韓国（KST）",
+        "Asia/Shanghai": "中国",
+        "Asia/Hong_Kong": "香港",
+        "Asia/Bangkok": "バンコク",
+        "Pacific/Auckland": "オークランド",
+        "UTC": "UTC"
+      }
+    }
+  },
   "es": {
     "logo": {
       "tagline": "El reproductor web no oficial"
@@ -2772,14 +3071,10 @@
     "auth": {
       "checking": "Verificando inicio de sesión con Discord…",
       "signingIn": "Iniciando sesión…",
-      "reconnecting": "Reconectando a la partida…",
-      "reconnectingTry": "Reconectando a la partida… (intento {n})",
-      "reconnectingWaiting": "Aún esperando al servidor… (intento {n})",
       "signInDiscord": "Iniciar sesión con Discord",
       "guestPrompt": "Inicia sesión con Discord para guardar tu colección y jugar clasificatoria.",
       "guestPlayHint": "Juega no clasificada sin cuenta, o inicia sesión para clasificatoria.",
       "sessionExpired": "La sesión expiró: inicia sesión otra vez, o juega no clasificada sin cuenta.",
-      "serverBusy": "El servidor está ocupado: tu sesión se conservó. Espera y actualiza, o juega no clasificada.",
       "loadError": "No se pudo cargar la cuenta: aún puedes jugar no clasificada.",
       "guestTimeout": "La verificación de inicio de sesión tardó demasiado: juega no clasificada, o vuelve a intentar iniciar sesión con Discord."
     },
@@ -2787,7 +3082,7 @@
       "unrankedPlay": "Juego no clasificado",
       "unrankedSub": "Salas, amistades o práctica contra CPU",
       "deckExperiment": "Experimento de mazo",
-      "deckExperimentSub": "Construye con todas las cartas: solo Free, no clasificada",
+      "deckExperimentSub": "Construye con todas las cartas: solo invitados, no clasificada",
       "howToPlay": "Cómo jugar",
       "howToPlaySub": "Lección práctica para principiantes con Kanon",
       "officialVideo": "Vídeo oficial de 8 min ↗"
@@ -2817,35 +3112,14 @@
       "tournamentModeSub": "Próximamente",
       "howToPlay": "Cómo jugar",
       "howToPlaySub": "Lección práctica para principiantes con Kanon",
-      "officialVideo": "Vídeo oficial de 8 min ↗",
       "backHub": "← Hub",
       "missions": "Misiones",
-      "missionsClaimable": "Misiones — {n} listas para reclamar",
-      "loginBonus": "Login",
-      "apk": {
-        "title": "¿Juegas en Android? ¡Consigue el lanzador APK!",
-        "sub": "Descarga Loveca v1.1, permite instalar desde orígenes desconocidos y abre el APK."
-      },
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "Recompensas de packs PR clasificatorias restantes hoy: {remaining} / {limit} (JST · 3 cartas c/u)",
-      "stickerShop": "Intercambio de stickers",
+      "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
+      "stickerShop": "Tienda de stickers",
       "stickerShopSub": "Canjea sellos por cartas de tus sobres",
-      "sleeveShop": { "title": "Tienda de fundas", "sub": "Gasta monedas en fundas" },
-    },
-    "loginBonus": {
-      "title": "Bonus de login",
-      "lead": "Inicia sesión cada día (JST) para reclamar el siguiente bonus. Los días perdidos se saltan — tu progreso se mantiene.",
-      "day": "Día {day}",
-      "reward": {
-        "gems": "{amount} gemas",
-        "nSeals": "{amount} sellos N",
-        "srSeal": "{amount} sello SR",
-        "prPack": "Pack PR"
-      },
-      "gotGems": "¡Recibiste {amount} Star Gems!",
-      "gotNSeals": "¡Recibiste {amount} sellos N!",
-      "gotSrSeal": "¡Recibiste {amount} sello SR!",
-      "gotPrPack": "¡Recibiste un pack PR! Abriendo…"
+      "officialVideo": "Vídeo oficial de 8 min ↗",
+      "tournamentModeSubLive": "Eventos y brackets"
     },
     "language": {
       "label": "Idioma",
@@ -2887,18 +3161,12 @@
       "experimentDeckHint": "Construye en Experimento de mazo, genera una contraseña y luego introdúcela aquí, o elige un mazo guardado abajo.",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} esperando · {inGame} en partidas casuales",
-      "otherModesQueuedLead": "Hay jugadores en cola en otros modos:",
       "casualSearching": "Buscando oponente… ({seconds}s)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "Fácil",
       "cpuNormalShort": "Normal",
       "cpuHardShort": "Difícil",
       "cpuExpertShort": "Experto",
-      "cpuSleeve": "Funda del CPU",
-      "cpuPlaymat": "Playmat del CPU",
-      "cpuCosmeticDefault": "Predeterminado",
-      "cpuCosmeticRandom": "Aleatorio (propios)",
-      "cpuCosmeticsHint": "Elige un cosmético que tengas, o uno al azar de tu colección.",
       "soloStarting": "Iniciando vs CPU ({diff})",
       "player1Default": "Jugador 1",
       "player2Default": "Jugador 2"
@@ -2908,16 +3176,6 @@
       "experimentTitle": "Experimento de mazo",
       "deckName": "Nombre del mazo",
       "presetSlot": "Espacio de preajuste (máx. 10)",
-      "sleeve": "Funda",
-      "sleeveNone": "Ninguna",
-      "sleeveChange": "Cambiar",
-      "sleevePickTitle": "Elegir funda",
-      "sleevePickLead": "Toca una funda que poseas para equiparla en este mazo.",
-      "sleevePickClose": "Cerrar",
-      "sleeveHint": "La funda equipada sustituye el dorso de tus cartas en partida. Por defecto: ninguna.",
-      "sleeveEmpty": "Aún no hay fundas disponibles.",
-      "sleeveEmptyHint": "Compra fundas en la Tienda de fundas.",
-      "sleeveOwnedHint": "Fundas de la Tienda de fundas.",
       "search": "Buscar cartas",
       "searchPlaceholder": "Nombre, ID o texto de reglas…",
       "collection": "Colección",
@@ -2932,48 +3190,6 @@
       "backMenu": "← Menú",
       "deckPassword": "Contraseña del mazo",
       "deckPasswordPlaceholder": "Introduce contraseña para cargar",
-      "decklogCode": "Código deck log",
-      "decklogCodePlaceholder": "Código OR URL",
-      "decklogImport": "Importar",
-      "decklogHint": "Pega un código o URL de deck log: carga la receta y guarda una contraseña de experimento.",
-      "decklogNeedCode": "Introduce un código o URL de deck log.",
-      "decklogImporting": "Importando desde deck log…",
-      "decklogImportingShort": "Importando…",
-      "decklogImportedSaved": "Importado {code}. Contraseña de experimento: {password}",
-      "decklogImported": "Importado {code}.",
-      "decklogAccountHint": "Pega un código o URL de deck log: se carga en este preset si tienes las cartas.",
-      "decklogMissingTitle": "Faltan las siguientes cartas para crear este mazo",
-      "decklogMissingLead": "Sustituye las copias que faltan con cartas de tu colección, o cancela.",
-      "decklogNeedHave": "Necesitas {need} · Tienes {have}",
-      "decklogObtainBooster": "Obtener de: {pack} (Booster)",
-      "decklogObtainStarter": "Obtener de: {pack} (mazo inicial / Intercambio de sellos)",
-      "decklogObtainPr": "Obtener de: paquete PR o Intercambio de sellos",
-      "decklogObtainCollection": "Obtener de: {pack}",
-      "decklogObtainUnknown": "Obtener en la lista de cartas o Intercambio de sellos",
-      "decklogSubstitute": "Sustituto",
-      "decklogSubNone": "Sin sustituto elegido",
-      "decklogSubNoneCount": "Elige {n} sustitutos",
-      "decklogChooseSub": "Elegir sustitutos",
-      "decklogChangeSub": "Cambiar sustitutos",
-      "decklogSubPicked": "Sustituto: {name}",
-      "decklogSubPickedCount": "Sustitutos ({n})",
-      "decklogSubPickTitle": "Elegir sustitutos",
-      "decklogSubPickTitleFor": "Elige {n} para {name}",
-      "decklogSubPickLead": "Clic derecho o toque para añadir una copia. Cuando esté completo, clic derecho para quitar. Confirma al terminar.",
-      "decklogSubPickCount": "Elige {n} cartas",
-      "decklogSubPickCountReady": "Selección lista — confirma para aplicar",
-      "decklogSubPickConfirm": "Confirmar sustitutos",
-      "decklogSubPickRemoveHint": "Quitar",
-      "decklogSubPickReplacing": "Reemplazando",
-      "decklogSubPickShortfall": "{n} a sustituir",
-      "decklogSubNoneAvailable": "Sin sustitutos en posesión",
-      "decklogAutoSubs": "Elegir sustitutos auto",
-      "decklogApplySubs": "Sustituir y añadir mazo",
-      "decklogNeedAllSubs": "Elige suficientes sustitutos para cada carta que falta, o cancela.",
-      "decklogSubsStillShort": "Aún faltan copias: elige otros sustitutos o cancela.",
-      "decklogImportedAccount": "Importado {code}. Guarda el preset cuando quieras.",
-      "decklogNeedSignIn": "Inicia sesión para importar un deck log a tu mazo de colección.",
-      "decklogAutoEnergy": "Sustituir Energy faltante auto",
       "load": "Cargar",
       "savedPassword": "Contraseña guardada:",
       "copy": "Copiar",
@@ -3138,23 +3354,6 @@
       "openBox": "Abrir caja ({n} sobres)",
       "selectBoxFirst": "Elige un booster primero"
     },
-    "gameMode": {
-      "label": "Modo de juego",
-      "standard": "Estándar",
-      "starters": "Solo mazos iniciales",
-      "free": "Libre",
-      "randomized": "Mazos aleatorios",
-      "short": {
-        "standard": "Estándar",
-        "starters": "Iniciales",
-        "free": "Libre",
-        "randomized": "Aleatorio"
-      },
-      "standardDesc": "El modo TCG estándar. Usa mazos construidos con cartas que posees contra otros jugadores.",
-      "startersDesc": "Este modo solo se puede jugar con mazos iniciales.",
-      "freeDesc": "Usa mazos del experimento de mazos, ¡con cualquier carta del juego! (No hace falta poseerlas). Este modo no tiene tablas de clasificación.",
-      "randomizedDesc": "Ambos jugadores reciben un mazo legal aleatorio del catálogo completo (sin necesidad de poseer las cartas). Ranked tiene su propia clasificación."
-    },
     "ranked": {
       "title": "PvP clasificatorio",
       "findMatch": "Buscar partida",
@@ -3197,22 +3396,13 @@
       "flagLoading": "Cargando banderas…",
       "selectCardFirst": "Selecciona primero una carta",
       "jumpToYou": "Ir a mi fila",
-      "yourRank": "Tu puesto: #{rank}",
-      "yourRankNotPlayed": "Tu puesto: sin jugar"
+      "yourRank": "Tu puesto: #{rank}"
     },
     "options": {
       "title": "Opciones",
       "enhancedTextures": "Texturas mejoradas en cartas de alta rareza",
-      "sleeveConform": "Ajustar fundas a la forma de la carta (dorso redondeado, sin borde cuadrado)",
       "soundEffects": "Efectos de sonido",
-      "discordPresence": "Discord Rich Presence (Android)",
-      "discordPresenceOff": "Off — activa para compartir menús, partidas y cola en Discord.",
-      "discordPresenceOn": "On — Discord puede mostrar lo que haces en Loveca.",
-      "discordPresenceLink": "Vincular Discord para Presence",
       "sfxVolume": "Volumen de SFX",
-      "textScale": "Escala de texto y UI",
-      "textScaleExp": "Experimental",
-      "textScaleLead": "Amplía o reduce el texto y los botones de los menús. Los tamaños mayores usan más desplazamiento para no solaparse. Los paneles laterales de partida se mantienen en pantalla; el tablero sigue ajustado en móvil.",
       "stuckTitle": "¿Atascado en una partida?",
       "stuckLead": "Si clasificatoria te reconecta a una partida rota o terminada, abandona aquí el registro de partida activa. Esto cuenta como rendición si la partida aún está en curso.",
       "resetTitle": "Restablecer cuenta",
@@ -3332,10 +3522,6 @@
     "phaseBar": {
       "spectating": "Espectando: {p1} vs {p2} (solo lectura)",
       "setupWaitMulligan": "Esperando a que el oponente termine el muligan…",
-      "setupWaitMulliganYou": "Robaste de nuevo {n}. Esperando a que el oponente termine el muligan…",
-      "setupWaitMulliganYouKept": "Conservaste tu mano. Esperando a que el oponente termine el muligan…",
-      "setupMulliganPlayerN": "{name} robó de nuevo {n}",
-      "setupMulliganPlayerKept": "{name} conservó la mano",
       "setupMulligan": "Preparación: revisa tu mano inicial, marca cartas para muligan y luego confirma.",
       "coinFlip": "Lanzamiento de moneda: el ganador elige quién va primero…",
       "mainYour": "Tu Fase principal: juega Miembros ({energy} disponible). Termina la Fase principal cuando estés listo.",
@@ -3409,7 +3595,6 @@
       "bothWait": "Ambos jugadores esperan",
       "bothWaitSub": "Las cartas Live permanecen en almacenamiento",
       "liveStartFlash": "INICIO DE LIVE",
-      "heartCheck": "Comprobando corazones…",
       "liveJudgeTieCappedBoth": "Empate en puntuación Live — ninguno añade un Live exitoso (ambos ya tienen 2)",
       "liveJudgeTieYouCappedWin": "Empate — tienes el tope de 2 Lives exitosos",
       "liveJudgeTieOppEarns": "Empate — el oponente obtiene un Live exitoso",
@@ -3427,9 +3612,7 @@
       "replaceCard": "Reemplazar {n} carta",
       "replaceCards": "Reemplazar {n} cartas",
       "tutorialKeepHint": "¿Te gusta esta mano? Toca Conservar mano para continuar.",
-      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo.",
-      "declareTitle": "Muligan",
-      "declareSub": "{a}: {aN} · {b}: {bN}"
+      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo."
     },
     "coin": {
       "title": "Primer jugador",
@@ -3458,8 +3641,6 @@
       "yourScore": "Tu puntuación",
       "oppScore": "Puntuación del opo.",
       "combinedHearts": "Corazones requeridos combinados",
-      "combinedScore": "Puntuación {score}",
-      "combinedScoreBonus": "Puntuación {base} +{bonus}",
       "livesSelected": "{n} Lives",
       "livesSelectedOne": "1 Live",
       "plusMembers": "+{n} Miembros",
@@ -3507,6 +3688,7 @@
       "noLiveSuccess": "No hay cartas Live para colocar en Live exitoso",
       "searchDeckFor": "Buscar en el mazo…",
       "deckTopPick": "Parte superior del mazo",
+      "surveilHintReturnAll": "El hueco 1 es la cima del mazo. Arrastra cartas entre huecos numerados, o toca dos cartas para intercambiarlas. Todas deben permanecer en la cima del mazo.",
       "noValidTargets": "No hay Miembros válidos en el Escenario.",
       "selectAtMost": "Selecciona como máximo {n}",
       "selectAtLeast": "Selecciona al menos {n}",
@@ -3530,8 +3712,7 @@
       "noLiveInHand": "No hay carta Live en la mano",
       "noMemberInHand": "No hay carta de Miembro en la mano",
       "enterNumber0to99": "Introduce un número del 0 al 99",
-      "noYellMill": "No hay cartas Yell para enviar al molino.",
-      "surveilHintReturnAll": "El hueco 1 es la cima del mazo. Arrastra cartas entre huecos numerados, o toca dos cartas para intercambiarlas. Todas deben permanecer en la cima del mazo."
+      "noYellMill": "No hay cartas Yell para enviar al molino."
     },
     "skill": {
       "alreadyUsed": "Ya usado este turno",
@@ -3567,10 +3748,6 @@
         "title": "Una vez por turno",
         "body": "Solo puedes usar este efecto una vez en cada turno."
       },
-      "twicePerTurn": {
-        "title": "Dos veces por turno",
-        "body": "Puedes usar este efecto hasta dos veces en cada turno."
-      },
       "automatic": {
         "title": "Automático",
         "body": "Se dispara por sí mismo cuando ocurre la condición indicada; no requiere activación."
@@ -3586,6 +3763,18 @@
       "wait": {
         "body": "Un Miembro puesto en Wait no aporta su Blade ese turno: su Blade no aumenta las cartas reveladas para Yell en la Presentación Live. No es la Sala de espera.",
         "title": "Wait (ウェイト)"
+      },
+      "twicePerTurn": {
+        "title": "Dos veces por turno",
+        "body": "Puedes usar este efecto hasta dos veces en cada turno."
+      },
+      "leftSide": {
+        "title": "Lado izquierdo",
+        "body": "Solo aplica si este Miembro está en un espacio izquierdo del Escenario cuando el efecto se resuelve."
+      },
+      "rightSide": {
+        "title": "Lado derecho",
+        "body": "Solo aplica si este Miembro está en un espacio derecho del Escenario cuando el efecto se resuelve."
       }
     },
     "heart": {
@@ -3612,8 +3801,7 @@
       "playToSlot": "Jugar en espacio:",
       "needEnergy": "Necesitas",
       "haveEnergy": "tienes",
-      "bladeHearts": "Corazones de Blade",
-      "allBladeHeartsTip": "Al comprobar los corazones requeridos, los corazones de Blade ALL revelados para Yell cuentan como cualquier color.",
+      "bladeHearts": "Corazones de Blade"
     },
     "pack": {
       "opened": "Sobre abierto",
@@ -3665,14 +3853,10 @@
       "debugSaveLog": "💾 Guardar registro de depuración",
       "debugCopyLog": "📋 Copiar registro",
       "debugSaveBundle": "📦 Exportar paquete de depuración",
-      "rankedPrDailyCap": "Packs PR clasificatorios del día usados ({limit}/día JST)",
-      "rankedPrDupe": "Victoria clasificatoria: pack PR — ábrelo en el menú principal",
-      "rankedPrNew": "Victoria clasificatoria: pack PR — ábrelo en el menú principal",
-      "rankedPrPopupTitle": "¡Pack PR clasificatorio!",
-      "rankedPrPackWon": "Victoria clasificatoria: pack PR ×{count} — ábrelo en el menú principal",
-      "rankedPrPackPopupTitle": "¡Pack PR clasificatorio ×{count}!",
-      "rankedPrPackSummary": "{count} cartas",
-      "rankedPrPackDupes": "{count} duplicado(s) → {gems} Star Gems",
+      "rankedPrDailyCap": "Recompensas PR clasificatorias del día usadas ({limit}/día JST)",
+      "rankedPrDupe": "{name} convertida a {gems} Star Gems (límite de copias)",
+      "rankedPrNew": "Recompensa por victoria clasificatoria: {name}",
+      "rankedPrPopupTitle": "¡Recompensa por victoria clasificatoria!",
       "rematchAccept": "Aceptar revancha",
       "rematchOffer": "Revancha",
       "rematchOppWants": "¡{name} quiere una revancha!",
@@ -3694,15 +3878,10 @@
       "noFileSelected": "No se seleccionó ningún archivo.",
       "startImported": "Iniciar repetición importada",
       "playPause": "Reproducir / pausar",
-      "first": "Primera acción",
-      "prev": "Acción anterior",
-      "next": "Siguiente acción",
-      "last": "Última acción",
-      "startStep": "inicio",
       "positionAria": "Posición de la repetición",
       "handoffNote": "Repetición completa: tienes el control. La CPU juega como oponente.",
       "exitReplay": "Salir de repetición",
-      "phaseBarHint": "Repetición {step} / {total}: atrás/siguiente avanza una acción; la barra también busca.",
+      "phaseBarHint": "Repetición {step} / {total}: usa la barra de repetición abajo para avanzar por las acciones grabadas.",
       "signInLibrary": "Inicia sesión para guardar y ver repeticiones en tu biblioteca.",
       "emptyLibrary": "Aún no hay repeticiones guardadas. Termina una partida y elige Guardar repetición.",
       "watch": "Ver",
@@ -3864,13 +4043,7 @@
     },
     "mobile": {
       "rotateTitle": "Este juego se juega en horizontal",
-      "rotateSub": "Gira tu dispositivo para continuar.",
-      "openLog": "Registro",
-      "refresh": "Actualizar",
-      "stamps": "Sellos",
-      "offlineNeedNetwork": "Sin red — vuelve a conectar para jugar.",
-      "portraitHint": "Modo vertical para móviles",
-      "deckInspectHint": "Toca una carta para verla"
+      "rotateSub": "Gira tu dispositivo para continuar."
     },
     "common": {
       "loading": "Cargando…",
@@ -3910,13 +4083,8 @@
       "couldNotCopyLog": "No se pudo copiar el registro",
       "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
       "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo.",
-      "signInStickerShop": "Inicia sesión para usar el Intercambio de stickers.",
-      "signInSleeveShop": "Inicia sesión para usar la tienda de fundas.",
-      "sleeveShopLoadFailed": "No se pudo cargar la tienda de fundas",
-      "sleeveBought": "¡Funda desbloqueada!",
-      "sleeveClaimedFree": "¡Funda gratis reclamada!",
-      "coinsEarned": "+{n} monedas",
-      "stickerLoadFailed": "No se pudo cargar el Intercambio de stickers",
+      "signInStickerShop": "Inicia sesión para usar la tienda de stickers.",
+      "stickerLoadFailed": "No se pudo cargar la tienda de stickers",
       "stickerCardsLoadFailed": "No se pudieron cargar las cartas",
       "stickerExchangeFailed": "Canje fallido",
       "stickerConvertFailed": "Conversión fallida"
@@ -3943,11 +4111,9 @@
       "matchEnded": "La partida terminó — volviendo al lobby.",
       "sessionEnded": "La sesión de espectador terminó.",
       "switchPerspective": "Cambiar perspectiva",
-      "hiddenHands": "Manos ocultas",
-      "hiddenHandsTitle": "Manos ocultas (vista de torneo)",
-      "hiddenHandsOnTitle": "Manos ocultas activadas — toca para mostrar",
       "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
-      "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…"
+      "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…",
+      "listTitleTournament": "Espectar torneo"
     },
     "missions": {
       "claim": "Reclamar",
@@ -3966,11 +4132,6 @@
         "cards1200": "Posee 1.200 cartas",
         "cards1600": "Posee 1.600 cartas",
         "cards2000": "Posee 2.000 cartas",
-        "cards2400": "Posee 2.400 cartas",
-        "playIdol": "Jugaste una carta de {idol} {n} veces",
-        "playLiveGroup": "Jugaste una carta Live de {group} {n} veces",
-        "playLiveSubunit": "Jugaste una carta Live de {subunit} {n} veces",
-        "loginDays10": "Inicia sesión en 10 días distintos (JST)",
         "cards400": "Posee 400 cartas",
         "cards800": "Posee 800 cartas",
         "profileBanner": "Actualiza tu banner de perfil",
@@ -3989,21 +4150,17 @@
         "winLiella": "Gana con un mazo principal solo Liella!",
         "winMuse": "Gana con un mazo principal solo μ's",
         "winNijigasaki": "Gana con un mazo principal solo Nijigasaki",
+        "sticker1": "Canjeaste sellos en la tienda de stickers",
+        "sticker10": "Canjeaste sellos en la tienda de stickers 10 veces",
+        "sticker50": "Canjeaste sellos en la tienda de stickers 50 veces",
+        "sticker100": "Canjeaste sellos en la tienda de stickers 100 veces",
+        "cards2400": "Posee 2.400 cartas",
         "winTurn3": "Gana una partida en tu 3.er turno",
         "yellScore20": "Consigue una puntuación Yell de 20 o más",
-        "liveScore15": "Consigue una puntuación Live de 15 o más en una sola ronda",
-        "sticker1": "Canjeaste sellos en el Intercambio de stickers",
-        "sticker10": "Canjeaste sellos en el Intercambio de stickers 10 veces",
-        "sticker50": "Canjeaste sellos en el Intercambio de stickers 50 veces",
-        "sticker100": "Canjeaste sellos en el Intercambio de stickers 100 veces"
+        "liveScore15": "Consigue una puntuación Live de 15 o más en una sola ronda"
       },
       "rewardStarter": "Elige un mazo inicial",
       "rewardStarterOwned": "Ya lo tienes",
-      "rewardFreeSleeve": "Funda gratis",
-      "rewardCoinsAndPrPack": "+{coins} monedas · Pack PR",
-      "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
-      "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
-      "claimedCoinsToast": "Reclamaste {title} (+{coins} monedas)",
       "starterPickCancel": "Cancelar",
       "starterPickConfirm": "Desbloquear mazo",
       "starterPickTitle": "Elige un mazo inicial",
@@ -4013,7 +4170,11 @@
       "statusReady": "Lista para reclamar",
       "tabDaily": "Diarias",
       "tabMilestone": "Hitos",
-      "title": "Misiones"
+      "title": "Misiones",
+      "rewardCoinsAndPrPack": "+{coins} monedas · Pack PR",
+      "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
+      "rewardFreeSleeve": "Funda gratis",
+      "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas"
     },
     "stamps": {
       "audio": "Audio de sellos",
@@ -4050,7 +4211,7 @@
       "energy": "Energía"
     },
     "sticker": {
-      "title": "Intercambio de stickers",
+      "title": "Tienda de stickers",
       "backHub": "← Hub",
       "backProducts": "← Productos",
       "hint": "Convierte cartas gacha sobrantes en el Constructor de mazos en sellos, luego canjéalos por cartas aquí.",
@@ -4070,56 +4231,275 @@
       "infoRarities": "Rarezas",
       "infoCost": "Coste de canje"
     },
-    "sleeveShop": {
-      "title": "Tienda de fundas",
+    "tournament": {
       "backHub": "← Hub",
-      "backChars": "← Personajes",
-      "hint": "Gana monedas al terminar partidas. Elige una generación y luego un personaje.",
-      "coinsAria": "Monedas",
-      "freeClaims": "Elecciones gratis: {n}",
-      "owned": "En posesión",
-      "buy": "Comprar",
-      "buyConfirm": "¿Comprar {name} por {price} monedas?\n\nEsto no se puede deshacer.",
-      "claimFree": "Canjear gratis",
-      "hoverEmpty": "Pasa el cursor sobre una funda para previsualizar",
-      "bdayName": "Visual de cumpleaños de {name} {year}",
-      "hgVolName": "Colección de fundas HG Vol.{vol}: {title}",
-      "extraVolName": "Colección de fundas Extra Vol.{vol}: {title}",
-      "extraName": "Colección de fundas Extra: {title}",
-      "rebirthDeluxeName": "Set deluxe ReBirth for you (funda y carta): {title}",
-      "rebirthVer": "ver. ReBirth",
-      "units": {
-        "muse": "µ's",
-        "aqours": "Aqours",
-        "nijigasaki": "Nijigasaki",
-        "liella": "Liella!",
-        "hasunosora": "Hasunosora",
-        "mixed": "Mixtas",
-        "other": "Otros"
+      "title": "Modo torneo",
+      "lead": "Programa eventos, fija mazos, haz check-in y juega un bracket de eliminación simple.",
+      "timezoneLabel": "Zona horaria",
+      "timezoneAria": "Zona horaria de visualización",
+      "tzHint": "Horas mostradas en {tz}",
+      "tzHintJstFallback": "Horas mostradas en JST",
+      "createEvent": "Crear evento",
+      "refresh": "Actualizar",
+      "filterMode": "Modo",
+      "mode": {
+        "all": "Todos",
+        "standard": "Estándar",
+        "starters": "Iniciales",
+        "randomized": "Aleatorio",
+        "free": "Libre",
+        "freeDeckExperiment": "Libre (Experimento de mazo)"
       },
-      "series": {
-        "lovelive": "Love Live!",
-        "sunshine": "Love Live! Sunshine!!",
-        "nijigasaki": "Love Live! Nijigasaki High School Idol Club",
-        "superstar": "Love Live! Superstar!!",
-        "hasunosora": "Love Live! Hasunosora Girls' High School Idol Club",
-        "hasunosoraShort": "Hasunosora Girls' High School Idol Club",
-        "muse": "µ's",
-        "sukufesuThanks": "Agradecimiento serie Sukufesu",
-        "loveliveSeries": "Serie Love Live!",
-        "hasunosoraSchool": "Hasunosora Girls' High School"
+      "listEmpty": "Aún no hay torneos abiertos. Crea uno para empezar.",
+      "card": {
+        "fee": "cuota {n}",
+        "watching": "{n} viendo",
+        "starts": "empieza {when}",
+        "fog": "niebla {fog}",
+        "delay": "retraso {n}s",
+        "metaSep": "·"
+      },
+      "backBulletin": "← Tablón",
+      "notify": {
+        "title": "Torneo LLTCG",
+        "checkinOpen": "Check-in abierto: {title}",
+        "checkinSoon": "Check-in pronto: {title}"
+      },
+      "createHeading": "Crear torneo",
+      "createTzNote": "La hora de inicio usa {tz}.",
+      "createTzNoteFallback": "La hora de inicio usa tu zona horaria seleccionada.",
+      "field": {
+        "title": "Título",
+        "titlePlaceholder": "Bracket del viernes",
+        "startLocal": "Inicio (local)",
+        "checkinMins": "Minutos de check-in",
+        "minPlayers": "Jugadores mín.",
+        "maxPlayers": "Jugadores máx.",
+        "entryFee": "Cuota de entrada (Coins)",
+        "gameMode": "Modo de juego",
+        "format": "Formato",
+        "matchLength": "Duración del partido",
+        "fog": "Niebla de guerra",
+        "rules": "Plantilla de reglas",
+        "rulesTitle": "Reglas extra de mazo; solo Estándar aplica en Iniciales / Aleatorio",
+        "streamDelay": "Retraso de stream (espectar)"
+      },
+      "format": {
+        "singleElim": "Eliminación simple",
+        "doubleElimBracket": "Doble elim (Ganadores/Perdedores)",
+        "doubleElimLives": "Doble elim (2 vidas)",
+        "swiss": "Suizo",
+        "single_elim": "Eliminación simple",
+        "double_elim_bracket": "Doble elim (Ganadores/Perdedores)",
+        "double_elim": "Doble elim (2 vidas)"
+      },
+      "bestOf": {
+        "1": "Al mejor de 1",
+        "3": "Al mejor de 3"
+      },
+      "fog": {
+        "hiddenHands": "Manos ocultas (espectadores)",
+        "openHands": "Manos abiertas",
+        "hiddenHandsShort": "manos ocultas",
+        "openHandsShort": "manos abiertas"
+      },
+      "rules": {
+        "standardOption": "Estándar (sin límites extra)",
+        "pauperOption": "Pauper (N/R)",
+        "highlanderOption": "Highlander (1 copia)",
+        "standard": {
+          "label": "Estándar",
+          "help": "Sin límites de mazo extra más allá del modo de juego. Rarity y copias normales aplican."
+        },
+        "pauper": {
+          "label": "Pauper (N/R)",
+          "help": "Solo rarezas bajas: N, R, C, U y CL. Rarezas altas (SR+, SEC, etc.) no permitidas."
+        },
+        "highlander": {
+          "label": "Highlander (1 copia)",
+          "help": "Como máximo una copia de cada carta en todo el mazo (principal + energía). Sin duplicados de número."
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "El modo de juego ya fija las reglas de mazo — aquí solo aplica Estándar."
+      },
+      "delay": {
+        "none": "Ninguno",
+        "secs": "{n} segundos"
+      },
+      "schedule": "Programar",
+      "detail": {
+        "host": "Anfitrión",
+        "hostFallback": "Anfitrión",
+        "prize": "premio {n}",
+        "watching": "viendo {n}",
+        "starts": "empieza {when}",
+        "mode": "modo {mode}",
+        "rules": "reglas {rules}",
+        "fog": "niebla {fog}",
+        "streamDelay": "retraso de stream {n}s",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "Inscritos",
+      "bracketHeading": "Bracket",
+      "entrantsEmpty": "Sin inscritos",
+      "person": {
+        "playerFallback": "Jugador"
+      },
+      "standingsHeading": "Clasificación",
+      "standings": {
+        "record": "{wins}V–{losses}D"
+      },
+      "action": {
+        "register": "Inscribirse",
+        "registerTip": "Fija un mazo y entra al evento. Paga la cuota al pozo de premios si hay una.",
+        "checkin": "Check-in",
+        "checkinTip": "Confirma que estás presente antes de que empiece el bracket. Sin check-in = no-show.",
+        "unregister": "Cancelar inscripción",
+        "unregisterTip": "Sal del evento antes de que empiece y recupera tu cuota.",
+        "checkedIn": "Check-in hecho",
+        "checkedInTip": "Estás en check-in y esperando el inicio del bracket.",
+        "deposit": "Depositar premio",
+        "depositTip": "Añade Coins de tu saldo al pozo de premios (solo anfitrión).",
+        "cancel": "Cancelar (reembolso)",
+        "cancelTip": "Cancela el torneo y reembolsa cuotas más depósitos de premio restantes del anfitrión.",
+        "tick": "Actualizar / tick",
+        "tickTip": "Actualiza el evento y avanza temporizadores del servidor (check-in, bracket, salas).",
+        "join": "Unirme a mi partida",
+        "joinTip": "Entra a tu sala de torneo cuando tu partido del bracket esté listo.",
+        "spectateList": "Espectar partidas",
+        "spectateListTip": "Explora y mira partidas en vivo de este torneo como espectador."
+      },
+      "prompt": {
+        "deposit": "Coins a depositar en el pozo de premios:",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "¿Cancelar el torneo y reembolsar a los inscritos?"
+      },
+      "bracket": {
+        "empty": "El bracket aparece cuando se fijan jugadores máx. / formato.",
+        "previewSuffix": "Vista previa (nombres tras el check-in)",
+        "slot": "Plaza",
+        "tbd": "PDT",
+        "bye": "Bye",
+        "waiting": "Esperando…",
+        "spectate": "Espectar",
+        "spectateTip": "Mira este partido como espectador (no jugadores bienvenidos)",
+        "winner": "Ganador: {name}",
+        "namesLock": "Los nombres se fijan al iniciar el bracket"
+      },
+      "formatCaption": {
+        "swiss": "Rondas suizas",
+        "doubleElimLives": "Doble elim (2 vidas)",
+        "doubleElimBracket": "Doble elim (Ganadores/Perdedores)",
+        "singleElim": "Eliminación simple"
+      },
+      "round": {
+        "swiss": "Suizo · Ronda {n}",
+        "losersFinal": "Final de perdedores",
+        "losers": "Perdedores · R{n}",
+        "grandFinal": "Gran final",
+        "grandFinalReset": "Gran final (reset)",
+        "winnersFinal": "Final de ganadores",
+        "semifinals": "Semifinales",
+        "roundOf": "Ronda de {n}"
+      },
+      "matchStatus": {
+        "live": "En vivo",
+        "ready": "Listo",
+        "done": "Hecho",
+        "pending": "Próximo"
+      },
+      "register": {
+        "backEvent": "← Evento",
+        "heading": "Elige el mazo a fijar",
+        "leadDefault": "Este mazo queda fijado para el torneo al inscribirte.",
+        "leadPick": "Elige un mazo legal para fijar en este evento.",
+        "leadEmpty": "Aún no hay mazo válido — constrúyelo en el Constructor y vuelve.",
+        "leadFreePick": "Elige un preset de Experimento, un mazo de cuenta o una contraseña de experimento.",
+        "leadFreeEmpty": "Aún no hay mazos libres — abre Experimento, guarda un preset (o usa una contraseña) y vuelve.",
+        "noEligible": "No hay mazos aptos para este modo.",
+        "noFreeDecks": "No se encontraron presets de experimento ni mazos de cuenta.",
+        "deckFallback": "Mazo",
+        "metaPreset": "Slot de preset {slot}",
+        "metaEquipped": "· equipado",
+        "metaStarter": "Inicial · {label}",
+        "metaExperiment": "Experimento de mazo · slot {slot}",
+        "passwordLabel": "Contraseña de experimento",
+        "passwordPlaceholder": "Código compartido de Experimento",
+        "withPassword": "Inscribirse con contraseña",
+        "openDeckBuilder": "Abrir Constructor de mazos",
+        "openDeckExperiment": "Abrir Experimento de mazo"
+      },
+      "status": {
+        "open": "Abierto",
+        "checkin": "Check-in",
+        "running": "En curso",
+        "finished": "Finalizado",
+        "cancelled": "Cancelado"
+      },
+      "entrant": {
+        "registered": "Inscrito",
+        "checked_in": "Check-in hecho",
+        "no_show": "No presentado",
+        "eliminated": "Eliminado",
+        "active": "Activo"
+      },
+      "err": {
+        "cancelled": "Este torneo fue cancelado.",
+        "unavailable": "Ese torneo ya no está disponible.",
+        "cancelRefunded": "Torneo cancelado — inscritos reembolsados.",
+        "pickStart": "Elige fecha y hora de inicio",
+        "startTooSoon": "El inicio debe ser al menos 1 minuto desde ahora",
+        "pickStartSoon": "Elige una hora de inicio al menos 1 minuto desde ahora",
+        "experimentPassword": "Introduce una contraseña de experimento",
+        "joinHelperMissing": "Falta el asistente de unión",
+        "spectateHelperMissing": "Falta el asistente de espectar"
+      },
+      "toast": {
+        "noMatchReady": "Ninguna partida de torneo lista"
+      },
+      "cal": {
+        "pickDateTime": "Elegir fecha y hora",
+        "dialogAria": "Elegir fecha y hora de inicio",
+        "prevMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente",
+        "monthFallback": "Mes",
+        "dow": {
+          "su": "Do",
+          "mo": "Lu",
+          "tu": "Ma",
+          "we": "Mi",
+          "th": "Ju",
+          "fr": "Vi",
+          "sa": "Sa"
+        },
+        "hour": "Hora",
+        "min": "Min",
+        "cancel": "Cancelar",
+        "apply": "Aplicar"
+      },
+      "tz": {
+        "Asia/Tokyo": "Japón (JST)",
+        "America/New_York": "EE. UU. Este",
+        "America/Chicago": "EE. UU. Central",
+        "America/Denver": "EE. UU. Montaña",
+        "America/Los_Angeles": "EE. UU. Pacífico",
+        "America/Toronto": "Canadá Este",
+        "America/Vancouver": "Canadá Pacífico",
+        "Europe/London": "Reino Unido (Londres)",
+        "Europe/Paris": "Europa Central",
+        "Europe/Berlin": "Berlín",
+        "Australia/Sydney": "Sídney",
+        "Asia/Singapore": "Singapur",
+        "Asia/Seoul": "Corea (KST)",
+        "Asia/Shanghai": "China",
+        "Asia/Hong_Kong": "Hong Kong",
+        "Asia/Bangkok": "Bangkok",
+        "Pacific/Auckland": "Auckland",
+        "UTC": "UTC"
       }
-    },
-    "cardList": {
-      "title": "Lista de cartas",
-      "hubSub": "Ver todas las cartas",
-      "backHub": "← Hub",
-      "lead": "Explora todas las cartas por producto. Las que posees se muestran a color.",
-      "collection": "Colección",
-      "ownedProgress": "{owned}/{total}",
-      "notOwned": "No poseída",
-      "prCards": "Cartas PR",
-      "other": "Otras"
     }
   },
   "ko": {
@@ -4139,14 +4519,10 @@
     "auth": {
       "checking": "Discord 로그인 확인 중…",
       "signingIn": "로그인 중…",
-      "reconnecting": "경기에 다시 연결 중…",
-      "reconnectingTry": "경기에 다시 연결 중… (시도 {n})",
-      "reconnectingWaiting": "서버 응답 대기 중… (시도 {n})",
       "signInDiscord": "Discord로 로그인",
       "guestPrompt": "컬렉션을 저장하고 랭크전을 플레이하려면 Discord로 로그인하세요.",
       "guestPlayHint": "계정 없이 일반전을 즐기거나, 랭크전을 위해 로그인하세요.",
       "sessionExpired": "세션이 만료되었습니다 — 다시 로그인하거나 계정 없이 일반전을 플레이하세요.",
-      "serverBusy": "서버가 혼잡합니다 — 로그인 정보는 유지됩니다. 잠시 후 새로고침하거나 일반전을 플레이하세요.",
       "loadError": "계정을 불러올 수 없습니다 — 일반전은 계속 플레이할 수 있습니다.",
       "guestTimeout": "로그인 확인 시간이 초과되었습니다 — 일반전을 플레이하거나 Discord 로그인을 다시 시도하세요."
     },
@@ -4154,7 +4530,7 @@
       "unrankedPlay": "일반전",
       "unrankedSub": "방 만들기, 친구와 대전, CPU 연습",
       "deckExperiment": "덱 실험",
-      "deckExperimentSub": "모든 카드로 덱 구성 — Free 전용, 일반전",
+      "deckExperimentSub": "모든 카드로 덱 구성 — 게스트 전용, 일반전",
       "howToPlay": "플레이 방법",
       "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
       "officialVideo": "공식 8분 영상 ↗"
@@ -4184,35 +4560,14 @@
       "tournamentModeSub": "곧 공개",
       "howToPlay": "플레이 방법",
       "howToPlaySub": "카논과 함께하는 초보자 실습 강의",
-      "officialVideo": "공식 8분 영상 ↗",
       "backHub": "← 허브",
       "missions": "미션",
-      "missionsClaimable": "미션 — 수령 가능 {n}개",
-      "loginBonus": "출석",
-      "apk": {
-        "title": "Android에서 플레이하나요? APK 런처를 받으세요!",
-        "sub": "Loveca v1.1을 다운로드하고 알 수 없는 출처 설치를 허용한 뒤 APK를 여세요."
-      },
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "오늘 남은 랭크 PR 팩: {remaining} / {limit} (JST · 각 3장)",
-      "stickerShop": "스티커 교환",
+      "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
+      "stickerShop": "스티커 샵",
       "stickerShopSub": "실을 팩 카드로 교환",
-      "sleeveShop": { "title": "슬리브 샵", "sub": "코인으로 슬리브 구매" },
-    },
-    "loginBonus": {
-      "title": "출석 보너스",
-      "lead": "매일 로그인(JST)하면 다음 보너스를 받을 수 있습니다. 빠진 날은 건너뛰고 진행도는 그대로입니다.",
-      "day": "{day}일차",
-      "reward": {
-        "gems": "젬 {amount}",
-        "nSeals": "N 실 {amount}",
-        "srSeal": "SR 실 {amount}",
-        "prPack": "PR 팩"
-      },
-      "gotGems": "스타 젬 {amount}개를 받았습니다!",
-      "gotNSeals": "N 실 {amount}장을 받았습니다!",
-      "gotSrSeal": "SR 실 {amount}장을 받았습니다!",
-      "gotPrPack": "PR 팩을 받았습니다! 개봉 중…"
+      "officialVideo": "공식 8분 영상 ↗",
+      "tournamentModeSubLive": "이벤트 & 브래킷"
     },
     "language": {
       "label": "언어",
@@ -4254,18 +4609,12 @@
       "experimentDeckHint": "덱 실험에서 덱을 만들고 비밀번호를 생성한 뒤 여기에 입력하세요 — 또는 아래에서 저장된 덱을 선택하세요.",
       "secondsLabel": "{n}초",
       "casualQueueStats": "대기 {waiting}명 · 캐주얼 진행 중 {inGame}명",
-      "otherModesQueuedLead": "다른 모드에 대기 중인 플레이어:",
       "casualSearching": "상대 찾는 중… ({seconds}초)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "쉬움",
       "cpuNormalShort": "보통",
       "cpuHardShort": "어려움",
       "cpuExpertShort": "전문가",
-      "cpuSleeve": "CPU 슬리브",
-      "cpuPlaymat": "CPU 플레이매트",
-      "cpuCosmeticDefault": "기본",
-      "cpuCosmeticRandom": "랜덤 (보유)",
-      "cpuCosmeticsHint": "보유한 코스메틱을 고르거나, 보유 목록에서 랜덤으로 고를 수 있습니다.",
       "soloStarting": "CPU전 시작 중 ({diff})",
       "player1Default": "플레이어 1",
       "player2Default": "플레이어 2"
@@ -4275,16 +4624,6 @@
       "experimentTitle": "덱 실험",
       "deckName": "덱 이름",
       "presetSlot": "프리셋 슬롯 (최대 10개)",
-      "sleeve": "슬리브",
-      "sleeveNone": "없음",
-      "sleeveChange": "변경",
-      "sleevePickTitle": "슬리브 선택",
-      "sleevePickLead": "보유한 슬리브를 탭해 이 덱에 장착하세요.",
-      "sleevePickClose": "닫기",
-      "sleeveHint": "장착한 슬리브가 대전 중 카드 뒷면을 대체합니다. 기본값: 없음.",
-      "sleeveEmpty": "아직 사용할 수 있는 슬리브가 없습니다.",
-      "sleeveEmptyHint": "슬리브 샵에서 구매하세요.",
-      "sleeveOwnedHint": "슬리브 샵에서 보유한 슬리브.",
       "search": "카드 검색",
       "searchPlaceholder": "이름, ID 또는 룰 텍스트…",
       "collection": "컬렉션",
@@ -4299,48 +4638,6 @@
       "backMenu": "← 메뉴",
       "deckPassword": "덱 비밀번호",
       "deckPasswordPlaceholder": "불러올 비밀번호 입력",
-      "decklogCode": "덱 로그 코드",
-      "decklogCodePlaceholder": "코드 OR URL",
-      "decklogImport": "가져오기",
-      "decklogHint": "덱 로그 코드나 URL을 붙여넣으면 레시피를 불러오고 실험용 비밀번호를 저장합니다.",
-      "decklogNeedCode": "덱 로그 코드 또는 URL을 입력하세요.",
-      "decklogImporting": "덱 로그에서 가져오는 중…",
-      "decklogImportingShort": "가져오는 중…",
-      "decklogImportedSaved": "{code} 가져옴. 실험 비밀번호: {password}",
-      "decklogImported": "{code} 가져옴.",
-      "decklogAccountHint": "덱 로그 코드나 URL을 붙여넣으면, 보유 카드로 이 프리셋에 불러옵니다.",
-      "decklogMissingTitle": "이 덱을 만들려면 다음 카드가 부족합니다",
-      "decklogMissingLead": "부족한 장은 컬렉션의 대체 카드로 바꾸거나 취소하세요.",
-      "decklogNeedHave": "필요 {need} · 보유 {have}",
-      "decklogObtainBooster": "입수처: {pack} (부스터)",
-      "decklogObtainStarter": "입수처: {pack} (스타터 / 스티커 교환)",
-      "decklogObtainPr": "입수처: PR 카드 팩 또는 스티커 교환",
-      "decklogObtainCollection": "입수처: {pack}",
-      "decklogObtainUnknown": "카드 목록 또는 스티커 교환에서 입수",
-      "decklogSubstitute": "대체 카드",
-      "decklogSubNone": "대체 미선택",
-      "decklogSubNoneCount": "대체 {n}장 선택",
-      "decklogChooseSub": "대체 선택",
-      "decklogChangeSub": "대체 변경",
-      "decklogSubPicked": "대체: {name}",
-      "decklogSubPickedCount": "대체 ({n}장)",
-      "decklogSubPickTitle": "대체 카드 선택",
-      "decklogSubPickTitleFor": "{name} 대체 {n}장 선택",
-      "decklogSubPickLead": "우클릭 또는 탭으로 한 장씩 추가. 다 고르면 우클릭으로 한 장 제거. 확인으로 적용.",
-      "decklogSubPickCount": "{n}장 더 선택",
-      "decklogSubPickCountReady": "선택 완료 — 확인하세요",
-      "decklogSubPickConfirm": "대체 확정",
-      "decklogSubPickRemoveHint": "제거",
-      "decklogSubPickReplacing": "교체 대상",
-      "decklogSubPickShortfall": "{n}장 대체",
-      "decklogSubNoneAvailable": "보유한 대체 카드 없음",
-      "decklogAutoSubs": "대체 자동 선택",
-      "decklogApplySubs": "대체 후 덱 추가",
-      "decklogNeedAllSubs": "부족한 장수만큼 대체를 선택하거나 취소하세요.",
-      "decklogSubsStillShort": "여전히 부족합니다. 다른 대체를 고르거나 취소하세요.",
-      "decklogImportedAccount": "{code} 가져옴. 필요하면 프리셋을 저장하세요.",
-      "decklogNeedSignIn": "컬렉션 덱으로 가져오려면 로그인하세요.",
-      "decklogAutoEnergy": "부족한 에너지 자동 대체",
       "load": "불러오기",
       "savedPassword": "저장된 비밀번호:",
       "copy": "복사",
@@ -4515,23 +4812,6 @@
       "openBox": "박스 열기 (팩 {n}개)",
       "selectBoxFirst": "먼저 부스터 세트를 선택하세요"
     },
-    "gameMode": {
-      "label": "게임 모드",
-      "standard": "스탠다드",
-      "starters": "스타터 덱 전용",
-      "free": "프리",
-      "randomized": "랜덤 덱",
-      "short": {
-        "standard": "스탠다드",
-        "starters": "스타터",
-        "free": "프리",
-        "randomized": "랜덤"
-      },
-      "standardDesc": "표준 TCG 모드입니다. 보유 카드로 만든 덱으로 다른 플레이어와 대전합니다.",
-      "startersDesc": "이 모드는 스타터 덱으로만 플레이할 수 있습니다.",
-      "freeDesc": "덱 실험의 덱을 사용합니다. 게임의 어떤 카드든 가능합니다(소유 불필요). 이 모드에는 리더보드가 없습니다.",
-      "randomizedDesc": "양 플레이어에게 전체 카드 풀에서 합법적인 랜덤 덱이 배정됩니다(소유 불필요). 랭크에는 전용 리더보드가 있습니다."
-    },
     "ranked": {
       "title": "랭크 PvP",
       "findMatch": "대전 찾기",
@@ -4574,22 +4854,13 @@
       "flagLoading": "국기 불러오는 중…",
       "selectCardFirst": "먼저 카드를 선택하세요",
       "jumpToYou": "내 순위로 이동",
-      "yourRank": "내 순위: #{rank}",
-      "yourRankNotPlayed": "내 순위: 미플레이"
+      "yourRank": "내 순위: #{rank}"
     },
     "options": {
       "title": "옵션",
       "enhancedTextures": "고레어도 카드에 고해상도 텍스처 적용",
-      "sleeveConform": "슬리브를 카드 모양에 맞추기 (둥근 뒷면, 사각 테두리 없음)",
       "soundEffects": "음향 효과",
-      "discordPresence": "Discord Rich Presence (Android)",
-      "discordPresenceOff": "끔 — 켜면 메뉴·대전·대기열 상태를 Discord에 표시합니다.",
-      "discordPresenceOn": "켬 — Discord가 열려 있으면 Loveca 활동이 공유됩니다.",
-      "discordPresenceLink": "Presence용 Discord 연결",
       "sfxVolume": "SFX 음량",
-      "textScale": "텍스트·UI 크기",
-      "textScaleExp": "실험적",
-      "textScaleLead": "메뉴 텍스트와 버튼 크기를 조절합니다. 크게 하면 스크롤로 맞춰져 겹치지 않습니다. 대전 중 사이드 패널은 화면 안에 유지되고, 모바일에서는 보드가 화면에 맞게 유지됩니다.",
       "stuckTitle": "경기에 갇혀 있나요?",
       "stuckLead": "랭크전이 깨지거나 종료된 경기로 재접속시킨다면, 여기서 진행 중인 경기 기록을 나가세요. 경기가 아직 진행 중이라면 기권으로 처리됩니다.",
       "resetTitle": "계정 초기화",
@@ -4709,10 +4980,6 @@
     "phaseBar": {
       "spectating": "관전 중 — {p1} vs {p2} (읽기 전용)",
       "setupWaitMulligan": "상대가 멀리건을 마치기를 기다리는 중…",
-      "setupWaitMulliganYou": "{n}장 다시 뽑음. 상대가 멀리건을 마치기를 기다리는 중…",
-      "setupWaitMulliganYouKept": "패를 유지함. 상대가 멀리건을 마치기를 기다리는 중…",
-      "setupMulliganPlayerN": "{name} {n}장 다시 뽑음",
-      "setupMulliganPlayerKept": "{name} 패 유지",
       "setupMulligan": "준비 — 시작 패를 확인하고 원하는 카드를 멀리건한 뒤 확정하세요.",
       "coinFlip": "코인 플립 — 승자가 선공을 선택합니다…",
       "mainYour": "내 메인 페이즈 — 멤버를 플레이하세요 ({energy} 사용 가능). 준비되면 메인 페이즈를 종료하세요.",
@@ -4786,7 +5053,6 @@
       "bothWait": "두 플레이어 모두 Wait",
       "bothWaitSub": "Live 카드가 스토리지에 남습니다",
       "liveStartFlash": "라이브 개시",
-      "heartCheck": "하트 확인 중…",
       "liveJudgeTieCappedBoth": "Live 스코어 동점 — 양쪽 모두 이미 성공 Live 2개라 추가되지 않음",
       "liveJudgeTieYouCappedWin": "동점 — 이미 성공 Live 2개로 한도에 도달함",
       "liveJudgeTieOppEarns": "동점 — 상대가 성공 Live를 획득함",
@@ -4804,9 +5070,7 @@
       "replaceCard": "{n}장 교체",
       "replaceCards": "{n}장 교체",
       "tutorialKeepHint": "이 핸드로 괜찮다면 「핸드 유지」를 눌러 계속하세요.",
-      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요.",
-      "declareTitle": "멀리건",
-      "declareSub": "{a}: {aN} · {b}: {bN}"
+      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요."
     },
     "coin": {
       "title": "선공 결정",
@@ -4835,8 +5099,6 @@
       "yourScore": "내 스코어",
       "oppScore": "상대 스코어",
       "combinedHearts": "필요 하트 합계",
-      "combinedScore": "점수 {score}",
-      "combinedScoreBonus": "점수 {base} +{bonus}",
       "livesSelected": "Live {n}장",
       "livesSelectedOne": "Live 1장",
       "plusMembers": "+멤버 {n}",
@@ -4884,6 +5146,7 @@
       "noLiveSuccess": "성공 Live에 놓을 Live 카드가 없습니다",
       "searchDeckFor": "덱에서 검색…",
       "deckTopPick": "덱 상단",
+      "surveilHintReturnAll": "1번 칸이 덱 맨 위입니다. 번호 칸 사이로 카드를 드래그하거나 두 장을 탭해 바꾸세요. 모든 카드는 덱 맨 위에 있어야 합니다.",
       "noValidTargets": "스테이지에 유효한 멤버가 없습니다.",
       "selectAtMost": "최대 {n}장까지 선택",
       "selectAtLeast": "최소 {n}장 선택",
@@ -4907,8 +5170,7 @@
       "noLiveInHand": "손패에 Live 카드가 없습니다",
       "noMemberInHand": "손패에 멤버 카드가 없습니다",
       "enterNumber0to99": "0부터 99 사이의 숫자를 입력하세요",
-      "noYellMill": "밀할 Yell 카드가 없습니다.",
-      "surveilHintReturnAll": "1번 칸이 덱 맨 위입니다. 번호 칸 사이로 카드를 드래그하거나 두 장을 탭해 바꾸세요. 모든 카드는 덱 맨 위에 있어야 합니다."
+      "noYellMill": "밀할 Yell 카드가 없습니다."
     },
     "skill": {
       "alreadyUsed": "이번 턴에 이미 사용함",
@@ -4944,10 +5206,6 @@
         "title": "턴에 1회",
         "body": "이 효과는 각 턴에 한 번만 사용할 수 있습니다."
       },
-      "twicePerTurn": {
-        "title": "턴당 2회",
-        "body": "이 효과는 각 턴에 최대 두 번까지 사용할 수 있습니다."
-      },
       "automatic": {
         "title": "자동",
         "body": "표시된 조건이 발생하면 자동으로 발동됩니다 — 별도의 발동 절차가 필요하지 않습니다."
@@ -4963,6 +5221,18 @@
       "wait": {
         "body": "Wait 상태가 된 멤버는 그 턴 Blade를 기여하지 않습니다 — Live 퍼포먼스에서 Yell로 공개되는 카드의 Blade를 올리지 않습니다. Waiting Room과는 다릅니다.",
         "title": "Wait (ウェイト)"
+      },
+      "twicePerTurn": {
+        "title": "턴당 2회",
+        "body": "이 효과는 각 턴에 최대 두 번까지 사용할 수 있습니다."
+      },
+      "leftSide": {
+        "title": "왼쪽",
+        "body": "효과가 해결될 때 이 멤버가 스테이지의 왼쪽 슬롯에 있을 때만 적용됩니다."
+      },
+      "rightSide": {
+        "title": "오른쪽",
+        "body": "효과가 해결될 때 이 멤버가 스테이지의 오른쪽 슬롯에 있을 때만 적용됩니다."
       }
     },
     "heart": {
@@ -4989,8 +5259,7 @@
       "playToSlot": "슬롯에 플레이:",
       "needEnergy": "필요",
       "haveEnergy": "보유",
-      "bladeHearts": "Blade 하트",
-      "allBladeHeartsTip": "필요 하트를 확인할 때, Yell로 공개된 ALL Blade 하트는 아무 색으로 취급한다."
+      "bladeHearts": "Blade 하트"
     },
     "pack": {
       "opened": "팩 개봉 완료",
@@ -5042,14 +5311,10 @@
       "debugSaveLog": "💾 디버그 로그 저장",
       "debugCopyLog": "📋 로그 복사",
       "debugSaveBundle": "📦 디버그 묶음 내보내기",
-      "rankedPrDailyCap": "오늘의 랭크 PR 팩 한도 소진 ({limit}/일 JST)",
-      "rankedPrDupe": "랭크 승리: PR 팩 — 메인 메뉴에서 개봉",
-      "rankedPrNew": "랭크 승리: PR 팩 — 메인 메뉴에서 개봉",
-      "rankedPrPopupTitle": "랭크 PR 팩!",
-      "rankedPrPackWon": "랭크 승리: PR 팩 ×{count} — 메인 메뉴에서 개봉",
-      "rankedPrPackPopupTitle": "랭크 PR 팩 ×{count}!",
-      "rankedPrPackSummary": "{count}장",
-      "rankedPrPackDupes": "중복 {count}장 → Star Gem {gems}",
+      "rankedPrDailyCap": "오늘의 랭크 PR 보상 한도 소진 ({limit}/일 JST)",
+      "rankedPrDupe": "{name} → Star Gem {gems}개로 변환 (보유 한도 초과)",
+      "rankedPrNew": "랭크 승리 보상: {name}",
+      "rankedPrPopupTitle": "랭크 승리 보상!",
       "rematchAccept": "재대결 수락",
       "rematchOffer": "재대결",
       "rematchOppWants": "{name} 님이 재대결을 원합니다!",
@@ -5071,15 +5336,10 @@
       "noFileSelected": "선택된 파일이 없습니다.",
       "startImported": "가져온 리플레이 시작",
       "playPause": "재생 / 일시정지",
-      "first": "첫 액션",
-      "prev": "이전 액션",
-      "next": "다음 액션",
-      "last": "마지막 액션",
-      "startStep": "시작",
       "positionAria": "리플레이 위치",
       "handoffNote": "리플레이 종료 — 이제부터 직접 조작합니다. CPU가 상대를 플레이합니다.",
       "exitReplay": "리플레이 종료",
-      "phaseBarHint": "리플레이 {step} / {total} — 이전/다음으로 액션 1개씩, 바로도 탐색할 수 있습니다.",
+      "phaseBarHint": "리플레이 {step} / {total} — 아래 리플레이 바로 기록된 액션을 넘겨보세요.",
       "signInLibrary": "리플레이를 저장하고 라이브러리에서 보려면 로그인하세요.",
       "emptyLibrary": "아직 저장된 리플레이가 없습니다. 경기를 마친 뒤 리플레이 저장을 선택하세요.",
       "watch": "시청",
@@ -5255,13 +5515,7 @@
     },
     "mobile": {
       "rotateTitle": "이 게임은 가로 화면으로 플레이합니다",
-      "rotateSub": "계속하려면 기기를 회전하세요.",
-      "openLog": "로그",
-      "refresh": "새로고침",
-      "stamps": "스탬프",
-      "offlineNeedNetwork": "네트워크 없음 — 다시 연결한 뒤 플레이하세요.",
-      "portraitHint": "휴대폰용 세로 모드",
-      "deckInspectHint": "카드를 탭하여 미리보기"
+      "rotateSub": "계속하려면 기기를 회전하세요."
     },
     "common": {
       "loading": "불러오는 중…",
@@ -5301,13 +5555,8 @@
       "couldNotCopyLog": "로그를 복사할 수 없음",
       "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
       "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
-      "signInStickerShop": "스티커 교환을 쓰려면 로그인하세요.",
-      "signInSleeveShop": "슬리브 샵을 쓰려면 로그인하세요.",
-      "sleeveShopLoadFailed": "슬리브 샵을 불러오지 못했습니다",
-      "sleeveBought": "슬리브를 해제했습니다!",
-      "sleeveClaimedFree": "무료 슬리브를 받았습니다!",
-      "coinsEarned": "+{n} 코인",
-      "stickerLoadFailed": "스티커 교환을 불러오지 못했습니다",
+      "signInStickerShop": "스티커 샵을 쓰려면 로그인하세요.",
+      "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
       "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
       "stickerExchangeFailed": "교환 실패",
       "stickerConvertFailed": "변환 실패"
@@ -5334,11 +5583,9 @@
       "matchEnded": "매치가 종료되어 로비로 돌아갑니다.",
       "sessionEnded": "관전 세션이 종료되었습니다.",
       "switchPerspective": "시점 전환",
-      "hiddenHands": "손패 비공개",
-      "hiddenHandsTitle": "손패 비공개 (토너먼트 관전)",
-      "hiddenHandsOnTitle": "손패 비공개 중 — 탭하여 표시",
       "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
-      "waitingJudgeResolve": "Live 승패 — {name} 대기 중…"
+      "waitingJudgeResolve": "Live 승패 — {name} 대기 중…",
+      "listTitleTournament": "토너먼트 관전"
     },
     "missions": {
       "claim": "수령",
@@ -5357,11 +5604,6 @@
         "cards1200": "카드 1,200장 보유",
         "cards1600": "카드 1,600장 보유",
         "cards2000": "카드 2,000장 보유",
-        "cards2400": "카드 2,400장 보유",
-        "playIdol": "{idol} 카드를 {n}회 플레이했다",
-        "playLiveGroup": "{group} Live 카드를 {n}회 플레이했다",
-        "playLiveSubunit": "{subunit} Live 카드를 {n}회 플레이했다",
-        "loginDays10": "서로 다른 10일에 로그인 (JST)",
         "cards400": "카드 400장 보유",
         "cards800": "카드 800장 보유",
         "profileBanner": "프로필 배너 변경",
@@ -5380,21 +5622,17 @@
         "winLiella": "Liella! 전용 메인 덱으로 승리",
         "winMuse": "μ's 전용 메인 덱으로 승리",
         "winNijigasaki": "니지가사키 전용 메인 덱으로 승리",
+        "sticker1": "스티커 샵에서 실을 교환했다",
+        "sticker10": "스티커 샵에서 실을 10회 교환했다",
+        "sticker50": "스티커 샵에서 실을 50회 교환했다",
+        "sticker100": "스티커 샵에서 실을 100회 교환했다",
+        "cards2400": "카드 2,400장 보유",
         "winTurn3": "3번째 턴에 승리하기",
         "yellScore20": "Yell 스코어 20 이상 달성",
-        "liveScore15": "한 라운드에서 Live 스코어 15점 이상 달성",
-        "sticker1": "스티커 교환에서 실을 교환했다",
-        "sticker10": "스티커 교환에서 실을 10회 교환했다",
-        "sticker50": "스티커 교환에서 실을 50회 교환했다",
-        "sticker100": "스티커 교환에서 실을 100회 교환했다"
+        "liveScore15": "한 라운드에서 Live 스코어 15점 이상 달성"
       },
       "rewardStarter": "스타터 덱 선택",
       "rewardStarterOwned": "이미 보유 중",
-      "rewardFreeSleeve": "무료 슬리브",
-      "rewardCoinsAndPrPack": "+{coins} 코인 · PR 팩",
-      "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
-      "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
-      "claimedCoinsToast": "{title} 수령 (+{coins} 코인)",
       "starterPickCancel": "취소",
       "starterPickConfirm": "스타터 해금",
       "starterPickTitle": "스타터 덱 선택",
@@ -5404,7 +5642,11 @@
       "statusReady": "수령 가능",
       "tabDaily": "일일",
       "tabMilestone": "마일스톤",
-      "title": "미션"
+      "title": "미션",
+      "rewardCoinsAndPrPack": "+{coins} 코인 · PR 팩",
+      "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
+      "rewardFreeSleeve": "무료 슬리브",
+      "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능"
     },
     "stamps": {
       "audio": "스탬프 오디오",
@@ -5441,7 +5683,7 @@
       "energy": "에너지"
     },
     "sticker": {
-      "title": "스티커 교환",
+      "title": "스티커 샵",
       "backHub": "← 허브",
       "backProducts": "← 상품",
       "hint": "덱 빌더에서 여분의 가챠 카드를 실로 바꾼 뒤, 여기서 실을 카드로 교환하세요.",
@@ -5461,56 +5703,275 @@
       "infoRarities": "희귀도",
       "infoCost": "교환 비용"
     },
-    "sleeveShop": {
-      "title": "슬리브 샵",
+    "tournament": {
       "backHub": "← 허브",
-      "backChars": "← 캐릭터",
-      "hint": "매치를 끝내면 코인을 얻습니다. 세대를 고른 뒤 캐릭터를 선택하세요.",
-      "coinsAria": "코인",
-      "freeClaims": "무료 선택: {n}",
-      "owned": "보유 중",
-      "buy": "구매",
-      "buyConfirm": "{name}을(를) {price} 코인에 구매할까요?\n\n이 작업은 되돌릴 수 없습니다.",
-      "claimFree": "무료 받기",
-      "hoverEmpty": "슬리브에 마우스를 올리면 미리보기",
-      "bdayName": "{name} 버스데이 비주얼 {year}",
-      "hgVolName": "슬리브 컬렉션 HG Vol.{vol}: {title}",
-      "extraVolName": "슬리브 컬렉션 엑스트라 Vol.{vol}: {title}",
-      "extraName": "슬리브 컬렉션 엑스트라: {title}",
-      "rebirthDeluxeName": "ReBirth for you 슬리브&카드 디럭스 세트: {title}",
-      "rebirthVer": "ReBirth ver.",
-      "units": {
-        "muse": "μ's",
-        "aqours": "Aqours",
-        "nijigasaki": "니지가를",
-        "liella": "Liella!",
-        "hasunosora": "하스노소라",
-        "mixed": "믹스",
-        "other": "기타"
+      "title": "토너먼트 모드",
+      "lead": "이벤트를 잡고, 덱을 잠그고, 체크인한 뒤 싱글 엘리미네이션 브래킷을 진행하세요.",
+      "timezoneLabel": "시간대",
+      "timezoneAria": "표시 시간대",
+      "tzHint": "시간은 {tz} 기준",
+      "tzHintJstFallback": "시간은 JST 기준",
+      "createEvent": "이벤트 만들기",
+      "refresh": "새로고침",
+      "filterMode": "모드",
+      "mode": {
+        "all": "전체",
+        "standard": "스탠다드",
+        "starters": "스타터",
+        "randomized": "랜덤",
+        "free": "프리",
+        "freeDeckExperiment": "프리 (덱 실험)"
       },
-      "series": {
-        "lovelive": "러브라이브!",
-        "sunshine": "러브라이브! 선샤인!!",
-        "nijigasaki": "러브라이브! 니지가사키 학원 스쿨 아이돌 동호회",
-        "superstar": "러브라이브! 슈퍼스타!!",
-        "hasunosora": "러브라이브! 하스노소라 여학원 스쿨 아이돌 클럽",
-        "hasunosoraShort": "하스노소라 여학원 스쿨 아이돌 클럽",
-        "muse": "μ's",
-        "sukufesuThanks": "스쿠페스 시리즈 감사제",
-        "loveliveSeries": "러브라이브! 시리즈",
-        "hasunosoraSchool": "하스노소라 여학원"
+      "listEmpty": "아직 열린 토너먼트가 없습니다. 하나 만들어 보세요.",
+      "card": {
+        "fee": "참가비 {n}",
+        "watching": "관전 {n}",
+        "starts": "시작 {when}",
+        "fog": "포그 {fog}",
+        "delay": "지연 {n}초",
+        "metaSep": "·"
+      },
+      "backBulletin": "← 게시판",
+      "notify": {
+        "title": "LLTCG 토너먼트",
+        "checkinOpen": "체크인 시작: {title}",
+        "checkinSoon": "곧 체크인: {title}"
+      },
+      "createHeading": "토너먼트 만들기",
+      "createTzNote": "시작 시간은 {tz}를 사용합니다.",
+      "createTzNoteFallback": "시작 시간은 선택한 시간대를 사용합니다.",
+      "field": {
+        "title": "제목",
+        "titlePlaceholder": "금요일 밤 브래킷",
+        "startLocal": "시작 (로컬)",
+        "checkinMins": "체크인 분",
+        "minPlayers": "최소 인원",
+        "maxPlayers": "최대 인원",
+        "entryFee": "참가비 (코인)",
+        "gameMode": "게임 모드",
+        "format": "형식",
+        "matchLength": "매치 길이",
+        "fog": "전장의 안개",
+        "rules": "규칙 템플릿",
+        "rulesTitle": "추가 덱 규칙; 스타터/랜덤은 스탠다드만 적용",
+        "streamDelay": "스트림 지연 (관전)"
+      },
+      "format": {
+        "singleElim": "싱글 엘리미네이션",
+        "doubleElimBracket": "더블 엘림 (승자/패자)",
+        "doubleElimLives": "더블 엘림 (2라이프)",
+        "swiss": "스위스",
+        "single_elim": "싱글 엘리미네이션",
+        "double_elim_bracket": "더블 엘림 (승자/패자)",
+        "double_elim": "더블 엘림 (2라이프)"
+      },
+      "bestOf": {
+        "1": "베스트 오브 1",
+        "3": "베스트 오브 3"
+      },
+      "fog": {
+        "hiddenHands": "손패 비공개 (관전자)",
+        "openHands": "손패 공개",
+        "hiddenHandsShort": "손패 비공개",
+        "openHandsShort": "손패 공개"
+      },
+      "rules": {
+        "standardOption": "스탠다드 (추가 제한 없음)",
+        "pauperOption": "파우퍼 (N/R)",
+        "highlanderOption": "하이랜더 (1장)",
+        "standard": {
+          "label": "스탠다드",
+          "help": "선택한 게임 모드 외 추가 덱 제한 없음. 일반 레어도·장수 제한 적용."
+        },
+        "pauper": {
+          "label": "파우퍼 (N/R)",
+          "help": "낮은 레어도만: N, R, C, U, CL. SR+·SEC 등 고레어 불가."
+        },
+        "highlander": {
+          "label": "하이랜더 (1장)",
+          "help": "메인+에너지 전체에서 각 카드 1장까지. 같은 번호 중복 불가."
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "게임 모드가 이미 덱 규칙을 정합니다 — 여기서는 스탠다드만 적용됩니다."
+      },
+      "delay": {
+        "none": "없음",
+        "secs": "{n}초"
+      },
+      "schedule": "일정 잡기",
+      "detail": {
+        "host": "주최",
+        "hostFallback": "주최",
+        "prize": "상금 {n}",
+        "watching": "관전 {n}",
+        "starts": "시작 {when}",
+        "mode": "모드 {mode}",
+        "rules": "규칙 {rules}",
+        "fog": "포그 {fog}",
+        "streamDelay": "스트림 지연 {n}초",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "참가자",
+      "bracketHeading": "브래킷",
+      "entrantsEmpty": "참가자 없음",
+      "person": {
+        "playerFallback": "플레이어"
+      },
+      "standingsHeading": "순위표",
+      "standings": {
+        "record": "{wins}승–{losses}패"
+      },
+      "action": {
+        "register": "등록",
+        "registerTip": "덱을 잠그고 참가합니다. 참가비가 있으면 상금 풀에 납부합니다.",
+        "checkin": "체크인",
+        "checkinTip": "브래킷 시작 전 출석 확인. 미체크인은 노쇼 처리됩니다.",
+        "unregister": "등록 취소",
+        "unregisterTip": "시작 전에 나와 참가비를 환불받습니다.",
+        "checkedIn": "체크인 완료",
+        "checkedInTip": "체크인했습니다. 브래킷 시작을 기다리는 중.",
+        "deposit": "상금 입금",
+        "depositTip": "잔액 코인을 이 이벤트의 상금 풀에 추가 (주최만).",
+        "cancel": "취소 (환불)",
+        "cancelTip": "토너먼트를 취소하고 참가비와 남은 주최 상금을 환불합니다.",
+        "tick": "새로고침 / 틱",
+        "tickTip": "이벤트를 갱신하고 서버 타이머(체크인·브래킷·방 배정)를 진행합니다.",
+        "join": "내 매치 참가",
+        "joinTip": "브래킷 경기가 준비되면 토너먼트 방에 들어갑니다.",
+        "spectateList": "매치 관전",
+        "spectateListTip": "이 토너먼트의 진행 중 매치를 관전자로 봅니다."
+      },
+      "prompt": {
+        "deposit": "상금 금고에 넣을 코인:",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "토너먼트를 취소하고 참가자를 환불할까요?"
+      },
+      "bracket": {
+        "empty": "최대 인원/형식이 정해지면 브래킷이 표시됩니다.",
+        "previewSuffix": "미리보기 (체크인 후 이름 표시)",
+        "slot": "슬롯",
+        "tbd": "미정",
+        "bye": "부전승",
+        "waiting": "대기 중…",
+        "spectate": "관전",
+        "spectateTip": "관전자로 이 경기를 봅니다 (비참가자 환영)",
+        "winner": "승자: {name}",
+        "namesLock": "이름은 브래킷 시작 시 확정"
+      },
+      "formatCaption": {
+        "swiss": "스위스 라운드",
+        "doubleElimLives": "더블 엘림 (2라이프)",
+        "doubleElimBracket": "더블 엘림 (승자/패자)",
+        "singleElim": "싱글 엘리미네이션"
+      },
+      "round": {
+        "swiss": "스위스 · 라운드 {n}",
+        "losersFinal": "패자 결승",
+        "losers": "패자 · R{n}",
+        "grandFinal": "그랜드 파이널",
+        "grandFinalReset": "그랜드 파이널 (리셋)",
+        "winnersFinal": "승자 결승",
+        "semifinals": "준결승",
+        "roundOf": "{n}강"
+      },
+      "matchStatus": {
+        "live": "진행 중",
+        "ready": "준비됨",
+        "done": "종료",
+        "pending": "예정"
+      },
+      "register": {
+        "backEvent": "← 이벤트",
+        "heading": "잠글 덱 선택",
+        "leadDefault": "등록하면 이 덱이 토너먼트용으로 잠깁니다.",
+        "leadPick": "이 이벤트에 쓸 합법 덱을 골라 잠그세요.",
+        "leadEmpty": "아직 대상 덱이 없습니다 — 덱 빌더에서 만든 뒤 돌아오세요.",
+        "leadFreePick": "덱 실험 프리셋, 저장 덱, 또는 실험 비밀번호를 입력하세요.",
+        "leadFreeEmpty": "저장된 프리 덱이 없습니다 — 덱 실험에서 프리셋을 저장(또는 공유 비밀번호)한 뒤 돌아오세요.",
+        "noEligible": "이 게임 모드에 맞는 덱이 없습니다.",
+        "noFreeDecks": "실험 프리셋이나 보유 계정 덱을 찾지 못했습니다.",
+        "deckFallback": "덱",
+        "metaPreset": "프리셋 슬롯 {slot}",
+        "metaEquipped": "· 장착 중",
+        "metaStarter": "스타터 · {label}",
+        "metaExperiment": "덱 실험 · 슬롯 {slot}",
+        "passwordLabel": "실험 비밀번호",
+        "passwordPlaceholder": "공유 덱 실험 코드",
+        "withPassword": "비밀번호로 등록",
+        "openDeckBuilder": "덱 빌더 열기",
+        "openDeckExperiment": "덱 실험 열기"
+      },
+      "status": {
+        "open": "모집 중",
+        "checkin": "체크인",
+        "running": "진행 중",
+        "finished": "종료",
+        "cancelled": "취소됨"
+      },
+      "entrant": {
+        "registered": "등록됨",
+        "checked_in": "체크인됨",
+        "no_show": "노쇼",
+        "eliminated": "탈락",
+        "active": "활성"
+      },
+      "err": {
+        "cancelled": "이 토너먼트가 취소되었습니다.",
+        "unavailable": "해당 토너먼트는 더 이상 사용할 수 없습니다.",
+        "cancelRefunded": "토너먼트 취소 — 참가자에게 환불했습니다.",
+        "pickStart": "시작 날짜와 시간을 선택하세요",
+        "startTooSoon": "시작은 지금부터 최소 1분 뒤여야 합니다",
+        "pickStartSoon": "시작 시간은 지금부터 최소 1분 뒤로 선택하세요",
+        "experimentPassword": "실험 비밀번호를 입력하세요",
+        "joinHelperMissing": "참가 도우미가 없습니다",
+        "spectateHelperMissing": "관전 도우미가 없습니다"
+      },
+      "toast": {
+        "noMatchReady": "준비된 토너먼트 매치가 없습니다"
+      },
+      "cal": {
+        "pickDateTime": "날짜·시간 선택",
+        "dialogAria": "시작 날짜와 시간 선택",
+        "prevMonth": "이전 달",
+        "nextMonth": "다음 달",
+        "monthFallback": "월",
+        "dow": {
+          "su": "일",
+          "mo": "월",
+          "tu": "화",
+          "we": "수",
+          "th": "목",
+          "fr": "금",
+          "sa": "토"
+        },
+        "hour": "시",
+        "min": "분",
+        "cancel": "취소",
+        "apply": "적용"
+      },
+      "tz": {
+        "Asia/Tokyo": "일본 (JST)",
+        "America/New_York": "미국 동부",
+        "America/Chicago": "미국 중부",
+        "America/Denver": "미국 산지",
+        "America/Los_Angeles": "미국 서부",
+        "America/Toronto": "캐나다 동부",
+        "America/Vancouver": "캐나다 서부",
+        "Europe/London": "영국 (런던)",
+        "Europe/Paris": "중부 유럽",
+        "Europe/Berlin": "베를린",
+        "Australia/Sydney": "시드니",
+        "Asia/Singapore": "싱가포르",
+        "Asia/Seoul": "한국 (KST)",
+        "Asia/Shanghai": "중국",
+        "Asia/Hong_Kong": "홍콩",
+        "Asia/Bangkok": "방콕",
+        "Pacific/Auckland": "오클랜드",
+        "UTC": "UTC"
       }
-    },
-    "cardList": {
-      "title": "카드 목록",
-      "hubSub": "전체 카드 보기",
-      "backHub": "← 허브",
-      "lead": "상품별로 모든 카드를 둘러보세요. 보유 카드는 컬러로 표시됩니다.",
-      "collection": "컬렉션",
-      "ownedProgress": "{owned}/{total}",
-      "notOwned": "미보유",
-      "prCards": "PR 카드",
-      "other": "기타"
     }
   },
   "zh": {
@@ -5530,14 +5991,10 @@
     "auth": {
       "checking": "正在检查 Discord 登录…",
       "signingIn": "正在登录…",
-      "reconnecting": "正在重新连接对局…",
-      "reconnectingTry": "正在重新连接对局…（第 {n} 次）",
-      "reconnectingWaiting": "仍在等待服务器…（第 {n} 次）",
       "signInDiscord": "使用 Discord 登录",
       "guestPrompt": "使用 Discord 登录以保存收藏并参加排名对战。",
       "guestPlayHint": "无需账号即可游玩非排名对战，或登录后参加排名对战。",
       "sessionExpired": "会话已过期 — 请重新登录，或继续游玩非排名对战。",
-      "serverBusy": "服务器繁忙 — 登录状态已保留。请稍后再刷新，或先游玩非排名对战。",
       "loadError": "无法加载账号 — 你仍可游玩非排名对战。",
       "guestTimeout": "登录检查超时 — 可先游玩非排名对战，或重试 Discord 登录。"
     },
@@ -5545,7 +6002,7 @@
       "unrankedPlay": "非排名对战",
       "unrankedSub": "开房、与好友对战，或练习对战 CPU",
       "deckExperiment": "牌组实验",
-      "deckExperimentSub": "用全部卡牌构筑——仅限 Free，不计入排名",
+      "deckExperimentSub": "用全部卡牌构筑——仅限访客，不计入排名",
       "howToPlay": "怎么玩",
       "howToPlaySub": "与香音一起的新手实战教学",
       "officialVideo": "官方8分钟视频 ↗"
@@ -5575,35 +6032,14 @@
       "tournamentModeSub": "即将推出",
       "howToPlay": "怎么玩",
       "howToPlaySub": "与香音一起的新手实战教学",
-      "officialVideo": "官方8分钟视频 ↗",
       "backHub": "← 主页",
       "missions": "任务",
-      "missionsClaimable": "任务 — {n} 项可领取",
-      "loginBonus": "签到",
-      "apk": {
-        "title": "在 Android 上玩？获取 APK 启动器！",
-        "sub": "下载 Loveca v1.1，允许安装未知来源应用，然后打开 APK。"
-      },
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "今日剩余排名 PR 包：{remaining} / {limit}（JST · 每包 3 张）",
-      "stickerShop": "贴纸兑换",
+      "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）",
+      "stickerShop": "贴纸商店",
       "stickerShopSub": "用印章兑换你补充包中的卡牌",
-      "sleeveShop": { "title": "卡套商店", "sub": "用金币购买卡套" },
-    },
-    "loginBonus": {
-      "title": "登录奖励",
-      "lead": "每天登录（JST）即可领取下一项奖励。错过的日子会跳过，进度保留。",
-      "day": "第 {day} 天",
-      "reward": {
-        "gems": "{amount} 宝石",
-        "nSeals": "{amount} 枚 N 印章",
-        "srSeal": "{amount} 枚 SR 印章",
-        "prPack": "PR 包"
-      },
-      "gotGems": "获得了 {amount} 颗星宝石！",
-      "gotNSeals": "获得了 {amount} 枚 N 印章！",
-      "gotSrSeal": "获得了 {amount} 枚 SR 印章！",
-      "gotPrPack": "获得了 PR 包！正在打开…"
+      "officialVideo": "官方8分钟视频 ↗",
+      "tournamentModeSubLive": "赛事与对阵表"
     },
     "language": {
       "label": "语言",
@@ -5645,18 +6081,12 @@
       "experimentDeckHint": "在「牌组实验」中构筑并生成密码，然后粘贴到这里 — 或从下方选择已保存的牌组。",
       "secondsLabel": "{n} 秒",
       "casualQueueStats": "{waiting} 人等待 · {inGame} 场休闲对战中",
-      "otherModesQueuedLead": "其他模式也有玩家在排队：",
       "casualSearching": "正在寻找对手…（{seconds} 秒）",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "简单",
       "cpuNormalShort": "普通",
       "cpuHardShort": "困难",
       "cpuExpertShort": "专家",
-      "cpuSleeve": "CPU 卡套",
-      "cpuPlaymat": "CPU 牌桌",
-      "cpuCosmeticDefault": "默认",
-      "cpuCosmeticRandom": "随机（已拥有）",
-      "cpuCosmeticsHint": "选择你拥有的外观，或从收藏中随机挑选。",
       "soloStarting": "正在开始对战 CPU（{diff}）",
       "player1Default": "玩家 1",
       "player2Default": "玩家 2"
@@ -5666,16 +6096,6 @@
       "experimentTitle": "牌组实验",
       "deckName": "牌组名称",
       "presetSlot": "预设槽位（最多 10 个）",
-      "sleeve": "卡套",
-      "sleeveNone": "无",
-      "sleeveChange": "更换",
-      "sleevePickTitle": "选择卡套",
-      "sleevePickLead": "点按已拥有的卡套，为本套牌装备。",
-      "sleevePickClose": "关闭",
-      "sleeveHint": "装备的卡套会替换对战中的卡背。默认：无。",
-      "sleeveEmpty": "暂无可用卡套。",
-      "sleeveEmptyHint": "请在卡套商店购买。",
-      "sleeveOwnedHint": "卡套商店已拥有的卡套。",
       "search": "搜索卡牌",
       "searchPlaceholder": "名称、ID 或规则文本…",
       "collection": "收藏",
@@ -5690,48 +6110,6 @@
       "backMenu": "← 菜单",
       "deckPassword": "牌组密码",
       "deckPasswordPlaceholder": "输入密码以加载",
-      "decklogCode": "deck log 代码",
-      "decklogCodePlaceholder": "代码 OR URL",
-      "decklogImport": "导入",
-      "decklogHint": "粘贴 deck log 代码或链接即可导入卡组并生成实验密码。",
-      "decklogNeedCode": "请输入 deck log 代码或链接。",
-      "decklogImporting": "正在从 deck log 导入…",
-      "decklogImportingShort": "导入中…",
-      "decklogImportedSaved": "已导入 {code}。实验密码：{password}",
-      "decklogImported": "已导入 {code}。",
-      "decklogAccountHint": "粘贴 deck log 代码或链接；若你拥有这些卡，将载入到当前预设。",
-      "decklogMissingTitle": "创建此卡组还缺少以下卡片",
-      "decklogMissingLead": "用收藏中的替代卡替换缺少的张数，或取消。",
-      "decklogNeedHave": "需要 {need} · 拥有 {have}",
-      "decklogObtainBooster": "获取途径：{pack}（补充包）",
-      "decklogObtainStarter": "获取途径：{pack}（起始牌组 / 贴纸兑换）",
-      "decklogObtainPr": "获取途径：PR 卡包或贴纸兑换",
-      "decklogObtainCollection": "获取途径：{pack}",
-      "decklogObtainUnknown": "可从卡表或贴纸兑换获取",
-      "decklogSubstitute": "替代卡",
-      "decklogSubNone": "未选择替代",
-      "decklogSubNoneCount": "选择 {n} 张替代",
-      "decklogChooseSub": "选择替代",
-      "decklogChangeSub": "更改替代",
-      "decklogSubPicked": "替代：{name}",
-      "decklogSubPickedCount": "替代（{n}）",
-      "decklogSubPickTitle": "选择替代卡",
-      "decklogSubPickTitleFor": "为 {name} 选择 {n} 张",
-      "decklogSubPickLead": "右键或点按一次加一张。选满后右键可移除一张。完成后确认。",
-      "decklogSubPickCount": "还需选择 {n} 张",
-      "decklogSubPickCountReady": "选择完成 — 请确认",
-      "decklogSubPickConfirm": "确认替代",
-      "decklogSubPickRemoveHint": "移除",
-      "decklogSubPickReplacing": "正在替换",
-      "decklogSubPickShortfall": "需替代 {n} 张",
-      "decklogSubNoneAvailable": "没有可用的替代卡",
-      "decklogAutoSubs": "自动选择替代",
-      "decklogApplySubs": "替换并加入卡组",
-      "decklogNeedAllSubs": "请为每张缺少的卡选够替代数量，或取消。",
-      "decklogSubsStillShort": "数量仍不足——请换其他替代或取消。",
-      "decklogImportedAccount": "已导入 {code}。需要时请保存预设。",
-      "decklogNeedSignIn": "请先登录，才能将 deck log 导入收藏卡组。",
-      "decklogAutoEnergy": "自动替换缺少的能量卡",
       "load": "加载",
       "savedPassword": "已保存密码：",
       "copy": "复制",
@@ -5906,23 +6284,6 @@
       "openBox": "打开盒装（{n} 包）",
       "selectBoxFirst": "请先选择补充包系列"
     },
-    "gameMode": {
-      "label": "对战模式",
-      "standard": "标准",
-      "starters": "仅限初始牌组",
-      "free": "自由",
-      "randomized": "随机牌组",
-      "short": {
-        "standard": "标准",
-        "starters": "初始",
-        "free": "自由",
-        "randomized": "随机"
-      },
-      "standardDesc": "标准TCG模式。使用你用持有卡牌构筑的牌组与其他玩家对战。",
-      "startersDesc": "此模式只能使用初始牌组进行对战。",
-      "freeDesc": "使用牌组实验中的牌组，可使用游戏中的任意卡牌（无需持有）。此模式没有排行榜。",
-      "randomizedDesc": "双方各获得一套来自全卡池的合法随机牌组（无需持有）。排位有独立排行榜。"
-    },
     "ranked": {
       "title": "排名对战",
       "findMatch": "寻找对战",
@@ -5965,22 +6326,13 @@
       "flagLoading": "正在加载旗帜…",
       "selectCardFirst": "请先选择一张卡",
       "jumpToYou": "跳到我的名次",
-      "yourRank": "你的排名：#{rank}",
-      "yourRankNotPlayed": "你的排名：未游玩"
+      "yourRank": "你的排名：#{rank}"
     },
     "options": {
       "title": "选项",
       "enhancedTextures": "高稀有度卡牌的增强纹理",
-      "sleeveConform": "卡套贴合卡牌形状（圆角卡背，无方形外沿）",
       "soundEffects": "音效",
-      "discordPresence": "Discord Rich Presence（Android）",
-      "discordPresenceOff": "关 — 开启后可在 Discord 分享菜单、对战与排队状态。",
-      "discordPresenceOn": "开 — Discord 打开时可显示你在 Loveca 中的状态。",
-      "discordPresenceLink": "链接 Discord 以启用 Presence",
       "sfxVolume": "音效音量",
-      "textScale": "文字与界面缩放",
-      "textScaleExp": "实验性",
-      "textScaleLead": "放大或缩小菜单文字与按钮。更大尺寸会增加滚动，避免重叠。对战侧栏会保持在屏幕内；手机上盘面仍贴合屏幕。",
       "stuckTitle": "对战卡住了？",
       "stuckLead": "若排名对战把你重连到已损坏或已结束的对局，可在此离开该对战记录。若对局仍在进行中，将计为弃权。",
       "resetTitle": "重置账号",
@@ -6101,11 +6453,7 @@
     "phaseBar": {
       "spectating": "观看 — {p1} vs {p2}（只读）",
       "setupWaitMulligan": "等待对手完成调度……",
-      "setupWaitMulliganYou": "你重抽了 {n} 张。等待对手完成调度……",
-      "setupWaitMulliganYouKept": "你保留了手牌。等待对手完成调度……",
-      "setupMulliganPlayerN": "{name} 重抽 {n}",
-      "setupMulliganPlayerKept": "{name} 保留手牌",
-      "setupMulligan": "准备 — 查看开局手牌，调度任意张后确认。",
+      "setupMulligan": "准备工作——检查你的起手牌，调度任何牌，然后确认。",
       "coinFlip": "抛硬币——获胜者选择谁先走……",
       "mainYour": "你的主要阶段 - 扮演成员（{energy}可用）。准备好后结束主阶段。",
       "mainOpp": "轮到{name}了——主阶段……",
@@ -6178,7 +6526,6 @@
       "bothWait": "双方玩家都在等待",
       "bothWaitSub": "活卡仍保留在存储中",
       "liveStartFlash": "现场开始",
-      "heartCheck": "正在检查心…",
       "liveJudgeTieCappedBoth": "实时比分平局 — 均未增加成功实时比分（均已为 2）",
       "liveJudgeTieYouCappedWin": "平局 — 您的成功生命上限为 2",
       "liveJudgeTieOppEarns": "平局 — 对手获得成功直播",
@@ -6196,9 +6543,7 @@
       "replaceCard": "更换 {n} 张卡",
       "replaceCards": "替换 {n} 张卡",
       "tutorialKeepHint": "对这手满意吗？点击“保持手部”以继续。",
-      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。",
-      "declareTitle": "调度",
-      "declareSub": "{a}: {aN} · {b}: {bN}"
+      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。"
     },
     "coin": {
       "title": "第一个玩家",
@@ -6227,8 +6572,6 @@
       "yourScore": "你的分数",
       "oppScore": "奥普分数",
       "combinedHearts": "合计所需心形",
-      "combinedScore": "分数 {score}",
-      "combinedScoreBonus": "分数 {base} +{bonus}",
       "livesSelected": "{n} 张 Live",
       "livesSelectedOne": "1 张 Live",
       "plusMembers": "+{n} 名成员",
@@ -6276,6 +6619,7 @@
       "noLiveSuccess": "没有可在 Success Live 中放置的 Live 卡",
       "searchDeckFor": "搜索甲板...",
       "deckTopPick": "甲板顶",
+      "surveilHintReturnAll": "位置 1 是牌组顶。在编号位置之间拖动卡牌，或点选两张互换。所有卡牌都必须留在牌组顶。",
       "noValidTargets": "舞台上没有有效的成员。",
       "selectAtMost": "最多选择 {n} 张",
       "selectAtLeast": "至少选择 {n} 张",
@@ -6299,8 +6643,7 @@
       "noLiveInHand": "手牌中没有Live卡",
       "noMemberInHand": "手牌中没有成员卡",
       "enterNumber0to99": "请输入 0 到 99 的数字",
-      "noYellMill": "没有可送入磨牌区的Yell卡。",
-      "surveilHintReturnAll": "位置 1 是牌组顶。在编号位置之间拖动卡牌，或点选两张互换。所有卡牌都必须留在牌组顶。"
+      "noYellMill": "没有可送入磨牌区的Yell卡。"
     },
     "skill": {
       "alreadyUsed": "本回合已使用",
@@ -6336,10 +6679,6 @@
         "title": "每回合1次",
         "body": "该效果每回合只能使用一次。"
       },
-      "twicePerTurn": {
-        "title": "每回合2次",
-        "body": "该效果每回合最多可以使用两次。"
-      },
       "automatic": {
         "title": "自动",
         "body": "当列出的条件发生时自行触发 - 无需激活。"
@@ -6355,6 +6694,18 @@
       "wait": {
         "body": "处于 Wait（待机）的成员本回合不贡献 Blade——不会增加 Live 表演中为 Yell 翻开的牌的 Blade。这与等候室不同。",
         "title": "Wait（待机）"
+      },
+      "twicePerTurn": {
+        "title": "每回合2次",
+        "body": "该效果每回合最多可以使用两次。"
+      },
+      "leftSide": {
+        "title": "左侧",
+        "body": "仅当效果结算时该成员位于舞台左侧位置时才适用。"
+      },
+      "rightSide": {
+        "title": "右侧",
+        "body": "仅当效果结算时该成员位于舞台右侧位置时才适用。"
       }
     },
     "heart": {
@@ -6381,8 +6732,7 @@
       "playToSlot": "玩老虎机：",
       "needEnergy": "需要",
       "haveEnergy": "有",
-      "bladeHearts": "刀锋之心",
-      "allBladeHeartsTip": "确认所需心形时，Yell 公开的 ALL 刀锋心可视为任意颜色。",
+      "bladeHearts": "刀锋之心"
     },
     "pack": {
       "opened": "包装已打开",
@@ -6434,14 +6784,10 @@
       "debugSaveLog": "💾 保存调试日志",
       "debugCopyLog": "📋复制日志",
       "debugSaveBundle": "📦 导出调试包",
-      "rankedPrDailyCap": "使用的每日排名 PR 包（{limit}/天 JST）",
-      "rankedPrDupe": "排名获胜：PR 包 — 请在主菜单开包",
-      "rankedPrNew": "排名获胜：PR 包 — 请在主菜单开包",
-      "rankedPrPopupTitle": "排名 PR 包！",
-      "rankedPrPackWon": "排名获胜：PR 包 ×{count} — 请在主菜单开包",
-      "rankedPrPackPopupTitle": "排名 PR 包 ×{count}！",
-      "rankedPrPackSummary": "{count} 张卡",
-      "rankedPrPackDupes": "{count} 张重复 → {gems} 星星宝石",
+      "rankedPrDailyCap": "使用的每日排名 PR 奖励（{limit}/天 JST）",
+      "rankedPrDupe": "{name} 转换为 {gems} 星星宝石（超出副本限制）",
+      "rankedPrNew": "排名获胜奖励：{name}",
+      "rankedPrPopupTitle": "排位赢奖励！",
       "rematchAccept": "接受重赛",
       "rematchOffer": "复赛",
       "rematchOppWants": "{name}想要重赛！",
@@ -6463,15 +6809,10 @@
       "noFileSelected": "未选择文件。",
       "startImported": "开始导入的录像",
       "playPause": "播放/暂停",
-      "first": "第一个操作",
-      "prev": "上一个操作",
-      "next": "下一个操作",
-      "last": "最后一个操作",
-      "startStep": "开始",
       "positionAria": "录像进度",
       "handoffNote": "录像结束 — 现在由你操作。CPU 操控对手。",
       "exitReplay": "退出录像",
-      "phaseBarHint": "录像 {step} / {total} — 后退/前进逐步操作；进度条仍可跳转。",
+      "phaseBarHint": "录像 {step} / {total} — 用下方进度条逐步查看记录的操作。",
       "signInLibrary": "登录后可保存并查看库中的录像。",
       "emptyLibrary": "尚未保存录像。完成一场对战后选择保存录像。",
       "watch": "观看",
@@ -6647,13 +6988,7 @@
     },
     "mobile": {
       "rotateTitle": "这个游戏是横屏玩的",
-      "rotateSub": "旋转您的设备以继续。",
-      "openLog": "日志",
-      "refresh": "刷新",
-      "stamps": "贴纸",
-      "offlineNeedNetwork": "无网络 — 请重新连接后再游玩。",
-      "portraitHint": "手机竖屏模式",
-      "deckInspectHint": "点按卡牌预览"
+      "rotateSub": "旋转您的设备以继续。"
     },
     "common": {
       "loading": "加载中…",
@@ -6693,13 +7028,8 @@
       "couldNotCopyLog": "无法复制日志",
       "resolveSkillFirst": "在继续之前解决待处理的技能。",
       "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。",
-      "signInStickerShop": "请登录后使用贴纸兑换。",
-      "signInSleeveShop": "请登录后使用卡套商店。",
-      "sleeveShopLoadFailed": "无法加载卡套商店",
-      "sleeveBought": "已解锁卡套！",
-      "sleeveClaimedFree": "已领取免费卡套！",
-      "coinsEarned": "+{n} 金币",
-      "stickerLoadFailed": "贴纸兑换加载失败",
+      "signInStickerShop": "请登录后使用贴纸商店。",
+      "stickerLoadFailed": "贴纸商店加载失败",
       "stickerCardsLoadFailed": "卡牌加载失败",
       "stickerExchangeFailed": "兑换失败",
       "stickerConvertFailed": "转换失败"
@@ -6726,11 +7056,9 @@
       "matchEnded": "对战已结束 — 返回大厅。",
       "sessionEnded": "观战已结束。",
       "switchPerspective": "切换视角",
-      "hiddenHands": "隐藏手牌",
-      "hiddenHandsTitle": "隐藏手牌（锦标赛观战）",
-      "hiddenHandsOnTitle": "隐藏手牌已开启 — 点按显示",
       "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
-      "waitingJudgeResolve": "Live 胜负 — 等待 {name}…"
+      "waitingJudgeResolve": "Live 胜负 — 等待 {name}…",
+      "listTitleTournament": "观战锦标赛"
     },
     "missions": {
       "claim": "领取",
@@ -6749,11 +7077,6 @@
         "cards1200": "拥有 1,200 张卡",
         "cards1600": "拥有 1,600 张卡",
         "cards2000": "拥有 2,000 张卡",
-        "cards2400": "拥有 2,400 张卡",
-        "playIdol": "打出 {idol} 卡牌 {n} 次",
-        "playLiveGroup": "打出 {group} Live 卡牌 {n} 次",
-        "playLiveSubunit": "打出 {subunit} Live 卡牌 {n} 次",
-        "loginDays10": "累计登录 10 个不同日期（JST）",
         "cards400": "拥有 400 张卡",
         "cards800": "拥有 800 张卡",
         "profileBanner": "更新个人资料横幅",
@@ -6772,21 +7095,17 @@
         "winLiella": "使用仅含 Liella! 的主牌组获胜",
         "winMuse": "使用仅含 μ's 的主牌组获胜",
         "winNijigasaki": "使用仅含虹咲学园的主牌组获胜",
+        "sticker1": "在贴纸商店兑换了印章",
+        "sticker10": "在贴纸商店兑换印章 10 次",
+        "sticker50": "在贴纸商店兑换印章 50 次",
+        "sticker100": "在贴纸商店兑换印章 100 次",
+        "cards2400": "拥有 2,400 张卡",
         "winTurn3": "在第3回合获胜",
         "yellScore20": "Yell分数达到20或以上",
-        "liveScore15": "单回合Live分数达到15或以上",
-        "sticker1": "在贴纸兑换中兑换了印章",
-        "sticker10": "在贴纸兑换中兑换印章 10 次",
-        "sticker50": "在贴纸兑换中兑换印章 50 次",
-        "sticker100": "在贴纸兑换中兑换印章 100 次"
+        "liveScore15": "单回合Live分数达到15或以上"
       },
       "rewardStarter": "选择入门牌组",
       "rewardStarterOwned": "已拥有",
-      "rewardFreeSleeve": "免费卡套领取",
-      "rewardCoinsAndPrPack": "+{coins} 金币 · PR包",
-      "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
-      "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
-      "claimedCoinsToast": "已领取 {title}（+{coins} 金币）",
       "starterPickCancel": "取消",
       "starterPickConfirm": "解锁入门牌组",
       "starterPickTitle": "选择入门牌组",
@@ -6796,7 +7115,11 @@
       "statusReady": "可领取",
       "tabDaily": "每日",
       "tabMilestone": "里程碑",
-      "title": "任务"
+      "title": "任务",
+      "rewardCoinsAndPrPack": "+{coins} 金币 · PR包",
+      "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
+      "rewardFreeSleeve": "免费卡套领取",
+      "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取"
     },
     "stamps": {
       "audio": "贴纸语音",
@@ -6833,7 +7156,7 @@
       "energy": "能量"
     },
     "sticker": {
-      "title": "贴纸兑换",
+      "title": "贴纸商店",
       "backHub": "← 主页",
       "backProducts": "← 商品",
       "hint": "在牌组构筑中把多余的扭蛋卡换成印章，再在这里用印章兑换卡牌。",
@@ -6853,56 +7176,275 @@
       "infoRarities": "稀有度",
       "infoCost": "兑换费用"
     },
-    "sleeveShop": {
-      "title": "卡套商店",
+    "tournament": {
       "backHub": "← 主页",
-      "backChars": "← 角色",
-      "hint": "完成对战可获得金币。先选世代，再选角色。",
-      "coinsAria": "金币",
-      "freeClaims": "免费次数：{n}",
-      "owned": "已拥有",
-      "buy": "购买",
-      "buyConfirm": "要用 {price} 金币购买「{name}」吗？\n\n此操作无法撤销。",
-      "claimFree": "免费领取",
-      "hoverEmpty": "将鼠标移到卡套上预览",
-      "bdayName": "{name} 生日视觉 {year}",
-      "hgVolName": "卡套收藏 HG Vol.{vol}：{title}",
-      "extraVolName": "卡套收藏 Extra Vol.{vol}：{title}",
-      "extraName": "卡套收藏 Extra：{title}",
-      "rebirthDeluxeName": "ReBirth for you 卡套&卡牌豪华套装：{title}",
-      "rebirthVer": "ReBirth ver.",
-      "units": {
-        "muse": "μ's",
-        "aqours": "Aqours",
-        "nijigasaki": "虹咲",
-        "liella": "Liella!",
-        "hasunosora": "莲之空",
-        "mixed": "混合",
-        "other": "其他"
+      "title": "锦标赛模式",
+      "lead": "安排赛事、锁定卡组、签到，并进行单败淘汰对阵。",
+      "timezoneLabel": "时区",
+      "timezoneAria": "显示时区",
+      "tzHint": "时间按 {tz} 显示",
+      "tzHintJstFallback": "时间按 JST 显示",
+      "createEvent": "创建赛事",
+      "refresh": "刷新",
+      "filterMode": "模式",
+      "mode": {
+        "all": "全部",
+        "standard": "标准",
+        "starters": "新手",
+        "randomized": "随机",
+        "free": "自由",
+        "freeDeckExperiment": "自由（卡组实验）"
       },
-      "series": {
-        "lovelive": "Love Live!",
-        "sunshine": "Love Live! Sunshine!!",
-        "nijigasaki": "Love Live! 虹咲学园学园偶像同好会",
-        "superstar": "Love Live! Superstar!!",
-        "hasunosora": "Love Live! 莲之空女学院学园偶像俱乐部",
-        "hasunosoraShort": "莲之空女学院学园偶像俱乐部",
-        "muse": "μ's",
-        "sukufesuThanks": "学园偶像祭系列感谢祭",
-        "loveliveSeries": "Love Live! 系列",
-        "hasunosoraSchool": "莲之空女学院"
+      "listEmpty": "暂无开放的锦标赛。创建一个开始吧。",
+      "card": {
+        "fee": "报名费 {n}",
+        "watching": "{n} 人观战",
+        "starts": "开始 {when}",
+        "fog": "迷雾 {fog}",
+        "delay": "延迟 {n}秒",
+        "metaSep": "·"
+      },
+      "backBulletin": "← 公告板",
+      "notify": {
+        "title": "LLTCG 锦标赛",
+        "checkinOpen": "签到已开始：{title}",
+        "checkinSoon": "即将签到：{title}"
+      },
+      "createHeading": "创建锦标赛",
+      "createTzNote": "开始时间使用 {tz}。",
+      "createTzNoteFallback": "开始时间使用你选择的时区。",
+      "field": {
+        "title": "标题",
+        "titlePlaceholder": "周五夜对阵",
+        "startLocal": "开始（本地）",
+        "checkinMins": "签到分钟数",
+        "minPlayers": "最少人数",
+        "maxPlayers": "最多人数",
+        "entryFee": "报名费（Coins）",
+        "gameMode": "游戏模式",
+        "format": "赛制",
+        "matchLength": "对局局数",
+        "fog": "战争迷雾",
+        "rules": "规则模板",
+        "rulesTitle": "额外卡组规则；新手/随机仅适用标准",
+        "streamDelay": "直播延迟（观战）"
+      },
+      "format": {
+        "singleElim": "单败淘汰",
+        "doubleElimBracket": "双败（胜者/败者）",
+        "doubleElimLives": "双败（2命）",
+        "swiss": "瑞士轮",
+        "single_elim": "单败淘汰",
+        "double_elim_bracket": "双败（胜者/败者）",
+        "double_elim": "双败（2命）"
+      },
+      "bestOf": {
+        "1": "一局定胜负",
+        "3": "三局两胜"
+      },
+      "fog": {
+        "hiddenHands": "隐藏手牌（观众）",
+        "openHands": "公开手牌",
+        "hiddenHandsShort": "隐藏手牌",
+        "openHandsShort": "公开手牌"
+      },
+      "rules": {
+        "standardOption": "标准（无额外限制）",
+        "pauperOption": "贫民（N/R）",
+        "highlanderOption": "高地人（各1）",
+        "standard": {
+          "label": "标准",
+          "help": "除所选游戏模式外无额外卡组限制。适用完整稀有度与常规张数限制。"
+        },
+        "pauper": {
+          "label": "贫民（N/R）",
+          "help": "仅较低稀有度：N、R、C、U、CL。不允许更高稀有度（SR+、SEC 等）。"
+        },
+        "highlander": {
+          "label": "高地人（各1）",
+          "help": "主卡组+能量整副中每种卡最多1张。不允许同编号重复。"
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "游戏模式已设定卡组规则 — 此处仅适用标准。"
+      },
+      "delay": {
+        "none": "无",
+        "secs": "{n} 秒"
+      },
+      "schedule": "安排",
+      "detail": {
+        "host": "主办",
+        "hostFallback": "主办",
+        "prize": "奖金 {n}",
+        "watching": "观战 {n}",
+        "starts": "开始 {when}",
+        "mode": "模式 {mode}",
+        "rules": "规则 {rules}",
+        "fog": "迷雾 {fog}",
+        "streamDelay": "直播延迟 {n}秒",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "参赛者",
+      "bracketHeading": "对阵表",
+      "entrantsEmpty": "暂无参赛者",
+      "person": {
+        "playerFallback": "玩家"
+      },
+      "standingsHeading": "积分榜",
+      "standings": {
+        "record": "{wins}胜–{losses}负"
+      },
+      "action": {
+        "register": "报名",
+        "registerTip": "锁定卡组并报名。若有报名费将计入奖池。",
+        "checkin": "签到",
+        "checkinTip": "在对阵开始前确认到场。未签到视为缺席。",
+        "unregister": "取消报名",
+        "unregisterTip": "在开始前退出并退还报名费。",
+        "checkedIn": "已签到",
+        "checkedInTip": "你已签到，等待对阵开始。",
+        "deposit": "存入奖金",
+        "depositTip": "从余额向本赛事奖池添加 Coins（仅主办）。",
+        "cancel": "取消（退款）",
+        "cancelTip": "取消锦标赛并退还报名费及剩余主办奖金。",
+        "tick": "刷新 / 推进",
+        "tickTip": "刷新本赛事并推进服务器计时（签到窗口、对阵、房间分配）。",
+        "join": "加入我的对局",
+        "joinTip": "当你的对阵局准备好时进入锦标赛房间。",
+        "spectateList": "观战对局",
+        "spectateListTip": "以观众身份浏览并观看本锦标赛的进行中对局。"
+      },
+      "prompt": {
+        "deposit": "存入奖池的 Coins 数量：",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "取消锦标赛并为参赛者退款？"
+      },
+      "bracket": {
+        "empty": "设定最多人数/赛制后显示对阵表。",
+        "previewSuffix": "预览（签到后填入名字）",
+        "slot": "席位",
+        "tbd": "待定",
+        "bye": "轮空",
+        "waiting": "等待中…",
+        "spectate": "观战",
+        "spectateTip": "以观众身份观看本局（非参赛者也可）",
+        "winner": "胜者：{name}",
+        "namesLock": "名字在对阵开始时锁定"
+      },
+      "formatCaption": {
+        "swiss": "瑞士轮",
+        "doubleElimLives": "双败（2命）",
+        "doubleElimBracket": "双败（胜者/败者）",
+        "singleElim": "单败淘汰"
+      },
+      "round": {
+        "swiss": "瑞士 · 第{n}轮",
+        "losersFinal": "败者决赛",
+        "losers": "败者 · R{n}",
+        "grandFinal": "总决赛",
+        "grandFinalReset": "总决赛（重置）",
+        "winnersFinal": "胜者决赛",
+        "semifinals": "半决赛",
+        "roundOf": "{n}强"
+      },
+      "matchStatus": {
+        "live": "进行中",
+        "ready": "就绪",
+        "done": "结束",
+        "pending": "即将开始"
+      },
+      "register": {
+        "backEvent": "← 赛事",
+        "heading": "选择要锁定的卡组",
+        "leadDefault": "报名后此卡组将锁定用于锦标赛。",
+        "leadPick": "为本赛事选择合法卡组并锁定。",
+        "leadEmpty": "尚无合格卡组 — 请先在卡组构建器制作后再回来。",
+        "leadFreePick": "选择卡组实验预设、已存账号卡组，或输入实验密码。",
+        "leadFreeEmpty": "尚无已存自由卡组 — 打开卡组实验保存预设（或使用分享密码）后再回来。",
+        "noEligible": "此游戏模式没有合格卡组。",
+        "noFreeDecks": "未找到实验预设或账号卡组。",
+        "deckFallback": "卡组",
+        "metaPreset": "预设栏位 {slot}",
+        "metaEquipped": "· 已装备",
+        "metaStarter": "新手 · {label}",
+        "metaExperiment": "卡组实验 · 栏位 {slot}",
+        "passwordLabel": "实验密码",
+        "passwordPlaceholder": "分享的卡组实验代码",
+        "withPassword": "用密码报名",
+        "openDeckBuilder": "打开卡组构建器",
+        "openDeckExperiment": "打开卡组实验"
+      },
+      "status": {
+        "open": "开放",
+        "checkin": "签到",
+        "running": "进行中",
+        "finished": "已结束",
+        "cancelled": "已取消"
+      },
+      "entrant": {
+        "registered": "已报名",
+        "checked_in": "已签到",
+        "no_show": "缺席",
+        "eliminated": "已淘汰",
+        "active": "进行中"
+      },
+      "err": {
+        "cancelled": "此锦标赛已取消。",
+        "unavailable": "该锦标赛已不可用。",
+        "cancelRefunded": "锦标赛已取消 — 已为参赛者退款。",
+        "pickStart": "请选择开始日期与时间",
+        "startTooSoon": "开始时间须至少在1分钟之后",
+        "pickStartSoon": "请选择至少1分钟之后的开始时间",
+        "experimentPassword": "请输入实验密码",
+        "joinHelperMissing": "缺少加入助手",
+        "spectateHelperMissing": "缺少观战助手"
+      },
+      "toast": {
+        "noMatchReady": "暂无就绪的锦标赛对局"
+      },
+      "cal": {
+        "pickDateTime": "选择日期与时间",
+        "dialogAria": "选择开始日期与时间",
+        "prevMonth": "上个月",
+        "nextMonth": "下个月",
+        "monthFallback": "月",
+        "dow": {
+          "su": "日",
+          "mo": "一",
+          "tu": "二",
+          "we": "三",
+          "th": "四",
+          "fr": "五",
+          "sa": "六"
+        },
+        "hour": "时",
+        "min": "分",
+        "cancel": "取消",
+        "apply": "应用"
+      },
+      "tz": {
+        "Asia/Tokyo": "日本（JST）",
+        "America/New_York": "美国东部",
+        "America/Chicago": "美国中部",
+        "America/Denver": "美国山地",
+        "America/Los_Angeles": "美国太平洋",
+        "America/Toronto": "加拿大东部",
+        "America/Vancouver": "加拿大太平洋",
+        "Europe/London": "英国（伦敦）",
+        "Europe/Paris": "中欧",
+        "Europe/Berlin": "柏林",
+        "Australia/Sydney": "悉尼",
+        "Asia/Singapore": "新加坡",
+        "Asia/Seoul": "韩国（KST）",
+        "Asia/Shanghai": "中国",
+        "Asia/Hong_Kong": "香港",
+        "Asia/Bangkok": "曼谷",
+        "Pacific/Auckland": "奥克兰",
+        "UTC": "UTC"
       }
-    },
-    "cardList": {
-      "title": "卡牌一览",
-      "hubSub": "浏览全部卡牌",
-      "backHub": "← 主页",
-      "lead": "按商品浏览全部卡牌。已拥有的卡牌以彩色显示。",
-      "collection": "收藏",
-      "ownedProgress": "{owned}/{total}",
-      "notOwned": "未拥有",
-      "prCards": "PR 卡",
-      "other": "其他"
     }
   },
   "th": {
@@ -6922,14 +7464,10 @@
     "auth": {
       "checking": "กำลังตรวจสอบการเข้าสู่ระบบ Discord…",
       "signingIn": "กำลังเข้าสู่ระบบ…",
-      "reconnecting": "กำลังเชื่อมต่อแมตช์อีกครั้ง…",
-      "reconnectingTry": "กำลังเชื่อมต่อแมตช์อีกครั้ง… (ครั้งที่ {n})",
-      "reconnectingWaiting": "ยังรอเซิร์ฟเวอร์อยู่… (ครั้งที่ {n})",
       "signInDiscord": "เข้าสู่ระบบด้วย Discord",
       "guestPrompt": "เข้าสู่ระบบด้วย Discord เพื่อบันทึกคอลเลกชันและเล่นแรงก์",
       "guestPlayHint": "เล่นอันแรงก์โดยไม่มีบัญชี หรือเข้าสู่ระบบเพื่อเล่นแรงก์",
       "sessionExpired": "เซสชันหมดอายุ — เข้าสู่ระบบอีกครั้ง หรือเล่นอันแรงก์โดยไม่มีบัญชี",
-      "serverBusy": "เซิร์ฟเวอร์ไม่ว่าง — ยังเก็บการเข้าสู่ระบบไว้ รอแล้วรีเฟรช หรือเล่นอันแรงก์ก่อน",
       "loadError": "โหลดบัญชีไม่ได้ — ยังเล่นอันแรงก์ได้",
       "guestTimeout": "ตรวจสอบการเข้าสู่ระบบหมดเวลา — เล่นอันแรงก์ หรือลองเข้าสู่ระบบ Discord อีกครั้ง"
     },
@@ -6937,7 +7475,7 @@
       "unrankedPlay": "เล่นอันแรงก์",
       "unrankedSub": "ห้อง เพื่อน หรือฝึกกับ CPU",
       "deckExperiment": "ทดลองเด็ค",
-      "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะ Free อันแรงก์",
+      "deckExperimentSub": "สร้างด้วยการ์ดทั้งหมด — เฉพาะแขก อันแรงก์",
       "howToPlay": "วิธีเล่น",
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗"
@@ -6967,35 +7505,14 @@
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
       "backHub": "← ฮับ",
       "missions": "ภารกิจ",
-      "missionsClaimable": "ภารกิจ — พร้อมรับ {n} รายการ",
-      "loginBonus": "ล็อกอิน",
-      "apk": {
-        "title": "เล่นบน Android ไหม? ดาวน์โหลดตัวเปิด APK!",
-        "sub": "ดาวน์โหลด Loveca v1.1 อนุญาตติดตั้งจากแหล่งที่ไม่รู้จัก แล้วเปิดไฟล์ APK"
-      },
       "rankedPrCount": "{remaining} / {limit}",
-      "rankedPrTitle": "รางวัลแพ็ก PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST · แพ็กละ 3 ใบ)",
-      "stickerShop": "แลกสติกเกอร์",
+      "rankedPrTitle": "รางวัล PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST)",
+      "stickerShop": "ร้านสติกเกอร์",
       "stickerShopSub": "แลกซีลเป็นการ์ดจากแพ็กของคุณ",
-      "sleeveShop": { "title": "ร้านซองการ์ด", "sub": "ใช้เหรียญซื้อซอง" },
       "tournamentMode": "โหมดทัวร์นาเมนต์",
       "tournamentModeSub": "เร็ว ๆ นี้",
-      "officialVideo": "วิดีโอทางการ 8 นาที ↗"
-    },
-    "loginBonus": {
-      "title": "โบนัสล็อกอิน",
-      "lead": "ล็อกอินทุกวัน (JST) เพื่อรับโบนัสถัดไป วันที่พลาดจะถูกข้าม — ความคืบหน้ายังคงอยู่",
-      "day": "วันที่ {day}",
-      "reward": {
-        "gems": "เจม {amount}",
-        "nSeals": "ซีล N {amount}",
-        "srSeal": "ซีล SR {amount}",
-        "prPack": "แพ็ก PR"
-      },
-      "gotGems": "ได้รับ Star Gem {amount} ชิ้น!",
-      "gotNSeals": "ได้รับซีล N {amount} อัน!",
-      "gotSrSeal": "ได้รับซีล SR {amount} อัน!",
-      "gotPrPack": "ได้รับแพ็ก PR! กำลังเปิด…"
+      "officialVideo": "วิดีโอทางการ 8 นาที ↗",
+      "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต"
     },
     "language": {
       "label": "ภาษา",
@@ -7037,18 +7554,12 @@
       "experimentDeckHint": "สร้างในทดลองเด็ค สร้างรหัสผ่าน แล้วใส่ที่นี่ — หรือเลือกเด็คที่บันทึกไว้ด้านล่าง",
       "secondsLabel": "{n} วินาที",
       "casualQueueStats": "{waiting} รอคิว · {inGame} ในเกมแคชชวล",
-      "otherModesQueuedLead": "มีผู้เล่นรอคิวในโหมดอื่น:",
       "casualSearching": "กำลังค้นหาคู่ต่อสู้… ({seconds} วินาที)",
       "roomCodePlaceholder": "ABCD1234",
       "cpuEasyShort": "ง่าย",
       "cpuNormalShort": "ปกติ",
       "cpuHardShort": "ยาก",
       "cpuExpertShort": "ผู้เชี่ยวชาญ",
-      "cpuSleeve": "ซองของ CPU",
-      "cpuPlaymat": "เพลย์แมตของ CPU",
-      "cpuCosmeticDefault": "ค่าเริ่มต้น",
-      "cpuCosmeticRandom": "สุ่ม (ที่มีอยู่)",
-      "cpuCosmeticsHint": "เลือกของที่มีอยู่ หรือสุ่มจากคอลเลกชันของคุณ",
       "soloStarting": "กำลังเริ่มปะทะ CPU ({diff})",
       "player1Default": "ผู้เล่น 1",
       "player2Default": "ผู้เล่น 2"
@@ -7058,16 +7569,6 @@
       "experimentTitle": "ทดลองเด็ค",
       "deckName": "ชื่อเด็ค",
       "presetSlot": "ช่องพรีเซ็ต (สูงสุด 10)",
-      "sleeve": "ซองการ์ด",
-      "sleeveNone": "ไม่มี",
-      "sleeveChange": "เปลี่ยน",
-      "sleevePickTitle": "เลือกซองการ์ด",
-      "sleevePickLead": "แตะซองที่คุณมีเพื่อสวมใส่ให้เด็คนี้",
-      "sleevePickClose": "ปิด",
-      "sleeveHint": "ซองที่สวมจะแทนที่ด้านหลังการ์ดในการแข่งขัน ค่าเริ่มต้น: ไม่มี",
-      "sleeveEmpty": "ยังไม่มีซองการ์ดให้เลือก",
-      "sleeveEmptyHint": "ซื้อได้ที่ร้านซองการ์ด",
-      "sleeveOwnedHint": "ซองที่มีจากร้านซองการ์ด",
       "search": "ค้นหาการ์ด",
       "searchPlaceholder": "ชื่อ รหัส หรือข้อความกฎ…",
       "collection": "คอลเลกชัน",
@@ -7082,48 +7583,6 @@
       "backMenu": "← เมนู",
       "deckPassword": "รหัสผ่านเด็ค",
       "deckPasswordPlaceholder": "ใส่รหัสผ่านเพื่อโหลด",
-      "decklogCode": "รหัส deck log",
-      "decklogCodePlaceholder": "โค้ด OR URL",
-      "decklogImport": "นำเข้า",
-      "decklogHint": "วางรหัสหรือ URL จาก deck log เพื่อโหลดเด็คและบันทึกรหัสผ่านทดลอง",
-      "decklogNeedCode": "กรอกรหัสหรือ URL ของ deck log",
-      "decklogImporting": "กำลังนำเข้าจาก deck log…",
-      "decklogImportingShort": "กำลังนำเข้า…",
-      "decklogImportedSaved": "นำเข้า {code} แล้ว รหัสผ่านทดลอง: {password}",
-      "decklogImported": "นำเข้า {code} แล้ว",
-      "decklogAccountHint": "วางรหัสหรือ URL จาก deck log — โหลดเข้าพรีเซ็ตนี้หากคุณมีการ์ดครบ",
-      "decklogMissingTitle": "การ์ดต่อไปนี้ขาดสำหรับการสร้างเด็คนี้",
-      "decklogMissingLead": "แทนที่สำเนาที่ขาดด้วยการ์ดจากคอลเลกชัน หรือยกเลิก",
-      "decklogNeedHave": "ต้องการ {need} · มี {have}",
-      "decklogObtainBooster": "หาได้จาก: {pack} (บูสเตอร์)",
-      "decklogObtainStarter": "หาได้จาก: {pack} (สตาร์ทเตอร์ / แลกซีล)",
-      "decklogObtainPr": "หาได้จาก: แพ็ก PR หรือแลกซีล",
-      "decklogObtainCollection": "หาได้จาก: {pack}",
-      "decklogObtainUnknown": "หาได้จากรายการการ์ดหรือแลกซีล",
-      "decklogSubstitute": "การ์ดทดแทน",
-      "decklogSubNone": "ยังไม่ได้เลือกทดแทน",
-      "decklogSubNoneCount": "เลือกทดแทน {n} ใบ",
-      "decklogChooseSub": "เลือกการ์ดทดแทน",
-      "decklogChangeSub": "เปลี่ยนการ์ดทดแทน",
-      "decklogSubPicked": "ทดแทน: {name}",
-      "decklogSubPickedCount": "ทดแทน ({n})",
-      "decklogSubPickTitle": "เลือกการ์ดทดแทน",
-      "decklogSubPickTitleFor": "เลือก {n} ใบสำหรับ {name}",
-      "decklogSubPickLead": "คลิกขวาหรือแตะเพื่อเพิ่มทีละใบ เมื่อครบแล้วคลิกขวาเพื่อเอาออก แล้วยืนยัน",
-      "decklogSubPickCount": "เลือกอีก {n} ใบ",
-      "decklogSubPickCountReady": "เลือกครบแล้ว — ยืนยันเพื่อใช้",
-      "decklogSubPickConfirm": "ยืนยันการ์ดทดแทน",
-      "decklogSubPickRemoveHint": "เอาออก",
-      "decklogSubPickReplacing": "กำลังแทนที่",
-      "decklogSubPickShortfall": "ต้องแทน {n} ใบ",
-      "decklogSubNoneAvailable": "ไม่มีการ์ดทดแทนในครอบครอง",
-      "decklogAutoSubs": "เลือกทดแทนอัตโนมัติ",
-      "decklogApplySubs": "แทนที่แล้วเพิ่มเด็ค",
-      "decklogNeedAllSubs": "เลือกการ์ดทดแทนให้ครบจำนวนที่ขาด หรือยกเลิก",
-      "decklogSubsStillShort": "ยังขาดอยู่ — เลือกทดแทนอื่นหรือยกเลิก",
-      "decklogImportedAccount": "นำเข้า {code} แล้ว บันทึกพรีเซ็ตเมื่อพร้อม",
-      "decklogNeedSignIn": "เข้าสู่ระบบเพื่อนำเข้า deck log ไปยังเด็คคอลเลกชัน",
-      "decklogAutoEnergy": "แทนที่ Energy ที่ขาดอัตโนมัติ",
       "load": "โหลด",
       "savedPassword": "รหัสผ่านที่บันทึก:",
       "copy": "คัดลอก",
@@ -7288,23 +7747,6 @@
       "openBox": "เปิดกล่อง ({n} แพ็ก)",
       "selectBoxFirst": "เลือกชุดบูสเตอร์ก่อน"
     },
-    "gameMode": {
-      "label": "โหมดเกม",
-      "standard": "มาตรฐาน",
-      "starters": "เฉพาะเด็คเริ่มต้น",
-      "free": "ฟรี",
-      "randomized": "เด็คสุ่ม",
-      "short": {
-        "standard": "มาตรฐาน",
-        "starters": "เริ่มต้น",
-        "free": "ฟรี",
-        "randomized": "สุ่ม"
-      },
-      "standardDesc": "โหมด TCG มาตรฐาน ใช้เด็คที่สร้างจากการ์ดที่คุณมีเพื่อแข่งกับผู้เล่นอื่น",
-      "startersDesc": "โหมดนี้เล่นได้เฉพาะเด็คเริ่มต้นเท่านั้น",
-      "freeDesc": "ใช้เด็คจาก Deck Experiment ใช้การ์ดใดก็ได้ในเกม (ไม่ต้องมีในครอบครอง) โหมดนี้ไม่มีลีดเดอร์บอร์ด",
-      "randomizedDesc": "ผู้เล่นทั้งสองได้เด็คสุ่มที่ถูกต้องตามกติกาจากคลังการ์ดทั้งหมด (ไม่ต้องมีในครอบครอง) แรงก์มีลีดเดอร์บอร์ดแยก"
-    },
     "ranked": {
       "title": "แรงก์ PvP",
       "findMatch": "หาแมตช์",
@@ -7340,7 +7782,6 @@
       "selectCardFirst": "เลือกการ์ดก่อน",
       "jumpToYou": "ไปที่รายการของฉัน",
       "yourRank": "อันดับของคุณ: #{rank}",
-      "yourRankNotPlayed": "อันดับของคุณ: ยังไม่เคยเล่น",
       "profileFlag": "ธงโปรไฟล์",
       "flagLead": "เลือกธงเพื่อแสดงข้างชื่อของคุณบนกระดานผู้นำ",
       "flagSearchPlaceholder": "ค้นหาธง…",
@@ -7353,16 +7794,8 @@
     "options": {
       "title": "ตัวเลือก",
       "enhancedTextures": "พื้นผิวพิเศษบนการ์ดหายากสูง",
-      "sleeveConform": "ให้ซองพอดีกับรูปร่างการ์ด (มุมโค้ง ไม่ยื่นเป็นสี่เหลี่ยม)",
       "soundEffects": "เอฟเฟกต์เสียง",
-      "discordPresence": "Discord Rich Presence (Android)",
-      "discordPresenceOff": "ปิด — เปิดเพื่อแชร์เมนู แมตช์ และคิวบน Discord",
-      "discordPresenceOn": "เปิด — Discord จะแสดงกิจกรรมใน Loveca เมื่อเปิดอยู่",
-      "discordPresenceLink": "ลิงก์ Discord สำหรับ Presence",
       "sfxVolume": "ระดับเสียง SFX",
-      "textScale": "ขนาดข้อความและ UI",
-      "textScaleExp": "ทดลอง",
-      "textScaleLead": "ขยายหรือย่อข้อความกับปุ่มในเมนู ขนาดใหญ่ขึ้นจะเลื่อนดูได้มากขึ้นเพื่อไม่ให้ทับกัน แผงด้านข้างระหว่างแมตช์ยังอยู่ในจอ และกระดานบนมือถือยังพอดีหน้าจอ",
       "stuckTitle": "ติดอยู่ในแมตช์?",
       "stuckLead": "หากแรงก์เชื่อมต่อคุณกลับไปยังเกมที่พังหรือจบแล้ว ให้ออกจากบันทึกแมตช์ที่ใช้งานอยู่ที่นี่ นับเป็นการยอมแพ้หากเกมยังดำเนินอยู่",
       "resetTitle": "รีเซ็ตบัญชี",
@@ -7483,10 +7916,6 @@
     "phaseBar": {
       "spectating": "กำลังชม — {p1} ปะทะ {p2} (อ่านอย่างเดียว)",
       "setupWaitMulligan": "รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
-      "setupWaitMulliganYou": "คุณจั่วใหม่ {n} ใบ รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
-      "setupWaitMulliganYouKept": "คุณเก็บมือนี้ไว้ รอคู่ต่อสู้ทำมัลลิแกนให้เสร็จ…",
-      "setupMulliganPlayerN": "{name} จั่วใหม่ {n}",
-      "setupMulliganPlayerKept": "{name} เก็บมือ",
       "setupMulligan": "เตรียมการ — ตรวจมือเปิด มัลลิแกนการ์ดที่ต้องการ แล้วยืนยัน",
       "coinFlip": "โยนเหรียญ — ผู้ชนะเลือกว่าใครไปก่อน…",
       "mainYour": "เฟสหลักของคุณ — เล่นสมาชิก (มีพลังงาน {energy}) กดจบเฟสหลักเมื่อพร้อม",
@@ -7560,7 +7989,6 @@
       "bothWait": "ทั้งสองฝ่ายรอ",
       "bothWaitSub": "การ์ด Live ยังอยู่ในที่เก็บ",
       "liveStartFlash": "เริ่ม LIVE",
-      "heartCheck": "กำลังตรวจหัวใจ…",
       "liveJudgeTieCappedBoth": "คะแนน Live เสมอ — ไม่มีใครได้ Live สำเร็จ (ทั้งคู่มีครบ 2 แล้ว)",
       "liveJudgeTieYouCappedWin": "เสมอ — คุณมี Live สำเร็จครบ 2 แล้ว",
       "liveJudgeTieOppEarns": "เสมอ — คู่ต่อสู้ได้ Live สำเร็จ",
@@ -7578,9 +8006,7 @@
       "replaceCard": "เปลี่ยน {n} ใบ",
       "replaceCards": "เปลี่ยน {n} ใบ",
       "tutorialKeepHint": "พอใจกับมือนี้ไหม? แตะเก็บมือนี้เพื่อไปต่อ",
-      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน",
-      "declareTitle": "มัลลิแกน",
-      "declareSub": "{a}: {aN} · {b}: {bN}"
+      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน"
     },
     "coin": {
       "title": "ผู้เล่นคนแรก",
@@ -7609,8 +8035,6 @@
       "yourScore": "คะแนนของคุณ",
       "oppScore": "คะแนนคู่ต่อสู้",
       "combinedHearts": "หัวใจที่ต้องใช้รวม",
-      "combinedScore": "คะแนน {score}",
-      "combinedScoreBonus": "คะแนน {base} +{bonus}",
       "livesSelected": "{n} Live",
       "livesSelectedOne": "1 Live",
       "plusMembers": "+{n} สมาชิก",
@@ -7658,6 +8082,7 @@
       "noLiveSuccess": "ไม่มีการ์ด Live สำหรับวางใน Live สำเร็จ",
       "searchDeckFor": "ค้นหาเด็คหา…",
       "deckTopPick": "บนสุดของเด็ค",
+      "surveilHintReturnAll": "ช่อง 1 คือบนสุดของเด็ค ลากการ์ดระหว่างช่องหมายเลขเพื่อจัดเรียง หรือแตะสองใบเพื่อสลับ การ์ดทั้งหมดต้องอยู่บนสุดของเด็ค",
       "noValidTargets": "ไม่มีสมาชิกที่ถูกต้องบนเวที",
       "selectAtMost": "เลือกได้สูงสุด {n}",
       "selectAtLeast": "เลือกอย่างน้อย {n}",
@@ -7681,8 +8106,7 @@
       "noLiveInHand": "ไม่มีการ์ด Live ในมือ",
       "noMemberInHand": "ไม่มีการ์ดสมาชิกในมือ",
       "enterNumber0to99": "ใส่ตัวเลข 0 ถึง 99",
-      "noYellMill": "ไม่มีการ์ด Yell ที่จะมิลได้",
-      "surveilHintReturnAll": "ช่อง 1 คือบนสุดของเด็ค ลากการ์ดระหว่างช่องหมายเลขเพื่อจัดเรียง หรือแตะสองใบเพื่อสลับ การ์ดทั้งหมดต้องอยู่บนสุดของเด็ค"
+      "noYellMill": "ไม่มีการ์ด Yell ที่จะมิลได้"
     },
     "skill": {
       "alreadyUsed": "ใช้ไปแล้วในเทิร์นนี้",
@@ -7718,10 +8142,6 @@
         "title": "เทิร์นละ 1 ครั้ง",
         "body": "คุณใช้เอฟเฟกต์นี้ได้เพียงครั้งเดียวต่อเทิร์น"
       },
-      "twicePerTurn": {
-        "title": "เทิร์นละ 2 ครั้ง",
-        "body": "คุณใช้เอฟเฟกต์นี้ได้สูงสุดสองครั้งต่อเทิร์น"
-      },
       "automatic": {
         "title": "อัตโนมัติ",
         "body": "ทำงานเองเมื่อเงื่อนไขที่ระบุเกิดขึ้น — ไม่ต้องเปิดใช้"
@@ -7737,6 +8157,18 @@
       "wait": {
         "body": "สมาชิกที่เข้าสู่ Wait ไม่สามารถให้เบลดในเทิร์นนั้น — เบลดของเขาไม่เพิ่มจำนวนการ์ดที่เปิดสำหรับ Yell ระหว่างการแสดง Live นี่ไม่ใช่ห้องรอ",
         "title": "Wait"
+      },
+      "twicePerTurn": {
+        "title": "เทิร์นละ 2 ครั้ง",
+        "body": "คุณใช้เอฟเฟกต์นี้ได้สูงสุดสองครั้งต่อเทิร์น"
+      },
+      "leftSide": {
+        "title": "ฝั่งซ้าย",
+        "body": "ใช้ได้เฉพาะเมื่อสมาชิกใบนี้อยู่ในช่องฝั่งซ้ายของเวทีขณะเอฟเฟกต์แก้"
+      },
+      "rightSide": {
+        "title": "ฝั่งขวา",
+        "body": "ใช้ได้เฉพาะเมื่อสมาชิกใบนี้อยู่ในช่องฝั่งขวาของเวทีขณะเอฟเฟกต์แก้"
       }
     },
     "heart": {
@@ -7763,8 +8195,7 @@
       "playToSlot": "เล่นลงช่อง:",
       "needEnergy": "ต้องการ",
       "haveEnergy": "มี",
-      "bladeHearts": "หัวใจเบลด",
-      "allBladeHeartsTip": "เมื่อตรวจหัวใจที่ต้องการ หัวใจเบลด ALL ที่เปิดสำหรับ Yell นับเป็นสีใดก็ได้"
+      "bladeHearts": "หัวใจเบลด"
     },
     "pack": {
       "opened": "เปิดแพ็กแล้ว",
@@ -7816,14 +8247,10 @@
       "debugSaveLog": "💾 บันทึกดีบักล็อก",
       "debugCopyLog": "📋 คัดลอกล็อก",
       "debugSaveBundle": "📦 ส่งออกบันเดิลดีบัก",
-      "rankedPrDailyCap": "ใช้แพ็ก PR แรงก์รายวันแล้ว ({limit}/วัน JST)",
-      "rankedPrDupe": "ชนะแรงก์: แพ็ก PR — เปิดที่เมนูหลัก",
-      "rankedPrNew": "ชนะแรงก์: แพ็ก PR — เปิดที่เมนูหลัก",
-      "rankedPrPopupTitle": "แพ็ก PR แรงก์!",
-      "rankedPrPackWon": "ชนะแรงก์: แพ็ก PR ×{count} — เปิดที่เมนูหลัก",
-      "rankedPrPackPopupTitle": "แพ็ก PR แรงก์ ×{count}!",
-      "rankedPrPackSummary": "{count} ใบ",
-      "rankedPrPackDupes": "ซ้ำ {count} ใบ → {gems} Star Gems",
+      "rankedPrDailyCap": "ใช้รางวัล PR แรงก์รายวันแล้ว ({limit}/วัน JST)",
+      "rankedPrDupe": "{name} แปลงเป็น {gems} Star Gems (เกินลิมิตสำเนา)",
+      "rankedPrNew": "รางวัลชนะแรงก์: {name}",
+      "rankedPrPopupTitle": "รางวัลชนะแรงก์!",
       "rematchAccept": "รับรีแมตช์",
       "rematchOffer": "รีแมตช์",
       "rematchOppWants": "{name} ต้องการรีแมตช์!",
@@ -7845,15 +8272,10 @@
       "noFileSelected": "ยังไม่ได้เลือกไฟล์",
       "startImported": "เริ่มรีเพลย์ที่นำเข้า",
       "playPause": "เล่น / หยุดชั่วคราว",
-      "first": "แอ็กชันแรก",
-      "prev": "แอ็กชันก่อนหน้า",
-      "next": "แอ็กชันถัดไป",
-      "last": "แอ็กชันสุดท้าย",
-      "startStep": "เริ่ม",
       "positionAria": "ตำแหน่งรีเพลย์",
       "handoffNote": "รีเพลย์จบแล้ว — คุณควบคุมได้ CPU เล่นฝั่งคู่ต่อสู้",
       "exitReplay": "ออกจากรีเพลย์",
-      "phaseBarHint": "รีเพลย์ {step} / {total} — ย้อน/ถัดไปทีละแอ็กชัน แถบเลื่อนยังใช้ข้ามได้",
+      "phaseBarHint": "รีเพลย์ {step} / {total} — ใช้แถบรีเพลย์ด้านล่างเพื่อไล่แอ็กชันที่บันทึก",
       "signInLibrary": "เข้าสู่ระบบเพื่อบันทึกและดูรีเพลย์ในไลบรารี",
       "emptyLibrary": "ยังไม่มีรีเพลย์ที่บันทึก จบแมตช์แล้วเลือกบันทึกรีเพลย์",
       "watch": "ดู",
@@ -8015,13 +8437,7 @@
     },
     "mobile": {
       "rotateTitle": "เกมนี้เล่นในแนวนอน",
-      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ",
-      "openLog": "บันทึก",
-      "refresh": "รีเฟรช",
-      "stamps": "แสตมป์",
-      "offlineNeedNetwork": "ไม่มีเครือข่าย — เชื่อมต่อใหม่เพื่อเล่น",
-      "portraitHint": "โหมดแนวตั้งสำหรับมือถือ",
-      "deckInspectHint": "แตะการ์ดเพื่อดูตัวอย่าง"
+      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ"
     },
     "common": {
       "loading": "กำลังโหลด…",
@@ -8061,13 +8477,8 @@
       "couldNotCopyLog": "คัดลอกล็อกไม่ได้",
       "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ",
       "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
-      "signInStickerShop": "เข้าสู่ระบบเพื่อใช้แลกสติกเกอร์",
-      "signInSleeveShop": "เข้าสู่ระบบเพื่อใช้ร้านซองการ์ด",
-      "sleeveShopLoadFailed": "โหลดร้านซองการ์ดไม่สำเร็จ",
-      "sleeveBought": "ปลดล็อกซองแล้ว!",
-      "sleeveClaimedFree": "รับซองฟรีแล้ว!",
-      "coinsEarned": "+{n} เหรียญ",
-      "stickerLoadFailed": "โหลดแลกสติกเกอร์ไม่สำเร็จ",
+      "signInStickerShop": "เข้าสู่ระบบเพื่อใช้ร้านสติกเกอร์",
+      "stickerLoadFailed": "โหลดร้านสติกเกอร์ไม่สำเร็จ",
       "stickerCardsLoadFailed": "โหลดการ์ดไม่สำเร็จ",
       "stickerExchangeFailed": "แลกไม่สำเร็จ",
       "stickerConvertFailed": "แปลงไม่สำเร็จ"
@@ -8094,11 +8505,9 @@
       "matchEnded": "แมตช์จบแล้ว — กลับล็อบบี้",
       "sessionEnded": "เซสชันผู้ชมจบแล้ว",
       "switchPerspective": "สลับมุมมอง",
-      "hiddenHands": "ซ่อนมือถือ",
-      "hiddenHandsTitle": "ซ่อนมือถือ (มุมมองทัวร์นาเมนต์)",
-      "hiddenHandsOnTitle": "กำลังซ่อนมือถือ — แตะเพื่อแสดง",
       "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
-      "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…"
+      "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…",
+      "listTitleTournament": "ชมทัวร์นาเมนต์"
     },
     "missions": {
       "claim": "รับ",
@@ -8117,11 +8526,6 @@
         "cards1200": "มีการ์ดครบ 1,200 ใบ",
         "cards1600": "มีการ์ดครบ 1,600 ใบ",
         "cards2000": "มีการ์ดครบ 2,000 ใบ",
-        "cards2400": "มีการ์ดครบ 2,400 ใบ",
-        "playIdol": "เล่นการ์ด {idol} ครบ {n} ครั้ง",
-        "playLiveGroup": "เล่นการ์ด Live ของ {group} ครบ {n} ครั้ง",
-        "playLiveSubunit": "เล่นการ์ด Live ของ {subunit} ครบ {n} ครั้ง",
-        "loginDays10": "เข้าสู่ระบบครบ 10 วัน (JST)",
         "cards400": "มีการ์ดครบ 400 ใบ",
         "cards800": "มีการ์ดครบ 800 ใบ",
         "profileBanner": "อัปเดตแบนเนอร์โปรไฟล์",
@@ -8137,24 +8541,20 @@
         "winLiella": "ชนะด้วยเด็คหลัก Liella! อย่างเดียว",
         "winMuse": "ชนะด้วยเด็คหลัก μ's อย่างเดียว",
         "winNijigasaki": "ชนะด้วยเด็คหลักนิจิกะซากิอย่างเดียว",
-        "winTurn3": "ชนะเกมในเทิร์นที่ 3",
-        "yellScore20": "ได้คะแนน Yell 20 ขึ้นไป",
-        "liveScore15": "ได้คะแนน Live 15 ขึ้นไปในรอบเดียว",
         "profileFlag": "ตั้งธงบนโปรไฟล์ของคุณ",
         "ranked500": "เล่นแมตช์จัดอันดับ 500 นัด",
         "ranked1000": "เล่นแมตช์จัดอันดับ 1,000 นัด",
-        "sticker1": "แลกซีลในแลกสติกเกอร์",
-        "sticker10": "แลกซีลในแลกสติกเกอร์ 10 ครั้ง",
-        "sticker50": "แลกซีลในแลกสติกเกอร์ 50 ครั้ง",
-        "sticker100": "แลกซีลในแลกสติกเกอร์ 100 ครั้ง"
+        "sticker1": "แลกซีลในร้านสติกเกอร์",
+        "sticker10": "แลกซีลในร้านสติกเกอร์ 10 ครั้ง",
+        "sticker50": "แลกซีลในร้านสติกเกอร์ 50 ครั้ง",
+        "sticker100": "แลกซีลในร้านสติกเกอร์ 100 ครั้ง",
+        "cards2400": "มีการ์ดครบ 2,400 ใบ",
+        "winTurn3": "ชนะเกมในเทิร์นที่ 3",
+        "yellScore20": "ได้คะแนน Yell 20 ขึ้นไป",
+        "liveScore15": "ได้คะแนน Live 15 ขึ้นไปในรอบเดียว"
       },
       "rewardStarter": "เลือกเด็คสตาร์ทเตอร์",
       "rewardStarterOwned": "มีอยู่แล้ว",
-      "rewardFreeSleeve": "รับซองฟรี",
-      "rewardCoinsAndPrPack": "+{coins} เหรียญ · แพ็ก PR",
-      "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
-      "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
-      "claimedCoinsToast": "รับ {title} แล้ว (+{coins} เหรียญ)",
       "starterPickCancel": "ยกเลิก",
       "starterPickConfirm": "ปลดล็อกสตาร์ทเตอร์",
       "starterPickTitle": "เลือกเด็คสตาร์ทเตอร์",
@@ -8164,7 +8564,11 @@
       "statusReady": "พร้อมรับ",
       "tabDaily": "รายวัน",
       "tabMilestone": "ไมล์สโตน",
-      "title": "ภารกิจ"
+      "title": "ภารกิจ",
+      "rewardCoinsAndPrPack": "+{coins} เหรียญ · แพ็ก PR",
+      "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
+      "rewardFreeSleeve": "รับซองฟรี",
+      "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด"
     },
     "stamps": {
       "audio": "เสียงแสตมป์",
@@ -8201,7 +8605,7 @@
       "energy": "พลังงาน"
     },
     "sticker": {
-      "title": "แลกสติกเกอร์",
+      "title": "ร้านสติกเกอร์",
       "backHub": "← ฮับ",
       "backProducts": "← สินค้า",
       "hint": "แปลงการ์ดกาชาที่มีเกินในหน้าสร้างเด็คเป็นซีล แล้วนำซีลมาแลกการ์ดที่นี่",
@@ -8221,56 +8625,275 @@
       "infoRarities": "ความหายาก",
       "infoCost": "ราคาแลก"
     },
-    "sleeveShop": {
-      "title": "ร้านซองการ์ด",
+    "tournament": {
       "backHub": "← ฮับ",
-      "backChars": "← ตัวละคร",
-      "hint": "ได้เหรียญเมื่อจบแมตช์ เลือกเจเนอเรชันแล้วค่อยเลือกตัวละคร",
-      "coinsAria": "เหรียญ",
-      "freeClaims": "เลือกฟรี: {n}",
-      "owned": "มีแล้ว",
-      "buy": "ซื้อ",
-      "buyConfirm": "ซื้อ {name} ในราคา {price} เหรียญ?\n\nการกระทำนี้ย้อนกลับไม่ได้",
-      "claimFree": "รับฟรี",
-      "hoverEmpty": "ชี้ที่ซองเพื่อดูตัวอย่าง",
-      "bdayName": "วิชวลวันเกิด {name} {year}",
-      "hgVolName": "คอลเลกชันซอง HG Vol.{vol}: {title}",
-      "extraVolName": "คอลเลกชันซอง Extra Vol.{vol}: {title}",
-      "extraName": "คอลเลกชันซอง Extra: {title}",
-      "rebirthDeluxeName": "ชุดดีลักซ์ ReBirth for you (ซองและการ์ด): {title}",
-      "rebirthVer": "ReBirth ver.",
-      "units": {
-        "muse": "µ's",
-        "aqours": "Aqours",
-        "nijigasaki": "Nijigasaki",
-        "liella": "Liella!",
-        "hasunosora": "Hasunosora",
-        "mixed": "ผสม",
-        "other": "อื่นๆ"
+      "title": "โหมดทัวร์นาเมนต์",
+      "lead": "จัดอีเวนต์ ล็อกเด็ค เช็คอิน และเล่นแบร็กเก็ตแบบคัดออกเดี่ยว",
+      "timezoneLabel": "เขตเวลา",
+      "timezoneAria": "เขตเวลาที่แสดง",
+      "tzHint": "แสดงเวลาตาม {tz}",
+      "tzHintJstFallback": "แสดงเวลาตาม JST",
+      "createEvent": "สร้างอีเวนต์",
+      "refresh": "รีเฟรช",
+      "filterMode": "โหมด",
+      "mode": {
+        "all": "ทั้งหมด",
+        "standard": "มาตรฐาน",
+        "starters": "สตาร์ทเตอร์",
+        "randomized": "สุ่ม",
+        "free": "ฟรี",
+        "freeDeckExperiment": "ฟรี (ทดลองเด็ค)"
       },
-      "series": {
-        "lovelive": "Love Live!",
-        "sunshine": "Love Live! Sunshine!!",
-        "nijigasaki": "Love Live! สโมสรไอดอลโรงเรียนนิจิกะซากิ",
-        "superstar": "Love Live! Superstar!!",
-        "hasunosora": "Love Live! ชมรมไอดอลโรงเรียนหญิงฮาซุโนโซระ",
-        "hasunosoraShort": "ชมรมไอดอลโรงเรียนหญิงฮาซุโนโซระ",
-        "muse": "µ's",
-        "sukufesuThanks": "งานขอบคุณซีรีส์ Sukufesu",
-        "loveliveSeries": "ซีรีส์ Love Live!",
-        "hasunosoraSchool": "Hasunosora Girls' High School"
+      "listEmpty": "ยังไม่มีทัวร์นาเมนต์ที่เปิดอยู่ สร้างหนึ่งรายการเพื่อเริ่มต้น",
+      "card": {
+        "fee": "ค่าเข้า {n}",
+        "watching": "ชม {n}",
+        "starts": "เริ่ม {when}",
+        "fog": "หมอก {fog}",
+        "delay": "หน่วง {n}วินาที",
+        "metaSep": "·"
+      },
+      "backBulletin": "← บอร์ด",
+      "notify": {
+        "title": "ทัวร์นาเมนต์ LLTCG",
+        "checkinOpen": "เปิดเช็คอินแล้ว: {title}",
+        "checkinSoon": "ใกล้เช็คอิน: {title}"
+      },
+      "createHeading": "สร้างทัวร์นาเมนต์",
+      "createTzNote": "เวลาเริ่มใช้ {tz}",
+      "createTzNoteFallback": "เวลาเริ่มใช้เขตเวลาที่คุณเลือก",
+      "field": {
+        "title": "ชื่อ",
+        "titlePlaceholder": "แบร็กเก็ตคืนวันศุกร์",
+        "startLocal": "เริ่ม (ท้องถิ่น)",
+        "checkinMins": "นาทีเช็คอิน",
+        "minPlayers": "ผู้เล่นขั้นต่ำ",
+        "maxPlayers": "ผู้เล่นสูงสุด",
+        "entryFee": "ค่าเข้า (Coins)",
+        "gameMode": "โหมดเกม",
+        "format": "รูปแบบ",
+        "matchLength": "ความยาวแมตช์",
+        "fog": "หมอกสงคราม",
+        "rules": "เทมเพลตกฎ",
+        "rulesTitle": "กฎเด็คเพิ่มเติม; สตาร์ทเตอร์/สุ่มใช้ได้เฉพาะมาตรฐาน",
+        "streamDelay": "หน่วงสตรีม (ชม)"
+      },
+      "format": {
+        "singleElim": "คัดออกเดี่ยว",
+        "doubleElimBracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+        "doubleElimLives": "คัดออกคู่ (2 ชีวิต)",
+        "swiss": "สวิส",
+        "single_elim": "คัดออกเดี่ยว",
+        "double_elim_bracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+        "double_elim": "คัดออกคู่ (2 ชีวิต)"
+      },
+      "bestOf": {
+        "1": "Best of 1",
+        "3": "Best of 3"
+      },
+      "fog": {
+        "hiddenHands": "ซ่อนมือถือ (ผู้ชม)",
+        "openHands": "เปิดมือถือ",
+        "hiddenHandsShort": "ซ่อนมือถือ",
+        "openHandsShort": "เปิดมือถือ"
+      },
+      "rules": {
+        "standardOption": "มาตรฐาน (ไม่มีข้อจำกัดเพิ่ม)",
+        "pauperOption": "Pauper (N/R)",
+        "highlanderOption": "Highlander (ใบละ 1)",
+        "standard": {
+          "label": "มาตรฐาน",
+          "help": "ไม่มีข้อจำกัดเด็คเพิ่มนอกโหมดเกมที่เลือก ใช้เราริตี้และจำนวนสำเนาปกติ"
+        },
+        "pauper": {
+          "label": "Pauper (N/R)",
+          "help": "เฉพาะเราริตี้ต่ำ: N, R, C, U และ CL ไม่อนุญาตเราริตี้สูง (SR+, SEC ฯลฯ)"
+        },
+        "highlander": {
+          "label": "Highlander (ใบละ 1)",
+          "help": "ทั้งเด็คหลัก+พลังงาน การ์ดละไม่เกิน 1 ใบ ห้ามเลขการ์ดซ้ำ"
+        }
+      },
+      "rulesHelp": {
+        "modeLockedPrefix": "โหมดเกมกำหนดกฎเด็คแล้ว — ที่นี่ใช้ได้เฉพาะมาตรฐาน"
+      },
+      "delay": {
+        "none": "ไม่มี",
+        "secs": "{n} วินาที"
+      },
+      "schedule": "ตั้งเวลา",
+      "detail": {
+        "host": "โฮสต์",
+        "hostFallback": "โฮสต์",
+        "prize": "รางวัล {n}",
+        "watching": "ชม {n}",
+        "starts": "เริ่ม {when}",
+        "mode": "โหมด {mode}",
+        "rules": "กฎ {rules}",
+        "fog": "หมอก {fog}",
+        "streamDelay": "หน่วงสตรีม {n}วินาที",
+        "bestOfShort": "Bo{n}"
+      },
+      "entrantsHeading": "ผู้เข้าแข่ง",
+      "bracketHeading": "แบร็กเก็ต",
+      "entrantsEmpty": "ยังไม่มีผู้เข้าแข่ง",
+      "person": {
+        "playerFallback": "ผู้เล่น"
+      },
+      "standingsHeading": "ตารางคะแนน",
+      "standings": {
+        "record": "{wins}ชนะ–{losses}แพ้"
+      },
+      "action": {
+        "register": "ลงทะเบียน",
+        "registerTip": "ล็อกเด็คและเข้าอีเวนต์ จ่ายค่าเข้าเข้าสู่กองรางวัลหากมี",
+        "checkin": "เช็คอิน",
+        "checkinTip": "ยืนยันว่าคุณอยู่ก่อนแบร็กเก็ตเริ่ม ไม่เช็คอินถือว่าไม่มา",
+        "unregister": "ยกเลิกการลงทะเบียน",
+        "unregisterTip": "ออกจากอีเวนต์ก่อนเริ่มและคืนค่าเข้า",
+        "checkedIn": "เช็คอินแล้ว",
+        "checkedInTip": "คุณเช็คอินแล้ว รอแบร็กเก็ตเริ่ม",
+        "deposit": "ฝากรางวัล",
+        "depositTip": "เพิ่ม Coins จากยอดคงเหลือเข้ากองรางวัล (โฮสต์เท่านั้น)",
+        "cancel": "ยกเลิก (คืนเงิน)",
+        "cancelTip": "ยกเลิกทัวร์นาเมนต์และคืนค่าเข้าพร้อมเงินรางวัลโฮสต์ที่เหลือ",
+        "tick": "รีเฟรช / tick",
+        "tickTip": "รีเฟรชอีเวนต์และเดินเวลาเซิร์ฟเวอร์ (เช็คอิน แบร็กเก็ต จัดห้อง)",
+        "join": "เข้าแมตช์ของฉัน",
+        "joinTip": "เข้าห้องทัวร์นาเมนต์เมื่อแมตช์ในแบร็กเก็ตพร้อม",
+        "spectateList": "ชมแมตช์",
+        "spectateListTip": "เรียกดูและชมแมตช์สดของทัวร์นาเมนต์นี้ในฐานะผู้ชม"
+      },
+      "prompt": {
+        "deposit": "Coins ที่จะฝากเข้ากองรางวัล:",
+        "depositDefault": "1000"
+      },
+      "confirm": {
+        "cancel": "ยกเลิกทัวร์นาเมนต์และคืนเงินผู้เข้าแข่ง?"
+      },
+      "bracket": {
+        "empty": "แบร็กเก็ตจะปรากฏเมื่อตั้งผู้เล่นสูงสุด/รูปแบบแล้ว",
+        "previewSuffix": "ตัวอย่าง (ชื่อเติมหลังเช็คอิน)",
+        "slot": "ช่อง",
+        "tbd": "รอกำหนด",
+        "bye": "บาย",
+        "waiting": "รอ…",
+        "spectate": "ชม",
+        "spectateTip": "ชมแมตช์นี้ในฐานะผู้ชม (ผู้ที่ไม่แข่งก็ได้)",
+        "winner": "ผู้ชนะ: {name}",
+        "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม"
+      },
+      "formatCaption": {
+        "swiss": "รอบสวิส",
+        "doubleElimLives": "คัดออกคู่ (2 ชีวิต)",
+        "doubleElimBracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+        "singleElim": "คัดออกเดี่ยว"
+      },
+      "round": {
+        "swiss": "สวิส · รอบ {n}",
+        "losersFinal": "ชิงฝ่ายแพ้",
+        "losers": "ฝ่ายแพ้ · R{n}",
+        "grandFinal": "ชิงชนะเลิศ",
+        "grandFinalReset": "ชิงชนะเลิศ (รีเซ็ต)",
+        "winnersFinal": "ชิงฝ่ายชนะ",
+        "semifinals": "รอบรองชนะเลิศ",
+        "roundOf": "รอบ {n} คน"
+      },
+      "matchStatus": {
+        "live": "สด",
+        "ready": "พร้อม",
+        "done": "จบ",
+        "pending": "ถัดไป"
+      },
+      "register": {
+        "backEvent": "← อีเวนต์",
+        "heading": "เลือกเด็คที่จะล็อก",
+        "leadDefault": "เด็คนี้จะถูกล็อกสำหรับทัวร์นาเมนต์เมื่อคุณลงทะเบียน",
+        "leadPick": "เลือกเด็คที่ถูกกติกาเพื่อล็อกในอีเวนต์นี้",
+        "leadEmpty": "ยังไม่มีเด็คที่ใช้ได้ — สร้างในตัวสร้างเด็คแล้วกลับมา",
+        "leadFreePick": "เลือกพรีเซ็ตทดลองเด็ค เด็คบัญชีที่บันทึก หรือใส่รหัสทดลอง",
+        "leadFreeEmpty": "ยังไม่มีเด็คฟรีที่บันทึก — เปิดทดลองเด็ค บันทึกพรีเซ็ต (หรือใช้รหัสแชร์) แล้วกลับมา",
+        "noEligible": "ไม่มีเด็คที่ใช้ได้สำหรับโหมดนี้",
+        "noFreeDecks": "ไม่พบพรีเซ็ตทดลองหรือเด็คบัญชีที่เป็นเจ้าของ",
+        "deckFallback": "เด็ค",
+        "metaPreset": "ช่องพรีเซ็ต {slot}",
+        "metaEquipped": "· ติดตั้งอยู่",
+        "metaStarter": "สตาร์ทเตอร์ · {label}",
+        "metaExperiment": "ทดลองเด็ค · ช่อง {slot}",
+        "passwordLabel": "รหัสทดลอง",
+        "passwordPlaceholder": "รหัสทดลองเด็คที่แชร์",
+        "withPassword": "ลงทะเบียนด้วยรหัส",
+        "openDeckBuilder": "เปิดตัวสร้างเด็ค",
+        "openDeckExperiment": "เปิดทดลองเด็ค"
+      },
+      "status": {
+        "open": "เปิดรับ",
+        "checkin": "เช็คอิน",
+        "running": "กำลังแข่ง",
+        "finished": "จบแล้ว",
+        "cancelled": "ยกเลิกแล้ว"
+      },
+      "entrant": {
+        "registered": "ลงทะเบียนแล้ว",
+        "checked_in": "เช็คอินแล้ว",
+        "no_show": "ไม่มา",
+        "eliminated": "ตกรอบ",
+        "active": "ใช้งานอยู่"
+      },
+      "err": {
+        "cancelled": "ทัวร์นาเมนต์นี้ถูกยกเลิกแล้ว",
+        "unavailable": "ทัวร์นาเมนต์นั้นใช้ไม่ได้อีกแล้ว",
+        "cancelRefunded": "ยกเลิกทัวร์นาเมนต์แล้ว — คืนเงินผู้เข้าแข่งแล้ว",
+        "pickStart": "เลือกวันและเวลาเริ่ม",
+        "startTooSoon": "เวลาเริ่มต้องอย่างน้อย 1 นาทีจากตอนนี้",
+        "pickStartSoon": "เลือกเวลาเริ่มอย่างน้อย 1 นาทีจากตอนนี้",
+        "experimentPassword": "ใส่รหัสทดลอง",
+        "joinHelperMissing": "ไม่มีตัวช่วยเข้าร่วม",
+        "spectateHelperMissing": "ไม่มีตัวช่วยชม"
+      },
+      "toast": {
+        "noMatchReady": "ยังไม่มีแมตช์ทัวร์นาเมนต์ที่พร้อม"
+      },
+      "cal": {
+        "pickDateTime": "เลือกวันและเวลา",
+        "dialogAria": "เลือกวันและเวลาเริ่ม",
+        "prevMonth": "เดือนก่อน",
+        "nextMonth": "เดือนถัดไป",
+        "monthFallback": "เดือน",
+        "dow": {
+          "su": "อา",
+          "mo": "จ",
+          "tu": "อ",
+          "we": "พ",
+          "th": "พฤ",
+          "fr": "ศ",
+          "sa": "ส"
+        },
+        "hour": "ชม.",
+        "min": "นาที",
+        "cancel": "ยกเลิก",
+        "apply": "ใช้"
+      },
+      "tz": {
+        "Asia/Tokyo": "ญี่ปุ่น (JST)",
+        "America/New_York": "สหรัฐฯ ตะวันออก",
+        "America/Chicago": "สหรัฐฯ กลาง",
+        "America/Denver": "สหรัฐฯ ภูเขา",
+        "America/Los_Angeles": "สหรัฐฯ แปซิฟิก",
+        "America/Toronto": "แคนาดา ตะวันออก",
+        "America/Vancouver": "แคนาดา แปซิฟิก",
+        "Europe/London": "สหราชอาณาจักร (ลอนดอน)",
+        "Europe/Paris": "ยุโรปกลาง",
+        "Europe/Berlin": "เบอร์ลิน",
+        "Australia/Sydney": "ซิดนีย์",
+        "Asia/Singapore": "สิงคโปร์",
+        "Asia/Seoul": "เกาหลี (KST)",
+        "Asia/Shanghai": "จีน",
+        "Asia/Hong_Kong": "ฮ่องกง",
+        "Asia/Bangkok": "กรุงเทพฯ",
+        "Pacific/Auckland": "โอ๊คแลนด์",
+        "UTC": "UTC"
       }
-    },
-    "cardList": {
-      "title": "รายการการ์ด",
-      "hubSub": "ดูการ์ดทั้งหมด",
-      "backHub": "← ฮับ",
-      "lead": "เรียกดูการ์ดทั้งหมดตามสินค้า การ์ดที่คุณมีจะแสดงเป็นสีเต็ม",
-      "collection": "คอลเลกชัน",
-      "ownedProgress": "{owned}/{total}",
-      "notOwned": "ยังไม่มี",
-      "prCards": "การ์ด PR",
-      "other": "อื่นๆ"
     }
   }
 };
@@ -8413,11 +9036,12 @@
     loc.hub.tournament = {
       title: loc.hub.tournamentMode || 'Tournament Mode',
       sub: loc.hub.tournamentModeSub || 'Coming Soon',
-      subLive: loc.hub.tournamentModeSubLive || 'Local events & brackets',
+      subLive: loc.hub.tournamentModeSubLive || 'Events & brackets',
     };
     loc.auth.tournament = {
       title: loc.hub.tournament.title,
       sub: loc.hub.tournament.sub,
+      subLive: loc.hub.tournament.subLive,
     };
     loc.hub.tutorial = loc.hub.tutorial || {};
     loc.hub.tutorial.title = loc.menu && loc.menu.howToPlay;

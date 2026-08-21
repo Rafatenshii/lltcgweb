@@ -2054,32 +2054,32 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     </div>
     <div class="panel account-panel tournament-panel">
       <div class="account-screen-head">
-        <button class="btn-ghost" id="btn-tournament-back" type="button">← Hub</button>
-        <h2 id="tournament-panel-title">Tournament Mode</h2>
+        <button class="btn-ghost" id="btn-tournament-back" type="button" data-i18n="tournament.backHub">← Hub</button>
+        <h2 id="tournament-panel-title" data-i18n="tournament.title">Tournament Mode</h2>
       </div>
-      <p class="account-lead" id="tournament-lead">Schedule events, lock decks, check in, and run a single-elim bracket.</p>
+      <p class="account-lead" id="tournament-lead" data-i18n="tournament.lead">Schedule events, lock decks, check in, and run a single-elim bracket.</p>
       <div class="tournament-tz-bar">
-        <label class="tournament-filter-label" for="tournament-timezone">Timezone
+        <label class="tournament-filter-label" for="tournament-timezone"><span data-i18n="tournament.timezoneLabel">Timezone</span>
           <span class="llc-select-wrap">
-            <select id="tournament-timezone" aria-label="Display timezone"></select>
+            <select id="tournament-timezone" data-i18n-aria-label="tournament.timezoneAria" aria-label="Display timezone"></select>
           </span>
         </label>
-        <span class="tournament-tz-hint" id="tournament-tz-hint">Times shown in JST</span>
+        <span class="tournament-tz-hint" id="tournament-tz-hint" data-i18n="tournament.tzHintJstFallback">Times shown in JST</span>
       </div>
       <p class="lerr" id="tournament-err"></p>
       <div class="tournament-views">
         <div id="tournament-view-list">
           <div class="tournament-toolbar">
-            <button type="button" class="btn-grad" id="btn-tournament-create">Create event</button>
-            <button type="button" class="btn-out" id="btn-tournament-refresh">Refresh</button>
-            <label class="tournament-filter-label">Mode
+            <button type="button" class="btn-grad" id="btn-tournament-create" data-i18n="tournament.createEvent">Create event</button>
+            <button type="button" class="btn-out" id="btn-tournament-refresh" data-i18n="tournament.refresh">Refresh</button>
+            <label class="tournament-filter-label"><span data-i18n="tournament.filterMode">Mode</span>
               <span class="llc-select-wrap">
                 <select id="tournament-filter-mode">
-                  <option value="">All</option>
-                  <option value="standard">Standard</option>
-                  <option value="starters">Starters</option>
-                  <option value="randomized">Randomized</option>
-                  <option value="free">Free</option>
+                  <option value="" data-i18n="tournament.mode.all">All</option>
+                  <option value="standard" data-i18n="tournament.mode.standard">Standard</option>
+                  <option value="starters" data-i18n="tournament.mode.starters">Starters</option>
+                  <option value="randomized" data-i18n="tournament.mode.randomized">Randomized</option>
+                  <option value="free" data-i18n="tournament.mode.free">Free</option>
                 </select>
               </span>
             </label>
@@ -2087,89 +2087,89 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <div class="tournament-list" id="tournament-list"></div>
         </div>
         <div id="tournament-view-create" hidden>
-          <button type="button" class="btn-ghost" id="btn-tournament-create-back">← Bulletin</button>
-          <h3 class="tournament-subhead">Create tournament</h3>
-          <p class="tournament-muted" id="tournament-create-tz-note">Start time uses your selected timezone.</p>
+          <button type="button" class="btn-ghost" id="btn-tournament-create-back" data-i18n="tournament.backBulletin">← Bulletin</button>
+          <h3 class="tournament-subhead" data-i18n="tournament.createHeading">Create tournament</h3>
+          <p class="tournament-muted" id="tournament-create-tz-note" data-i18n="tournament.createTzNoteFallback">Start time uses your selected timezone.</p>
           <form class="tournament-form" id="tournament-create-form">
-            <label>Title <input id="tournament-create-title" required maxlength="80" placeholder="Friday Night Bracket"></label>
-            <label class="tournament-datetime-field">Start (local)
+            <label><span data-i18n="tournament.field.title">Title</span> <input id="tournament-create-title" required maxlength="80" data-i18n-placeholder="tournament.field.titlePlaceholder" placeholder="Friday Night Bracket"></label>
+            <label class="tournament-datetime-field"><span data-i18n="tournament.field.startLocal">Start (local)</span>
               <div class="tournament-datetime" id="tournament-datetime">
                 <button type="button" class="tournament-datetime-trigger" id="tournament-create-start-btn" aria-haspopup="dialog" aria-expanded="false">
-                  <span id="tournament-create-start-label">Pick date &amp; time</span>
+                  <span id="tournament-create-start-label" data-i18n="tournament.cal.pickDateTime">Pick date &amp; time</span>
                   <span class="tournament-datetime-icon" aria-hidden="true">📅</span>
                 </button>
                 <input type="hidden" id="tournament-create-start" required value="">
-                <div class="tournament-datetime-popover" id="tournament-datetime-popover" hidden role="dialog" aria-label="Pick start date and time">
+                <div class="tournament-datetime-popover" id="tournament-datetime-popover" hidden role="dialog" data-i18n-aria-label="tournament.cal.dialogAria" aria-label="Pick start date and time">
                   <div class="tournament-cal-head">
-                    <button type="button" class="tournament-cal-nav" id="tournament-cal-prev" aria-label="Previous month">‹</button>
-                    <div class="tournament-cal-title" id="tournament-cal-title">Month</div>
-                    <button type="button" class="tournament-cal-nav" id="tournament-cal-next" aria-label="Next month">›</button>
+                    <button type="button" class="tournament-cal-nav" id="tournament-cal-prev" data-i18n-aria-label="tournament.cal.prevMonth" aria-label="Previous month">‹</button>
+                    <div class="tournament-cal-title" id="tournament-cal-title" data-i18n="tournament.cal.monthFallback">Month</div>
+                    <button type="button" class="tournament-cal-nav" id="tournament-cal-next" data-i18n-aria-label="tournament.cal.nextMonth" aria-label="Next month">›</button>
                   </div>
                   <div class="tournament-cal-dows" aria-hidden="true">
-                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    <span data-i18n="tournament.cal.dow.su">Su</span><span data-i18n="tournament.cal.dow.mo">Mo</span><span data-i18n="tournament.cal.dow.tu">Tu</span><span data-i18n="tournament.cal.dow.we">We</span><span data-i18n="tournament.cal.dow.th">Th</span><span data-i18n="tournament.cal.dow.fr">Fr</span><span data-i18n="tournament.cal.dow.sa">Sa</span>
                   </div>
                   <div class="tournament-cal-grid" id="tournament-cal-grid"></div>
                   <div class="tournament-cal-time">
-                    <label>Hour
+                    <label><span data-i18n="tournament.cal.hour">Hour</span>
                       <select id="tournament-cal-hour"></select>
                     </label>
-                    <label>Min
+                    <label><span data-i18n="tournament.cal.min">Min</span>
                       <select id="tournament-cal-min"></select>
                     </label>
                   </div>
                   <div class="tournament-cal-actions">
-                    <button type="button" class="btn-ghost" id="tournament-cal-cancel">Cancel</button>
-                    <button type="button" class="btn-grad" id="tournament-cal-apply">Apply</button>
+                    <button type="button" class="btn-ghost" id="tournament-cal-cancel" data-i18n="tournament.cal.cancel">Cancel</button>
+                    <button type="button" class="btn-grad" id="tournament-cal-apply" data-i18n="tournament.cal.apply">Apply</button>
                   </div>
                 </div>
               </div>
             </label>
-            <label>Check-in minutes
+            <label><span data-i18n="tournament.field.checkinMins">Check-in minutes</span>
               <select id="tournament-create-checkin">
                 <option value="5">5</option>
                 <option value="10" selected>10</option>
               </select>
             </label>
-            <label>Min players <input id="tournament-create-min" type="number" min="2" max="32" value="2"></label>
-            <label>Max players <input id="tournament-create-max" type="number" min="2" max="32" value="8"></label>
-            <label>Entry fee (Coins) <input id="tournament-create-fee" type="number" min="0" value="0"></label>
-            <label>Game mode
+            <label><span data-i18n="tournament.field.minPlayers">Min players</span> <input id="tournament-create-min" type="number" min="2" max="32" value="2"></label>
+            <label><span data-i18n="tournament.field.maxPlayers">Max players</span> <input id="tournament-create-max" type="number" min="2" max="32" value="8"></label>
+            <label><span data-i18n="tournament.field.entryFee">Entry fee (Coins)</span> <input id="tournament-create-fee" type="number" min="0" value="0"></label>
+            <label><span data-i18n="tournament.field.gameMode">Game mode</span>
               <select id="tournament-create-mode">
-                <option value="standard">Standard</option>
-                <option value="starters">Starters</option>
-                <option value="randomized">Randomized</option>
-                <option value="free">Free (Deck Experiment)</option>
+                <option value="standard" data-i18n="tournament.mode.standard">Standard</option>
+                <option value="starters" data-i18n="tournament.mode.starters">Starters</option>
+                <option value="randomized" data-i18n="tournament.mode.randomized">Randomized</option>
+                <option value="free" data-i18n="tournament.mode.freeDeckExperiment">Free (Deck Experiment)</option>
               </select>
             </label>
-            <label>Format
+            <label><span data-i18n="tournament.field.format">Format</span>
               <select id="tournament-create-format">
-                <option value="single_elim">Single elimination</option>
-                <option value="double_elim_bracket">Double elim (Winners/Losers)</option>
-                <option value="double_elim">Double elim (2 lives)</option>
-                <option value="swiss">Swiss</option>
+                <option value="single_elim" data-i18n="tournament.format.singleElim">Single elimination</option>
+                <option value="double_elim_bracket" data-i18n="tournament.format.doubleElimBracket">Double elim (Winners/Losers)</option>
+                <option value="double_elim" data-i18n="tournament.format.doubleElimLives">Double elim (2 lives)</option>
+                <option value="swiss" data-i18n="tournament.format.swiss">Swiss</option>
               </select>
             </label>
-            <label>Match length
+            <label><span data-i18n="tournament.field.matchLength">Match length</span>
               <select id="tournament-create-bestof">
-                <option value="1">Best of 1</option>
-                <option value="3">Best of 3</option>
+                <option value="1" data-i18n="tournament.bestOf.1">Best of 1</option>
+                <option value="3" data-i18n="tournament.bestOf.3">Best of 3</option>
               </select>
             </label>
-            <label>Fog of war
+            <label><span data-i18n="tournament.field.fog">Fog of war</span>
               <select id="tournament-create-fog">
-                <option value="hidden_hands">Hidden hands (spectators)</option>
-                <option value="open_hands">Open hands</option>
+                <option value="hidden_hands" data-i18n="tournament.fog.hiddenHands">Hidden hands (spectators)</option>
+                <option value="open_hands" data-i18n="tournament.fog.openHands">Open hands</option>
               </select>
             </label>
-            <label>Rules template
-              <select id="tournament-create-rules" title="Extra deck rules; only Standard applies for Starters / Randomized">
-                <option value="standard">Standard (no extra limits)</option>
-                <option value="pauper">Pauper (N/R)</option>
-                <option value="highlander">Highlander (1-of)</option>
+            <label><span data-i18n="tournament.field.rules">Rules template</span>
+              <select id="tournament-create-rules" data-i18n-title="tournament.field.rulesTitle" title="Extra deck rules; only Standard applies for Starters / Randomized">
+                <option value="standard" data-i18n="tournament.rules.standardOption">Standard (no extra limits)</option>
+                <option value="pauper" data-i18n="tournament.rules.pauperOption">Pauper (N/R)</option>
+                <option value="highlander" data-i18n="tournament.rules.highlanderOption">Highlander (1-of)</option>
               </select>
             </label>
             <p class="tournament-field-help" id="tournament-create-rules-help" aria-live="polite"></p>
-            <label>Stream delay (spectate)
+            <label><span data-i18n="tournament.field.streamDelay">Stream delay (spectate)</span>
               <select id="tournament-create-delay">
                 <option value="0">None</option>
                 <option value="15">15 seconds</option>
@@ -2177,22 +2177,22 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
                 <option value="60">60 seconds</option>
               </select>
             </label>
-            <button type="submit" class="btn-grad">Schedule</button>
+            <button type="submit" class="btn-grad" data-i18n="tournament.schedule">Schedule</button>
           </form>
         </div>
         <div id="tournament-view-detail" hidden>
-          <button type="button" class="btn-ghost" id="btn-tournament-detail-back">← Bulletin</button>
+          <button type="button" class="btn-ghost" id="btn-tournament-detail-back" data-i18n="tournament.backBulletin">← Bulletin</button>
           <div id="tournament-detail-head"></div>
           <div class="tournament-actions" id="tournament-detail-actions"></div>
-          <h4>Entrants</h4>
+          <h4 data-i18n="tournament.entrantsHeading">Entrants</h4>
           <ul class="tournament-entrants" id="tournament-entrants"></ul>
-          <h4>Bracket</h4>
+          <h4 data-i18n="tournament.bracketHeading">Bracket</h4>
           <div class="tournament-bracket" id="tournament-bracket"></div>
         </div>
         <div id="tournament-view-register" hidden>
-          <button type="button" class="btn-ghost" id="btn-tournament-register-back">← Event</button>
-          <h3 class="tournament-subhead">Choose deck to lock in</h3>
-          <p class="tournament-muted" id="tournament-register-lead">This deck is locked for the tournament when you register.</p>
+          <button type="button" class="btn-ghost" id="btn-tournament-register-back" data-i18n="tournament.register.backEvent">← Event</button>
+          <h3 class="tournament-subhead" data-i18n="tournament.register.heading">Choose deck to lock in</h3>
+          <p class="tournament-muted" id="tournament-register-lead" data-i18n="tournament.register.leadDefault">This deck is locked for the tournament when you register.</p>
           <div class="tournament-register-decks" id="tournament-register-decks"></div>
           <div class="tournament-register-actions" id="tournament-register-actions"></div>
         </div>
@@ -2712,7 +2712,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=137"></script>
+<script src="i18n.js?v=138"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=17"></script>
 <script src="client/js/news.js?v=30"></script>
@@ -2728,7 +2728,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   } catch (e) { /* ignore */ }
 })();
 </script>
-<script src="client/js/tournament.js?v=14"></script>
+<script src="client/js/tournament.js?v=15"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=2"></script>
@@ -14100,7 +14100,12 @@ async function enterRankedMatch(st) {
 /** Local tournament seat — GameStore on account host (not VPS overflow). */
 async function enterTournamentMatch(st) {
   if (!st?.room_id || !st?.player_token) {
-    toast('No tournament match ready', 2800);
+    const readyMsg = (typeof LLTCG_I18N !== 'undefined' && LLTCG_I18N.t)
+      ? LLTCG_I18N.t('tournament.toast.noMatchReady')
+      : 'No tournament match ready';
+    toast((readyMsg && readyMsg !== 'tournament.toast.noMatchReady')
+      ? readyMsg
+      : 'No tournament match ready', 2800);
     return;
   }
   try { stopPoll(); } catch (e) { /* ignore */ }
