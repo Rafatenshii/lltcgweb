@@ -2715,7 +2715,16 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/news.js?v=29"></script>
 <script src="client/js/runtime-flags.js?v=5"></script>
 <script src="client/js/api-client.js?v=35"></script>
-<script src="client/js/local-dev-auth.js?v=2"></script>
+<script>
+/* Local Docker fake Discord only — skipped on production (no 404 for missing file). */
+(function () {
+  try {
+    var h = location.hostname || '';
+    if (h !== 'localhost' && h !== '127.0.0.1' && h !== '0.0.0.0') return;
+    document.write('<script src="client/js/local-dev-auth.js?v=2"><\/script>');
+  } catch (e) { /* ignore */ }
+})();
+</script>
 <script src="client/js/tournament.js?v=11"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
