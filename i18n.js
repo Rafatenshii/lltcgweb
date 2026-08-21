@@ -65,9 +65,15 @@
       "deckBuilderSub": "Edit presets and ranked loadout",
       "rankedPvp": "Ranked PvP",
       "rankedPvpSub": "Climb ELO in matchmade games",
-      "leaderboard": "Leaderboard",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "View the online rankings",
-      "unranked": "Unranked Play",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "Rooms, friends, or practice vs CPU",
       "tournamentMode": "Tournament Mode",
       "tournamentModeSub": "Coming Soon",
@@ -76,7 +82,58 @@
       "backHub": "← Hub",
       "missions": "Missions",
       "tournamentModeSubLive": "Events & brackets",
-      "loginBonus": "Login"
+      "loginBonus": "Login",
+      "apk": {
+        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "title": "Play on Android? Get the APK launcher!"
+      },
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "missionsClaimable": "Missions — {n} claimable",
+      "officialVideo": "Official 8-min video ↗",
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sleeveShop": {
+        "sub": "Buy sleeves with Coins",
+        "title": "Sleeve Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "missions": {
       "title": "Missions",
@@ -188,7 +245,16 @@
       "experimentDeckHint": "Build in Deck Experiment, generate a password, then enter it here — or pick a saved deck below.",
       "secondsLabel": "{n}s",
       "casualQueueStats": "{waiting} waiting · {inGame} in casual games",
-      "casualSearching": "Searching for opponent… ({seconds}s)"
+      "casualSearching": "Searching for opponent… ({seconds}s)",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+      "cpuPlaymat": "CPU playmat",
+      "cpuSleeve": "CPU sleeve",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "otherModesQueuedLead": "Players waiting in other modes:",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "basicDecks": "Basic decks",
@@ -342,7 +408,69 @@
           "group": "Group / school",
           "recent": "Recently acquired"
         }
-      }
+      },
+      "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+      "decklogApplySubs": "Replace & add deck",
+      "decklogAutoEnergy": "Auto-replace missing Energy",
+      "decklogAutoSubs": "Auto-pick substitutes",
+      "decklogChangeSub": "Change substitute",
+      "decklogChooseSub": "Choose substitute",
+      "decklogCode": "Deck log code",
+      "decklogCodePlaceholder": "Code OR URL",
+      "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+      "decklogImport": "Import",
+      "decklogImported": "Imported {code}.",
+      "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+      "decklogImporting": "Importing from deck log…",
+      "decklogImportingShort": "Importing…",
+      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+      "decklogMissingTitle": "The following cards are missing to create this deck",
+      "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+      "decklogNeedCode": "Enter a deck log code or URL.",
+      "decklogNeedHave": "Need {need} · Own {have}",
+      "decklogNeedSignIn": "Sign in to import into a collection deck.",
+      "decklogObtainBooster": "Open packs: {pack}",
+      "decklogObtainCollection": "Collection: {pack}",
+      "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+      "decklogObtainStarter": "Starter deck: {pack}",
+      "decklogObtainUnknown": "See card list / Sticker Exchange",
+      "decklogSubNone": "No substitute selected",
+      "decklogSubNoneAvailable": "No owned substitutes available",
+      "decklogSubNoneCount": "Choose {n} substitute(s)",
+      "decklogSubPickConfirm": "Confirm substitutes",
+      "decklogSubPickCount": "{n} more",
+      "decklogSubPickCountReady": "Selection complete — confirm",
+      "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+      "decklogSubPickRemoveHint": "Remove",
+      "decklogSubPickReplacing": "Replacing",
+      "decklogSubPickShortfall": "Substitute {n}",
+      "decklogSubPickTitle": "Choose substitutes",
+      "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+      "decklogSubPicked": "Substitute: {name}",
+      "decklogSubPickedCount": "Substitutes ({n})",
+      "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+      "decklogSubstitute": "Substitute card",
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sleeve": "Sleeve",
+      "sleeveEmpty": "No sleeves available yet.",
+      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+      "sleevePickTitle": "Choose sleeve",
+      "sort": "Sort"
     },
     "booster": {
       "title": "Open Boosters",
@@ -446,7 +574,9 @@
       "flagLoading": "Loading flags…",
       "selectCardFirst": "Select a card first",
       "yourRank": "Your rank: #{rank}",
-      "jumpToYou": "Jump to my entry"
+      "jumpToYou": "Jump to my entry",
+      "bannerSaved": "Result saved",
+      "yourRankNotPlayed": "Your rank: not played yet"
     },
     "stamps": {
       "send": "💬 Stamps",
@@ -480,7 +610,28 @@
       "resetTitle": "Reset account",
       "resetLead": "Delete all collection cards, deck presets, ranked stats, and booster progress. You will choose a new starter deck and begin again. This cannot be undone.",
       "resetAccount": "Reset account",
-      "backHub": "← Hub"
+      "backHub": "← Hub",
+      "back": "← Back",
+      "discordPresence": "Discord Rich Presence (Android)",
+      "discordPresenceLink": "Link Discord for Presence",
+      "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+      "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "foil": "Enhanced textures",
+      "leaveActive": "Leave active match",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      },
+      "textScale": "Text & UI size",
+      "textScaleExp": "Experimental",
+      "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
     },
     "starter": {
       "title": "Choose Your Starter Deck",
@@ -543,7 +694,11 @@
       "perfYou": "You",
       "perfOpp": "Opponent",
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>Phase: {phase}<span class=\"turn-sep\">·</span>Active: {active}<span class=\"turn-sep\">·</span>First: {first}",
-      "deckTopLabel": "Deck top"
+      "deckTopLabel": "Deck top",
+      "oppPiles": "Opp piles",
+      "placeLiveCard": "Place card",
+      "placeLiveCards": "Place cards",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "Left",
@@ -683,7 +838,9 @@
       "tutorialReplaceHint": "Tap the highlighted card to mark it for replacement, then confirm.",
       "keepHand": "Keep Hand",
       "replaceCard": "Replace {n} card",
-      "replaceCards": "Replace {n} cards"
+      "replaceCards": "Replace {n} cards",
+      "declareSub": "{a}: {aN} · {b}: {bN}",
+      "declareTitle": "Mulligan"
     },
     "coin": {
       "title": "First Player",
@@ -715,7 +872,9 @@
       "liveJudge": "Live Judge",
       "liveWinLoss": "Live Win/Loss Check",
       "yourScore": "Your Score",
-      "oppScore": "Opp Score"
+      "oppScore": "Opp Score",
+      "combinedScore": "Score {score}",
+      "combinedScoreBonus": "Score {base} +{bonus}"
     },
     "prompt": {
       "confirm": "Confirm",
@@ -783,7 +942,9 @@
       "noLiveInHand": "No Live card in hand",
       "noMemberInHand": "No Member card in hand",
       "enterNumber0to99": "Enter a number from 0 to 99",
-      "noYellMill": "No Yell cards available to mill."
+      "noYellMill": "No Yell cards available to mill.",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "Already used this turn",
@@ -864,7 +1025,8 @@
       "yellIcons": "Yell icons",
       "playToSlot": "Play to slot:",
       "needEnergy": "Need",
-      "haveEnergy": "have"
+      "haveEnergy": "have",
+      "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
     },
     "pack": {
       "opened": "Pack Opened",
@@ -994,7 +1156,12 @@
       "savedToLibrary": "Replay saved forever in your library",
       "savedToLibraryId": "Replay saved forever (#{id})",
       "downloadedAsJson": "Replay downloaded as JSON",
-      "couldNotSave": "Could not save replay"
+      "couldNotSave": "Could not save replay",
+      "first": "First action",
+      "last": "Last action",
+      "next": "Next action",
+      "prev": "Previous action",
+      "startStep": "Start"
     },
     "apiError": {
       "titleClient": "Something went wrong",
@@ -1090,7 +1257,13 @@
     },
     "mobile": {
       "rotateTitle": "This game is played in landscape",
-      "rotateSub": "Rotate your device to continue."
+      "rotateSub": "Rotate your device to continue.",
+      "deckInspectHint": "Tap a card to preview",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "openLog": "Log",
+      "portraitHint": "Portrait mode for phones",
+      "refresh": "Refresh",
+      "stamps": "Stamps"
     },
     "common": {
       "loading": "Loading…",
@@ -1133,7 +1306,17 @@
       "maxLiveStoragePlural": "Max {slots} cards for Live storage",
       "liveStorageFull": "Live storage is full",
       "logCopied": "Log copied",
-      "couldNotCopyLog": "Could not copy log"
+      "couldNotCopyLog": "Could not copy log",
+      "alreadyInRanked": "Already in a ranked match.",
+      "coinsEarned": "+{n} Coins",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "resolveSkillFirst": "Resolve the skill prompt first.",
+      "signInShop": "Sign in to use the shop.",
+      "signInSleeveShop": "Sign in to use the sleeve shop.",
+      "sleeveBought": "Sleeve unlocked!",
+      "sleeveClaimedFree": "Free sleeve claimed!",
+      "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
     },
     "tutorialUi": {
       "exitTitle": "Exit to Title",
@@ -1477,7 +1660,8 @@
       "other": "Other",
       "ownedProgress": "{owned}/{total} owned",
       "prCards": "PR cards",
-      "title": "Card List"
+      "title": "Card List",
+      "hubSub": "Browse all cards"
     },
     "playmatShop": {
       "backChars": "← Characters",
@@ -1503,6 +1687,26 @@
       "hint": "Tap a sleeve to preview, then buy or equip.",
       "hoverEmpty": "Select a sleeve",
       "title": "Sleeves"
+    },
+    "gameMode": {
+      "free": "Free",
+      "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+      "label": "Game mode",
+      "randomized": "Random decks",
+      "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+      "short": {
+        "free": "Free",
+        "randomized": "Random",
+        "standard": "Standard",
+        "starters": "Starters"
+      },
+      "standard": "Standard",
+      "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+      "starters": "Starters only",
+      "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+    },
+    "lang": {
+      "label": "Language"
     }
   },
   "ja": {
@@ -1567,9 +1771,15 @@
       "deckBuilderSub": "プリセットとランク用デッキを編集",
       "rankedPvp": "ランクPvP",
       "rankedPvpSub": "マッチメイクでELOを競う",
-      "leaderboard": "リーダーボード",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "オンラインランキングを見る",
-      "unranked": "カジュアル対戦",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "ルーム作成、フレンド対戦、CPU練習",
       "tournamentMode": "トーナメントモード",
       "tournamentModeSub": "近日公開",
@@ -1584,7 +1794,48 @@
         "title": "Androidで遊ぶ？APKランチャーを入手！",
         "sub": "Loveca v1.1をダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
       },
-      "tournamentModeSubLive": "イベント＆ブラケット"
+      "tournamentModeSubLive": "イベント＆ブラケット",
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "missions": {
       "title": "ミッション",
@@ -1721,7 +1972,10 @@
       "secondsLabel": "{n}秒",
       "casualQueueStats": "待機 {waiting} · カジュアル対戦中 {inGame}",
       "otherModesQueuedLead": "他のモードで待機中のプレイヤーがいます：",
-      "casualSearching": "相手を検索中…（{seconds}秒）"
+      "casualSearching": "相手を検索中…（{seconds}秒）",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "basicDecks": "基本デッキ",
@@ -1927,7 +2181,22 @@
           "group": "グループ／スクール",
           "recent": "最近入手"
         }
-      }
+      },
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sort": "Sort"
     },
     "booster": {
       "title": "ブースターを開封",
@@ -2101,7 +2370,8 @@
       "selectCardFirst": "先にカードを選択してください",
       "yourRank": "あなたの順位: #{rank}",
       "yourRankNotPlayed": "あなたの順位: 未プレイ",
-      "jumpToYou": "自分の行へ移動"
+      "jumpToYou": "自分の行へ移動",
+      "bannerSaved": "Result saved"
     },
     "stamps": {
       "send": "💬 スタンプ",
@@ -2143,7 +2413,20 @@
       "resetTitle": "アカウントリセット",
       "resetLead": "コレクション、デッキプリセット、ランク成績、ブースター進行をすべて削除します。新しいスターターデッキを選び直します。元に戻せません。",
       "resetAccount": "アカウントリセット",
-      "backHub": "← ハブ"
+      "backHub": "← ハブ",
+      "back": "← Back",
+      "foil": "Enhanced textures",
+      "leaveActive": "Leave active match",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      }
     },
     "starter": {
       "title": "スターターデッキを選ぶ",
@@ -2208,7 +2491,9 @@
       "perfYou": "あなた",
       "perfOpp": "相手",
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>フェイズ：{phase}<span class=\"turn-sep\">·</span>アクティブ：{active}<span class=\"turn-sep\">·</span>先攻：{first}",
-      "deckTopLabel": "デッキトップ"
+      "deckTopLabel": "デッキトップ",
+      "oppPiles": "Opp piles",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "左",
@@ -2456,7 +2741,9 @@
       "noLiveInHand": "手札にライブカードがありません",
       "noMemberInHand": "手札にメンバーカードがありません",
       "enterNumber0to99": "0〜99の数字を入力してください",
-      "noYellMill": "ミルできるエールカードがありません。"
+      "noYellMill": "ミルできるエールカードがありません。",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "このターンは使用済み",
@@ -2825,7 +3112,12 @@
       "maxLiveStoragePlural": "ライブ置き場は最大{slots}枚です",
       "liveStorageFull": "ライブ置き場がいっぱいです",
       "logCopied": "ログをコピーしました",
-      "couldNotCopyLog": "ログをコピーできませんでした"
+      "couldNotCopyLog": "ログをコピーできませんでした",
+      "alreadyInRanked": "Already in a ranked match.",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "resolveSkillFirst": "Resolve the skill prompt first.",
+      "signInShop": "Sign in to use the shop."
     },
     "spectate": {
       "listTitle": "観戦",
@@ -3156,6 +3448,9 @@
       "sleevesSub": "Card backs",
       "sleevesTitle": "Sleeves",
       "title": "Shop"
+    },
+    "lang": {
+      "label": "Language"
     }
   },
   "es": {
@@ -3208,9 +3503,15 @@
       "deckBuilderSub": "Edita preajustes y mazo clasificatorio",
       "rankedPvp": "PvP clasificatorio",
       "rankedPvpSub": "Sube tu ELO en partidas emparejadas",
-      "leaderboard": "Clasificación",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "Ver las clasificaciones en línea",
-      "unranked": "Juego no clasificado",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "Salas, amistades o práctica contra CPU",
       "tournamentMode": "Modo torneo",
       "tournamentModeSub": "Próximamente",
@@ -3224,7 +3525,57 @@
       "stickerShopSub": "Canjea sellos por cartas de tus sobres",
       "officialVideo": "Vídeo oficial de 8 min ↗",
       "tournamentModeSubLive": "Eventos y brackets",
-      "loginBonus": "Bonus"
+      "loginBonus": "Bonus",
+      "apk": {
+        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "title": "Play on Android? Get the APK launcher!"
+      },
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "missionsClaimable": "Missions — {n} claimable",
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sleeveShop": {
+        "sub": "Buy sleeves with Coins",
+        "title": "Sleeve Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "language": {
       "label": "Idioma",
@@ -3274,7 +3625,16 @@
       "cpuExpertShort": "Experto",
       "soloStarting": "Iniciando vs CPU ({diff})",
       "player1Default": "Jugador 1",
-      "player2Default": "Jugador 2"
+      "player2Default": "Jugador 2",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+      "cpuPlaymat": "CPU playmat",
+      "cpuSleeve": "CPU sleeve",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "otherModesQueuedLead": "Players waiting in other modes:",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "title": "Constructor de mazos",
@@ -3428,7 +3788,69 @@
       "fullPoolZero": "Pool completo · 0 coincidencias",
       "fullPoolBrowse": "Pool completo · desplázate para ver todas las cartas",
       "fullPoolMatches": "Pool completo · {n} coincidencias",
-      "fullPoolCards": "Pool completo · {n} cartas"
+      "fullPoolCards": "Pool completo · {n} cartas",
+      "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+      "decklogApplySubs": "Replace & add deck",
+      "decklogAutoEnergy": "Auto-replace missing Energy",
+      "decklogAutoSubs": "Auto-pick substitutes",
+      "decklogChangeSub": "Change substitute",
+      "decklogChooseSub": "Choose substitute",
+      "decklogCode": "Deck log code",
+      "decklogCodePlaceholder": "Code OR URL",
+      "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+      "decklogImport": "Import",
+      "decklogImported": "Imported {code}.",
+      "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+      "decklogImporting": "Importing from deck log…",
+      "decklogImportingShort": "Importing…",
+      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+      "decklogMissingTitle": "The following cards are missing to create this deck",
+      "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+      "decklogNeedCode": "Enter a deck log code or URL.",
+      "decklogNeedHave": "Need {need} · Own {have}",
+      "decklogNeedSignIn": "Sign in to import into a collection deck.",
+      "decklogObtainBooster": "Open packs: {pack}",
+      "decklogObtainCollection": "Collection: {pack}",
+      "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+      "decklogObtainStarter": "Starter deck: {pack}",
+      "decklogObtainUnknown": "See card list / Sticker Exchange",
+      "decklogSubNone": "No substitute selected",
+      "decklogSubNoneAvailable": "No owned substitutes available",
+      "decklogSubNoneCount": "Choose {n} substitute(s)",
+      "decklogSubPickConfirm": "Confirm substitutes",
+      "decklogSubPickCount": "{n} more",
+      "decklogSubPickCountReady": "Selection complete — confirm",
+      "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+      "decklogSubPickRemoveHint": "Remove",
+      "decklogSubPickReplacing": "Replacing",
+      "decklogSubPickShortfall": "Substitute {n}",
+      "decklogSubPickTitle": "Choose substitutes",
+      "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+      "decklogSubPicked": "Substitute: {name}",
+      "decklogSubPickedCount": "Substitutes ({n})",
+      "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+      "decklogSubstitute": "Substitute card",
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sleeve": "Sleeve",
+      "sleeveEmpty": "No sleeves available yet.",
+      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+      "sleevePickTitle": "Choose sleeve",
+      "sort": "Sort"
     },
     "booster": {
       "title": "Abrir sobres",
@@ -3501,7 +3923,9 @@
       "flagLoading": "Cargando banderas…",
       "selectCardFirst": "Selecciona primero una carta",
       "jumpToYou": "Ir a mi fila",
-      "yourRank": "Tu puesto: #{rank}"
+      "yourRank": "Tu puesto: #{rank}",
+      "bannerSaved": "Result saved",
+      "yourRankNotPlayed": "Your rank: not played yet"
     },
     "options": {
       "title": "Opciones",
@@ -3513,7 +3937,28 @@
       "resetTitle": "Restablecer cuenta",
       "resetLead": "Elimina todas las cartas de colección, preajustes de mazo, estadísticas clasificatorias y progreso de sobres. Elegirás un nuevo mazo inicial y empezarás de nuevo. Esto no se puede deshacer.",
       "resetAccount": "Restablecer cuenta",
-      "backHub": "← Hub"
+      "backHub": "← Hub",
+      "back": "← Back",
+      "discordPresence": "Discord Rich Presence (Android)",
+      "discordPresenceLink": "Link Discord for Presence",
+      "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+      "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "foil": "Enhanced textures",
+      "leaveActive": "Leave active match",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      },
+      "textScale": "Text & UI size",
+      "textScaleExp": "Experimental",
+      "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
     },
     "starter": {
       "title": "Elige tu mazo inicial",
@@ -3578,7 +4023,9 @@
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>Fase: {phase}<span class=\"turn-sep\">·</span>Activo: {active}<span class=\"turn-sep\">·</span>Primero: {first}",
       "deckTopLabel": "Parte superior del mazo",
       "hoverPickerEmpty": "Pasa el cursor sobre una carta para previsualizarla aquí.",
-      "zoneEmpty": "Vacío"
+      "zoneEmpty": "Vacío",
+      "oppPiles": "Opp piles",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "Izquierda",
@@ -3718,7 +4165,9 @@
       "replaceCard": "Reemplazar {n} carta",
       "replaceCards": "Reemplazar {n} cartas",
       "tutorialKeepHint": "¿Te gusta esta mano? Toca Conservar mano para continuar.",
-      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo."
+      "tutorialReplaceHint": "Toca la carta resaltada para marcarla y luego confirma el reemplazo.",
+      "declareSub": "{a}: {aN} · {b}: {bN}",
+      "declareTitle": "Mulligan"
     },
     "coin": {
       "title": "Primer jugador",
@@ -3750,7 +4199,9 @@
       "livesSelected": "{n} Lives",
       "livesSelectedOne": "1 Live",
       "plusMembers": "+{n} Miembros",
-      "plusMembersOne": "+1 Miembro"
+      "plusMembersOne": "+1 Miembro",
+      "combinedScore": "Score {score}",
+      "combinedScoreBonus": "Score {base} +{bonus}"
     },
     "prompt": {
       "confirm": "Confirmar",
@@ -3818,7 +4269,9 @@
       "noLiveInHand": "No hay carta Live en la mano",
       "noMemberInHand": "No hay carta de Miembro en la mano",
       "enterNumber0to99": "Introduce un número del 0 al 99",
-      "noYellMill": "No hay cartas Yell para enviar al molino."
+      "noYellMill": "No hay cartas Yell para enviar al molino.",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "Ya usado este turno",
@@ -3907,7 +4360,8 @@
       "playToSlot": "Jugar en espacio:",
       "needEnergy": "Necesitas",
       "haveEnergy": "tienes",
-      "bladeHearts": "Corazones de Blade"
+      "bladeHearts": "Corazones de Blade",
+      "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
     },
     "pack": {
       "opened": "Sobre abierto",
@@ -4037,7 +4491,12 @@
       "recentHint": "Autoguardadas de tus últimas 10 partidas. La más antigua se reemplaza sola.",
       "recentSection": "Partidas recientes",
       "savedHint": "Se mantienen al guardar en la pantalla de resultados, o al preservar una de Recientes.",
-      "savedSection": "Guardadas para siempre"
+      "savedSection": "Guardadas para siempre",
+      "first": "First action",
+      "last": "Last action",
+      "next": "Next action",
+      "prev": "Previous action",
+      "startStep": "Start"
     },
     "apiError": {
       "titleClient": "Algo salió mal",
@@ -4153,7 +4612,13 @@
     },
     "mobile": {
       "rotateTitle": "Este juego se juega en horizontal",
-      "rotateSub": "Gira tu dispositivo para continuar."
+      "rotateSub": "Gira tu dispositivo para continuar.",
+      "deckInspectHint": "Tap a card to preview",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "openLog": "Log",
+      "portraitHint": "Portrait mode for phones",
+      "refresh": "Refresh",
+      "stamps": "Stamps"
     },
     "common": {
       "loading": "Cargando…",
@@ -4197,7 +4662,16 @@
       "stickerLoadFailed": "No se pudo cargar la tienda de stickers",
       "stickerCardsLoadFailed": "No se pudieron cargar las cartas",
       "stickerExchangeFailed": "Canje fallido",
-      "stickerConvertFailed": "Conversión fallida"
+      "stickerConvertFailed": "Conversión fallida",
+      "alreadyInRanked": "Already in a ranked match.",
+      "coinsEarned": "+{n} Coins",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "signInShop": "Sign in to use the shop.",
+      "signInSleeveShop": "Sign in to use the sleeve shop.",
+      "sleeveBought": "Sleeve unlocked!",
+      "sleeveClaimedFree": "Free sleeve claimed!",
+      "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
     },
     "tutorialUi": {
       "exitTitle": "Salir al título",
@@ -4656,7 +5130,8 @@
       "other": "Other",
       "ownedProgress": "{owned}/{total} owned",
       "prCards": "PR cards",
-      "title": "Card List"
+      "title": "Card List",
+      "hubSub": "Browse all cards"
     },
     "playmatShop": {
       "backChars": "← Characters",
@@ -4682,6 +5157,26 @@
       "hint": "Tap a sleeve to preview, then buy or equip.",
       "hoverEmpty": "Select a sleeve",
       "title": "Sleeves"
+    },
+    "gameMode": {
+      "free": "Free",
+      "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+      "label": "Game mode",
+      "randomized": "Random decks",
+      "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+      "short": {
+        "free": "Free",
+        "randomized": "Random",
+        "standard": "Standard",
+        "starters": "Starters"
+      },
+      "standard": "Standard",
+      "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+      "starters": "Starters only",
+      "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+    },
+    "lang": {
+      "label": "Language"
     }
   },
   "ko": {
@@ -4734,9 +5229,15 @@
       "deckBuilderSub": "프리셋 편집 및 랭크전 덱 설정",
       "rankedPvp": "랭크 PvP",
       "rankedPvpSub": "매칭 대전으로 ELO 올리기",
-      "leaderboard": "리더보드",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "온라인 순위 보기",
-      "unranked": "일반전",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "방 만들기, 친구와 대전, CPU 연습",
       "tournamentMode": "토너먼트 모드",
       "tournamentModeSub": "곧 공개",
@@ -4750,7 +5251,57 @@
       "stickerShopSub": "실을 팩 카드로 교환",
       "officialVideo": "공식 8분 영상 ↗",
       "tournamentModeSubLive": "이벤트 & 브래킷",
-      "loginBonus": "로그인"
+      "loginBonus": "로그인",
+      "apk": {
+        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "title": "Play on Android? Get the APK launcher!"
+      },
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "missionsClaimable": "Missions — {n} claimable",
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sleeveShop": {
+        "sub": "Buy sleeves with Coins",
+        "title": "Sleeve Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "language": {
       "label": "언어",
@@ -4800,7 +5351,16 @@
       "cpuExpertShort": "전문가",
       "soloStarting": "CPU전 시작 중 ({diff})",
       "player1Default": "플레이어 1",
-      "player2Default": "플레이어 2"
+      "player2Default": "플레이어 2",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+      "cpuPlaymat": "CPU playmat",
+      "cpuSleeve": "CPU sleeve",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "otherModesQueuedLead": "Players waiting in other modes:",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "title": "덱 빌더",
@@ -4964,7 +5524,69 @@
       "fullPoolZero": "전체 카드 풀 · 0개 일치",
       "fullPoolBrowse": "전체 카드 풀 · 스크롤하여 모든 카드 보기",
       "fullPoolMatches": "전체 카드 풀 · {n}개 일치",
-      "fullPoolCards": "전체 카드 풀 · {n}장"
+      "fullPoolCards": "전체 카드 풀 · {n}장",
+      "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+      "decklogApplySubs": "Replace & add deck",
+      "decklogAutoEnergy": "Auto-replace missing Energy",
+      "decklogAutoSubs": "Auto-pick substitutes",
+      "decklogChangeSub": "Change substitute",
+      "decklogChooseSub": "Choose substitute",
+      "decklogCode": "Deck log code",
+      "decklogCodePlaceholder": "Code OR URL",
+      "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+      "decklogImport": "Import",
+      "decklogImported": "Imported {code}.",
+      "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+      "decklogImporting": "Importing from deck log…",
+      "decklogImportingShort": "Importing…",
+      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+      "decklogMissingTitle": "The following cards are missing to create this deck",
+      "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+      "decklogNeedCode": "Enter a deck log code or URL.",
+      "decklogNeedHave": "Need {need} · Own {have}",
+      "decklogNeedSignIn": "Sign in to import into a collection deck.",
+      "decklogObtainBooster": "Open packs: {pack}",
+      "decklogObtainCollection": "Collection: {pack}",
+      "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+      "decklogObtainStarter": "Starter deck: {pack}",
+      "decklogObtainUnknown": "See card list / Sticker Exchange",
+      "decklogSubNone": "No substitute selected",
+      "decklogSubNoneAvailable": "No owned substitutes available",
+      "decklogSubNoneCount": "Choose {n} substitute(s)",
+      "decklogSubPickConfirm": "Confirm substitutes",
+      "decklogSubPickCount": "{n} more",
+      "decklogSubPickCountReady": "Selection complete — confirm",
+      "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+      "decklogSubPickRemoveHint": "Remove",
+      "decklogSubPickReplacing": "Replacing",
+      "decklogSubPickShortfall": "Substitute {n}",
+      "decklogSubPickTitle": "Choose substitutes",
+      "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+      "decklogSubPicked": "Substitute: {name}",
+      "decklogSubPickedCount": "Substitutes ({n})",
+      "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+      "decklogSubstitute": "Substitute card",
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sleeve": "Sleeve",
+      "sleeveEmpty": "No sleeves available yet.",
+      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+      "sleevePickTitle": "Choose sleeve",
+      "sort": "Sort"
     },
     "booster": {
       "title": "부스터 개봉",
@@ -5037,7 +5659,9 @@
       "flagLoading": "국기 불러오는 중…",
       "selectCardFirst": "먼저 카드를 선택하세요",
       "jumpToYou": "내 순위로 이동",
-      "yourRank": "내 순위: #{rank}"
+      "yourRank": "내 순위: #{rank}",
+      "bannerSaved": "Result saved",
+      "yourRankNotPlayed": "Your rank: not played yet"
     },
     "options": {
       "title": "옵션",
@@ -5049,7 +5673,28 @@
       "resetTitle": "계정 초기화",
       "resetLead": "모든 컬렉션 카드, 덱 프리셋, 랭크 전적, 부스터 진행도가 삭제됩니다. 새 스타터 덱을 선택하고 처음부터 다시 시작합니다. 이 작업은 되돌릴 수 없습니다.",
       "resetAccount": "계정 초기화",
-      "backHub": "← 허브"
+      "backHub": "← 허브",
+      "back": "← Back",
+      "discordPresence": "Discord Rich Presence (Android)",
+      "discordPresenceLink": "Link Discord for Presence",
+      "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+      "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "foil": "Enhanced textures",
+      "leaveActive": "Leave active match",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      },
+      "textScale": "Text & UI size",
+      "textScaleExp": "Experimental",
+      "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
     },
     "starter": {
       "title": "스타터 덱을 선택하세요",
@@ -5114,7 +5759,9 @@
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>페이즈: {phase}<span class=\"turn-sep\">·</span>활성: {active}<span class=\"turn-sep\">·</span>선공: {first}",
       "deckTopLabel": "덱 상단",
       "hoverPickerEmpty": "카드를 가리키면 여기에 미리보기가 표시됩니다.",
-      "zoneEmpty": "비어 있음"
+      "zoneEmpty": "비어 있음",
+      "oppPiles": "Opp piles",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "왼쪽",
@@ -5254,7 +5901,9 @@
       "replaceCard": "{n}장 교체",
       "replaceCards": "{n}장 교체",
       "tutorialKeepHint": "이 핸드로 괜찮다면 「핸드 유지」를 눌러 계속하세요.",
-      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요."
+      "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요.",
+      "declareSub": "{a}: {aN} · {b}: {bN}",
+      "declareTitle": "Mulligan"
     },
     "coin": {
       "title": "선공 결정",
@@ -5286,7 +5935,9 @@
       "livesSelected": "Live {n}장",
       "livesSelectedOne": "Live 1장",
       "plusMembers": "+멤버 {n}",
-      "plusMembersOne": "+멤버 1"
+      "plusMembersOne": "+멤버 1",
+      "combinedScore": "Score {score}",
+      "combinedScoreBonus": "Score {base} +{bonus}"
     },
     "prompt": {
       "confirm": "확인",
@@ -5354,7 +6005,9 @@
       "noLiveInHand": "손패에 Live 카드가 없습니다",
       "noMemberInHand": "손패에 멤버 카드가 없습니다",
       "enterNumber0to99": "0부터 99 사이의 숫자를 입력하세요",
-      "noYellMill": "밀할 Yell 카드가 없습니다."
+      "noYellMill": "밀할 Yell 카드가 없습니다.",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "이번 턴에 이미 사용함",
@@ -5443,7 +6096,8 @@
       "playToSlot": "슬롯에 플레이:",
       "needEnergy": "필요",
       "haveEnergy": "보유",
-      "bladeHearts": "Blade 하트"
+      "bladeHearts": "Blade 하트",
+      "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
     },
     "pack": {
       "opened": "팩 개봉 완료",
@@ -5573,7 +6227,12 @@
       "recentHint": "최근 10경기에서 자동 저장됩니다. 가장 오래된 항목부터 교체됩니다.",
       "recentSection": "최근 매치",
       "savedHint": "결과 화면에서 저장하거나, 「최근」 리플레이를 여기서 영구 보관합니다.",
-      "savedSection": "영구 보관"
+      "savedSection": "영구 보관",
+      "first": "First action",
+      "last": "Last action",
+      "next": "Next action",
+      "prev": "Previous action",
+      "startStep": "Start"
     },
     "apiError": {
       "titleClient": "문제가 발생했습니다",
@@ -5703,7 +6362,13 @@
     },
     "mobile": {
       "rotateTitle": "이 게임은 가로 화면으로 플레이합니다",
-      "rotateSub": "계속하려면 기기를 회전하세요."
+      "rotateSub": "계속하려면 기기를 회전하세요.",
+      "deckInspectHint": "Tap a card to preview",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "openLog": "Log",
+      "portraitHint": "Portrait mode for phones",
+      "refresh": "Refresh",
+      "stamps": "Stamps"
     },
     "common": {
       "loading": "불러오는 중…",
@@ -5747,7 +6412,16 @@
       "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
       "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
       "stickerExchangeFailed": "교환 실패",
-      "stickerConvertFailed": "변환 실패"
+      "stickerConvertFailed": "변환 실패",
+      "alreadyInRanked": "Already in a ranked match.",
+      "coinsEarned": "+{n} Coins",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "signInShop": "Sign in to use the shop.",
+      "signInSleeveShop": "Sign in to use the sleeve shop.",
+      "sleeveBought": "Sleeve unlocked!",
+      "sleeveClaimedFree": "Free sleeve claimed!",
+      "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
     },
     "tutorialUi": {
       "exitTitle": "타이틀로 나가기",
@@ -6206,7 +6880,8 @@
       "other": "Other",
       "ownedProgress": "{owned}/{total} owned",
       "prCards": "PR cards",
-      "title": "Card List"
+      "title": "Card List",
+      "hubSub": "Browse all cards"
     },
     "playmatShop": {
       "backChars": "← Characters",
@@ -6232,6 +6907,26 @@
       "hint": "Tap a sleeve to preview, then buy or equip.",
       "hoverEmpty": "Select a sleeve",
       "title": "Sleeves"
+    },
+    "gameMode": {
+      "free": "Free",
+      "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+      "label": "Game mode",
+      "randomized": "Random decks",
+      "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+      "short": {
+        "free": "Free",
+        "randomized": "Random",
+        "standard": "Standard",
+        "starters": "Starters"
+      },
+      "standard": "Standard",
+      "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+      "starters": "Starters only",
+      "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+    },
+    "lang": {
+      "label": "Language"
     }
   },
   "zh": {
@@ -6284,9 +6979,15 @@
       "deckBuilderSub": "编辑预设并设置排名牌组",
       "rankedPvp": "排名对战",
       "rankedPvpSub": "匹配对战并提升 ELO",
-      "leaderboard": "排行榜",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "查看在线排名",
-      "unranked": "非排名对战",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "开房、好友对战、CPU 练习",
       "tournamentMode": "锦标赛模式",
       "tournamentModeSub": "即将推出",
@@ -6300,7 +7001,57 @@
       "stickerShopSub": "用印章兑换你补充包中的卡牌",
       "officialVideo": "官方8分钟视频 ↗",
       "tournamentModeSubLive": "赛事与对阵表",
-      "loginBonus": "登录"
+      "loginBonus": "登录",
+      "apk": {
+        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "title": "Play on Android? Get the APK launcher!"
+      },
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "missionsClaimable": "Missions — {n} claimable",
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sleeveShop": {
+        "sub": "Buy sleeves with Coins",
+        "title": "Sleeve Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "language": {
       "label": "语言",
@@ -6350,7 +7101,16 @@
       "cpuExpertShort": "专家",
       "soloStarting": "正在开始对战 CPU（{diff}）",
       "player1Default": "玩家 1",
-      "player2Default": "玩家 2"
+      "player2Default": "玩家 2",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+      "cpuPlaymat": "CPU playmat",
+      "cpuSleeve": "CPU sleeve",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "otherModesQueuedLead": "Players waiting in other modes:",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "title": "牌组构筑",
@@ -6514,7 +7274,69 @@
       "fullPoolZero": "完整卡池 · 0 张匹配",
       "fullPoolBrowse": "完整卡池 · 滚动浏览全部卡牌",
       "fullPoolMatches": "完整卡池 · {n} 张匹配",
-      "fullPoolCards": "完整卡池 · {n} 张卡"
+      "fullPoolCards": "完整卡池 · {n} 张卡",
+      "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+      "decklogApplySubs": "Replace & add deck",
+      "decklogAutoEnergy": "Auto-replace missing Energy",
+      "decklogAutoSubs": "Auto-pick substitutes",
+      "decklogChangeSub": "Change substitute",
+      "decklogChooseSub": "Choose substitute",
+      "decklogCode": "Deck log code",
+      "decklogCodePlaceholder": "Code OR URL",
+      "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+      "decklogImport": "Import",
+      "decklogImported": "Imported {code}.",
+      "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+      "decklogImporting": "Importing from deck log…",
+      "decklogImportingShort": "Importing…",
+      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+      "decklogMissingTitle": "The following cards are missing to create this deck",
+      "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+      "decklogNeedCode": "Enter a deck log code or URL.",
+      "decklogNeedHave": "Need {need} · Own {have}",
+      "decklogNeedSignIn": "Sign in to import into a collection deck.",
+      "decklogObtainBooster": "Open packs: {pack}",
+      "decklogObtainCollection": "Collection: {pack}",
+      "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+      "decklogObtainStarter": "Starter deck: {pack}",
+      "decklogObtainUnknown": "See card list / Sticker Exchange",
+      "decklogSubNone": "No substitute selected",
+      "decklogSubNoneAvailable": "No owned substitutes available",
+      "decklogSubNoneCount": "Choose {n} substitute(s)",
+      "decklogSubPickConfirm": "Confirm substitutes",
+      "decklogSubPickCount": "{n} more",
+      "decklogSubPickCountReady": "Selection complete — confirm",
+      "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+      "decklogSubPickRemoveHint": "Remove",
+      "decklogSubPickReplacing": "Replacing",
+      "decklogSubPickShortfall": "Substitute {n}",
+      "decklogSubPickTitle": "Choose substitutes",
+      "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+      "decklogSubPicked": "Substitute: {name}",
+      "decklogSubPickedCount": "Substitutes ({n})",
+      "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+      "decklogSubstitute": "Substitute card",
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sleeve": "Sleeve",
+      "sleeveEmpty": "No sleeves available yet.",
+      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+      "sleevePickTitle": "Choose sleeve",
+      "sort": "Sort"
     },
     "booster": {
       "title": "开启补充包",
@@ -6587,7 +7409,9 @@
       "flagLoading": "正在加载旗帜…",
       "selectCardFirst": "请先选择一张卡",
       "jumpToYou": "跳到我的名次",
-      "yourRank": "你的排名：#{rank}"
+      "yourRank": "你的排名：#{rank}",
+      "bannerSaved": "Result saved",
+      "yourRankNotPlayed": "Your rank: not played yet"
     },
     "options": {
       "title": "选项",
@@ -6600,7 +7424,27 @@
       "resetLead": "删除全部收藏卡牌、牌组预设、排名战绩与补充包进度。你将重新选择入门牌组。此操作无法撤销。",
       "resetAccount": "重置账号",
       "backHub": "← 主页",
-      "leaveActive": "离开当前对战"
+      "leaveActive": "离开当前对战",
+      "back": "← Back",
+      "discordPresence": "Discord Rich Presence (Android)",
+      "discordPresenceLink": "Link Discord for Presence",
+      "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+      "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "foil": "Enhanced textures",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      },
+      "textScale": "Text & UI size",
+      "textScaleExp": "Experimental",
+      "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
     },
     "starter": {
       "title": "选择入门牌组",
@@ -6665,7 +7509,9 @@
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>阶段：{phase}<span class=\"turn-sep\">·</span>活跃：{active}<span class=\"turn-sep\">·</span>第一：{first}",
       "deckTopLabel": "甲板顶",
       "hoverPickerEmpty": "将鼠标悬停在卡片上即可在此处预览。",
-      "zoneEmpty": "空的"
+      "zoneEmpty": "空的",
+      "oppPiles": "Opp piles",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "左边",
@@ -6805,7 +7651,9 @@
       "replaceCard": "更换 {n} 张卡",
       "replaceCards": "替换 {n} 张卡",
       "tutorialKeepHint": "对这手满意吗？点击“保持手部”以继续。",
-      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。"
+      "tutorialReplaceHint": "点击突出显示的卡将其标记为更换，然后确认。",
+      "declareSub": "{a}: {aN} · {b}: {bN}",
+      "declareTitle": "Mulligan"
     },
     "coin": {
       "title": "第一个玩家",
@@ -6837,7 +7685,9 @@
       "livesSelected": "{n} 张 Live",
       "livesSelectedOne": "1 张 Live",
       "plusMembers": "+{n} 名成员",
-      "plusMembersOne": "+1 名成员"
+      "plusMembersOne": "+1 名成员",
+      "combinedScore": "Score {score}",
+      "combinedScoreBonus": "Score {base} +{bonus}"
     },
     "prompt": {
       "confirm": "确认",
@@ -6905,7 +7755,9 @@
       "noLiveInHand": "手牌中没有Live卡",
       "noMemberInHand": "手牌中没有成员卡",
       "enterNumber0to99": "请输入 0 到 99 的数字",
-      "noYellMill": "没有可送入磨牌区的Yell卡。"
+      "noYellMill": "没有可送入磨牌区的Yell卡。",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "本回合已使用",
@@ -6994,7 +7846,8 @@
       "playToSlot": "玩老虎机：",
       "needEnergy": "需要",
       "haveEnergy": "有",
-      "bladeHearts": "刀锋之心"
+      "bladeHearts": "刀锋之心",
+      "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
     },
     "pack": {
       "opened": "包装已打开",
@@ -7124,7 +7977,12 @@
       "recentHint": "自动保存最近 10 场。最旧的会自动被替换。",
       "recentSection": "最近对战",
       "savedHint": "可从结果界面保存，或在此把「最近」中的录像永久保留。",
-      "savedSection": "永久保存"
+      "savedSection": "永久保存",
+      "first": "First action",
+      "last": "Last action",
+      "next": "Next action",
+      "prev": "Previous action",
+      "startStep": "Start"
     },
     "apiError": {
       "titleClient": "出了点问题",
@@ -7254,7 +8112,13 @@
     },
     "mobile": {
       "rotateTitle": "这个游戏是横屏玩的",
-      "rotateSub": "旋转您的设备以继续。"
+      "rotateSub": "旋转您的设备以继续。",
+      "deckInspectHint": "Tap a card to preview",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "openLog": "Log",
+      "portraitHint": "Portrait mode for phones",
+      "refresh": "Refresh",
+      "stamps": "Stamps"
     },
     "common": {
       "loading": "加载中…",
@@ -7298,7 +8162,16 @@
       "stickerLoadFailed": "贴纸商店加载失败",
       "stickerCardsLoadFailed": "卡牌加载失败",
       "stickerExchangeFailed": "兑换失败",
-      "stickerConvertFailed": "转换失败"
+      "stickerConvertFailed": "转换失败",
+      "alreadyInRanked": "Already in a ranked match.",
+      "coinsEarned": "+{n} Coins",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "signInShop": "Sign in to use the shop.",
+      "signInSleeveShop": "Sign in to use the sleeve shop.",
+      "sleeveBought": "Sleeve unlocked!",
+      "sleeveClaimedFree": "Free sleeve claimed!",
+      "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
     },
     "tutorialUi": {
       "exitTitle": "退出到标题",
@@ -7757,7 +8630,8 @@
       "other": "Other",
       "ownedProgress": "{owned}/{total} owned",
       "prCards": "PR cards",
-      "title": "Card List"
+      "title": "Card List",
+      "hubSub": "Browse all cards"
     },
     "playmatShop": {
       "backChars": "← Characters",
@@ -7783,6 +8657,26 @@
       "hint": "Tap a sleeve to preview, then buy or equip.",
       "hoverEmpty": "Select a sleeve",
       "title": "Sleeves"
+    },
+    "gameMode": {
+      "free": "Free",
+      "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+      "label": "Game mode",
+      "randomized": "Random decks",
+      "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+      "short": {
+        "free": "Free",
+        "randomized": "Random",
+        "standard": "Standard",
+        "starters": "Starters"
+      },
+      "standard": "Standard",
+      "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+      "starters": "Starters only",
+      "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+    },
+    "lang": {
+      "label": "Language"
     }
   },
   "th": {
@@ -7835,9 +8729,15 @@
       "deckBuilderSub": "แก้ไขพรีเซ็ตและเด็คแรงก์",
       "rankedPvp": "แรงก์ PvP",
       "rankedPvpSub": "ไต่ ELO ด้วยแมตช์เมด",
-      "leaderboard": "กระดานจัดอันดับ",
+      "leaderboard": {
+        "sub": "See ranked standings",
+        "title": "Leaderboard"
+      },
       "leaderboardSub": "ดูอันดับออนไลน์",
-      "unranked": "เล่นอันแรงก์",
+      "unranked": {
+        "sub": "Casual matches",
+        "title": "Unranked"
+      },
       "unrankedSub": "ห้อง เพื่อน หรือฝึกกับ CPU",
       "howToPlay": "วิธีเล่น",
       "howToPlaySub": "บทเรียนมือใหม่แบบลงมือทำกับคานง",
@@ -7851,7 +8751,57 @@
       "tournamentModeSub": "เร็ว ๆ นี้",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗",
       "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต",
-      "loginBonus": "โบนัส"
+      "loginBonus": "โบนัส",
+      "apk": {
+        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "title": "Play on Android? Get the APK launcher!"
+      },
+      "booster": {
+        "sub": "Open packs from your collection",
+        "title": "Boosters"
+      },
+      "cardList": {
+        "sub": "Browse the full catalog",
+        "title": "Card List"
+      },
+      "deck": {
+        "sub": "Build and equip decks",
+        "title": "Deck Builder"
+      },
+      "experiment": {
+        "sub": "Try any cards freely",
+        "title": "Deck Experiment"
+      },
+      "missionsClaimable": "Missions — {n} claimable",
+      "ranked": {
+        "sub": "Competitive matchmaking",
+        "title": "Ranked"
+      },
+      "replay": {
+        "sub": "Watch past matches",
+        "title": "Replays"
+      },
+      "shop": {
+        "sub": "Sleeves & playmats",
+        "title": "Shop"
+      },
+      "sleeveShop": {
+        "sub": "Buy sleeves with Coins",
+        "title": "Sleeve Shop"
+      },
+      "sticker": {
+        "sub": "Convert spare cards",
+        "title": "Stickers"
+      },
+      "tournament": {
+        "subLive": "Live events",
+        "title": "Tournaments"
+      },
+      "tutorial": {
+        "officialVideo": "Official 8-min video ↗",
+        "sub": "Learn the rules",
+        "title": "How to Play"
+      }
     },
     "language": {
       "label": "ภาษา",
@@ -7901,7 +8851,16 @@
       "cpuExpertShort": "ผู้เชี่ยวชาญ",
       "soloStarting": "กำลังเริ่มปะทะ CPU ({diff})",
       "player1Default": "ผู้เล่น 1",
-      "player2Default": "ผู้เล่น 2"
+      "player2Default": "ผู้เล่น 2",
+      "cpuCosmeticDefault": "Default",
+      "cpuCosmeticRandom": "Random (owned)",
+      "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+      "cpuPlaymat": "CPU playmat",
+      "cpuSleeve": "CPU sleeve",
+      "experimentDeckIncomplete": "Experiment deck is incomplete.",
+      "freeDeckEmpty": "No free/experiment decks saved yet.",
+      "otherModesQueuedLead": "Players waiting in other modes:",
+      "presetDeckIncomplete": "Preset deck is incomplete."
     },
     "deck": {
       "title": "สร้างเด็ค",
@@ -8055,7 +9014,69 @@
         "liella": "เด็คเริ่มต้น Liella!",
         "hasunosora": "เด็คเริ่มต้นฮาซุโนะโซระ",
         "sunshine": "เด็คเริ่มต้น Sunshine!!"
-      }
+      },
+      "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+      "decklogApplySubs": "Replace & add deck",
+      "decklogAutoEnergy": "Auto-replace missing Energy",
+      "decklogAutoSubs": "Auto-pick substitutes",
+      "decklogChangeSub": "Change substitute",
+      "decklogChooseSub": "Choose substitute",
+      "decklogCode": "Deck log code",
+      "decklogCodePlaceholder": "Code OR URL",
+      "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+      "decklogImport": "Import",
+      "decklogImported": "Imported {code}.",
+      "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+      "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+      "decklogImporting": "Importing from deck log…",
+      "decklogImportingShort": "Importing…",
+      "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+      "decklogMissingTitle": "The following cards are missing to create this deck",
+      "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+      "decklogNeedCode": "Enter a deck log code or URL.",
+      "decklogNeedHave": "Need {need} · Own {have}",
+      "decklogNeedSignIn": "Sign in to import into a collection deck.",
+      "decklogObtainBooster": "Open packs: {pack}",
+      "decklogObtainCollection": "Collection: {pack}",
+      "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+      "decklogObtainStarter": "Starter deck: {pack}",
+      "decklogObtainUnknown": "See card list / Sticker Exchange",
+      "decklogSubNone": "No substitute selected",
+      "decklogSubNoneAvailable": "No owned substitutes available",
+      "decklogSubNoneCount": "Choose {n} substitute(s)",
+      "decklogSubPickConfirm": "Confirm substitutes",
+      "decklogSubPickCount": "{n} more",
+      "decklogSubPickCountReady": "Selection complete — confirm",
+      "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+      "decklogSubPickRemoveHint": "Remove",
+      "decklogSubPickReplacing": "Replacing",
+      "decklogSubPickShortfall": "Substitute {n}",
+      "decklogSubPickTitle": "Choose substitutes",
+      "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+      "decklogSubPicked": "Substitute: {name}",
+      "decklogSubPickedCount": "Substitutes ({n})",
+      "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+      "decklogSubstitute": "Substitute card",
+      "emptySlot": "Empty slot",
+      "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+      "experimentSaved": "Experiment deck saved.",
+      "experimentSlot": "Experiment slot",
+      "more": "More",
+      "playmat": "Playmat",
+      "playmatBrightness": "Brightness",
+      "playmatConfirm": "Confirm",
+      "playmatEmpty": "No playmats available yet.",
+      "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+      "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+      "playmatPickTitle": "Choose playmat",
+      "saveExperiment": "Save experiment",
+      "savedPresets": "Saved presets",
+      "sleeve": "Sleeve",
+      "sleeveEmpty": "No sleeves available yet.",
+      "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+      "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+      "sleevePickTitle": "Choose sleeve",
+      "sort": "Sort"
     },
     "booster": {
       "title": "เปิดบูสเตอร์",
@@ -8128,7 +9149,9 @@
       "flagNone": "ไม่มี",
       "flagEquipped": "ติดตั้งอยู่แล้ว",
       "flagReady": "ติดตั้ง {name}?",
-      "flagLoading": "กำลังโหลดธง…"
+      "flagLoading": "กำลังโหลดธง…",
+      "bannerSaved": "Result saved",
+      "yourRankNotPlayed": "Your rank: not played yet"
     },
     "options": {
       "title": "ตัวเลือก",
@@ -8141,7 +9164,27 @@
       "resetLead": "ลบการ์ดในคอลเลกชันทั้งหมด พรีเซ็ตเด็ค สถิติแรงก์ และความคืบหน้าบูสเตอร์ คุณจะเลือกเด็คสตาร์ทเตอร์ใหม่และเริ่มใหม่ ไม่สามารถย้อนกลับได้",
       "resetAccount": "รีเซ็ตบัญชี",
       "backHub": "← ฮับ",
-      "leaveActive": "ออกจากแมตช์ที่กำลังเล่น"
+      "leaveActive": "ออกจากแมตช์ที่กำลังเล่น",
+      "back": "← Back",
+      "discordPresence": "Discord Rich Presence (Android)",
+      "discordPresenceLink": "Link Discord for Presence",
+      "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+      "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "foil": "Enhanced textures",
+      "leaveActiveConfirm": "Leave the active match and return to the hub?",
+      "reset": {
+        "btn": "Reset account",
+        "lead": "This clears local account data on this device.",
+        "title": "Reset account"
+      },
+      "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+      "stuck": {
+        "lead": "If the game is stuck, leave the match and return to the hub.",
+        "title": "Stuck?"
+      },
+      "textScale": "Text & UI size",
+      "textScaleExp": "Experimental",
+      "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
     },
     "starter": {
       "title": "เลือกเด็คสตาร์ทเตอร์",
@@ -8206,7 +9249,9 @@
       "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>เฟส: {phase}<span class=\"turn-sep\">·</span>แอคทีฟ: {active}<span class=\"turn-sep\">·</span>ไปก่อน: {first}",
       "deckTopLabel": "บนสุดของเด็ค",
       "hoverPickerEmpty": "เลื่อนเมาส์เหนือการ์ดเพื่อดูตัวอย่างที่นี่",
-      "zoneEmpty": "ว่าง"
+      "zoneEmpty": "ว่าง",
+      "oppPiles": "Opp piles",
+      "yourPiles": "Your piles"
     },
     "slot": {
       "left": "ซ้าย",
@@ -8346,7 +9391,9 @@
       "replaceCard": "เปลี่ยน {n} ใบ",
       "replaceCards": "เปลี่ยน {n} ใบ",
       "tutorialKeepHint": "พอใจกับมือนี้ไหม? แตะเก็บมือนี้เพื่อไปต่อ",
-      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน"
+      "tutorialReplaceHint": "แตะการ์ดที่ไฮไลต์เพื่อทำเครื่องหมายเปลี่ยน แล้วยืนยัน",
+      "declareSub": "{a}: {aN} · {b}: {bN}",
+      "declareTitle": "Mulligan"
     },
     "coin": {
       "title": "ผู้เล่นคนแรก",
@@ -8378,7 +9425,9 @@
       "livesSelected": "{n} Live",
       "livesSelectedOne": "1 Live",
       "plusMembers": "+{n} สมาชิก",
-      "plusMembersOne": "+1 สมาชิก"
+      "plusMembersOne": "+1 สมาชิก",
+      "combinedScore": "Score {score}",
+      "combinedScoreBonus": "Score {base} +{bonus}"
     },
     "prompt": {
       "confirm": "ยืนยัน",
@@ -8446,7 +9495,9 @@
       "noLiveInHand": "ไม่มีการ์ด Live ในมือ",
       "noMemberInHand": "ไม่มีการ์ดสมาชิกในมือ",
       "enterNumber0to99": "ใส่ตัวเลข 0 ถึง 99",
-      "noYellMill": "ไม่มีการ์ด Yell ที่จะมิลได้"
+      "noYellMill": "ไม่มีการ์ด Yell ที่จะมิลได้",
+      "cardNotEligible": "That card is not eligible.",
+      "onePerGroup": "Pick one per group."
     },
     "skill": {
       "alreadyUsed": "ใช้ไปแล้วในเทิร์นนี้",
@@ -8535,7 +9586,8 @@
       "playToSlot": "เล่นลงช่อง:",
       "needEnergy": "ต้องการ",
       "haveEnergy": "มี",
-      "bladeHearts": "หัวใจเบลด"
+      "bladeHearts": "หัวใจเบลด",
+      "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
     },
     "pack": {
       "opened": "เปิดแพ็กแล้ว",
@@ -8665,7 +9717,12 @@
       "recentHint": "บันทึกอัตโนมัติจาก 10 เกมล่าสุด ใบเก่าสุดถูกแทนที่อัตโนมัติ",
       "recentSection": "แมตช์ล่าสุด",
       "savedHint": "เก็บเมื่อคุณบันทึกจากหน้าผล หรือเก็บรีเพลย์ล่าสุดที่นี่",
-      "savedSection": "บันทึกตลอด"
+      "savedSection": "บันทึกตลอด",
+      "first": "First action",
+      "last": "Last action",
+      "next": "Next action",
+      "prev": "Previous action",
+      "startStep": "Start"
     },
     "apiError": {
       "titleClient": "เกิดข้อผิดพลาด",
@@ -8781,7 +9838,13 @@
     },
     "mobile": {
       "rotateTitle": "เกมนี้เล่นในแนวนอน",
-      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ"
+      "rotateSub": "หมุนอุปกรณ์เพื่อไปต่อ",
+      "deckInspectHint": "Tap a card to preview",
+      "offlineNeedNetwork": "No network — reconnect to play.",
+      "openLog": "Log",
+      "portraitHint": "Portrait mode for phones",
+      "refresh": "Refresh",
+      "stamps": "Stamps"
     },
     "common": {
       "loading": "กำลังโหลด…",
@@ -8825,7 +9888,16 @@
       "stickerLoadFailed": "โหลดร้านสติกเกอร์ไม่สำเร็จ",
       "stickerCardsLoadFailed": "โหลดการ์ดไม่สำเร็จ",
       "stickerExchangeFailed": "แลกไม่สำเร็จ",
-      "stickerConvertFailed": "แปลงไม่สำเร็จ"
+      "stickerConvertFailed": "แปลงไม่สำเร็จ",
+      "alreadyInRanked": "Already in a ranked match.",
+      "coinsEarned": "+{n} Coins",
+      "leftDeadMatch": "Left a finished/disconnected match.",
+      "playmatBought": "Playmat unlocked!",
+      "signInShop": "Sign in to use the shop.",
+      "signInSleeveShop": "Sign in to use the sleeve shop.",
+      "sleeveBought": "Sleeve unlocked!",
+      "sleeveClaimedFree": "Free sleeve claimed!",
+      "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
     },
     "tutorialUi": {
       "exitTitle": "ออกไปหน้าชื่อเรื่อง",
@@ -9284,7 +10356,8 @@
       "other": "Other",
       "ownedProgress": "{owned}/{total} owned",
       "prCards": "PR cards",
-      "title": "Card List"
+      "title": "Card List",
+      "hubSub": "Browse all cards"
     },
     "playmatShop": {
       "backChars": "← Characters",
@@ -9310,6 +10383,26 @@
       "hint": "Tap a sleeve to preview, then buy or equip.",
       "hoverEmpty": "Select a sleeve",
       "title": "Sleeves"
+    },
+    "gameMode": {
+      "free": "Free",
+      "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+      "label": "Game mode",
+      "randomized": "Random decks",
+      "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+      "short": {
+        "free": "Free",
+        "randomized": "Random",
+        "standard": "Standard",
+        "starters": "Starters"
+      },
+      "standard": "Standard",
+      "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+      "starters": "Starters only",
+      "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+    },
+    "lang": {
+      "label": "Language"
     }
   }
 };

@@ -48,9 +48,15 @@
     "deckBuilderSub": "프리셋 편집 및 랭크전 덱 설정",
     "rankedPvp": "랭크 PvP",
     "rankedPvpSub": "매칭 대전으로 ELO 올리기",
-    "leaderboard": "리더보드",
+    "leaderboard": {
+      "sub": "See ranked standings",
+      "title": "Leaderboard"
+    },
     "leaderboardSub": "온라인 순위 보기",
-    "unranked": "일반전",
+    "unranked": {
+      "sub": "Casual matches",
+      "title": "Unranked"
+    },
     "unrankedSub": "방 만들기, 친구와 대전, CPU 연습",
     "tournamentMode": "토너먼트 모드",
     "tournamentModeSub": "곧 공개",
@@ -64,7 +70,57 @@
     "stickerShopSub": "실을 팩 카드로 교환",
     "officialVideo": "공식 8분 영상 ↗",
     "tournamentModeSubLive": "이벤트 & 브래킷",
-    "loginBonus": "로그인"
+    "loginBonus": "로그인",
+    "apk": {
+      "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+      "title": "Play on Android? Get the APK launcher!"
+    },
+    "booster": {
+      "sub": "Open packs from your collection",
+      "title": "Boosters"
+    },
+    "cardList": {
+      "sub": "Browse the full catalog",
+      "title": "Card List"
+    },
+    "deck": {
+      "sub": "Build and equip decks",
+      "title": "Deck Builder"
+    },
+    "experiment": {
+      "sub": "Try any cards freely",
+      "title": "Deck Experiment"
+    },
+    "missionsClaimable": "Missions — {n} claimable",
+    "ranked": {
+      "sub": "Competitive matchmaking",
+      "title": "Ranked"
+    },
+    "replay": {
+      "sub": "Watch past matches",
+      "title": "Replays"
+    },
+    "shop": {
+      "sub": "Sleeves & playmats",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "sub": "Buy sleeves with Coins",
+      "title": "Sleeve Shop"
+    },
+    "sticker": {
+      "sub": "Convert spare cards",
+      "title": "Stickers"
+    },
+    "tournament": {
+      "subLive": "Live events",
+      "title": "Tournaments"
+    },
+    "tutorial": {
+      "officialVideo": "Official 8-min video ↗",
+      "sub": "Learn the rules",
+      "title": "How to Play"
+    }
   },
   "language": {
     "label": "언어",
@@ -114,7 +170,16 @@
     "cpuExpertShort": "전문가",
     "soloStarting": "CPU전 시작 중 ({diff})",
     "player1Default": "플레이어 1",
-    "player2Default": "플레이어 2"
+    "player2Default": "플레이어 2",
+    "cpuCosmeticDefault": "Default",
+    "cpuCosmeticRandom": "Random (owned)",
+    "cpuCosmeticsHint": "Pick owned cosmetics or randomize from what you own.",
+    "cpuPlaymat": "CPU playmat",
+    "cpuSleeve": "CPU sleeve",
+    "experimentDeckIncomplete": "Experiment deck is incomplete.",
+    "freeDeckEmpty": "No free/experiment decks saved yet.",
+    "otherModesQueuedLead": "Players waiting in other modes:",
+    "presetDeckIncomplete": "Preset deck is incomplete."
   },
   "deck": {
     "title": "덱 빌더",
@@ -278,7 +343,69 @@
     "fullPoolZero": "전체 카드 풀 · 0개 일치",
     "fullPoolBrowse": "전체 카드 풀 · 스크롤하여 모든 카드 보기",
     "fullPoolMatches": "전체 카드 풀 · {n}개 일치",
-    "fullPoolCards": "전체 카드 풀 · {n}장"
+    "fullPoolCards": "전체 카드 풀 · {n}장",
+    "decklogAccountHint": "Paste a deck log code or view URL — loads into this preset if you own the cards.",
+    "decklogApplySubs": "Replace & add deck",
+    "decklogAutoEnergy": "Auto-replace missing Energy",
+    "decklogAutoSubs": "Auto-pick substitutes",
+    "decklogChangeSub": "Change substitute",
+    "decklogChooseSub": "Choose substitute",
+    "decklogCode": "Deck log code",
+    "decklogCodePlaceholder": "Code OR URL",
+    "decklogHint": "Paste a deck log code or view URL — imports into this builder and saves an experiment password.",
+    "decklogImport": "Import",
+    "decklogImported": "Imported {code}.",
+    "decklogImportedAccount": "Imported {code}. Save a preset if you want to keep it.",
+    "decklogImportedSaved": "Imported {code}. Experiment password: {password}",
+    "decklogImporting": "Importing from deck log…",
+    "decklogImportingShort": "Importing…",
+    "decklogMissingLead": "Replace missing copies with substitutes from your collection, or cancel.",
+    "decklogMissingTitle": "The following cards are missing to create this deck",
+    "decklogNeedAllSubs": "Choose substitutes for every missing copy, or cancel.",
+    "decklogNeedCode": "Enter a deck log code or URL.",
+    "decklogNeedHave": "Need {need} · Own {have}",
+    "decklogNeedSignIn": "Sign in to import into a collection deck.",
+    "decklogObtainBooster": "Open packs: {pack}",
+    "decklogObtainCollection": "Collection: {pack}",
+    "decklogObtainPr": "PR Card Pack or Sticker Exchange",
+    "decklogObtainStarter": "Starter deck: {pack}",
+    "decklogObtainUnknown": "See card list / Sticker Exchange",
+    "decklogSubNone": "No substitute selected",
+    "decklogSubNoneAvailable": "No owned substitutes available",
+    "decklogSubNoneCount": "Choose {n} substitute(s)",
+    "decklogSubPickConfirm": "Confirm substitutes",
+    "decklogSubPickCount": "{n} more",
+    "decklogSubPickCountReady": "Selection complete — confirm",
+    "decklogSubPickLead": "Right-click or tap to add one copy at a time. Right-click again when full to remove. Confirm when ready.",
+    "decklogSubPickRemoveHint": "Remove",
+    "decklogSubPickReplacing": "Replacing",
+    "decklogSubPickShortfall": "Substitute {n}",
+    "decklogSubPickTitle": "Choose substitutes",
+    "decklogSubPickTitleFor": "Choose {n} substitute(s) for {name}",
+    "decklogSubPicked": "Substitute: {name}",
+    "decklogSubPickedCount": "Substitutes ({n})",
+    "decklogSubsStillShort": "Still short — pick more substitutes or cancel.",
+    "decklogSubstitute": "Substitute card",
+    "emptySlot": "Empty slot",
+    "experimentHintSignedIn": "Save experiment presets or load with a shared password.",
+    "experimentSaved": "Experiment deck saved.",
+    "experimentSlot": "Experiment slot",
+    "more": "More",
+    "playmat": "Playmat",
+    "playmatBrightness": "Brightness",
+    "playmatConfirm": "Confirm",
+    "playmatEmpty": "No playmats available yet.",
+    "playmatHint": "Equipped playmat appears on your seat in matches. Default board if none.",
+    "playmatPickLead": "Select an owned playmat, adjust brightness, then confirm.",
+    "playmatPickTitle": "Choose playmat",
+    "saveExperiment": "Save experiment",
+    "savedPresets": "Saved presets",
+    "sleeve": "Sleeve",
+    "sleeveEmpty": "No sleeves available yet.",
+    "sleeveHint": "Equipped sleeve replaces your card back in matches. Default: none.",
+    "sleevePickLead": "Tap a sleeve you own to equip it on this deck.",
+    "sleevePickTitle": "Choose sleeve",
+    "sort": "Sort"
   },
   "booster": {
     "title": "부스터 개봉",
@@ -351,7 +478,9 @@
     "flagLoading": "국기 불러오는 중…",
     "selectCardFirst": "먼저 카드를 선택하세요",
     "jumpToYou": "내 순위로 이동",
-    "yourRank": "내 순위: #{rank}"
+    "yourRank": "내 순위: #{rank}",
+    "bannerSaved": "Result saved",
+    "yourRankNotPlayed": "Your rank: not played yet"
   },
   "options": {
     "title": "옵션",
@@ -363,7 +492,28 @@
     "resetTitle": "계정 초기화",
     "resetLead": "모든 컬렉션 카드, 덱 프리셋, 랭크 전적, 부스터 진행도가 삭제됩니다. 새 스타터 덱을 선택하고 처음부터 다시 시작합니다. 이 작업은 되돌릴 수 없습니다.",
     "resetAccount": "계정 초기화",
-    "backHub": "← 허브"
+    "backHub": "← 허브",
+    "back": "← Back",
+    "discordPresence": "Discord Rich Presence (Android)",
+    "discordPresenceLink": "Link Discord for Presence",
+    "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
+    "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+    "foil": "Enhanced textures",
+    "leaveActive": "Leave active match",
+    "leaveActiveConfirm": "Leave the active match and return to the hub?",
+    "reset": {
+      "btn": "Reset account",
+      "lead": "This clears local account data on this device.",
+      "title": "Reset account"
+    },
+    "sleeveConform": "Fit sleeves to card size (rounded corners, no square overflow)",
+    "stuck": {
+      "lead": "If the game is stuck, leave the match and return to the hub.",
+      "title": "Stuck?"
+    },
+    "textScale": "Text & UI size",
+    "textScaleExp": "Experimental",
+    "textScaleLead": "Scale menu text and buttons. Larger sizes scroll instead of overlapping. In-match side panels stay on-screen; mobile boards keep their fit."
   },
   "starter": {
     "title": "스타터 덱을 선택하세요",
@@ -428,7 +578,9 @@
     "sidebarInfo": "{turn}<span class=\"turn-sep\">·</span>페이즈: {phase}<span class=\"turn-sep\">·</span>활성: {active}<span class=\"turn-sep\">·</span>선공: {first}",
     "deckTopLabel": "덱 상단",
     "hoverPickerEmpty": "카드를 가리키면 여기에 미리보기가 표시됩니다.",
-    "zoneEmpty": "비어 있음"
+    "zoneEmpty": "비어 있음",
+    "oppPiles": "Opp piles",
+    "yourPiles": "Your piles"
   },
   "slot": {
     "left": "왼쪽",
@@ -568,7 +720,9 @@
     "replaceCard": "{n}장 교체",
     "replaceCards": "{n}장 교체",
     "tutorialKeepHint": "이 핸드로 괜찮다면 「핸드 유지」를 눌러 계속하세요.",
-    "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요."
+    "tutorialReplaceHint": "강조된 카드를 눌러 교체 대상으로 표시한 뒤 확인하세요.",
+    "declareSub": "{a}: {aN} · {b}: {bN}",
+    "declareTitle": "Mulligan"
   },
   "coin": {
     "title": "선공 결정",
@@ -600,7 +754,9 @@
     "livesSelected": "Live {n}장",
     "livesSelectedOne": "Live 1장",
     "plusMembers": "+멤버 {n}",
-    "plusMembersOne": "+멤버 1"
+    "plusMembersOne": "+멤버 1",
+    "combinedScore": "Score {score}",
+    "combinedScoreBonus": "Score {base} +{bonus}"
   },
   "prompt": {
     "confirm": "확인",
@@ -668,7 +824,9 @@
     "noLiveInHand": "손패에 Live 카드가 없습니다",
     "noMemberInHand": "손패에 멤버 카드가 없습니다",
     "enterNumber0to99": "0부터 99 사이의 숫자를 입력하세요",
-    "noYellMill": "밀할 Yell 카드가 없습니다."
+    "noYellMill": "밀할 Yell 카드가 없습니다.",
+    "cardNotEligible": "That card is not eligible.",
+    "onePerGroup": "Pick one per group."
   },
   "skill": {
     "alreadyUsed": "이번 턴에 이미 사용함",
@@ -757,7 +915,8 @@
     "playToSlot": "슬롯에 플레이:",
     "needEnergy": "필요",
     "haveEnergy": "보유",
-    "bladeHearts": "Blade 하트"
+    "bladeHearts": "Blade 하트",
+    "allBladeHeartsTip": "When checking required hearts, ALL blades from Yell count as any heart color."
   },
   "pack": {
     "opened": "팩 개봉 완료",
@@ -887,7 +1046,12 @@
     "recentHint": "최근 10경기에서 자동 저장됩니다. 가장 오래된 항목부터 교체됩니다.",
     "recentSection": "최근 매치",
     "savedHint": "결과 화면에서 저장하거나, 「최근」 리플레이를 여기서 영구 보관합니다.",
-    "savedSection": "영구 보관"
+    "savedSection": "영구 보관",
+    "first": "First action",
+    "last": "Last action",
+    "next": "Next action",
+    "prev": "Previous action",
+    "startStep": "Start"
   },
   "apiError": {
     "titleClient": "문제가 발생했습니다",
@@ -1017,7 +1181,13 @@
   },
   "mobile": {
     "rotateTitle": "이 게임은 가로 화면으로 플레이합니다",
-    "rotateSub": "계속하려면 기기를 회전하세요."
+    "rotateSub": "계속하려면 기기를 회전하세요.",
+    "deckInspectHint": "Tap a card to preview",
+    "offlineNeedNetwork": "No network — reconnect to play.",
+    "openLog": "Log",
+    "portraitHint": "Portrait mode for phones",
+    "refresh": "Refresh",
+    "stamps": "Stamps"
   },
   "common": {
     "loading": "불러오는 중…",
@@ -1061,7 +1231,16 @@
     "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
     "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
     "stickerExchangeFailed": "교환 실패",
-    "stickerConvertFailed": "변환 실패"
+    "stickerConvertFailed": "변환 실패",
+    "alreadyInRanked": "Already in a ranked match.",
+    "coinsEarned": "+{n} Coins",
+    "leftDeadMatch": "Left a finished/disconnected match.",
+    "playmatBought": "Playmat unlocked!",
+    "signInShop": "Sign in to use the shop.",
+    "signInSleeveShop": "Sign in to use the sleeve shop.",
+    "sleeveBought": "Sleeve unlocked!",
+    "sleeveClaimedFree": "Free sleeve claimed!",
+    "sleeveShopLoadFailed": "Couldn’t load the sleeve shop."
   },
   "tutorialUi": {
     "exitTitle": "타이틀로 나가기",
@@ -1520,7 +1699,8 @@
     "other": "Other",
     "ownedProgress": "{owned}/{total} owned",
     "prCards": "PR cards",
-    "title": "Card List"
+    "title": "Card List",
+    "hubSub": "Browse all cards"
   },
   "playmatShop": {
     "backChars": "← Characters",
@@ -1546,5 +1726,25 @@
     "hint": "Tap a sleeve to preview, then buy or equip.",
     "hoverEmpty": "Select a sleeve",
     "title": "Sleeves"
+  },
+  "gameMode": {
+    "free": "Free",
+    "freeDesc": "Use Deck Experiment decks. Any in-game cards are OK (ownership not required). No leaderboard for this mode.",
+    "label": "Game mode",
+    "randomized": "Random decks",
+    "randomizedDesc": "Both players get a legal random deck from the full card pool (ownership not required). Ranked has its own leaderboard.",
+    "short": {
+      "free": "Free",
+      "randomized": "Random",
+      "standard": "Standard",
+      "starters": "Starters"
+    },
+    "standard": "Standard",
+    "standardDesc": "Normal TCG mode. Build decks from cards you own and play other players.",
+    "starters": "Starters only",
+    "startersDesc": "Unlocked starter decks only. Official starter lists stay usable even after trading cards."
+  },
+  "lang": {
+    "label": "Language"
   }
 }

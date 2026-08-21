@@ -1,14 +1,13 @@
 <?php
 /**
- * Assert locale parity vs English, and that critical UI keys used in code exist in en.
+ * Assert locale parity vs English, and that dotted keys used in code exist in en.
  *
  * Exit 0 on success; exit 1 and print missing keys on failure.
  *
  * Checks:
  *  1) locales/{es,ko,zh,th}.json each contain every leaf key from locales/en_extracted.json
- *  2) Dotted keys under critical namespaces, referenced via t()/data-i18n/titleKey in
- *     client/js + index.html, exist in en_extracted.json (prevents raw key flash after
- *     language edits that forget English).
+ *  2) Dotted keys referenced via t()/tt()/data-i18n/titleKey in client/js + index.html
+ *     exist in en_extracted.json (except known runtime-hydrate-only prefixes).
  */
 declare(strict_types=1);
 
@@ -21,21 +20,11 @@ $locales = [
     'th' => $root . '/locales/th.json',
 ];
 
-/** Namespaces that must live in JSON (not only runtime hydrate aliases). */
-$criticalPrefixes = [
-    'loginBonus.',
-    'splash.',
-    'win.',
-    'tournament.',
-    'missions.',
-    'news.',
-    'sleeveShop.',
-    'playmatShop.',
-    'shop.',
-    'cardList.',
-    'sticker.',
-    'booster.',
-    'spectate.',
+/** Keys under these prefixes are created in i18n.js hydrate, not stored as JSON leaves. */
+$hydrateOnlyPrefixes = [
+    'auth.',
+    'phaseMsg.',
+    'tut.',
 ];
 
 if (!is_readable($enPath)) {
@@ -78,7 +67,7 @@ function lookupPath(array $node, string $key): mixed
 }
 
 /** @return list<string> */
-function collectUsedKeys(string $root, array $criticalPrefixes): array
+function collectUsedKeys(string $root, array $hydrateOnlyPrefixes): array
 {
     $files = [];
     $jsDir = $root . '/client/js';
@@ -110,12 +99,17 @@ function collectUsedKeys(string $root, array $criticalPrefixes): array
         foreach ($patterns as $re) {
             if (preg_match_all($re, $txt, $m)) {
                 foreach ($m[1] as $key) {
-                    foreach ($criticalPrefixes as $prefix) {
+                    $hydrate = false;
+                    foreach ($hydrateOnlyPrefixes as $prefix) {
                         if (str_starts_with($key, $prefix)) {
-                            $used[$key] = true;
+                            $hydrate = true;
                             break;
                         }
                     }
+                    if ($hydrate) {
+                        continue;
+                    }
+                    $used[$key] = true;
                 }
             }
         }
@@ -127,7 +121,6 @@ function collectUsedKeys(string $root, array $criticalPrefixes): array
 
 $en = json_decode((string) file_get_contents($enPath), true, 512, JSON_THROW_ON_ERROR);
 $enKeys = leafKeys($en);
-$enKeySet = array_flip($enKeys);
 
 $hadFailure = false;
 $summary = [];
@@ -154,16 +147,16 @@ foreach ($locales as $code => $path) {
     }
 }
 
-$usedCritical = collectUsedKeys($root, $criticalPrefixes);
+$usedKeys = collectUsedKeys($root, $hydrateOnlyPrefixes);
 $missingInEn = [];
-foreach ($usedCritical as $key) {
+foreach ($usedKeys as $key) {
     if (lookupPath($en, $key) === null) {
         $missingInEn[] = $key;
     }
 }
 if ($missingInEn !== []) {
     $hadFailure = true;
-    fwrite(STDERR, "en_extracted.json missing " . count($missingInEn) . " critical key(s) used in code:\n");
+    fwrite(STDERR, "en_extracted.json missing " . count($missingInEn) . " key(s) used in code:\n");
     foreach ($missingInEn as $key) {
         fwrite(STDERR, "  - {$key}\n");
     }
@@ -174,4 +167,4 @@ if ($hadFailure) {
 }
 
 echo 'i18n OK: ' . count($enKeys) . ' en keys matched in ' . implode(', ', $summary)
-    . '; ' . count($usedCritical) . " critical code keys present\n";
+    . '; ' . count($usedKeys) . " code keys present\n";
