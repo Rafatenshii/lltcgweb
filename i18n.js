@@ -661,7 +661,8 @@
       "liveJudgeTieBothSucceed": "Tie on Live Score — both succeed!",
       "liveJudgeYouWin": "You win on Live Score!",
       "liveJudgeOppWin": "Opponent wins on Live Score",
-      "liveJudgeNamedWin": "{name} wins on Live Score"
+      "liveJudgeNamedWin": "{name} wins on Live Score",
+      "heartCheck": "Checking hearts…"
     },
     "mulligan": {
       "title": "Opening Hand 🌸",
@@ -3617,7 +3618,8 @@
       "liveJudgeTieBothSucceed": "Empate en puntuación Live — ¡ambos tienen éxito!",
       "liveJudgeYouWin": "¡Ganas por puntuación Live!",
       "liveJudgeOppWin": "El oponente gana por puntuación Live",
-      "liveJudgeNamedWin": "{name} gana por puntuación Live"
+      "liveJudgeNamedWin": "{name} gana por puntuación Live",
+      "heartCheck": "Verificando corazones…"
     },
     "mulligan": {
       "title": "Mano inicial 🌸",
@@ -5082,7 +5084,8 @@
       "liveJudgeTieBothSucceed": "Live 스코어 동점 — 양쪽 모두 성공!",
       "liveJudgeYouWin": "Live 스코어로 승리!",
       "liveJudgeOppWin": "상대가 Live 스코어로 승리",
-      "liveJudgeNamedWin": "{name}이(가) Live 스코어로 승리"
+      "liveJudgeNamedWin": "{name}이(가) Live 스코어로 승리",
+      "heartCheck": "하트 판정 중…"
     },
     "mulligan": {
       "title": "시작 패 🌸",
@@ -6562,7 +6565,8 @@
       "liveJudgeTieBothSucceed": "实时比分平局 — 双方均成功！",
       "liveJudgeYouWin": "您在实时比分上获胜！",
       "liveJudgeOppWin": "实时比分显示对手获胜",
-      "liveJudgeNamedWin": "{name} 在实时比分中获胜"
+      "liveJudgeNamedWin": "{name} 在实时比分中获胜",
+      "heartCheck": "正在判定爱心…"
     },
     "mulligan": {
       "title": "张开双手🍃",
@@ -8032,7 +8036,8 @@
       "liveJudgeTieBothSucceed": "คะแนน Live เสมอ — ทั้งคู่สำเร็จ!",
       "liveJudgeYouWin": "คุณชนะด้วยคะแนน Live!",
       "liveJudgeOppWin": "คู่ต่อสู้ชนะด้วยคะแนน Live",
-      "liveJudgeNamedWin": "{name} ชนะด้วยคะแนน Live"
+      "liveJudgeNamedWin": "{name} ชนะด้วยคะแนน Live",
+      "heartCheck": "กำลังตรวจหัวใจ…"
     },
     "mulligan": {
       "title": "มือเปิด 🌸",

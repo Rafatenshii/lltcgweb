@@ -547,7 +547,8 @@
     "liveJudgeTieBothSucceed": "Empate en puntuación Live — ¡ambos tienen éxito!",
     "liveJudgeYouWin": "¡Ganas por puntuación Live!",
     "liveJudgeOppWin": "El oponente gana por puntuación Live",
-    "liveJudgeNamedWin": "{name} gana por puntuación Live"
+    "liveJudgeNamedWin": "{name} gana por puntuación Live",
+    "heartCheck": "Verificando corazones…"
   },
   "mulligan": {
     "title": "Mano inicial 🌸",

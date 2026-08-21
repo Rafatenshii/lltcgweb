@@ -647,7 +647,8 @@
     "liveJudgeTieBothSucceed": "Tie on Live Score — both succeed!",
     "liveJudgeYouWin": "You win on Live Score!",
     "liveJudgeOppWin": "Opponent wins on Live Score",
-    "liveJudgeNamedWin": "{name} wins on Live Score"
+    "liveJudgeNamedWin": "{name} wins on Live Score",
+    "heartCheck": "Checking hearts…"
   },
   "mulligan": {
     "title": "Opening Hand 🌸",

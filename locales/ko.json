@@ -557,7 +557,8 @@
     "liveJudgeTieBothSucceed": "Live 스코어 동점 — 양쪽 모두 성공!",
     "liveJudgeYouWin": "Live 스코어로 승리!",
     "liveJudgeOppWin": "상대가 Live 스코어로 승리",
-    "liveJudgeNamedWin": "{name}이(가) Live 스코어로 승리"
+    "liveJudgeNamedWin": "{name}이(가) Live 스코어로 승리",
+    "heartCheck": "하트 판정 중…"
   },
   "mulligan": {
     "title": "시작 패 🌸",

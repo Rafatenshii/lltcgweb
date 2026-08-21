@@ -7451,7 +7451,8 @@ function perfClearHeartCheckHold() {
 function perfShowHeartCheckHold(labelKey = 'splash.heartCheck') {
   if (!G._perfSpectacleActive || G._perfSpectacleAborted) return;
   G._perfHeartCheckHold = true;
-  const label = (typeof t === 'function' ? t(labelKey) : null) || 'Checking hearts…';
+  const translated = (typeof t === 'function') ? t(labelKey) : null;
+  const label = (translated && translated !== labelKey) ? translated : 'Checking hearts…';
   G._perfHeartCheckLabel = label;
   const splash = el('perf-splash');
   const txt = el('perf-splash-txt');

@@ -558,7 +558,8 @@
     "liveJudgeTieBothSucceed": "实时比分平局 — 双方均成功！",
     "liveJudgeYouWin": "您在实时比分上获胜！",
     "liveJudgeOppWin": "实时比分显示对手获胜",
-    "liveJudgeNamedWin": "{name} 在实时比分中获胜"
+    "liveJudgeNamedWin": "{name} 在实时比分中获胜",
+    "heartCheck": "正在判定爱心…"
   },
   "mulligan": {
     "title": "张开双手🍃",

@@ -548,7 +548,8 @@
     "liveJudgeTieBothSucceed": "คะแนน Live เสมอ — ทั้งคู่สำเร็จ!",
     "liveJudgeYouWin": "คุณชนะด้วยคะแนน Live!",
     "liveJudgeOppWin": "คู่ต่อสู้ชนะด้วยคะแนน Live",
-    "liveJudgeNamedWin": "{name} ชนะด้วยคะแนน Live"
+    "liveJudgeNamedWin": "{name} ชนะด้วยคะแนน Live",
+    "heartCheck": "กำลังตรวจหัวใจ…"
   },
   "mulligan": {
     "title": "มือเปิด 🌸",
