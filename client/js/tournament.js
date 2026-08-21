@@ -230,19 +230,46 @@
     return Math.floor(utc / 1000);
   }
 
+  function formatUtcOffsetBracket(timeZone) {
+    try {
+      const ms = getTimeZoneOffsetMs(new Date(), timeZone || 'UTC');
+      const totalMins = Math.round(ms / 60000);
+      const sign = totalMins >= 0 ? '+' : '-';
+      const abs = Math.abs(totalMins);
+      const h = Math.floor(abs / 60);
+      const m = abs % 60;
+      if (m === 0) return '(UTC' + sign + h + ')';
+      return '(UTC' + sign + h + ':' + String(m).padStart(2, '0') + ')';
+    } catch (e) {
+      return '';
+    }
+  }
+
   function timezoneLabel(id) {
     const hit = TIMEZONE_OPTIONS.find((z) => z.id === id);
-    return hit ? hit.label : id;
+    const base = hit ? hit.label : (id || 'UTC');
+    const off = formatUtcOffsetBracket(id);
+    return off ? (base + ' ' + off) : base;
   }
 
   function ensureTimezoneSelect() {
     const sel = el('tournament-timezone');
-    if (!sel || sel.dataset.ready === '1') return;
+    if (!sel) return;
+    const prev = sel.value || state.timezone || 'Asia/Tokyo';
     sel.innerHTML = TIMEZONE_OPTIONS.map((z) => (
-      '<option value="' + escapeAttr(z.id) + '">' + escapeHtml(z.label) + '</option>'
+      '<option value="' + escapeAttr(z.id) + '">' + escapeHtml(timezoneLabel(z.id)) + '</option>'
     )).join('');
-    sel.dataset.ready = '1';
-    sel.addEventListener('change', onTimezoneChange);
+    if (prev && ![...sel.options].some((o) => o.value === prev)) {
+      const opt = document.createElement('option');
+      opt.value = prev;
+      opt.textContent = timezoneLabel(prev);
+      sel.appendChild(opt);
+    }
+    if (prev) sel.value = prev;
+    if (sel.dataset.ready !== '1') {
+      sel.dataset.ready = '1';
+      sel.addEventListener('change', onTimezoneChange);
+    }
   }
 
   function syncTimezoneFromProfile() {
@@ -254,7 +281,7 @@
       if (![...sel.options].some((o) => o.value === tz)) {
         const opt = document.createElement('option');
         opt.value = tz;
-        opt.textContent = tz;
+        opt.textContent = timezoneLabel(tz);
         sel.appendChild(opt);
       }
       sel.value = tz;
@@ -455,6 +482,26 @@
     );
   }
 
+  const ACTION_TOOLTIPS = {
+    register: 'Lock in a deck and enter this event. Pays the entry fee into the prize pool if one is set.',
+    checkin: 'Confirm you are present before the bracket starts. Missing check-in marks you as a no-show.',
+    unregister: 'Leave the event before it starts and refund your entry fee.',
+    deposit: 'Add Coins from your balance to this event’s prize pool (host only).',
+    cancel: 'Cancel the tournament and refund entry fees plus remaining host prize deposits.',
+    tick: 'Refresh this event and advance server timers (check-in window, bracket, room seeding).',
+    join: 'Enter your ready tournament match room when your bracket game is available.',
+    'spectate-list': 'Browse and watch live matches from this tournament as a spectator.',
+  };
+
+  function actionButtonHtml(cls, act, label) {
+    const tip = ACTION_TOOLTIPS[act] || '';
+    return (
+      '<button type="button" class="' + cls + '" data-act="' + escapeAttr(act) + '"'
+      + (tip ? ' title="' + escapeAttr(tip) + '"' : '')
+      + '>' + escapeHtml(label) + '</button>'
+    );
+  }
+
   function renderDetail() {
     const res = state.detail;
     if (!res || !res.tournament) return;
@@ -487,23 +534,23 @@
       const isHost = !!res.is_host;
       const bits = [];
       if (!me && (trow.status === 'open' || trow.status === 'checkin')) {
-        bits.push('<button type="button" class="btn-grad" data-act="register">Register</button>');
+        bits.push(actionButtonHtml('btn-grad', 'register', 'Register'));
       }
       if (me && (trow.status === 'open' || trow.status === 'checkin') && me.status === 'registered') {
-        bits.push('<button type="button" class="btn-grad" data-act="checkin">Check in</button>');
-        bits.push('<button type="button" class="btn-ghost" data-act="unregister">Unregister</button>');
+        bits.push(actionButtonHtml('btn-grad', 'checkin', 'Check in'));
+        bits.push(actionButtonHtml('btn-ghost', 'unregister', 'Unregister'));
       }
       if (me && me.status === 'checked_in') {
-        bits.push('<span class="tournament-muted">Checked in</span>');
+        bits.push('<span class="tournament-muted" title="You are checked in and waiting for the bracket to start.">Checked in</span>');
       }
       if (isHost && (trow.status === 'open' || trow.status === 'checkin' || trow.status === 'running')) {
-        bits.push('<button type="button" class="btn-out" data-act="deposit">Deposit prize</button>');
-        bits.push('<button type="button" class="btn-ghost" data-act="cancel">Cancel (refund)</button>');
+        bits.push(actionButtonHtml('btn-out', 'deposit', 'Deposit prize'));
+        bits.push(actionButtonHtml('btn-ghost', 'cancel', 'Cancel (refund)'));
       }
-      bits.push('<button type="button" class="btn-out" data-act="tick">Refresh / tick</button>');
-      bits.push('<button type="button" class="btn-grad" data-act="join">Join my match</button>');
+      bits.push(actionButtonHtml('btn-out', 'tick', 'Refresh / tick'));
+      bits.push(actionButtonHtml('btn-grad', 'join', 'Join my match'));
       if (trow.status === 'running') {
-        bits.push('<button type="button" class="btn-out" data-act="spectate-list">Spectate matches</button>');
+        bits.push(actionButtonHtml('btn-out', 'spectate-list', 'Spectate matches'));
       }
       actions.innerHTML = bits.join('');
       actions.querySelectorAll('[data-act]').forEach((btn) => {
@@ -581,7 +628,8 @@
           + '</text>';
         if (m.room_id && (status === 'ready' || status === 'live')) {
           svg += '<text class="tournament-bracket-sub" data-spec="' + escapeAttr(m.room_id)
-            + '" x="' + (x + 140) + '" y="' + (y + 50) + '" style="cursor:pointer;fill:#9cf">Spec</text>';
+            + '" x="' + (x + 140) + '" y="' + (y + 50) + '" style="cursor:pointer;fill:#9cf">'
+            + '<title>Spectate this match (hidden hands follow event fog setting)</title>Spec</text>';
         }
       });
     }
