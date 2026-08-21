@@ -903,6 +903,215 @@
     return st;
   }
 
+  function bracketSideTitle(side) {
+    const s = String(side || 'winners');
+    if (s === 'losers') return t('tournament.bracket.sideLosers', 'Losers bracket');
+    if (s === 'grand_final') return t('tournament.bracket.sideGrandFinal', 'Grand Final');
+    if (s === 'swiss') return t('tournament.bracket.sideSwiss', 'Swiss rounds');
+    return t('tournament.bracket.sideWinners', 'Winners bracket');
+  }
+
+  function bracketUsesTreeConnectors(format) {
+    const f = String(format || 'single_elim');
+    return f === 'single_elim' || f === 'double_elim_bracket';
+  }
+
+  const BRACKET_ORIENT_KEY = 'tcg_tournament_bracket_orient';
+
+  function getBracketOrient() {
+    try {
+      return sessionStorage.getItem(BRACKET_ORIENT_KEY) === 'vertical' ? 'vertical' : 'horizontal';
+    } catch (e) {
+      return 'horizontal';
+    }
+  }
+
+  function setBracketOrient(orient) {
+    const next = orient === 'vertical' ? 'vertical' : 'horizontal';
+    try { sessionStorage.setItem(BRACKET_ORIENT_KEY, next); } catch (e) { /* ignore */ }
+    return next;
+  }
+
+  function matchCardHtml(m, opts) {
+    opts = opts || {};
+    const isPreview = !!opts.isPreview;
+    const bestOf = Number(opts.bestOf) || 1;
+    const status = String(m.status || 'pending');
+    const canSpec = !isPreview && m.room_id && (status === 'ready' || status === 'live');
+    const p1w = Number(m.p1_wins) || 0;
+    const p2w = Number(m.p2_wins) || 0;
+    const showSeries = !isPreview && (Number(m.best_of) || bestOf) === 3;
+    const side = String(m.bracket_side || opts.side || 'winners');
+    const round = Number(m.round) || 1;
+    const slot = Number(m.bracket_slot) || 0;
+    let html = '<article class="tournament-match-card tournament-match-card--' + escapeAttr(status)
+      + (isPreview ? ' tournament-match-card--skeleton' : '') + '"'
+      + ' data-side="' + escapeAttr(side) + '"'
+      + ' data-round="' + escapeAttr(String(round)) + '"'
+      + ' data-slot="' + escapeAttr(String(slot)) + '">';
+    html += '<div class="tournament-match-card-head">';
+    html += '<span class="tournament-match-status">'
+      + escapeHtml(isPreview ? t('tournament.bracket.slot', 'Slot') : statusLabel(m))
+      + '</span>';
+    if (showSeries) {
+      html += '<span class="tournament-match-series">' + p1w + '–' + p2w + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="tournament-match-seats">';
+    if (isPreview) {
+      html += seatHtml(null, { placeholder: true });
+      html += seatHtml(null, { placeholder: true });
+    } else {
+      const bye = status === 'done' && !m.p2_discord_id;
+      html += seatHtml(m.p1_discord_id, {
+        winner: m.winner_discord_id && m.winner_discord_id === m.p1_discord_id,
+        bye: false,
+      });
+      html += seatHtml(m.p2_discord_id, {
+        winner: m.winner_discord_id && m.winner_discord_id === m.p2_discord_id,
+        bye: bye,
+      });
+    }
+    html += '</div>';
+    html += '<div class="tournament-match-card-foot">';
+    if (canSpec) {
+      html += '<button type="button" class="tournament-spec-btn" data-spec="' + escapeAttr(m.room_id) + '"'
+        + ' title="' + escapeAttr(t('tournament.bracket.spectateTip', 'Watch this match as a spectator (non-players welcome)')) + '">'
+        + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> '
+        + escapeHtml(t('tournament.bracket.spectate', 'Spectate')) + '</button>';
+    } else if (!isPreview && status === 'done' && m.winner_discord_id) {
+      html += '<span class="tournament-muted">'
+        + escapeHtml(t('tournament.bracket.winner', 'Winner: {name}', { name: nameFor(m.winner_discord_id) }))
+        + '</span>';
+    } else if (isPreview) {
+      html += '<span class="tournament-muted">'
+        + escapeHtml(t('tournament.bracket.namesLock', 'Names lock in at bracket start'))
+        + '</span>';
+    } else {
+      html += '<span class="tournament-muted">' + escapeHtml(statusLabel(m)) + '</span>';
+    }
+    html += '</div></article>';
+    return html;
+  }
+
+  function syncBracketTreeHeights(root) {
+    root.querySelectorAll('.tournament-bracket-side--tree').forEach((sideEl) => {
+      const lists = [...sideEl.querySelectorAll('.tournament-bracket-round-list')];
+      if (lists.length < 2) return;
+      lists.forEach((list) => { list.style.minHeight = ''; });
+      const board = root.querySelector('.tournament-bracket-board');
+      const vertical = board && board.dataset.orient === 'vertical';
+      if (vertical) {
+        const firstW = lists[0].scrollWidth;
+        lists.forEach((list) => { list.style.minWidth = Math.max(firstW, 280) + 'px'; });
+      } else {
+        const firstH = lists[0].scrollHeight;
+        lists.forEach((list) => { list.style.minHeight = firstH + 'px'; });
+      }
+    });
+  }
+
+  function layoutBracketConnectors(root) {
+    const canvas = root.querySelector('.tournament-bracket-canvas');
+    const svg = root.querySelector('svg.tournament-bracket-connectors');
+    if (!canvas || !svg) return;
+    const board = root.querySelector('.tournament-bracket-board');
+    const vertical = !!(board && board.dataset.orient === 'vertical');
+    const cRect = canvas.getBoundingClientRect();
+    const w = Math.max(canvas.scrollWidth, canvas.clientWidth, 1);
+    const h = Math.max(canvas.scrollHeight, canvas.clientHeight, 1);
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.innerHTML = '';
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const stroke = 'rgba(186, 228, 255, 0.55)';
+    const strokeAccent = 'rgba(255, 107, 168, 0.55)';
+
+    root.querySelectorAll('.tournament-bracket-side--tree').forEach((sideEl, sideIdx) => {
+      const rounds = [...sideEl.querySelectorAll('.tournament-bracket-round')];
+      for (let ri = 0; ri < rounds.length - 1; ri++) {
+        const fromCards = [...rounds[ri].querySelectorAll('.tournament-match-card')];
+        const toCards = [...rounds[ri + 1].querySelectorAll('.tournament-match-card')];
+        toCards.forEach((parent, pi) => {
+          const c0 = fromCards[pi * 2];
+          const c1 = fromCards[pi * 2 + 1];
+          if (!c0 && !c1) return;
+          const pRect = parent.getBoundingClientRect();
+          const kids = [c0, c1].filter(Boolean);
+          if (!kids.length) return;
+          const color = sideIdx % 2 === 0 ? stroke : strokeAccent;
+          kids.forEach((child) => {
+            const a = child.getBoundingClientRect();
+            let x1; let y1; let x2; let y2; let mx; let my;
+            if (vertical) {
+              x1 = a.left + a.width / 2 - cRect.left;
+              y1 = a.bottom - cRect.top;
+              x2 = pRect.left + pRect.width / 2 - cRect.left;
+              y2 = pRect.top - cRect.top;
+              my = (y1 + y2) / 2;
+              const path = document.createElementNS(ns, 'path');
+              path.setAttribute('d',
+                'M ' + x1 + ' ' + y1
+                + ' L ' + x1 + ' ' + my
+                + ' L ' + x2 + ' ' + my
+                + ' L ' + x2 + ' ' + y2);
+              path.setAttribute('fill', 'none');
+              path.setAttribute('stroke', color);
+              path.setAttribute('stroke-width', '2');
+              path.setAttribute('stroke-linecap', 'round');
+              path.setAttribute('stroke-linejoin', 'round');
+              svg.appendChild(path);
+            } else {
+              x1 = a.right - cRect.left;
+              y1 = a.top + a.height / 2 - cRect.top;
+              x2 = pRect.left - cRect.left;
+              y2 = pRect.top + pRect.height / 2 - cRect.top;
+              mx = (x1 + x2) / 2;
+              const path = document.createElementNS(ns, 'path');
+              path.setAttribute('d',
+                'M ' + x1 + ' ' + y1
+                + ' L ' + mx + ' ' + y1
+                + ' L ' + mx + ' ' + y2
+                + ' L ' + x2 + ' ' + y2);
+              path.setAttribute('fill', 'none');
+              path.setAttribute('stroke', color);
+              path.setAttribute('stroke-width', '2');
+              path.setAttribute('stroke-linecap', 'round');
+              path.setAttribute('stroke-linejoin', 'round');
+              svg.appendChild(path);
+            }
+          });
+        });
+      }
+    });
+  }
+
+  let _bracketResizeObs = null;
+
+  function bindBracketLayout(root) {
+    const run = () => {
+      syncBracketTreeHeights(root);
+      layoutBracketConnectors(root);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(run));
+    if (_bracketResizeObs) {
+      try { _bracketResizeObs.disconnect(); } catch (e) { /* ignore */ }
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      _bracketResizeObs = new ResizeObserver(() => run());
+      const canvas = root.querySelector('.tournament-bracket-canvas');
+      if (canvas) _bracketResizeObs.observe(canvas);
+      root.querySelectorAll('.tournament-match-card').forEach((card) => _bracketResizeObs.observe(card));
+    }
+    const scroll = root.querySelector('.tournament-bracket-scroll');
+    if (scroll && !scroll.dataset.connScrollBound) {
+      scroll.dataset.connScrollBound = '1';
+      scroll.addEventListener('scroll', () => layoutBracketConnectors(root), { passive: true });
+    }
+  }
+
   function renderStandings(rows) {
     let box = el('tournament-standings');
     if (!box) {
@@ -953,6 +1162,8 @@
     const prev = Array.isArray(preview) ? preview : [];
     const isPreview = live.length === 0;
     const source = isPreview ? prev : live;
+    const useTree = bracketUsesTreeConnectors(format);
+    const orient = getBracketOrient();
 
     if (!source.length) {
       root.innerHTML = '<p class="tournament-muted">'
@@ -961,7 +1172,6 @@
       return;
     }
 
-    // Group by side then round.
     const groups = {};
     source.forEach((m) => {
       const side = String(m.bracket_side || (format === 'swiss' ? 'swiss' : 'winners'));
@@ -975,18 +1185,33 @@
     Object.keys(groups).forEach((k) => {
       groups[k].items.sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
     });
-    const keys = Object.keys(groups).sort((a, b) => {
-      const ga = groups[a];
-      const gb = groups[b];
-      const sideOrder = { winners: 0, swiss: 0, losers: 1, grand_final: 2 };
-      const sa = sideOrder[ga.side] != null ? sideOrder[ga.side] : 9;
-      const sb = sideOrder[gb.side] != null ? sideOrder[gb.side] : 9;
-      if (sa !== sb) return sa - sb;
-      return ga.round - gb.round;
+
+    const sideOrder = { winners: 0, swiss: 0, losers: 1, grand_final: 2 };
+    const sides = [];
+    const sideMap = {};
+    Object.keys(groups).forEach((k) => {
+      const g = groups[k];
+      if (!sideMap[g.side]) {
+        sideMap[g.side] = { side: g.side, rounds: [] };
+        sides.push(sideMap[g.side]);
+      }
+      sideMap[g.side].rounds.push(g);
     });
+    sides.sort((a, b) => {
+      const sa = sideOrder[a.side] != null ? sideOrder[a.side] : 9;
+      const sb = sideOrder[b.side] != null ? sideOrder[b.side] : 9;
+      return sa - sb;
+    });
+    sides.forEach((s) => s.rounds.sort((a, b) => a.round - b.round));
 
     const sep = metaSep();
-    let html = '<div class="tournament-bracket-board' + (isPreview ? ' tournament-bracket-board--preview' : '') + '">';
+    const showOrientToggle = useTree || sides.some((s) => s.rounds.length > 1);
+    let html = '<div class="tournament-bracket-board'
+      + (isPreview ? ' tournament-bracket-board--preview' : '')
+      + (useTree ? ' tournament-bracket-board--tree' : ' tournament-bracket-board--columns')
+      + '" data-orient="' + escapeAttr(orient) + '">';
+
+    html += '<div class="tournament-bracket-toolbar">';
     html += '<div class="tournament-bracket-caption">'
       + escapeHtml(formatCaption(format))
       + sep + escapeHtml(
@@ -998,74 +1223,67 @@
         ? (sep + escapeHtml(t('tournament.bracket.previewSuffix', 'Preview (names fill in after check-in)')))
         : '')
       + '</div>';
-    html += '<div class="tournament-bracket-rounds">';
+    if (showOrientToggle) {
+      const nextOrient = orient === 'vertical' ? 'horizontal' : 'vertical';
+      const btnLabel = orient === 'vertical'
+        ? t('tournament.bracket.orientHorizontal', 'Horizontal')
+        : t('tournament.bracket.orientVertical', 'Vertical');
+      html += '<button type="button" class="btn-ghost tournament-bracket-orient-btn" data-orient-toggle="'
+        + escapeAttr(nextOrient) + '" title="'
+        + escapeAttr(t('tournament.bracket.orientTip', 'Switch bracket layout')) + '">'
+        + escapeHtml(btnLabel)
+        + '</button>';
+    }
+    html += '</div>';
 
-    keys.forEach((k) => {
-      const g = groups[k];
-      const label = g.label || roundLabel(g.side, g.round, g.items.length, isPreview);
-      html += '<div class="tournament-bracket-round" data-side="' + escapeAttr(g.side) + '">';
-      html += '<div class="tournament-bracket-round-label">' + escapeHtml(label) + '</div>';
-      html += '<div class="tournament-bracket-round-list">';
-      g.items.forEach((m) => {
-        const status = String(m.status || (isPreview ? 'pending' : 'pending'));
-        const canSpec = !isPreview && m.room_id && (status === 'ready' || status === 'live');
-        const p1w = Number(m.p1_wins) || 0;
-        const p2w = Number(m.p2_wins) || 0;
-        const showSeries = !isPreview && (Number(m.best_of) || bestOf) === 3;
-        html += '<article class="tournament-match-card tournament-match-card--' + escapeAttr(status)
-          + (isPreview ? ' tournament-match-card--skeleton' : '') + '">';
-        html += '<div class="tournament-match-card-head">';
-        html += '<span class="tournament-match-status">'
-          + escapeHtml(isPreview ? t('tournament.bracket.slot', 'Slot') : statusLabel(m))
-          + '</span>';
-        if (showSeries) {
-          html += '<span class="tournament-match-series">' + p1w + '–' + p2w + '</span>';
-        }
-        html += '</div>';
-        html += '<div class="tournament-match-seats">';
-        if (isPreview) {
-          html += seatHtml(null, { placeholder: true });
-          html += seatHtml(null, { placeholder: true });
-        } else {
-          const bye = status === 'done' && !m.p2_discord_id;
-          html += seatHtml(m.p1_discord_id, {
-            winner: m.winner_discord_id && m.winner_discord_id === m.p1_discord_id,
-            bye: false,
-          });
-          html += seatHtml(m.p2_discord_id, {
-            winner: m.winner_discord_id && m.winner_discord_id === m.p2_discord_id,
-            bye: bye,
-          });
-        }
-        html += '</div>';
-        html += '<div class="tournament-match-card-foot">';
-        if (canSpec) {
-          html += '<button type="button" class="tournament-spec-btn" data-spec="' + escapeAttr(m.room_id) + '"'
-            + ' title="' + escapeAttr(t('tournament.bracket.spectateTip', 'Watch this match as a spectator (non-players welcome)')) + '">'
-            + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> '
-            + escapeHtml(t('tournament.bracket.spectate', 'Spectate')) + '</button>';
-        } else if (!isPreview && status === 'done' && m.winner_discord_id) {
-          html += '<span class="tournament-muted">'
-            + escapeHtml(t('tournament.bracket.winner', 'Winner: {name}', { name: nameFor(m.winner_discord_id) }))
-            + '</span>';
-        } else if (isPreview) {
-          html += '<span class="tournament-muted">'
-            + escapeHtml(t('tournament.bracket.namesLock', 'Names lock in at bracket start'))
-            + '</span>';
-        } else {
-          html += '<span class="tournament-muted">' + escapeHtml(statusLabel(m)) + '</span>';
-        }
-        html += '</div></article>';
+    html += '<div class="tournament-bracket-scroll">';
+    html += '<div class="tournament-bracket-canvas">';
+    if (useTree) {
+      html += '<svg class="tournament-bracket-connectors" aria-hidden="true"></svg>';
+    }
+
+    sides.forEach((sideBlock) => {
+      const treeClass = useTree ? ' tournament-bracket-side--tree' : '';
+      html += '<section class="tournament-bracket-side' + treeClass + '" data-side="'
+        + escapeAttr(sideBlock.side) + '">';
+      if (sides.length > 1 || format === 'double_elim_bracket') {
+        html += '<h5 class="tournament-bracket-side-title">'
+          + escapeHtml(bracketSideTitle(sideBlock.side)) + '</h5>';
+      }
+      html += '<div class="tournament-bracket-rounds">';
+      sideBlock.rounds.forEach((g) => {
+        const label = g.label || roundLabel(g.side, g.round, g.items.length, isPreview);
+        html += '<div class="tournament-bracket-round" data-side="' + escapeAttr(g.side)
+          + '" data-round="' + escapeAttr(String(g.round)) + '">';
+        html += '<div class="tournament-bracket-round-label">' + escapeHtml(label) + '</div>';
+        html += '<div class="tournament-bracket-round-list">';
+        g.items.forEach((m) => {
+          html += matchCardHtml(m, { isPreview: isPreview, bestOf: bestOf, side: g.side });
+        });
+        html += '</div></div>';
       });
-      html += '</div></div>';
+      html += '</div></section>';
     });
 
-    html += '</div></div>';
+    html += '</div></div></div>';
     root.innerHTML = html;
+
     root.querySelectorAll('[data-spec]').forEach((node) => {
       node.addEventListener('click', () => spectateRoom(node.getAttribute('data-spec')));
     });
+    const orientBtn = root.querySelector('[data-orient-toggle]');
+    if (orientBtn) {
+      orientBtn.addEventListener('click', () => {
+        setBracketOrient(orientBtn.getAttribute('data-orient-toggle'));
+        renderBracket(matches, preview);
+      });
+    }
     wireAvatarFallbacks(root);
+    if (useTree) bindBracketLayout(root);
+    else {
+      // Still equalize column rhythm a bit for swiss-style boards.
+      requestAnimationFrame(() => syncBracketTreeHeights(root));
+    }
   }
 
   async function onDetailAction(act) {

@@ -123,38 +123,110 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
 }
 .tournament-bracket {
   width: 100%;
-  overflow-x: auto;
   padding: 8px 0 16px;
 }
 .tournament-bracket-board {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: min(100%, 720px);
+  gap: 10px;
+  min-width: 0;
+}
+.tournament-bracket-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .tournament-bracket-caption {
   font-size: 0.9rem;
   opacity: 0.9;
-  margin-bottom: 2px;
+  margin: 0;
+  flex: 1 1 auto;
+}
+.tournament-bracket-orient-btn {
+  width: auto !important;
+  flex: 0 0 auto;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  border-radius: 999px;
+  border-color: rgba(165, 145, 230, 0.55);
+  background: rgba(78, 48, 158, 0.35);
+}
+.tournament-bracket-orient-btn:hover {
+  border-color: rgba(186, 228, 255, 0.75);
 }
 .tournament-bracket-board--preview .tournament-match-card {
   border-style: dashed;
   opacity: 0.92;
 }
+.tournament-bracket-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(78, 48, 158, 0.18), rgba(0, 20, 48, 0.22)),
+    rgba(0, 12, 32, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.tournament-bracket-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 14px 12px 16px;
+  min-width: min-content;
+  min-height: 160px;
+}
+.tournament-bracket-connectors {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+.tournament-bracket-side {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tournament-bracket-side-title {
+  margin: 0;
+  font-family: 'Fredoka One', cursive;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  color: #e9ddff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.tournament-bracket-side[data-side="losers"] .tournament-bracket-side-title {
+  color: #bae4ff;
+}
+.tournament-bracket-side[data-side="grand_final"] .tournament-bracket-side-title {
+  color: var(--pink, #FF6BA8);
+}
 .tournament-bracket-rounds {
   display: flex;
   flex-wrap: nowrap;
-  gap: 14px;
-  align-items: flex-start;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  gap: 28px;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
 }
 .tournament-bracket-round {
   flex: 0 0 auto;
-  width: 220px;
+  width: 210px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .tournament-bracket-round-label {
   font-family: 'Fredoka One', cursive;
@@ -162,15 +234,22 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   letter-spacing: 0.02em;
   color: var(--pink, #FF6BA8);
   padding: 0 4px;
+  white-space: nowrap;
 }
 .tournament-bracket-round-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: space-around;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .tournament-match-card {
+  position: relative;
+  z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(0, 20, 48, 0.35);
+  background: rgba(0, 20, 48, 0.55);
+  backdrop-filter: blur(6px);
   border-radius: 12px;
   padding: 10px;
   display: flex;
@@ -254,6 +333,48 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
 .tournament-spec-btn-icon {
   font-size: 13px;
   line-height: 1;
+}
+
+/* Vertical tree: rounds stack top→bottom; matches sit in a row */
+.tournament-bracket-board[data-orient="vertical"] .tournament-bracket-scroll {
+  max-height: min(70vh, 720px);
+}
+.tournament-bracket-board[data-orient="vertical"] .tournament-bracket-rounds {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22px;
+  min-width: 100%;
+}
+.tournament-bracket-board[data-orient="vertical"] .tournament-bracket-round {
+  width: auto;
+  min-width: 100%;
+}
+.tournament-bracket-board[data-orient="vertical"] .tournament-bracket-round-list {
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.tournament-bracket-board[data-orient="vertical"] .tournament-match-card {
+  flex: 0 0 auto;
+  width: min(210px, 78vw);
+}
+
+@media (max-width: 720px) {
+  .tournament-bracket-scroll {
+    max-height: min(68vh, 640px);
+  }
+  .tournament-bracket-round {
+    width: 188px;
+  }
+  .tournament-bracket-rounds {
+    gap: 22px;
+  }
+  .tournament-bracket-canvas {
+    padding: 12px 10px 14px;
+  }
 }
 .tournament-standings {
   margin: 8px 0 14px;

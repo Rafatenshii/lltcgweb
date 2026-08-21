@@ -1331,7 +1331,14 @@
       "spectate": "Espectar",
       "spectateTip": "Mira este partido como espectador (no jugadores bienvenidos)",
       "winner": "Ganador: {name}",
-      "namesLock": "Los nombres se fijan al iniciar el bracket"
+      "namesLock": "Los nombres se fijan al iniciar el bracket",
+      "orientHorizontal": "Horizontal",
+      "orientVertical": "Vertical",
+      "orientTip": "Cambiar diseño del bracket",
+      "sideWinners": "Cuadro de ganadores",
+      "sideLosers": "Cuadro de perdedores",
+      "sideGrandFinal": "Gran final",
+      "sideSwiss": "Rondas suizas"
     },
     "formatCaption": {
       "swiss": "Rondas suizas",

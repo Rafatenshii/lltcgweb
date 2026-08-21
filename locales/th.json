@@ -1332,7 +1332,14 @@
       "spectate": "ชม",
       "spectateTip": "ชมแมตช์นี้ในฐานะผู้ชม (ผู้ที่ไม่แข่งก็ได้)",
       "winner": "ผู้ชนะ: {name}",
-      "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม"
+      "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม",
+      "orientHorizontal": "แนวนอน",
+      "orientVertical": "แนวตั้ง",
+      "orientTip": "สลับรูปแบบแบร็คเก็ต",
+      "sideWinners": "สายผู้ชนะ",
+      "sideLosers": "สายผู้แพ้",
+      "sideGrandFinal": "รอบชิงชนะเลิศ",
+      "sideSwiss": "รอบสวิส"
     },
     "formatCaption": {
       "swiss": "รอบสวิส",

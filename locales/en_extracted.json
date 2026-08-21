@@ -1298,7 +1298,14 @@
       "spectate": "Spectate",
       "spectateTip": "Watch this match as a spectator (non-players welcome)",
       "winner": "Winner: {name}",
-      "namesLock": "Names lock in at bracket start"
+      "namesLock": "Names lock in at bracket start",
+      "orientHorizontal": "Horizontal",
+      "orientVertical": "Vertical",
+      "orientTip": "Switch bracket layout",
+      "sideWinners": "Winners bracket",
+      "sideLosers": "Losers bracket",
+      "sideGrandFinal": "Grand Final",
+      "sideSwiss": "Swiss rounds"
     },
     "formatCaption": {
       "swiss": "Swiss rounds",

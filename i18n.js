@@ -1312,7 +1312,14 @@
         "spectate": "Spectate",
         "spectateTip": "Watch this match as a spectator (non-players welcome)",
         "winner": "Winner: {name}",
-        "namesLock": "Names lock in at bracket start"
+        "namesLock": "Names lock in at bracket start",
+        "orientHorizontal": "Horizontal",
+        "orientVertical": "Vertical",
+        "orientTip": "Switch bracket layout",
+        "sideWinners": "Winners bracket",
+        "sideLosers": "Losers bracket",
+        "sideGrandFinal": "Grand Final",
+        "sideSwiss": "Swiss rounds"
       },
       "formatCaption": {
         "swiss": "Swiss rounds",
@@ -2939,7 +2946,14 @@
         "spectate": "観戦",
         "spectateTip": "観戦者としてこの試合を見る（非参加者もOK）",
         "winner": "勝者: {name}",
-        "namesLock": "名前はブラケット開始時に確定"
+        "namesLock": "名前はブラケット開始時に確定",
+        "orientHorizontal": "横向き",
+        "orientVertical": "縦向き",
+        "orientTip": "ブラケット表示を切り替え",
+        "sideWinners": "勝者ブラケット",
+        "sideLosers": "敗者ブラケット",
+        "sideGrandFinal": "グランドファイナル",
+        "sideSwiss": "スイスラウンド"
       },
       "formatCaption": {
         "swiss": "スイスラウンド",
@@ -4387,7 +4401,14 @@
         "spectate": "Espectar",
         "spectateTip": "Mira este partido como espectador (no jugadores bienvenidos)",
         "winner": "Ganador: {name}",
-        "namesLock": "Los nombres se fijan al iniciar el bracket"
+        "namesLock": "Los nombres se fijan al iniciar el bracket",
+        "orientHorizontal": "Horizontal",
+        "orientVertical": "Vertical",
+        "orientTip": "Cambiar diseño del bracket",
+        "sideWinners": "Cuadro de ganadores",
+        "sideLosers": "Cuadro de perdedores",
+        "sideGrandFinal": "Gran final",
+        "sideSwiss": "Rondas suizas"
       },
       "formatCaption": {
         "swiss": "Rondas suizas",
@@ -5859,7 +5880,14 @@
         "spectate": "관전",
         "spectateTip": "관전자로 이 경기를 봅니다 (비참가자 환영)",
         "winner": "승자: {name}",
-        "namesLock": "이름은 브래킷 시작 시 확정"
+        "namesLock": "이름은 브래킷 시작 시 확정",
+        "orientHorizontal": "가로",
+        "orientVertical": "세로",
+        "orientTip": "브래킷 레이아웃 전환",
+        "sideWinners": "승자 브래킷",
+        "sideLosers": "패자 브래킷",
+        "sideGrandFinal": "그랜드 파이널",
+        "sideSwiss": "스위스 라운드"
       },
       "formatCaption": {
         "swiss": "스위스 라운드",
@@ -7332,7 +7360,14 @@
         "spectate": "观战",
         "spectateTip": "以观众身份观看本局（非参赛者也可）",
         "winner": "胜者：{name}",
-        "namesLock": "名字在对阵开始时锁定"
+        "namesLock": "名字在对阵开始时锁定",
+        "orientHorizontal": "横向",
+        "orientVertical": "纵向",
+        "orientTip": "切换对阵表方向",
+        "sideWinners": "胜者组",
+        "sideLosers": "败者组",
+        "sideGrandFinal": "总决赛",
+        "sideSwiss": "瑞士轮"
       },
       "formatCaption": {
         "swiss": "瑞士轮",
@@ -8781,7 +8816,14 @@
         "spectate": "ชม",
         "spectateTip": "ชมแมตช์นี้ในฐานะผู้ชม (ผู้ที่ไม่แข่งก็ได้)",
         "winner": "ผู้ชนะ: {name}",
-        "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม"
+        "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม",
+        "orientHorizontal": "แนวนอน",
+        "orientVertical": "แนวตั้ง",
+        "orientTip": "สลับรูปแบบแบร็คเก็ต",
+        "sideWinners": "สายผู้ชนะ",
+        "sideLosers": "สายผู้แพ้",
+        "sideGrandFinal": "รอบชิงชนะเลิศ",
+        "sideSwiss": "รอบสวิส"
       },
       "formatCaption": {
         "swiss": "รอบสวิส",

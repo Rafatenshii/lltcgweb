@@ -1355,7 +1355,14 @@
       "spectate": "관전",
       "spectateTip": "관전자로 이 경기를 봅니다 (비참가자 환영)",
       "winner": "승자: {name}",
-      "namesLock": "이름은 브래킷 시작 시 확정"
+      "namesLock": "이름은 브래킷 시작 시 확정",
+      "orientHorizontal": "가로",
+      "orientVertical": "세로",
+      "orientTip": "브래킷 레이아웃 전환",
+      "sideWinners": "승자 브래킷",
+      "sideLosers": "패자 브래킷",
+      "sideGrandFinal": "그랜드 파이널",
+      "sideSwiss": "스위스 라운드"
     },
     "formatCaption": {
       "swiss": "스위스 라운드",
