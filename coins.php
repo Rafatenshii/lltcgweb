@@ -36,13 +36,20 @@ function tcgAddCoins(string $discordId, int $amount): int {
     return tcgGetCoins($discordId);
 }
 
+/**
+ * Deduct Coins. Safe to call inside an already-open PDO transaction
+ * (tournament deposit/register); otherwise opens its own short transaction.
+ */
 function tcgDeductCoins(string $discordId, int $amount): int {
     if ($amount <= 0) {
         return tcgGetCoins($discordId);
     }
-    return tcgDbRetry(function () use ($discordId, $amount) {
+    $run = static function () use ($discordId, $amount): int {
         $db = tcgDb();
-        $db->beginTransaction();
+        $ownTx = !$db->inTransaction();
+        if ($ownTx) {
+            $db->beginTransaction();
+        }
         try {
             $stmt = $db->prepare('SELECT coins FROM tcg_users WHERE discord_id = ?');
             $stmt->execute([$discordId]);
@@ -52,15 +59,23 @@ function tcgDeductCoins(string $discordId, int $amount): int {
             }
             $db->prepare('UPDATE tcg_users SET coins = coins - ?, updated_at = ? WHERE discord_id = ?')
                 ->execute([$amount, time(), $discordId]);
-            $db->commit();
+            if ($ownTx) {
+                $db->commit();
+            }
         } catch (Throwable $e) {
-            if ($db->inTransaction()) {
+            if ($ownTx && $db->inTransaction()) {
                 $db->rollBack();
             }
             throw $e;
         }
         return tcgGetCoins($discordId);
-    });
+    };
+
+    // Retry only when we own the transaction — outer tournament txs must not retry mid-flight.
+    if (tcgDb()->inTransaction()) {
+        return $run();
+    }
+    return tcgDbRetry($run);
 }
 
 function tcgCoinsNaturalFinish(array $state): bool {

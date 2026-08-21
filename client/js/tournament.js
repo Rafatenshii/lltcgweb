@@ -542,7 +542,10 @@
         const raw = global.prompt('Coins to deposit into prize vault:', '1000');
         const amount = Number(raw);
         if (!amount || amount <= 0) return;
-        await global.accountPost('tournament_deposit_prize', { tournament_id: tid, amount: amount });
+        const dep = await global.accountPost('tournament_deposit_prize', { tournament_id: tid, amount: amount });
+        if (dep && typeof global.syncCoinsFromProfile === 'function') {
+          global.syncCoinsFromProfile(dep);
+        }
       } else if (act === 'cancel') {
         if (!global.confirm('Cancel tournament and refund entrants?')) return;
         await global.accountPost('tournament_cancel', { tournament_id: tid });
