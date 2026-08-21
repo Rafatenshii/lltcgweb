@@ -955,20 +955,35 @@
     const actions = el('tournament-register-actions');
     const lead = el('tournament-register-lead');
     const decks = (opts && opts.decks) || [];
+    const isFree = !!(opts && opts.free);
     if (lead) {
-      lead.textContent = decks.length
-        ? 'Pick a legal deck to lock in for this event.'
-        : 'No eligible deck yet — build one in Deck Builder, then come back.';
+      if (isFree) {
+        lead.textContent = decks.length
+          ? 'Pick a Deck Experiment preset, a saved account deck, or enter an experiment password.'
+          : 'No saved Free decks yet — open Deck Experiment, save a preset (or use a share password), then come back.';
+      } else {
+        lead.textContent = decks.length
+          ? 'Pick a legal deck to lock in for this event.'
+          : 'No eligible deck yet — build one in Deck Builder, then come back.';
+      }
     }
     if (root) {
+      let html = '';
       if (!decks.length) {
-        root.innerHTML = '<p class="tournament-muted">No eligible decks for this game mode.</p>';
+        html += '<p class="tournament-muted">'
+          + (isFree
+            ? 'No experiment presets or owned account decks found.'
+            : 'No eligible decks for this game mode.')
+          + '</p>';
       } else {
-        root.innerHTML = decks.map((d, i) => {
+        html += decks.map((d, i) => {
           const title = escapeHtml(d.name || d.label || 'Deck');
-          const meta = d.type === 'starter'
-            ? 'Starter · ' + escapeHtml(d.label || d.starter || '')
-            : 'Preset slot ' + (d.slot || '?') + (d.equipped ? ' · equipped' : '');
+          let meta = 'Preset slot ' + (d.slot || '?') + (d.equipped ? ' · equipped' : '');
+          if (d.type === 'starter') {
+            meta = 'Starter · ' + escapeHtml(d.label || d.starter || '');
+          } else if (d.type === 'experiment_preset') {
+            meta = 'Deck Experiment · slot ' + (d.slot || '?');
+          }
           return (
             '<button type="button" class="tournament-deck-pick" data-idx="' + i + '">'
             + '<div class="tournament-deck-pick-title">' + title + '</div>'
@@ -976,18 +991,45 @@
             + '</button>'
           );
         }).join('');
-        root.querySelectorAll('[data-idx]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const d = decks[Number(btn.getAttribute('data-idx'))];
-            if (d) void confirmRegisterWithDeck(d);
-          });
+      }
+      if (isFree) {
+        html += '<div class="tournament-register-password">'
+          + '<label>Experiment password'
+          + '<input type="text" id="tournament-experiment-pwd" maxlength="16" autocomplete="off" placeholder="Shared Deck Experiment code">'
+          + '</label>'
+          + '<button type="button" class="btn-grad" id="btn-tournament-register-pwd">Register with password</button>'
+          + '</div>';
+      }
+      root.innerHTML = html;
+      root.querySelectorAll('[data-idx]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const d = decks[Number(btn.getAttribute('data-idx'))];
+          if (d) void confirmRegisterWithDeck(d);
+        });
+      });
+      const pwdBtn = el('btn-tournament-register-pwd');
+      if (pwdBtn) {
+        pwdBtn.addEventListener('click', () => {
+          const inp = el('tournament-experiment-pwd');
+          const pw = (inp && inp.value) ? String(inp.value).trim() : '';
+          if (!pw) {
+            setErr('Enter an experiment password');
+            return;
+          }
+          void confirmRegisterWithDeck({ type: 'experiment_password', password: pw });
         });
       }
     }
     if (actions) {
-      actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-deck">Open Deck Builder</button>';
-      const go = el('btn-tournament-goto-deck');
-      if (go) go.addEventListener('click', openDeckBuilderFromTournament);
+      if (isFree) {
+        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-experiment">Open Deck Experiment</button>';
+        const go = el('btn-tournament-goto-experiment');
+        if (go) go.addEventListener('click', openDeckExperimentFromTournament);
+      } else {
+        actions.innerHTML = '<button type="button" class="btn-out" id="btn-tournament-goto-deck">Open Deck Builder</button>';
+        const go = el('btn-tournament-goto-deck');
+        if (go) go.addEventListener('click', openDeckBuilderFromTournament);
+      }
     }
   }
 
@@ -997,6 +1039,8 @@
     setErr('');
     const body = { tournament_id: tid };
     if (deck.type === 'starter') body.starter = deck.starter;
+    else if (deck.type === 'experiment_preset') body.experiment_slot = deck.slot;
+    else if (deck.type === 'experiment_password') body.experiment_password = deck.password;
     else if (deck.type === 'preset') body.deck_slot = deck.slot;
     try {
       await global.accountPost('tournament_register', body);
@@ -1016,6 +1060,18 @@
       return;
     }
     if (typeof global.showScr === 'function') global.showScr('deck');
+  }
+
+  function openDeckExperimentFromTournament() {
+    state.open = false;
+    stopTickLoop();
+    setSky(false);
+    if (global.A) global.A.deckBuilderReturn = 'tournament';
+    if (typeof global.openDeckExperiment === 'function') {
+      global.openDeckExperiment({ returnTo: 'tournament' });
+      return;
+    }
+    openDeckBuilderFromTournament();
   }
 
   /** Extra deck rules — labels + short help (create form + detail). */
@@ -1042,7 +1098,7 @@
   /** Rules templates that apply for a given game mode (mirrors server). */
   function rulesTemplatesForMode(mode) {
     const m = String(mode || 'standard').toLowerCase();
-    if (m === 'standard') return ['standard', 'pauper', 'highlander'];
+    if (m === 'standard' || m === 'free') return ['standard', 'pauper', 'highlander'];
     return ['standard'];
   }
 

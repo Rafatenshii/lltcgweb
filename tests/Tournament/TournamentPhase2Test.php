@@ -58,11 +58,18 @@ final class TournamentPhase2Test extends TestCase
             ['standard', 'pauper', 'highlander'],
             tcgTournamentRulesTemplatesForMode('standard')
         );
+        $this->assertSame(
+            ['standard', 'pauper', 'highlander'],
+            tcgTournamentRulesTemplatesForMode('free')
+        );
         $this->assertSame(['standard'], tcgTournamentRulesTemplatesForMode('starters'));
         $this->assertSame(['standard'], tcgTournamentRulesTemplatesForMode('randomized'));
 
         $n = tcgTournamentNormalizeSettings(['rules_template' => 'pauper'], 'starters');
         $this->assertSame('standard', $n['rules_template']);
+
+        $free = tcgTournamentNormalizeSettings(['rules_template' => 'highlander'], 'free');
+        $this->assertSame('highlander', $free['rules_template']);
 
         $legacy = tcgTournamentNormalizeSettings(['rules_template' => 'starters_only'], 'standard');
         $this->assertSame('standard', $legacy['rules_template']);

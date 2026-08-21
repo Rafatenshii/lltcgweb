@@ -93,6 +93,10 @@ function tcgApiTournamentRegister(array $body): array {
     $choice = null;
     if (!empty($body['starter'])) {
         $choice = ['starter' => trim((string)$body['starter'])];
+    } elseif (isset($body['experiment_slot']) && (int)$body['experiment_slot'] > 0) {
+        $choice = ['experiment_slot' => (int)$body['experiment_slot']];
+    } elseif (trim((string)($body['experiment_password'] ?? '')) !== '') {
+        $choice = ['experiment_password' => trim((string)$body['experiment_password'])];
     } elseif (isset($body['deck_slot']) && (int)$body['deck_slot'] > 0) {
         $choice = ['slot' => (int)$body['deck_slot']];
     }

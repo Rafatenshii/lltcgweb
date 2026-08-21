@@ -554,3 +554,17 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   width: auto;
   padding: 8px 14px;
 }
+.tournament-register-password {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  max-width: 28rem;
+}
+.tournament-register-password label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.92rem;
+}
+.tournament-register-password input {
+  padding: 8px 10px;
+}

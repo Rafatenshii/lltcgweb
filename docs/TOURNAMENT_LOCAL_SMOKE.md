@@ -51,3 +51,4 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, P
 - Double elim **(Winners/Losers)** is a classic WB/LB tree with grand final + bracket reset if the LB champ wins GF1.
 - Swiss uses fixed round count from field size.
 - Account SQLite tracks tournament history per user (`tcg_tournament_user_stats` / `tcg_tournament_h2h`): match W–L, H2H, coins earned from payouts, coins contributed (entry + host deposit, minus refunds). No profile UI yet.
+- **Free** game mode is allowed: register with Deck Experiment presets, share passwords, or owned account decks (ownership not required for experiment decks).

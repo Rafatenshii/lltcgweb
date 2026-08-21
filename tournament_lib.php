@@ -107,7 +107,7 @@ function tcgTournamentEncodeSettings(?array $settings): string {
  */
 function tcgTournamentRulesTemplatesForMode(string $gameMode): array {
     $gameMode = tcgNormalizeGameMode($gameMode);
-    if ($gameMode === TCG_GAME_MODE_STANDARD) {
+    if ($gameMode === TCG_GAME_MODE_STANDARD || $gameMode === TCG_GAME_MODE_FREE) {
         return ['standard', 'pauper', 'highlander'];
     }
     return ['standard'];
@@ -403,7 +403,7 @@ function tcgTournamentLedgerWrite(
 }
 
 /**
- * @param array{slot?:int,starter?:string}|null $choice
+ * @param array{slot?:int,starter?:string,experiment_slot?:int,experiment_password?:string}|null $choice
  * @return array{name:string,main_nos:list<string>,energy_nos:list<string>,sleeve_id:string,playmat_id:string,playmat_brightness:float,source:string,starter_key:string}
  */
 function tcgTournamentDeckSnapshotForUser(string $discordId, string $gameMode, ?array $choice = null): array {
@@ -428,6 +428,84 @@ function tcgTournamentDeckSnapshotForUser(string $discordId, string $gameMode, ?
             'source' => 'random',
             'starter_key' => '',
         ];
+    }
+
+    if (tcgIsFreeGameMode($gameMode)) {
+        require_once __DIR__ . '/experiment_decks.php';
+        $cards = tcgLoadCardsData();
+        $expSlot = isset($choice['experiment_slot']) ? (int)$choice['experiment_slot'] : 0;
+        $expPw = normalizeExperimentPassword((string)($choice['experiment_password'] ?? ''));
+        $acctSlot = isset($choice['slot']) ? (int)$choice['slot'] : 0;
+
+        if ($expPw !== '') {
+            $resolved = resolveExperimentDeckFromPassword($expPw, $cards);
+            return [
+                'name' => (string)($resolved['deck_label'] ?? 'Experiment Deck'),
+                'main_nos' => array_values(array_map('strval', $resolved['main_nos'] ?? [])),
+                'energy_nos' => array_values(array_map('strval', $resolved['energy_nos'] ?? [])),
+                'sleeve_id' => tcgNormalizeSleeveId($resolved['sleeve_id'] ?? ''),
+                'playmat_id' => '',
+                'playmat_brightness' => 1.0,
+                'source' => 'experiment',
+                'starter_key' => '',
+            ];
+        }
+        if ($expSlot >= 1) {
+            $db = tcgDb();
+            $stmt = $db->prepare(
+                'SELECT name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness
+                 FROM tcg_experiment_presets WHERE discord_id = ? AND slot = ?'
+            );
+            $stmt->execute([$discordId, $expSlot]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                throw new Exception('Experiment deck not found', 404);
+            }
+            $main = json_decode((string)($row['main_deck'] ?? '[]'), true) ?: [];
+            $energy = json_decode((string)($row['energy_deck'] ?? '[]'), true) ?: [];
+            $validated = validateExperimentDeckPayload($main, $energy, $cards);
+            return [
+                'name' => normalizeExperimentDeckName((string)($row['name'] ?? ('Experiment ' . $expSlot))),
+                'main_nos' => $validated['main'],
+                'energy_nos' => $validated['energy'],
+                'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+                'playmat_id' => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+                'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
+                'source' => 'experiment_preset',
+                'starter_key' => '',
+            ];
+        }
+        if ($acctSlot > 0) {
+            $db = tcgDb();
+            $stmt = $db->prepare(
+                'SELECT name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness
+                 FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?'
+            );
+            $stmt->execute([$discordId, $acctSlot]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                throw new Exception('Deck not found', 404);
+            }
+            $main = array_values(array_map('strval', json_decode((string)($row['main_deck'] ?? '[]'), true) ?: []));
+            $energy = array_values(array_map('strval', json_decode((string)($row['energy_deck'] ?? '[]'), true) ?: []));
+            $cardMap = tcgBuildCardMap($cards);
+            $owned = tcgGetCollectionMap($discordId);
+            $v = tcgValidateDeckLists($main, $energy, $cardMap, $owned);
+            if (!$v['valid']) {
+                throw new Exception('Equipped deck is not legal: ' . implode('; ', $v['errors'] ?? ['invalid']), 400);
+            }
+            return [
+                'name' => tcgNormalizeDeckPresetName($row['name'] ?? 'Tournament Deck'),
+                'main_nos' => $main,
+                'energy_nos' => $energy,
+                'sleeve_id' => tcgNormalizeSleeveId($row['sleeve_id'] ?? ''),
+                'playmat_id' => tcgNormalizePlaymatId($row['playmat_id'] ?? ''),
+                'playmat_brightness' => tcgNormalizePlaymatBrightness($row['playmat_brightness'] ?? 1.0),
+                'source' => 'preset',
+                'starter_key' => '',
+            ];
+        }
+        throw new Exception('Free tournaments need a Deck Experiment deck (preset or password) or a saved account deck', 400);
     }
 
     if (is_array($choice)) {
@@ -508,6 +586,7 @@ function tcgTournamentEligibleDecksForUser(string $discordId, string $gameMode):
             'success' => true,
             'game_mode' => $gameMode,
             'randomized' => true,
+            'free' => false,
             'decks' => [],
             'needs_deck_builder' => false,
         ];
@@ -516,6 +595,58 @@ function tcgTournamentEligibleDecksForUser(string $discordId, string $gameMode):
     $decks = [];
     $cards = tcgLoadCardsData();
     $cardMap = tcgBuildCardMap($cards);
+
+    if (tcgIsFreeGameMode($gameMode)) {
+        require_once __DIR__ . '/experiment_decks.php';
+        $stmt = tcgDb()->prepare(
+            'SELECT slot, name, main_deck, energy_deck FROM tcg_experiment_presets
+             WHERE discord_id = ? ORDER BY slot ASC'
+        );
+        $stmt->execute([$discordId]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $main = json_decode($row['main_deck'] ?? '[]', true) ?: [];
+            $energy = json_decode($row['energy_deck'] ?? '[]', true) ?: [];
+            try {
+                validateExperimentDeckPayload($main, $energy, $cards);
+            } catch (Throwable $e) {
+                continue;
+            }
+            $decks[] = [
+                'type' => 'experiment_preset',
+                'slot' => (int)$row['slot'],
+                'name' => normalizeExperimentDeckName((string)($row['name'] ?? ('Experiment ' . $row['slot']))),
+            ];
+        }
+        $owned = tcgGetCollectionMap($discordId);
+        $stmt = tcgDb()->prepare(
+            'SELECT slot, name, main_deck, energy_deck, equipped FROM tcg_deck_presets
+             WHERE discord_id = ? ORDER BY slot ASC'
+        );
+        $stmt->execute([$discordId]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $main = json_decode($row['main_deck'] ?? '[]', true) ?: [];
+            $energy = json_decode($row['energy_deck'] ?? '[]', true) ?: [];
+            $v = tcgValidateDeckLists($main, $energy, $cardMap, $owned);
+            if (!$v['valid']) {
+                continue;
+            }
+            $decks[] = [
+                'type' => 'preset',
+                'slot' => (int)$row['slot'],
+                'name' => tcgNormalizeDeckPresetName($row['name'] ?? 'Deck'),
+                'equipped' => (int)($row['equipped'] ?? 0) === 1,
+            ];
+        }
+        return [
+            'success' => true,
+            'game_mode' => $gameMode,
+            'randomized' => false,
+            'free' => true,
+            'decks' => $decks,
+            'needs_deck_builder' => count($decks) === 0,
+            'allows_experiment_password' => true,
+        ];
+    }
 
     if ($gameMode === TCG_GAME_MODE_STARTERS || $gameMode === 'starters') {
         foreach (tcgOwnedStarterKeys($discordId) as $key) {
@@ -571,6 +702,7 @@ function tcgTournamentEligibleDecksForUser(string $discordId, string $gameMode):
         'success' => true,
         'game_mode' => $gameMode,
         'randomized' => false,
+        'free' => false,
         'decks' => $decks,
         'needs_deck_builder' => count($decks) === 0,
     ];
