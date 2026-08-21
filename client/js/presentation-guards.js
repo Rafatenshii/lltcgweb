@@ -37,6 +37,8 @@
 
   /** Default ms before Main "no flights" heal may clear healthy baton / log-sync. */
   const MAIN_UNSTICK_HYSTERESIS_MS = 1800;
+  /** Faster heal when flights finished but hand still masked by _animHideIids (baton/play). */
+  const MAIN_HIDE_IID_UNSTICK_MS = 700;
 
   function liveShowInFlight(state) {
     const stage = state?.live_show?.stage;
@@ -154,7 +156,9 @@
 
   /**
    * Poll heal that clears G.animating on Main. False during Win/Loss / live_show.
-   * Requires hysteresisMs so baton / log-sync gaps between flight clones are not aborted.
+   * Requires hysteresisMs so healthy baton / log-sync gaps between flight clones are not aborted.
+   * Baton / play hide-iids with no flights use a shorter latch so the hand does not
+   * stay stuck on the pre-play fan while the stage already shows the new member.
    */
   function mayUnstickStuckMainPresentation(state, flags, flightCount) {
     flags = flags || {};
@@ -166,7 +170,7 @@
     if (!busy) return false;
     const hysteresis = Number.isFinite(flags.hysteresisMs)
       ? flags.hysteresisMs
-      : MAIN_UNSTICK_HYSTERESIS_MS;
+      : (flags.hideIidsStuck ? MAIN_HIDE_IID_UNSTICK_MS : MAIN_UNSTICK_HYSTERESIS_MS);
     const zeroFlightMs = Number(flags.zeroFlightMs || 0);
     if (zeroFlightMs < hysteresis) return false;
     return true;
@@ -190,6 +194,12 @@
       return false;
     }
     if (flags.heartCheckHold && state?.status !== 'finished' && !isPromptlessPostCursorLiveJudge(state)) {
+      // Match-ending Success can clear live_show while Checking hearts is still up
+      // and phase has not yet flipped to finished — still allow chrome clear so polls
+      // can deliver status=finished (see spectacleBlocksPoll companion in game-sync).
+      if (!liveShowInFlight(state) && !state?.pending_prompt && !state?.pending_prompt_meta) {
+        return true;
+      }
       return false;
     }
     if (mayUnblockPollsForFinishedMatch(state)) return true;
@@ -243,6 +253,7 @@
 
   return {
     MAIN_UNSTICK_HYSTERESIS_MS,
+    MAIN_HIDE_IID_UNSTICK_MS,
     liveShowInFlight,
     isLiveWinLossPipelinePhase,
     isSettledPlayPhase,

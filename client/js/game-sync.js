@@ -173,6 +173,7 @@
     if (G._logSyncStartedAt && G._logSyncInFlight) {
       flags.zeroFlightMs = Math.max(flags.zeroFlightMs, Date.now() - G._logSyncStartedAt);
     }
+    flags.hideIidsStuck = !!(G._animHideIids && G._animHideIids.size);
     if (guards && guards.mayUnstickStuckMainPresentation(G.gameState, flags, flightCount)) {
       TCG_DEBUG.warn('poll', 'clear stuck Main presentation (no flights)', {
         phase: ph,
@@ -213,8 +214,15 @@
     }
     // live_show cursor: allow polls while spectacle chrome is up so stage advances
     // arrive. The runner itself holds polls via _liveShowRunnerActive / _livePollHold.
+    //
+    // Do NOT block when Checking hearts / Win-Loss chrome is up but live_show is
+    // already cleared — match-ending 3rd Success does that, and blocking polls
+    // there softlocks on Live Win/Loss Check until refresh (never sees finished).
     if (typeof ensureBannerPumpNotStuck === 'function') ensureBannerPumpNotStuck('poll-gate');
-    const spectacleBlocksPoll = !!G._perfSpectacleActive && !serverLiveShowInFlight;
+    const winLossChrome = !!G._perfHeartCheckHold
+      || !!(guards && guards.isLiveWinLossPipelinePhase?.(ph));
+    const spectacleBlocksPoll = !!G._perfSpectacleActive && !serverLiveShowInFlight
+      && !winLossChrome;
     const directorActiveNow = typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active;
     return !!(G.animating || spectacleBlocksPoll || G._livePollHold
       || directorActiveNow

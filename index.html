@@ -108,6 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=22">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
+<link rel="stylesheet" href="client/css/tournament.css?v=6">
 <link rel="stylesheet" href="client/css/portrait.css?v=81">
 
 </head>
@@ -2041,6 +2042,127 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
+<!-- ══ TOURNAMENT MODE (local-flagged) ══ -->
+<div id="screen-tournament" class="screen llc-menu-screen" hidden aria-hidden="true">
+  <div class="account-shell wide">
+    <div class="logo">
+      <img class="logo-img" src="tcglogo.png" alt="">
+      <div class="logo-foot">
+        <span class="logo-version">v0.1.5</span>
+        <p class="logo-tagline" data-i18n="tagline">The Unofficial Web Player</p>
+      </div>
+    </div>
+    <div class="panel account-panel tournament-panel">
+      <div class="account-screen-head">
+        <button class="btn-ghost" id="btn-tournament-back" type="button">← Hub</button>
+        <h2 id="tournament-panel-title">Tournament Mode</h2>
+      </div>
+      <p class="account-lead" id="tournament-lead">Schedule events, lock decks, check in, and run a single-elim bracket.</p>
+      <div class="tournament-tz-bar">
+        <label class="tournament-filter-label" for="tournament-timezone">Timezone
+          <span class="llc-select-wrap">
+            <select id="tournament-timezone" aria-label="Display timezone"></select>
+          </span>
+        </label>
+        <span class="tournament-tz-hint" id="tournament-tz-hint">Times shown in JST</span>
+      </div>
+      <p class="lerr" id="tournament-err"></p>
+      <div class="tournament-views">
+        <div id="tournament-view-list">
+          <div class="tournament-toolbar">
+            <button type="button" class="btn-grad" id="btn-tournament-create">Create event</button>
+            <button type="button" class="btn-out" id="btn-tournament-refresh">Refresh</button>
+            <label class="tournament-filter-label">Mode
+              <span class="llc-select-wrap">
+                <select id="tournament-filter-mode">
+                  <option value="">All</option>
+                  <option value="standard">Standard</option>
+                  <option value="starters">Starters</option>
+                  <option value="randomized">Randomized</option>
+                </select>
+              </span>
+            </label>
+          </div>
+          <div class="tournament-list" id="tournament-list"></div>
+        </div>
+        <div id="tournament-view-create" hidden>
+          <button type="button" class="btn-ghost" id="btn-tournament-create-back">← Bulletin</button>
+          <h3 class="tournament-subhead">Create tournament</h3>
+          <p class="tournament-muted" id="tournament-create-tz-note">Start time uses your selected timezone.</p>
+          <form class="tournament-form" id="tournament-create-form">
+            <label>Title <input id="tournament-create-title" required maxlength="80" placeholder="Friday Night Bracket"></label>
+            <label class="tournament-datetime-field">Start (local)
+              <div class="tournament-datetime" id="tournament-datetime">
+                <button type="button" class="tournament-datetime-trigger" id="tournament-create-start-btn" aria-haspopup="dialog" aria-expanded="false">
+                  <span id="tournament-create-start-label">Pick date &amp; time</span>
+                  <span class="tournament-datetime-icon" aria-hidden="true">📅</span>
+                </button>
+                <input type="hidden" id="tournament-create-start" required value="">
+                <div class="tournament-datetime-popover" id="tournament-datetime-popover" hidden role="dialog" aria-label="Pick start date and time">
+                  <div class="tournament-cal-head">
+                    <button type="button" class="tournament-cal-nav" id="tournament-cal-prev" aria-label="Previous month">‹</button>
+                    <div class="tournament-cal-title" id="tournament-cal-title">Month</div>
+                    <button type="button" class="tournament-cal-nav" id="tournament-cal-next" aria-label="Next month">›</button>
+                  </div>
+                  <div class="tournament-cal-dows" aria-hidden="true">
+                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                  </div>
+                  <div class="tournament-cal-grid" id="tournament-cal-grid"></div>
+                  <div class="tournament-cal-time">
+                    <label>Hour
+                      <select id="tournament-cal-hour"></select>
+                    </label>
+                    <label>Min
+                      <select id="tournament-cal-min"></select>
+                    </label>
+                  </div>
+                  <div class="tournament-cal-actions">
+                    <button type="button" class="btn-ghost" id="tournament-cal-cancel">Cancel</button>
+                    <button type="button" class="btn-grad" id="tournament-cal-apply">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </label>
+            <label>Check-in minutes
+              <select id="tournament-create-checkin">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+              </select>
+            </label>
+            <label>Min players <input id="tournament-create-min" type="number" min="2" max="32" value="2"></label>
+            <label>Max players <input id="tournament-create-max" type="number" min="2" max="32" value="8"></label>
+            <label>Entry fee (Coins) <input id="tournament-create-fee" type="number" min="0" value="0"></label>
+            <label>Game mode
+              <select id="tournament-create-mode">
+                <option value="standard">Standard</option>
+                <option value="starters">Starters</option>
+                <option value="randomized">Randomized</option>
+              </select>
+            </label>
+            <button type="submit" class="btn-grad">Schedule</button>
+          </form>
+        </div>
+        <div id="tournament-view-detail" hidden>
+          <button type="button" class="btn-ghost" id="btn-tournament-detail-back">← Bulletin</button>
+          <div id="tournament-detail-head"></div>
+          <div class="tournament-actions" id="tournament-detail-actions"></div>
+          <h4>Entrants</h4>
+          <ul class="tournament-entrants" id="tournament-entrants"></ul>
+          <h4>Bracket</h4>
+          <div class="tournament-bracket" id="tournament-bracket"></div>
+        </div>
+        <div id="tournament-view-register" hidden>
+          <button type="button" class="btn-ghost" id="btn-tournament-register-back">← Event</button>
+          <h3 class="tournament-subhead">Choose deck to lock in</h3>
+          <p class="tournament-muted" id="tournament-register-lead">This deck is locked for the tournament when you register.</p>
+          <div class="tournament-register-decks" id="tournament-register-decks"></div>
+          <div class="tournament-register-actions" id="tournament-register-actions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Daily login bonus -->
 <div id="overlay-login-bonus" class="llc-menu-screen login-bonus-overlay" aria-modal="true" aria-labelledby="login-bonus-title" aria-hidden="true">
   <div class="account-shell login-bonus-shell">
@@ -2556,8 +2678,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=17"></script>
 <script src="client/js/news.js?v=29"></script>
-<script src="client/js/runtime-flags.js?v=2"></script>
+<script src="client/js/runtime-flags.js?v=3"></script>
 <script src="client/js/api-client.js?v=35"></script>
+<script src="client/js/local-dev-auth.js?v=2"></script>
+<script src="client/js/tournament.js?v=5"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=1"></script>
@@ -2565,8 +2689,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
 <script src="client/js/discord-presence.js?v=12"></script>
-<script src="client/js/presentation-guards.js?v=6"></script>
-<script src="client/js/game-sync.js?v=58"></script>
+<script src="client/js/presentation-guards.js?v=7"></script>
+<script src="client/js/game-sync.js?v=59"></script>
 <script src="client/js/state-apply.js?v=69"></script>
 <script src="client/js/stamps.js?v=20"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
@@ -5582,7 +5706,9 @@ async function runReconnectQueue() {
           const active = res?.active;
           if (active?.room_id && active?.player_token) {
             rankedEmptyConfirmed = false;
-            const rankedOnOverflow = (active.match_api || 'overflow') !== 'hostinger';
+            const rankedOnOverflow = (active.mode === 'tournament')
+              ? false
+              : ((active.match_api || 'overflow') !== 'hostinger');
             if (await reconnectToGame({
               roomId: active.room_id,
               token: active.player_token,
@@ -5590,9 +5716,10 @@ async function runReconnectQueue() {
               isCPU: false,
               cpuToken: null,
               screen: 'game',
-              mode: 'ranked',
+              mode: active.mode || 'ranked',
               match_api: rankedOnOverflow ? 'overflow' : 'hostinger',
               // New ranked rooms are VPS Redis; legacy drain rows may still be Hostinger files.
+              // Tournament local rooms use file/Redis GameStore on the account host.
               apiOrigin: rankedOnOverflow ? 'overflow' : 'hostinger',
             }, {
               hostingerOnly: !rankedOnOverflow,
@@ -5764,6 +5891,14 @@ async function initAccountFlow() {
     try {
       await consumeResignEscape();
     } catch (e) { /* still continue into hub/auth below */ }
+  }
+  // Local Docker fake Discord login before reconnect, so stale sessions can be cleared.
+  if (typeof window.tcgEnsureLocalDevAuth === 'function') {
+    try {
+      await window.tcgEnsureLocalDevAuth();
+    } catch (localAuthErr) {
+      console.warn('local_dev_auth', localAuthErr);
+    }
   }
   // Reconnect in parallel with /me — never block rejoin on a slow Discord profile fetch.
   const resumePromise = resignEscape ? Promise.resolve(false) : resumeActiveGameIfAny();
@@ -13858,6 +13993,46 @@ async function enterRankedMatch(st) {
   startPoll();
 }
 
+/** Local tournament seat — GameStore on account host (not VPS overflow). */
+async function enterTournamentMatch(st) {
+  if (!st?.room_id || !st?.player_token) {
+    toast('No tournament match ready', 2800);
+    return;
+  }
+  try { stopPoll(); } catch (e) { /* ignore */ }
+  G.roomId = st.room_id;
+  G.token = st.player_token;
+  G.playerId = st.player_id || 'p1';
+  G.isCPU = false;
+  if (typeof tcgLockApiOrigin === 'function') {
+    tcgLockApiOrigin('hostinger');
+  }
+  try { saveActiveGameSession(); } catch (e) { /* ignore */ }
+  setSpectateHiddenHands(true);
+  showScr('game');
+  startPoll();
+}
+window.tcgEnterTournamentMatch = enterTournamentMatch;
+
+async function spectateTournamentRoom(roomId) {
+  const id = String(roomId || '').toUpperCase();
+  if (!id) return;
+  try {
+    const r = await apiPost('spectate_join', { room_id: id });
+    G.isSpectator = true;
+    G.roomId = r.room_id || id;
+    G.token = r.spectator_token;
+    G.playerId = null;
+    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
+    setSpectateHiddenHands(true);
+    showScr('game');
+    startPoll();
+  } catch (e) {
+    toast(e.message || String(e), 3200);
+  }
+}
+window.tcgSpectateTournamentRoom = spectateTournamentRoom;
+
 function startRankedPoll() {
   A.rankedPollScheduled = true;
   scheduleRankedStatusPoll();
@@ -16353,6 +16528,10 @@ async function bootApp() {
     if (A.deckSealBatchMode) exitDeckSealBatchMode({ render: false });
     const ret = A.deckBuilderReturn;
     A.deckBuilderReturn = null;
+    if (ret === 'tournament' && window.TCGTournamentUI?.open) {
+      window.TCGTournamentUI.open();
+      return;
+    }
     if (A.deckBuilderMode === 'experiment') {
       if (ret === 'lobby') openUnrankedLobby();
       else if (ret === 'hub' || (ret !== 'auth' && isSignedInAccount() && A.profile)) {
@@ -29268,11 +29447,23 @@ function shouldPlaySuccessLiveTriumph(prev, s) {
 async function playSuccessLiveTriumphCelebration(s, myId) {
   const winner = s.winner;
   const prefix = winner === myId ? 'my' : 'opp';
-  const zone = el(`${prefix}-pips`);
-  const stack = zone?.querySelector('.success-live-stack');
-  if (!zone || !stack) return;
-  const chips = [...stack.querySelectorAll('.slive-chip')];
-  if (chips.length !== 3) return;
+  // Ensure finished board (incl. 3 Success Live chips) is painted before we look for chips.
+  if (typeof renderGame === 'function') {
+    G.gameState = s;
+    renderGame(s, { skipLog: true });
+  }
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  let zone = el(`${prefix}-pips`);
+  let stack = zone?.querySelector('.success-live-stack');
+  let chips = stack ? [...stack.querySelectorAll('.slive-chip')] : [];
+  // Brief retry — first paint can lag one frame behind status=finished apply.
+  if (chips.length !== 3) {
+    await sleep(50);
+    zone = el(`${prefix}-pips`);
+    stack = zone?.querySelector('.success-live-stack');
+    chips = stack ? [...stack.querySelectorAll('.slive-chip')] : [];
+  }
+  if (!zone || !stack || chips.length !== 3) return;
 
   layoutSuccessLiveStack(stack);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -31989,6 +32180,9 @@ function showScr(n){
   }
   if (n !== 'lobby') stopCasualLobbyStatsPoll();
   if (n !== 'ranked') stopRankedLobbyStatsPoll();
+  if (n !== 'tournament' && window.TCGTournamentUI?.closeQuiet) {
+    try { window.TCGTournamentUI.closeQuiet(); } catch (e) { /* ignore */ }
+  }
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active');
     s.hidden = true;
