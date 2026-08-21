@@ -21315,10 +21315,17 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
   const handBefore = collectHandSlotRects();
   G._animHideIids = animHideIidsForMoves(fromState, moves);
   prepareWrPileAnimPending(fromState, final, moves);
+  // Apply hide classes before concurrent flights so Success/WR dests + sources stay blank.
+  moves.forEach(m => { if (m.iid) setCardArriving(m.iid, true); });
   try {
     await playCardMoveAnimations(fromState, final, prevRects, myId, handBefore, collectHandSlotRects(), moves);
   } finally {
-    clearWrPileAnimPending();
+    if (typeof clearLiveStorageExitDestPending === 'function') {
+      clearLiveStorageExitDestPending();
+    } else {
+      clearWrPileAnimPending();
+      if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending();
+    }
     G._animHideIids = null;
     clearHandArrivingFlags();
   }
@@ -21362,11 +21369,40 @@ async function playDeferredLiveStorageOutcomes(fromState, final, myId, opts = {}
         G._liveStorageOutcomesPlayedLiveKey = null;
         throw e;
       }
-    } else {
+    } else if (!liveStorageStillNeedsOutcomeExits(board || G.gameState, final)) {
+      // Truly nothing left to fly (or already handed off) — seal the key.
       G._liveStorageOutcomesPlayedLiveKey = liveKey;
     }
+    // If candidates remain but moves were filtered (race), leave the key unset so
+    // a later post-judge pass can still own the flights instead of snapping away.
   }
   return ran;
+}
+
+/** Held live storage still has cards that belong in final WR/Success. */
+function liveStorageStillNeedsOutcomeExits(board, final) {
+  if (!board || !final) return false;
+  if (typeof collectLiveBluffDiscards === 'function'
+      && collectLiveBluffDiscards(board, final).length) return true;
+  if (postLiveRevealOutcomeMoves(board, final).length) return true;
+  const roundId = liveMovementRoundId(final, board);
+  for (const pid of ['p1', 'p2']) {
+    for (const c of (board.players?.[pid]?.live_zone || [])) {
+      const iid = c?.instance_id;
+      if (!iid) continue;
+      // Already reserved/handed off — do not block sealing the outcomes key.
+      if (liveStorageDepartureLatched(iid, roundId)) continue;
+      const stillLive = (final.players?.[pid]?.live_zone || [])
+        .some(x => x?.instance_id === iid);
+      if (stillLive) continue;
+      const inWr = (final.players?.[pid]?.waiting_room || [])
+        .some(x => x?.instance_id === iid);
+      const inSucc = (final.players?.[pid]?.success_lives || [])
+        .some(x => x?.instance_id === iid);
+      if (inWr || inSucc) return true;
+    }
+  }
+  return false;
 }
 
 /** WR flights deferred until live storage clears (e.g. after skill prompts). */
@@ -21765,6 +21801,12 @@ function commitLiveRoundAfterOutcomes(fallback) {
   // clearing here allowed a newer-seq paint to invent ghost exit flights.
   // Prefer the post-outcome board (empty live_zone). A deferred hold from mid-spectacle
   // still has storage cards and would briefly re-paint them after flights finish.
+  if (typeof clearLiveStorageExitDestPending === 'function') {
+    clearLiveStorageExitDestPending();
+  } else {
+    if (typeof clearWrPileAnimPending === 'function') clearWrPileAnimPending();
+    if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending();
+  }
   if (fallback) G._deferredLiveState = fallback;
   commitDeferredLiveState(fallback || G.gameState);
 }
@@ -22595,7 +22637,19 @@ async function executeCardMoveAnimation(m, opts) {
     }
   }
 
-  if (!deferSourceHide) setCardArriving(m.iid, true);
+  // Live→WR/Success: latch hide iids immediately so mid-flight paints stay empty.
+  // With delayMs>0 (staggered bluffs), wait until flyCard's timeout to blank the source
+  // so later cards stay visible until their turn. delayMs===0: hide as soon as fr is known.
+  if (hideLiveSource || isLiveStorageExit) {
+    if (!G._animHideIids) G._animHideIids = new Set();
+    if (m.iid) G._animHideIids.add(m.iid);
+    if (!(delayMs > 0)) setCardArriving(m.iid, true);
+  } else if (!deferSourceHide) {
+    setCardArriving(m.iid, true);
+  }
+  const deferHideForFly = (hideLiveSource || isLiveStorageExit)
+    ? (delayMs > 0)
+    : deferSourceHide;
   let handoffPromise = null;
   try {
     const trEl = keepHiddenEffective ? null : (cardEl && domCardAtMoveLoc(cardEl, m.to, myId) ? cardEl : null);
@@ -22618,6 +22672,9 @@ async function executeCardMoveAnimation(m, opts) {
       handoffPromise = (async () => {
         if (m.to?.zone === 'waiting_room') {
           await wrPileRevealPendingMove(m.to.pid, m.iid, renderState || stateAfter, myId);
+        } else if (m.to?.zone === 'success'
+            && typeof successPileRevealPendingMove === 'function') {
+          successPileRevealPendingMove(m.to.pid, m.iid, renderState || stateAfter, myId);
         }
         removeLiveStorageCardFromDomIfDeparted(m.from, m.iid, myId, renderState || stateAfter);
         finishCardMoveHandoff(m.iid, handoffOpts);
@@ -22633,7 +22690,7 @@ async function executeCardMoveAnimation(m, opts) {
         myId,
         faceDown,
         preloadReveal: playerHandReveal,
-        deferSourceHide,
+        deferSourceHide: deferHideForFly,
         sourceIid: m.iid,
         sourceNode: cardEl?.closest?.('.mslot') || null,
         flightMs: opts.flightMs,
@@ -24714,6 +24771,9 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
   const morphClass = visual.morphClass;
   return new Promise(resolve => {
     setTimeout(async () => {
+      // Blank the mat source as soon as this flight's delay elapses — before image
+      // preload — so Live exits never leave a twin behind while art loads.
+      if (opts.deferSourceHide && opts.sourceIid) setCardArriving(opts.sourceIid, true);
       const layer = el('card-flight-layer');
       if (!layer || !fromRect || !toRect) {
         try { opts.onHandoff?.(); } catch (e) { TCG_DEBUG.warn('anim', 'handoff failed', e); }
@@ -24762,7 +24822,6 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
       ghost.style.transform = `translate(${fx}px, ${fy}px) translate(-50%, -50%) scale(1)${startRot}`;
       ghost.style.opacity = '1';
       layer.appendChild(ghost);
-      if (opts.deferSourceHide && opts.sourceIid) setCardArriving(opts.sourceIid, true);
       noteOppHandDepartStart({ zone: fromZone, pid: opts.fromPid }, opts.myId || G.playerId);
       const { sx: scaleX, sy: scaleY } = flightGhostScale(fw, fh, tw, th, card);
       requestAnimationFrame(() => {
@@ -32716,8 +32775,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=97"></script>
-<script src="client/js/board-render.js?v=31"></script>
+<script src="client/js/spectacle.js?v=98"></script>
+<script src="client/js/board-render.js?v=32"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

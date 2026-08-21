@@ -122,9 +122,9 @@ function renderGame(s, opts = {}) {
   renderEnergy('my-energy',  me.energy_zone||[]);
   renderEnergy('opp-energy', opp.energy_zone||[]);
 
-  // Pips
-  renderSuccessLives('my-pips',  me.success_lives||[]);
-  renderSuccessLives('opp-pips', opp.success_lives||[]);
+  // Pips (filter mid-flight Success arrivals — same contract as WR pending)
+  renderSuccessLives('my-pips',  successLivesForDisplay(me.success_lives||[]));
+  renderSuccessLives('opp-pips', successLivesForDisplay(opp.success_lives||[]));
   if (typeof tcgPortraitSyncWinCounts === 'function') {
     try { tcgPortraitSyncWinCounts(s, myId); } catch (_) { /* ignore */ }
   }
@@ -697,6 +697,10 @@ async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
   const handBefore = collectHandSlotRects();
   captureFlightArtClones(moves, myId, playback);
   prepareWrPileAnimPending(playback, final, moves);
+  // Hide sources for mid-flight mat paints (parity with playPostLiveRevealOutcomes).
+  G._animHideIids = typeof animHideIidsForMoves === 'function'
+    ? animHideIidsForMoves(playback, moves)
+    : new Set(moves.map(m => m.iid).filter(Boolean));
   G._liveWrDiscardInProgress = true;
   try {
     for (let i = 0; i < moves.length; i++) {
@@ -734,6 +738,7 @@ async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
   } finally {
     G._liveWrDiscardInProgress = false;
     clearWrPileAnimPending();
+    G._animHideIids = null;
   }
   return true;
 }
@@ -1317,27 +1322,72 @@ function waitingRoomCardsForDisplay(cards) {
   return wr.filter(c => c?.instance_id && !pending.has(c.instance_id));
 }
 
+/** Hide Success-pile chips until their Live→Success flight hands off (anti-ghost). */
+function successLivesForDisplay(cards) {
+  const list = cards || [];
+  const pending = G._successPilePendingIids;
+  if (!pending?.size) return list;
+  return list.filter(c => c?.instance_id && !pending.has(c.instance_id));
+}
+
 function noteWrPilePendingMove(iid) {
   if (!iid) return;
   if (!G._wrPilePendingIids) G._wrPilePendingIids = new Set();
   G._wrPilePendingIids.add(iid);
 }
 
+function noteSuccessPilePendingMove(iid) {
+  if (!iid) return;
+  if (!G._successPilePendingIids) G._successPilePendingIids = new Set();
+  G._successPilePendingIids.add(iid);
+}
+
+/**
+ * Latch destination hides for Live-storage exits.
+ * WR and Success pending are independent so Member→WR flights do not clear
+ * Success pending latched at outcomes hold.
+ */
 function prepareWrPileAnimPending(fromState, toState, moves) {
   const list = moves || (fromState && toState ? diffCardMoves(fromState, toState) : []);
   const wrMoves = list.filter(m => m.to?.zone === 'waiting_room');
-  if (!wrMoves.length) {
-    G._wrPilePendingIids = null;
-    return;
+  const successMoves = list.filter(m =>
+    m.to?.zone === 'success' && m.from?.zone === 'live');
+  if (wrMoves.length) {
+    const next = new Set(wrMoves.map(m => m.iid).filter(Boolean));
+    if (G._wrPilePendingIids?.size) {
+      G._wrPilePendingIids.forEach(id => next.add(id));
+    }
+    G._wrPilePendingIids = next;
+    wrMoves.forEach(m => {
+      if (m.card) ensureCardImageLoaded(m.card);
+    });
   }
-  G._wrPilePendingIids = new Set(wrMoves.map(m => m.iid));
-  wrMoves.forEach(m => {
-    if (m.card) ensureCardImageLoaded(m.card);
-  });
+  if (successMoves.length) {
+    const next = new Set(successMoves.map(m => m.iid).filter(Boolean));
+    if (G._successPilePendingIids?.size) {
+      G._successPilePendingIids.forEach(id => next.add(id));
+    }
+    G._successPilePendingIids = next;
+  }
+}
+
+/** Latch WR + Success pending from held storage → post-outcome board (before paint). */
+function prepareLiveStorageExitDestPending(fromState, toState) {
+  if (!fromState || !toState || typeof diffCardMoves !== 'function') return;
+  prepareWrPileAnimPending(fromState, toState, diffCardMoves(fromState, toState));
 }
 
 function clearWrPileAnimPending() {
   G._wrPilePendingIids = null;
+}
+
+function clearSuccessPileAnimPending() {
+  G._successPilePendingIids = null;
+}
+
+function clearLiveStorageExitDestPending() {
+  clearWrPileAnimPending();
+  clearSuccessPileAnimPending();
 }
 
 /** WR cards added in this transition without a matching flight (e.g. look-pick rest → WR). */
@@ -1357,8 +1407,11 @@ function wrCardsAddedWithoutAnimMoves(prev, next, moves) {
 
 /** Force WR pile faces to match server order (clears stale pending hides from skill resolution). */
 async function refreshWaitingRoomPiles(state, myId, opts = {}) {
-  if (opts.clearPending) clearWrPileAnimPending();
-  else (opts.releaseIids || []).forEach(id => G._wrPilePendingIids?.delete(id));
+  if (opts.clearPending) clearLiveStorageExitDestPending();
+  else (opts.releaseIids || []).forEach(id => {
+    G._wrPilePendingIids?.delete(id);
+    G._successPilePendingIids?.delete(id);
+  });
   for (const pid of ['p1', 'p2']) {
     const pileId = pid === myId ? 'my-wait-pile' : 'opp-wait-pile';
     const wr = state?.players?.[pid]?.waiting_room;
@@ -1393,6 +1446,18 @@ async function wrPileRevealPendingMove(pid, iid, state, myId) {
   const wr = state?.players?.[pid]?.waiting_room;
   const preferSrcByIdx = await preloadWrPileDisplayCards(wr);
   renderWaitingRoomPile(pileId, wr, state, myId, preferSrcByIdx);
+}
+
+/** Reveal a Success-pile chip under the fading Live→Success flight ghost. */
+function successPileRevealPendingMove(pid, iid, state, myId) {
+  if (!iid) return;
+  G._successPilePendingIids?.delete(iid);
+  const pileId = pid === myId ? 'my-pips' : 'opp-pips';
+  const lives = state?.players?.[pid]?.success_lives || [];
+  renderSuccessLives(pileId, successLivesForDisplay(lives));
+  if (typeof tcgPortraitSyncWinCounts === 'function') {
+    try { tcgPortraitSyncWinCounts(state || G.gameState, myId || G.playerId); } catch (_) { /* ignore */ }
+  }
 }
 
 /** Left-panel card info when hovering face-up Waiting Room pile art (yours or opponent). */

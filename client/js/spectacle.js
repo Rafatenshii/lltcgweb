@@ -8144,6 +8144,13 @@ function holdLiveShowStorageBeforeOutcomePaint(prior, board) {
     ensureLivePostRevealBoardSnapshot(prior);
   }
   G._liveStorageOutcomePending = true;
+  // Keep WR/Success destinations blank until post-judge flights hand off — otherwise
+  // the outcomes paint shows chips at dest while held live storage still shows sources.
+  if (typeof prepareLiveStorageExitDestPending === 'function') {
+    prepareLiveStorageExitDestPending(prior, board);
+  } else if (typeof prepareWrPileAnimPending === 'function') {
+    prepareWrPileAnimPending(prior, board);
+  }
 }
 
 /**
@@ -8157,6 +8164,9 @@ async function playLiveShowPostJudgeStorageExits(fromBoard, toBoard, myId) {
   }
   if (typeof liveStorageOutcomesAlreadyPlayed === 'function'
       && liveStorageOutcomesAlreadyPlayed(toBoard)) {
+    if (typeof commitLiveRoundAfterOutcomes === 'function') {
+      commitLiveRoundAfterOutcomes(toBoard);
+    }
     return false;
   }
   const storageBoard = G._livePostRevealBoard || fromBoard;
@@ -8164,8 +8174,11 @@ async function playLiveShowPostJudgeStorageExits(fromBoard, toBoard, myId) {
     kinds: 'all',
     skipInitialRender: true,
   });
-  if (ran || (typeof liveStorageOutcomesAlreadyPlayed === 'function'
-      && liveStorageOutcomesAlreadyPlayed(toBoard))) {
+  const sealed = typeof liveStorageOutcomesAlreadyPlayed === 'function'
+    && liveStorageOutcomesAlreadyPlayed(toBoard);
+  const stillNeeds = typeof liveStorageStillNeedsOutcomeExits === 'function'
+    && liveStorageStillNeedsOutcomeExits(G._livePostRevealBoard || storageBoard, toBoard);
+  if (ran || sealed || !stillNeeds) {
     if (typeof commitLiveRoundAfterOutcomes === 'function') {
       commitLiveRoundAfterOutcomes(toBoard);
     } else {
