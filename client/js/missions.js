@@ -22,6 +22,13 @@
     return typeof fn === 'function' ? fn(key, vars || {}) : key;
   }
 
+  function tt(key, fallback, vars) {
+    const fn = global.LLTCG_I18N && global.LLTCG_I18N.tt;
+    if (typeof fn === 'function') return fn(key, fallback, vars || {});
+    const v = t(key, vars);
+    return (v && v !== key) ? v : fallback;
+  }
+
   /** Localize dynamic play-milestone name slots for the active UI locale. */
   function localizeMissionVars(vars) {
     const src = vars && typeof vars === 'object' ? vars : {};
@@ -148,7 +155,7 @@
         + progressBit + ' · ' + missionStatusLabel(m.status);
     }
     if (m.reward_type === 'coins_and_pr_pack') {
-      const prLabel = t('loginBonus.reward.prPack') || 'PR Pack';
+      const prLabel = tt('loginBonus.reward.prPack', 'PR Pack');
       return '+' + Number(m.reward || 0).toLocaleString()
         + ' <span class="star-gem-inline">' + coinIconHtml(16) + '</span>'
         + ' · ' + prLabel

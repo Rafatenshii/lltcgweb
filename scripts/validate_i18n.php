@@ -1,8 +1,14 @@
 <?php
 /**
- * Assert STRINGS.es, STRINGS.ko, STRINGS.zh, and STRINGS.th each have every leaf key present in
- * STRINGS.en (locales/*.json source).
+ * Assert locale parity vs English, and that critical UI keys used in code exist in en.
+ *
  * Exit 0 on success; exit 1 and print missing keys on failure.
+ *
+ * Checks:
+ *  1) locales/{es,ko,zh,th}.json each contain every leaf key from locales/en_extracted.json
+ *  2) Dotted keys under critical namespaces, referenced via t()/data-i18n/titleKey in
+ *     client/js + index.html, exist in en_extracted.json (prevents raw key flash after
+ *     language edits that forget English).
  */
 declare(strict_types=1);
 
@@ -13,6 +19,23 @@ $locales = [
     'ko' => $root . '/locales/ko.json',
     'zh' => $root . '/locales/zh.json',
     'th' => $root . '/locales/th.json',
+];
+
+/** Namespaces that must live in JSON (not only runtime hydrate aliases). */
+$criticalPrefixes = [
+    'loginBonus.',
+    'splash.',
+    'win.',
+    'tournament.',
+    'missions.',
+    'news.',
+    'sleeveShop.',
+    'playmatShop.',
+    'shop.',
+    'cardList.',
+    'sticker.',
+    'booster.',
+    'spectate.',
 ];
 
 if (!is_readable($enPath)) {
@@ -42,8 +65,69 @@ function leafKeys(array $node, string $prefix = ''): array
     return $keys;
 }
 
+function lookupPath(array $node, string $key): mixed
+{
+    $cur = $node;
+    foreach (explode('.', $key) as $part) {
+        if (!is_array($cur) || !array_key_exists($part, $cur)) {
+            return null;
+        }
+        $cur = $cur[$part];
+    }
+    return is_array($cur) ? null : $cur;
+}
+
+/** @return list<string> */
+function collectUsedKeys(string $root, array $criticalPrefixes): array
+{
+    $files = [];
+    $jsDir = $root . '/client/js';
+    if (is_dir($jsDir)) {
+        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($jsDir));
+        foreach ($it as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.js')) {
+                $files[] = $file->getPathname();
+            }
+        }
+    }
+    $index = $root . '/index.html';
+    if (is_readable($index)) {
+        $files[] = $index;
+    }
+
+    $patterns = [
+        "/(?:^|[^.\\w])t\\(\\s*['\"]([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)['\"]/",
+        "/(?:^|[^.\\w])tt\\(\\s*['\"]([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)['\"]/",
+        "/data-i18n=[\"']([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)[\"']/",
+        "/data-i18n-placeholder=[\"']([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)[\"']/",
+        "/data-i18n-title=[\"']([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)[\"']/",
+        "/(?:titleKey|subtitleKey|subKey)\\s*:\\s*['\"]([a-z][a-zA-Z0-9]*(?:\\.[a-zA-Z0-9_]+)+)['\"]/",
+    ];
+
+    $used = [];
+    foreach ($files as $path) {
+        $txt = (string) file_get_contents($path);
+        foreach ($patterns as $re) {
+            if (preg_match_all($re, $txt, $m)) {
+                foreach ($m[1] as $key) {
+                    foreach ($criticalPrefixes as $prefix) {
+                        if (str_starts_with($key, $prefix)) {
+                            $used[$key] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    $keys = array_keys($used);
+    sort($keys);
+    return $keys;
+}
+
 $en = json_decode((string) file_get_contents($enPath), true, 512, JSON_THROW_ON_ERROR);
 $enKeys = leafKeys($en);
+$enKeySet = array_flip($enKeys);
 
 $hadFailure = false;
 $summary = [];
@@ -70,8 +154,24 @@ foreach ($locales as $code => $path) {
     }
 }
 
+$usedCritical = collectUsedKeys($root, $criticalPrefixes);
+$missingInEn = [];
+foreach ($usedCritical as $key) {
+    if (lookupPath($en, $key) === null) {
+        $missingInEn[] = $key;
+    }
+}
+if ($missingInEn !== []) {
+    $hadFailure = true;
+    fwrite(STDERR, "en_extracted.json missing " . count($missingInEn) . " critical key(s) used in code:\n");
+    foreach ($missingInEn as $key) {
+        fwrite(STDERR, "  - {$key}\n");
+    }
+}
+
 if ($hadFailure) {
     exit(1);
 }
 
-echo 'i18n OK: ' . count($enKeys) . ' en keys matched in ' . implode(', ', $summary) . "\n";
+echo 'i18n OK: ' . count($enKeys) . ' en keys matched in ' . implode(', ', $summary)
+    . '; ' . count($usedCritical) . " critical code keys present\n";

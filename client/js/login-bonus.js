@@ -21,6 +21,13 @@
     return typeof fn === 'function' ? fn(key, vars || {}) : key;
   }
 
+  function tt(key, fallback, vars) {
+    const fn = global.LLTCG_I18N && global.LLTCG_I18N.tt;
+    if (typeof fn === 'function') return fn(key, fallback, vars || {});
+    const v = t(key, vars);
+    return (v && v !== key) ? v : fallback;
+  }
+
   function sfxPlay(id, opts) {
     try { global.LLTCG_SFX?.play?.(id, opts); } catch (e) { /* ignore */ }
   }
@@ -51,18 +58,20 @@
   function dayLabel(day) {
     const label = day.label || day.type;
     if (day.type === 'gems') {
-      return t('loginBonus.reward.gems', { amount: day.amount }) || (day.amount + ' Gems');
+      return tt('loginBonus.reward.gems', day.amount + ' Gems', { amount: day.amount });
     }
     if (day.type === 'seals' && (label === 'seals_sr' || day.tier === 'R')) {
-      return t('loginBonus.reward.srSeal', { amount: day.amount })
-        || ((day.amount > 1 ? day.amount + ' ' : '') + 'SR Seal');
+      return tt(
+        'loginBonus.reward.srSeal',
+        (day.amount > 1 ? day.amount + ' ' : '') + 'SR Seal',
+        { amount: day.amount }
+      );
     }
     if (day.type === 'seals') {
-      return t('loginBonus.reward.nSeals', { amount: day.amount })
-        || (day.amount + ' N Seals');
+      return tt('loginBonus.reward.nSeals', day.amount + ' N Seals', { amount: day.amount });
     }
     if (day.type === 'pr_pack') {
-      return t('loginBonus.reward.prPack') || 'PR Pack';
+      return tt('loginBonus.reward.prPack', 'PR Pack');
     }
     return label;
   }
@@ -92,7 +101,7 @@
       cell.className = 'login-bonus-cell login-bonus-cell--' + (day.status || 'locked');
       cell.dataset.index = String(day.index);
       cell.innerHTML =
-        '<span class="login-bonus-day">' + t('loginBonus.day', { day: day.day }) + '</span>'
+        '<span class="login-bonus-day">' + tt('loginBonus.day', 'Day ' + day.day, { day: day.day }) + '</span>'
         + '<span class="login-bonus-icon-wrap">' + dayIcon(day) + '</span>'
         + '<span class="login-bonus-reward">' + dayLabel(day) + '</span>';
       grid.appendChild(cell);
@@ -186,19 +195,21 @@
       const r = payload.reward;
       let text = '';
       if (r.type === 'gems') {
-        text = t('loginBonus.gotGems', { amount: r.amount }) || ('Received ' + r.amount + ' Star Gems!');
+        text = tt('loginBonus.gotGems', 'Received ' + r.amount + ' Star Gem(s)!', { amount: r.amount });
       } else if (r.type === 'seals' && (r.label === 'seals_sr' || r.tier === 'R')) {
-        text = t('loginBonus.gotSrSeal', { amount: r.amount }) || ('Received ' + r.amount + ' SR Seal!');
+        text = tt('loginBonus.gotSrSeal', 'Received ' + r.amount + ' SR Seal!', { amount: r.amount });
       } else if (r.type === 'seals') {
-        text = t('loginBonus.gotNSeals', { amount: r.amount }) || ('Received ' + r.amount + ' N Seals!');
+        text = tt('loginBonus.gotNSeals', 'Received ' + r.amount + ' N Seals!', { amount: r.amount });
       } else if (r.type === 'pr_pack') {
-        text = t('loginBonus.gotPrPack') || 'Received a PR pack! Opening…';
+        text = tt('loginBonus.gotPrPack', 'Received a PR pack! Opening…');
       }
       lead.textContent = text;
       return;
     }
-    lead.textContent = t('loginBonus.lead')
-      || 'Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.';
+    lead.textContent = tt(
+      'loginBonus.lead',
+      'Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.'
+    );
   }
 
   async function openLoginBonus(opts = {}) {

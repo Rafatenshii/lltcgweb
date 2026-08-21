@@ -69,7 +69,18 @@ def split_top_level_locales(body: str) -> dict[str, str]:
     return locales
 
 
+def deep_merge(dst: dict, src: dict) -> dict:
+    """Recursively merge src into dst (dicts only; scalars overwrite)."""
+    for k, v in src.items():
+        if isinstance(v, dict) and isinstance(dst.get(k), dict):
+            deep_merge(dst[k], v)
+        else:
+            dst[k] = v
+    return dst
+
+
 def inject_locale(code: str, data: dict, locales_js: list[str] | None = None) -> None:
+    """Replace STRINGS.<code> with data (full pack). Prefer inject_locale_merge for patches."""
     text = I18N.read_text(encoding="utf-8")
     if locales_js is None:
         locales_js = LOCALE_ORDER[:]
@@ -97,3 +108,43 @@ def inject_locale(code: str, data: dict, locales_js: list[str] | None = None) ->
     text = text[:start] + new_body + text[end:]
     I18N.write_text(text, encoding="utf-8")
     print(f"Injected {code} into {I18N} ({len(parts)} locale packs)")
+
+
+def _parse_locale_json_block(block: str) -> dict:
+    """Parse a formatted '"xx": { ... }' block into a dict."""
+    m = re.match(r'\s*"(?:en|ja|es|ko|zh|th)":\s*(\{)', block)
+    if not m:
+        raise SystemExit(f"cannot parse locale block: {block[:40]!r}")
+    start = m.start(1)
+    depth = 0
+    i = start
+    while i < len(block):
+        if block[i] == "{":
+            depth += 1
+        elif block[i] == "}":
+            depth -= 1
+            if depth == 0:
+                raw = block[start : i + 1]
+                raw = re.sub(r",(\s*[}\]])", r"\1", raw)
+                return json.loads(raw)
+        i += 1
+    raise SystemExit("unclosed locale block")
+
+
+def inject_locale_merge(code: str, patch: dict, locales_js: list[str] | None = None) -> dict:
+    """Deep-merge patch into the existing STRINGS.<code> pack, then write i18n.js.
+
+    Use this for language additions so incomplete JSON sources cannot wipe peers.
+    Returns the merged locale dict.
+    """
+    text = I18N.read_text(encoding="utf-8")
+    start, end = find_strings_object(text)
+    body = text[start:end]
+    locales = split_top_level_locales(body)
+    if code not in locales:
+        merged = deep_merge({}, patch)
+    else:
+        existing = _parse_locale_json_block(locales[code])
+        merged = deep_merge(existing, patch)
+    inject_locale(code, merged, locales_js=locales_js)
+    return merged

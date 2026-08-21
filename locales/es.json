@@ -63,7 +63,8 @@
     "stickerShop": "Tienda de stickers",
     "stickerShopSub": "Canjea sellos por cartas de tus sobres",
     "officialVideo": "Vídeo oficial de 8 min ↗",
-    "tournamentModeSubLive": "Eventos y brackets"
+    "tournamentModeSubLive": "Eventos y brackets",
+    "loginBonus": "Bonus"
   },
   "language": {
     "label": "Idioma",
@@ -808,7 +809,11 @@
     "rematchWaiting": "Esperando…",
     "rematchWaitingHint": "Esperando a que tu oponente acepte la revancha.",
     "spectatorStatsLine": "Turno: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-    "spectatorWinner": "¡{name} gana!"
+    "spectatorWinner": "¡{name} gana!",
+    "rankedPrPackWon": "Victoria ranked: sobre PR ×{count} — ábrelo desde el menú",
+    "rankedPrPackPopupTitle": "¡Sobre PR ranked ×{count}!",
+    "rankedPrPackSummary": "{count} carta(s)",
+    "rankedPrPackDupes": "{count} duplicado(s) → {gems} gemas estrella"
   },
   "replay": {
     "menuTitle": "Visor de repeticiones",
@@ -1058,7 +1063,11 @@
     "switchPerspective": "Cambiar perspectiva",
     "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
     "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…",
-    "listTitleTournament": "Espectar torneo"
+    "listTitleTournament": "Espectar torneo",
+    "hiddenHands": "Hidden hands",
+    "hiddenHandsOn": "Hands hidden",
+    "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+    "hiddenHandsTitle": "Hide both players’ hands while spectating"
   },
   "missions": {
     "claim": "Reclamar",
@@ -1119,7 +1128,8 @@
     "rewardCoinsAndPrPack": "+{coins} monedas · Pack PR",
     "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
     "rewardFreeSleeve": "Funda gratis",
-    "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas"
+    "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
+    "claimedCoinsToast": "+{n} Coins"
   },
   "stamps": {
     "audio": "Audio de sellos",
@@ -1174,7 +1184,17 @@
     "infoTitle": "Guía de sellos",
     "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
     "infoRarities": "Rarezas",
-    "infoCost": "Coste de canje"
+    "infoCost": "Coste de canje",
+    "batchConfirm": "Convert",
+    "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+    "batchConvert": "Batch convert",
+    "batchConvertActive": "Select cards…",
+    "batchEmpty": "No spare cards selected",
+    "batchNoSpare": "No convertible spares",
+    "batchNotConvertible": "Can’t convert this card",
+    "batchOk": "Done",
+    "batchSelected": "Selected",
+    "batchSelectedCount": "{count} selected"
   },
   "tournament": {
     "backHub": "← Hub",
@@ -1452,5 +1472,55 @@
       "Pacific/Auckland": "Auckland",
       "UTC": "UTC"
     }
+  },
+  "loginBonus": {
+    "title": "Bonus de inicio de sesión",
+    "lead": "Inicia sesión cada día (JST) para reclamar el siguiente bonus. Los días perdidos se saltan: tu racha se mantiene.",
+    "day": "Día {day}",
+    "reward": {
+      "gems": "{amount} gemas",
+      "nSeals": "{amount} sellos N",
+      "srSeal": "{amount} sello SR",
+      "prPack": "Sobre PR"
+    },
+    "gotGems": "¡Recibiste {amount} gema(s) estrella!",
+    "gotNSeals": "¡Recibiste {amount} sello(s) N!",
+    "gotSrSeal": "¡Recibiste {amount} sello(s) SR!",
+    "gotPrPack": "¡Recibiste un sobre PR! Abriendo…"
+  },
+  "cardList": {
+    "backHub": "← Hub",
+    "collection": "Collection",
+    "lead": "Browse cards you own and the full catalog.",
+    "notOwned": "Not owned",
+    "other": "Other",
+    "ownedProgress": "{owned}/{total} owned",
+    "prCards": "PR cards",
+    "title": "Card List"
+  },
+  "playmatShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this playmat for {price} Coins?",
+    "hint": "Tap a playmat to preview, then buy or equip.",
+    "hoverEmpty": "Select a playmat",
+    "title": "Playmats"
+  },
+  "shop": {
+    "backHub": "← Hub",
+    "hint": "Spend Coins on sleeves and playmats.",
+    "playmatsSub": "Board backgrounds",
+    "playmatsTitle": "Playmats",
+    "sleevesSub": "Card backs",
+    "sleevesTitle": "Sleeves",
+    "title": "Shop"
+  },
+  "sleeveShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this sleeve for {price} Coins?",
+    "hint": "Tap a sleeve to preview, then buy or equip.",
+    "hoverEmpty": "Select a sleeve",
+    "title": "Sleeves"
   }
 }

@@ -63,7 +63,8 @@
     "stickerShop": "스티커 샵",
     "stickerShopSub": "실을 팩 카드로 교환",
     "officialVideo": "공식 8분 영상 ↗",
-    "tournamentModeSubLive": "이벤트 & 브래킷"
+    "tournamentModeSubLive": "이벤트 & 브래킷",
+    "loginBonus": "로그인"
   },
   "language": {
     "label": "언어",
@@ -818,7 +819,11 @@
     "rematchWaiting": "대기 중…",
     "rematchWaitingHint": "상대가 재대결을 수락하기를 기다리는 중입니다.",
     "spectatorStatsLine": "턴: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-    "spectatorWinner": "{name} 승리!"
+    "spectatorWinner": "{name} 승리!",
+    "rankedPrPackWon": "랭크 승리: PR 팩 ×{count} — 메뉴에서 개봉",
+    "rankedPrPackPopupTitle": "랭크 PR 팩 ×{count}!",
+    "rankedPrPackSummary": "{count}장",
+    "rankedPrPackDupes": "중복 {count}장 → 스타 젬 {gems}"
   },
   "replay": {
     "menuTitle": "리플레이 뷰어",
@@ -1082,7 +1087,11 @@
     "switchPerspective": "시점 전환",
     "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
     "waitingJudgeResolve": "Live 승패 — {name} 대기 중…",
-    "listTitleTournament": "토너먼트 관전"
+    "listTitleTournament": "토너먼트 관전",
+    "hiddenHands": "Hidden hands",
+    "hiddenHandsOn": "Hands hidden",
+    "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+    "hiddenHandsTitle": "Hide both players’ hands while spectating"
   },
   "missions": {
     "claim": "수령",
@@ -1143,7 +1152,8 @@
     "rewardCoinsAndPrPack": "+{coins} 코인 · PR 팩",
     "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
     "rewardFreeSleeve": "무료 슬리브",
-    "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능"
+    "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
+    "claimedCoinsToast": "+{n} Coins"
   },
   "stamps": {
     "audio": "스탬프 오디오",
@@ -1198,7 +1208,17 @@
     "infoTitle": "실 가이드",
     "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
     "infoRarities": "희귀도",
-    "infoCost": "교환 비용"
+    "infoCost": "교환 비용",
+    "batchConfirm": "Convert",
+    "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+    "batchConvert": "Batch convert",
+    "batchConvertActive": "Select cards…",
+    "batchEmpty": "No spare cards selected",
+    "batchNoSpare": "No convertible spares",
+    "batchNotConvertible": "Can’t convert this card",
+    "batchOk": "Done",
+    "batchSelected": "Selected",
+    "batchSelectedCount": "{count} selected"
   },
   "tournament": {
     "backHub": "← 허브",
@@ -1476,5 +1496,55 @@
       "Pacific/Auckland": "오클랜드",
       "UTC": "UTC"
     }
+  },
+  "loginBonus": {
+    "title": "로그인 보너스",
+    "lead": "매일 로그인(JST)하면 다음 보너스를 받을 수 있습니다. 놓친 날은 건너뛰며 진행은 유지됩니다.",
+    "day": "{day}일차",
+    "reward": {
+      "gems": "젬 ×{amount}",
+      "nSeals": "N 실 ×{amount}",
+      "srSeal": "SR 실 ×{amount}",
+      "prPack": "PR 팩"
+    },
+    "gotGems": "스타 젬 {amount}개를 받았습니다!",
+    "gotNSeals": "N 실 {amount}장을 받았습니다!",
+    "gotSrSeal": "SR 실 {amount}장을 받았습니다!",
+    "gotPrPack": "PR 팩을 받았습니다! 여는 중…"
+  },
+  "cardList": {
+    "backHub": "← Hub",
+    "collection": "Collection",
+    "lead": "Browse cards you own and the full catalog.",
+    "notOwned": "Not owned",
+    "other": "Other",
+    "ownedProgress": "{owned}/{total} owned",
+    "prCards": "PR cards",
+    "title": "Card List"
+  },
+  "playmatShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this playmat for {price} Coins?",
+    "hint": "Tap a playmat to preview, then buy or equip.",
+    "hoverEmpty": "Select a playmat",
+    "title": "Playmats"
+  },
+  "shop": {
+    "backHub": "← Hub",
+    "hint": "Spend Coins on sleeves and playmats.",
+    "playmatsSub": "Board backgrounds",
+    "playmatsTitle": "Playmats",
+    "sleevesSub": "Card backs",
+    "sleevesTitle": "Sleeves",
+    "title": "Shop"
+  },
+  "sleeveShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this sleeve for {price} Coins?",
+    "hint": "Tap a sleeve to preview, then buy or equip.",
+    "hoverEmpty": "Select a sleeve",
+    "title": "Sleeves"
   }
 }

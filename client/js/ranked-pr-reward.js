@@ -18,6 +18,13 @@
     return typeof fn === 'function' ? fn(key, vars || {}) : key;
   }
 
+  function tt(key, fallback, vars) {
+    const fn = global.LLTCG_I18N && global.LLTCG_I18N.tt;
+    if (typeof fn === 'function') return fn(key, fallback, vars || {});
+    const v = t(key, vars);
+    return (v && v !== key) ? v : fallback;
+  }
+
   function sleep(ms) {
     if (typeof global.sleep === 'function') return global.sleep(ms);
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -179,8 +186,10 @@
     const converted = cards.filter((c) => c.converted).length;
     if (!converted && !gems) return '';
     if (gems > 0) {
-      return t('win.rankedPrPackDupes', { count: converted || cards.length, gems })
-        || (`${converted} duplicate(s) → ${gems} Star Gems`);
+      return tt('win.rankedPrPackDupes', `${converted} duplicate(s) → ${gems} Star Gems`, {
+        count: converted || cards.length,
+        gems,
+      });
     }
     return '';
   }
@@ -210,9 +219,7 @@
     if (!cards.length) return;
 
     if (titleEl) {
-      titleEl.textContent = t('win.rankedPrPackPopupTitle', { count: cards.length })
-        || t('win.rankedPrPopupTitle')
-        || 'Ranked PR pack!';
+      titleEl.textContent = tt('win.rankedPrPackPopupTitle', 'Ranked PR pack!', { count: cards.length });
     }
     if (detailsEl) detailsEl.hidden = true;
     if (nameEl) nameEl.textContent = '';
@@ -299,8 +306,7 @@
 
     if (detailsEl && nameEl && rarityEl) {
       nameEl.textContent = revealed.map(rankedPrCardName).join(' · ');
-      rarityEl.textContent = t('win.rankedPrPackSummary', { count: revealed.length })
-        || (`${revealed.length} cards`);
+      rarityEl.textContent = tt('win.rankedPrPackSummary', `${revealed.length} cards`, { count: revealed.length });
       rarityEl.className = 'ranked-pr-reward-rarity';
       detailsEl.hidden = false;
     }

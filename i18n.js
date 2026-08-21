@@ -75,7 +75,8 @@
       "howToPlaySub": "Hands-on beginner lesson with Kanon",
       "backHub": "← Hub",
       "missions": "Missions",
-      "tournamentModeSubLive": "Events & brackets"
+      "tournamentModeSubLive": "Events & brackets",
+      "loginBonus": "Login"
     },
     "missions": {
       "title": "Missions",
@@ -136,7 +137,8 @@
       "rewardCoinsAndPrPack": "+{coins} Coins · PR Pack",
       "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
       "rewardFreeSleeve": "Free sleeve claim",
-      "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop"
+      "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
+      "claimedCoinsToast": "+{n} Coins"
     },
     "language": {
       "label": "Language",
@@ -390,7 +392,17 @@
       "infoTitle": "Seal guide",
       "infoLead": "Convert 1 spare booster or owned-starter card into 1 matching seal. Exchange seals for cards at the costs below.",
       "infoRarities": "Rarities",
-      "infoCost": "Exchange cost"
+      "infoCost": "Exchange cost",
+      "batchConfirm": "Convert",
+      "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+      "batchConvert": "Batch convert",
+      "batchConvertActive": "Select cards…",
+      "batchEmpty": "No spare cards selected",
+      "batchNoSpare": "No convertible spares",
+      "batchNotConvertible": "Can’t convert this card",
+      "batchOk": "Done",
+      "batchSelected": "Selected",
+      "batchSelectedCount": "{count} selected"
     },
     "ranked": {
       "title": "Ranked PvP",
@@ -914,7 +926,11 @@
       "rankedPrNew": "Ranked win reward: {name}",
       "rankedPrDupe": "{name} converted to {gems} Star Gems (over copy limit)",
       "rankedPrDailyCap": "Daily ranked PR rewards used ({limit}/day JST)",
-      "rankedPrPopupTitle": "Ranked win reward!"
+      "rankedPrPopupTitle": "Ranked win reward!",
+      "rankedPrPackWon": "Ranked win: PR Pack ×{count} — open it from the menu",
+      "rankedPrPackPopupTitle": "Ranked PR Pack ×{count}!",
+      "rankedPrPackSummary": "{count} card(s)",
+      "rankedPrPackDupes": "{count} duplicate(s) → {gems} Star Gems"
     },
     "replay": {
       "menuTitle": "Replay Viewer",
@@ -1143,7 +1159,11 @@
       "switchPerspective": "Switch perspective",
       "waitingJudgePick": "Live Win/Loss — waiting for {name} to choose a Success Live…",
       "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…",
-      "listTitleTournament": "Spectate tournament"
+      "listTitleTournament": "Spectate tournament",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsOn": "Hands hidden",
+      "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+      "hiddenHandsTitle": "Hide both players’ hands while spectating"
     },
     "ui": {
       "fullscreen": "Full screen",
@@ -1433,6 +1453,56 @@
         "Pacific/Auckland": "Auckland",
         "UTC": "UTC"
       }
+    },
+    "loginBonus": {
+      "title": "Login Bonus",
+      "lead": "Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.",
+      "day": "Day {day}",
+      "reward": {
+        "gems": "{amount} Gems",
+        "nSeals": "{amount} N Seals",
+        "srSeal": "{amount} SR Seal",
+        "prPack": "PR Pack"
+      },
+      "gotGems": "Received {amount} Star Gem(s)!",
+      "gotNSeals": "Received {amount} N Seal(s)!",
+      "gotSrSeal": "Received {amount} SR Seal(s)!",
+      "gotPrPack": "Received a PR Pack! Opening…"
+    },
+    "cardList": {
+      "backHub": "← Hub",
+      "collection": "Collection",
+      "lead": "Browse cards you own and the full catalog.",
+      "notOwned": "Not owned",
+      "other": "Other",
+      "ownedProgress": "{owned}/{total} owned",
+      "prCards": "PR cards",
+      "title": "Card List"
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this sleeve for {price} Coins?",
+      "hint": "Tap a sleeve to preview, then buy or equip.",
+      "hoverEmpty": "Select a sleeve",
+      "title": "Sleeves"
     }
   },
   "ja": {
@@ -1957,7 +2027,8 @@
         "sukufesuThanks": "スクフェスシリーズ感謝祭",
         "loveliveSeries": "ラブライブ！シリーズ",
         "hasunosoraSchool": "蓮ノ空女学院"
-      }
+      },
+      "backShop": "← Shop"
     },
     "cardList": {
       "title": "カードリスト",
@@ -2777,7 +2848,8 @@
       "hiddenHandsOnTitle": "手札非公開中 — タップで表示",
       "waitingJudgePick": "ライブ勝敗判定 — {name} の成功ライブ選択を待っています…",
       "waitingJudgeResolve": "ライブ勝敗判定 — {name} の操作待ち…",
-      "listTitleTournament": "トーナメントを観戦"
+      "listTitleTournament": "トーナメントを観戦",
+      "hiddenHandsOn": "Hands hidden"
     },
     "ui": {
       "fullscreen": "全画面",
@@ -3067,6 +3139,23 @@
         "Pacific/Auckland": "オークランド",
         "UTC": "UTC"
       }
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
     }
   },
   "es": {
@@ -3134,7 +3223,8 @@
       "stickerShop": "Tienda de stickers",
       "stickerShopSub": "Canjea sellos por cartas de tus sobres",
       "officialVideo": "Vídeo oficial de 8 min ↗",
-      "tournamentModeSubLive": "Eventos y brackets"
+      "tournamentModeSubLive": "Eventos y brackets",
+      "loginBonus": "Bonus"
     },
     "language": {
       "label": "Idioma",
@@ -3879,7 +3969,11 @@
       "rematchWaiting": "Esperando…",
       "rematchWaitingHint": "Esperando a que tu oponente acepte la revancha.",
       "spectatorStatsLine": "Turno: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-      "spectatorWinner": "¡{name} gana!"
+      "spectatorWinner": "¡{name} gana!",
+      "rankedPrPackWon": "Victoria ranked: sobre PR ×{count} — ábrelo desde el menú",
+      "rankedPrPackPopupTitle": "¡Sobre PR ranked ×{count}!",
+      "rankedPrPackSummary": "{count} carta(s)",
+      "rankedPrPackDupes": "{count} duplicado(s) → {gems} gemas estrella"
     },
     "replay": {
       "menuTitle": "Visor de repeticiones",
@@ -4129,7 +4223,11 @@
       "switchPerspective": "Cambiar perspectiva",
       "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
       "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…",
-      "listTitleTournament": "Espectar torneo"
+      "listTitleTournament": "Espectar torneo",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsOn": "Hands hidden",
+      "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+      "hiddenHandsTitle": "Hide both players’ hands while spectating"
     },
     "missions": {
       "claim": "Reclamar",
@@ -4190,7 +4288,8 @@
       "rewardCoinsAndPrPack": "+{coins} monedas · Pack PR",
       "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
       "rewardFreeSleeve": "Funda gratis",
-      "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas"
+      "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
+      "claimedCoinsToast": "+{n} Coins"
     },
     "stamps": {
       "audio": "Audio de sellos",
@@ -4245,7 +4344,17 @@
       "infoTitle": "Guía de sellos",
       "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
       "infoRarities": "Rarezas",
-      "infoCost": "Coste de canje"
+      "infoCost": "Coste de canje",
+      "batchConfirm": "Convert",
+      "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+      "batchConvert": "Batch convert",
+      "batchConvertActive": "Select cards…",
+      "batchEmpty": "No spare cards selected",
+      "batchNoSpare": "No convertible spares",
+      "batchNotConvertible": "Can’t convert this card",
+      "batchOk": "Done",
+      "batchSelected": "Selected",
+      "batchSelectedCount": "{count} selected"
     },
     "tournament": {
       "backHub": "← Hub",
@@ -4523,6 +4632,56 @@
         "Pacific/Auckland": "Auckland",
         "UTC": "UTC"
       }
+    },
+    "loginBonus": {
+      "title": "Bonus de inicio de sesión",
+      "lead": "Inicia sesión cada día (JST) para reclamar el siguiente bonus. Los días perdidos se saltan: tu racha se mantiene.",
+      "day": "Día {day}",
+      "reward": {
+        "gems": "{amount} gemas",
+        "nSeals": "{amount} sellos N",
+        "srSeal": "{amount} sello SR",
+        "prPack": "Sobre PR"
+      },
+      "gotGems": "¡Recibiste {amount} gema(s) estrella!",
+      "gotNSeals": "¡Recibiste {amount} sello(s) N!",
+      "gotSrSeal": "¡Recibiste {amount} sello(s) SR!",
+      "gotPrPack": "¡Recibiste un sobre PR! Abriendo…"
+    },
+    "cardList": {
+      "backHub": "← Hub",
+      "collection": "Collection",
+      "lead": "Browse cards you own and the full catalog.",
+      "notOwned": "Not owned",
+      "other": "Other",
+      "ownedProgress": "{owned}/{total} owned",
+      "prCards": "PR cards",
+      "title": "Card List"
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this sleeve for {price} Coins?",
+      "hint": "Tap a sleeve to preview, then buy or equip.",
+      "hoverEmpty": "Select a sleeve",
+      "title": "Sleeves"
     }
   },
   "ko": {
@@ -4590,7 +4749,8 @@
       "stickerShop": "스티커 샵",
       "stickerShopSub": "실을 팩 카드로 교환",
       "officialVideo": "공식 8분 영상 ↗",
-      "tournamentModeSubLive": "이벤트 & 브래킷"
+      "tournamentModeSubLive": "이벤트 & 브래킷",
+      "loginBonus": "로그인"
     },
     "language": {
       "label": "언어",
@@ -5345,7 +5505,11 @@
       "rematchWaiting": "대기 중…",
       "rematchWaitingHint": "상대가 재대결을 수락하기를 기다리는 중입니다.",
       "spectatorStatsLine": "턴: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-      "spectatorWinner": "{name} 승리!"
+      "spectatorWinner": "{name} 승리!",
+      "rankedPrPackWon": "랭크 승리: PR 팩 ×{count} — 메뉴에서 개봉",
+      "rankedPrPackPopupTitle": "랭크 PR 팩 ×{count}!",
+      "rankedPrPackSummary": "{count}장",
+      "rankedPrPackDupes": "중복 {count}장 → 스타 젬 {gems}"
     },
     "replay": {
       "menuTitle": "리플레이 뷰어",
@@ -5609,7 +5773,11 @@
       "switchPerspective": "시점 전환",
       "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
       "waitingJudgeResolve": "Live 승패 — {name} 대기 중…",
-      "listTitleTournament": "토너먼트 관전"
+      "listTitleTournament": "토너먼트 관전",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsOn": "Hands hidden",
+      "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+      "hiddenHandsTitle": "Hide both players’ hands while spectating"
     },
     "missions": {
       "claim": "수령",
@@ -5670,7 +5838,8 @@
       "rewardCoinsAndPrPack": "+{coins} 코인 · PR 팩",
       "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
       "rewardFreeSleeve": "무료 슬리브",
-      "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능"
+      "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
+      "claimedCoinsToast": "+{n} Coins"
     },
     "stamps": {
       "audio": "스탬프 오디오",
@@ -5725,7 +5894,17 @@
       "infoTitle": "실 가이드",
       "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
       "infoRarities": "희귀도",
-      "infoCost": "교환 비용"
+      "infoCost": "교환 비용",
+      "batchConfirm": "Convert",
+      "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+      "batchConvert": "Batch convert",
+      "batchConvertActive": "Select cards…",
+      "batchEmpty": "No spare cards selected",
+      "batchNoSpare": "No convertible spares",
+      "batchNotConvertible": "Can’t convert this card",
+      "batchOk": "Done",
+      "batchSelected": "Selected",
+      "batchSelectedCount": "{count} selected"
     },
     "tournament": {
       "backHub": "← 허브",
@@ -6003,6 +6182,56 @@
         "Pacific/Auckland": "오클랜드",
         "UTC": "UTC"
       }
+    },
+    "loginBonus": {
+      "title": "로그인 보너스",
+      "lead": "매일 로그인(JST)하면 다음 보너스를 받을 수 있습니다. 놓친 날은 건너뛰며 진행은 유지됩니다.",
+      "day": "{day}일차",
+      "reward": {
+        "gems": "젬 ×{amount}",
+        "nSeals": "N 실 ×{amount}",
+        "srSeal": "SR 실 ×{amount}",
+        "prPack": "PR 팩"
+      },
+      "gotGems": "스타 젬 {amount}개를 받았습니다!",
+      "gotNSeals": "N 실 {amount}장을 받았습니다!",
+      "gotSrSeal": "SR 실 {amount}장을 받았습니다!",
+      "gotPrPack": "PR 팩을 받았습니다! 여는 중…"
+    },
+    "cardList": {
+      "backHub": "← Hub",
+      "collection": "Collection",
+      "lead": "Browse cards you own and the full catalog.",
+      "notOwned": "Not owned",
+      "other": "Other",
+      "ownedProgress": "{owned}/{total} owned",
+      "prCards": "PR cards",
+      "title": "Card List"
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this sleeve for {price} Coins?",
+      "hint": "Tap a sleeve to preview, then buy or equip.",
+      "hoverEmpty": "Select a sleeve",
+      "title": "Sleeves"
     }
   },
   "zh": {
@@ -6070,7 +6299,8 @@
       "stickerShop": "贴纸商店",
       "stickerShopSub": "用印章兑换你补充包中的卡牌",
       "officialVideo": "官方8分钟视频 ↗",
-      "tournamentModeSubLive": "赛事与对阵表"
+      "tournamentModeSubLive": "赛事与对阵表",
+      "loginBonus": "登录"
     },
     "language": {
       "label": "语言",
@@ -6826,7 +7056,11 @@
       "rematchWaiting": "等待…",
       "rematchWaitingHint": "等待对手接受重赛。",
       "spectatorStatsLine": "转弯：{turn} | {p1}：{p1Lives}/3 | {p2}：{p2Lives}/3",
-      "spectatorWinner": "{name}获胜！"
+      "spectatorWinner": "{name}获胜！",
+      "rankedPrPackWon": "排位胜利：PR卡包×{count} — 请在菜单中开启",
+      "rankedPrPackPopupTitle": "排位PR卡包×{count}！",
+      "rankedPrPackSummary": "{count}张卡",
+      "rankedPrPackDupes": "{count}张重复 → {gems}星星宝石"
     },
     "replay": {
       "menuTitle": "录像查看器",
@@ -7090,7 +7324,11 @@
       "switchPerspective": "切换视角",
       "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
       "waitingJudgeResolve": "Live 胜负 — 等待 {name}…",
-      "listTitleTournament": "观战锦标赛"
+      "listTitleTournament": "观战锦标赛",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsOn": "Hands hidden",
+      "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+      "hiddenHandsTitle": "Hide both players’ hands while spectating"
     },
     "missions": {
       "claim": "领取",
@@ -7151,7 +7389,8 @@
       "rewardCoinsAndPrPack": "+{coins} 金币 · PR包",
       "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
       "rewardFreeSleeve": "免费卡套领取",
-      "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取"
+      "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
+      "claimedCoinsToast": "+{n} Coins"
     },
     "stamps": {
       "audio": "贴纸语音",
@@ -7206,7 +7445,17 @@
       "infoTitle": "印章指南",
       "infoLead": "将 1 张多余的补充包卡或你拥有的入门卡转换为 1 枚对应印章。按下方费用用印章兑换卡牌。",
       "infoRarities": "稀有度",
-      "infoCost": "兑换费用"
+      "infoCost": "兑换费用",
+      "batchConfirm": "Convert",
+      "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+      "batchConvert": "Batch convert",
+      "batchConvertActive": "Select cards…",
+      "batchEmpty": "No spare cards selected",
+      "batchNoSpare": "No convertible spares",
+      "batchNotConvertible": "Can’t convert this card",
+      "batchOk": "Done",
+      "batchSelected": "Selected",
+      "batchSelectedCount": "{count} selected"
     },
     "tournament": {
       "backHub": "← 主页",
@@ -7484,6 +7733,56 @@
         "Pacific/Auckland": "奥克兰",
         "UTC": "UTC"
       }
+    },
+    "loginBonus": {
+      "title": "登录奖励",
+      "lead": "每天登录（JST）即可领取下一项奖励。错过的天数会跳过，进度保留。",
+      "day": "第{day}天",
+      "reward": {
+        "gems": "宝石×{amount}",
+        "nSeals": "N印章×{amount}",
+        "srSeal": "SR印章×{amount}",
+        "prPack": "PR卡包"
+      },
+      "gotGems": "获得了{amount}个星星宝石！",
+      "gotNSeals": "获得了{amount}枚N印章！",
+      "gotSrSeal": "获得了{amount}枚SR印章！",
+      "gotPrPack": "获得了PR卡包！正在打开…"
+    },
+    "cardList": {
+      "backHub": "← Hub",
+      "collection": "Collection",
+      "lead": "Browse cards you own and the full catalog.",
+      "notOwned": "Not owned",
+      "other": "Other",
+      "ownedProgress": "{owned}/{total} owned",
+      "prCards": "PR cards",
+      "title": "Card List"
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this sleeve for {price} Coins?",
+      "hint": "Tap a sleeve to preview, then buy or equip.",
+      "hoverEmpty": "Select a sleeve",
+      "title": "Sleeves"
     }
   },
   "th": {
@@ -7551,7 +7850,8 @@
       "tournamentMode": "โหมดทัวร์นาเมนต์",
       "tournamentModeSub": "เร็ว ๆ นี้",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗",
-      "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต"
+      "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต",
+      "loginBonus": "โบนัส"
     },
     "language": {
       "label": "ภาษา",
@@ -8297,7 +8597,11 @@
       "rematchWaiting": "กำลังรอ…",
       "rematchWaitingHint": "รอคู่ต่อสู้รับรีแมตช์",
       "spectatorStatsLine": "เทิร์น: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-      "spectatorWinner": "{name} ชนะ!"
+      "spectatorWinner": "{name} ชนะ!",
+      "rankedPrPackWon": "ชนะแรงก์: แพ็ก PR ×{count} — เปิดจากเมนู",
+      "rankedPrPackPopupTitle": "แพ็ก PR แรงก์ ×{count}!",
+      "rankedPrPackSummary": "{count} ใบ",
+      "rankedPrPackDupes": "ซ้ำ {count} ใบ → สตาร์เจม {gems}"
     },
     "replay": {
       "menuTitle": "ตัวดูรีเพลย์",
@@ -8547,7 +8851,11 @@
       "switchPerspective": "สลับมุมมอง",
       "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
       "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…",
-      "listTitleTournament": "ชมทัวร์นาเมนต์"
+      "listTitleTournament": "ชมทัวร์นาเมนต์",
+      "hiddenHands": "Hidden hands",
+      "hiddenHandsOn": "Hands hidden",
+      "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+      "hiddenHandsTitle": "Hide both players’ hands while spectating"
     },
     "missions": {
       "claim": "รับ",
@@ -8608,7 +8916,8 @@
       "rewardCoinsAndPrPack": "+{coins} เหรียญ · แพ็ก PR",
       "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
       "rewardFreeSleeve": "รับซองฟรี",
-      "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด"
+      "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
+      "claimedCoinsToast": "+{n} Coins"
     },
     "stamps": {
       "audio": "เสียงแสตมป์",
@@ -8663,7 +8972,17 @@
       "infoTitle": "คู่มือซีล",
       "infoLead": "แปลงการ์ดบูสเตอร์ที่มีเกินหรือการ์ดสตาร์ทเตอร์ที่คุณมี 1 ใบ เป็นซีลที่ตรงกัน 1 ชิ้น แล้วนำซีลมาแลกการ์ดตามราคาด้านล่าง",
       "infoRarities": "ความหายาก",
-      "infoCost": "ราคาแลก"
+      "infoCost": "ราคาแลก",
+      "batchConfirm": "Convert",
+      "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+      "batchConvert": "Batch convert",
+      "batchConvertActive": "Select cards…",
+      "batchEmpty": "No spare cards selected",
+      "batchNoSpare": "No convertible spares",
+      "batchNotConvertible": "Can’t convert this card",
+      "batchOk": "Done",
+      "batchSelected": "Selected",
+      "batchSelectedCount": "{count} selected"
     },
     "tournament": {
       "backHub": "← ฮับ",
@@ -8941,6 +9260,56 @@
         "Pacific/Auckland": "โอ๊คแลนด์",
         "UTC": "UTC"
       }
+    },
+    "loginBonus": {
+      "title": "โบนัสเข้าสู่ระบบ",
+      "lead": "เข้าสู่ระบบทุกวัน (JST) เพื่อรับโบนัสถัดไป วันที่พลาดจะถูกข้าม — ความคืบหน้ายังอยู่",
+      "day": "วันที่ {day}",
+      "reward": {
+        "gems": "เจม ×{amount}",
+        "nSeals": "ซีล N ×{amount}",
+        "srSeal": "ซีล SR ×{amount}",
+        "prPack": "แพ็ก PR"
+      },
+      "gotGems": "ได้รับสตาร์เจม {amount} ชิ้น!",
+      "gotNSeals": "ได้รับซีล N {amount} ชิ้น!",
+      "gotSrSeal": "ได้รับซีล SR {amount} ชิ้น!",
+      "gotPrPack": "ได้รับแพ็ก PR! กำลังเปิด…"
+    },
+    "cardList": {
+      "backHub": "← Hub",
+      "collection": "Collection",
+      "lead": "Browse cards you own and the full catalog.",
+      "notOwned": "Not owned",
+      "other": "Other",
+      "ownedProgress": "{owned}/{total} owned",
+      "prCards": "PR cards",
+      "title": "Card List"
+    },
+    "playmatShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this playmat for {price} Coins?",
+      "hint": "Tap a playmat to preview, then buy or equip.",
+      "hoverEmpty": "Select a playmat",
+      "title": "Playmats"
+    },
+    "shop": {
+      "backHub": "← Hub",
+      "hint": "Spend Coins on sleeves and playmats.",
+      "playmatsSub": "Board backgrounds",
+      "playmatsTitle": "Playmats",
+      "sleevesSub": "Card backs",
+      "sleevesTitle": "Sleeves",
+      "title": "Shop"
+    },
+    "sleeveShop": {
+      "backChars": "← Characters",
+      "backShop": "← Shop",
+      "buyConfirm": "Buy this sleeve for {price} Coins?",
+      "hint": "Tap a sleeve to preview, then buy or equip.",
+      "hoverEmpty": "Select a sleeve",
+      "title": "Sleeves"
     }
   }
 };
@@ -9200,6 +9569,15 @@
     if (val == null && (loc === 'ja' || loc === 'es' || loc === 'ko' || loc === 'zh' || loc === 'th')) val = lookupPath(STRINGS.en, key);
     if (typeof val === 'string') return interpolate(val, vars);
     return key;
+  }
+
+  /** Like t(), but if the key is missing return fallback instead of the raw key path. */
+  function tt(key, fallback, vars) {
+    var val = t(key, vars);
+    if (val == null || val === key) {
+      return fallback != null ? interpolate(String(fallback), vars) : key;
+    }
+    return val;
   }
 
   function applyI18n(root) {
@@ -11122,6 +11500,7 @@
     getLocale: getLocale,
     setLocale: setLocale,
     t: t,
+    tt: tt,
     applyI18n: applyI18n,
     cardLocaleName: cardLocaleName,
     idolLocaleName: idolLocaleName,

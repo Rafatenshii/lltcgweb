@@ -63,7 +63,8 @@
     "stickerShop": "贴纸商店",
     "stickerShopSub": "用印章兑换你补充包中的卡牌",
     "officialVideo": "官方8分钟视频 ↗",
-    "tournamentModeSubLive": "赛事与对阵表"
+    "tournamentModeSubLive": "赛事与对阵表",
+    "loginBonus": "登录"
   },
   "language": {
     "label": "语言",
@@ -819,7 +820,11 @@
     "rematchWaiting": "等待…",
     "rematchWaitingHint": "等待对手接受重赛。",
     "spectatorStatsLine": "转弯：{turn} | {p1}：{p1Lives}/3 | {p2}：{p2Lives}/3",
-    "spectatorWinner": "{name}获胜！"
+    "spectatorWinner": "{name}获胜！",
+    "rankedPrPackWon": "排位胜利：PR卡包×{count} — 请在菜单中开启",
+    "rankedPrPackPopupTitle": "排位PR卡包×{count}！",
+    "rankedPrPackSummary": "{count}张卡",
+    "rankedPrPackDupes": "{count}张重复 → {gems}星星宝石"
   },
   "replay": {
     "menuTitle": "录像查看器",
@@ -1083,7 +1088,11 @@
     "switchPerspective": "切换视角",
     "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
     "waitingJudgeResolve": "Live 胜负 — 等待 {name}…",
-    "listTitleTournament": "观战锦标赛"
+    "listTitleTournament": "观战锦标赛",
+    "hiddenHands": "Hidden hands",
+    "hiddenHandsOn": "Hands hidden",
+    "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+    "hiddenHandsTitle": "Hide both players’ hands while spectating"
   },
   "missions": {
     "claim": "领取",
@@ -1144,7 +1153,8 @@
     "rewardCoinsAndPrPack": "+{coins} 金币 · PR包",
     "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
     "rewardFreeSleeve": "免费卡套领取",
-    "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取"
+    "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
+    "claimedCoinsToast": "+{n} Coins"
   },
   "stamps": {
     "audio": "贴纸语音",
@@ -1199,7 +1209,17 @@
     "infoTitle": "印章指南",
     "infoLead": "将 1 张多余的补充包卡或你拥有的入门卡转换为 1 枚对应印章。按下方费用用印章兑换卡牌。",
     "infoRarities": "稀有度",
-    "infoCost": "兑换费用"
+    "infoCost": "兑换费用",
+    "batchConfirm": "Convert",
+    "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+    "batchConvert": "Batch convert",
+    "batchConvertActive": "Select cards…",
+    "batchEmpty": "No spare cards selected",
+    "batchNoSpare": "No convertible spares",
+    "batchNotConvertible": "Can’t convert this card",
+    "batchOk": "Done",
+    "batchSelected": "Selected",
+    "batchSelectedCount": "{count} selected"
   },
   "tournament": {
     "backHub": "← 主页",
@@ -1477,5 +1497,55 @@
       "Pacific/Auckland": "奥克兰",
       "UTC": "UTC"
     }
+  },
+  "loginBonus": {
+    "title": "登录奖励",
+    "lead": "每天登录（JST）即可领取下一项奖励。错过的天数会跳过，进度保留。",
+    "day": "第{day}天",
+    "reward": {
+      "gems": "宝石×{amount}",
+      "nSeals": "N印章×{amount}",
+      "srSeal": "SR印章×{amount}",
+      "prPack": "PR卡包"
+    },
+    "gotGems": "获得了{amount}个星星宝石！",
+    "gotNSeals": "获得了{amount}枚N印章！",
+    "gotSrSeal": "获得了{amount}枚SR印章！",
+    "gotPrPack": "获得了PR卡包！正在打开…"
+  },
+  "cardList": {
+    "backHub": "← Hub",
+    "collection": "Collection",
+    "lead": "Browse cards you own and the full catalog.",
+    "notOwned": "Not owned",
+    "other": "Other",
+    "ownedProgress": "{owned}/{total} owned",
+    "prCards": "PR cards",
+    "title": "Card List"
+  },
+  "playmatShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this playmat for {price} Coins?",
+    "hint": "Tap a playmat to preview, then buy or equip.",
+    "hoverEmpty": "Select a playmat",
+    "title": "Playmats"
+  },
+  "shop": {
+    "backHub": "← Hub",
+    "hint": "Spend Coins on sleeves and playmats.",
+    "playmatsSub": "Board backgrounds",
+    "playmatsTitle": "Playmats",
+    "sleevesSub": "Card backs",
+    "sleevesTitle": "Sleeves",
+    "title": "Shop"
+  },
+  "sleeveShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this sleeve for {price} Coins?",
+    "hint": "Tap a sleeve to preview, then buy or equip.",
+    "hoverEmpty": "Select a sleeve",
+    "title": "Sleeves"
   }
 }

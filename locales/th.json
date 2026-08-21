@@ -63,7 +63,8 @@
     "tournamentMode": "โหมดทัวร์นาเมนต์",
     "tournamentModeSub": "เร็ว ๆ นี้",
     "officialVideo": "วิดีโอทางการ 8 นาที ↗",
-    "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต"
+    "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต",
+    "loginBonus": "โบนัส"
   },
   "language": {
     "label": "ภาษา",
@@ -809,7 +810,11 @@
     "rematchWaiting": "กำลังรอ…",
     "rematchWaitingHint": "รอคู่ต่อสู้รับรีแมตช์",
     "spectatorStatsLine": "เทิร์น: {turn} | {p1}: {p1Lives}/3 | {p2}: {p2Lives}/3",
-    "spectatorWinner": "{name} ชนะ!"
+    "spectatorWinner": "{name} ชนะ!",
+    "rankedPrPackWon": "ชนะแรงก์: แพ็ก PR ×{count} — เปิดจากเมนู",
+    "rankedPrPackPopupTitle": "แพ็ก PR แรงก์ ×{count}!",
+    "rankedPrPackSummary": "{count} ใบ",
+    "rankedPrPackDupes": "ซ้ำ {count} ใบ → สตาร์เจม {gems}"
   },
   "replay": {
     "menuTitle": "ตัวดูรีเพลย์",
@@ -1059,7 +1064,11 @@
     "switchPerspective": "สลับมุมมอง",
     "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
     "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…",
-    "listTitleTournament": "ชมทัวร์นาเมนต์"
+    "listTitleTournament": "ชมทัวร์นาเมนต์",
+    "hiddenHands": "Hidden hands",
+    "hiddenHandsOn": "Hands hidden",
+    "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+    "hiddenHandsTitle": "Hide both players’ hands while spectating"
   },
   "missions": {
     "claim": "รับ",
@@ -1120,7 +1129,8 @@
     "rewardCoinsAndPrPack": "+{coins} เหรียญ · แพ็ก PR",
     "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
     "rewardFreeSleeve": "รับซองฟรี",
-    "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด"
+    "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
+    "claimedCoinsToast": "+{n} Coins"
   },
   "stamps": {
     "audio": "เสียงแสตมป์",
@@ -1175,7 +1185,17 @@
     "infoTitle": "คู่มือซีล",
     "infoLead": "แปลงการ์ดบูสเตอร์ที่มีเกินหรือการ์ดสตาร์ทเตอร์ที่คุณมี 1 ใบ เป็นซีลที่ตรงกัน 1 ชิ้น แล้วนำซีลมาแลกการ์ดตามราคาด้านล่าง",
     "infoRarities": "ความหายาก",
-    "infoCost": "ราคาแลก"
+    "infoCost": "ราคาแลก",
+    "batchConfirm": "Convert",
+    "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+    "batchConvert": "Batch convert",
+    "batchConvertActive": "Select cards…",
+    "batchEmpty": "No spare cards selected",
+    "batchNoSpare": "No convertible spares",
+    "batchNotConvertible": "Can’t convert this card",
+    "batchOk": "Done",
+    "batchSelected": "Selected",
+    "batchSelectedCount": "{count} selected"
   },
   "tournament": {
     "backHub": "← ฮับ",
@@ -1453,5 +1473,55 @@
       "Pacific/Auckland": "โอ๊คแลนด์",
       "UTC": "UTC"
     }
+  },
+  "loginBonus": {
+    "title": "โบนัสเข้าสู่ระบบ",
+    "lead": "เข้าสู่ระบบทุกวัน (JST) เพื่อรับโบนัสถัดไป วันที่พลาดจะถูกข้าม — ความคืบหน้ายังอยู่",
+    "day": "วันที่ {day}",
+    "reward": {
+      "gems": "เจม ×{amount}",
+      "nSeals": "ซีล N ×{amount}",
+      "srSeal": "ซีล SR ×{amount}",
+      "prPack": "แพ็ก PR"
+    },
+    "gotGems": "ได้รับสตาร์เจม {amount} ชิ้น!",
+    "gotNSeals": "ได้รับซีล N {amount} ชิ้น!",
+    "gotSrSeal": "ได้รับซีล SR {amount} ชิ้น!",
+    "gotPrPack": "ได้รับแพ็ก PR! กำลังเปิด…"
+  },
+  "cardList": {
+    "backHub": "← Hub",
+    "collection": "Collection",
+    "lead": "Browse cards you own and the full catalog.",
+    "notOwned": "Not owned",
+    "other": "Other",
+    "ownedProgress": "{owned}/{total} owned",
+    "prCards": "PR cards",
+    "title": "Card List"
+  },
+  "playmatShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this playmat for {price} Coins?",
+    "hint": "Tap a playmat to preview, then buy or equip.",
+    "hoverEmpty": "Select a playmat",
+    "title": "Playmats"
+  },
+  "shop": {
+    "backHub": "← Hub",
+    "hint": "Spend Coins on sleeves and playmats.",
+    "playmatsSub": "Board backgrounds",
+    "playmatsTitle": "Playmats",
+    "sleevesSub": "Card backs",
+    "sleevesTitle": "Sleeves",
+    "title": "Shop"
+  },
+  "sleeveShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this sleeve for {price} Coins?",
+    "hint": "Tap a sleeve to preview, then buy or equip.",
+    "hoverEmpty": "Select a sleeve",
+    "title": "Sleeves"
   }
 }

@@ -61,7 +61,8 @@
     "howToPlaySub": "Hands-on beginner lesson with Kanon",
     "backHub": "← Hub",
     "missions": "Missions",
-    "tournamentModeSubLive": "Events & brackets"
+    "tournamentModeSubLive": "Events & brackets",
+    "loginBonus": "Login"
   },
   "missions": {
     "title": "Missions",
@@ -122,7 +123,8 @@
     "rewardCoinsAndPrPack": "+{coins} Coins · PR Pack",
     "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
     "rewardFreeSleeve": "Free sleeve claim",
-    "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop"
+    "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
+    "claimedCoinsToast": "+{n} Coins"
   },
   "language": {
     "label": "Language",
@@ -376,7 +378,17 @@
     "infoTitle": "Seal guide",
     "infoLead": "Convert 1 spare booster or owned-starter card into 1 matching seal. Exchange seals for cards at the costs below.",
     "infoRarities": "Rarities",
-    "infoCost": "Exchange cost"
+    "infoCost": "Exchange cost",
+    "batchConfirm": "Convert",
+    "batchConfirmMsg": "Convert {count} spare card(s) into seals?",
+    "batchConvert": "Batch convert",
+    "batchConvertActive": "Select cards…",
+    "batchEmpty": "No spare cards selected",
+    "batchNoSpare": "No convertible spares",
+    "batchNotConvertible": "Can’t convert this card",
+    "batchOk": "Done",
+    "batchSelected": "Selected",
+    "batchSelectedCount": "{count} selected"
   },
   "ranked": {
     "title": "Ranked PvP",
@@ -900,7 +912,11 @@
     "rankedPrNew": "Ranked win reward: {name}",
     "rankedPrDupe": "{name} converted to {gems} Star Gems (over copy limit)",
     "rankedPrDailyCap": "Daily ranked PR rewards used ({limit}/day JST)",
-    "rankedPrPopupTitle": "Ranked win reward!"
+    "rankedPrPopupTitle": "Ranked win reward!",
+    "rankedPrPackWon": "Ranked win: PR Pack ×{count} — open it from the menu",
+    "rankedPrPackPopupTitle": "Ranked PR Pack ×{count}!",
+    "rankedPrPackSummary": "{count} card(s)",
+    "rankedPrPackDupes": "{count} duplicate(s) → {gems} Star Gems"
   },
   "replay": {
     "menuTitle": "Replay Viewer",
@@ -1129,7 +1145,11 @@
     "switchPerspective": "Switch perspective",
     "waitingJudgePick": "Live Win/Loss — waiting for {name} to choose a Success Live…",
     "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…",
-    "listTitleTournament": "Spectate tournament"
+    "listTitleTournament": "Spectate tournament",
+    "hiddenHands": "Hidden hands",
+    "hiddenHandsOn": "Hands hidden",
+    "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
+    "hiddenHandsTitle": "Hide both players’ hands while spectating"
   },
   "ui": {
     "fullscreen": "Full screen",
@@ -1419,5 +1439,55 @@
       "Pacific/Auckland": "Auckland",
       "UTC": "UTC"
     }
+  },
+  "loginBonus": {
+    "title": "Login Bonus",
+    "lead": "Log in each day (JST) to claim the next bonus. Missed days are skipped — your streak stays.",
+    "day": "Day {day}",
+    "reward": {
+      "gems": "{amount} Gems",
+      "nSeals": "{amount} N Seals",
+      "srSeal": "{amount} SR Seal",
+      "prPack": "PR Pack"
+    },
+    "gotGems": "Received {amount} Star Gem(s)!",
+    "gotNSeals": "Received {amount} N Seal(s)!",
+    "gotSrSeal": "Received {amount} SR Seal(s)!",
+    "gotPrPack": "Received a PR Pack! Opening…"
+  },
+  "cardList": {
+    "backHub": "← Hub",
+    "collection": "Collection",
+    "lead": "Browse cards you own and the full catalog.",
+    "notOwned": "Not owned",
+    "other": "Other",
+    "ownedProgress": "{owned}/{total} owned",
+    "prCards": "PR cards",
+    "title": "Card List"
+  },
+  "playmatShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this playmat for {price} Coins?",
+    "hint": "Tap a playmat to preview, then buy or equip.",
+    "hoverEmpty": "Select a playmat",
+    "title": "Playmats"
+  },
+  "shop": {
+    "backHub": "← Hub",
+    "hint": "Spend Coins on sleeves and playmats.",
+    "playmatsSub": "Board backgrounds",
+    "playmatsTitle": "Playmats",
+    "sleevesSub": "Card backs",
+    "sleevesTitle": "Sleeves",
+    "title": "Shop"
+  },
+  "sleeveShop": {
+    "backChars": "← Characters",
+    "backShop": "← Shop",
+    "buyConfirm": "Buy this sleeve for {price} Coins?",
+    "hint": "Tap a sleeve to preview, then buy or equip.",
+    "hoverEmpty": "Select a sleeve",
+    "title": "Sleeves"
   }
 }
