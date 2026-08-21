@@ -105,7 +105,26 @@ function tryResolveAbilityEffectSwitchLive(
             break;
 
         case 'live_score_if_yell_has_hearts':
+            // Deprecated: Love U my friends — use live_score_if_yell_has_all_blade.
             break;
+
+        case 'live_score_if_yell_has_all_blade': {
+            // Official: [Live Success] if Yell reveals ≥1 card with ALL blade → this Live's score +N once
+            // (not +N per ALL-blade card). Official Q&A: ALL hearts do not satisfy this.
+            $yellCards = $ctx['yell_cards'] ?? $p['_pending_yell_wr'] ?? [];
+            if (!is_array($yellCards) || !yellCardsHaveAllBlade($yellCards)) {
+                break;
+            }
+            $amt = intval($ab['amount'] ?? 1);
+            if ($amt <= 0) {
+                break;
+            }
+            if (bumpLiveCardScore($state, $pid, $source['instance_id'] ?? '', $amt)) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] score +' . $amt . ' (Yell has ALL blade).');
+            }
+            break;
+        }
 
         case 'live_success_add_wr_if_distinct_subunit':
             if (countDistinctNamedSubunit($p, $ab['subunit'] ?? '') >= intval($ab['min_distinct'] ?? 2)) {

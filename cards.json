@@ -36450,13 +36450,13 @@
                 "all"
             ],
             "rarity": "L",
-            "text": "[Always] During your Live attempt, if any card you revealed for Yell has a printed heart icon, this card's score +1.",
+            "text": "[Live Success] If any card you revealed for Yell has an ALL blade, this card's score +1.",
             "text_jp": "[ライブ成功時] エールにより公開された自分のカードの中にALLブレードを持つカードが1枚以上ある場合、このカードのスコアを＋１する。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP03/PL!N-bp3-L-030-L.png",
             "abilities": [
                 {
-                    "trigger": "continuous",
-                    "type": "live_score_if_yell_has_hearts",
+                    "trigger": "live_success",
+                    "type": "live_score_if_yell_has_all_blade",
                     "amount": 1
                 }
             ],
@@ -36487,10 +36487,6 @@
                     "count": 1
                 }
             ],
-            "text_es": "[Siempre] Durante tu intento de Live, si alguna carta que revelaste para Yell tiene un icono de corazón impreso, la puntuación de esta carta +1.",
-            "text_ko": "[상시] 동안 자신의 Live attempt, 만약 임의의 카드 자신이 Yell을 위해 공개된 가지고 있다 표기된 하트 icon, 이 카드의 스코어 +1.",
-            "text_zh": "[永续] 在你的现场尝试中，如果你为大声Yell而展示的任何一张卡片上印有心形图标，则这张卡片的分数+1。",
-            "text_th": "[ต่อเนื่อง] ระหว่างพยายามถ่ายทอดสด หากการ์ดใบใดที่คุณเปิดเผยสำหรับเยลมีไอคอนรูปหัวใจ คะแนนของการ์ดใบนี้ +1",
             "loveca_point": 1
         },
         {

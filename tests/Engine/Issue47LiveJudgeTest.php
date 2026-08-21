@@ -21,11 +21,17 @@ final class Issue47LiveJudgeTest extends TestCase
     }
 
     public function testApplyLiveScoreIfYellHasHeartsBumpsLiveZoneScore(): void {
+        // Legacy continuous helper — Love U my friends no longer uses this path.
         $live = [
             'instance_id' => 'live_bonus',
-            'card_no' => 'PL!N-bp3-030-L',
+            'card_no' => 'TEST-legacy-yell-hearts',
             'card_type' => 'ライブ',
             'score' => 3,
+            'abilities' => [[
+                'trigger' => 'continuous',
+                'type' => 'live_score_if_yell_has_hearts',
+                'amount' => 1,
+            ]],
         ];
         $yellMember = [
             'instance_id' => 'yell_hearts',

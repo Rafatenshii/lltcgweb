@@ -1173,6 +1173,42 @@ function cardHasPrintedHearts(array $card): bool {
     return false;
 }
 
+/**
+ * True when a card prints ALL blade (icon_b_all / blade_hearts "all").
+ * Does not treat ALL2 / colored blades as ALL blade.
+ */
+function cardHasAllBladeHeart(array $card): bool {
+    mergeYellCardCatalogFields($card);
+    foreach ($card['blade_hearts'] ?? [] as $bh) {
+        if (is_string($bh)) {
+            $t = strtolower(trim($bh));
+            if ($t === 'all' || $t === 'all1' || $t === 'b_all') {
+                return true;
+            }
+            continue;
+        }
+        if (!is_array($bh)) {
+            continue;
+        }
+        $t = strtolower(trim((string)($bh['type'] ?? $bh['color'] ?? '')));
+        if ($t === 'all' || $t === 'all1' || $t === 'b_all') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** @param list<array<string,mixed>> $yellCards */
+function yellCardsHaveAllBlade(array $yellCards): bool {
+    hydrateYellCardsForPerformance($yellCards);
+    foreach ($yellCards as $yc) {
+        if (cardHasAllBladeHeart($yc)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Hydrate yell-reveal rows before draw/score icon counts or heart checks. */
 function hydrateYellCardsForPerformance(array &$yellCards): void {
     foreach ($yellCards as &$yc) {
@@ -1181,7 +1217,10 @@ function hydrateYellCardsForPerformance(array &$yellCards): void {
     unset($yc);
 }
 
-/** Apply continuous live_score_if_yell_has_hearts directly on live zone cards. */
+/**
+ * Legacy continuous path (Love U my friends used to misuse printed hearts).
+ * Kept for any remaining continuous live_score_if_yell_has_hearts entries.
+ */
 function applyLiveScoreIfYellHasHeartsInZone(array &$zone, array $yellCards): void {
     hydrateYellCardsForPerformance($yellCards);
     $yellHasPrintedHearts = false;

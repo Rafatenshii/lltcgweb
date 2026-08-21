@@ -28,6 +28,7 @@ function continuousEffectDescription(array $ab, ?int $stackedEnergyCount = null)
         'yell_hearts_wildcard'                => 'Yell hearts count as any color',
         'yell_heart_score_bonus'              => "+{$amount} Score per Yell heart (all your Lives this Performance)",
         'live_score_if_yell_has_hearts'       => "+{$amount} Score when Yell has printed hearts",
+        'live_score_if_yell_has_all_blade'    => "+{$amount} Score when Yell has ALL blade",
         'success_score_per_yell_score'        => "+{$amount} Live Score per Yell Score icon",
         'live_score_if_wr_group_count'        => "+{$amount} Live Score (Waiting Room group count)",
         'live_score_if_stage_wr_name_live'    => "+{$amount} Live Score (stage + WR Live name)",
