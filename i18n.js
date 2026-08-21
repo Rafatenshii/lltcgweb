@@ -8412,6 +8412,7 @@
     loc.hub.tournament = {
       title: loc.hub.tournamentMode || 'Tournament Mode',
       sub: loc.hub.tournamentModeSub || 'Coming Soon',
+      subLive: loc.hub.tournamentModeSubLive || 'Local events & brackets',
     };
     loc.auth.tournament = {
       title: loc.hub.tournament.title,

@@ -203,6 +203,11 @@ function tcgCreateRankedRoomPair(
 }
 
 function tcgOnGameFinished(array &$state): void {
+    if (($state['mode'] ?? '') === 'tournament') {
+        require_once __DIR__ . '/tournament.php';
+        tcgOnTournamentGameFinished($state);
+        return;
+    }
     if (($state['mode'] ?? '') !== 'ranked') {
         return;
     }

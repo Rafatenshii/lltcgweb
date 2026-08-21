@@ -422,7 +422,8 @@ function tcgJoinSpectator(string $roomId): array {
     if (!tcgIsSpectatableHumanGame($state, $roomId)) {
         throw new Exception('This match is not available to spectate');
     }
-    $category = (($state['mode'] ?? '') === 'ranked') ? 'ranked' : 'casual';
+    $category = (($state['mode'] ?? '') === 'ranked') ? 'ranked'
+        : ((($state['mode'] ?? '') === 'tournament') ? 'tournament' : 'casual');
     $spectators = tcgPurgeStaleSpectators($roomId);
     if (count($spectators) >= TCG_SPECTATOR_MAX_PER_ROOM) {
         throw new Exception('Spectator slots full for this match');

@@ -1448,23 +1448,7 @@ function listWaitOpponentStageTargets(array $state, string $owner, array $effect
     }
     if (isset($effect['max_original_hearts'])) {
         $maxHearts = intval($effect['max_original_hearts']);
-        $out = [];
-        foreach ($oppStage as $slot => $mbr) {
-            if (!$mbr) {
-                continue;
-            }
-            if (memberIsInWait($mbr)) {
-                continue;
-            }
-            if ($activeOnly && !memberIsActiveForGame($mbr)) {
-                continue;
-            }
-            if (memberHeartCount($mbr) > $maxHearts) {
-                continue;
-            }
-            $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
-        }
-        return $out;
+        return listOppStageMembersByMaxOriginalHearts($state, $opp, $maxHearts, $activeOnly);
     }
     $defaultMax = (($effect['type'] ?? '') === 'optional_wait_self_wait_opp') ? 4 : 9;
     $maxCost = intval($effect['max_cost'] ?? $defaultMax);
@@ -4353,6 +4337,23 @@ function listOppStageMembersByMaxOriginalBlade(
     return $out;
 }
 
+function listOppStageMembersByMaxOriginalHearts(
+    array $state,
+    string $oppId,
+    int $maxHearts,
+    bool $activeOnly = false
+): array {
+    $out = [];
+    foreach ($state['players'][$oppId]['stage'] as $slot => $mbr) {
+        if (!$mbr) continue;
+        if (memberIsInWait($mbr)) continue;
+        if ($activeOnly && !memberIsActiveForGame($mbr)) continue;
+        if (memberHeartCount($mbr) > $maxHearts) continue;
+        $out[] = array_merge(cardPromptSummary($mbr), ['slot' => $slot]);
+    }
+    return $out;
+}
+
 function takeWrMemberExactCost(array &$p, string $group, int $exactCost): ?array {
     foreach ($p['waiting_room'] as $i => $c) {
         if (($c['card_type'] ?? '') !== 'メンバー') continue;
@@ -4489,20 +4490,19 @@ function resolveAutoAreaMoveAbilities(array $state, string $pid, string $memberI
             $trigger = $ab['trigger'] ?? '';
             $type = $ab['type'] ?? '';
             if ($trigger === 'on_enter_or_auto' && $type === 'wait_opp_max_original_hearts') {
-                $opp = ($pid === 'p1') ? 'p2' : 'p1';
-                $waited = waitOpponentStageByOriginalHearts(
+                $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+                $p['stage'][$slot] = $member;
+                return beginWaitOpponentStagePick(
                     $state,
-                    $opp,
-                    intval($ab['max_original_hearts'] ?? 3),
-                    intval($ab['pick_count'] ?? 1) ?: null,
-                    $pid
+                    $pid,
+                    $mName,
+                    array_merge($ab, [
+                        'max_original_hearts' => intval($ab['max_original_hearts'] ?? 3),
+                        'pick_count' => intval($ab['pick_count'] ?? 1),
+                    ]),
+                    $memberInstanceId,
+                    ($state['phase'] ?? '') === 'live_start_effects'
                 );
-                if ($waited > 0) {
-                    $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
-                    $state = addLog($state, $state['players'][$pid]['name'] .
-                        " — [$mName] put $waited opponent Member(s) into Wait (area move).");
-                }
-                continue;
             }
             if ($trigger !== 'auto') continue;
             if ($type === 'auto_area_move_energy_wait') {
@@ -5708,9 +5708,11 @@ function logOpponentMembersWaitedOutcome(
     string $mode = 'cost'
 ): array {
     $prefix = $state['players'][$ownerPid]['name'] . ' — [' . $srcName . '] ';
-    $thresh = $mode === 'blade'
-        ? ('original Blade ≤' . $maxCost)
-        : ('cost ≤' . $maxCost);
+    $thresh = match ($mode) {
+        'blade' => 'original Blade ≤' . $maxCost,
+        'hearts' => 'printed hearts ≤' . $maxCost,
+        default => 'cost ≤' . $maxCost,
+    };
     if ($waited > 0) {
         return addLog($state, $prefix . "put $waited opponent Stage Member" .
             ($waited === 1 ? '' : 's') . " into Wait ($thresh).");
@@ -6007,26 +6009,44 @@ function beginWaitOpponentStagePick(
     bool $liveStart = false
 ): array {
     $opp = ($owner === 'p1') ? 'p2' : 'p1';
-    $byBlade = array_key_exists('max_original_blade', $effect);
+    $byBlade = array_key_exists('max_original_blade', $effect)
+        || array_key_exists('max_original_blades', $effect);
+    $byHearts = array_key_exists('max_original_hearts', $effect);
     $maxCost = intval($effect['max_cost'] ?? 9);
-    $maxBlade = intval($effect['max_original_blade'] ?? 2);
+    $maxBlade = intval($effect['max_original_blade'] ?? $effect['max_original_blades'] ?? 2);
+    $maxHearts = intval($effect['max_original_hearts'] ?? 3);
     $pickCount = isset($effect['pick_count']) ? intval($effect['pick_count']) : null;
     $activeOnly = !empty($effect['active_only']);
     // "Your opponent puts … into Wait" → opponent picks which of their Members.
     // Default "Put 1 opponent Stage Member … into Wait" → effect controller picks.
     $oppChooses = !empty($effect['opp_chooses']);
-    $members = $byBlade
-        ? listOppStageMembersByMaxOriginalBlade($state, $opp, $maxBlade, $activeOnly)
-        : listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
-    $thresholdLabel = $byBlade ? "original Blade ≤$maxBlade" : "cost ≤$maxCost";
+    if ($byBlade) {
+        $members = listOppStageMembersByMaxOriginalBlade($state, $opp, $maxBlade, $activeOnly);
+        $thresholdLabel = "original Blade ≤$maxBlade";
+        $logMode = 'blade';
+        $logMax = $maxBlade;
+    } elseif ($byHearts) {
+        $members = listOppStageMembersByMaxOriginalHearts($state, $opp, $maxHearts, $activeOnly);
+        $thresholdLabel = "printed hearts ≤$maxHearts";
+        $logMode = 'hearts';
+        $logMax = $maxHearts;
+    } else {
+        $members = listOppStageMembersByMaxCost($state, $opp, $maxCost, $activeOnly);
+        $thresholdLabel = "cost ≤$maxCost";
+        $logMode = 'cost';
+        $logMax = $maxCost;
+    }
+    $showThreshold = ($byBlade && $maxBlade < 99)
+        || ($byHearts && $maxHearts < 99)
+        || (!$byBlade && !$byHearts && $maxCost < 99);
     if (empty($members)) {
         $state = logOpponentMembersWaitedOutcome(
             $state,
             $owner,
             $srcName,
             0,
-            $byBlade ? $maxBlade : $maxCost,
-            $byBlade ? 'blade' : 'cost'
+            $logMax,
+            $logMode
         );
         return finishAfterBranchChoicePrompt($state, [
             'live_start' => $liveStart,
@@ -6036,16 +6056,20 @@ function beginWaitOpponentStagePick(
     }
     // No pick_count = wait all matching (legacy / "put all … into Wait").
     if ($pickCount === null) {
-        $waited = $byBlade
-            ? waitOpponentStageByOriginalBlades($state, $opp, $maxBlade, null, $owner, $activeOnly)
-            : waitOpponentStageByCost($state, $opp, $maxCost, null, $owner, $activeOnly);
+        if ($byBlade) {
+            $waited = waitOpponentStageByOriginalBlades($state, $opp, $maxBlade, null, $owner, $activeOnly);
+        } elseif ($byHearts) {
+            $waited = waitOpponentStageByOriginalHearts($state, $opp, $maxHearts, null, $owner, $activeOnly);
+        } else {
+            $waited = waitOpponentStageByCost($state, $opp, $maxCost, null, $owner, $activeOnly);
+        }
         $state = logOpponentMembersWaitedOutcome(
             $state,
             $owner,
             $srcName,
             $waited,
-            $byBlade ? $maxBlade : $maxCost,
-            $byBlade ? 'blade' : 'cost'
+            $logMax,
+            $logMode
         );
         return finishAfterBranchChoicePrompt($state, [
             'live_start' => $liveStart,
@@ -6062,8 +6086,8 @@ function beginWaitOpponentStagePick(
             $owner,
             $srcName,
             1,
-            $byBlade ? $maxBlade : $maxCost,
-            $byBlade ? 'blade' : 'cost'
+            $logMax,
+            $logMode
         );
         return finishAfterBranchChoicePrompt($state, [
             'live_start' => $liveStart,
@@ -6076,7 +6100,7 @@ function beginWaitOpponentStagePick(
             $prompt = $activeOnly
                 ? "Choose up to $pickCount active Member(s) on your Stage to put into Wait."
                 : "Choose up to $pickCount Member(s) on your Stage to put into Wait.";
-            if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+            if ($showThreshold) {
                 $prompt = $activeOnly
                     ? "Choose up to $pickCount active Member(s) on your Stage with $thresholdLabel to put into Wait."
                     : "Choose up to $pickCount Member(s) on your Stage with $thresholdLabel to put into Wait.";
@@ -6085,7 +6109,7 @@ function beginWaitOpponentStagePick(
             $prompt = $activeOnly
                 ? 'Choose 1 active Member on your Stage to put into Wait.'
                 : 'Choose 1 Member on your Stage to put into Wait.';
-            if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+            if ($showThreshold) {
                 $prompt = $activeOnly
                     ? "Choose 1 active Member on your Stage with $thresholdLabel to put into Wait."
                     : "Choose 1 Member on your Stage with $thresholdLabel to put into Wait.";
@@ -6096,7 +6120,7 @@ function beginWaitOpponentStagePick(
         $prompt = $activeOnly
             ? "Choose up to $pickCount active opponent Stage Member(s)"
             : "Choose up to $pickCount opponent Stage Member(s)";
-        if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+        if ($showThreshold) {
             $prompt .= " ($thresholdLabel)";
         }
         $prompt .= ' to put into Wait.';
@@ -6105,7 +6129,7 @@ function beginWaitOpponentStagePick(
         $prompt = $activeOnly
             ? "Choose 1 active opponent Stage Member"
             : 'Choose 1 opponent Stage Member';
-        if (($byBlade && $maxBlade < 99) || (!$byBlade && $maxCost < 99)) {
+        if ($showThreshold) {
             $prompt .= " ($thresholdLabel)";
         }
         $prompt .= ' to put into Wait.';
@@ -6123,8 +6147,9 @@ function beginWaitOpponentStagePick(
         'live_start'    => $liveStart,
         'prompt'        => $prompt,
         'candidates'    => $members,
-        'max_cost'      => $byBlade ? 99 : $maxCost,
+        'max_cost'      => ($byBlade || $byHearts) ? 99 : $maxCost,
         'max_original_blade' => $byBlade ? $maxBlade : null,
+        'max_original_hearts' => $byHearts ? $maxHearts : null,
         'pick_count'    => $pickCount,
         'up_to'         => $pickCount > 1,
         'ability'       => $effect,

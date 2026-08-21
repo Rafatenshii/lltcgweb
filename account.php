@@ -12,7 +12,8 @@
  *   ranked_join, ranked_leave, ranked_status, ranked_apply_result, mission_stamp_sent, mission_game_finished, rank_stats, rank_banner_set, rank_flag_set, stamp_favorites_set, active_game, leave_active_game,
  *   replay_save, replay_list, replay_get, replay_start, missions_list, missions_claim, login_bonus_status, login_bonus_claim, public_profile,
  *   public_leaderboard, sticker_shop_catalog, sticker_shop_cards, convert_to_seal, convert_to_seals_batch, sticker_buy,
- *   presence_action_mint, presence_action_redeem
+ *   presence_action_mint, presence_action_redeem,
+ *   tournament_* (local-flagged: list/get/create/update/cancel/deposit/register/checkin/tick/…)
  */
 require_once __DIR__ . '/config/paths.php';
 require_once __DIR__ . '/config/cors.php';
@@ -51,6 +52,8 @@ require_once __DIR__ . '/deckgen.php';
 require_once __DIR__ . '/missions.php';
 require_once __DIR__ . '/login_bonus.php';
 require_once __DIR__ . '/presence_actions.php';
+require_once __DIR__ . '/tournament.php';
+require_once __DIR__ . '/local_dev_auth.php';
 if (!defined('TCG_API_LIB_ONLY')) {
     define('TCG_API_LIB_ONLY', true);
 }
@@ -124,6 +127,26 @@ try {
         case 'owned_playmats':     echo json_encode(tcgApiOwnedPlaymats($body)); break;
         case 'presence_action_mint': echo json_encode(tcgApiPresenceActionMint($body)); break;
         case 'presence_action_redeem': echo json_encode(tcgApiPresenceActionRedeem($body)); break;
+        case 'tournament_enabled':   echo json_encode(tcgApiTournamentEnabled($body)); break;
+        case 'tournament_list':      echo json_encode(tcgApiTournamentList($body)); break;
+        case 'tournament_get':       echo json_encode(tcgApiTournamentGet($body)); break;
+        case 'tournament_create':    echo json_encode(tcgApiTournamentCreate($body)); break;
+        case 'tournament_update':    echo json_encode(tcgApiTournamentUpdate($body)); break;
+        case 'tournament_deposit_prize': echo json_encode(tcgApiTournamentDepositPrize($body)); break;
+        case 'tournament_register':  echo json_encode(tcgApiTournamentRegister($body)); break;
+        case 'tournament_unregister': echo json_encode(tcgApiTournamentUnregister($body)); break;
+        case 'tournament_checkin':   echo json_encode(tcgApiTournamentCheckin($body)); break;
+        case 'tournament_kick':      echo json_encode(tcgApiTournamentKick($body)); break;
+        case 'tournament_dq':        echo json_encode(tcgApiTournamentDq($body)); break;
+        case 'tournament_force_result': echo json_encode(tcgApiTournamentForceResult($body)); break;
+        case 'tournament_cancel':    echo json_encode(tcgApiTournamentCancel($body)); break;
+        case 'tournament_tick':      echo json_encode(tcgApiTournamentTick($body)); break;
+        case 'tournament_report':    echo json_encode(tcgApiTournamentReport($body)); break;
+        case 'tournament_join_match': echo json_encode(tcgApiTournamentJoinMatch($body)); break;
+        case 'tournament_eligible_decks': echo json_encode(tcgApiTournamentEligibleDecks($body)); break;
+        case 'timezone_set':          echo json_encode(tcgApiTimezoneSet($body)); break;
+        case 'local_dev_status':     echo json_encode(tcgApiLocalDevStatus($body)); break;
+        case 'local_dev_login':      echo json_encode(tcgApiLocalDevLogin($body)); break;
         default:
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Unknown action']);
@@ -195,6 +218,7 @@ function tcgApiMe(array $body): array {
         'equipped_deck_name' => $equipped ? tcgNormalizeDeckPresetName($equipped['name'] ?? '') : null,
         'equipped_loadout' => $equippedLoadout,
         'equipped_starter_key' => ($equippedLoadout === 'starter') ? ($equipped['starter_key'] ?? null) : null,
+        'preferred_timezone' => tcgNormalizePreferredTimezone($user['preferred_timezone'] ?? null),
         'starter_options' => tcgStarterDecks(),
         'missions' => tcgMissionSummaryForUser($uid),
     ];
@@ -1269,6 +1293,9 @@ function tcgApiRankedLeave(array $body): array {
 function tcgApiActiveGame(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $active = tcgGetActiveRankedGame($uid);
+    if (!$active && function_exists('tcgGetActiveTournamentGame')) {
+        $active = tcgGetActiveTournamentGame($uid);
+    }
     return ['success' => true, 'active' => $active];
 }
 
@@ -1878,6 +1905,29 @@ function tcgDecodeCardNoFromBody(array $body): string {
     }
     // Fullwidth exclamation (！) → ASCII ! for catalog / collection keys.
     return str_replace("\u{FF01}", '!', $plain);
+}
+
+/** Normalize IANA timezone; default Asia/Tokyo (JST). */
+function tcgNormalizePreferredTimezone(?string $tz): string {
+    $tz = trim((string)$tz);
+    if ($tz === '') {
+        return 'Asia/Tokyo';
+    }
+    try {
+        new DateTimeZone($tz);
+        return $tz;
+    } catch (Throwable $e) {
+        return 'Asia/Tokyo';
+    }
+}
+
+function tcgApiTimezoneSet(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    $tz = tcgNormalizePreferredTimezone($body['timezone'] ?? $body['preferred_timezone'] ?? null);
+    tcgDb()->prepare('UPDATE tcg_users SET preferred_timezone = ?, updated_at = ? WHERE discord_id = ?')
+        ->execute([$tz, time(), $uid]);
+    return ['success' => true, 'preferred_timezone' => $tz];
 }
 
 function tcgApiRankBannerSet(array $body): array {

@@ -1414,10 +1414,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 return finishAfterBranchChoicePrompt($state, $prompt);
             }
             // Targeted Wait (pick_count set): let the controller choose opponent Members.
-            // Special original-blade/heart filters still auto-resolve via those helpers.
-            if ($pickCount !== null && $pickCount > 0
-                && empty($ability['max_original_blades'])
-                && empty($ability['max_original_hearts'])) {
+            if ($pickCount !== null && $pickCount > 0) {
                 unset($state['pending_prompt']);
                 $state = addLog($state, $state['players'][$owner]['name'] .
                     ' — [' . $srcName . '] Waited self; choose opponent Member(s) to put into Wait.');
@@ -4600,6 +4597,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         $opp = $prompt['opp'] ?? (($owner === 'p1') ? 'p2' : 'p1');
         $oppChooses = !empty($prompt['opp_chooses']) || !empty($ability['opp_chooses']);
         $maxCost = intval($prompt['max_cost'] ?? $ability['max_cost'] ?? 4);
+        $maxBlade = $prompt['max_original_blade'] ?? $ability['max_original_blade']
+            ?? $ability['max_original_blades'] ?? null;
+        $maxHearts = $prompt['max_original_hearts'] ?? $ability['max_original_hearts'] ?? null;
         $pickCount = intval($prompt['pick_count'] ?? $ability['pick_count'] ?? 1);
         $upTo = !empty($prompt['up_to']) || $pickCount > 1;
 
@@ -4643,7 +4643,13 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     : 'Choose an opponent Stage Member');
             }
             $picked = $state['players'][$opp]['stage'][$slot];
-            if (intval($picked['cost'] ?? 0) > $maxCost) {
+            if ($maxHearts !== null && memberHeartCount($picked) > intval($maxHearts)) {
+                throw new Exception('Member has too many printed hearts');
+            }
+            if ($maxBlade !== null && intval($picked['blade'] ?? 0) > intval($maxBlade)) {
+                throw new Exception('Member Blade too high');
+            }
+            if ($maxHearts === null && $maxBlade === null && intval($picked['cost'] ?? 0) > $maxCost) {
                 throw new Exception('Member cost too high');
             }
             if (!empty($ability['active_only']) && memberIsInWait($picked)) {

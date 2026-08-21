@@ -513,6 +513,7 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_users', 'login_days_last_date', 'TEXT');
     tcgDbEnsureColumn($db, 'tcg_users', 'login_days_bootstrapped', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'free_sleeve_claims', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_owned_sleeves (
         discord_id TEXT NOT NULL,
         sleeve_id TEXT NOT NULL,

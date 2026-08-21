@@ -68,18 +68,18 @@ function tryResolveAbilityEffectSwitchWaitActivate(
             break;
 
         case 'wait_opp_max_original_hearts':
-            $opp = ($pid === 'p1') ? 'p2' : 'p1';
-            $waited = waitOpponentStageByOriginalHearts(
+            $state = beginWaitOpponentStagePick(
                 $state,
-                $opp,
-                intval($ab['max_original_hearts'] ?? 3),
-                intval($ab['pick_count'] ?? 1) ?: null,
-                $pid
+                $pid,
+                $name,
+                array_merge($ab, [
+                    'max_original_hearts' => intval($ab['max_original_hearts'] ?? 3),
+                    'pick_count' => intval($ab['pick_count'] ?? 1),
+                ]),
+                $source['instance_id'] ?? '',
+                ($ctx['phase'] ?? '') === 'live_start'
+                    || ($state['phase'] ?? '') === 'live_start_effects'
             );
-            if ($waited > 0) {
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] put $waited opponent Member(s) into Wait.");
-            }
             break;
 
         case 'wait_opp_max_original_blade_if_stage_group':
