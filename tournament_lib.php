@@ -366,6 +366,9 @@ function tcgTournamentLedgerWrite(
             json_encode($meta, JSON_UNESCAPED_UNICODE) ?: '{}',
             time(),
         ]);
+        if (function_exists('tcgTournamentStatsOnLedger')) {
+            tcgTournamentStatsOnLedger($kind, $discordId, $amount);
+        }
         return true;
     } catch (PDOException $e) {
         if (str_contains($e->getMessage(), 'UNIQUE') || str_contains($e->getMessage(), 'unique')) {

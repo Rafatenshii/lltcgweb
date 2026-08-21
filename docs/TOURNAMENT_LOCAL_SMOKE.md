@@ -50,3 +50,4 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, P
 - Register opens a deck picker (or Deck Builder shortcut) when no eligible deck is equipped.
 - List/detail show `spectator_count` for live tournament rooms.
 - Double elim is **two-life re-pair** (eliminated at 2 losses). Swiss uses fixed round count from field size.
+- Account SQLite tracks tournament history per user (`tcg_tournament_user_stats` / `tcg_tournament_h2h`): match W–L, H2H, coins earned from payouts, coins contributed (entry + host deposit, minus refunds). No profile UI yet.

@@ -3,7 +3,7 @@
  * Tournament Phase 3 — Swiss / double-elim / best-of series helpers.
  */
 
-/** @return array{p1_wins:int,p2_wins:int,best_of:int,games:list<array<string,mixed>>} */
+/** @return array{p1_wins:int,p2_wins:int,best_of:int,games:list<array<string,mixed>>,stats_recorded?:bool} */
 function tcgTournamentDecodeMatchMeta(?string $json): array {
     $raw = json_decode((string)$json, true);
     if (!is_array($raw)) {
@@ -19,6 +19,7 @@ function tcgTournamentDecodeMatchMeta(?string $json): array {
         'p2_wins' => max(0, (int)($raw['p2_wins'] ?? 0)),
         'best_of' => $bestOf,
         'games' => $games,
+        'stats_recorded' => !empty($raw['stats_recorded']),
     ];
 }
 

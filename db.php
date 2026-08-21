@@ -310,6 +310,11 @@ function tcgDbMigrate(PDO $db): void {
             ON tcg_tournament_matches(tournament_id, bracket_side, round, bracket_slot)');
     });
 
+    tcgDbRunMigrationOnce($db, 'tournament_stats_20260821', function (PDO $db): void {
+        require_once __DIR__ . '/tournament_stats.php';
+        tcgTournamentStatsEnsureSchema($db);
+    });
+
     // Account timezone for tournament scheduling UI (was only in full bootstrap).
     tcgDbRunMigrationOnce($db, 'preferred_timezone_20260821', function (PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");

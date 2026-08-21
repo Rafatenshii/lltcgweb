@@ -170,13 +170,17 @@ function tcgTournamentInsertMatchRow(
     $p1 = $pair['p1'] ?? null;
     $p2 = $pair['p2'] ?? null;
     $bye = $pair['bye'] ?? null;
-    $meta = tcgTournamentEncodeMatchMeta([
-        'best_of' => $bestOf === 3 ? 3 : 1,
-        'p1_wins' => 0,
-        'p2_wins' => 0,
-        'games' => [],
-    ]);
     if ($bye !== null) {
+        $metaArr = [
+            'best_of' => $bestOf === 3 ? 3 : 1,
+            'p1_wins' => 0,
+            'p2_wins' => 0,
+            'games' => [],
+        ];
+        if (function_exists('tcgTournamentStatsRecordSeriesResult')) {
+            tcgTournamentStatsRecordSeriesResult((string)$bye, '', $metaArr);
+        }
+        $meta = tcgTournamentEncodeMatchMeta($metaArr);
         tcgDb()->prepare(
             'INSERT INTO tcg_tournament_matches
              (id, tournament_id, round, bracket_slot, bracket_side, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
@@ -185,6 +189,12 @@ function tcgTournamentInsertMatchRow(
         )->execute([$mid, $tournamentId, $round, $slot, $side, $bye, $bye, $meta, $created, $created]);
         return;
     }
+    $meta = tcgTournamentEncodeMatchMeta([
+        'best_of' => $bestOf === 3 ? 3 : 1,
+        'p1_wins' => 0,
+        'p2_wins' => 0,
+        'games' => [],
+    ]);
     tcgDb()->prepare(
         'INSERT INTO tcg_tournament_matches
          (id, tournament_id, round, bracket_slot, bracket_side, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
@@ -319,6 +329,10 @@ function tcgTournamentFinalizeMatchSeries(array $m, string $winnerDiscordId, arr
     $p2 = (string)($m['p2_discord_id'] ?? '');
     $loser = ($winnerDiscordId === $p1) ? $p2 : $p1;
     $now = time();
+
+    if (function_exists('tcgTournamentStatsRecordSeriesResult')) {
+        tcgTournamentStatsRecordSeriesResult($winnerDiscordId, $loser, $meta);
+    }
 
     tcgDb()->prepare(
         'UPDATE tcg_tournament_matches
