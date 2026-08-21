@@ -1382,7 +1382,12 @@
     }
     grid.innerHTML = cells.join('');
     grid.querySelectorAll('.tournament-cal-day:not(:disabled)').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (ev) => {
+        // Keep the popover open until Apply/Cancel — stop the document
+        // outside-click handler, and avoid relying on contains() after we
+        // replace the grid (which detaches this button mid-click).
+        ev.preventDefault();
+        ev.stopPropagation();
         datePicker.selectedY = Number(btn.getAttribute('data-y'));
         datePicker.selectedM = Number(btn.getAttribute('data-m'));
         datePicker.selectedD = Number(btn.getAttribute('data-d'));
@@ -1528,7 +1533,13 @@
     document.addEventListener('click', (ev) => {
       if (!datePicker.open) return;
       const wrap = el('tournament-datetime');
-      if (wrap && !wrap.contains(ev.target)) closeDatePicker();
+      if (!wrap) return;
+      // Prefer composedPath: day cells are replaced on select, so ev.target may
+      // already be detached and wrap.contains(ev.target) would falsely close.
+      const path = typeof ev.composedPath === 'function' ? ev.composedPath() : null;
+      if (path && path.indexOf(wrap) !== -1) return;
+      if (wrap.contains(ev.target)) return;
+      closeDatePicker();
     });
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && datePicker.open) closeDatePicker();
