@@ -5123,18 +5123,22 @@ html[lang="ko"] #overlay-news .news-list-item-new-tag{text-transform:none;letter
   font-size:9px;font-weight:900;letter-spacing:.04em;line-height:1.2;text-transform:uppercase;
   color:#fff;background:linear-gradient(135deg,var(--pink),var(--pink-d));
   border:1px solid rgba(255,255,255,.55);box-shadow:0 2px 10px rgba(255,107,168,.45);
-  pointer-events:none}
+  pointer-events:none;white-space:nowrap}
 #btn-hub-shop.is-shop-new,
 .shop-hub-tile.is-shop-new,
 .sleeve-shop-gen.is-shop-new,
 .sleeve-shop-char.is-shop-new{
   position:relative;
   box-shadow:0 0 0 2px rgba(255,107,168,.45),0 0 18px rgba(255,107,168,.35)}
+/* Bleed "New" above category / character boxes without shifting layout */
+.sleeve-shop-gen.is-shop-new,
+.sleeve-shop-char.is-shop-new{overflow:visible;z-index:2}
 #btn-hub-shop.is-shop-new{animation:newsFabGlow 1.6s ease-in-out infinite}
 .sleeve-shop-tile.is-shop-new{position:relative;outline:2px solid rgba(255,107,168,.65)}
 .sleeve-shop-tile.is-shop-new > .shop-new-badge{top:4px;right:4px}
 .sleeve-shop-gen.is-shop-new > .shop-new-badge,
-.sleeve-shop-char.is-shop-new > .shop-new-badge{top:4px;right:4px}
+.sleeve-shop-char.is-shop-new > .shop-new-badge{
+  top:-8px;right:-6px;z-index:4}
 .shop-hub-tile{position:relative}
 .shop-hub-tile.is-shop-new > .shop-new-badge{top:10px;right:10px}
 html[lang="ja"] .shop-new-badge,
