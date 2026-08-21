@@ -62,7 +62,8 @@
     "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
     "stickerShop": "스티커 샵",
     "stickerShopSub": "실을 팩 카드로 교환",
-    "officialVideo": "공식 8분 영상 ↗"
+    "officialVideo": "공식 8분 영상 ↗",
+    "tournamentModeSubLive": "이벤트 & 브래킷"
   },
   "language": {
     "label": "언어",
@@ -1079,7 +1080,8 @@
     "sessionEnded": "관전 세션이 종료되었습니다.",
     "switchPerspective": "시점 전환",
     "waitingJudgePick": "Live 승패 — {name}이(가) 성공 Live를 고를 때까지 대기 중…",
-    "waitingJudgeResolve": "Live 승패 — {name} 대기 중…"
+    "waitingJudgeResolve": "Live 승패 — {name} 대기 중…",
+    "listTitleTournament": "토너먼트 관전"
   },
   "missions": {
     "claim": "수령",
@@ -1196,5 +1198,275 @@
     "infoLead": "여분의 부스터 카드 또는 보유한 스타터 카드 1장을 같은 희귀도 실 1장으로 변환할 수 있습니다. 아래 비용으로 실을 카드와 교환하세요.",
     "infoRarities": "희귀도",
     "infoCost": "교환 비용"
+  },
+  "tournament": {
+    "backHub": "← 허브",
+    "title": "토너먼트 모드",
+    "lead": "이벤트를 잡고, 덱을 잠그고, 체크인한 뒤 싱글 엘리미네이션 브래킷을 진행하세요.",
+    "timezoneLabel": "시간대",
+    "timezoneAria": "표시 시간대",
+    "tzHint": "시간은 {tz} 기준",
+    "tzHintJstFallback": "시간은 JST 기준",
+    "createEvent": "이벤트 만들기",
+    "refresh": "새로고침",
+    "filterMode": "모드",
+    "mode": {
+      "all": "전체",
+      "standard": "스탠다드",
+      "starters": "스타터",
+      "randomized": "랜덤",
+      "free": "프리",
+      "freeDeckExperiment": "프리 (덱 실험)"
+    },
+    "listEmpty": "아직 열린 토너먼트가 없습니다. 하나 만들어 보세요.",
+    "card": {
+      "fee": "참가비 {n}",
+      "watching": "관전 {n}",
+      "starts": "시작 {when}",
+      "fog": "포그 {fog}",
+      "delay": "지연 {n}초",
+      "metaSep": "·"
+    },
+    "backBulletin": "← 게시판",
+    "notify": {
+      "title": "LLTCG 토너먼트",
+      "checkinOpen": "체크인 시작: {title}",
+      "checkinSoon": "곧 체크인: {title}"
+    },
+    "createHeading": "토너먼트 만들기",
+    "createTzNote": "시작 시간은 {tz}를 사용합니다.",
+    "createTzNoteFallback": "시작 시간은 선택한 시간대를 사용합니다.",
+    "field": {
+      "title": "제목",
+      "titlePlaceholder": "금요일 밤 브래킷",
+      "startLocal": "시작 (로컬)",
+      "checkinMins": "체크인 분",
+      "minPlayers": "최소 인원",
+      "maxPlayers": "최대 인원",
+      "entryFee": "참가비 (코인)",
+      "gameMode": "게임 모드",
+      "format": "형식",
+      "matchLength": "매치 길이",
+      "fog": "전장의 안개",
+      "rules": "규칙 템플릿",
+      "rulesTitle": "추가 덱 규칙; 스타터/랜덤은 스탠다드만 적용",
+      "streamDelay": "스트림 지연 (관전)"
+    },
+    "format": {
+      "singleElim": "싱글 엘리미네이션",
+      "doubleElimBracket": "더블 엘림 (승자/패자)",
+      "doubleElimLives": "더블 엘림 (2라이프)",
+      "swiss": "스위스",
+      "single_elim": "싱글 엘리미네이션",
+      "double_elim_bracket": "더블 엘림 (승자/패자)",
+      "double_elim": "더블 엘림 (2라이프)"
+    },
+    "bestOf": {
+      "1": "베스트 오브 1",
+      "3": "베스트 오브 3"
+    },
+    "fog": {
+      "hiddenHands": "손패 비공개 (관전자)",
+      "openHands": "손패 공개",
+      "hiddenHandsShort": "손패 비공개",
+      "openHandsShort": "손패 공개"
+    },
+    "rules": {
+      "standardOption": "스탠다드 (추가 제한 없음)",
+      "pauperOption": "파우퍼 (N/R)",
+      "highlanderOption": "하이랜더 (1장)",
+      "standard": {
+        "label": "스탠다드",
+        "help": "선택한 게임 모드 외 추가 덱 제한 없음. 일반 레어도·장수 제한 적용."
+      },
+      "pauper": {
+        "label": "파우퍼 (N/R)",
+        "help": "낮은 레어도만: N, R, C, U, CL. SR+·SEC 등 고레어 불가."
+      },
+      "highlander": {
+        "label": "하이랜더 (1장)",
+        "help": "메인+에너지 전체에서 각 카드 1장까지. 같은 번호 중복 불가."
+      }
+    },
+    "rulesHelp": {
+      "modeLockedPrefix": "게임 모드가 이미 덱 규칙을 정합니다 — 여기서는 스탠다드만 적용됩니다."
+    },
+    "delay": {
+      "none": "없음",
+      "secs": "{n}초"
+    },
+    "schedule": "일정 잡기",
+    "detail": {
+      "host": "주최",
+      "hostFallback": "주최",
+      "prize": "상금 {n}",
+      "watching": "관전 {n}",
+      "starts": "시작 {when}",
+      "mode": "모드 {mode}",
+      "rules": "규칙 {rules}",
+      "fog": "포그 {fog}",
+      "streamDelay": "스트림 지연 {n}초",
+      "bestOfShort": "Bo{n}"
+    },
+    "entrantsHeading": "참가자",
+    "bracketHeading": "브래킷",
+    "entrantsEmpty": "참가자 없음",
+    "person": {
+      "playerFallback": "플레이어"
+    },
+    "standingsHeading": "순위표",
+    "standings": {
+      "record": "{wins}승–{losses}패"
+    },
+    "action": {
+      "register": "등록",
+      "registerTip": "덱을 잠그고 참가합니다. 참가비가 있으면 상금 풀에 납부합니다.",
+      "checkin": "체크인",
+      "checkinTip": "브래킷 시작 전 출석 확인. 미체크인은 노쇼 처리됩니다.",
+      "unregister": "등록 취소",
+      "unregisterTip": "시작 전에 나와 참가비를 환불받습니다.",
+      "checkedIn": "체크인 완료",
+      "checkedInTip": "체크인했습니다. 브래킷 시작을 기다리는 중.",
+      "deposit": "상금 입금",
+      "depositTip": "잔액 코인을 이 이벤트의 상금 풀에 추가 (주최만).",
+      "cancel": "취소 (환불)",
+      "cancelTip": "토너먼트를 취소하고 참가비와 남은 주최 상금을 환불합니다.",
+      "tick": "새로고침 / 틱",
+      "tickTip": "이벤트를 갱신하고 서버 타이머(체크인·브래킷·방 배정)를 진행합니다.",
+      "join": "내 매치 참가",
+      "joinTip": "브래킷 경기가 준비되면 토너먼트 방에 들어갑니다.",
+      "spectateList": "매치 관전",
+      "spectateListTip": "이 토너먼트의 진행 중 매치를 관전자로 봅니다."
+    },
+    "prompt": {
+      "deposit": "상금 금고에 넣을 코인:",
+      "depositDefault": "1000"
+    },
+    "confirm": {
+      "cancel": "토너먼트를 취소하고 참가자를 환불할까요?"
+    },
+    "bracket": {
+      "empty": "최대 인원/형식이 정해지면 브래킷이 표시됩니다.",
+      "previewSuffix": "미리보기 (체크인 후 이름 표시)",
+      "slot": "슬롯",
+      "tbd": "미정",
+      "bye": "부전승",
+      "waiting": "대기 중…",
+      "spectate": "관전",
+      "spectateTip": "관전자로 이 경기를 봅니다 (비참가자 환영)",
+      "winner": "승자: {name}",
+      "namesLock": "이름은 브래킷 시작 시 확정"
+    },
+    "formatCaption": {
+      "swiss": "스위스 라운드",
+      "doubleElimLives": "더블 엘림 (2라이프)",
+      "doubleElimBracket": "더블 엘림 (승자/패자)",
+      "singleElim": "싱글 엘리미네이션"
+    },
+    "round": {
+      "swiss": "스위스 · 라운드 {n}",
+      "losersFinal": "패자 결승",
+      "losers": "패자 · R{n}",
+      "grandFinal": "그랜드 파이널",
+      "grandFinalReset": "그랜드 파이널 (리셋)",
+      "winnersFinal": "승자 결승",
+      "semifinals": "준결승",
+      "roundOf": "{n}강"
+    },
+    "matchStatus": {
+      "live": "진행 중",
+      "ready": "준비됨",
+      "done": "종료",
+      "pending": "예정"
+    },
+    "register": {
+      "backEvent": "← 이벤트",
+      "heading": "잠글 덱 선택",
+      "leadDefault": "등록하면 이 덱이 토너먼트용으로 잠깁니다.",
+      "leadPick": "이 이벤트에 쓸 합법 덱을 골라 잠그세요.",
+      "leadEmpty": "아직 대상 덱이 없습니다 — 덱 빌더에서 만든 뒤 돌아오세요.",
+      "leadFreePick": "덱 실험 프리셋, 저장 덱, 또는 실험 비밀번호를 입력하세요.",
+      "leadFreeEmpty": "저장된 프리 덱이 없습니다 — 덱 실험에서 프리셋을 저장(또는 공유 비밀번호)한 뒤 돌아오세요.",
+      "noEligible": "이 게임 모드에 맞는 덱이 없습니다.",
+      "noFreeDecks": "실험 프리셋이나 보유 계정 덱을 찾지 못했습니다.",
+      "deckFallback": "덱",
+      "metaPreset": "프리셋 슬롯 {slot}",
+      "metaEquipped": "· 장착 중",
+      "metaStarter": "스타터 · {label}",
+      "metaExperiment": "덱 실험 · 슬롯 {slot}",
+      "passwordLabel": "실험 비밀번호",
+      "passwordPlaceholder": "공유 덱 실험 코드",
+      "withPassword": "비밀번호로 등록",
+      "openDeckBuilder": "덱 빌더 열기",
+      "openDeckExperiment": "덱 실험 열기"
+    },
+    "status": {
+      "open": "모집 중",
+      "checkin": "체크인",
+      "running": "진행 중",
+      "finished": "종료",
+      "cancelled": "취소됨"
+    },
+    "entrant": {
+      "registered": "등록됨",
+      "checked_in": "체크인됨",
+      "no_show": "노쇼",
+      "eliminated": "탈락",
+      "active": "활성"
+    },
+    "err": {
+      "cancelled": "이 토너먼트가 취소되었습니다.",
+      "unavailable": "해당 토너먼트는 더 이상 사용할 수 없습니다.",
+      "cancelRefunded": "토너먼트 취소 — 참가자에게 환불했습니다.",
+      "pickStart": "시작 날짜와 시간을 선택하세요",
+      "startTooSoon": "시작은 지금부터 최소 1분 뒤여야 합니다",
+      "pickStartSoon": "시작 시간은 지금부터 최소 1분 뒤로 선택하세요",
+      "experimentPassword": "실험 비밀번호를 입력하세요",
+      "joinHelperMissing": "참가 도우미가 없습니다",
+      "spectateHelperMissing": "관전 도우미가 없습니다"
+    },
+    "toast": {
+      "noMatchReady": "준비된 토너먼트 매치가 없습니다"
+    },
+    "cal": {
+      "pickDateTime": "날짜·시간 선택",
+      "dialogAria": "시작 날짜와 시간 선택",
+      "prevMonth": "이전 달",
+      "nextMonth": "다음 달",
+      "monthFallback": "월",
+      "dow": {
+        "su": "일",
+        "mo": "월",
+        "tu": "화",
+        "we": "수",
+        "th": "목",
+        "fr": "금",
+        "sa": "토"
+      },
+      "hour": "시",
+      "min": "분",
+      "cancel": "취소",
+      "apply": "적용"
+    },
+    "tz": {
+      "Asia/Tokyo": "일본 (JST)",
+      "America/New_York": "미국 동부",
+      "America/Chicago": "미국 중부",
+      "America/Denver": "미국 산지",
+      "America/Los_Angeles": "미국 서부",
+      "America/Toronto": "캐나다 동부",
+      "America/Vancouver": "캐나다 서부",
+      "Europe/London": "영국 (런던)",
+      "Europe/Paris": "중부 유럽",
+      "Europe/Berlin": "베를린",
+      "Australia/Sydney": "시드니",
+      "Asia/Singapore": "싱가포르",
+      "Asia/Seoul": "한국 (KST)",
+      "Asia/Shanghai": "중국",
+      "Asia/Hong_Kong": "홍콩",
+      "Asia/Bangkok": "방콕",
+      "Pacific/Auckland": "오클랜드",
+      "UTC": "UTC"
+    }
   }
 }

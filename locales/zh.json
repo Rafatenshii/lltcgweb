@@ -62,7 +62,8 @@
     "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）",
     "stickerShop": "贴纸商店",
     "stickerShopSub": "用印章兑换你补充包中的卡牌",
-    "officialVideo": "官方8分钟视频 ↗"
+    "officialVideo": "官方8分钟视频 ↗",
+    "tournamentModeSubLive": "赛事与对阵表"
   },
   "language": {
     "label": "语言",
@@ -1080,7 +1081,8 @@
     "sessionEnded": "观战已结束。",
     "switchPerspective": "切换视角",
     "waitingJudgePick": "Live 胜负 — 等待 {name} 选择成功 Live…",
-    "waitingJudgeResolve": "Live 胜负 — 等待 {name}…"
+    "waitingJudgeResolve": "Live 胜负 — 等待 {name}…",
+    "listTitleTournament": "观战锦标赛"
   },
   "missions": {
     "claim": "领取",
@@ -1197,5 +1199,275 @@
     "infoLead": "将 1 张多余的补充包卡或你拥有的入门卡转换为 1 枚对应印章。按下方费用用印章兑换卡牌。",
     "infoRarities": "稀有度",
     "infoCost": "兑换费用"
+  },
+  "tournament": {
+    "backHub": "← 主页",
+    "title": "锦标赛模式",
+    "lead": "安排赛事、锁定卡组、签到，并进行单败淘汰对阵。",
+    "timezoneLabel": "时区",
+    "timezoneAria": "显示时区",
+    "tzHint": "时间按 {tz} 显示",
+    "tzHintJstFallback": "时间按 JST 显示",
+    "createEvent": "创建赛事",
+    "refresh": "刷新",
+    "filterMode": "模式",
+    "mode": {
+      "all": "全部",
+      "standard": "标准",
+      "starters": "新手",
+      "randomized": "随机",
+      "free": "自由",
+      "freeDeckExperiment": "自由（卡组实验）"
+    },
+    "listEmpty": "暂无开放的锦标赛。创建一个开始吧。",
+    "card": {
+      "fee": "报名费 {n}",
+      "watching": "{n} 人观战",
+      "starts": "开始 {when}",
+      "fog": "迷雾 {fog}",
+      "delay": "延迟 {n}秒",
+      "metaSep": "·"
+    },
+    "backBulletin": "← 公告板",
+    "notify": {
+      "title": "LLTCG 锦标赛",
+      "checkinOpen": "签到已开始：{title}",
+      "checkinSoon": "即将签到：{title}"
+    },
+    "createHeading": "创建锦标赛",
+    "createTzNote": "开始时间使用 {tz}。",
+    "createTzNoteFallback": "开始时间使用你选择的时区。",
+    "field": {
+      "title": "标题",
+      "titlePlaceholder": "周五夜对阵",
+      "startLocal": "开始（本地）",
+      "checkinMins": "签到分钟数",
+      "minPlayers": "最少人数",
+      "maxPlayers": "最多人数",
+      "entryFee": "报名费（Coins）",
+      "gameMode": "游戏模式",
+      "format": "赛制",
+      "matchLength": "对局局数",
+      "fog": "战争迷雾",
+      "rules": "规则模板",
+      "rulesTitle": "额外卡组规则；新手/随机仅适用标准",
+      "streamDelay": "直播延迟（观战）"
+    },
+    "format": {
+      "singleElim": "单败淘汰",
+      "doubleElimBracket": "双败（胜者/败者）",
+      "doubleElimLives": "双败（2命）",
+      "swiss": "瑞士轮",
+      "single_elim": "单败淘汰",
+      "double_elim_bracket": "双败（胜者/败者）",
+      "double_elim": "双败（2命）"
+    },
+    "bestOf": {
+      "1": "一局定胜负",
+      "3": "三局两胜"
+    },
+    "fog": {
+      "hiddenHands": "隐藏手牌（观众）",
+      "openHands": "公开手牌",
+      "hiddenHandsShort": "隐藏手牌",
+      "openHandsShort": "公开手牌"
+    },
+    "rules": {
+      "standardOption": "标准（无额外限制）",
+      "pauperOption": "贫民（N/R）",
+      "highlanderOption": "高地人（各1）",
+      "standard": {
+        "label": "标准",
+        "help": "除所选游戏模式外无额外卡组限制。适用完整稀有度与常规张数限制。"
+      },
+      "pauper": {
+        "label": "贫民（N/R）",
+        "help": "仅较低稀有度：N、R、C、U、CL。不允许更高稀有度（SR+、SEC 等）。"
+      },
+      "highlander": {
+        "label": "高地人（各1）",
+        "help": "主卡组+能量整副中每种卡最多1张。不允许同编号重复。"
+      }
+    },
+    "rulesHelp": {
+      "modeLockedPrefix": "游戏模式已设定卡组规则 — 此处仅适用标准。"
+    },
+    "delay": {
+      "none": "无",
+      "secs": "{n} 秒"
+    },
+    "schedule": "安排",
+    "detail": {
+      "host": "主办",
+      "hostFallback": "主办",
+      "prize": "奖金 {n}",
+      "watching": "观战 {n}",
+      "starts": "开始 {when}",
+      "mode": "模式 {mode}",
+      "rules": "规则 {rules}",
+      "fog": "迷雾 {fog}",
+      "streamDelay": "直播延迟 {n}秒",
+      "bestOfShort": "Bo{n}"
+    },
+    "entrantsHeading": "参赛者",
+    "bracketHeading": "对阵表",
+    "entrantsEmpty": "暂无参赛者",
+    "person": {
+      "playerFallback": "玩家"
+    },
+    "standingsHeading": "积分榜",
+    "standings": {
+      "record": "{wins}胜–{losses}负"
+    },
+    "action": {
+      "register": "报名",
+      "registerTip": "锁定卡组并报名。若有报名费将计入奖池。",
+      "checkin": "签到",
+      "checkinTip": "在对阵开始前确认到场。未签到视为缺席。",
+      "unregister": "取消报名",
+      "unregisterTip": "在开始前退出并退还报名费。",
+      "checkedIn": "已签到",
+      "checkedInTip": "你已签到，等待对阵开始。",
+      "deposit": "存入奖金",
+      "depositTip": "从余额向本赛事奖池添加 Coins（仅主办）。",
+      "cancel": "取消（退款）",
+      "cancelTip": "取消锦标赛并退还报名费及剩余主办奖金。",
+      "tick": "刷新 / 推进",
+      "tickTip": "刷新本赛事并推进服务器计时（签到窗口、对阵、房间分配）。",
+      "join": "加入我的对局",
+      "joinTip": "当你的对阵局准备好时进入锦标赛房间。",
+      "spectateList": "观战对局",
+      "spectateListTip": "以观众身份浏览并观看本锦标赛的进行中对局。"
+    },
+    "prompt": {
+      "deposit": "存入奖池的 Coins 数量：",
+      "depositDefault": "1000"
+    },
+    "confirm": {
+      "cancel": "取消锦标赛并为参赛者退款？"
+    },
+    "bracket": {
+      "empty": "设定最多人数/赛制后显示对阵表。",
+      "previewSuffix": "预览（签到后填入名字）",
+      "slot": "席位",
+      "tbd": "待定",
+      "bye": "轮空",
+      "waiting": "等待中…",
+      "spectate": "观战",
+      "spectateTip": "以观众身份观看本局（非参赛者也可）",
+      "winner": "胜者：{name}",
+      "namesLock": "名字在对阵开始时锁定"
+    },
+    "formatCaption": {
+      "swiss": "瑞士轮",
+      "doubleElimLives": "双败（2命）",
+      "doubleElimBracket": "双败（胜者/败者）",
+      "singleElim": "单败淘汰"
+    },
+    "round": {
+      "swiss": "瑞士 · 第{n}轮",
+      "losersFinal": "败者决赛",
+      "losers": "败者 · R{n}",
+      "grandFinal": "总决赛",
+      "grandFinalReset": "总决赛（重置）",
+      "winnersFinal": "胜者决赛",
+      "semifinals": "半决赛",
+      "roundOf": "{n}强"
+    },
+    "matchStatus": {
+      "live": "进行中",
+      "ready": "就绪",
+      "done": "结束",
+      "pending": "即将开始"
+    },
+    "register": {
+      "backEvent": "← 赛事",
+      "heading": "选择要锁定的卡组",
+      "leadDefault": "报名后此卡组将锁定用于锦标赛。",
+      "leadPick": "为本赛事选择合法卡组并锁定。",
+      "leadEmpty": "尚无合格卡组 — 请先在卡组构建器制作后再回来。",
+      "leadFreePick": "选择卡组实验预设、已存账号卡组，或输入实验密码。",
+      "leadFreeEmpty": "尚无已存自由卡组 — 打开卡组实验保存预设（或使用分享密码）后再回来。",
+      "noEligible": "此游戏模式没有合格卡组。",
+      "noFreeDecks": "未找到实验预设或账号卡组。",
+      "deckFallback": "卡组",
+      "metaPreset": "预设栏位 {slot}",
+      "metaEquipped": "· 已装备",
+      "metaStarter": "新手 · {label}",
+      "metaExperiment": "卡组实验 · 栏位 {slot}",
+      "passwordLabel": "实验密码",
+      "passwordPlaceholder": "分享的卡组实验代码",
+      "withPassword": "用密码报名",
+      "openDeckBuilder": "打开卡组构建器",
+      "openDeckExperiment": "打开卡组实验"
+    },
+    "status": {
+      "open": "开放",
+      "checkin": "签到",
+      "running": "进行中",
+      "finished": "已结束",
+      "cancelled": "已取消"
+    },
+    "entrant": {
+      "registered": "已报名",
+      "checked_in": "已签到",
+      "no_show": "缺席",
+      "eliminated": "已淘汰",
+      "active": "进行中"
+    },
+    "err": {
+      "cancelled": "此锦标赛已取消。",
+      "unavailable": "该锦标赛已不可用。",
+      "cancelRefunded": "锦标赛已取消 — 已为参赛者退款。",
+      "pickStart": "请选择开始日期与时间",
+      "startTooSoon": "开始时间须至少在1分钟之后",
+      "pickStartSoon": "请选择至少1分钟之后的开始时间",
+      "experimentPassword": "请输入实验密码",
+      "joinHelperMissing": "缺少加入助手",
+      "spectateHelperMissing": "缺少观战助手"
+    },
+    "toast": {
+      "noMatchReady": "暂无就绪的锦标赛对局"
+    },
+    "cal": {
+      "pickDateTime": "选择日期与时间",
+      "dialogAria": "选择开始日期与时间",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月",
+      "monthFallback": "月",
+      "dow": {
+        "su": "日",
+        "mo": "一",
+        "tu": "二",
+        "we": "三",
+        "th": "四",
+        "fr": "五",
+        "sa": "六"
+      },
+      "hour": "时",
+      "min": "分",
+      "cancel": "取消",
+      "apply": "应用"
+    },
+    "tz": {
+      "Asia/Tokyo": "日本（JST）",
+      "America/New_York": "美国东部",
+      "America/Chicago": "美国中部",
+      "America/Denver": "美国山地",
+      "America/Los_Angeles": "美国太平洋",
+      "America/Toronto": "加拿大东部",
+      "America/Vancouver": "加拿大太平洋",
+      "Europe/London": "英国（伦敦）",
+      "Europe/Paris": "中欧",
+      "Europe/Berlin": "柏林",
+      "Australia/Sydney": "悉尼",
+      "Asia/Singapore": "新加坡",
+      "Asia/Seoul": "韩国（KST）",
+      "Asia/Shanghai": "中国",
+      "Asia/Hong_Kong": "香港",
+      "Asia/Bangkok": "曼谷",
+      "Pacific/Auckland": "奥克兰",
+      "UTC": "UTC"
+    }
   }
 }

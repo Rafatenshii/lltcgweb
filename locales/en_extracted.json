@@ -60,7 +60,8 @@
     "howToPlay": "How to Play",
     "howToPlaySub": "Hands-on beginner lesson with Kanon",
     "backHub": "← Hub",
-    "missions": "Missions"
+    "missions": "Missions",
+    "tournamentModeSubLive": "Events & brackets"
   },
   "missions": {
     "title": "Missions",
@@ -1126,7 +1127,8 @@
     "count": "Spectators: {n}",
     "switchPerspective": "Switch perspective",
     "waitingJudgePick": "Live Win/Loss — waiting for {name} to choose a Success Live…",
-    "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…"
+    "waitingJudgeResolve": "Live Win/Loss — waiting for {name}…",
+    "listTitleTournament": "Spectate tournament"
   },
   "ui": {
     "fullscreen": "Full screen",
@@ -1139,5 +1141,275 @@
     "member": "Member",
     "live": "Live",
     "energy": "Energy"
+  },
+  "tournament": {
+    "backHub": "← Hub",
+    "title": "Tournament Mode",
+    "lead": "Schedule events, lock decks, check in, and run a single-elim bracket.",
+    "timezoneLabel": "Timezone",
+    "timezoneAria": "Display timezone",
+    "tzHint": "Times shown in {tz}",
+    "tzHintJstFallback": "Times shown in JST",
+    "createEvent": "Create event",
+    "refresh": "Refresh",
+    "filterMode": "Mode",
+    "mode": {
+      "all": "All",
+      "standard": "Standard",
+      "starters": "Starters",
+      "randomized": "Randomized",
+      "free": "Free",
+      "freeDeckExperiment": "Free (Deck Experiment)"
+    },
+    "listEmpty": "No open tournaments yet. Create one to get started.",
+    "card": {
+      "fee": "fee {n}",
+      "watching": "{n} watching",
+      "starts": "starts {when}",
+      "fog": "fog {fog}",
+      "delay": "delay {n}s",
+      "metaSep": "·"
+    },
+    "backBulletin": "← Bulletin",
+    "notify": {
+      "title": "LLTCG Tournament",
+      "checkinOpen": "Check-in open: {title}",
+      "checkinSoon": "Check-in soon: {title}"
+    },
+    "createHeading": "Create tournament",
+    "createTzNote": "Start time uses {tz}.",
+    "createTzNoteFallback": "Start time uses your selected timezone.",
+    "field": {
+      "title": "Title",
+      "titlePlaceholder": "Friday Night Bracket",
+      "startLocal": "Start (local)",
+      "checkinMins": "Check-in minutes",
+      "minPlayers": "Min players",
+      "maxPlayers": "Max players",
+      "entryFee": "Entry fee (Coins)",
+      "gameMode": "Game mode",
+      "format": "Format",
+      "matchLength": "Match length",
+      "fog": "Fog of war",
+      "rules": "Rules template",
+      "rulesTitle": "Extra deck rules; only Standard applies for Starters / Randomized",
+      "streamDelay": "Stream delay (spectate)"
+    },
+    "format": {
+      "singleElim": "Single elimination",
+      "doubleElimBracket": "Double elim (Winners/Losers)",
+      "doubleElimLives": "Double elim (2 lives)",
+      "swiss": "Swiss",
+      "single_elim": "Single elimination",
+      "double_elim_bracket": "Double elim (Winners/Losers)",
+      "double_elim": "Double elim (2 lives)"
+    },
+    "bestOf": {
+      "1": "Best of 1",
+      "3": "Best of 3"
+    },
+    "fog": {
+      "hiddenHands": "Hidden hands (spectators)",
+      "openHands": "Open hands",
+      "hiddenHandsShort": "hidden hands",
+      "openHandsShort": "open hands"
+    },
+    "rules": {
+      "standardOption": "Standard (no extra limits)",
+      "pauperOption": "Pauper (N/R)",
+      "highlanderOption": "Highlander (1-of)",
+      "standard": {
+        "label": "Standard",
+        "help": "No extra deck limits beyond the selected game mode. Full rarity and normal copy limits apply."
+      },
+      "pauper": {
+        "label": "Pauper (N/R)",
+        "help": "Only lower rarities: N, R, C, U, and CL. Higher rarities (SR+, SEC, etc.) are not allowed."
+      },
+      "highlander": {
+        "label": "Highlander (1-of)",
+        "help": "At most one copy of each card in the whole deck (main + energy). No duplicates of any card number."
+      }
+    },
+    "rulesHelp": {
+      "modeLockedPrefix": "Game mode already sets deck rules — only Standard applies here."
+    },
+    "delay": {
+      "none": "None",
+      "secs": "{n} seconds"
+    },
+    "schedule": "Schedule",
+    "detail": {
+      "host": "Host",
+      "hostFallback": "Host",
+      "prize": "prize {n}",
+      "watching": "watching {n}",
+      "starts": "starts {when}",
+      "mode": "mode {mode}",
+      "rules": "rules {rules}",
+      "fog": "fog {fog}",
+      "streamDelay": "stream delay {n}s",
+      "bestOfShort": "Bo{n}"
+    },
+    "entrantsHeading": "Entrants",
+    "bracketHeading": "Bracket",
+    "entrantsEmpty": "No entrants",
+    "person": {
+      "playerFallback": "Player"
+    },
+    "standingsHeading": "Standings",
+    "standings": {
+      "record": "{wins}W–{losses}L"
+    },
+    "action": {
+      "register": "Register",
+      "registerTip": "Lock in a deck and enter this event. Pays the entry fee into the prize pool if one is set.",
+      "checkin": "Check in",
+      "checkinTip": "Confirm you are present before the bracket starts. Missing check-in marks you as a no-show.",
+      "unregister": "Unregister",
+      "unregisterTip": "Leave the event before it starts and refund your entry fee.",
+      "checkedIn": "Checked in",
+      "checkedInTip": "You are checked in and waiting for the bracket to start.",
+      "deposit": "Deposit prize",
+      "depositTip": "Add Coins from your balance to this event’s prize pool (host only).",
+      "cancel": "Cancel (refund)",
+      "cancelTip": "Cancel the tournament and refund entry fees plus remaining host prize deposits.",
+      "tick": "Refresh / tick",
+      "tickTip": "Refresh this event and advance server timers (check-in window, bracket, room seeding).",
+      "join": "Join my match",
+      "joinTip": "Enter your ready tournament match room when your bracket game is available.",
+      "spectateList": "Spectate matches",
+      "spectateListTip": "Browse and watch live matches from this tournament as a spectator."
+    },
+    "prompt": {
+      "deposit": "Coins to deposit into prize vault:",
+      "depositDefault": "1000"
+    },
+    "confirm": {
+      "cancel": "Cancel tournament and refund entrants?"
+    },
+    "bracket": {
+      "empty": "Bracket layout appears once max players / format is set.",
+      "previewSuffix": "Preview (names fill in after check-in)",
+      "slot": "Slot",
+      "tbd": "TBD",
+      "bye": "Bye",
+      "waiting": "Waiting…",
+      "spectate": "Spectate",
+      "spectateTip": "Watch this match as a spectator (non-players welcome)",
+      "winner": "Winner: {name}",
+      "namesLock": "Names lock in at bracket start"
+    },
+    "formatCaption": {
+      "swiss": "Swiss rounds",
+      "doubleElimLives": "Double elim (2 lives)",
+      "doubleElimBracket": "Double elim (Winners/Losers)",
+      "singleElim": "Single elimination"
+    },
+    "round": {
+      "swiss": "Swiss · Round {n}",
+      "losersFinal": "Losers Final",
+      "losers": "Losers · R{n}",
+      "grandFinal": "Grand Final",
+      "grandFinalReset": "Grand Final (Reset)",
+      "winnersFinal": "Winners Final",
+      "semifinals": "Semifinals",
+      "roundOf": "Round of {n}"
+    },
+    "matchStatus": {
+      "live": "Live",
+      "ready": "Ready",
+      "done": "Done",
+      "pending": "Upcoming"
+    },
+    "register": {
+      "backEvent": "← Event",
+      "heading": "Choose deck to lock in",
+      "leadDefault": "This deck is locked for the tournament when you register.",
+      "leadPick": "Pick a legal deck to lock in for this event.",
+      "leadEmpty": "No eligible deck yet — build one in Deck Builder, then come back.",
+      "leadFreePick": "Pick a Deck Experiment preset, a saved account deck, or enter an experiment password.",
+      "leadFreeEmpty": "No saved Free decks yet — open Deck Experiment, save a preset (or use a share password), then come back.",
+      "noEligible": "No eligible decks for this game mode.",
+      "noFreeDecks": "No experiment presets or owned account decks found.",
+      "deckFallback": "Deck",
+      "metaPreset": "Preset slot {slot}",
+      "metaEquipped": "· equipped",
+      "metaStarter": "Starter · {label}",
+      "metaExperiment": "Deck Experiment · slot {slot}",
+      "passwordLabel": "Experiment password",
+      "passwordPlaceholder": "Shared Deck Experiment code",
+      "withPassword": "Register with password",
+      "openDeckBuilder": "Open Deck Builder",
+      "openDeckExperiment": "Open Deck Experiment"
+    },
+    "status": {
+      "open": "Open",
+      "checkin": "Check-in",
+      "running": "Running",
+      "finished": "Finished",
+      "cancelled": "Cancelled"
+    },
+    "entrant": {
+      "registered": "Registered",
+      "checked_in": "Checked in",
+      "no_show": "No-show",
+      "eliminated": "Eliminated",
+      "active": "Active"
+    },
+    "err": {
+      "cancelled": "This tournament was cancelled.",
+      "unavailable": "That tournament is no longer available.",
+      "cancelRefunded": "Tournament cancelled — entrants refunded.",
+      "pickStart": "Pick a start date and time",
+      "startTooSoon": "Start time must be at least 1 minute from now",
+      "pickStartSoon": "Pick a start time at least 1 minute from now",
+      "experimentPassword": "Enter an experiment password",
+      "joinHelperMissing": "Join helper missing",
+      "spectateHelperMissing": "Spectate helper missing"
+    },
+    "toast": {
+      "noMatchReady": "No tournament match ready"
+    },
+    "cal": {
+      "pickDateTime": "Pick date & time",
+      "dialogAria": "Pick start date and time",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "monthFallback": "Month",
+      "dow": {
+        "su": "Su",
+        "mo": "Mo",
+        "tu": "Tu",
+        "we": "We",
+        "th": "Th",
+        "fr": "Fr",
+        "sa": "Sa"
+      },
+      "hour": "Hour",
+      "min": "Min",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "tz": {
+      "Asia/Tokyo": "Japan (JST)",
+      "America/New_York": "US Eastern",
+      "America/Chicago": "US Central",
+      "America/Denver": "US Mountain",
+      "America/Los_Angeles": "US Pacific",
+      "America/Toronto": "Canada Eastern",
+      "America/Vancouver": "Canada Pacific",
+      "Europe/London": "UK (London)",
+      "Europe/Paris": "Central Europe",
+      "Europe/Berlin": "Berlin",
+      "Australia/Sydney": "Sydney",
+      "Asia/Singapore": "Singapore",
+      "Asia/Seoul": "Korea (KST)",
+      "Asia/Shanghai": "China",
+      "Asia/Hong_Kong": "Hong Kong",
+      "Asia/Bangkok": "Bangkok",
+      "Pacific/Auckland": "Auckland",
+      "UTC": "UTC"
+    }
   }
 }

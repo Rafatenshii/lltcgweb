@@ -62,7 +62,8 @@
     "stickerShopSub": "แลกซีลเป็นการ์ดจากแพ็กของคุณ",
     "tournamentMode": "โหมดทัวร์นาเมนต์",
     "tournamentModeSub": "เร็ว ๆ นี้",
-    "officialVideo": "วิดีโอทางการ 8 นาที ↗"
+    "officialVideo": "วิดีโอทางการ 8 นาที ↗",
+    "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต"
   },
   "language": {
     "label": "ภาษา",
@@ -1056,7 +1057,8 @@
     "sessionEnded": "เซสชันผู้ชมจบแล้ว",
     "switchPerspective": "สลับมุมมอง",
     "waitingJudgePick": "แพ้/ชนะ Live — กำลังรอ {name} เลือก Live ที่สำเร็จ…",
-    "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…"
+    "waitingJudgeResolve": "แพ้/ชนะ Live — กำลังรอ {name}…",
+    "listTitleTournament": "ชมทัวร์นาเมนต์"
   },
   "missions": {
     "claim": "รับ",
@@ -1173,5 +1175,275 @@
     "infoLead": "แปลงการ์ดบูสเตอร์ที่มีเกินหรือการ์ดสตาร์ทเตอร์ที่คุณมี 1 ใบ เป็นซีลที่ตรงกัน 1 ชิ้น แล้วนำซีลมาแลกการ์ดตามราคาด้านล่าง",
     "infoRarities": "ความหายาก",
     "infoCost": "ราคาแลก"
+  },
+  "tournament": {
+    "backHub": "← ฮับ",
+    "title": "โหมดทัวร์นาเมนต์",
+    "lead": "จัดอีเวนต์ ล็อกเด็ค เช็คอิน และเล่นแบร็กเก็ตแบบคัดออกเดี่ยว",
+    "timezoneLabel": "เขตเวลา",
+    "timezoneAria": "เขตเวลาที่แสดง",
+    "tzHint": "แสดงเวลาตาม {tz}",
+    "tzHintJstFallback": "แสดงเวลาตาม JST",
+    "createEvent": "สร้างอีเวนต์",
+    "refresh": "รีเฟรช",
+    "filterMode": "โหมด",
+    "mode": {
+      "all": "ทั้งหมด",
+      "standard": "มาตรฐาน",
+      "starters": "สตาร์ทเตอร์",
+      "randomized": "สุ่ม",
+      "free": "ฟรี",
+      "freeDeckExperiment": "ฟรี (ทดลองเด็ค)"
+    },
+    "listEmpty": "ยังไม่มีทัวร์นาเมนต์ที่เปิดอยู่ สร้างหนึ่งรายการเพื่อเริ่มต้น",
+    "card": {
+      "fee": "ค่าเข้า {n}",
+      "watching": "ชม {n}",
+      "starts": "เริ่ม {when}",
+      "fog": "หมอก {fog}",
+      "delay": "หน่วง {n}วินาที",
+      "metaSep": "·"
+    },
+    "backBulletin": "← บอร์ด",
+    "notify": {
+      "title": "ทัวร์นาเมนต์ LLTCG",
+      "checkinOpen": "เปิดเช็คอินแล้ว: {title}",
+      "checkinSoon": "ใกล้เช็คอิน: {title}"
+    },
+    "createHeading": "สร้างทัวร์นาเมนต์",
+    "createTzNote": "เวลาเริ่มใช้ {tz}",
+    "createTzNoteFallback": "เวลาเริ่มใช้เขตเวลาที่คุณเลือก",
+    "field": {
+      "title": "ชื่อ",
+      "titlePlaceholder": "แบร็กเก็ตคืนวันศุกร์",
+      "startLocal": "เริ่ม (ท้องถิ่น)",
+      "checkinMins": "นาทีเช็คอิน",
+      "minPlayers": "ผู้เล่นขั้นต่ำ",
+      "maxPlayers": "ผู้เล่นสูงสุด",
+      "entryFee": "ค่าเข้า (Coins)",
+      "gameMode": "โหมดเกม",
+      "format": "รูปแบบ",
+      "matchLength": "ความยาวแมตช์",
+      "fog": "หมอกสงคราม",
+      "rules": "เทมเพลตกฎ",
+      "rulesTitle": "กฎเด็คเพิ่มเติม; สตาร์ทเตอร์/สุ่มใช้ได้เฉพาะมาตรฐาน",
+      "streamDelay": "หน่วงสตรีม (ชม)"
+    },
+    "format": {
+      "singleElim": "คัดออกเดี่ยว",
+      "doubleElimBracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+      "doubleElimLives": "คัดออกคู่ (2 ชีวิต)",
+      "swiss": "สวิส",
+      "single_elim": "คัดออกเดี่ยว",
+      "double_elim_bracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+      "double_elim": "คัดออกคู่ (2 ชีวิต)"
+    },
+    "bestOf": {
+      "1": "Best of 1",
+      "3": "Best of 3"
+    },
+    "fog": {
+      "hiddenHands": "ซ่อนมือถือ (ผู้ชม)",
+      "openHands": "เปิดมือถือ",
+      "hiddenHandsShort": "ซ่อนมือถือ",
+      "openHandsShort": "เปิดมือถือ"
+    },
+    "rules": {
+      "standardOption": "มาตรฐาน (ไม่มีข้อจำกัดเพิ่ม)",
+      "pauperOption": "Pauper (N/R)",
+      "highlanderOption": "Highlander (ใบละ 1)",
+      "standard": {
+        "label": "มาตรฐาน",
+        "help": "ไม่มีข้อจำกัดเด็คเพิ่มนอกโหมดเกมที่เลือก ใช้เราริตี้และจำนวนสำเนาปกติ"
+      },
+      "pauper": {
+        "label": "Pauper (N/R)",
+        "help": "เฉพาะเราริตี้ต่ำ: N, R, C, U และ CL ไม่อนุญาตเราริตี้สูง (SR+, SEC ฯลฯ)"
+      },
+      "highlander": {
+        "label": "Highlander (ใบละ 1)",
+        "help": "ทั้งเด็คหลัก+พลังงาน การ์ดละไม่เกิน 1 ใบ ห้ามเลขการ์ดซ้ำ"
+      }
+    },
+    "rulesHelp": {
+      "modeLockedPrefix": "โหมดเกมกำหนดกฎเด็คแล้ว — ที่นี่ใช้ได้เฉพาะมาตรฐาน"
+    },
+    "delay": {
+      "none": "ไม่มี",
+      "secs": "{n} วินาที"
+    },
+    "schedule": "ตั้งเวลา",
+    "detail": {
+      "host": "โฮสต์",
+      "hostFallback": "โฮสต์",
+      "prize": "รางวัล {n}",
+      "watching": "ชม {n}",
+      "starts": "เริ่ม {when}",
+      "mode": "โหมด {mode}",
+      "rules": "กฎ {rules}",
+      "fog": "หมอก {fog}",
+      "streamDelay": "หน่วงสตรีม {n}วินาที",
+      "bestOfShort": "Bo{n}"
+    },
+    "entrantsHeading": "ผู้เข้าแข่ง",
+    "bracketHeading": "แบร็กเก็ต",
+    "entrantsEmpty": "ยังไม่มีผู้เข้าแข่ง",
+    "person": {
+      "playerFallback": "ผู้เล่น"
+    },
+    "standingsHeading": "ตารางคะแนน",
+    "standings": {
+      "record": "{wins}ชนะ–{losses}แพ้"
+    },
+    "action": {
+      "register": "ลงทะเบียน",
+      "registerTip": "ล็อกเด็คและเข้าอีเวนต์ จ่ายค่าเข้าเข้าสู่กองรางวัลหากมี",
+      "checkin": "เช็คอิน",
+      "checkinTip": "ยืนยันว่าคุณอยู่ก่อนแบร็กเก็ตเริ่ม ไม่เช็คอินถือว่าไม่มา",
+      "unregister": "ยกเลิกการลงทะเบียน",
+      "unregisterTip": "ออกจากอีเวนต์ก่อนเริ่มและคืนค่าเข้า",
+      "checkedIn": "เช็คอินแล้ว",
+      "checkedInTip": "คุณเช็คอินแล้ว รอแบร็กเก็ตเริ่ม",
+      "deposit": "ฝากรางวัล",
+      "depositTip": "เพิ่ม Coins จากยอดคงเหลือเข้ากองรางวัล (โฮสต์เท่านั้น)",
+      "cancel": "ยกเลิก (คืนเงิน)",
+      "cancelTip": "ยกเลิกทัวร์นาเมนต์และคืนค่าเข้าพร้อมเงินรางวัลโฮสต์ที่เหลือ",
+      "tick": "รีเฟรช / tick",
+      "tickTip": "รีเฟรชอีเวนต์และเดินเวลาเซิร์ฟเวอร์ (เช็คอิน แบร็กเก็ต จัดห้อง)",
+      "join": "เข้าแมตช์ของฉัน",
+      "joinTip": "เข้าห้องทัวร์นาเมนต์เมื่อแมตช์ในแบร็กเก็ตพร้อม",
+      "spectateList": "ชมแมตช์",
+      "spectateListTip": "เรียกดูและชมแมตช์สดของทัวร์นาเมนต์นี้ในฐานะผู้ชม"
+    },
+    "prompt": {
+      "deposit": "Coins ที่จะฝากเข้ากองรางวัล:",
+      "depositDefault": "1000"
+    },
+    "confirm": {
+      "cancel": "ยกเลิกทัวร์นาเมนต์และคืนเงินผู้เข้าแข่ง?"
+    },
+    "bracket": {
+      "empty": "แบร็กเก็ตจะปรากฏเมื่อตั้งผู้เล่นสูงสุด/รูปแบบแล้ว",
+      "previewSuffix": "ตัวอย่าง (ชื่อเติมหลังเช็คอิน)",
+      "slot": "ช่อง",
+      "tbd": "รอกำหนด",
+      "bye": "บาย",
+      "waiting": "รอ…",
+      "spectate": "ชม",
+      "spectateTip": "ชมแมตช์นี้ในฐานะผู้ชม (ผู้ที่ไม่แข่งก็ได้)",
+      "winner": "ผู้ชนะ: {name}",
+      "namesLock": "ชื่อล็อกเมื่อแบร็กเก็ตเริ่ม"
+    },
+    "formatCaption": {
+      "swiss": "รอบสวิส",
+      "doubleElimLives": "คัดออกคู่ (2 ชีวิต)",
+      "doubleElimBracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
+      "singleElim": "คัดออกเดี่ยว"
+    },
+    "round": {
+      "swiss": "สวิส · รอบ {n}",
+      "losersFinal": "ชิงฝ่ายแพ้",
+      "losers": "ฝ่ายแพ้ · R{n}",
+      "grandFinal": "ชิงชนะเลิศ",
+      "grandFinalReset": "ชิงชนะเลิศ (รีเซ็ต)",
+      "winnersFinal": "ชิงฝ่ายชนะ",
+      "semifinals": "รอบรองชนะเลิศ",
+      "roundOf": "รอบ {n} คน"
+    },
+    "matchStatus": {
+      "live": "สด",
+      "ready": "พร้อม",
+      "done": "จบ",
+      "pending": "ถัดไป"
+    },
+    "register": {
+      "backEvent": "← อีเวนต์",
+      "heading": "เลือกเด็คที่จะล็อก",
+      "leadDefault": "เด็คนี้จะถูกล็อกสำหรับทัวร์นาเมนต์เมื่อคุณลงทะเบียน",
+      "leadPick": "เลือกเด็คที่ถูกกติกาเพื่อล็อกในอีเวนต์นี้",
+      "leadEmpty": "ยังไม่มีเด็คที่ใช้ได้ — สร้างในตัวสร้างเด็คแล้วกลับมา",
+      "leadFreePick": "เลือกพรีเซ็ตทดลองเด็ค เด็คบัญชีที่บันทึก หรือใส่รหัสทดลอง",
+      "leadFreeEmpty": "ยังไม่มีเด็คฟรีที่บันทึก — เปิดทดลองเด็ค บันทึกพรีเซ็ต (หรือใช้รหัสแชร์) แล้วกลับมา",
+      "noEligible": "ไม่มีเด็คที่ใช้ได้สำหรับโหมดนี้",
+      "noFreeDecks": "ไม่พบพรีเซ็ตทดลองหรือเด็คบัญชีที่เป็นเจ้าของ",
+      "deckFallback": "เด็ค",
+      "metaPreset": "ช่องพรีเซ็ต {slot}",
+      "metaEquipped": "· ติดตั้งอยู่",
+      "metaStarter": "สตาร์ทเตอร์ · {label}",
+      "metaExperiment": "ทดลองเด็ค · ช่อง {slot}",
+      "passwordLabel": "รหัสทดลอง",
+      "passwordPlaceholder": "รหัสทดลองเด็คที่แชร์",
+      "withPassword": "ลงทะเบียนด้วยรหัส",
+      "openDeckBuilder": "เปิดตัวสร้างเด็ค",
+      "openDeckExperiment": "เปิดทดลองเด็ค"
+    },
+    "status": {
+      "open": "เปิดรับ",
+      "checkin": "เช็คอิน",
+      "running": "กำลังแข่ง",
+      "finished": "จบแล้ว",
+      "cancelled": "ยกเลิกแล้ว"
+    },
+    "entrant": {
+      "registered": "ลงทะเบียนแล้ว",
+      "checked_in": "เช็คอินแล้ว",
+      "no_show": "ไม่มา",
+      "eliminated": "ตกรอบ",
+      "active": "ใช้งานอยู่"
+    },
+    "err": {
+      "cancelled": "ทัวร์นาเมนต์นี้ถูกยกเลิกแล้ว",
+      "unavailable": "ทัวร์นาเมนต์นั้นใช้ไม่ได้อีกแล้ว",
+      "cancelRefunded": "ยกเลิกทัวร์นาเมนต์แล้ว — คืนเงินผู้เข้าแข่งแล้ว",
+      "pickStart": "เลือกวันและเวลาเริ่ม",
+      "startTooSoon": "เวลาเริ่มต้องอย่างน้อย 1 นาทีจากตอนนี้",
+      "pickStartSoon": "เลือกเวลาเริ่มอย่างน้อย 1 นาทีจากตอนนี้",
+      "experimentPassword": "ใส่รหัสทดลอง",
+      "joinHelperMissing": "ไม่มีตัวช่วยเข้าร่วม",
+      "spectateHelperMissing": "ไม่มีตัวช่วยชม"
+    },
+    "toast": {
+      "noMatchReady": "ยังไม่มีแมตช์ทัวร์นาเมนต์ที่พร้อม"
+    },
+    "cal": {
+      "pickDateTime": "เลือกวันและเวลา",
+      "dialogAria": "เลือกวันและเวลาเริ่ม",
+      "prevMonth": "เดือนก่อน",
+      "nextMonth": "เดือนถัดไป",
+      "monthFallback": "เดือน",
+      "dow": {
+        "su": "อา",
+        "mo": "จ",
+        "tu": "อ",
+        "we": "พ",
+        "th": "พฤ",
+        "fr": "ศ",
+        "sa": "ส"
+      },
+      "hour": "ชม.",
+      "min": "นาที",
+      "cancel": "ยกเลิก",
+      "apply": "ใช้"
+    },
+    "tz": {
+      "Asia/Tokyo": "ญี่ปุ่น (JST)",
+      "America/New_York": "สหรัฐฯ ตะวันออก",
+      "America/Chicago": "สหรัฐฯ กลาง",
+      "America/Denver": "สหรัฐฯ ภูเขา",
+      "America/Los_Angeles": "สหรัฐฯ แปซิฟิก",
+      "America/Toronto": "แคนาดา ตะวันออก",
+      "America/Vancouver": "แคนาดา แปซิฟิก",
+      "Europe/London": "สหราชอาณาจักร (ลอนดอน)",
+      "Europe/Paris": "ยุโรปกลาง",
+      "Europe/Berlin": "เบอร์ลิน",
+      "Australia/Sydney": "ซิดนีย์",
+      "Asia/Singapore": "สิงคโปร์",
+      "Asia/Seoul": "เกาหลี (KST)",
+      "Asia/Shanghai": "จีน",
+      "Asia/Hong_Kong": "ฮ่องกง",
+      "Asia/Bangkok": "กรุงเทพฯ",
+      "Pacific/Auckland": "โอ๊คแลนด์",
+      "UTC": "UTC"
+    }
   }
 }

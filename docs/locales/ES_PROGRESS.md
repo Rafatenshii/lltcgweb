@@ -33,11 +33,13 @@ Quality audit (`python scripts/audit_text_es_quality.py`): **0 leaks**, **0 glue
 
 ## UI namespaces (`i18n.js` → `STRINGS.es`)
 
-756 `STRINGS.en` leaf keys matched in `STRINGS.es` (see `scripts/validate_i18n.php`).
+1209 `STRINGS.en` leaf keys matched in `STRINGS.es` (see `scripts/validate_i18n.php`).
 
 Source of truth for ES copy: `locales/es.json` → inject via `python scripts/inject_i18n_es.py`.
 
 Supplemental keys (spectate, booster paid/rates, prompt pick fallbacks): `python scripts/merge_supplemental_i18n.py`.
+
+**Tournament Mode UI:** `python scripts/merge_tournament_i18n.py` merges `tournament.*` (+ `hub.tournamentModeSubLive`, `spectate.listTitleTournament`) into `en_extracted` / `es` / `ko` / `zh` / `th` and injects **en/ja/es/ko/zh/th** into `i18n.js`. Re-run after editing tournament copy in that script.
 
 ## Card `text_es` by set
 

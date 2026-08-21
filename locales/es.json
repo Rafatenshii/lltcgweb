@@ -62,7 +62,8 @@
     "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
     "stickerShop": "Tienda de stickers",
     "stickerShopSub": "Canjea sellos por cartas de tus sobres",
-    "officialVideo": "Vídeo oficial de 8 min ↗"
+    "officialVideo": "Vídeo oficial de 8 min ↗",
+    "tournamentModeSubLive": "Eventos y brackets"
   },
   "language": {
     "label": "Idioma",
@@ -1055,7 +1056,8 @@
     "sessionEnded": "La sesión de espectador terminó.",
     "switchPerspective": "Cambiar perspectiva",
     "waitingJudgePick": "Victoria/derrota Live — esperando a que {name} elija un Live exitoso…",
-    "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…"
+    "waitingJudgeResolve": "Victoria/derrota Live — esperando a {name}…",
+    "listTitleTournament": "Espectar torneo"
   },
   "missions": {
     "claim": "Reclamar",
@@ -1172,5 +1174,275 @@
     "infoLead": "Convierte 1 carta de booster sobrante o 1 carta de mazo inicial que poseas en 1 sello del mismo tipo. Canjea sellos por cartas con los costes de abajo.",
     "infoRarities": "Rarezas",
     "infoCost": "Coste de canje"
+  },
+  "tournament": {
+    "backHub": "← Hub",
+    "title": "Modo torneo",
+    "lead": "Programa eventos, fija mazos, haz check-in y juega un bracket de eliminación simple.",
+    "timezoneLabel": "Zona horaria",
+    "timezoneAria": "Zona horaria de visualización",
+    "tzHint": "Horas mostradas en {tz}",
+    "tzHintJstFallback": "Horas mostradas en JST",
+    "createEvent": "Crear evento",
+    "refresh": "Actualizar",
+    "filterMode": "Modo",
+    "mode": {
+      "all": "Todos",
+      "standard": "Estándar",
+      "starters": "Iniciales",
+      "randomized": "Aleatorio",
+      "free": "Libre",
+      "freeDeckExperiment": "Libre (Experimento de mazo)"
+    },
+    "listEmpty": "Aún no hay torneos abiertos. Crea uno para empezar.",
+    "card": {
+      "fee": "cuota {n}",
+      "watching": "{n} viendo",
+      "starts": "empieza {when}",
+      "fog": "niebla {fog}",
+      "delay": "retraso {n}s",
+      "metaSep": "·"
+    },
+    "backBulletin": "← Tablón",
+    "notify": {
+      "title": "Torneo LLTCG",
+      "checkinOpen": "Check-in abierto: {title}",
+      "checkinSoon": "Check-in pronto: {title}"
+    },
+    "createHeading": "Crear torneo",
+    "createTzNote": "La hora de inicio usa {tz}.",
+    "createTzNoteFallback": "La hora de inicio usa tu zona horaria seleccionada.",
+    "field": {
+      "title": "Título",
+      "titlePlaceholder": "Bracket del viernes",
+      "startLocal": "Inicio (local)",
+      "checkinMins": "Minutos de check-in",
+      "minPlayers": "Jugadores mín.",
+      "maxPlayers": "Jugadores máx.",
+      "entryFee": "Cuota de entrada (Coins)",
+      "gameMode": "Modo de juego",
+      "format": "Formato",
+      "matchLength": "Duración del partido",
+      "fog": "Niebla de guerra",
+      "rules": "Plantilla de reglas",
+      "rulesTitle": "Reglas extra de mazo; solo Estándar aplica en Iniciales / Aleatorio",
+      "streamDelay": "Retraso de stream (espectar)"
+    },
+    "format": {
+      "singleElim": "Eliminación simple",
+      "doubleElimBracket": "Doble elim (Ganadores/Perdedores)",
+      "doubleElimLives": "Doble elim (2 vidas)",
+      "swiss": "Suizo",
+      "single_elim": "Eliminación simple",
+      "double_elim_bracket": "Doble elim (Ganadores/Perdedores)",
+      "double_elim": "Doble elim (2 vidas)"
+    },
+    "bestOf": {
+      "1": "Al mejor de 1",
+      "3": "Al mejor de 3"
+    },
+    "fog": {
+      "hiddenHands": "Manos ocultas (espectadores)",
+      "openHands": "Manos abiertas",
+      "hiddenHandsShort": "manos ocultas",
+      "openHandsShort": "manos abiertas"
+    },
+    "rules": {
+      "standardOption": "Estándar (sin límites extra)",
+      "pauperOption": "Pauper (N/R)",
+      "highlanderOption": "Highlander (1 copia)",
+      "standard": {
+        "label": "Estándar",
+        "help": "Sin límites de mazo extra más allá del modo de juego. Rarity y copias normales aplican."
+      },
+      "pauper": {
+        "label": "Pauper (N/R)",
+        "help": "Solo rarezas bajas: N, R, C, U y CL. Rarezas altas (SR+, SEC, etc.) no permitidas."
+      },
+      "highlander": {
+        "label": "Highlander (1 copia)",
+        "help": "Como máximo una copia de cada carta en todo el mazo (principal + energía). Sin duplicados de número."
+      }
+    },
+    "rulesHelp": {
+      "modeLockedPrefix": "El modo de juego ya fija las reglas de mazo — aquí solo aplica Estándar."
+    },
+    "delay": {
+      "none": "Ninguno",
+      "secs": "{n} segundos"
+    },
+    "schedule": "Programar",
+    "detail": {
+      "host": "Anfitrión",
+      "hostFallback": "Anfitrión",
+      "prize": "premio {n}",
+      "watching": "viendo {n}",
+      "starts": "empieza {when}",
+      "mode": "modo {mode}",
+      "rules": "reglas {rules}",
+      "fog": "niebla {fog}",
+      "streamDelay": "retraso de stream {n}s",
+      "bestOfShort": "Bo{n}"
+    },
+    "entrantsHeading": "Inscritos",
+    "bracketHeading": "Bracket",
+    "entrantsEmpty": "Sin inscritos",
+    "person": {
+      "playerFallback": "Jugador"
+    },
+    "standingsHeading": "Clasificación",
+    "standings": {
+      "record": "{wins}V–{losses}D"
+    },
+    "action": {
+      "register": "Inscribirse",
+      "registerTip": "Fija un mazo y entra al evento. Paga la cuota al pozo de premios si hay una.",
+      "checkin": "Check-in",
+      "checkinTip": "Confirma que estás presente antes de que empiece el bracket. Sin check-in = no-show.",
+      "unregister": "Cancelar inscripción",
+      "unregisterTip": "Sal del evento antes de que empiece y recupera tu cuota.",
+      "checkedIn": "Check-in hecho",
+      "checkedInTip": "Estás en check-in y esperando el inicio del bracket.",
+      "deposit": "Depositar premio",
+      "depositTip": "Añade Coins de tu saldo al pozo de premios (solo anfitrión).",
+      "cancel": "Cancelar (reembolso)",
+      "cancelTip": "Cancela el torneo y reembolsa cuotas más depósitos de premio restantes del anfitrión.",
+      "tick": "Actualizar / tick",
+      "tickTip": "Actualiza el evento y avanza temporizadores del servidor (check-in, bracket, salas).",
+      "join": "Unirme a mi partida",
+      "joinTip": "Entra a tu sala de torneo cuando tu partido del bracket esté listo.",
+      "spectateList": "Espectar partidas",
+      "spectateListTip": "Explora y mira partidas en vivo de este torneo como espectador."
+    },
+    "prompt": {
+      "deposit": "Coins a depositar en el pozo de premios:",
+      "depositDefault": "1000"
+    },
+    "confirm": {
+      "cancel": "¿Cancelar el torneo y reembolsar a los inscritos?"
+    },
+    "bracket": {
+      "empty": "El bracket aparece cuando se fijan jugadores máx. / formato.",
+      "previewSuffix": "Vista previa (nombres tras el check-in)",
+      "slot": "Plaza",
+      "tbd": "PDT",
+      "bye": "Bye",
+      "waiting": "Esperando…",
+      "spectate": "Espectar",
+      "spectateTip": "Mira este partido como espectador (no jugadores bienvenidos)",
+      "winner": "Ganador: {name}",
+      "namesLock": "Los nombres se fijan al iniciar el bracket"
+    },
+    "formatCaption": {
+      "swiss": "Rondas suizas",
+      "doubleElimLives": "Doble elim (2 vidas)",
+      "doubleElimBracket": "Doble elim (Ganadores/Perdedores)",
+      "singleElim": "Eliminación simple"
+    },
+    "round": {
+      "swiss": "Suizo · Ronda {n}",
+      "losersFinal": "Final de perdedores",
+      "losers": "Perdedores · R{n}",
+      "grandFinal": "Gran final",
+      "grandFinalReset": "Gran final (reset)",
+      "winnersFinal": "Final de ganadores",
+      "semifinals": "Semifinales",
+      "roundOf": "Ronda de {n}"
+    },
+    "matchStatus": {
+      "live": "En vivo",
+      "ready": "Listo",
+      "done": "Hecho",
+      "pending": "Próximo"
+    },
+    "register": {
+      "backEvent": "← Evento",
+      "heading": "Elige el mazo a fijar",
+      "leadDefault": "Este mazo queda fijado para el torneo al inscribirte.",
+      "leadPick": "Elige un mazo legal para fijar en este evento.",
+      "leadEmpty": "Aún no hay mazo válido — constrúyelo en el Constructor y vuelve.",
+      "leadFreePick": "Elige un preset de Experimento, un mazo de cuenta o una contraseña de experimento.",
+      "leadFreeEmpty": "Aún no hay mazos libres — abre Experimento, guarda un preset (o usa una contraseña) y vuelve.",
+      "noEligible": "No hay mazos aptos para este modo.",
+      "noFreeDecks": "No se encontraron presets de experimento ni mazos de cuenta.",
+      "deckFallback": "Mazo",
+      "metaPreset": "Slot de preset {slot}",
+      "metaEquipped": "· equipado",
+      "metaStarter": "Inicial · {label}",
+      "metaExperiment": "Experimento de mazo · slot {slot}",
+      "passwordLabel": "Contraseña de experimento",
+      "passwordPlaceholder": "Código compartido de Experimento",
+      "withPassword": "Inscribirse con contraseña",
+      "openDeckBuilder": "Abrir Constructor de mazos",
+      "openDeckExperiment": "Abrir Experimento de mazo"
+    },
+    "status": {
+      "open": "Abierto",
+      "checkin": "Check-in",
+      "running": "En curso",
+      "finished": "Finalizado",
+      "cancelled": "Cancelado"
+    },
+    "entrant": {
+      "registered": "Inscrito",
+      "checked_in": "Check-in hecho",
+      "no_show": "No presentado",
+      "eliminated": "Eliminado",
+      "active": "Activo"
+    },
+    "err": {
+      "cancelled": "Este torneo fue cancelado.",
+      "unavailable": "Ese torneo ya no está disponible.",
+      "cancelRefunded": "Torneo cancelado — inscritos reembolsados.",
+      "pickStart": "Elige fecha y hora de inicio",
+      "startTooSoon": "El inicio debe ser al menos 1 minuto desde ahora",
+      "pickStartSoon": "Elige una hora de inicio al menos 1 minuto desde ahora",
+      "experimentPassword": "Introduce una contraseña de experimento",
+      "joinHelperMissing": "Falta el asistente de unión",
+      "spectateHelperMissing": "Falta el asistente de espectar"
+    },
+    "toast": {
+      "noMatchReady": "Ninguna partida de torneo lista"
+    },
+    "cal": {
+      "pickDateTime": "Elegir fecha y hora",
+      "dialogAria": "Elegir fecha y hora de inicio",
+      "prevMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "monthFallback": "Mes",
+      "dow": {
+        "su": "Do",
+        "mo": "Lu",
+        "tu": "Ma",
+        "we": "Mi",
+        "th": "Ju",
+        "fr": "Vi",
+        "sa": "Sa"
+      },
+      "hour": "Hora",
+      "min": "Min",
+      "cancel": "Cancelar",
+      "apply": "Aplicar"
+    },
+    "tz": {
+      "Asia/Tokyo": "Japón (JST)",
+      "America/New_York": "EE. UU. Este",
+      "America/Chicago": "EE. UU. Central",
+      "America/Denver": "EE. UU. Montaña",
+      "America/Los_Angeles": "EE. UU. Pacífico",
+      "America/Toronto": "Canadá Este",
+      "America/Vancouver": "Canadá Pacífico",
+      "Europe/London": "Reino Unido (Londres)",
+      "Europe/Paris": "Europa Central",
+      "Europe/Berlin": "Berlín",
+      "Australia/Sydney": "Sídney",
+      "Asia/Singapore": "Singapur",
+      "Asia/Seoul": "Corea (KST)",
+      "Asia/Shanghai": "China",
+      "Asia/Hong_Kong": "Hong Kong",
+      "Asia/Bangkok": "Bangkok",
+      "Pacific/Auckland": "Auckland",
+      "UTC": "UTC"
+    }
   }
 }
