@@ -2717,9 +2717,15 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     // Main script is signing in / reconnecting — do not clobber with a false timeout.
     if (authEl && authEl.getAttribute('data-auth-boot') === 'booting') return;
     if (window.G && window.G.roomId) return;
-    // Never dump to guest while a saved match session exists (reconnect queue owns this).
+    // Never dump to guest while a parseable saved match session exists (reconnect queue owns this).
     try {
-      if (sessionStorage.getItem('tcg_active_game') || localStorage.getItem('tcg_active_game')) return;
+      var _agRaw = sessionStorage.getItem('tcg_active_game') || localStorage.getItem('tcg_active_game');
+      if (_agRaw) {
+        var _ag = JSON.parse(_agRaw);
+        var _agAt = Number(_ag && _ag.savedAt) || 0;
+        var _agFresh = !_agAt || (Date.now() - _agAt) <= (6 * 60 * 60 * 1000);
+        if (_ag && _ag.roomId && _ag.token && _agFresh) return;
+      }
     } catch (e) { /* ignore */ }
     if (authEl) {
       authEl.setAttribute('data-i18n', i18nKey || 'auth.guestTimeout');
@@ -5064,7 +5070,12 @@ function clearActiveGameSession() {
 
 function parseActiveGameSessionRaw(raw) {
   if (!raw) return null;
-  const saved = JSON.parse(raw);
+  let saved;
+  try {
+    saved = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
   if (!saved?.roomId || !saved?.token) return null;
   const savedAt = Number(saved.savedAt) || 0;
   if (savedAt > 0 && (Date.now() - savedAt) > ACTIVE_GAME_MAX_AGE_MS) return null;
@@ -5073,15 +5084,24 @@ function parseActiveGameSessionRaw(raw) {
 
 function readActiveGameSession() {
   try {
-    const fromSession = parseActiveGameSessionRaw(sessionStorage.getItem(ACTIVE_GAME_KEY));
+    const rawSession = sessionStorage.getItem(ACTIVE_GAME_KEY);
+    const fromSession = parseActiveGameSessionRaw(rawSession);
     if (fromSession) return fromSession;
+    // Drop expired / corrupt sessionStorage so boot does not treat it as in-match.
+    if (rawSession) {
+      try { sessionStorage.removeItem(ACTIVE_GAME_KEY); } catch (e) { /* ignore */ }
+    }
   } catch (e) { /* fall through */ }
   try {
-    const fromLocal = parseActiveGameSessionRaw(localStorage.getItem(ACTIVE_GAME_KEY));
+    const rawLocal = localStorage.getItem(ACTIVE_GAME_KEY);
+    const fromLocal = parseActiveGameSessionRaw(rawLocal);
     if (fromLocal) {
       // Promote into sessionStorage for this tab.
       try { sessionStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify(fromLocal)); } catch (e) {}
       return fromLocal;
+    }
+    if (rawLocal) {
+      try { localStorage.removeItem(ACTIVE_GAME_KEY); } catch (e) { /* ignore */ }
     }
   } catch (e) { /* ignore */ }
   return null;
@@ -5555,9 +5575,8 @@ function cancelReconnectQueue() {
 }
 
 function hasStoredActiveGameSession() {
-  try {
-    if (sessionStorage.getItem(ACTIVE_GAME_KEY) || localStorage.getItem(ACTIVE_GAME_KEY)) return true;
-  } catch (e) { /* ignore */ }
+  // Must match a parseable, non-expired session — a stale key alone must not
+  // force the "Reconnecting…" boot path.
   return !!readActiveGameSession();
 }
 
@@ -5646,7 +5665,14 @@ async function runReconnectQueue() {
       setAuthSkipReconnectVisible(false);
       return false;
     }
-    updateReconnectBanner(attempt);
+
+    // Only show "Reconnecting…" when there is a real local/spectator session, or we
+    // already know ranked/tournament active_game exists (attempt > 1 after a hit).
+    // Logged-in hub refresh must not flash reconnect while silently probing active_game.
+    const showReconnectUi = !!(saved || spectator || (canRanked && !rankedEmptyConfirmed && attempt > 1));
+    if (showReconnectUi) {
+      updateReconnectBanner(attempt);
+    }
 
     const attemptCtrl = new AbortController();
     const attemptTimer = setTimeout(() => {
@@ -5706,6 +5732,8 @@ async function runReconnectQueue() {
           const active = res?.active;
           if (active?.room_id && active?.player_token) {
             rankedEmptyConfirmed = false;
+            // Real server match found — show reconnect UI before joining.
+            updateReconnectBanner(attempt);
             const rankedOnOverflow = (active.mode === 'tournament')
               ? false
               : ((active.match_api || 'overflow') !== 'hostinger');
