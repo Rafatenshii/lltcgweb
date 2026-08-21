@@ -2716,7 +2716,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/runtime-flags.js?v=4"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script src="client/js/local-dev-auth.js?v=2"></script>
-<script src="client/js/tournament.js?v=8"></script>
+<script src="client/js/tournament.js?v=9"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=2"></script>
@@ -6297,16 +6297,7 @@ function enterHub(me) {
   if (getAuthToken()) {
     ensureDeckList().catch(() => {});
   }
-  showScr('hub');
-  if (typeof prefetchShopCatalogsForNewBadges === 'function') {
-    void prefetchShopCatalogsForNewBadges().then(() => {
-      if (typeof refreshShopNewHubBadges === 'function') refreshShopNewHubBadges();
-    });
-  }
-  if (typeof schedulePendingRankedPrReward === 'function') schedulePendingRankedPrReward();
-  if (window.TCGLoginBonus?.scheduleHubLoginBonus) window.TCGLoginBonus.scheduleHubLoginBonus();
-  if (window.TCGLoginBonus?.syncHubButton) window.TCGLoginBonus.syncHubButton();
-  // Unlock Tournament Mode from /me allowlist (tcg:auth-ready was never dispatched before).
+  // Unlock Tournament Mode from /me allowlist before choosing hub vs resume.
   try {
     if (A.profile && typeof A.profile.tournament_enabled === 'boolean'
         && window.TCGTournamentUI && typeof window.TCGTournamentUI.applyEnabled === 'function') {
@@ -6316,6 +6307,20 @@ function enterHub(me) {
     }
     window.dispatchEvent(new CustomEvent('tcg:auth-ready', { detail: { profile: A.profile } }));
   } catch (e) { /* ignore */ }
+  const resumedTournament = !!(window.TCGTournamentUI
+    && typeof window.TCGTournamentUI.tryResumeSession === 'function'
+    && window.TCGTournamentUI.tryResumeSession());
+  if (!resumedTournament) {
+    showScr('hub');
+  }
+  if (typeof prefetchShopCatalogsForNewBadges === 'function') {
+    void prefetchShopCatalogsForNewBadges().then(() => {
+      if (typeof refreshShopNewHubBadges === 'function') refreshShopNewHubBadges();
+    });
+  }
+  if (typeof schedulePendingRankedPrReward === 'function') schedulePendingRankedPrReward();
+  if (window.TCGLoginBonus?.scheduleHubLoginBonus) window.TCGLoginBonus.scheduleHubLoginBonus();
+  if (window.TCGLoginBonus?.syncHubButton) window.TCGLoginBonus.syncHubButton();
 }
 
 function renderStarterOptions(opts) {

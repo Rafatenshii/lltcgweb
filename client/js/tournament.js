@@ -106,17 +106,53 @@
     return !!el('screen-tournament')?.classList.contains('active');
   }
 
+  const REMIND_KEY = 'tcg_tournament_remind_dismissed';
+  const SESSION_KEY = 'tcg_tournament_ui_session';
+
+  function persistSession() {
+    try {
+      if (!state.open) {
+        sessionStorage.removeItem(SESSION_KEY);
+        return;
+      }
+      const tid = (state.detail && state.detail.tournament && state.detail.tournament.id)
+        || state.registerTid
+        || null;
+      const keepTid = (state.view === 'detail' || state.view === 'register') ? tid : null;
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        open: true,
+        view: state.view || 'list',
+        tournamentId: keepTid,
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function clearSession() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ }
+  }
+
+  function readSession() {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && parsed.open ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function setSky(on) {
     document.body.classList.toggle('tcg-tournament-sky', !!on);
   }
 
-  function openScreen() {
+  /** @param {{view?: string, tournamentId?: string|null}} [opts] */
+  function openScreen(opts) {
+    opts = opts || {};
     state.open = true;
     setSky(true);
     ensureTimezoneSelect();
     syncTimezoneFromProfile();
-    showView('list');
-    loadList();
     startTickLoop();
     if (typeof global.showScr === 'function') {
       global.showScr('tournament');
@@ -133,16 +169,44 @@
         scr.setAttribute('aria-hidden', 'false');
       }
     }
+    const tid = opts.tournamentId ? String(opts.tournamentId) : '';
+    if (tid && (opts.view === 'detail' || opts.view === 'register' || !opts.view)) {
+      void openDetail(tid);
+      persistSession();
+      return;
+    }
+    if (opts.view === 'create') {
+      showView('create');
+      persistSession();
+      return;
+    }
+    showView('list');
+    loadList();
+    persistSession();
   }
 
   function closeToHub() {
     state.open = false;
     stopTickLoop();
     state.detail = null;
+    state.registerTid = null;
+    clearSession();
     setSky(false);
     if (typeof global.showScr === 'function') {
       global.showScr('hub');
     }
+  }
+
+  /** Resume bulletin/event after refresh once auth + allowlist are ready. */
+  function tryResumeSession() {
+    const saved = readSession();
+    if (!saved) return false;
+    if (!global.TCG_TOURNAMENTS_ENABLED && !clientEnabled()) return false;
+    openScreen({
+      view: saved.view || 'list',
+      tournamentId: saved.tournamentId || null,
+    });
+    return true;
   }
 
   function showView(name) {
@@ -152,6 +216,7 @@
       const node = el('tournament-view-' + v);
       if (node) node.hidden = v !== name;
     });
+    if (state.open) persistSession();
   }
 
   function setErr(msg) {
@@ -335,8 +400,6 @@
     }
   }
 
-  const REMIND_KEY = 'tcg_tournament_remind_dismissed';
-
   function readRemindDismissed() {
     try {
       const raw = localStorage.getItem(REMIND_KEY);
@@ -427,6 +490,7 @@
       }
       state.detail = res;
       renderDetail();
+      persistSession();
     } catch (e) {
       const msg = e.message || String(e);
       if (/not found/i.test(msg) || /404/.test(msg)) {
@@ -442,6 +506,7 @@
     state.registerTid = null;
     showView('list');
     void loadList();
+    persistSession();
     if (msg) {
       if (typeof global.toast === 'function') global.toast(msg, 3600);
       else setErr(msg);
@@ -1351,10 +1416,12 @@
     open: openScreen,
     close: closeToHub,
     closeQuiet: function () {
+      // Leaving the screen without ← Hub — keep session so refresh can resume.
       state.open = false;
       stopTickLoop();
       setSky(false);
     },
+    tryResumeSession: tryResumeSession,
     refreshFlag: refreshServerFlag,
     applyEnabled: applyEnabled,
     onAvatarError: onAvatarError,
