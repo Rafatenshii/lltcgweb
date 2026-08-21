@@ -135,7 +135,7 @@ function renderGame(s, opts = {}) {
 
   updateLiveJudgeOverlay(s, me, opp, myId);
 
-  // Hand + opponent hidden hand fan
+  // Hand + opponent hidden hand fan (replay/tutorial show faces)
   const hideHandsOnMat = handsHiddenOnMat(s);
   if (hideHandsOnMat) {
     clearMatHands();
@@ -158,7 +158,9 @@ function renderGame(s, opts = {}) {
     const zone = el('opp-hand-zone');
     if (zone) zone.innerHTML = '';
   } else if (!opts.skipOppHand) {
-    if (G.isTutorial && opp.hand?.length) renderOpponentHandVisible(opp.hand, s, oppId);
+    const showOppFaces = (G.isTutorial || (typeof isReplayViewing === 'function' && isReplayViewing()))
+      && opp.hand?.length;
+    if (showOppFaces) renderOpponentHandVisible(opp.hand, s, oppId);
     else if (G.isSpectator && opp.hand?.length) {
       if (typeof spectatorHandsHidden === 'function' && spectatorHandsHidden()) {
         renderOpponentHandTracked(opp.hand, s, oppId);

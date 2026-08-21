@@ -20107,15 +20107,22 @@ function opponentHandDisplayCount(state, oppId) {
 /** CPU solo: server sends opponent hand with instance ids — track slots for shift/draw anims. */
 function opponentHandUsesTrackedSlots(s, myId = G.playerId) {
   if (G.isTutorial || G.isSpectator) return false;
+  if (typeof isReplayViewing === 'function' && isReplayViewing()) return false;
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   const opp = s?.players?.[oppId];
   return !!(s?.cpu_solo || G.isCPU) && (opp?.hand?.length > 0);
 }
 
+/** Tutorial + replay: opponent hand faces are public (not fogged like tournament spectate). */
+function showOpponentHandFaces() {
+  if (G.isTutorial) return true;
+  return typeof isReplayViewing === 'function' && isReplayViewing();
+}
+
 function shouldDeferOpponentHandLayout(moves, s, myId = G.playerId) {
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   if (!handLayoutDeferForPlayer(moves, oppId)) return false;
-  if (G.isTutorial) return true;
+  if (showOpponentHandFaces()) return true;
   return opponentHandUsesTrackedSlots(s, myId);
 }
 
@@ -20138,6 +20145,8 @@ function noteOppHandDepartEnd(fromLoc, myId) {
     } else {
       renderOpponentHandVisible(s.players[oppId].hand || [], s, oppId, { animate: true });
     }
+  } else if (showOpponentHandFaces()) {
+    renderOpponentHandVisible(s.players[oppId].hand || [], s, oppId, { animate: true });
   } else if (opponentHandUsesTrackedSlots(s, myId)) {
     renderOpponentHandTracked(s.players[oppId].hand || [], s, oppId, { animate: true });
   } else {
@@ -20558,6 +20567,10 @@ function syncOppHandDomAfterDeferredLayout(state, oppId, { animateFan = false } 
     else renderOpponentHandVisible(hand, state, oppId, { animate: animateFan });
     return;
   }
+  if (showOpponentHandFaces()) {
+    renderOpponentHandVisible(hand, state, oppId, { animate: animateFan });
+    return;
+  }
   zone.querySelectorAll('.opp-hand-card').forEach(n => n.classList.remove('card-arriving'));
   const keep = new Set(hand.map(c => c.instance_id));
   zone.querySelectorAll('.opp-hand-card').forEach(n => {
@@ -20591,7 +20604,7 @@ function finalizeDeferredHandLayouts(state, myId, { deferMine = false, deferOpp 
   const oppId = myId === 'p1' ? 'p2' : 'p1';
   if (deferMine) syncHandDomAfterDeferredLayout(state, myId, { animateFan });
   if (deferOpp) {
-    const syncOpp = G.isTutorial || G.isSpectator || opponentHandUsesTrackedSlots(state, myId)
+    const syncOpp = showOpponentHandFaces() || G.isSpectator || opponentHandUsesTrackedSlots(state, myId)
       || (animateFan && el('opp-hand-zone')?.children.length);
     if (syncOpp) syncOppHandDomAfterDeferredLayout(state, oppId, { animateFan });
   }
@@ -20647,7 +20660,7 @@ function primeHandLayoutFromBaseline(stateAfter, pid, myId, { animate = true } =
   if (mine) {
     if (spectatorHandsHidden()) renderHandFaceDownTracked(hand, stateAfter, myId, layoutOpts);
     else renderHand(hand, stateAfter, myId, layoutOpts);
-  } else if (G.isTutorial) {
+  } else if (showOpponentHandFaces()) {
     renderOpponentHandVisible(hand, stateAfter, pid, layoutOpts);
   } else if (G.isSpectator) {
     if (spectatorHandsHidden()) renderOpponentHandTracked(hand, stateAfter, pid, layoutOpts);
@@ -20779,6 +20792,15 @@ function shouldFlyFaceDownForMove(m, myId, state) {
   const to = m.to?.zone || null;
   const card = m.card || findCardInState(state, m.iid, pid);
   if (isEnergyCard(card) || from === 'energy' || to === 'energy' || from === 'energy_deck') return false;
+  // Replays are omniscient for hands (not tournament fog). Live storage still flips on reveal.
+  if (typeof isReplayViewing === 'function' && isReplayViewing()) {
+    if (from === 'hand' || to === 'hand') return false;
+    if (to === 'live' && from !== 'live') return true;
+    if (from === 'main_deck') return to !== 'hand';
+    if (to === 'stage' && from === 'main_deck') return true;
+    if (from === 'live' && !(m.card?.revealed)) return true;
+    return false;
+  }
   if (spectatorHandsHidden()) {
     // Tournament spectate: both hands stay secret; both Live storages stay face-down
     // until that performer's reveal beat (same as an in-game opponent).
@@ -24509,7 +24531,7 @@ function stageOpeningHandForDeal(finalState, myId) {
     return;
   }
   renderHand(mineHand, finalState, myId, { animate: false });
-  if (G.isTutorial) renderOpponentHandVisible(oppHand, finalState, oppId, { animate: false });
+  if (showOpponentHandFaces()) renderOpponentHandVisible(oppHand, finalState, oppId, { animate: false });
   else if (opponentHandUsesTrackedSlots(finalState, myId)) {
     renderOpponentHandTracked(oppHand, finalState, oppId, { animate: false });
   }
@@ -24540,7 +24562,7 @@ function finishOpeningHandDealRender(finalState, myId) {
     if (cardEl) resolveStuckHandDrawFlip(cardEl, card, myId);
   });
   renderHand(mineHand, finalState, myId, { animate: true });
-  if (G.isTutorial && oppHand.length) {
+  if (showOpponentHandFaces() && oppHand.length) {
     renderOpponentHandVisible(oppHand, finalState, oppId, { animate: true });
   } else if (opponentHandUsesTrackedSlots(finalState, myId) && oppHand.length) {
     renderOpponentHandTracked(oppHand, finalState, oppId, { animate: true });
@@ -32683,7 +32705,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=97"></script>
-<script src="client/js/board-render.js?v=30"></script>
+<script src="client/js/board-render.js?v=31"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
