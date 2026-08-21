@@ -52,15 +52,20 @@ final class TournamentPhase2Test extends TestCase
         ], 'standard');
     }
 
-    public function testRulesTemplateStartersOnlyRejectsCustom(): void
+    public function testRulesTemplatesByMode(): void
     {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessageMatches('/starter/i');
-        tcgTournamentAssertRulesTemplate('starters_only', [
-            'source' => 'collection',
-            'main_nos' => [],
-            'energy_nos' => [],
-        ], 'standard');
+        $this->assertSame(
+            ['standard', 'pauper', 'highlander'],
+            tcgTournamentRulesTemplatesForMode('standard')
+        );
+        $this->assertSame(['standard'], tcgTournamentRulesTemplatesForMode('starters'));
+        $this->assertSame(['standard'], tcgTournamentRulesTemplatesForMode('randomized'));
+
+        $n = tcgTournamentNormalizeSettings(['rules_template' => 'pauper'], 'starters');
+        $this->assertSame('standard', $n['rules_template']);
+
+        $legacy = tcgTournamentNormalizeSettings(['rules_template' => 'starters_only'], 'standard');
+        $this->assertSame('standard', $legacy['rules_template']);
     }
 
     public function testRulesTemplateStandardAllowsAnythingShaped(): void

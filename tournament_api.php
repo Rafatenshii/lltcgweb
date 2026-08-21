@@ -173,7 +173,7 @@ function tcgApiTournamentCreate(array $body): array {
     }
     $gameMode = tcgNormalizeGameMode($body['game_mode'] ?? TCG_GAME_MODE_STANDARD);
     $settings = is_array($body['settings'] ?? null) ? $body['settings'] : [];
-    $settings = tcgTournamentNormalizeSettings($settings);
+    $settings = tcgTournamentNormalizeSettings($settings, $gameMode);
     $settings['connect_secs'] = TCG_TOURNAMENT_CONNECT_SECS;
 
     $id = tcgTournamentNewId();
@@ -232,7 +232,7 @@ function tcgApiTournamentUpdate(array $body): array {
     if (is_array($body['settings'] ?? null)) {
         $settings = array_merge($settings, $body['settings']);
     }
-    $settings = tcgTournamentNormalizeSettings($settings);
+    $settings = tcgTournamentNormalizeSettings($settings, $gameMode);
 
     tcgDb()->prepare(
         'UPDATE tcg_tournaments SET title=?, start_at=?, checkin_mins=?, min_players=?, max_players=?,

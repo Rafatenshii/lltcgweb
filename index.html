@@ -2159,9 +2159,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
               </select>
             </label>
             <label>Rules template
-              <select id="tournament-create-rules">
-                <option value="standard">Standard</option>
-                <option value="starters_only">Starters only</option>
+              <select id="tournament-create-rules" title="Extra deck rules; only Standard applies for Starters / Randomized">
+                <option value="standard">Standard (no extra limits)</option>
                 <option value="pauper">Pauper (N/R)</option>
                 <option value="highlander">Highlander (1-of)</option>
               </select>

@@ -101,12 +101,27 @@ function tcgTournamentEncodeSettings(?array $settings): string {
 }
 
 /**
+ * Deck-construction rules templates allowed for a tournament game mode.
+ * Starters / randomized already constrain decks — extra templates don't apply.
+ *
+ * @return list<string>
+ */
+function tcgTournamentRulesTemplatesForMode(string $gameMode): array {
+    $gameMode = tcgNormalizeGameMode($gameMode);
+    if ($gameMode === TCG_GAME_MODE_STANDARD) {
+        return ['standard', 'pauper', 'highlander'];
+    }
+    return ['standard'];
+}
+
+/**
  * Normalize tournament settings_json (Phase 2+ fields).
+ * Pass $gameMode so rules_template is clamped to what that mode allows.
  *
  * @param array<string,mixed> $settings
  * @return array<string,mixed>
  */
-function tcgTournamentNormalizeSettings(array $settings): array {
+function tcgTournamentNormalizeSettings(array $settings, ?string $gameMode = null): array {
     $fog = (string)($settings['fog'] ?? 'hidden_hands');
     if ($fog !== 'open_hands') {
         $fog = 'hidden_hands';
@@ -116,8 +131,18 @@ function tcgTournamentNormalizeSettings(array $settings): array {
         $delay = 0;
     }
     $rules = (string)($settings['rules_template'] ?? 'standard');
-    if (!in_array($rules, ['standard', 'starters_only', 'pauper', 'highlander'], true)) {
+    // Legacy: starters_only duplicated game_mode=starters — drop it.
+    if ($rules === 'starters_only') {
         $rules = 'standard';
+    }
+    if (!in_array($rules, ['standard', 'pauper', 'highlander'], true)) {
+        $rules = 'standard';
+    }
+    if ($gameMode !== null) {
+        $allowed = tcgTournamentRulesTemplatesForMode($gameMode);
+        if (!in_array($rules, $allowed, true)) {
+            $rules = 'standard';
+        }
     }
     $format = (string)($settings['format'] ?? 'single_elim');
     if (!in_array($format, ['single_elim', 'double_elim', 'swiss'], true)) {
@@ -211,15 +236,15 @@ function tcgTournamentSpectatorCount(string $tournamentId): int {
  */
 function tcgTournamentAssertRulesTemplate(string $template, array $snap, string $gameMode): void {
     $template = (string)$template;
-    if ($template === '' || $template === 'standard') {
-        return;
-    }
     if ($template === 'starters_only') {
-        $src = (string)($snap['source'] ?? '');
-        $starter = trim((string)($snap['starter_key'] ?? ''));
-        if ($src !== 'starter' && $starter === '') {
-            throw new Exception('This event requires an official starter deck', 400);
-        }
+        // Legacy alias — starters are enforced by game_mode=starters.
+        $template = 'standard';
+    }
+    $allowed = tcgTournamentRulesTemplatesForMode($gameMode);
+    if (!in_array($template, $allowed, true)) {
+        $template = 'standard';
+    }
+    if ($template === '' || $template === 'standard') {
         return;
     }
     require_once __DIR__ . '/cards_data.php';

@@ -1003,6 +1003,35 @@
     if (typeof global.showScr === 'function') global.showScr('deck');
   }
 
+  /** Rules templates that apply for a given game mode (mirrors server). */
+  function rulesTemplatesForMode(mode) {
+    const m = String(mode || 'standard').toLowerCase();
+    if (m === 'standard') return ['standard', 'pauper', 'highlander'];
+    return ['standard'];
+  }
+
+  function syncCreateRulesOptions() {
+    const modeEl = el('tournament-create-mode');
+    const rulesEl = el('tournament-create-rules');
+    if (!modeEl || !rulesEl) return;
+    const allowed = rulesTemplatesForMode(modeEl.value);
+    const prev = rulesEl.value;
+    const labels = {
+      standard: 'Standard (no extra limits)',
+      pauper: 'Pauper (N/R)',
+      highlander: 'Highlander (1-of)',
+    };
+    rulesEl.innerHTML = '';
+    allowed.forEach((v) => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = labels[v] || v;
+      rulesEl.appendChild(opt);
+    });
+    rulesEl.value = allowed.indexOf(prev) >= 0 ? prev : 'standard';
+    rulesEl.disabled = allowed.length <= 1;
+  }
+
   async function createTournament(ev) {
     if (ev) ev.preventDefault();
     setErr('');
@@ -1373,6 +1402,11 @@
     on('tournament-cal-apply', () => applyDatePicker());
     const form = el('tournament-create-form');
     if (form) form.addEventListener('submit', createTournament);
+    const modeSel = el('tournament-create-mode');
+    if (modeSel) {
+      modeSel.addEventListener('change', syncCreateRulesOptions);
+      syncCreateRulesOptions();
+    }
     const filter = el('tournament-filter-mode');
     if (filter) {
       filter.addEventListener('change', () => {
