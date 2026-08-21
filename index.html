@@ -2684,7 +2684,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/tournament.js?v=6"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
-<script src="client/js/shop-new.js?v=1"></script>
+<script src="client/js/shop-new.js?v=2"></script>
 <script src="client/js/ranked-pr-reward.js?v=5"></script>
 <script src="client/js/missions.js?v=11"></script>
 <script src="client/js/login-bonus.js?v=2"></script>
@@ -6669,6 +6669,13 @@ function renderSleeveShopChars() {
 
 function openSleeveShopCharacter(character) {
   _sleeveShopChar = character;
+  // Clear "New" as soon as this idol's grid is opened (persists across refresh),
+  // same idea as news last-seen — not only when tapping ← Characters.
+  if (window.LLTCG_SHOP_NEW) {
+    LLTCG_SHOP_NEW.markCharacterSeen('sleeves', character);
+    refreshShopNewHubBadges();
+    if (_sleeveShopData) renderSleeveShopGens(_sleeveShopData.generations || []);
+  }
   const chars = el('sleeve-shop-chars');
   const view = el('sleeve-shop-sleeves-view');
   const nameEl = el('sleeve-shop-char-name');
@@ -7049,6 +7056,13 @@ function renderPlaymatShopChars() {
 
 function openPlaymatShopCharacter(character) {
   _playmatShopChar = character;
+  // Clear "New" as soon as this idol's grid is opened (persists across refresh),
+  // same idea as news last-seen — not only when tapping ← Characters.
+  if (window.LLTCG_SHOP_NEW) {
+    LLTCG_SHOP_NEW.markCharacterSeen('playmats', character);
+    refreshShopNewHubBadges();
+    if (_playmatShopData) renderPlaymatShopGens();
+  }
   const chars = el('playmat-shop-chars');
   const view = el('playmat-shop-mats-view');
   const nameEl = el('playmat-shop-char-name');
@@ -16427,8 +16441,24 @@ async function bootApp() {
   on('btn-shop-back', 'click', () => { enterHub(A.profile); });
   on('btn-shop-sleeves', 'click', () => { void loadSleeveShopScreen(); });
   on('btn-shop-playmats', 'click', () => { void loadPlaymatShopScreen(); });
-  on('btn-sleeve-shop-back', 'click', () => { clearSleeveShopHover(); void loadShopHubScreen(); });
-  on('btn-playmat-shop-back', 'click', () => { clearPlaymatShopHover(); void loadShopHubScreen(); });
+  on('btn-sleeve-shop-back', 'click', () => {
+    clearSleeveShopHover();
+    if (_sleeveShopChar && window.LLTCG_SHOP_NEW) {
+      LLTCG_SHOP_NEW.markCharacterSeen('sleeves', _sleeveShopChar);
+      _sleeveShopChar = null;
+      refreshShopNewHubBadges();
+    }
+    void loadShopHubScreen();
+  });
+  on('btn-playmat-shop-back', 'click', () => {
+    clearPlaymatShopHover();
+    if (_playmatShopChar && window.LLTCG_SHOP_NEW) {
+      LLTCG_SHOP_NEW.markCharacterSeen('playmats', _playmatShopChar);
+      _playmatShopChar = null;
+      refreshShopNewHubBadges();
+    }
+    void loadShopHubScreen();
+  });
   on('btn-playmat-shop-chars-back', 'click', showPlaymatShopCharsView);
   on('btn-sleeve-shop-chars-back', 'click', showSleeveShopCharsView);
   if (window.LLTCG_I18N && typeof window.LLTCG_I18N.onLocaleChange === 'function') {

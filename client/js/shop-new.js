@@ -1,6 +1,7 @@
 /**
  * Shop "New" badges for playmats / sleeves — same idea as news FAB highlights.
- * Items with catalog `added_at` stay new until the player opens that idol's grid.
+ * Items with catalog `added_at` stay new until the player opens that idol's grid
+ * (markCharacterSeen); leaving via ← Shop must also mark if a grid was open.
  */
 (function (global) {
   'use strict';
