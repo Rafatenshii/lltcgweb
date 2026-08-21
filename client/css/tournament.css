@@ -280,6 +280,17 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   opacity: 0.85;
   font-size: 0.9rem;
 }
+.tournament-field-help,
+.tournament-rules-blurb {
+  margin: -4px 0 10px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  opacity: 0.8;
+  max-width: 42rem;
+}
+.tournament-rules-blurb {
+  margin: 2px 0 10px;
+}
 
 .tournament-host-row {
   display: flex;

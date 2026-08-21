@@ -606,11 +606,15 @@
         + ' · starts ' + escapeHtml(fmtWhen(trow.start_at))
         + '</p>'
         + '<p class="tournament-muted">'
-        + 'rules ' + escapeHtml(String((trow.settings && trow.settings.rules_template) || 'standard'))
+        + 'mode ' + escapeHtml(String(trow.game_mode || 'standard'))
+        + ' · rules ' + escapeHtml(rulesTemplateInfo((trow.settings && trow.settings.rules_template) || 'standard').label)
         + ' · fog ' + escapeHtml(String((trow.settings && trow.settings.fog) || 'hidden_hands'))
         + ' · stream delay ' + String((trow.settings && trow.settings.stream_delay_secs) || 0) + 's'
         + ' · ' + escapeHtml(String((trow.settings && trow.settings.format) || 'single_elim'))
         + ' · Bo' + String((trow.settings && trow.settings.best_of) || 1)
+        + '</p>'
+        + '<p class="tournament-rules-blurb">'
+        + escapeHtml(rulesTemplateInfo((trow.settings && trow.settings.rules_template) || 'standard').help)
         + '</p>';
     }
     wireAvatarFallbacks(head);
@@ -1003,11 +1007,46 @@
     if (typeof global.showScr === 'function') global.showScr('deck');
   }
 
+  /** Extra deck rules — labels + short help (create form + detail). */
+  const RULES_TEMPLATE_INFO = {
+    standard: {
+      label: 'Standard',
+      help: 'No extra deck limits beyond the selected game mode. Full rarity and normal copy limits apply.',
+    },
+    pauper: {
+      label: 'Pauper (N/R)',
+      help: 'Only lower rarities: N, R, C, U, and CL. Higher rarities (SR+, SEC, etc.) are not allowed.',
+    },
+    highlander: {
+      label: 'Highlander (1-of)',
+      help: 'At most one copy of each card in the whole deck (main + energy). No duplicates of any card number.',
+    },
+  };
+
+  function rulesTemplateInfo(key) {
+    const k = String(key || 'standard').toLowerCase();
+    return RULES_TEMPLATE_INFO[k] || RULES_TEMPLATE_INFO.standard;
+  }
+
   /** Rules templates that apply for a given game mode (mirrors server). */
   function rulesTemplatesForMode(mode) {
     const m = String(mode || 'standard').toLowerCase();
     if (m === 'standard') return ['standard', 'pauper', 'highlander'];
     return ['standard'];
+  }
+
+  function syncCreateRulesHelp() {
+    const rulesEl = el('tournament-create-rules');
+    const helpEl = el('tournament-create-rules-help');
+    if (!helpEl) return;
+    const info = rulesTemplateInfo(rulesEl && rulesEl.value);
+    let text = info.help;
+    const modeEl = el('tournament-create-mode');
+    const mode = modeEl ? modeEl.value : 'standard';
+    if (rulesTemplatesForMode(mode).length <= 1) {
+      text = 'Game mode already sets deck rules — only Standard applies here. ' + info.help;
+    }
+    helpEl.textContent = text;
   }
 
   function syncCreateRulesOptions() {
@@ -1030,6 +1069,7 @@
     });
     rulesEl.value = allowed.indexOf(prev) >= 0 ? prev : 'standard';
     rulesEl.disabled = allowed.length <= 1;
+    syncCreateRulesHelp();
   }
 
   async function createTournament(ev) {
@@ -1406,6 +1446,10 @@
     if (modeSel) {
       modeSel.addEventListener('change', syncCreateRulesOptions);
       syncCreateRulesOptions();
+    }
+    const rulesSel = el('tournament-create-rules');
+    if (rulesSel) {
+      rulesSel.addEventListener('change', syncCreateRulesHelp);
     }
     const filter = el('tournament-filter-mode');
     if (filter) {
