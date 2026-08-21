@@ -181,6 +181,8 @@ function tcgDbMigrate(PDO $db): void {
     // Only invoke the SQL migrator when migration files change. Its
     // CREATE TABLE IF NOT EXISTS on every PHP request acquired schema locks
     // and made unrelated account/button requests wait behind matchmaking.
+    // Hostinger has no Composer vendor/; multi-statement Migrator::run there
+    // can 500 the whole account API — use tcgDbRunMigrationOnce for prod schema.
     $migrationFingerprint = tcgDbMigrationFingerprint();
     $appliedFingerprint = null;
     try {
@@ -189,11 +191,17 @@ function tcgDbMigrate(PDO $db): void {
         $appliedFingerprint = $stmt->fetchColumn() ?: null;
     } catch (Throwable $e) { /* bootstrap path handles a missing meta table */ }
 
-    if ($migrationFingerprint !== $appliedFingerprint) {
-        if (tcgDbLoadMigrator()) {
-            \LLTCG\Db\Migrator::run($db);
+    if ($migrationFingerprint !== $appliedFingerprint && is_file(__DIR__ . '/vendor/autoload.php')) {
+        try {
+            require_once __DIR__ . '/vendor/autoload.php';
+            if (class_exists(\LLTCG\Db\Migrator::class)) {
+                \LLTCG\Db\Migrator::run($db);
+            }
             $db->prepare('INSERT OR REPLACE INTO tcg_schema_meta (key, value) VALUES (?, ?)')
                 ->execute(['migration_fingerprint', $migrationFingerprint]);
+        } catch (Throwable $e) {
+            // Do not brick account.php if a SQL migration fails mid-file.
+            error_log('tcgDbMigrate Migrator: ' . $e->getMessage());
         }
     }
 
@@ -314,9 +322,15 @@ function tcgDbMigrationFingerprint(): string {
 
 /** One-time full schema create + column ensures (skipped once bootstrap_v2 is set). */
 function tcgDbMigrateBootstrap(PDO $db): void {
-    tcgDbLoadMigrator();
-    if (class_exists(\LLTCG\Db\Migrator::class, false)) {
-        \LLTCG\Db\Migrator::run($db);
+    if (is_file(__DIR__ . '/vendor/autoload.php')) {
+        try {
+            require_once __DIR__ . '/vendor/autoload.php';
+            if (class_exists(\LLTCG\Db\Migrator::class)) {
+                \LLTCG\Db\Migrator::run($db);
+            }
+        } catch (Throwable $e) {
+            error_log('tcgDbMigrateBootstrap Migrator: ' . $e->getMessage());
+        }
     }
 
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_users (
@@ -627,22 +641,6 @@ function tcgDbRunMigrationOnce(PDO $db, string $key, callable $fn): void {
     $fn($db);
     $db->prepare('INSERT INTO tcg_schema_meta (key, value) VALUES (?, ?)')
         ->execute([$key, (string) time()]);
-}
-
-/** Load Migrator without requiring a full Composer vendor tree (Hostinger). */
-function tcgDbLoadMigrator(): bool {
-    if (class_exists(\LLTCG\Db\Migrator::class, false)) {
-        return true;
-    }
-    $autoload = __DIR__ . '/vendor/autoload.php';
-    if (is_file($autoload)) {
-        require_once $autoload;
-    }
-    $migratorFile = __DIR__ . '/src/Db/Migrator.php';
-    if (!class_exists(\LLTCG\Db\Migrator::class, false) && is_file($migratorFile)) {
-        require_once $migratorFile;
-    }
-    return class_exists(\LLTCG\Db\Migrator::class, false);
 }
 
 /** Create Tournament Mode tables (mirrors migrations/017_tournaments.sql). */
