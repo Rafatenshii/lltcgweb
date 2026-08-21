@@ -7,6 +7,10 @@ require_once __DIR__ . '/chat_moderation.php';
 
 /** @param array<string,mixed> $body */
 function tcgApiTournamentEnabled(array $body = []): array {
+    // Touch DB so once-migrations (tournament tables) apply even before auth.
+    try {
+        tcgDb();
+    } catch (Throwable $e) { /* ignore */ }
     $uid = null;
     try {
         $uid = tcgRequireAuthUser($body);
