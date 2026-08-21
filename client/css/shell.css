@@ -1299,8 +1299,9 @@ body.login-bonus-overlay-open{overflow:hidden}
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:100%}
 .login-bonus-cell{
   display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;
-  min-height:104px;padding:8px 4px 10px;border-radius:12px;text-align:center;
+  min-width:0;min-height:104px;padding:8px 4px 10px;border-radius:12px;text-align:center;
   border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.22);
+  overflow:hidden;
   transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease,opacity .25s ease}
 .login-bonus-cell--locked{opacity:.42;filter:saturate(.55)}
 .login-bonus-cell--claimed{
@@ -1319,21 +1320,25 @@ body.login-bonus-overlay-open{overflow:hidden}
   100%{transform:scale(1);filter:brightness(1)}
 }
 .login-bonus-day{
-  font-size:10px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.7);text-transform:uppercase}
+  font-size:10px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.7);text-transform:uppercase;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .login-bonus-icon-wrap{
-  display:flex;align-items:center;justify-content:center;min-height:36px;margin:2px 0}
+  display:flex;align-items:center;justify-content:center;min-height:36px;margin:2px 0;flex:0 0 auto}
 .login-bonus-icon{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
 .login-bonus-pr-badge{
   display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:22px;padding:0 7px;
   border-radius:7px;font-size:11px;font-weight:800;letter-spacing:.04em;color:#fff;
   background:linear-gradient(135deg,#9b7bff,#6a4fd8);box-shadow:0 2px 8px rgba(80,50,160,.4)}
 .login-bonus-reward{
-  font-size:11px;font-weight:700;line-height:1.25;color:#fff;letter-spacing:.02em}
+  font-size:11px;font-weight:700;line-height:1.2;color:#fff;letter-spacing:.02em;
+  width:100%;max-width:100%;min-width:0;box-sizing:border-box;
+  overflow:hidden;overflow-wrap:anywhere;word-break:break-word;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
 @media (max-width:560px){
   #login-bonus-grid{gap:6px}
   .login-bonus-cell{min-height:92px;padding:6px 2px 8px}
   .login-bonus-icon{width:24px;height:24px}
-  .login-bonus-reward{font-size:10px}
+  .login-bonus-reward{font-size:9px;line-height:1.15;-webkit-line-clamp:4}
 }
 body.missions-overlay-open{overflow:hidden}
 #overlay-missions.llc-menu-screen{

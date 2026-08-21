@@ -193,9 +193,15 @@ html.tcg-portrait-play .login-bonus-cell{
   padding:10px 4px 12px;
   gap:6px;
   justify-content:center;
+  overflow:hidden;
+  min-width:0;
 }
 html.tcg-portrait-play .login-bonus-day{
   font-size:11px;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 html.tcg-portrait-play .login-bonus-icon-wrap{
   min-height:52px;
@@ -213,8 +219,17 @@ html.tcg-portrait-play .login-bonus-pr-badge{
   padding:0 10px;
 }
 html.tcg-portrait-play .login-bonus-reward{
-  font-size:12px;
-  line-height:1.3;
+  font-size:11px;
+  line-height:1.2;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
 }
 
 /* Deck builder — compact chrome, card list dominates */
@@ -1173,9 +1188,10 @@ html.tcg-portrait-play{
   --p-zone-bg: linear-gradient(180deg, #fff8fb 0%, #f4d4e4 100%);
   --p-zone-border: #e891b4;
   --p-live-bg: linear-gradient(180deg, #fff6fa 0%, #efc8db 100%);
-  /* Stage outlines smaller than hand cards; hearts/blades stay fixed px below */
-  --p-stage-outline-scale: 0.72;
-  --p-live-outline-scale: 0.86;
+  /* Stage outlines smaller than hand cards; hearts/blades stay fixed px below.
+     Keep scale modest so portrait members clear the hand-fan overhang. */
+  --p-stage-outline-scale: 0.62;
+  --p-live-outline-scale: 0.82;
   /* Defeat landscape hand-strip vars that blow cards past the field */
   --hand-strip-h: var(--p-hand-mine);
   --my-hand-card-h: var(--p-card-h);
@@ -1193,8 +1209,8 @@ html.tcg-portrait-play.tcg-portrait-square{
   --p-hand-opp: calc(var(--p-card-h) * 0.40);
   --p-field-min: 96px;
   --p-hud-max: 18vh;
-  --p-stage-outline-scale: 0.68;
-  --p-live-outline-scale: 0.82;
+  --p-stage-outline-scale: 0.58;
+  --p-live-outline-scale: 0.78;
 }
 
 /* Tablets + mouse-desktop portrait: cap content width and keep stage cells readable. */
@@ -1508,9 +1524,10 @@ html.tcg-portrait-play #screen-game .playmat-overlay{
   display:grid!important;
   /* Row gap is the only separation between a stage and its live storage:
      both are pinned to the shared row edge, so this is the literal margin. */
-  gap:18px 1px;
-  /* Use more of the field width while retaining a small safe edge. */
-  padding:0 4%;
+  gap:10px 2px;
+  /* Use more of the field width while retaining a small safe edge.
+     Extra vertical pad keeps stage cards clear of the hand-fan overhang. */
+  padding: calc(var(--p-card-h) * 0.06) 4% calc(var(--p-card-h) * 0.16);
   box-sizing:border-box;
   /* Size stage/live outlines from cell height/width */
   container-type: size;
@@ -1521,17 +1538,21 @@ html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
   /* Live row is sized to the live card so its slack cannot become a gap;
      all spare height collects in the stage row, on the hand side. */
-  grid-template-rows: minmax(0, 1fr) minmax(0, 18.5vw);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 16vw);
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
+  padding-top: calc(var(--p-card-h) * 0.14);
+  padding-bottom: calc(var(--p-card-h) * 0.04);
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 18.5vw) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 16vw) minmax(0, 1fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";
+  padding-top: calc(var(--p-card-h) * 0.04);
+  padding-bottom: calc(var(--p-card-h) * 0.16);
 }
 html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-left{grid-area:sl}
@@ -1568,8 +1589,8 @@ html.tcg-portrait-play #screen-game .mat-zone{
 }
 /* Member stage slots — portrait (63×88), smaller than hand so sizes stay distinct.
    Hearts / blades use fixed px sizes below and do not scale with this.
-   Size from the grid cell (height + column width) — avoid 100cqw, which can be 0
-   when container queries have not established on desktop resize into portrait. */
+   Fit inside the grid cell with width+height caps so aspect-ratio is never
+   stretched tall (that was cropping card art via object-fit:cover). */
 html.tcg-portrait-play #screen-game .z-opp-stage-left,
 html.tcg-portrait-play #screen-game .z-opp-stage-center,
 html.tcg-portrait-play #screen-game .z-opp-stage-right,
@@ -1577,9 +1598,12 @@ html.tcg-portrait-play #screen-game .z-my-stage-left,
 html.tcg-portrait-play #screen-game .z-my-stage-center,
 html.tcg-portrait-play #screen-game .z-my-stage-right{
   aspect-ratio: 63 / 88;
-  height: calc(100% * var(--p-stage-outline-scale));
-  width: auto;
-  max-width: min(100%, calc(100% * var(--p-stage-outline-scale)));
+  width: min(
+    calc(100% * var(--p-stage-outline-scale)),
+    calc(100cqh * 63 / 88 * var(--p-stage-outline-scale))
+  );
+  height: auto;
+  max-width: calc(100% * var(--p-stage-outline-scale));
   max-height: calc(100% * var(--p-stage-outline-scale));
   justify-self: center;
 }
@@ -1665,7 +1689,7 @@ html.tcg-portrait-play #screen-game .stage-slot{
   border-radius: calc(var(--p-slot-r) - 2px);
   overflow:visible!important;
 }
-/* Card art only — do not blow up blade/heart icons inside the slot */
+/* Card art only — keep full face visible inside the 63×88 outline */
 html.tcg-portrait-play #screen-game .mslot > img,
 html.tcg-portrait-play #screen-game .mslot > .noimg,
 html.tcg-portrait-play #screen-game .lcard > img,
@@ -1674,7 +1698,8 @@ html.tcg-portrait-play #screen-game .lcard > .noimg{
   height:100%;
   max-width:100%;
   max-height:100%;
-  object-fit:cover;
+  object-fit:contain;
+  object-position:center;
   border-radius: inherit;
 }
 /* Stage hearts + blade sit outside the card face */
@@ -3255,7 +3280,8 @@ html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-opp-stage-right,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-left,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-center,
 html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-right{
-  height: 100%;
-  max-height: 100%;
+  width: min(100%, calc(100cqh * 63 / 88));
   max-width: 100%;
+  max-height: 100%;
+  height: auto;
 }
