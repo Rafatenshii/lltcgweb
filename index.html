@@ -2142,6 +2142,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <label>Format
               <select id="tournament-create-format">
                 <option value="single_elim">Single elimination</option>
+                <option value="double_elim_bracket">Double elim (Winners/Losers)</option>
                 <option value="double_elim">Double elim (2 lives)</option>
                 <option value="swiss">Swiss</option>
               </select>
@@ -2725,7 +2726,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   } catch (e) { /* ignore */ }
 })();
 </script>
-<script src="client/js/tournament.js?v=11"></script>
+<script src="client/js/tournament.js?v=12"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=2"></script>

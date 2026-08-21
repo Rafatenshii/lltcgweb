@@ -144,7 +144,7 @@ function tcgTournamentNormalizeSettings(array $settings, ?string $gameMode = nul
         }
     }
     $format = (string)($settings['format'] ?? 'single_elim');
-    if (!in_array($format, ['single_elim', 'double_elim', 'swiss'], true)) {
+    if (!in_array($format, ['single_elim', 'double_elim', 'double_elim_bracket', 'swiss'], true)) {
         $format = 'single_elim';
     }
     $bestOf = (int)($settings['best_of'] ?? 1);

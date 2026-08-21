@@ -23,7 +23,7 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, P
 2. Enable flags (above). Hard-refresh Hub — Tournament Mode should unlock (not “Coming Soon”).
 3. Two signed-in accounts (or offline-dev users):
    - Host: Create event (start ~2–5 min out, check-in 5, min 2, fee optional).
-     Choose format (single elim / double elim 2-lives / Swiss), match length (Bo1 / Bo3), fog, rules template, stream delay.
+     Choose format (single elim / double elim Winners-Losers / double elim 2-lives / Swiss), match length (Bo1 / Bo3), fog, rules template, stream delay.
      Before start, the bracket shows a **preview skeleton** sized to max/entrants (empty TBD seats).
      Titles use the same slur/link filters as web radio chat (`config/chat_slurs.txt`).
    - Host + entrants show Discord avatars next to names on the event detail view.
@@ -47,5 +47,7 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, P
 - Tournament sky is purple; event times default to **Asia/Tokyo** and follow account `preferred_timezone` (UTC offset shown in the timezone picker).
 - Register opens a deck picker (or Deck Builder shortcut) when no eligible deck is equipped.
 - List/detail show `spectator_count` for live tournament rooms.
-- Double elim is **two-life re-pair** (eliminated at 2 losses). Swiss uses fixed round count from field size.
+- Double elim **(2 lives)** is Swiss-style re-pair (eliminated at 2 losses).
+- Double elim **(Winners/Losers)** is a classic WB/LB tree with grand final + bracket reset if the LB champ wins GF1.
+- Swiss uses fixed round count from field size.
 - Account SQLite tracks tournament history per user (`tcg_tournament_user_stats` / `tcg_tournament_h2h`): match W–L, H2H, coins earned from payouts, coins contributed (entry + host deposit, minus refunds). No profile UI yet.

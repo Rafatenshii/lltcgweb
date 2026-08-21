@@ -152,7 +152,9 @@ function tcgTournamentPriorPairsFromMatches(array $matches): array {
  * @return list<array{round:int,bracket_slot:int,label:string,bracket_side:string}>
  */
 function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_elim'): array {
-    $format = in_array($format, ['single_elim', 'double_elim', 'swiss'], true) ? $format : 'single_elim';
+    $format = in_array($format, ['single_elim', 'double_elim', 'double_elim_bracket', 'swiss'], true)
+        ? $format
+        : 'single_elim';
     $n = max(2, $playerCap);
     $out = [];
     if ($format === 'swiss') {
@@ -170,10 +172,28 @@ function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_el
         }
         return $out;
     }
+    if ($format === 'double_elim') {
+        // 2-lives re-pair: show swiss-like round slots (no fake W/L tree).
+        $rounds = max(3, (int)ceil(log(max(2, $n), 2)));
+        $slots = (int)ceil($n / 2);
+        for ($r = 1; $r <= $rounds; $r++) {
+            for ($s = 0; $s < $slots; $s++) {
+                $out[] = [
+                    'round' => $r,
+                    'bracket_slot' => $s,
+                    'label' => 'Round ' . $r,
+                    'bracket_side' => 'winners',
+                ];
+            }
+        }
+        return $out;
+    }
     $size = tcgTournamentBracketSize($n);
     $round = 1;
     for ($slots = (int)($size / 2); $slots >= 1; $slots = (int)($slots / 2), $round++) {
-        $label = $slots === 1 ? 'Final' : ($slots === 2 ? 'Semifinals' : ('Round of ' . ($slots * 2)));
+        $label = $slots === 1
+            ? ($format === 'double_elim_bracket' ? 'Winners Final' : 'Final')
+            : ($slots === 2 ? 'Semifinals' : ('Round of ' . ($slots * 2)));
         for ($s = 0; $s < $slots; $s++) {
             $out[] = [
                 'round' => $round,
@@ -183,16 +203,19 @@ function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_el
             ];
         }
     }
-    if ($format === 'double_elim') {
-        // Rough losers-bracket skeleton sized to winners R1 count.
-        $lSlots = (int)($size / 2);
-        for ($s = 0; $s < max(1, $lSlots - 1); $s++) {
-            $out[] = [
-                'round' => 1,
-                'bracket_slot' => $s,
-                'label' => 'Losers',
-                'bracket_side' => 'losers',
-            ];
+    if ($format === 'double_elim_bracket') {
+        $lCounts = tcgTournamentClassicDeLosersRoundCounts($size);
+        foreach ($lCounts as $i => $slots) {
+            $lr = $i + 1;
+            $label = ($i === count($lCounts) - 1) ? 'Losers Final' : ('Losers R' . $lr);
+            for ($s = 0; $s < $slots; $s++) {
+                $out[] = [
+                    'round' => $lr,
+                    'bracket_slot' => $s,
+                    'label' => $label,
+                    'bracket_side' => 'losers',
+                ];
+            }
         }
         $out[] = [
             'round' => 1,
@@ -200,6 +223,133 @@ function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_el
             'label' => 'Grand Final',
             'bracket_side' => 'grand_final',
         ];
+        $out[] = [
+            'round' => 2,
+            'bracket_slot' => 0,
+            'label' => 'GF Reset',
+            'bracket_side' => 'grand_final',
+        ];
     }
     return $out;
+}
+
+function tcgTournamentIsClassicDoubleElim(string $format): bool {
+    return $format === 'double_elim_bracket';
+}
+
+/** log2 of power-of-two bracket size. */
+function tcgTournamentClassicDeWinnersRounds(int $bracketSize): int {
+    $size = tcgTournamentBracketSize($bracketSize);
+    return max(1, (int)round(log($size, 2)));
+}
+
+/**
+ * Match counts per losers round (Challonge-style).
+ * e.g. size 8 → [2,2,1,1]; size 4 → [1,1]; size 16 → [4,4,2,2,1,1]
+ *
+ * @return list<int>
+ */
+function tcgTournamentClassicDeLosersRoundCounts(int $bracketSize): array {
+    $size = tcgTournamentBracketSize($bracketSize);
+    $k = tcgTournamentClassicDeWinnersRounds($size);
+    $totalRounds = 2 * max(1, $k - 1);
+    $counts = [];
+    $n = max(1, (int)($size / 4));
+    while (count($counts) < $totalRounds) {
+        $counts[] = $n;
+        if (count($counts) >= $totalRounds) {
+            break;
+        }
+        $counts[] = $n;
+        $n = (int)($n / 2);
+        if ($n < 1) {
+            break;
+        }
+    }
+    return array_slice($counts, 0, $totalRounds);
+}
+
+/**
+ * Destination for a match winner.
+ * @return array{side:string,round:int,slot:int,seat:int}|null seat 0=p1, 1=p2
+ */
+function tcgTournamentClassicDeWinnerDest(int $bracketSize, string $side, int $round, int $slot): ?array {
+    $size = tcgTournamentBracketSize($bracketSize);
+    $side = (string)$side;
+    $round = max(1, $round);
+    $slot = max(0, $slot);
+
+    if ($side === 'grand_final') {
+        return null; // handled separately (reset / finish)
+    }
+    if ($side === 'winners') {
+        $wRounds = tcgTournamentClassicDeWinnersRounds($size);
+        if ($round < $wRounds) {
+            return [
+                'side' => 'winners',
+                'round' => $round + 1,
+                'slot' => (int)floor($slot / 2),
+                'seat' => $slot % 2,
+            ];
+        }
+        // Winners final champ → GF1 as p1 (WB seat)
+        return ['side' => 'grand_final', 'round' => 1, 'slot' => 0, 'seat' => 0];
+    }
+    if ($side === 'losers') {
+        $counts = tcgTournamentClassicDeLosersRoundCounts($size);
+        $idx = $round - 1;
+        if ($idx < 0 || $idx >= count($counts)) {
+            return null;
+        }
+        if ($idx === count($counts) - 1) {
+            // Losers final champ → GF1 as p2 (LB seat)
+            return ['side' => 'grand_final', 'round' => 1, 'slot' => 0, 'seat' => 1];
+        }
+        $cur = (int)$counts[$idx];
+        $next = (int)$counts[$idx + 1];
+        if ($next === $cur) {
+            return ['side' => 'losers', 'round' => $round + 1, 'slot' => $slot, 'seat' => 0];
+        }
+        return [
+            'side' => 'losers',
+            'round' => $round + 1,
+            'slot' => (int)floor($slot / 2),
+            'seat' => $slot % 2,
+        ];
+    }
+    return null;
+}
+
+/**
+ * Where a winners-bracket loser drops into the losers bracket.
+ * @return array{side:string,round:int,slot:int,seat:int}|null
+ */
+function tcgTournamentClassicDeLoserDrop(int $bracketSize, int $winnersRound, int $slot): ?array {
+    $size = tcgTournamentBracketSize($bracketSize);
+    $wr = max(1, $winnersRound);
+    $slot = max(0, $slot);
+    $wRounds = tcgTournamentClassicDeWinnersRounds($size);
+    if ($wr > $wRounds) {
+        return null;
+    }
+    if ($wr === 1) {
+        return [
+            'side' => 'losers',
+            'round' => 1,
+            'slot' => (int)floor($slot / 2),
+            'seat' => $slot % 2,
+        ];
+    }
+    // W2 → L2, W3 → L4, …
+    $lr = 2 * ($wr - 1);
+    $counts = tcgTournamentClassicDeLosersRoundCounts($size);
+    if ($lr < 1 || $lr > count($counts)) {
+        return null;
+    }
+    return [
+        'side' => 'losers',
+        'round' => $lr,
+        'slot' => $slot,
+        'seat' => 1,
+    ];
 }

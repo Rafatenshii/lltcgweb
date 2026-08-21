@@ -705,12 +705,21 @@
     );
   }
 
+  function formatCaption(format) {
+    const f = String(format || 'single_elim');
+    if (f === 'swiss') return 'Swiss rounds';
+    if (f === 'double_elim') return 'Double elim (2 lives)';
+    if (f === 'double_elim_bracket') return 'Double elim (Winners/Losers)';
+    return 'Single elimination';
+  }
+
   function roundLabel(side, round, slotCount, isPreview) {
     const s = String(side || 'winners');
-    if (s === 'swiss') return 'Swiss · Round ' + round;
-    if (s === 'losers') return 'Losers · R' + round;
-    if (s === 'grand_final') return 'Grand Final';
-    if (slotCount === 1) return isPreview ? 'Final' : 'Final';
+    const r = Number(round) || 1;
+    if (s === 'swiss') return 'Swiss · Round ' + r;
+    if (s === 'losers') return slotCount === 1 ? 'Losers Final' : ('Losers · R' + r);
+    if (s === 'grand_final') return r >= 2 ? 'Grand Final (Reset)' : 'Grand Final';
+    if (slotCount === 1) return 'Winners Final';
     if (slotCount === 2) return 'Semifinals';
     return 'Round of ' + (slotCount * 2);
   }
@@ -802,7 +811,7 @@
 
     let html = '<div class="tournament-bracket-board' + (isPreview ? ' tournament-bracket-board--preview' : '') + '">';
     html += '<div class="tournament-bracket-caption">'
-      + escapeHtml(format === 'swiss' ? 'Swiss rounds' : (format === 'double_elim' ? 'Double elim (2 lives)' : 'Single elimination'))
+      + escapeHtml(formatCaption(format))
       + (bestOf === 3 ? ' · Best of 3' : ' · Best of 1')
       + (isPreview ? ' · Preview (names fill in after check-in)' : '')
       + '</div>';
