@@ -421,10 +421,30 @@
     showView('detail');
     try {
       const res = await global.accountPost('tournament_get', { tournament_id: id });
+      if (res && res.tournament && res.tournament.status === 'cancelled') {
+        returnToBulletin('This tournament was cancelled.');
+        return;
+      }
       state.detail = res;
       renderDetail();
     } catch (e) {
-      setErr(e.message || String(e));
+      const msg = e.message || String(e);
+      if (/not found/i.test(msg) || /404/.test(msg)) {
+        returnToBulletin('That tournament is no longer available.');
+        return;
+      }
+      setErr(msg);
+    }
+  }
+
+  function returnToBulletin(msg) {
+    state.detail = null;
+    state.registerTid = null;
+    showView('list');
+    void loadList();
+    if (msg) {
+      if (typeof global.toast === 'function') global.toast(msg, 3600);
+      else setErr(msg);
     }
   }
 
@@ -801,6 +821,8 @@
       } else if (act === 'cancel') {
         if (!global.confirm('Cancel tournament and refund entrants?')) return;
         await global.accountPost('tournament_cancel', { tournament_id: tid });
+        returnToBulletin('Tournament cancelled — entrants refunded.');
+        return;
       } else if (act === 'tick') {
         await global.accountPost('tournament_tick', { tournament_id: tid });
       } else if (act === 'join') {
@@ -822,7 +844,12 @@
       }
       await openDetail(tid);
     } catch (e) {
-      setErr(e.message || String(e));
+      const msg = e.message || String(e);
+      if (/not found/i.test(msg) || /cancelled/i.test(msg) || /Already closed/i.test(msg)) {
+        returnToBulletin(msg);
+        return;
+      }
+      setErr(msg);
     }
   }
 
@@ -1220,13 +1247,26 @@
       if (state.view !== 'detail' || !state.detail || !state.detail.tournament) return;
       const tid = state.detail.tournament.id;
       const st = state.detail.tournament.status;
-      if (st === 'finished' || st === 'cancelled') return;
+      if (st === 'finished') return;
+      if (st === 'cancelled') {
+        returnToBulletin('This tournament was cancelled.');
+        return;
+      }
       try {
         await global.accountPost('tournament_tick', { tournament_id: tid });
         const res = await global.accountPost('tournament_get', { tournament_id: tid });
+        if (res && res.tournament && res.tournament.status === 'cancelled') {
+          returnToBulletin('This tournament was cancelled.');
+          return;
+        }
         state.detail = res;
         renderDetail();
-      } catch (e) { /* ignore poll errors */ }
+      } catch (e) {
+        const msg = (e && e.message) ? String(e.message) : '';
+        if (/not found/i.test(msg)) {
+          returnToBulletin('That tournament is no longer available.');
+        }
+      }
     }, 8000);
   }
 
