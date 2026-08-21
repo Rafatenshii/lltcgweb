@@ -5078,7 +5078,9 @@ function parseActiveGameSessionRaw(raw) {
   }
   if (!saved?.roomId || !saved?.token) return null;
   const savedAt = Number(saved.savedAt) || 0;
-  if (savedAt > 0 && (Date.now() - savedAt) > ACTIVE_GAME_MAX_AGE_MS) return null;
+  // Require savedAt — legacy rows without a timestamp never expire and cause
+  // false "Reconnecting…" flashes for rooms that no longer exist.
+  if (!savedAt || (Date.now() - savedAt) > ACTIVE_GAME_MAX_AGE_MS) return null;
   return saved;
 }
 
@@ -5666,10 +5668,11 @@ async function runReconnectQueue() {
       return false;
     }
 
-    // Only show "Reconnecting…" when there is a real local/spectator session, or we
-    // already know ranked/tournament active_game exists (attempt > 1 after a hit).
-    // Logged-in hub refresh must not flash reconnect while silently probing active_game.
-    const showReconnectUi = !!(saved || spectator || (canRanked && !rankedEmptyConfirmed && attempt > 1));
+    // Banner policy:
+    // - First attempt with only a local/spectator save: probe silently (room may be gone).
+    // - Show "Reconnecting…" only after a soft/transient fail, or when ranked active_game
+    //   confirmed a live room (updateReconnectBanner is also called there explicitly).
+    const showReconnectUi = attempt > 1 && !!(saved || spectator || (canRanked && !rankedEmptyConfirmed));
     if (showReconnectUi) {
       updateReconnectBanner(attempt);
     }
@@ -5862,10 +5865,10 @@ async function initAccountFlow() {
       authEl.removeAttribute('data-i18n');
       authEl.textContent = t('auth.leavingMatch') || 'Leaving match…';
     } else if (getAuthToken() || readActiveGameSession()) {
-      authEl.setAttribute('data-i18n', readActiveGameSession() ? 'auth.reconnecting' : 'auth.signingIn');
-      authEl.textContent = readActiveGameSession()
-        ? (t('auth.reconnecting') || 'Reconnecting to match…')
-        : t('auth.signingIn');
+      // Never flash "Reconnecting…" before we know a room still exists — stale
+      // tcg_active_game keys are common after finished/abandoned matches.
+      authEl.setAttribute('data-i18n', 'auth.signingIn');
+      authEl.textContent = t('auth.signingIn');
     }
   }
   let authDone = false;
@@ -5887,7 +5890,7 @@ async function initAccountFlow() {
     }
     // Active match session: never dump to guest — reconnect queue keeps retrying.
     if (hasStoredActiveGameSession() || readSpectatorSession()) {
-      updateReconnectBanner(1);
+      // Stay on "Signing in…" until a live room is confirmed (or soft-fail retries).
       void resumeActiveGameIfAny().then((ok) => {
         if (ok || hasRestoredMatchUi()) finishAuthBoot();
         // If still queued, leave boot flag as booting until queue settles.
@@ -5907,7 +5910,7 @@ async function initAccountFlow() {
         return;
       }
       if (hasStoredActiveGameSession() || readSpectatorSession()) {
-        updateReconnectBanner(1);
+        // Keep signing-in copy; queue shows reconnect only after soft fails.
         return;
       }
       showGuestAuth(null, 'auth.guestTimeout');
@@ -5968,7 +5971,6 @@ async function initAccountFlow() {
       if (hasStoredActiveGameSession() || readSpectatorSession()) {
         // Overload during /me must not cancel match resume.
         if (await resumeActiveGameIfAny()) return;
-        updateReconnectBanner(1);
         return;
       }
       if (typeof isHostingerAuthRejectedError === 'function'
@@ -6025,7 +6027,6 @@ async function initAccountFlow() {
     if (await resumePromise.catch(() => false)) return;
     if (hasStoredActiveGameSession() || readSpectatorSession()) {
       if (await resumeActiveGameIfAny().catch(() => false)) return;
-      updateReconnectBanner(1);
       return;
     }
     if (typeof isHostingerAuthRejectedError === 'function'
@@ -6056,7 +6057,6 @@ function showGuestAuth(message, i18nKey) {
   }
   // Never abandon an in-progress match resume for guest/busy UI.
   if (hasStoredActiveGameSession() || readSpectatorSession()) {
-    updateReconnectBanner(1);
     void resumeActiveGameIfAny();
     return;
   }
