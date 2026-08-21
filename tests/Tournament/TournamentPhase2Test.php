@@ -27,15 +27,19 @@ final class TournamentPhase2Test extends TestCase
             'fog' => 'open_hands',
             'stream_delay_secs' => 30,
             'rules_template' => 'highlander',
-            'format' => 'swiss', // Phase 3 stub → forced single_elim
+            'format' => 'swiss',
+            'best_of' => 3,
         ]);
         $this->assertSame('open_hands', $n2['fog']);
         $this->assertSame(30, $n2['stream_delay_secs']);
         $this->assertSame('highlander', $n2['rules_template']);
-        $this->assertSame('single_elim', $n2['format']);
+        $this->assertSame('swiss', $n2['format']);
+        $this->assertSame(3, $n2['best_of']);
+        $this->assertArrayNotHasKey('cosmetic_prizes', $n2);
 
-        $n3 = tcgTournamentNormalizeSettings(['stream_delay_secs' => 45]);
+        $n3 = tcgTournamentNormalizeSettings(['stream_delay_secs' => 45, 'format' => 'nope']);
         $this->assertSame(0, $n3['stream_delay_secs']);
+        $this->assertSame('single_elim', $n3['format']);
     }
 
     public function testRulesTemplateHighlanderRejectsDupes(): void

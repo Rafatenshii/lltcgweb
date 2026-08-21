@@ -17,7 +17,7 @@ composer test -- --filter Tournament
 ./vendor/bin/phpunit tests/Tournament
 ```
 
-Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, and `spectate_list` category `tournament`.
+Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, Phase 3 formats (Swiss / double-elim / Bo3), and `spectate_list` category `tournament`.
 
 ## Manual Hub flow
 
@@ -25,27 +25,28 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, a
 2. Enable flags (above). Hard-refresh Hub — Tournament Mode should unlock (not “Coming Soon”).
 3. Two signed-in accounts (or offline-dev users):
    - Host: Create event (start ~2–5 min out, check-in 5, min 2, fee optional).
-     Choose fog (hidden/open hands), rules template (standard / starters / pauper / highlander), stream delay, format (single elim).
+     Choose format (single elim / double elim 2-lives / Swiss), match length (Bo1 / Bo3), fog, rules template, stream delay.
+     Before start, the bracket shows a **preview skeleton** sized to max/entrants (empty TBD seats).
      Titles use the same slur/link filters as web radio chat (`config/chat_slurs.txt`).
    - Host + entrants show Discord avatars next to names on the event detail view.
-   - Host: Deposit prize Coins.
+   - Host: Deposit prize **Coins** into the pool (cosmetic prizes not used — pool Coins only).
    - Both: Register (locks equipped deck; rules template rejects illegal decks).
 4. When check-in opens: both Check in. Optional: close host tab; keep one client open (tick poll) or run:
    `TCG_TOURNAMENTS_ENABLED=1 php scripts/tournament_tick.php <ID>`
    Bulletin may toast a check-in reminder (~15 min window / just opened).
-5. After `start_at`, tick builds single-elim bracket (byes for odd counts) and seeds rooms.
+5. After `start_at`, tick builds the bracket/pairings and seeds rooms. Names fill into match cards; **Spectate** is a clear button for non-players.
 6. Players: **Join my match** → board (Hostinger GameStore lock; match status becomes `live`).
-   Spectators: bracket **Spec**, detail **Spectate matches**, or hub Spectate → tournament list
+   Spectators: bracket **Spectate**, detail **Spectate matches**, or hub Spectate → tournament list
    (always Hostinger origin under match-primary). Hidden hands follow fog setting.
-7. With stream delay &gt; 0, spectators see lagged snapshots under `data/spectate_delay/`; players stay live.
-8. Finish / force result / connect forfeit (~3 min) → bracket advances → payout on final.
+7. Bo3: series score shows on cards; rooms reseed until 2 game wins. Prize payout remains Coins from the pool.
+8. Finish / force result / connect forfeit (~3 min) → advances → Coins payout on final / standings.
 9. Cancel mid-registration → entry + remaining host vault refunded.
 
 ## Notes
 
 - Match rooms use `mode: "tournament"` on Hostinger GameStore (not VPS ranked overflow).
 - `scripts/tournament_tick.php` advances events with no browser tab.
-- Tournament sky is purple; event times default to **Asia/Tokyo** and follow account `preferred_timezone`.
+- Tournament sky is purple; event times default to **Asia/Tokyo** and follow account `preferred_timezone` (UTC offset shown in the timezone picker).
 - Register opens a deck picker (or Deck Builder shortcut) when no eligible deck is equipped.
 - List/detail show `spectator_count` for live tournament rooms.
-- Phase 3 formats (Swiss / double-elim / Bo3) are stubbed as `settings.format = single_elim` only.
+- Double elim is **two-life re-pair** (eliminated at 2 losses). Swiss uses fixed round count from field size.

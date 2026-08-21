@@ -302,6 +302,14 @@ function tcgDbMigrate(PDO $db): void {
         tcgDbEnsureTournamentSchema($db);
     });
 
+    tcgDbRunMigrationOnce($db, 'tournaments_phase3_20260821', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_tournament_matches', 'bracket_side', "TEXT NOT NULL DEFAULT 'winners'");
+        tcgDbEnsureColumn($db, 'tcg_tournament_matches', 'meta_json', "TEXT NOT NULL DEFAULT '{}'");
+        $db->exec('DROP INDEX IF EXISTS idx_tcg_tournament_matches_slot');
+        $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_tournament_matches_slot3
+            ON tcg_tournament_matches(tournament_id, bracket_side, round, bracket_slot)');
+    });
+
     // Account timezone for tournament scheduling UI (was only in full bootstrap).
     tcgDbRunMigrationOnce($db, 'preferred_timezone_20260821', function (PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");

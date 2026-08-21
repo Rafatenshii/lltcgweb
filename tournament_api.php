@@ -107,8 +107,47 @@ function tcgApiTournamentGet(array $body): array {
         'me' => $me,
         'entrants' => array_map(static fn($e) => tcgTournamentPublicEntrant($e, false), $entrants),
         'matches' => array_map('tcgTournamentPublicMatch', $matches),
+        'bracket_preview' => (count($matches) === 0)
+            ? tcgTournamentBracketPreview(
+                max((int)$row['max_players'], max(2, count($entrants))),
+                (string)(tcgTournamentDecodeSettings($row['settings_json'] ?? '{}')['format'] ?? 'single_elim')
+            )
+            : [],
+        'standings' => tcgTournamentPublicStandings($entrants, $matches),
         'server_now' => time(),
     ];
+}
+
+/**
+ * @param list<array<string,mixed>> $entrants
+ * @param list<array<string,mixed>> $matches
+ * @return list<array{discord_id:string,username:string,wins:int,losses:int,status:string}>
+ */
+function tcgTournamentPublicStandings(array $entrants, array $matches): array {
+    $records = function_exists('tcgTournamentRecordsFromMatches')
+        ? tcgTournamentRecordsFromMatches($matches)
+        : [];
+    $out = [];
+    foreach ($entrants as $e) {
+        $id = (string)$e['discord_id'];
+        $out[] = [
+            'discord_id' => $id,
+            'username' => (string)($e['username'] ?? 'Player'),
+            'wins' => (int)($records[$id]['wins'] ?? 0),
+            'losses' => (int)($records[$id]['losses'] ?? 0),
+            'status' => (string)($e['status'] ?? ''),
+        ];
+    }
+    usort($out, static function ($a, $b) {
+        if ($a['wins'] !== $b['wins']) {
+            return $b['wins'] <=> $a['wins'];
+        }
+        if ($a['losses'] !== $b['losses']) {
+            return $a['losses'] <=> $b['losses'];
+        }
+        return strcmp($a['username'], $b['username']);
+    });
+    return $out;
 }
 
 /** @param array<string,mixed> $body */

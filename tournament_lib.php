@@ -119,10 +119,13 @@ function tcgTournamentNormalizeSettings(array $settings): array {
     if (!in_array($rules, ['standard', 'starters_only', 'pauper', 'highlander'], true)) {
         $rules = 'standard';
     }
-    // Phase 3 stub — only single_elim for now.
     $format = (string)($settings['format'] ?? 'single_elim');
-    if ($format !== 'single_elim') {
+    if (!in_array($format, ['single_elim', 'double_elim', 'swiss'], true)) {
         $format = 'single_elim';
+    }
+    $bestOf = (int)($settings['best_of'] ?? 1);
+    if ($bestOf !== 3) {
+        $bestOf = 1;
     }
     return [
         'connect_secs' => max(30, (int)($settings['connect_secs'] ?? TCG_TOURNAMENT_CONNECT_SECS)),
@@ -130,6 +133,7 @@ function tcgTournamentNormalizeSettings(array $settings): array {
         'stream_delay_secs' => $delay,
         'rules_template' => $rules,
         'format' => $format,
+        'best_of' => $bestOf,
     ];
 }
 
@@ -593,11 +597,15 @@ function tcgTournamentPublicEntrant(array $e, bool $includeDeck = false): array 
 
 /** @param array<string,mixed> $m */
 function tcgTournamentPublicMatch(array $m): array {
+    $meta = function_exists('tcgTournamentDecodeMatchMeta')
+        ? tcgTournamentDecodeMatchMeta($m['meta_json'] ?? '{}')
+        : ['p1_wins' => 0, 'p2_wins' => 0, 'best_of' => 1, 'games' => []];
     return [
         'id' => (string)$m['id'],
         'tournament_id' => (string)$m['tournament_id'],
         'round' => (int)$m['round'],
         'bracket_slot' => (int)$m['bracket_slot'],
+        'bracket_side' => (string)($m['bracket_side'] ?? 'winners'),
         'p1_discord_id' => $m['p1_discord_id'] !== null ? (string)$m['p1_discord_id'] : null,
         'p2_discord_id' => $m['p2_discord_id'] !== null ? (string)$m['p2_discord_id'] : null,
         'room_id' => $m['room_id'] !== null && $m['room_id'] !== '' ? (string)$m['room_id'] : null,
@@ -605,5 +613,8 @@ function tcgTournamentPublicMatch(array $m): array {
         'winner_discord_id' => $m['winner_discord_id'] !== null ? (string)$m['winner_discord_id'] : null,
         'connect_deadline_at' => isset($m['connect_deadline_at']) && $m['connect_deadline_at'] !== null
             ? (int)$m['connect_deadline_at'] : null,
+        'best_of' => (int)($meta['best_of'] ?? 1),
+        'p1_wins' => (int)($meta['p1_wins'] ?? 0),
+        'p2_wins' => (int)($meta['p2_wins'] ?? 0),
     ];
 }

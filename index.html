@@ -108,7 +108,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
-<link rel="stylesheet" href="client/css/tournament.css?v=7">
+<link rel="stylesheet" href="client/css/tournament.css?v=8">
 <link rel="stylesheet" href="client/css/portrait.css?v=81">
 
 </head>
@@ -2142,6 +2142,14 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <label>Format
               <select id="tournament-create-format">
                 <option value="single_elim">Single elimination</option>
+                <option value="double_elim">Double elim (2 lives)</option>
+                <option value="swiss">Swiss</option>
+              </select>
+            </label>
+            <label>Match length
+              <select id="tournament-create-bestof">
+                <option value="1">Best of 1</option>
+                <option value="3">Best of 3</option>
               </select>
             </label>
             <label>Fog of war
@@ -2708,7 +2716,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/runtime-flags.js?v=4"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script src="client/js/local-dev-auth.js?v=2"></script>
-<script src="client/js/tournament.js?v=6"></script>
+<script src="client/js/tournament.js?v=7"></script>
 <script src="client/js/sleeves.js?v=12"></script>
 <script src="client/js/playmats.js?v=5"></script>
 <script src="client/js/shop-new.js?v=2"></script>

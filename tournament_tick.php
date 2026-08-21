@@ -115,28 +115,35 @@ function tcgTournamentStartBracket(string $id): bool {
         $playerIds[] = (string)$e['discord_id'];
     }
 
-    $pairings = tcgTournamentBuildRound1Pairings($playerIds);
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $format = (string)($settings['format'] ?? 'single_elim');
+    $bestOf = (int)($settings['best_of'] ?? 1);
+    $side = ($format === 'swiss' || $format === 'double_elim') ? $format : 'winners';
+    if ($format === 'double_elim') {
+        $side = 'winners'; // first round is winners; two-loss re-pair uses swiss-style later
+    }
+
+    if ($format === 'swiss' || $format === 'double_elim') {
+        $records = [];
+        foreach ($playerIds as $pid) {
+            $records[$pid] = ['wins' => 0, 'losses' => 0];
+        }
+        $pairings = tcgTournamentBuildSwissPairings($playerIds, $records, []);
+    } else {
+        $pairings = tcgTournamentBuildRound1Pairings($playerIds);
+        $side = 'winners';
+    }
+
     $created = time();
     foreach ($pairings as $slot => $pair) {
-        $mid = tcgTournamentMatchNewId();
-        $p1 = $pair['p1'];
-        $p2 = $pair['p2'];
-        $bye = $pair['bye'];
-        if ($bye !== null) {
-            tcgDb()->prepare(
-                'INSERT INTO tcg_tournament_matches
-                 (id, tournament_id, round, bracket_slot, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
-                  status, winner_discord_id, connect_deadline_at, created_at, updated_at)
-                 VALUES (?, ?, 1, ?, ?, NULL, NULL, NULL, NULL, "done", ?, NULL, ?, ?)'
-            )->execute([$mid, $id, $slot, $bye, $bye, $created, $created]);
-            continue;
-        }
-        tcgDb()->prepare(
-            'INSERT INTO tcg_tournament_matches
-             (id, tournament_id, round, bracket_slot, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
-              status, winner_discord_id, connect_deadline_at, created_at, updated_at)
-             VALUES (?, ?, 1, ?, ?, ?, NULL, NULL, NULL, "pending", NULL, NULL, ?, ?)'
-        )->execute([$mid, $id, $slot, $p1, $p2, $created, $created]);
+        tcgTournamentInsertMatchRow($id, 1, (int)$slot, $side, $pair, $bestOf, $created);
+    }
+
+    // Persist swiss target rounds in settings for finish checks.
+    if ($format === 'swiss') {
+        $settings['swiss_rounds'] = tcgTournamentSwissRoundCount(count($playerIds));
+        tcgDb()->prepare('UPDATE tcg_tournaments SET settings_json = ?, updated_at = ? WHERE id = ?')
+            ->execute([tcgTournamentEncodeSettings($settings), $now, $id]);
     }
 
     tcgDb()->prepare('UPDATE tcg_tournaments SET status = "running", updated_at = ? WHERE id = ?')
@@ -145,6 +152,45 @@ function tcgTournamentStartBracket(string $id): bool {
     tcgTournamentSeedPendingRooms($id);
     tcgTournamentAdvanceCompletedRounds($id);
     return true;
+}
+
+/**
+ * @param array{p1:?string,p2:?string,bye:?string} $pair
+ */
+function tcgTournamentInsertMatchRow(
+    string $tournamentId,
+    int $round,
+    int $slot,
+    string $side,
+    array $pair,
+    int $bestOf,
+    int $created
+): void {
+    $mid = tcgTournamentMatchNewId();
+    $p1 = $pair['p1'] ?? null;
+    $p2 = $pair['p2'] ?? null;
+    $bye = $pair['bye'] ?? null;
+    $meta = tcgTournamentEncodeMatchMeta([
+        'best_of' => $bestOf === 3 ? 3 : 1,
+        'p1_wins' => 0,
+        'p2_wins' => 0,
+        'games' => [],
+    ]);
+    if ($bye !== null) {
+        tcgDb()->prepare(
+            'INSERT INTO tcg_tournament_matches
+             (id, tournament_id, round, bracket_slot, bracket_side, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
+              status, winner_discord_id, connect_deadline_at, meta_json, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, "done", ?, NULL, ?, ?, ?)'
+        )->execute([$mid, $tournamentId, $round, $slot, $side, $bye, $bye, $meta, $created, $created]);
+        return;
+    }
+    tcgDb()->prepare(
+        'INSERT INTO tcg_tournament_matches
+         (id, tournament_id, round, bracket_slot, bracket_side, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
+          status, winner_discord_id, connect_deadline_at, meta_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, "pending", NULL, NULL, ?, ?, ?)'
+    )->execute([$mid, $tournamentId, $round, $slot, $side, $p1, $p2, $meta, $created, $created]);
 }
 
 function tcgTournamentCancelAndRefund(string $id, string $reason = 'cancel'): void {
@@ -187,6 +233,11 @@ function tcgTournamentCancelAndRefund(string $id, string $reason = 'cancel'): vo
 }
 
 function tcgTournamentResolveMatch(string $matchId, string $winnerDiscordId, string $reason): void {
+    tcgTournamentRecordGameResult($matchId, $winnerDiscordId, $reason);
+}
+
+/** Record one game result; Bo3 may keep the series open and reseed the next game. */
+function tcgTournamentRecordGameResult(string $matchId, string $winnerDiscordId, string $reason): void {
     $stmt = tcgDb()->prepare('SELECT * FROM tcg_tournament_matches WHERE id = ?');
     $stmt->execute([$matchId]);
     $m = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -201,17 +252,104 @@ function tcgTournamentResolveMatch(string $matchId, string $winnerDiscordId, str
     if ($winnerDiscordId !== $p1 && $winnerDiscordId !== $p2) {
         throw new Exception('Winner must be a match participant', 400);
     }
+
+    $meta = tcgTournamentDecodeMatchMeta($m['meta_json'] ?? '{}');
+    $bestOf = (int)($meta['best_of'] ?? 1);
+    if ($bestOf !== 3) {
+        $bestOf = 1;
+    }
+    $roomId = (string)($m['room_id'] ?? '');
+    // Avoid double-counting the same finished room in a Bo3 series.
+    foreach ($meta['games'] as $g) {
+        if (is_array($g) && (string)($g['room_id'] ?? '') === $roomId && $roomId !== '') {
+            return;
+        }
+    }
+
+    if ($winnerDiscordId === $p1) {
+        $meta['p1_wins'] = (int)$meta['p1_wins'] + 1;
+    } else {
+        $meta['p2_wins'] = (int)$meta['p2_wins'] + 1;
+    }
+    $meta['best_of'] = $bestOf;
+    $meta['games'][] = [
+        'room_id' => $roomId,
+        'winner_discord_id' => $winnerDiscordId,
+        'reason' => $reason,
+        'at' => time(),
+    ];
+
+    $need = (int)ceil($bestOf / 2);
+    $seriesOver = $bestOf === 1
+        || (int)$meta['p1_wins'] >= $need
+        || (int)$meta['p2_wins'] >= $need;
+
+    if (!$seriesOver) {
+        tcgDb()->prepare(
+            'UPDATE tcg_tournament_matches
+             SET room_id = NULL, p1_token = NULL, p2_token = NULL, status = "pending",
+                 connect_deadline_at = NULL, meta_json = ?, updated_at = ?
+             WHERE id = ? AND status IN ("ready","live","pending")'
+        )->execute([tcgTournamentEncodeMatchMeta($meta), time(), $matchId]);
+        return;
+    }
+
+    $seriesWinner = ((int)$meta['p1_wins'] >= (int)$meta['p2_wins']) ? $p1 : $p2;
+    if ($bestOf === 1) {
+        $seriesWinner = $winnerDiscordId;
+    } elseif ((int)$meta['p1_wins'] > (int)$meta['p2_wins']) {
+        $seriesWinner = $p1;
+    } elseif ((int)$meta['p2_wins'] > (int)$meta['p1_wins']) {
+        $seriesWinner = $p2;
+    } else {
+        $seriesWinner = $winnerDiscordId;
+    }
+
+    tcgTournamentFinalizeMatchSeries($m, $seriesWinner, $meta, $reason);
+}
+
+/**
+ * @param array<string,mixed> $m
+ * @param array<string,mixed> $meta
+ */
+function tcgTournamentFinalizeMatchSeries(array $m, string $winnerDiscordId, array $meta, string $reason): void {
+    $matchId = (string)$m['id'];
+    $tournamentId = (string)$m['tournament_id'];
+    $p1 = (string)($m['p1_discord_id'] ?? '');
+    $p2 = (string)($m['p2_discord_id'] ?? '');
     $loser = ($winnerDiscordId === $p1) ? $p2 : $p1;
     $now = time();
+
     tcgDb()->prepare(
-        'UPDATE tcg_tournament_matches SET status = "done", winner_discord_id = ?, updated_at = ? WHERE id = ?'
-    )->execute([$winnerDiscordId, $now, $matchId]);
+        'UPDATE tcg_tournament_matches
+         SET status = "done", winner_discord_id = ?, meta_json = ?, updated_at = ?
+         WHERE id = ?'
+    )->execute([$winnerDiscordId, tcgTournamentEncodeMatchMeta($meta), $now, $matchId]);
+
+    $row = tcgTournamentFetch($tournamentId);
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $format = (string)($settings['format'] ?? 'single_elim');
+
     if ($loser !== '') {
-        tcgDb()->prepare(
-            'UPDATE tcg_tournament_entrants SET status = "eliminated"
-             WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
-        )->execute([(string)$m['tournament_id'], $loser]);
+        if ($format === 'swiss') {
+            // Swiss keeps everyone active until scheduled rounds finish.
+        } elseif ($format === 'double_elim') {
+            $all = tcgTournamentFetchMatches($tournamentId);
+            $records = tcgTournamentRecordsFromMatches($all);
+            if ((int)($records[$loser]['losses'] ?? 0) >= 2) {
+                tcgDb()->prepare(
+                    'UPDATE tcg_tournament_entrants SET status = "eliminated"
+                     WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
+                )->execute([$tournamentId, $loser]);
+            }
+        } else {
+            tcgDb()->prepare(
+                'UPDATE tcg_tournament_entrants SET status = "eliminated"
+                 WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
+            )->execute([$tournamentId, $loser]);
+        }
     }
+
     if (!empty($m['room_id'])) {
         tcgTournamentEnsureApi();
         try {
@@ -451,6 +589,20 @@ function tcgTournamentCreateRoomPair(
 }
 
 function tcgTournamentAdvanceCompletedRounds(string $tournamentId): void {
+    $row = tcgTournamentFetch($tournamentId);
+    if (!$row) {
+        return;
+    }
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $format = (string)($settings['format'] ?? 'single_elim');
+    $bestOf = (int)($settings['best_of'] ?? 1);
+
+    if ($format === 'swiss' || $format === 'double_elim') {
+        tcgTournamentAdvanceSwissOrDouble($tournamentId, $format, $settings, $bestOf);
+        tcgTournamentSeedPendingRooms($tournamentId);
+        return;
+    }
+
     $matches = tcgTournamentFetchMatches($tournamentId);
     if (!$matches) {
         return;
@@ -491,15 +643,17 @@ function tcgTournamentAdvanceCompletedRounds(string $tournamentId): void {
         if (count($nextExisting) === 0) {
             $created = time();
             for ($i = 0; $i < $needed; $i++) {
-                $mid = tcgTournamentMatchNewId();
                 $wp1 = $winners[$i * 2] ?? null;
                 $wp2 = $winners[$i * 2 + 1] ?? null;
-                tcgDb()->prepare(
-                    'INSERT INTO tcg_tournament_matches
-                     (id, tournament_id, round, bracket_slot, p1_discord_id, p2_discord_id, room_id, p1_token, p2_token,
-                      status, winner_discord_id, connect_deadline_at, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, "pending", NULL, NULL, ?, ?)'
-                )->execute([$mid, $tournamentId, $nextRound, $i, $wp1, $wp2, $created, $created]);
+                tcgTournamentInsertMatchRow(
+                    $tournamentId,
+                    $nextRound,
+                    $i,
+                    'winners',
+                    ['p1' => $wp1, 'p2' => $wp2, 'bye' => null],
+                    $bestOf,
+                    $created
+                );
             }
             $all = tcgTournamentFetchMatches($tournamentId);
             $byRound = [];
@@ -528,41 +682,203 @@ function tcgTournamentAdvanceCompletedRounds(string $tournamentId): void {
     tcgTournamentSeedPendingRooms($tournamentId);
 }
 
-function tcgTournamentTryFinish(string $tournamentId): bool {
-    $row = tcgTournamentFetch($tournamentId);
-    if (!$row || (string)$row['status'] !== 'running') {
-        return false;
-    }
+/**
+ * Swiss: fixed round count. Double elim (2 lives): re-pair while 2+ players have &lt;2 losses.
+ *
+ * @param array<string,mixed> $settings
+ */
+function tcgTournamentAdvanceSwissOrDouble(
+    string $tournamentId,
+    string $format,
+    array $settings,
+    int $bestOf
+): void {
     $matches = tcgTournamentFetchMatches($tournamentId);
     if (!$matches) {
-        return false;
+        return;
     }
     $maxRound = 0;
     foreach ($matches as $m) {
         $maxRound = max($maxRound, (int)$m['round']);
     }
-    $finals = array_values(array_filter($matches, static fn($m) => (int)$m['round'] === $maxRound));
-    if (count($finals) !== 1) {
-        return false;
+    $roundMatches = array_values(array_filter(
+        $matches,
+        static fn($m) => (int)$m['round'] === $maxRound
+    ));
+    if (!$roundMatches) {
+        return;
     }
-    $final = $finals[0];
-    if ((string)$final['status'] !== 'done' || empty($final['winner_discord_id'])) {
-        return false;
+    foreach ($roundMatches as $m) {
+        if ((string)$m['status'] !== 'done' || empty($m['winner_discord_id'])) {
+            return;
+        }
     }
 
-    $pool = (int)$row['prize_pool_coins'];
-    $winner = (string)$final['winner_discord_id'];
-    $p1 = (string)($final['p1_discord_id'] ?? '');
-    $p2 = (string)($final['p2_discord_id'] ?? '');
-    $runner = ($winner === $p1) ? $p2 : (($winner === $p2) ? $p1 : '');
+    $nextExisting = array_values(array_filter(
+        $matches,
+        static fn($m) => (int)$m['round'] === ($maxRound + 1)
+    ));
+    if ($nextExisting) {
+        return;
+    }
+
+    $entrants = tcgTournamentFetchEntrants($tournamentId);
+    $records = tcgTournamentRecordsFromMatches($matches);
+    $active = [];
+    foreach ($entrants as $e) {
+        if ((string)$e['status'] !== 'playing') {
+            continue;
+        }
+        $pid = (string)$e['discord_id'];
+        if ($format === 'double_elim' && (int)($records[$pid]['losses'] ?? 0) >= 2) {
+            continue;
+        }
+        $active[] = $pid;
+    }
+
+    if ($format === 'swiss') {
+        $target = (int)($settings['swiss_rounds'] ?? tcgTournamentSwissRoundCount(count($active)));
+        if ($maxRound >= $target) {
+            return;
+        }
+    } elseif ($format === 'double_elim') {
+        if (count($active) <= 1) {
+            return;
+        }
+    }
+
+    $side = $format === 'swiss' ? 'swiss' : 'winners';
+    $pairings = tcgTournamentBuildSwissPairings(
+        $active,
+        $records,
+        tcgTournamentPriorPairsFromMatches($matches)
+    );
+    $created = time();
+    $nextRound = $maxRound + 1;
+    foreach ($pairings as $slot => $pair) {
+        tcgTournamentInsertMatchRow($tournamentId, $nextRound, (int)$slot, $side, $pair, $bestOf, $created);
+    }
+}
+
+function tcgTournamentTryFinish(string $tournamentId): bool {
+    $row = tcgTournamentFetch($tournamentId);
+    if (!$row || (string)$row['status'] !== 'running') {
+        return false;
+    }
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $format = (string)($settings['format'] ?? 'single_elim');
+    $matches = tcgTournamentFetchMatches($tournamentId);
+    if (!$matches) {
+        return false;
+    }
 
     $places = [];
-    if ($winner !== '') {
-        $places[] = $winner;
+    if ($format === 'swiss') {
+        $maxRound = 0;
+        foreach ($matches as $m) {
+            $maxRound = max($maxRound, (int)$m['round']);
+        }
+        $target = (int)($settings['swiss_rounds'] ?? $maxRound);
+        if ($maxRound < $target) {
+            return false;
+        }
+        foreach ($matches as $m) {
+            if ((int)$m['round'] === $maxRound
+                && ((string)$m['status'] !== 'done' || empty($m['winner_discord_id']))) {
+                return false;
+            }
+        }
+        $records = tcgTournamentRecordsFromMatches($matches);
+        $ids = array_keys($records);
+        usort($ids, static function ($a, $b) use ($records) {
+            $wa = (int)($records[$a]['wins'] ?? 0);
+            $wb = (int)($records[$b]['wins'] ?? 0);
+            if ($wa !== $wb) {
+                return $wb <=> $wa;
+            }
+            $la = (int)($records[$a]['losses'] ?? 0);
+            $lb = (int)($records[$b]['losses'] ?? 0);
+            return $la <=> $lb;
+        });
+        $places = array_slice($ids, 0, 3);
+    } elseif ($format === 'double_elim') {
+        foreach ($matches as $m) {
+            if ((string)$m['status'] !== 'done') {
+                return false;
+            }
+        }
+        $records = tcgTournamentRecordsFromMatches($matches);
+        $alive = [];
+        foreach ($records as $pid => $rec) {
+            if ((int)($rec['losses'] ?? 0) < 2) {
+                $alive[] = $pid;
+            }
+        }
+        // Also include playing entrants with no matches yet — shouldn't happen at end.
+        if (count($alive) !== 1) {
+            return false;
+        }
+        $winner = $alive[0];
+        $places = [$winner];
+        $sorted = array_keys($records);
+        usort($sorted, static function ($a, $b) use ($records) {
+            $la = (int)($records[$a]['losses'] ?? 0);
+            $lb = (int)($records[$b]['losses'] ?? 0);
+            if ($la !== $lb) {
+                return $la <=> $lb;
+            }
+            return ((int)($records[$b]['wins'] ?? 0)) <=> ((int)($records[$a]['wins'] ?? 0));
+        });
+        foreach ($sorted as $pid) {
+            if ($pid === $winner) {
+                continue;
+            }
+            $places[] = $pid;
+            if (count($places) >= 3) {
+                break;
+            }
+        }
+    } else {
+        $maxRound = 0;
+        foreach ($matches as $m) {
+            $maxRound = max($maxRound, (int)$m['round']);
+        }
+        $finals = array_values(array_filter($matches, static fn($m) => (int)$m['round'] === $maxRound));
+        if (count($finals) !== 1) {
+            return false;
+        }
+        $final = $finals[0];
+        if ((string)$final['status'] !== 'done' || empty($final['winner_discord_id'])) {
+            return false;
+        }
+        $winner = (string)$final['winner_discord_id'];
+        $p1 = (string)($final['p1_discord_id'] ?? '');
+        $p2 = (string)($final['p2_discord_id'] ?? '');
+        $runner = ($winner === $p1) ? $p2 : (($winner === $p2) ? $p1 : '');
+        if ($winner !== '') {
+            $places[] = $winner;
+        }
+        if ($runner !== '') {
+            $places[] = $runner;
+        }
     }
-    if ($runner !== '') {
-        $places[] = $runner;
+
+    return tcgTournamentPayoutAndFinish($tournamentId, $row, $places);
+}
+
+/**
+ * Coin pool payout only (no cosmetic prizes).
+ *
+ * @param array<string,mixed> $row
+ * @param list<string> $places discord ids 1st..nth
+ */
+function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $places): bool {
+    $places = array_values(array_filter(array_map('strval', $places), static fn($id) => $id !== ''));
+    if (!$places) {
+        return false;
     }
+    $pool = (int)$row['prize_pool_coins'];
+    $winner = $places[0];
     $percents = tcgTournamentPrizePercents(count($places));
     $db = tcgDb();
     $db->beginTransaction();

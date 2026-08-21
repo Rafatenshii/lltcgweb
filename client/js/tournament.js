@@ -524,7 +524,8 @@
         + 'rules ' + escapeHtml(String((trow.settings && trow.settings.rules_template) || 'standard'))
         + ' · fog ' + escapeHtml(String((trow.settings && trow.settings.fog) || 'hidden_hands'))
         + ' · stream delay ' + String((trow.settings && trow.settings.stream_delay_secs) || 0) + 's'
-        + ' · format ' + escapeHtml(String((trow.settings && trow.settings.format) || 'single_elim'))
+        + ' · ' + escapeHtml(String((trow.settings && trow.settings.format) || 'single_elim'))
+        + ' · Bo' + String((trow.settings && trow.settings.best_of) || 1)
         + '</p>';
     }
     wireAvatarFallbacks(head);
@@ -571,7 +572,8 @@
       )).join('') || '<li class="tournament-muted">No entrants</li>';
       wireAvatarFallbacks(list);
     }
-    renderBracket(res.matches || []);
+    renderBracket(res.matches || [], res.bracket_preview || []);
+    renderStandings(res.standings || []);
   }
 
   function wireAvatarFallbacks(root) {
@@ -583,61 +585,197 @@
     });
   }
 
-  function renderBracket(matches) {
-    const root = el('tournament-bracket');
-    if (!root) return;
-    if (!matches.length) {
-      root.innerHTML = '<p class="tournament-muted">Bracket appears after check-in closes.</p>';
+  function entrantById(did) {
+    const ents = (state.detail && state.detail.entrants) || [];
+    return ents.find((e) => e.discord_id === did) || null;
+  }
+
+  function seatHtml(discordId, opts) {
+    opts = opts || {};
+    const placeholder = !!opts.placeholder;
+    const isBye = !!opts.bye;
+    const isWinner = !!opts.winner;
+    if (placeholder) {
+      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">TBD</span></div>';
+    }
+    if (isBye) {
+      return '<div class="tournament-match-seat tournament-match-seat--bye"><span class="tournament-match-seat-name">Bye</span></div>';
+    }
+    if (!discordId) {
+      return '<div class="tournament-match-seat tournament-match-seat--empty"><span class="tournament-match-seat-name">Waiting…</span></div>';
+    }
+    const ent = entrantById(discordId);
+    const name = (ent && ent.username) || nameFor(discordId);
+    const avatar = ent ? ent.avatar_url : null;
+    return (
+      '<div class="tournament-match-seat' + (isWinner ? ' tournament-match-seat--winner' : '') + '">'
+      + personChipHtml(discordId, name, avatar)
+      + '</div>'
+    );
+  }
+
+  function roundLabel(side, round, slotCount, isPreview) {
+    const s = String(side || 'winners');
+    if (s === 'swiss') return 'Swiss · Round ' + round;
+    if (s === 'losers') return 'Losers · R' + round;
+    if (s === 'grand_final') return 'Grand Final';
+    if (slotCount === 1) return isPreview ? 'Final' : 'Final';
+    if (slotCount === 2) return 'Semifinals';
+    return 'Round of ' + (slotCount * 2);
+  }
+
+  function statusLabel(m) {
+    const st = String(m.status || 'pending');
+    if (st === 'live') return 'Live';
+    if (st === 'ready') return 'Ready';
+    if (st === 'done') return 'Done';
+    if (st === 'pending') return 'Upcoming';
+    return st;
+  }
+
+  function renderStandings(rows) {
+    let box = el('tournament-standings');
+    if (!box) {
+      const bracket = el('tournament-bracket');
+      if (!bracket || !bracket.parentNode) return;
+      box = document.createElement('div');
+      box.id = 'tournament-standings';
+      box.className = 'tournament-standings';
+      bracket.parentNode.insertBefore(box, bracket);
+    }
+    const format = (state.detail && state.detail.tournament && state.detail.tournament.settings
+      && state.detail.tournament.settings.format) || 'single_elim';
+    if (!rows.length || (format === 'single_elim' && !(state.detail && (state.detail.matches || []).length))) {
+      box.hidden = true;
+      box.innerHTML = '';
       return;
     }
-    const byRound = {};
-    let maxRound = 1;
-    matches.forEach((m) => {
-      const r = Number(m.round) || 1;
-      maxRound = Math.max(maxRound, r);
-      (byRound[r] || (byRound[r] = [])).push(m);
-    });
-    Object.keys(byRound).forEach((r) => {
-      byRound[r].sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
-    });
-    const colW = 220;
-    const rowH = 72;
-    const pad = 24;
-    const firstCount = (byRound[1] || []).length || 1;
-    const height = pad * 2 + firstCount * rowH;
-    const width = pad * 2 + maxRound * colW;
-    let svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '">';
-    for (let r = 1; r <= maxRound; r++) {
-      const col = byRound[r] || [];
-      const slots = Math.max(col.length, 1);
-      const step = height / slots;
-      col.forEach((m, i) => {
-        const x = pad + (r - 1) * colW;
-        const y = pad + i * step + (step - 56) / 2;
-        const p1 = nameFor(m.p1_discord_id);
-        const p2 = nameFor(m.p2_discord_id);
-        const status = m.status || '';
-        const win = m.winner_discord_id ? nameFor(m.winner_discord_id) : '';
-        svg += '<rect class="tournament-bracket-node" x="' + x + '" y="' + y + '" width="190" height="56" rx="8"/>';
-        svg += '<text class="tournament-bracket-text" x="' + (x + 10) + '" y="' + (y + 18) + '">' + escapeHtml(p1) + '</text>';
-        svg += '<text class="tournament-bracket-text" x="' + (x + 10) + '" y="' + (y + 34) + '">'
-          + escapeHtml(p2 || (status === 'done' ? '(bye)' : 'TBD')) + '</text>';
-        svg += '<text class="tournament-bracket-sub" x="' + (x + 10) + '" y="' + (y + 50) + '">'
-          + escapeHtml(status) + (win ? ' · ' + escapeHtml(win) : '')
-          + (m.room_id ? ' · ' + escapeHtml(m.room_id) : '')
-          + '</text>';
-        if (m.room_id && (status === 'ready' || status === 'live')) {
-          svg += '<text class="tournament-bracket-sub" data-spec="' + escapeAttr(m.room_id)
-            + '" x="' + (x + 140) + '" y="' + (y + 50) + '" style="cursor:pointer;fill:#9cf">'
-            + '<title>Spectate this match (hidden hands follow event fog setting)</title>Spec</text>';
-        }
-      });
+    if (format === 'single_elim') {
+      box.hidden = true;
+      box.innerHTML = '';
+      return;
     }
-    svg += '</svg>';
-    root.innerHTML = svg;
+    box.hidden = false;
+    box.innerHTML =
+      '<h4 class="tournament-standings-title">Standings</h4>'
+      + '<ol class="tournament-standings-list">'
+      + rows.map((r, i) => (
+        '<li><span class="tournament-standings-rank">#' + (i + 1) + '</span> '
+        + escapeHtml(r.username || r.discord_id)
+        + ' <span class="tournament-muted">' + r.wins + 'W–' + r.losses + 'L'
+        + (r.status ? ' · ' + escapeHtml(r.status) : '')
+        + '</span></li>'
+      )).join('')
+      + '</ol>';
+  }
+
+  function renderBracket(matches, preview) {
+    const root = el('tournament-bracket');
+    if (!root) return;
+    const trow = state.detail && state.detail.tournament;
+    const format = (trow && trow.settings && trow.settings.format) || 'single_elim';
+    const bestOf = (trow && trow.settings && trow.settings.best_of) || 1;
+    const live = Array.isArray(matches) ? matches : [];
+    const prev = Array.isArray(preview) ? preview : [];
+    const isPreview = live.length === 0;
+    const source = isPreview ? prev : live;
+
+    if (!source.length) {
+      root.innerHTML = '<p class="tournament-muted">Bracket layout appears once max players / format is set.</p>';
+      return;
+    }
+
+    // Group by side then round.
+    const groups = {};
+    source.forEach((m) => {
+      const side = String(m.bracket_side || (format === 'swiss' ? 'swiss' : 'winners'));
+      const r = Number(m.round) || 1;
+      const key = side + ':' + r;
+      if (!groups[key]) {
+        groups[key] = { side: side, round: r, label: m.label || '', items: [] };
+      }
+      groups[key].items.push(m);
+    });
+    Object.keys(groups).forEach((k) => {
+      groups[k].items.sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
+    });
+    const keys = Object.keys(groups).sort((a, b) => {
+      const ga = groups[a];
+      const gb = groups[b];
+      const sideOrder = { winners: 0, swiss: 0, losers: 1, grand_final: 2 };
+      const sa = sideOrder[ga.side] != null ? sideOrder[ga.side] : 9;
+      const sb = sideOrder[gb.side] != null ? sideOrder[gb.side] : 9;
+      if (sa !== sb) return sa - sb;
+      return ga.round - gb.round;
+    });
+
+    let html = '<div class="tournament-bracket-board' + (isPreview ? ' tournament-bracket-board--preview' : '') + '">';
+    html += '<div class="tournament-bracket-caption">'
+      + escapeHtml(format === 'swiss' ? 'Swiss rounds' : (format === 'double_elim' ? 'Double elim (2 lives)' : 'Single elimination'))
+      + (bestOf === 3 ? ' · Best of 3' : ' · Best of 1')
+      + (isPreview ? ' · Preview (names fill in after check-in)' : '')
+      + '</div>';
+    html += '<div class="tournament-bracket-rounds">';
+
+    keys.forEach((k) => {
+      const g = groups[k];
+      const label = g.label || roundLabel(g.side, g.round, g.items.length, isPreview);
+      html += '<div class="tournament-bracket-round" data-side="' + escapeAttr(g.side) + '">';
+      html += '<div class="tournament-bracket-round-label">' + escapeHtml(label) + '</div>';
+      html += '<div class="tournament-bracket-round-list">';
+      g.items.forEach((m) => {
+        const status = String(m.status || (isPreview ? 'pending' : 'pending'));
+        const canSpec = !isPreview && m.room_id && (status === 'ready' || status === 'live');
+        const p1w = Number(m.p1_wins) || 0;
+        const p2w = Number(m.p2_wins) || 0;
+        const showSeries = !isPreview && (Number(m.best_of) || bestOf) === 3;
+        html += '<article class="tournament-match-card tournament-match-card--' + escapeAttr(status)
+          + (isPreview ? ' tournament-match-card--skeleton' : '') + '">';
+        html += '<div class="tournament-match-card-head">';
+        html += '<span class="tournament-match-status">' + escapeHtml(isPreview ? 'Slot' : statusLabel(m)) + '</span>';
+        if (showSeries) {
+          html += '<span class="tournament-match-series">' + p1w + '–' + p2w + '</span>';
+        }
+        html += '</div>';
+        html += '<div class="tournament-match-seats">';
+        if (isPreview) {
+          html += seatHtml(null, { placeholder: true });
+          html += seatHtml(null, { placeholder: true });
+        } else {
+          const bye = status === 'done' && !m.p2_discord_id;
+          html += seatHtml(m.p1_discord_id, {
+            winner: m.winner_discord_id && m.winner_discord_id === m.p1_discord_id,
+            bye: false,
+          });
+          html += seatHtml(m.p2_discord_id, {
+            winner: m.winner_discord_id && m.winner_discord_id === m.p2_discord_id,
+            bye: bye,
+          });
+        }
+        html += '</div>';
+        html += '<div class="tournament-match-card-foot">';
+        if (canSpec) {
+          html += '<button type="button" class="tournament-spec-btn" data-spec="' + escapeAttr(m.room_id) + '"'
+            + ' title="Watch this match as a spectator (non-players welcome)">'
+            + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> Spectate</button>';
+        } else if (!isPreview && status === 'done' && m.winner_discord_id) {
+          html += '<span class="tournament-muted">Winner: ' + escapeHtml(nameFor(m.winner_discord_id)) + '</span>';
+        } else if (isPreview) {
+          html += '<span class="tournament-muted">Names lock in at bracket start</span>';
+        } else {
+          html += '<span class="tournament-muted">' + escapeHtml(statusLabel(m)) + '</span>';
+        }
+        html += '</div></article>';
+      });
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+    root.innerHTML = html;
     root.querySelectorAll('[data-spec]').forEach((node) => {
       node.addEventListener('click', () => spectateRoom(node.getAttribute('data-spec')));
     });
+    wireAvatarFallbacks(root);
   }
 
   async function onDetailAction(act) {
@@ -798,6 +936,7 @@
       game_mode: (el('tournament-create-mode') || {}).value || 'standard',
       settings: {
         format: (el('tournament-create-format') || {}).value || 'single_elim',
+        best_of: Number((el('tournament-create-bestof') || {}).value || 1),
         fog: (el('tournament-create-fog') || {}).value || 'hidden_hands',
         rules_template: (el('tournament-create-rules') || {}).value || 'standard',
         stream_delay_secs: Number((el('tournament-create-delay') || {}).value || 0),
