@@ -86,4 +86,102 @@ final class ReplayActivateStageRepairTest extends TestCase
             'activate_ability should repair onto Stage or soft-skip, not throw'
         );
     }
+
+    public function testActivateAbilityRepairsInactiveEnergyInsteadOfAborting(): void
+    {
+        $state = $this->joinedMainFirstState();
+        $ez = $state['players']['p1']['energy_zone'] ?? [];
+        $this->assertGreaterThanOrEqual(1, count($ez));
+        foreach ($state['players']['p1']['energy_zone'] as &$e) {
+            $e['active'] = false;
+        }
+        unset($e);
+        while (count($state['players']['p1']['energy_zone']) < 2) {
+            $extra = array_shift($state['players']['p1']['energy_deck']);
+            $this->assertIsArray($extra);
+            $extra['active'] = false;
+            $state['players']['p1']['energy_zone'][] = $extra;
+        }
+        $member = [
+            'instance_id' => 'card_replay_pay_e2',
+            'card_type' => 'メンバー',
+            'name' => 'Replay Payer',
+            'name_en' => 'Replay Payer',
+            'group' => 'µ\'s',
+            'abilities' => [[
+                'trigger' => 'activated',
+                'type' => 'activated_pay_energy_mill',
+                'cost' => 2,
+                'count' => 1,
+                'once_per_turn' => true,
+            ]],
+        ];
+        $state['players']['p1']['stage']['center'] = $member;
+        $state['active_player'] = 'p1';
+        $state['phase'] = 'main_first';
+
+        $after = replayApplyRecordedAction(
+            $state,
+            'p1',
+            'activate_ability',
+            ['card_id' => 'card_replay_pay_e2', 'ability_index' => 0],
+            111
+        );
+
+        $this->assertIsArray($after);
+        $this->assertLessThanOrEqual(
+            0,
+            countActiveEnergyInZone($after['players']['p1']),
+            'paid 2 energy after flipping inactive zone cards'
+        );
+    }
+
+    public function testNeedActiveEnergyStillSoftSkipsWhenUnrepairable(): void
+    {
+        $state = $this->joinedMainFirstState();
+        $state['players']['p1']['energy_zone'] = [];
+        $state['players']['p1']['energy_deck'] = [];
+        $state['players']['p1']['hand'] = array_values(array_filter(
+            $state['players']['p1']['hand'] ?? [],
+            static fn($c): bool => ($c['card_type'] ?? '') !== 'エネルギー'
+        ));
+        $state['players']['p1']['waiting_room'] = array_values(array_filter(
+            $state['players']['p1']['waiting_room'] ?? [],
+            static fn($c): bool => ($c['card_type'] ?? '') !== 'エネルギー'
+        ));
+        $state['players']['p1']['main_deck'] = array_values(array_filter(
+            $state['players']['p1']['main_deck'] ?? [],
+            static fn($c): bool => ($c['card_type'] ?? '') !== 'エネルギー'
+        ));
+        $member = [
+            'instance_id' => 'card_replay_pay_e2_empty',
+            'card_type' => 'メンバー',
+            'name' => 'Replay Payer',
+            'name_en' => 'Replay Payer',
+            'group' => 'µ\'s',
+            'abilities' => [[
+                'trigger' => 'activated',
+                'type' => 'activated_pay_energy_mill',
+                'cost' => 2,
+                'count' => 1,
+                'once_per_turn' => true,
+            ]],
+        ];
+        $state['players']['p1']['stage']['center'] = $member;
+
+        $after = replayApplyRecordedAction(
+            $state,
+            'p1',
+            'activate_ability',
+            ['card_id' => 'card_replay_pay_e2_empty', 'ability_index' => 0],
+            111
+        );
+        $this->assertIsArray($after);
+        $logBlob = json_encode($after['log'] ?? []);
+        $this->assertTrue(
+            str_contains((string)$logBlob, 'skipped unresolved prompt')
+                || str_contains((string)$logBlob, 'Need 2 active Energy'),
+            'unrepairable energy cost should soft-skip, not throw'
+        );
+    }
 }

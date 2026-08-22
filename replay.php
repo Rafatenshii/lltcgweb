@@ -345,6 +345,59 @@ function replayEnsureMemberOnStage(array &$state, string $pid, string $cardId, s
     $p['stage'][$slot] = $card;
 }
 
+function replayCardIsEnergy(array $c): bool {
+    $t = (string)($c['card_type'] ?? '');
+    $en = strtolower((string)($c['card_type_en'] ?? ''));
+    return $t === 'エネルギー' || $en === 'energy';
+}
+
+function replayParseActiveEnergyNeed(string $msg, int $fallback = 1): int {
+    if (preg_match('/Need\s+(\d+)\s+active Energy/i', $msg, $m)) {
+        return max(1, (int)$m[1]);
+    }
+    if (stripos($msg, 'Not enough active energy') !== false) {
+        return max(1, $fallback);
+    }
+    return 0;
+}
+
+/** Flip or pull Energy so a recorded pay-cost action can apply after board drift. */
+function replayEnsureActiveEnergy(array &$state, string $pid, int $need): void {
+    if ($need <= 0 || ($pid !== 'p1' && $pid !== 'p2')) {
+        return;
+    }
+    $p = &$state['players'][$pid];
+    if (!isset($p['energy_zone']) || !is_array($p['energy_zone'])) {
+        $p['energy_zone'] = [];
+    }
+    $have = countActiveEnergyInZone($p);
+    if ($have >= $need) {
+        return;
+    }
+    activateEnergyForPlayer($p, $need - $have);
+    $have = countActiveEnergyInZone($p);
+    if ($have >= $need) {
+        return;
+    }
+    $short = $need - $have;
+    foreach (['energy_deck', 'hand', 'waiting_room', 'main_deck'] as $zone) {
+        if ($short <= 0) {
+            break;
+        }
+        $list = $p[$zone] ?? [];
+        for ($i = count($list) - 1; $i >= 0 && $short > 0; $i--) {
+            $c = $list[$i] ?? null;
+            if (!is_array($c) || !replayCardIsEnergy($c)) {
+                continue;
+            }
+            array_splice($p[$zone], $i, 1);
+            $c['active'] = true;
+            $p['energy_zone'][] = $c;
+            $short--;
+        }
+    }
+}
+
 /** Put a recorded Baton Touch target on the exact Stage slot (swap or pull off-stage). */
 function replayPlaceMemberOnExactSlot(array &$state, string $pid, string $cardId, string $slot): void {
     $slots = ['center', 'left', 'right'];
@@ -806,6 +859,7 @@ function replayLooksLikeSeekDriftError(string $msg): bool {
         'Cannot enter this Stage area this turn',
         'Cannot replace a Member that was played this turn',
         'Not enough active energy',
+        'active Energy',
         'Member not on stage',
         'Card not found on Stage or in Waiting Room',
         'Card not in hand',
@@ -880,6 +934,10 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
                 (string)($data['slot'] ?? $data['source_slot'] ?? '')
             );
         }
+    }
+    $energyNeed = replayParseActiveEnergyNeed($msg, 2);
+    if ($energyNeed > 0 && in_array($type, ['activate_ability', 'play_member'], true)) {
+        replayEnsureActiveEnergy($state, $pid, $energyNeed);
     }
     if ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
         $owner = $pid;
