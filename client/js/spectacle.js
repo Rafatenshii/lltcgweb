@@ -9597,7 +9597,7 @@ function appendMemberStackedMembersBadge(slotEl, member) {
   badge.className = 'stacked-cards-count';
   badge.textContent = '(x' + count + ')';
   wrap.appendChild(badge);
-  slotEl.appendChild(wrap);
+  slotEl.insertBefore(wrap, slotEl.firstChild);
   requestAnimationFrame(() => layoutMemberUnderStack(slotEl));
 }
 function estimateBatonWrEnergyActivation(me, occupant, incomingCard) {

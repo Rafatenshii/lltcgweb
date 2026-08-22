@@ -2788,7 +2788,14 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
   color:#e2e8f0;font-size:10px;font-weight:800;line-height:16px;text-align:center;
   box-shadow:0 1px 3px rgba(0,0,0,.45);white-space:nowrap
 }
-.perf-card.member:has(.member-under-stack){overflow:visible}
+.perf-card.member:has(.member-under-stack){overflow:visible;isolation:isolate}
+.perf-card.member > img,
+.perf-card.member > .noimg,
+.perf-card.member > .card-art,
+.perf-card.member > .card-face-fill{
+  position:relative;z-index:1
+}
+.perf-card.member > .member-under-stack{z-index:0}
 .field-badge .badge-val{
   font-size:clamp(15px,4.5cqw,21px);font-weight:800;color:#fff;
   text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95),0 1px 5px rgba(0,0,0,.92),0 2px 8px rgba(0,0,0,.88);
