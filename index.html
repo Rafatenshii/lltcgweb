@@ -21286,6 +21286,35 @@ function liveStorageDepartureLatched(iid, roundId = null) {
   return !!(iid && G._liveStorageDepartedIids?.has(iid));
 }
 
+/** True when a move handoff must not un-hide the source (Live storage already left). */
+function shouldClearAnimHideAfterHandoff(iid, fromZone) {
+  if (fromZone === 'live' && liveStorageDepartureLatched(iid)) return false;
+  return true;
+}
+
+/** Empty every Live-storage slot showing this iid. Do not un-hide — that restores the face. */
+function markLiveStorageSourceGone(iid, fromLoc, myId) {
+  if (!iid) return;
+  latchLiveStorageDeparture(iid, typeof liveMovementRoundId === 'function'
+    ? liveMovementRoundId(G.gameState) : null);
+  const prefixes = ['my', 'opp'];
+  const preferPid = fromLoc?.pid;
+  const preferPre = (preferPid && myId && preferPid === myId) ? 'my'
+    : (preferPid && myId ? 'opp' : null);
+  const order = preferPre ? [preferPre, ...prefixes.filter(p => p !== preferPre)] : prefixes;
+  for (const pre of order) {
+    for (let i = 0; i < 3; i++) {
+      const zoneEl = typeof el === 'function' ? el(`${pre}-live-${i}`) : document.getElementById(`${pre}-live-${i}`);
+      if (!zoneEl) continue;
+      zoneEl.querySelectorAll('.lcard.live-card').forEach(card => {
+        if (card.dataset.iid !== iid) return;
+        card.remove();
+      });
+      if (!zoneEl.querySelector('.lcard.live-card')) zoneEl.innerHTML = '';
+    }
+  }
+}
+
 /**
  * Reserve exclusive ownership of a logical card move for presentation.
  * Returns { key, ok }. ok=false means another path already reserved/settled it.
@@ -21776,40 +21805,30 @@ function clearAnimHideIid(iid) {
 /** Remove a card from live-storage DOM (used when a flight handoff leaves live). */
 function removeLiveStorageCardFromDom(fromLoc, iid, myId) {
   if (!iid || fromLoc?.zone !== 'live') return false;
-  const pid = fromLoc.pid;
-  const pre = pid === myId ? 'my' : 'opp';
-  const prefer = fromLoc.index;
-  const order = prefer != null ? [prefer, 0, 1, 2] : [0, 1, 2];
-  const tried = new Set();
-  for (const i of order) {
-    if (tried.has(i)) continue;
-    tried.add(i);
-    const zoneEl = el(`${pre}-live-${i}`);
-    if (!zoneEl) continue;
-    const card = zoneEl.querySelector(`.lcard.live-card[data-iid="${CSS.escape(iid)}"]`);
-    if (!card) continue;
-    card.remove();
-    if (!zoneEl.querySelector('.lcard.live-card')) zoneEl.innerHTML = '';
-    clearAnimHideIid(iid);
-    return true;
-  }
-  return false;
+  markLiveStorageSourceGone(iid, fromLoc, myId);
+  return true;
 }
 
 function removeLiveStorageCardFromDomIfDeparted(fromLoc, iid, myId, stateAfter) {
-  if (!iid || fromLoc?.zone !== 'live' || !stateAfter) return;
-  const pid = fromLoc.pid;
-  const stillInLive = (stateAfter.players?.[pid]?.live_zone || [])
-    .some(c => c.instance_id === iid);
-  if (stillInLive) return;
-  latchLiveStorageDeparture(iid, liveMovementRoundId(stateAfter));
-  removeLiveStorageCardFromDom(fromLoc, iid, myId);
+  if (!iid || fromLoc?.zone !== 'live') return;
+  // Always blank the source for a Live exit flight. Waiting until
+  // `stateAfter.live_zone` is empty races Performance boards that still list
+  // the card — handoff then un-hides the face on storage.
+  markLiveStorageSourceGone(iid, fromLoc, myId);
 }
 
 function syncLiveStorageSlotsFromState(state, myId) {
   const oppId = myId === 'p1' ? 'p2' : 'p1';
-  renderLiveSlots('my', state?.players?.[myId]?.live_zone || [], true, myId);
-  renderLiveSlots('opp', state?.players?.[oppId]?.live_zone || [], false, oppId);
+  const roundId = (typeof liveMovementRoundId === 'function')
+    ? liveMovementRoundId(state) : null;
+  const mine = (typeof liveZoneCardsExcludingDeparted === 'function')
+    ? liveZoneCardsExcludingDeparted(state?.players?.[myId]?.live_zone || [], roundId)
+    : (state?.players?.[myId]?.live_zone || []);
+  const opp = (typeof liveZoneCardsExcludingDeparted === 'function')
+    ? liveZoneCardsExcludingDeparted(state?.players?.[oppId]?.live_zone || [], roundId)
+    : (state?.players?.[oppId]?.live_zone || []);
+  renderLiveSlots('my', mine, true, myId);
+  renderLiveSlots('opp', opp, false, oppId);
 }
 
 /** Ensure live-storage flip animations are scheduled after renderGame. */
@@ -21948,6 +21967,7 @@ function revealAnimMoveDestination(iid, state) {
     if (card) break;
   }
   document.querySelectorAll(`[data-iid="${CSS.escape(iid)}"]`).forEach(n => {
+    if (liveStorageDepartureLatched(iid) && n.classList.contains('live-card')) return;
     n.classList.remove('card-arriving');
     if (card && !isEnergyStorageEl(n)) applyCardFoilFx(n, card);
     else clearCardFoilFx(n);
@@ -21969,7 +21989,9 @@ function finishCardMoveHandoff(iid, opts = {}) {
     renderState = null,
     finalState = null,
   } = opts;
-  clearAnimHideIid(iid);
+  if (shouldClearAnimHideAfterHandoff(iid, opts.fromZone || null)) {
+    clearAnimHideIid(iid);
+  }
   if (oppStageReveal && stagePid) {
     markStageRevealFlip(stagePid, iid);
     if (renderState) {
@@ -21989,7 +22011,7 @@ function finishCardMoveHandoff(iid, opts = {}) {
     beginHandDrawReveal(iid, state, myId);
   } else if (renderState) {
     G.gameState = renderState;
-    revealAnimMoveDestination(iid, renderState);
+    if (opts.fromZone !== 'live') revealAnimMoveDestination(iid, renderState);
   }
 }
 
@@ -22711,9 +22733,10 @@ async function executeCardMoveAnimation(m, opts) {
   // Ghost guard: card already handed off, or already painted at the destination
   // (state-apply renderGame-before-fly). Portrait dest fallbacks made these visible again.
   if (!reservation.ok) {
-    clearAnimHideIid(m.iid);
     if (isLiveStorageExit) {
-      removeLiveStorageCardFromDomIfDeparted(m.from, m.iid, myId, renderState || stateAfter);
+      markLiveStorageSourceGone(m.iid, m.from, myId);
+    } else {
+      clearAnimHideIid(m.iid);
     }
     return;
   }
@@ -22742,8 +22765,7 @@ async function executeCardMoveAnimation(m, opts) {
   }
   const cardEl = document.querySelector(`[data-iid="${CSS.escape(m.iid)}"]`);
   if (isLiveStorageExit && cardEl && domCardAtMoveLoc(cardEl, m.to, myId)) {
-    // Already at Success/WR in the DOM — do not invent a live-slot ghost flight.
-    clearAnimHideIid(m.iid);
+    markLiveStorageSourceGone(m.iid, m.from, myId);
     settleMovementPresentation(reservation.key);
     return;
   }
@@ -22771,7 +22793,10 @@ async function executeCardMoveAnimation(m, opts) {
   if (hideLiveSource || isLiveStorageExit) {
     if (!G._animHideIids) G._animHideIids = new Set();
     if (m.iid) G._animHideIids.add(m.iid);
-    if (!(delayMs > 0)) setCardArriving(m.iid, true);
+    if (!(delayMs > 0)) {
+      setCardArriving(m.iid, true);
+      if (isLiveStorageExit) markLiveStorageSourceGone(m.iid, m.from, myId);
+    }
   } else if (!deferSourceHide) {
     setCardArriving(m.iid, true);
   }
@@ -22794,6 +22819,7 @@ async function executeCardMoveAnimation(m, opts) {
       livePid: m.to?.pid,
       renderState,
       finalState: stateAfter,
+      fromZone: m.from?.zone || '',
     };
     const runHandoff = () => {
       if (handoffPromise) return handoffPromise;
@@ -24901,7 +24927,12 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
     setTimeout(async () => {
       // Blank the mat source as soon as this flight's delay elapses — before image
       // preload — so Live exits never leave a twin behind while art loads.
-      if (opts.deferSourceHide && opts.sourceIid) setCardArriving(opts.sourceIid, true);
+      if (opts.deferSourceHide && opts.sourceIid) {
+        setCardArriving(opts.sourceIid, true);
+        if (fromZone === 'live' && typeof markLiveStorageSourceGone === 'function') {
+          markLiveStorageSourceGone(opts.sourceIid, { zone: 'live', pid: opts.fromPid }, opts.myId);
+        }
+      }
       const layer = el('card-flight-layer');
       if (!layer || !fromRect || !toRect) {
         try { opts.onHandoff?.(); } catch (e) { TCG_DEBUG.warn('anim', 'handoff failed', e); }
@@ -32904,7 +32935,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=99"></script>
-<script src="client/js/board-render.js?v=34"></script>
+<script src="client/js/board-render.js?v=35"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

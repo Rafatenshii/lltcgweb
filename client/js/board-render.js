@@ -2209,8 +2209,9 @@ function renderLiveSlots(prefix, zone, isMe, pid){
         && (G._liveStorageRevealRunning
           || ((G._liveStorageRevealAnimCount || 0) > 0)
           || (G._liveRoundPlaybackActive && G._liveRevealFlips?.size));
-      if (flipBusy) continue;
-      if (existingCard?.classList.contains('card-arriving') && G._liveWrDiscardInProgress) continue;
+      if (flipBusy && !(existingCard?.dataset?.iid && liveStorageDepartureLatched(existingCard.dataset.iid))) continue;
+      if (existingCard?.classList.contains('card-arriving') && G._liveWrDiscardInProgress
+          && !(existingCard?.dataset?.iid && liveStorageDepartureLatched(existingCard.dataset.iid))) continue;
       e.innerHTML='';
       continue;
     }

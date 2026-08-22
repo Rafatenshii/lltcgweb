@@ -42,6 +42,7 @@ const fnNames = [
   'resetMovementLedger',
   'latchLiveStorageDeparture',
   'liveStorageDepartureLatched',
+  'shouldClearAnimHideAfterHandoff',
   'reserveMovementPresentation',
   'settleMovementPresentation',
   'movementPresentationOwned',
@@ -110,6 +111,7 @@ const {
   flightOrientClass,
   liveStorageDepartureLatched,
   latchLiveStorageDeparture,
+  shouldClearAnimHideAfterHandoff,
 } = sandbox;
 
 // --- placement vs draw classification ---
@@ -174,6 +176,10 @@ ok('latch strips held post-reveal live zone',
   G._livePostRevealBoard.players.p1.live_zone.length === 1
   && G._livePostRevealBoard.players.p1.live_zone[0].instance_id === 'keep-1'
   && G._livePostRevealBoard.players.p2.live_zone.length === 0);
+ok('handoff must not unhide a latched Live-storage source',
+  shouldClearAnimHideAfterHandoff('live-1', 'live') === false
+  && shouldClearAnimHideAfterHandoff('keep-1', 'live') === true
+  && shouldClearAnimHideAfterHandoff('live-1', 'hand') === true);
 
 // different round can reserve again
 resetMovementLedger();
