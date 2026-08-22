@@ -738,6 +738,14 @@ async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
   } finally {
     G._liveWrDiscardInProgress = false;
     clearWrPileAnimPending();
+    if (G._animHideIids) {
+      for (const iid of [...G._animHideIids]) {
+        if (!G._liveStorageDepartedIids?.has(iid)) {
+          if (typeof clearAnimHideIid === 'function') clearAnimHideIid(iid);
+          else G._animHideIids.delete(iid);
+        }
+      }
+    }
     G._animHideIids = null;
   }
   return true;

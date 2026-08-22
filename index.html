@@ -21268,12 +21268,22 @@ function latchLiveStorageDeparture(iid, roundId = null) {
   if (!G._liveStorageDepartedIids) G._liveStorageDepartedIids = new Set();
   G._liveStorageDepartedIids.add(iid);
   if (roundId != null) G._liveStorageDepartedRound = roundId;
+  if (G._livePostRevealBoard?.players) {
+    for (const pid of ['p1', 'p2']) {
+      const p = G._livePostRevealBoard.players[pid];
+      if (!p?.live_zone) continue;
+      p.live_zone = p.live_zone.filter(c => c && c.instance_id !== iid);
+    }
+  }
+}
+
+function stripLivePostRevealBoardCard(iid) {
+  latchLiveStorageDeparture(iid);
 }
 
 function liveStorageDepartureLatched(iid, roundId = null) {
-  if (!iid || !G._liveStorageDepartedIids?.has(iid)) return false;
-  if (roundId == null || G._liveStorageDepartedRound == null) return true;
-  return Number(G._liveStorageDepartedRound) === Number(roundId);
+  // roundId is kept for callers; turn vs live_show.turn must not unlatch.
+  return !!(iid && G._liveStorageDepartedIids?.has(iid));
 }
 
 /**
@@ -21425,6 +21435,11 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
     } else {
       clearWrPileAnimPending();
       if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending();
+    }
+    if (G._animHideIids) {
+      for (const iid of [...G._animHideIids]) {
+        if (!G._liveStorageDepartedIids?.has(iid)) clearAnimHideIid(iid);
+      }
     }
     G._animHideIids = null;
     clearHandArrivingFlags();
@@ -21590,7 +21605,11 @@ async function playLivePhaseTransition(prev, final, myId, opts = {}) {
 }
 
 function clearHandArrivingFlags() {
-  document.querySelectorAll('.card-arriving').forEach(d => d.classList.remove('card-arriving'));
+  document.querySelectorAll('.card-arriving').forEach(d => {
+    const iid = d.dataset?.iid;
+    if (iid && G._liveStorageDepartedIids?.has(iid)) return;
+    d.classList.remove('card-arriving');
+  });
 }
 
 function clearPlaySelection() {
@@ -21833,8 +21852,17 @@ function flushLiveStorageFlipScheduling(myId) {
 }
 
 /** Live storage zone for renderGame — keeps post-reveal cards visible until WR/success flights. */
+function liveZoneCardsExcludingDeparted(zone, roundId = null) {
+  const cards = clampLiveZoneCards(zone || []);
+  if (!G._liveStorageDepartedIids?.size) return cards;
+  return cards.filter(c => !liveStorageDepartureLatched(c?.instance_id, roundId));
+}
+
 function liveZoneForRender(s, pid) {
-  const current = clampLiveZoneCards(s?.players?.[pid]?.live_zone || []);
+  const roundId = (typeof liveMovementRoundId === 'function')
+    ? liveMovementRoundId(s, G._livePostRevealBoard)
+    : (s?.turn ?? s?.live_show?.turn ?? null);
+  const current = liveZoneCardsExcludingDeparted(s?.players?.[pid]?.live_zone || [], roundId);
   if (G._liveWrDiscardInProgress) return current;
   // Finished / Main: never keep a stale post-reveal snapshot (ghost Success flights).
   if (s?.status === 'finished') return current;
@@ -21864,7 +21892,7 @@ function liveZoneForRender(s, pid) {
       && s?.turn != null && Number(heldTurn) !== Number(s.turn)) {
     return current;
   }
-  const held = clampLiveZoneCards(heldRaw);
+  const held = liveZoneCardsExcludingDeparted(heldRaw, roundId);
   if (G._liveStorageOutcomePending || held.length > current.length) return held;
   if (G._deferredLiveState && held.length > current.length) return held;
   return current;
@@ -32876,7 +32904,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=99"></script>
-<script src="client/js/board-render.js?v=33"></script>
+<script src="client/js/board-render.js?v=34"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

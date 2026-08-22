@@ -80,6 +80,7 @@ const G = {
   _liveStorageDepartedRound: null,
   _liveStorageOutcomesPlayedBluffKey: null,
   _liveStorageOutcomesPlayedLiveKey: null,
+  _livePostRevealBoard: null,
 };
 
 const sandbox = { G, console, Set, Map, Number, JSON, Math };
@@ -107,6 +108,8 @@ const {
   liveStorageLiveOutcomesAlreadyPlayed,
   buildMovementVisualDescriptor,
   flightOrientClass,
+  liveStorageDepartureLatched,
+  latchLiveStorageDeparture,
 } = sandbox;
 
 // --- placement vs draw classification ---
@@ -152,6 +155,25 @@ const r3 = reserveMovementPresentation(5, {
   // newer seq same logical exit
 });
 ok('newer-seq logical exit still rejected', r3.ok === false);
+
+ok('departure latch survives turn vs live_show.turn mismatch', (() => {
+  G._liveStorageDepartedIids = new Set(['live-1']);
+  G._liveStorageDepartedRound = 4;
+  return liveStorageDepartureLatched('live-1', 5) === true
+    && liveStorageDepartureLatched('live-1', 4) === true
+    && liveStorageDepartureLatched('other', 4) === false;
+})());
+G._livePostRevealBoard = {
+  players: {
+    p1: { live_zone: [{ instance_id: 'live-1' }, { instance_id: 'keep-1' }] },
+    p2: { live_zone: [{ instance_id: 'live-1' }] },
+  },
+};
+latchLiveStorageDeparture('live-1', 4);
+ok('latch strips held post-reveal live zone',
+  G._livePostRevealBoard.players.p1.live_zone.length === 1
+  && G._livePostRevealBoard.players.p1.live_zone[0].instance_id === 'keep-1'
+  && G._livePostRevealBoard.players.p2.live_zone.length === 0);
 
 // different round can reserve again
 resetMovementLedger();
