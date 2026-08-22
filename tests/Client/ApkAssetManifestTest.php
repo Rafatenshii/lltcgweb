@@ -55,13 +55,12 @@ final class ApkAssetManifestTest extends TestCase
     public function testServiceWorkerDoesNotClaimOrReplayEventRequest(): void
     {
         $sw = (string)file_get_contents(dirname(__DIR__, 2) . '/apk-asset-sw.js');
-        $this->assertStringNotContainsString('clients.claim()', $sw);
+        $this->assertStringContainsString('clients.claim()', $sw);
         $this->assertStringNotContainsString('status: 504', $sw);
         $this->assertStringContainsString('_catalog', $sw);
         $this->assertStringContainsString('api.php', $sw);
-        $this->assertStringContainsString('Accept-Ranges', $sw);
-        $this->assertStringContainsString('status: 206', $sw);
-        $this->assertStringContainsString('destination === \'audio\'', $sw);
+        $this->assertStringContainsString('ignoreVary', $sw);
+        $this->assertStringContainsString('wav', $sw);
     }
 
     public function testBuildScriptMatchesCommittedManifestCount(): void

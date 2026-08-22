@@ -27,6 +27,8 @@
   };
   var unlocked = false;
   var unlockBound = false;
+  var audioCtx = null;
+  var decoded = Object.create(null);
 
   function enabled() {
     try { return localStorage.getItem(SFX_KEY) !== '0'; } catch (e) { return true; }
@@ -140,9 +142,61 @@
     if (p && typeof p.catch === 'function') p.catch(function () { /* autoplay */ });
   }
 
+  function getAudioCtx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    return audioCtx;
+  }
+
+  function loadSfxBuffer(file) {
+    if (decoded[file]) return Promise.resolve(decoded[file]);
+    var Apk = window.LLTCG_APK_ASSETS;
+    var fromCache = (Apk && typeof Apk.arrayBufferFor === 'function' && Apk.isNativeApk && Apk.isNativeApk())
+      ? Apk.arrayBufferFor(BASE + file)
+      : Promise.resolve(null);
+    return fromCache.then(function (cached) {
+      if (cached) return cached;
+      return fetch(BASE + file, { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) throw new Error('sfx HTTP ' + r.status);
+        return r.arrayBuffer();
+      });
+    }).then(function (buf) {
+      var ctx = getAudioCtx();
+      if (!ctx) throw new Error('no audio ctx');
+      return ctx.decodeAudioData(buf.slice(0));
+    }).then(function (audioBuf) {
+      decoded[file] = audioBuf;
+      return audioBuf;
+    });
+  }
+
+  function playBuffer(file, vol) {
+    var ctx = getAudioCtx();
+    if (!ctx) return Promise.reject(new Error('no audio ctx'));
+    var start = function () {
+      return loadSfxBuffer(file).then(function (audioBuf) {
+        var src = ctx.createBufferSource();
+        var gain = ctx.createGain();
+        gain.gain.value = vol;
+        src.buffer = audioBuf;
+        src.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(0);
+      });
+    };
+    if (ctx.state === 'suspended') {
+      return ctx.resume().then(start);
+    }
+    return start();
+  }
+
   function unlockFromGesture() {
-    if (unlocked) return;
     unlocked = true;
+    try {
+      var ctx = getAudioCtx();
+      if (ctx && ctx.state === 'suspended') swallowPlay(ctx.resume());
+    } catch (e1) { /* ignore */ }
     try {
       var files = Object.keys(pool);
       if (files.length) {
@@ -170,7 +224,6 @@
 
   function play(id, opts) {
     if (!enabled()) return;
-    if (!unlocked) return;
     var pick = pickVariant(id);
     if (!pick || !pick.file) return;
     var now = Date.now();
@@ -185,12 +238,17 @@
     var vol = getVolume() * userScale * eventScale;
     vol = Math.max(0, Math.min(1, vol));
     if (vol <= 0.001) return;
-    try {
-      warmFile(pick.file);
-      var node = pool[pick.file].cloneNode();
-      node.volume = vol;
-      swallowPlay(node.play());
-    } catch (e) { /* autoplay / missing file */ }
+    playBuffer(pick.file, vol).then(function () {
+      unlocked = true;
+    }).catch(function () {
+      if (!unlocked) return;
+      try {
+        warmFile(pick.file);
+        var node = pool[pick.file].cloneNode();
+        node.volume = vol;
+        swallowPlay(node.play());
+      } catch (e) { /* autoplay / missing file */ }
+    });
   }
 
   function init() {

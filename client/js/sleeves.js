@@ -286,23 +286,38 @@
   let lastMatchSleeveState = null;
   let pendingCatalogReapply = false;
 
+  function paintFromApkCache(targets, cssVar, path) {
+    try {
+      const Apk = global.LLTCG_APK_ASSETS;
+      if (!path || !Apk || typeof Apk.blobUrlFor !== 'function') return;
+      if (typeof Apk.isNativeApk === 'function' && !Apk.isNativeApk()) return;
+      const abs = /^(https?:|blob:|data:)/i.test(path)
+        ? path
+        : new URL(path, document.baseURI || location.href).href;
+      Apk.blobUrlFor(abs).then((blob) => {
+        if (!blob) return;
+        const css = 'url("' + blob + '")';
+        (Array.isArray(targets) ? targets : [targets]).forEach((root) => {
+          if (root && root.style) root.style.setProperty(cssVar, css);
+        });
+      }).catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
+
   function applySeatSleeve(targets, seat, sleeveId) {
     const id = normalizeSleeveId(sleeveId);
     const sleeve = getSleeve(id);
-    const url = id ? resolveSleeveSrc(id) : '';
-    const has = !!url;
-    const landscape = has && isLandscapeSleeve(sleeve || id);
+    const url = id ? resolveSleeveSrc(id) : DEFAULT_BACK;
+    const has = true;
+    const landscape = !!(id && isLandscapeSleeve(sleeve || id));
     const list = Array.isArray(targets) ? targets : [targets];
     list.forEach((root) => {
       if (!root || !root.classList) return;
       root.classList.toggle('has-' + seat + '-sleeve', has);
       root.classList.toggle('has-' + seat + '-sleeve-landscape', landscape);
-      if (has) {
-        root.style.setProperty('--' + seat + '-sleeve-image', cssImageUrl(url));
-      } else {
-        root.style.removeProperty('--' + seat + '-sleeve-image');
-      }
+      root.style.setProperty('--' + seat + '-sleeve-image', cssImageUrl(url));
     });
+    paintFromApkCache(list, '--' + seat + '-sleeve-image', url);
   }
 
   function clearMatchSleeves(root) {
@@ -355,14 +370,16 @@
     applySeatSleeve(targets, 'my', mySleeve);
     applySeatSleeve(targets, 'opp', oppSleeve);
     // Bind vars onto seat roots so mat/hand CSS cannot pick up a swapped html var.
-    const myUrl = mySleeve ? cssImageUrl(resolveSleeveSrc(mySleeve)) : '';
-    const oppUrl = oppSleeve ? cssImageUrl(resolveSleeveSrc(oppSleeve)) : '';
+    const myUrl = cssImageUrl(resolveSleeveSrc(mySleeve) || DEFAULT_BACK);
+    const oppUrl = cssImageUrl(resolveSleeveSrc(oppSleeve) || DEFAULT_BACK);
     const bindSeat = (sel, seat, url) => {
       document.querySelectorAll(sel).forEach((node) => {
         if (!node || !node.style) return;
         node.dataset.sleeveSeat = seat;
         if (url) node.style.setProperty('--' + seat + '-sleeve-image', url);
         else node.style.removeProperty('--' + seat + '-sleeve-image');
+        const raw = seat === 'my' ? (resolveSleeveSrc(mySleeve) || DEFAULT_BACK) : (resolveSleeveSrc(oppSleeve) || DEFAULT_BACK);
+        paintFromApkCache([node], '--' + seat + '-sleeve-image', raw);
       });
     };
     bindSeat('.my-mat, .my-hand-strip, #perf-col-mine', 'my', myUrl);

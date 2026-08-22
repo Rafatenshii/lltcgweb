@@ -139,14 +139,25 @@
     if (!isNativeApk()) return;
     if (!('serviceWorker' in global.navigator)) return;
     try {
-      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=4', { scope: './' });
+      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=5', { scope: './' });
     } catch (e) { /* ignore */ }
   }
 
   async function cacheMatch(url) {
     const cache = await openCache();
     if (!cache) return null;
-    return cache.match(absUrl(url));
+    return cache.match(absUrl(url), { ignoreVary: true });
+  }
+
+  async function arrayBufferFor(url) {
+    if (!isNativeApk() || !url) return null;
+    try {
+      const hit = await cacheMatch(url);
+      if (!hit || !hit.ok) return null;
+      return await hit.arrayBuffer();
+    } catch (e) {
+      return null;
+    }
   }
 
   async function blobUrlFor(url) {
@@ -169,7 +180,7 @@
     const abs = absUrl(url);
     const cache = await openCache();
     if (!cache) return false;
-    const hit = await cache.match(abs);
+    const hit = await cache.match(abs, { ignoreVary: true });
     if (hit) return true;
     const res = await fetch(abs, { credentials: 'same-origin' });
     if (!res.ok) return false;
@@ -518,6 +529,7 @@
     getStatus,
     ensureCached,
     blobUrlFor,
+    arrayBufferFor,
     rewriteSync,
     pauseFull,
     resumeFull,

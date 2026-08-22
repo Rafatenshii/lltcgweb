@@ -81,12 +81,31 @@
     return cleanPlaymatDisplayName(mat.name || mat.id || '');
   }
 
+  function paintFromApkCache(targets, cssVar, path) {
+    try {
+      const Apk = global.LLTCG_APK_ASSETS;
+      if (!path || !Apk || typeof Apk.blobUrlFor !== 'function') return;
+      if (typeof Apk.isNativeApk === 'function' && !Apk.isNativeApk()) return;
+      const abs = /^(https?:|blob:|data:)/i.test(path)
+        ? path
+        : new URL(path, global.document?.baseURI || global.location?.href || '').href;
+      Apk.blobUrlFor(abs).then((blob) => {
+        if (!blob) return;
+        const css = 'url("' + blob + '")';
+        (Array.isArray(targets) ? targets : [targets]).forEach((root) => {
+          if (root && root.style) root.style.setProperty(cssVar, css);
+        });
+      }).catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
+
   function applySeatPlaymat(targets, seat, playmatId, brightness) {
     const id = normalizePlaymatId(playmatId);
     const bright = normalizeBrightness(brightness);
     const url = id ? resolvePlaymatSrc(id) : '';
     const has = !!(id && url);
-    targets.forEach((root) => {
+    const list = Array.isArray(targets) ? targets : [targets];
+    list.forEach((root) => {
       if (!root || !root.classList || !root.style) return;
       root.classList.toggle('has-' + seat + '-playmat', has);
       if (has) {
@@ -97,6 +116,7 @@
         root.style.removeProperty('--' + seat + '-playmat-brightness');
       }
     });
+    if (has) paintFromApkCache(list, '--' + seat + '-playmat-image', url);
   }
 
   function clearMatchPlaymats(root) {
@@ -136,6 +156,14 @@
         img.src = resolveAssetUrl(url);
         img.style.filter = 'brightness(' + bright + ')';
         frame?.classList.add('has-custom-playmat');
+        try {
+          const Apk = global.LLTCG_APK_ASSETS;
+          if (Apk && typeof Apk.blobUrlFor === 'function' && Apk.isNativeApk && Apk.isNativeApk()) {
+            Apk.blobUrlFor(resolveAssetUrl(url)).then((blob) => {
+              if (blob && img.isConnected) img.src = blob;
+            }).catch(() => {});
+          }
+        } catch (e) { /* ignore */ }
       } else {
         img.src = img.dataset.defaultPlaymatSrc || DEFAULT_PLAYMAT;
         img.style.removeProperty('filter');
