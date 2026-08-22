@@ -360,19 +360,19 @@
     if (!board) return;
     const root = document.documentElement;
     const size = root.dataset.tcgPortraitSize || 'phone';
-    const rawW = board.clientWidth || global.innerWidth || 360;
+    const rawW = global.visualViewport?.width || global.innerWidth || board.clientWidth || 360;
     // Tablets: keep a phone-like column so the mat does not stretch edge-to-edge.
     const layoutW = size === 'tablet' ? Math.min(rawW, 720) : rawW;
     let cardMul = 1.55;
-    let mineFrac = 0.70;
+    let mineFrac = 0.52;
     let oppFrac = 0.50;
     if (size === 'square') {
       cardMul = 1.28;
-      mineFrac = 0.58;
+      mineFrac = 0.50;
       oppFrac = 0.40;
     } else if (size === 'tablet') {
       cardMul = 1.42;
-      mineFrac = 0.62;
+      mineFrac = 0.54;
       oppFrac = 0.48;
     }
     const cardSlots = 5;
