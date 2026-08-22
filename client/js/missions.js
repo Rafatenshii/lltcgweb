@@ -343,6 +343,7 @@
         global.toastSuccess(t('missions.claimedCoinsToast', {
           title,
           coins: res.coins_gained || res.mission?.reward || 0,
+          n: res.coins_gained || res.mission?.reward || 0,
         }) || ('Claimed ' + title + ' (+' + (res.coins_gained || 0) + ' Coins)'), 3200);
       } else {
         global.toastSuccess(t('missions.claimedToast', {

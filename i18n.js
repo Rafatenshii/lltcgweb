@@ -195,7 +195,7 @@
       "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
       "rewardFreeSleeve": "Free sleeve claim",
       "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
-      "claimedCoinsToast": "+{n} Coins"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
     },
     "language": {
       "label": "Language",
@@ -4834,7 +4834,7 @@
       "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
       "rewardFreeSleeve": "Funda gratis",
       "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
-      "claimedCoinsToast": "+{n} Coins"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
     },
     "stamps": {
       "audio": "Audio de sellos",
@@ -6609,7 +6609,7 @@
       "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
       "rewardFreeSleeve": "무료 슬리브",
       "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
-      "claimedCoinsToast": "+{n} Coins"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
     },
     "stamps": {
       "audio": "스탬프 오디오",
@@ -8384,7 +8384,7 @@
       "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
       "rewardFreeSleeve": "免费卡套领取",
       "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
-      "claimedCoinsToast": "+{n} Coins"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
     },
     "stamps": {
       "audio": "贴纸语音",
@@ -10135,7 +10135,7 @@
       "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
       "rewardFreeSleeve": "รับซองฟรี",
       "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
-      "claimedCoinsToast": "+{n} Coins"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
     },
     "stamps": {
       "audio": "เสียงแสตมป์",
