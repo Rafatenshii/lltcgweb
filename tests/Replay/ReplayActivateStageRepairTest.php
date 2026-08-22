@@ -184,4 +184,47 @@ final class ReplayActivateStageRepairTest extends TestCase
             'unrepairable energy cost should soft-skip, not throw'
         );
     }
+
+    public function testNeedActiveEnergyDoesNotStealFromDeck(): void
+    {
+        $state = $this->joinedMainFirstState();
+        $mainBefore = count($state['players']['p1']['main_deck'] ?? []);
+        $edeckBefore = count($state['players']['p1']['energy_deck'] ?? []);
+        $turnBefore = (int)($state['turn'] ?? 1);
+        $phaseBefore = (string)($state['phase'] ?? '');
+        $state['players']['p1']['energy_zone'] = [];
+        $member = [
+            'instance_id' => 'card_replay_pay_e2_nodeck',
+            'card_type' => 'メンバー',
+            'name' => 'Replay Payer',
+            'name_en' => 'Replay Payer',
+            'group' => 'µ\'s',
+            'abilities' => [[
+                'trigger' => 'activated',
+                'type' => 'activated_pay_energy_mill',
+                'cost' => 2,
+                'count' => 10,
+                'once_per_turn' => true,
+            ]],
+        ];
+        $state['players']['p1']['stage']['center'] = $member;
+
+        $after = replayApplyRecordedAction(
+            $state,
+            'p1',
+            'activate_ability',
+            ['card_id' => 'card_replay_pay_e2_nodeck', 'ability_index' => 0],
+            111
+        );
+        $this->assertSame($mainBefore, count($after['players']['p1']['main_deck'] ?? []));
+        $this->assertSame($edeckBefore, count($after['players']['p1']['energy_deck'] ?? []));
+        $this->assertSame(0, count($after['players']['p1']['energy_zone'] ?? []));
+        $this->assertSame($turnBefore, (int)($after['turn'] ?? 1));
+        $this->assertSame($phaseBefore, (string)($after['phase'] ?? ''));
+        $logBlob = json_encode($after['log'] ?? []);
+        $this->assertTrue(
+            str_contains((string)$logBlob, 'skipped unresolved prompt'),
+            'missing Energy must skip the skill, not mill the deck'
+        );
+    }
 }
