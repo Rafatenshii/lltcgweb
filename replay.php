@@ -279,6 +279,72 @@ function replayExtractCardFromPlayer(array &$player, string $instanceId): ?array
     return null;
 }
 
+/** Pull a card from off-stage zones (not Live) so a recorded activate can sit on Stage. */
+function replayTakeCardForStageRepair(array &$player, string $instanceId): ?array {
+    foreach (['main_deck', 'hand', 'waiting_room', 'success_lives', 'energy_deck'] as $zone) {
+        foreach ($player[$zone] ?? [] as $i => $c) {
+            if (($c['instance_id'] ?? '') === $instanceId) {
+                array_splice($player[$zone], $i, 1);
+                return $c;
+            }
+        }
+    }
+    foreach ($player['energy_zone'] ?? [] as $i => $c) {
+        if (($c['instance_id'] ?? '') === $instanceId) {
+            unset($c['active'], $c['skip_activate_next_turn']);
+            array_splice($player['energy_zone'], $i, 1);
+            return $c;
+        }
+    }
+    foreach ($player['stage'] ?? [] as $slot => &$mbr) {
+        if (!$mbr || empty($mbr['stacked_members']) || !is_array($mbr['stacked_members'])) {
+            continue;
+        }
+        foreach ($mbr['stacked_members'] as $i => $c) {
+            if (($c['instance_id'] ?? '') === $instanceId) {
+                array_splice($mbr['stacked_members'], $i, 1);
+                return $c;
+            }
+        }
+    }
+    unset($mbr);
+    return null;
+}
+
+function replayEnsureMemberOnStage(array &$state, string $pid, string $cardId, string $preferredSlot = ''): void {
+    if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2')) {
+        return;
+    }
+    $p = &$state['players'][$pid];
+    foreach ($p['stage'] ?? [] as $mbr) {
+        if ($mbr && ($mbr['instance_id'] ?? '') === $cardId) {
+            return;
+        }
+    }
+    $card = replayTakeCardForStageRepair($p, $cardId);
+    if (!$card) {
+        return;
+    }
+    $order = ['center', 'left', 'right'];
+    if (in_array($preferredSlot, $order, true)) {
+        $order = array_values(array_unique(array_merge([$preferredSlot], $order)));
+    }
+    $slot = null;
+    foreach ($order as $s) {
+        if (empty($p['stage'][$s])) {
+            $slot = $s;
+            break;
+        }
+    }
+    if ($slot === null) {
+        $slot = in_array($preferredSlot, $order, true) ? $preferredSlot : 'center';
+        if (!empty($p['stage'][$slot])) {
+            $p['waiting_room'][] = $p['stage'][$slot];
+        }
+    }
+    $p['stage'][$slot] = $card;
+}
+
 /** Best-effort: put a recorded card back in hand when replay state drifted (legacy exports). */
 function replayEnsureCardInHand(array &$state, string $pid, string $cardId): void {
     if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2')) {
@@ -415,6 +481,17 @@ function replayPrepareRecordedPlayAction(array $state, string $pid, string $type
         }
     } elseif ($type === 'play_member' && !empty($data['card_id'])) {
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
+    } elseif ($type === 'activate_ability' && !empty($data['card_id'])) {
+        $found = findActivatedAbilitySource($state['players'][$pid], (string)$data['card_id']);
+        // Leave WR-only activates in the Waiting Room for the first apply.
+        if (($found['zone'] ?? '') !== 'waiting_room') {
+            replayEnsureMemberOnStage(
+                $state,
+                $pid,
+                (string)$data['card_id'],
+                (string)($data['slot'] ?? $data['source_slot'] ?? '')
+            );
+        }
     } elseif ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
         $owner = $pid;
         $pr = $state['pending_prompt'] ?? null;
@@ -720,7 +797,15 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
     }
     if ($type === 'activate_ability' && !empty($data['card_id'])) {
-        replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
+        if (str_contains($msg, 'Member not on stage')
+            || str_contains($msg, 'Card not found on Stage or in Waiting Room')) {
+            replayEnsureMemberOnStage(
+                $state,
+                $pid,
+                (string)$data['card_id'],
+                (string)($data['slot'] ?? $data['source_slot'] ?? '')
+            );
+        }
     }
     if ($type === 'resolve_prompt' || $type === 'anti_softlock_skip') {
         $owner = $pid;
@@ -811,7 +896,9 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
         || $type === 'anti_softlock_skip'
         || replayLooksLikePromptInteractionError($msg)
         || str_contains($msg, 'Cannot replace a Member that was played this turn')
-        || str_contains($msg, 'Not enough active energy')) {
+        || str_contains($msg, 'Not enough active energy')
+        || str_contains($msg, 'Member not on stage')
+        || str_contains($msg, 'Card not found on Stage or in Waiting Room')) {
         return replaySoftSkipPendingPrompt(
             $state,
             '#' . $index . ' ' . $type . ': ' . $msg,
