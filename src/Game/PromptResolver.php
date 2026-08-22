@@ -2416,6 +2416,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         if (!$member || ($member['instance_id'] ?? '') !== $srcId) {
             throw new Exception('Member not found');
         }
+        if (function_exists('spBp2MarkEffectAreaMove')) {
+            spBp2MarkEffectAreaMove($state, $member);
+        }
         $other = $ownerP['stage'][$slot] ?? null;
         $ownerP['stage'][$slot] = $member;
         $ownerP['stage'][$srcSlot] = $other;
@@ -2429,6 +2432,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         $member['moved_from_slot'] = $srcSlot;
         $ownerP['stage'][$slot] = $member;
         $state = resolveAutoAreaMoveAbilities($state, $owner, $srcId, $srcSlot);
+        if (function_exists('spBp2ClearEffectAreaMove')) {
+            spBp2ClearEffectAreaMove($state);
+        }
         $state = addLog($state, $state['players'][$owner]['name'] .
             " — [" . ($prompt['source_name'] ?? 'Member') . "] moved to $slot.");
         unset($state['pending_prompt']);
@@ -2651,7 +2657,20 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         }
         if ($step === 'pick_dest') {
             $dest = $pickedSlot !== '' ? $pickedSlot : $choice;
-            $state = applyStagePositionChange($state, $owner, $fromSlot, $dest);
+            $effectSrc = [];
+            if ($srcId !== '') {
+                $foundSrc = findSourceCard($state, $owner, $srcId);
+                if (is_array($foundSrc)) {
+                    $effectSrc = $foundSrc;
+                }
+            }
+            if (($effectSrc['group'] ?? '') === '') {
+                $g = (string)(($prompt['ability'] ?? [])['group'] ?? ($ability['group'] ?? ''));
+                if ($g !== '') {
+                    $effectSrc = ['group' => $g];
+                }
+            }
+            $state = applyStagePositionChange($state, $owner, $fromSlot, $dest, $effectSrc);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . $srcName . '] Position Changed a Member to ' . $dest . '.');
             unset($state['pending_prompt']);
@@ -4138,6 +4157,9 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         $fromSlot = $prompt['source_slot'] ?? '';
         $member = $ownerP['stage'][$fromSlot] ?? null;
         if (!$member) throw new Exception('Member not on Stage');
+        if (function_exists('spBp2MarkEffectAreaMove')) {
+            spBp2MarkEffectAreaMove($state, $member);
+        }
         $other = $ownerP['stage'][$toSlot] ?? null;
         $ownerP['stage'][$toSlot] = $member;
         $ownerP['stage'][$fromSlot] = $other;
@@ -4147,7 +4169,13 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             ' — [' . ($prompt['source_name'] ?? 'Member') . "] moved to $toSlot area" .
             ($other ? ' (swapped).' : '.'));
         unset($state['pending_prompt']);
-        $state = resolveAutoAreaMoveAbilities($state, $owner, $member['instance_id'] ?? '');
+        $state = resolveAutoAreaMoveAbilities($state, $owner, $member['instance_id'] ?? '', $fromSlot);
+        if ($other && empty($state['pending_prompt'])) {
+            $state = resolveAutoAreaMoveAbilities($state, $owner, $other['instance_id'] ?? '', $toSlot);
+        }
+        if (function_exists('spBp2ClearEffectAreaMove')) {
+            spBp2ClearEffectAreaMove($state);
+        }
         $state['seq']++;
         return $state;
     }

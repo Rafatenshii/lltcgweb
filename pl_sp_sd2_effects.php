@@ -251,14 +251,23 @@ function plSpSd2ResolvePrompt(array $state, string $owner, array $prompt, string
             throw new Exception('Member not on Stage');
         }
         $toM = $p['stage'][$toSlot] ?? null;
+        if (function_exists('spBp2MarkEffectAreaMove')) {
+            spBp2MarkEffectAreaMove($state, $fromM);
+        }
         $p['stage'][$toSlot] = $fromM;
         $p['stage'][$fromSlot] = $toM;
         $fromM['moved_this_turn'] = true;
         $fromM['moved_from_slot'] = $fromSlot;
+        if (function_exists('spBp2ApplyMovedByGroupEffect')) {
+            spBp2ApplyMovedByGroupEffect($fromM, $state);
+        }
         $p['stage'][$toSlot] = $fromM;
         if ($toM) {
             $toM['moved_this_turn'] = true;
             $toM['moved_from_slot'] = $toSlot;
+            if (function_exists('spBp2ApplyMovedByGroupEffect')) {
+                spBp2ApplyMovedByGroupEffect($toM, $state);
+            }
             $p['stage'][$fromSlot] = $toM;
         }
         $state = addLog($state, $state['players'][$owner]['name'] .
@@ -274,7 +283,24 @@ function plSpSd2ResolvePrompt(array $state, string $owner, array $prompt, string
                 $state = resolveAutoAreaMoveAbilities($state, $owner, $toId, $toSlot);
             }
         }
+        $moveGrp = (string)($fromM['group'] ?? '');
+        if ($moveGrp !== '') {
+            foreach (['left', 'center', 'right'] as $slot) {
+                $mbr = $state['players'][$owner]['stage'][$slot] ?? null;
+                if (!$mbr || empty($mbr['moved_this_turn'])) {
+                    continue;
+                }
+                $iid = (string)($mbr['instance_id'] ?? '');
+                if ($iid !== $fromId && $iid !== (string)($toM['instance_id'] ?? '')) {
+                    continue;
+                }
+                $state['players'][$owner]['stage'][$slot]['moved_by_group_effect'] = $moveGrp;
+            }
+        }
         $state['seq']++;
+        if (function_exists('spBp2ClearEffectAreaMove')) {
+            spBp2ClearEffectAreaMove($state);
+        }
         return finishPromptEffects($state);
     }
     if ($type === 'on_enter_blade_self_and_pick_group') {

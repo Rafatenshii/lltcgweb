@@ -4876,7 +4876,7 @@ function countStageMembers(array $p): int {
 /**
  * Position Change 1 Member into another area (swap if occupied). Does not Activate.
  */
-function applyStagePositionChange(array $state, string $pid, string $fromSlot, string $toSlot): array {
+function applyStagePositionChange(array $state, string $pid, string $fromSlot, string $toSlot, array $effectSource = []): array {
     $slots = ['left', 'center', 'right'];
     if (!in_array($fromSlot, $slots, true) || !in_array($toSlot, $slots, true) || $fromSlot === $toSlot) {
         throw new Exception('Choose a different Stage area');
@@ -4885,6 +4885,9 @@ function applyStagePositionChange(array $state, string $pid, string $fromSlot, s
     $mover = $p['stage'][$fromSlot] ?? null;
     if (!$mover) {
         throw new Exception('Choose a Member to Position Change');
+    }
+    if ($effectSource !== [] && function_exists('spBp2MarkEffectAreaMove')) {
+        spBp2MarkEffectAreaMove($state, $effectSource);
     }
     $other = $p['stage'][$toSlot] ?? null;
     $mover['moved_this_turn'] = true;
@@ -4898,6 +4901,9 @@ function applyStagePositionChange(array $state, string $pid, string $fromSlot, s
         $state = resolveAutoAreaMoveAbilities($state, $pid, $other['instance_id'] ?? '', $toSlot);
     }
     $state = resolveAutoAreaMoveAbilities($state, $pid, $mover['instance_id'] ?? '', $fromSlot);
+    if ($effectSource !== [] && function_exists('spBp2ClearEffectAreaMove')) {
+        spBp2ClearEffectAreaMove($state);
+    }
     return $state;
 }
 
