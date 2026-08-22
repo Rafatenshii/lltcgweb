@@ -20954,6 +20954,11 @@ function shouldFlyFaceDownForMove(m, myId, state) {
     if (from === 'live' && !(m.card?.revealed)) return true;
     return false;
   }
+  // Open-hands spectate: both seats' hands are public (the far seat is not a
+  // hidden PvP opponent). Don't fly sleeve-backs for hand → stage / hand moves.
+  if (G.isSpectator) {
+    if (from === 'hand' || to === 'hand') return false;
+  }
   // Own live storage: face-up to the owner; opponent stays hidden until reveal.
   if (to === 'live' && from !== 'live') return pid !== myId;
   if (pid === myId && isHiddenSourceToHand(m)) return true;
