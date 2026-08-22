@@ -38,3 +38,45 @@ body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* PC-only left hover rail (created in prompt-renderer.js). */
+.prompt-board-peek-rail {
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  z-index: 98000;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, rgba(8,12,24,.72) 0%, rgba(8,12,24,.22) 70%, transparent 100%);
+  box-shadow: inset 3px 0 0 rgba(255,107,168,.85);
+}
+body.prompt-board-peek-rail-on .prompt-board-peek-rail {
+  display: flex;
+}
+body.prompt-board-peek .prompt-board-peek-rail {
+  background: linear-gradient(90deg, rgba(255,107,168,.28) 0%, rgba(8,12,24,.12) 70%, transparent 100%);
+  box-shadow: inset 3px 0 0 #FBBF24;
+}
+.prompt-board-peek-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+  pointer-events: none;
+  text-shadow: 0 1px 4px #000;
+}
+html.tcg-portrait-play .prompt-board-peek-rail,
+html.tcg-mobile-viewport .prompt-board-peek-rail {
+  display: none !important;
+}

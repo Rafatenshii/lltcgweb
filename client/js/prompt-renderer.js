@@ -3758,20 +3758,6 @@ global.renderPrompt = function renderPrompt(s, myId){
     return null;
   }
 
-  function eventEl(target) {
-    if (target instanceof Element) return target;
-    if (target instanceof Node) return target.parentElement;
-    return null;
-  }
-
-  /** True when the event is on the skill window itself (keep r-click card info there). */
-  function isInsideSkillPromptWindow(target) {
-    const node = eventEl(target);
-    if (!node || typeof node.closest !== 'function') return false;
-    if (node.closest('#modal-card.open, #modal-card .mbox')) return true;
-    return !!node.closest('.mbox, .hand-pick-shell, .prompt-branch-box');
-  }
-
   function peekBlockedByOtherUi() {
     if (document.body.classList.contains('perf-spectacle-active')) return true;
     const get = global.el || ((id) => document.getElementById(id));
@@ -3782,85 +3768,95 @@ global.renderPrompt = function renderPrompt(s, myId){
     return false;
   }
 
+  function isPcSkillBoardPeek() {
+    const root = document.documentElement;
+    if (root.classList.contains('tcg-portrait-play')) return false;
+    if (root.classList.contains('tcg-mobile-viewport')) return false;
+    try {
+      if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+    } catch (_) {
+      if ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches) return false;
+    }
+    return true;
+  }
+
+  function ensureBoardPeekRail() {
+    let rail = document.getElementById('prompt-board-peek-rail');
+    if (rail) return rail;
+    rail = document.createElement('div');
+    rail.id = 'prompt-board-peek-rail';
+    rail.className = 'prompt-board-peek-rail';
+    rail.setAttribute('aria-hidden', 'true');
+    const lab = document.createElement('span');
+    lab.className = 'prompt-board-peek-rail-label';
+    lab.textContent = 'Board';
+    rail.appendChild(lab);
+    document.body.appendChild(rail);
+    return rail;
+  }
+
   /**
-   * Hold right-click outside the skill prompt box to peek the playmat
-   * (hide prompt + dim/blur). Release restores the prompt.
+   * PC: hover the far-left rail during a skill prompt to hide the prompt + dim
+   * and see the playmat. Mouse away restores the prompt.
    */
   global.initPromptBoardPeek = function initPromptBoardPeek() {
     if (global._promptBoardPeekBound) return;
     global._promptBoardPeekBound = true;
 
+    const rail = ensureBoardPeekRail();
     let peekActive = false;
-    let peekPointerId = null;
-    let suppressContextMenuUntil = 0;
 
     function endPeek() {
-      if (!peekActive && !document.body.classList.contains('prompt-board-peek')) return;
       peekActive = false;
-      peekPointerId = null;
       document.body.classList.remove('prompt-board-peek', 'prompt-board-peek-holding');
     }
 
-    function startPeek(pointerId) {
+    function startPeek() {
       peekActive = true;
-      peekPointerId = pointerId == null ? null : pointerId;
-      suppressContextMenuUntil = performance.now() + 1200;
       document.body.classList.add('prompt-board-peek', 'prompt-board-peek-holding');
     }
 
-    function tryStartFromEvent(e) {
-      if (e.button !== 2) return;
-      if (!openBoardPeekPromptOverlay()) return;
-      if (peekBlockedByOtherUi()) return;
-      if (isInsideSkillPromptWindow(e.target)) return;
-      startPeek(e.pointerId);
-      if (typeof e.preventDefault === 'function') e.preventDefault();
+    function syncRail() {
+      const show = !!(openBoardPeekPromptOverlay() && isPcSkillBoardPeek() && !peekBlockedByOtherUi());
+      document.body.classList.toggle('prompt-board-peek-rail-on', show);
+      rail.setAttribute('aria-hidden', show ? 'false' : 'true');
+      if (!show && peekActive) endPeek();
     }
 
-    function onRelease(e) {
-      if (!peekActive) return;
-      if (e && peekPointerId != null && e.pointerId != null && e.pointerId !== peekPointerId) {
-        return;
-      }
-      if (e && e.type === 'pointerup' && e.button != null && e.button !== 2 && e.pointerId !== peekPointerId) {
-        return;
-      }
+    rail.addEventListener('pointerenter', () => {
+      if (!document.body.classList.contains('prompt-board-peek-rail-on')) return;
+      startPeek();
+    });
+    rail.addEventListener('pointerleave', () => {
       endPeek();
-    }
+    });
+    rail.addEventListener('mouseenter', () => {
+      if (!document.body.classList.contains('prompt-board-peek-rail-on')) return;
+      startPeek();
+    });
+    rail.addEventListener('mouseleave', () => {
+      endPeek();
+    });
 
-    // Capture on window so release still fires after the dim layer is hidden.
-    // Do not setPointerCapture on <html> — browsers drop it immediately (lostpointercapture → peek never sticks).
-    window.addEventListener('pointerdown', tryStartFromEvent, true);
-    window.addEventListener('mousedown', (e) => {
-      if (window.PointerEvent) return;
-      tryStartFromEvent(e);
-    }, true);
-    window.addEventListener('pointerup', onRelease, true);
-    window.addEventListener('mouseup', (e) => {
-      if (e.button === 2) onRelease(e);
-    }, true);
-    window.addEventListener('pointercancel', onRelease, true);
-    window.addEventListener('blur', endPeek);
+    window.addEventListener('blur', () => {
+      endPeek();
+      syncRail();
+    });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') endPeek();
     });
+    try {
+      window.matchMedia('(hover: hover) and (pointer: fine)').addEventListener('change', syncRail);
+    } catch (_) { /* ignore */ }
 
-    document.addEventListener('contextmenu', (e) => {
-      if (!peekActive && performance.now() >= suppressContextMenuUntil) return;
-      const ov = openBoardPeekPromptOverlay();
-      if (!ov) return;
-      if (isInsideSkillPromptWindow(e.target)) return;
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
-
-    const mo = new MutationObserver(() => {
-      if (peekActive && !openBoardPeekPromptOverlay()) endPeek();
-    });
+    const mo = new MutationObserver(syncRail);
     BOARD_PEEK_PROMPT_IDS.forEach((id) => {
       const ov = document.getElementById(id);
       if (ov) mo.observe(ov, { attributes: true, attributeFilter: ['class'] });
     });
+    const modal = document.getElementById('modal-card');
+    if (modal) mo.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    syncRail();
   };
 
 })(window);
