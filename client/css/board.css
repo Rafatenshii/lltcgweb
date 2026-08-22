@@ -758,6 +758,7 @@ body.tcg-spectator-mode #spectate-bar,
 body.tcg-spectator-mode #spectate-bar button{pointer-events:auto}
 body.tcg-spectator-mode #overlay-zone,
 body.tcg-spectator-mode #overlay-zone *{pointer-events:auto}
+body.tcg-spectator-mode #overlay-mull #btn-mull{display:none!important}
 body.tcg-spectator-mode #sb-activatable-wrap .btn-stage-ability{
   pointer-events:none!important;opacity:.55;cursor:default
 }

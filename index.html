@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=90">
+<link rel="stylesheet" href="client/css/shell-all.css?v=91">
 <link rel="stylesheet" href="client/css/prompts.css?v=3">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -16965,7 +16965,7 @@ async function bootApp() {
   on('btn-solo',  'click', doSolo);
   on('btn-cancel','click', () => { stopPoll(); clearActiveGameSession(); showScr('lobby'); });
   on('disp-code', 'click', copyCode);
-  on('btn-mull',  'click', () => { if (isReplayViewing()) return; confirmMull(); });
+  on('btn-mull',  'click', () => { if (G.isSpectator || isReplayViewing()) return; confirmMull(); });
   on('btn-coin-first-self', 'click', () => submitCoinFirstPlayerChoice(true));
   on('btn-coin-first-opp', 'click', () => submitCoinFirstPlayerChoice(false));
   on('btn-phase-primary', 'click', () => {
@@ -29190,7 +29190,8 @@ function syncTutorialMulliganConfirmButton() {
 }
 
 function openMull(hand, opts = {}){
-  const readonly = !!opts.readonly;
+  const spectator = !!G.isSpectator;
+  const readonly = !!opts.readonly || spectator;
   const railsReplace = !!opts.railsReplace || (!readonly && tutorialMulliganRailsReplace());
   const replaceNos = railsReplace ? tutorialMulliganReplaceNos() : [];
   const ovl = el('overlay-mull');
@@ -29235,11 +29236,17 @@ function openMull(hand, opts = {}){
     else if (railsReplace) hint.textContent = t('mulligan.tutorialReplaceHint');
     else hint.textContent = t('mulligan.hint');
   }
-  if (railsReplace) syncTutorialMulliganConfirmButton();
-  else {
-    const btn = el('btn-mull');
-    if (btn) btn.disabled = false;
-    updateMulliganButtonText(0);
+  const btn = el('btn-mull');
+  if (btn) {
+    btn.hidden = spectator;
+    btn.setAttribute('aria-hidden', spectator ? 'true' : 'false');
+  }
+  if (!spectator) {
+    if (railsReplace) syncTutorialMulliganConfirmButton();
+    else {
+      if (btn) btn.disabled = false;
+      updateMulliganButtonText(0);
+    }
   }
   openM('overlay-mull');
   if (G.tutorialLive && typeof repositionTutorialBubbleForLiveModal === 'function') {
@@ -29247,7 +29254,7 @@ function openMull(hand, opts = {}){
   }
 }
 function confirmMull(){
-  if (isReplayViewing()) return;
+  if (G.isSpectator || isReplayViewing()) return;
   if (typeof tutBlocks === 'function' && tutBlocks('mulligan')) return;
   let ids;
   if (tutorialMulliganRailsKeep()) {
@@ -33136,7 +33143,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=103"></script>
-<script src="client/js/board-render.js?v=37"></script>
+<script src="client/js/board-render.js?v=38"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

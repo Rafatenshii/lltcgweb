@@ -235,7 +235,9 @@ function renderGame(s, opts = {}) {
     } else if (G.mulliganPending) {
       el('overlay-mull').classList.remove('open');
       } else if (showMull) {
-      openMull(me.hand || [], tutorialMulliganOpenOpts());
+      openMull(me.hand || [], G.isSpectator
+        ? { readonly: true }
+        : tutorialMulliganOpenOpts());
       } else {
         el('overlay-mull').classList.remove('open');
     }
