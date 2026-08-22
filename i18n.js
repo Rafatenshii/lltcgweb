@@ -59,7 +59,7 @@
       "signOut": "Sign out",
       "openBoosters": "Open Boosters",
       "openBoostersSub": "Open card booster packs",
-      "stickerShop": "Sticker Shop",
+      "stickerShop": "Sticker Exchange",
       "stickerShopSub": "Trade seals for cards from your packs",
       "deckBuilder": "Deck Builder",
       "deckBuilderSub": "Edit presets and ranked loadout",
@@ -505,7 +505,7 @@
       "convertedToGems": " · {n} converted to Star Gems"
     },
     "sticker": {
-      "title": "Sticker Shop",
+      "title": "Sticker Exchange",
       "backHub": "← Hub",
       "backProducts": "← Products",
       "hint": "Convert spare gacha cards in Deck Builder to seals, then exchange seals for cards here.",
@@ -1315,8 +1315,8 @@
       "couldNotCopyCardId": "Could not copy card ID",
       "signInDeckBuilder": "Sign in to use the Deck Builder.",
       "cardsLoadFailed": "Could not load the card catalog. Check your connection and try again.",
-      "signInStickerShop": "Sign in to use the Sticker Shop.",
-      "stickerLoadFailed": "Failed to load sticker shop",
+      "signInStickerShop": "Sign in to use Sticker Exchange.",
+      "stickerLoadFailed": "Failed to load sticker exchange",
       "stickerCardsLoadFailed": "Failed to load cards",
       "stickerExchangeFailed": "Exchange failed",
       "stickerConvertFailed": "Convert failed",
@@ -3573,7 +3573,7 @@
       "missions": "Misiones",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "Recompensas PR clasificatorias restantes hoy: {remaining} / {limit} (JST)",
-      "stickerShop": "Tienda de stickers",
+      "stickerShop": "Intercambio de stickers",
       "stickerShopSub": "Canjea sellos por cartas de tus sobres",
       "officialVideo": "Vídeo oficial de 8 min ↗",
       "tournamentModeSubLive": "Eventos y brackets",
@@ -4738,8 +4738,8 @@
       "couldNotCopyLog": "No se pudo copiar el registro",
       "resolveSkillFirst": "Resuelve la habilidad pendiente antes de continuar.",
       "cardsLoadFailed": "No se pudo cargar el catálogo de cartas. Revisa tu conexión e inténtalo de nuevo.",
-      "signInStickerShop": "Inicia sesión para usar la tienda de stickers.",
-      "stickerLoadFailed": "No se pudo cargar la tienda de stickers",
+      "signInStickerShop": "Inicia sesión para usar el intercambio de stickers.",
+      "stickerLoadFailed": "No se pudo cargar el intercambio de stickers",
       "stickerCardsLoadFailed": "No se pudieron cargar las cartas",
       "stickerExchangeFailed": "Canje fallido",
       "stickerConvertFailed": "Conversión fallida",
@@ -4880,7 +4880,7 @@
       "energy": "Energía"
     },
     "sticker": {
-      "title": "Tienda de stickers",
+      "title": "Intercambio de stickers",
       "backHub": "← Hub",
       "backProducts": "← Productos",
       "hint": "Convierte cartas gacha sobrantes en el Constructor de mazos en sellos, luego canjéalos por cartas aquí.",
@@ -5327,7 +5327,7 @@
       "missions": "미션",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "오늘 남은 랭크 PR 보상: {remaining} / {limit} (JST)",
-      "stickerShop": "스티커 샵",
+      "stickerShop": "스티커 교환",
       "stickerShopSub": "실을 팩 카드로 교환",
       "officialVideo": "공식 8분 영상 ↗",
       "tournamentModeSubLive": "이벤트 & 브래킷",
@@ -6516,8 +6516,8 @@
       "couldNotCopyLog": "로그를 복사할 수 없음",
       "resolveSkillFirst": "계속하려면 먼저 대기 중인 스킬을 해결하세요.",
       "cardsLoadFailed": "카드 목록을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
-      "signInStickerShop": "스티커 샵을 쓰려면 로그인하세요.",
-      "stickerLoadFailed": "스티커 샵을 불러오지 못했습니다",
+      "signInStickerShop": "스티커 교환을 쓰려면 로그인하세요.",
+      "stickerLoadFailed": "스티커 교환을 불러오지 못했습니다",
       "stickerCardsLoadFailed": "카드를 불러오지 못했습니다",
       "stickerExchangeFailed": "교환 실패",
       "stickerConvertFailed": "변환 실패",
@@ -6658,7 +6658,7 @@
       "energy": "에너지"
     },
     "sticker": {
-      "title": "스티커 샵",
+      "title": "스티커 교환",
       "backHub": "← 허브",
       "backProducts": "← 상품",
       "hint": "덱 빌더에서 여분의 가챠 카드를 실로 바꾼 뒤, 여기서 실을 카드로 교환하세요.",
@@ -7105,7 +7105,7 @@
       "missions": "任务",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "今日剩余排名 PR 奖励：{remaining} / {limit}（JST）",
-      "stickerShop": "贴纸商店",
+      "stickerShop": "贴纸兑换",
       "stickerShopSub": "用印章兑换你补充包中的卡牌",
       "officialVideo": "官方8分钟视频 ↗",
       "tournamentModeSubLive": "赛事与对阵表",
@@ -8294,8 +8294,8 @@
       "couldNotCopyLog": "无法复制日志",
       "resolveSkillFirst": "在继续之前解决待处理的技能。",
       "cardsLoadFailed": "无法加载卡牌数据。请检查网络后重试。",
-      "signInStickerShop": "请登录后使用贴纸商店。",
-      "stickerLoadFailed": "贴纸商店加载失败",
+      "signInStickerShop": "请登录后使用贴纸兑换。",
+      "stickerLoadFailed": "贴纸兑换加载失败",
       "stickerCardsLoadFailed": "卡牌加载失败",
       "stickerExchangeFailed": "兑换失败",
       "stickerConvertFailed": "转换失败",
@@ -8436,7 +8436,7 @@
       "energy": "能量"
     },
     "sticker": {
-      "title": "贴纸商店",
+      "title": "贴纸兑换",
       "backHub": "← 主页",
       "backProducts": "← 商品",
       "hint": "在牌组构筑中把多余的扭蛋卡换成印章，再在这里用印章兑换卡牌。",
@@ -8881,7 +8881,7 @@
       "missions": "ภารกิจ",
       "rankedPrCount": "{remaining} / {limit}",
       "rankedPrTitle": "รางวัล PR แรงก์ที่เหลือวันนี้: {remaining} / {limit} (JST)",
-      "stickerShop": "ร้านสติกเกอร์",
+      "stickerShop": "แลกสติกเกอร์",
       "stickerShopSub": "แลกซีลเป็นการ์ดจากแพ็กของคุณ",
       "tournamentMode": "โหมดทัวร์นาเมนต์",
       "tournamentModeSub": "เร็ว ๆ นี้",
@@ -10048,8 +10048,8 @@
       "couldNotCopyLog": "คัดลอกล็อกไม่ได้",
       "resolveSkillFirst": "แก้สกิลที่ค้างก่อนไปต่อ",
       "cardsLoadFailed": "โหลดรายการการ์ดไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
-      "signInStickerShop": "เข้าสู่ระบบเพื่อใช้ร้านสติกเกอร์",
-      "stickerLoadFailed": "โหลดร้านสติกเกอร์ไม่สำเร็จ",
+      "signInStickerShop": "เข้าสู่ระบบเพื่อใช้แลกสติกเกอร์",
+      "stickerLoadFailed": "โหลดแลกสติกเกอร์ไม่สำเร็จ",
       "stickerCardsLoadFailed": "โหลดการ์ดไม่สำเร็จ",
       "stickerExchangeFailed": "แลกไม่สำเร็จ",
       "stickerConvertFailed": "แปลงไม่สำเร็จ",
@@ -10190,7 +10190,7 @@
       "energy": "พลังงาน"
     },
     "sticker": {
-      "title": "ร้านสติกเกอร์",
+      "title": "แลกสติกเกอร์",
       "backHub": "← ฮับ",
       "backProducts": "← สินค้า",
       "hint": "แปลงการ์ดกาชาที่มีเกินในหน้าสร้างเด็คเป็นซีล แล้วนำซีลมาแลกการ์ดที่นี่",
@@ -10602,7 +10602,7 @@
     loc.hub.booster.title = loc.hub.openBoosters;
     loc.hub.booster.sub = loc.hub.openBoostersSub;
     loc.hub.sticker = loc.hub.sticker || {};
-    loc.hub.sticker.title = loc.hub.stickerShop || 'Sticker Exchange';
+    loc.hub.sticker.title = (loc.sticker && loc.sticker.title) || loc.hub.stickerShop || loc.hub.sticker.title || 'Sticker Exchange';
     loc.hub.sticker.sub = loc.hub.stickerShopSub || 'Trade seals for cards from your packs';
     loc.hub.sleeveShop = loc.hub.sleeveShop || {};
     loc.hub.sleeveShop.title = loc.hub.sleeveShop.title || (loc.sleeveShop && loc.sleeveShop.title) || 'Sleeve Shop';
