@@ -553,6 +553,7 @@
       } catch (e) {
         /* keep empty */
       }
+      if (!SLEEVE_CATALOG.length) catalogLoadPromise = null;
       return SLEEVE_CATALOG;
     })();
     return catalogLoadPromise;

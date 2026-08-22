@@ -18,6 +18,8 @@ final class ApkAssetManifestTest extends TestCase
         $this->assertTrue(tcgApkAssetUrlEligible('assets/sfx/menu_tap.wav'));
         $this->assertFalse(tcgApkAssetUrlEligible('api.php?action=get_state'));
         $this->assertFalse(tcgApkAssetUrlEligible('https://stream.loveliveradio.ca/tcg/api?action=get_state'));
+        $this->assertFalse(tcgApkAssetUrlEligible('playmats_catalog.json'));
+        $this->assertFalse(tcgApkAssetUrlEligible('sleeves_catalog.json'));
         $this->assertFalse(tcgApkAssetUrlEligible('data:image/png;base64,xx'));
     }
 
@@ -47,6 +49,15 @@ final class ApkAssetManifestTest extends TestCase
         $this->assertStringContainsString('&w=256', $joined);
         $this->assertStringContainsString('assets/sleeves/', $joined);
         $this->assertStringContainsString('assets/playmats/', $joined);
+    }
+
+    public function testServiceWorkerDoesNotClaimOrReplayEventRequest(): void
+    {
+        $sw = (string)file_get_contents(dirname(__DIR__, 2) . '/apk-asset-sw.js');
+        $this->assertStringNotContainsString('clients.claim()', $sw);
+        $this->assertStringNotContainsString('fetch(event.request)', $sw);
+        $this->assertStringContainsString('_catalog', $sw);
+        $this->assertStringContainsString('api.php', $sw);
     }
 
     public function testBuildScriptMatchesCommittedManifestCount(): void

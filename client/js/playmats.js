@@ -418,6 +418,7 @@
       } catch (e) {
         /* keep empty */
       }
+      if (!PLAYMAT_CATALOG.length) catalogLoadPromise = null;
       return PLAYMAT_CATALOG;
     })();
     return catalogLoadPromise;

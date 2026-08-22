@@ -139,7 +139,7 @@
     if (!isNativeApk()) return;
     if (!('serviceWorker' in global.navigator)) return;
     try {
-      await global.navigator.serviceWorker.register('./apk-asset-sw.js', { scope: './' });
+      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=2', { scope: './' });
     } catch (e) { /* ignore */ }
   }
 
@@ -282,10 +282,11 @@
     };
     await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
     state.running = false;
-    const finished = state.progress.total > 0
-      && (state.progress.done + state.progress.failed) >= state.progress.total
-      && !state.paused;
-    if (finished) {
+    const processed = (state.progress.done || 0) + (state.progress.failed || 0);
+    const tot = state.progress.total || 0;
+    const failRatio = tot > 0 ? (state.progress.failed || 0) / tot : 1;
+    const finished = tot > 0 && processed >= tot && !state.paused;
+    if (finished && failRatio < 0.05) {
       try { localStorage.setItem(COMPLETE_KEY, '1'); } catch (e) { /* ignore */ }
     }
     notify();
@@ -333,17 +334,7 @@
   }
 
   function patchUrlHelpers() {
-    const wrap = (obj, name) => {
-      if (!obj || typeof obj[name] !== 'function') return;
-      const orig = obj[name].bind(obj);
-      obj[name] = function patched() {
-        const url = orig.apply(this, arguments);
-        return rewriteSync(url);
-      };
-    };
-    wrap(global, 'cachedCardImgUrl');
-    if (global.LLTCG_SLEEVES) wrap(global.LLTCG_SLEEVES, 'imageUrl');
-    if (global.LLTCG_PLAYMATS) wrap(global.LLTCG_PLAYMATS, 'imageUrl');
+    /* Keep cardimg.php and catalog src URLs unchanged so CSS/img/SW work. */
   }
 
   function isFullComplete() {
@@ -379,7 +370,7 @@
 
   function paintProgress(st) {
     const pct = pctOf(st);
-    const downloading = st.mode === 'full' && (st.running || (st.progress.total > 0 && !isFullComplete()));
+    const downloading = st.mode === 'full' && st.running;
     const overlay = document.getElementById('apk-asset-first-launch');
     const choice = document.getElementById('apk-asset-choice-block');
     if (downloading && overlay) {
@@ -400,8 +391,8 @@
         if (st.paused) bits.push(tApk('options.apkAssets.paused', 'paused'));
         lab.textContent = bits.join(' · ');
       }
-    } else if (overlay && getMode()) {
-      overlay.hidden = true;
+    } else if (overlay && (getMode() || !st.running)) {
+      if (getMode()) overlay.hidden = true;
     }
     const optBar = document.getElementById('options-apk-asset-bar');
     const optFill = document.getElementById('options-apk-asset-bar-fill');
@@ -436,7 +427,7 @@
       const prog = document.getElementById('apk-asset-progress-block');
       if (choice) choice.hidden = false;
       if (prog) prog.hidden = true;
-    } else if (overlay && !(mode === 'full' && !isFullComplete())) {
+    } else if (overlay && !(mode === 'full' && !isFullComplete() && state.running)) {
       overlay.hidden = true;
     }
     const btnFull = document.getElementById('btn-apk-assets-full');
@@ -467,7 +458,7 @@
     });
     updateOptionsStatus(getStatus());
     paintProgress(getStatus());
-    if (mode === 'full') void runFullQueue();
+    if (mode === 'full' && !isFullComplete()) void runFullQueue();
   }
 
   function updateOptionsStatus(st) {
