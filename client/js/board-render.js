@@ -1163,7 +1163,10 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
 
     if (isOpp && mbr?.instance_id) {
       const existing = wrap.querySelector(`.mslot[data-iid="${CSS.escape(mbr.instance_id)}"]`);
-      if (existing?.classList.contains('stage-flip')) {
+      // Spectators (and a stuck 3D flip) must not keep the sleeve back on a face-up member.
+      const flipStuck = existing?.classList.contains('stage-flip')
+        && (G.isSpectator || existing.classList.contains('revealed'));
+      if (existing?.classList.contains('stage-flip') && !flipStuck) {
         existing.classList.toggle('card-arriving', !!(G._animHideIids?.has(mbr.instance_id)));
         applyMemberWaitVisual(existing, mbr, { animate: true });
         return;
@@ -1180,7 +1183,7 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
     if(mbr){
       d.dataset.iid = mbr.instance_id;
       const flipKey = oppPid ? `${oppPid}:${mbr.instance_id}` : '';
-      const doFlip = isOpp && flipKeys.has(flipKey);
+      const doFlip = isOpp && !G.isSpectator && flipKeys.has(flipKey);
       if (doFlip) {
         flipKeys.delete(flipKey);
         d.classList.add('stage-flip', 'occupied');
