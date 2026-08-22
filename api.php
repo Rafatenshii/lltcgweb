@@ -4444,6 +4444,9 @@ function actionRequestRematch(array $state, string $playerId): array {
 }
 
 function isStampMatchAllowed(array $state, array $data = []): bool {
+    if (($state['mode'] ?? '') === 'replay_view') {
+        return true;
+    }
     if (isHumanVsHumanRoster($state)) {
         return true;
     }
@@ -4472,7 +4475,8 @@ function actionSendStamp(array $state, string $playerId, array $data): array {
     $now = time();
     $cooldown = 2;
     $lastAt = intval($state['stamp_last_at'][$playerId] ?? 0);
-    if ($lastAt > 0 && ($now - $lastAt) < $cooldown) {
+    $replayView = (($state['mode'] ?? '') === 'replay_view');
+    if (!$replayView && $lastAt > 0 && ($now - $lastAt) < $cooldown) {
         throw new Exception('Please wait before sending another stamp');
     }
     if (!isset($state['stamp_pop']) || !is_array($state['stamp_pop'])) {

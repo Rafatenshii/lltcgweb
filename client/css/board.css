@@ -775,13 +775,23 @@ body.tcg-replay-view-mode #overlay-coin *,
 body.tcg-replay-view-mode #overlay-live,
 body.tcg-replay-view-mode #overlay-live *{pointer-events:none!important}
 body.tcg-replay-view-mode #screen-game #btn-resign{display:none!important}
+body.tcg-replay-view-mode #replay-control-dock,
 body.tcg-replay-view-mode #replay-control-bar{
   z-index:20000!important;pointer-events:auto!important
 }
+body.tcg-replay-view-mode #replay-control-dock,
 body.tcg-replay-view-mode #replay-control-bar,
 body.tcg-replay-view-mode #replay-control-bar *,
 body.tcg-replay-view-mode #screen-game .tcg-debug-row,
 body.tcg-replay-view-mode #screen-game .tcg-debug-row button{pointer-events:auto!important}
+body.tcg-replay-view-mode.tcg-replay-bar-autohide #replay-control-bar{
+  pointer-events:none!important
+}
+body.tcg-replay-view-mode.tcg-replay-bar-autohide #replay-control-dock:hover #replay-control-bar,
+body.tcg-replay-view-mode.tcg-replay-bar-autohide #replay-control-dock.replay-bar-peek #replay-control-bar,
+body.tcg-replay-view-mode.tcg-replay-bar-autohide #replay-control-dock:focus-within #replay-control-bar{
+  pointer-events:auto!important
+}
 body.tcg-replay-view-mode .overlay.replay-prompt-readonly{pointer-events:none}
 body.tcg-replay-view-mode .overlay.replay-prompt-readonly button,
 body.tcg-replay-view-mode .overlay.replay-prompt-readonly input,
@@ -947,16 +957,35 @@ body.tcg-debug-on .screen.tcg-debug-only.active{display:flex}
 body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
 .sbfoot .tcg-debug-row{gap:6px;margin-bottom:2px}
 .sbfoot .tcg-debug-row button{font-size:10px;padding:6px}
+.replay-control-dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:20000;
+  display:none;justify-content:center;align-items:flex-end;
+  pointer-events:none;padding-bottom:max(8px, env(safe-area-inset-bottom, 0px));
+}
+.replay-control-dock.show{display:flex}
+#replay-control-dock[hidden]{display:none!important}
 .replay-control-bar{
-  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20000;
+  position:relative;left:auto;bottom:auto;transform:none;z-index:20000;
   isolation:isolate;pointer-events:auto;
   display:none;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
   padding:8px 14px;border-radius:14px;
   background:rgba(12,18,32,.92);border:1px solid rgba(186,228,255,.28);
   box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:min(96vw,860px);
+  margin:0 12px 4px;transition:transform .22s ease,opacity .22s ease;
 }
 .replay-control-bar.show{display:flex}
 #replay-control-bar[hidden]{display:none!important}
+body.tcg-replay-bar-autohide #replay-control-dock{
+  pointer-events:auto;min-height:40px;
+}
+body.tcg-replay-bar-autohide #replay-control-bar{
+  transform:translateY(calc(100% + 20px));opacity:0;pointer-events:none!important;
+}
+body.tcg-replay-bar-autohide #replay-control-dock:hover #replay-control-bar,
+body.tcg-replay-bar-autohide #replay-control-dock.replay-bar-peek #replay-control-bar,
+body.tcg-replay-bar-autohide #replay-control-dock:focus-within #replay-control-bar{
+  transform:none;opacity:1;pointer-events:auto!important;
+}
 .replay-control-bar .replay-step-btns{display:flex;align-items:center;gap:4px}
 .replay-control-bar .replay-step-label{
   font-size:11px;font-weight:700;color:rgba(255,255,255,.85);min-width:84px;text-align:center;
@@ -968,6 +997,7 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
 .replay-control-bar button{font-size:11px;padding:6px 10px}
 .replay-control-bar .replay-step-btn{min-width:36px;padding:6px 8px}
 .replay-control-bar .replay-play-btn{min-width:42px;font-size:13px}
+.replay-control-bar .replay-hide-btn{white-space:nowrap}
 .replay-control-bar .replay-exit-btn{font-weight:800;white-space:nowrap}
 .replay-control-bar input[type=range]{
   flex:1 1 200px;min-width:140px;max-width:min(48vw,360px);accent-color:var(--pink);

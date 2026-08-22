@@ -803,6 +803,9 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
         }
     }
     $msg = $lastError ? $lastError->getMessage() : 'failed';
+    if ($type === 'send_stamp') {
+        return $state;
+    }
     // Seek must not stop on interactive prompt validation — soft-skip and continue.
     if ($type === 'resolve_prompt'
         || $type === 'anti_softlock_skip'

@@ -104,7 +104,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=80">
+<link rel="stylesheet" href="client/css/shell-all.css?v=81">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=5">
@@ -1939,6 +1939,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </label>
 </div>
 
+<div id="replay-control-dock" class="replay-control-dock" hidden aria-hidden="true">
 <div id="replay-control-bar" class="replay-control-bar" hidden aria-hidden="true">
   <div class="replay-step-btns" role="group" aria-label="Replay step">
     <button type="button" class="btn-ghost replay-step-btn" id="btn-replay-first" data-i18n-title="replay.first" title="First">⏮</button>
@@ -1950,8 +1951,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   <input type="range" id="replay-step-range" min="0" max="0" value="0" step="1" data-i18n-aria-label="replay.positionAria">
   <span class="replay-step-label" id="replay-step-label">0 / 0 · 0:00</span>
   <span class="replay-action-label" id="replay-action-label" hidden></span>
+  <button type="button" class="btn-ghost replay-hide-btn" id="btn-replay-hide-bar" data-i18n="replay.hideBar" data-i18n-title="replay.hideBarTitle" title="Hide replay controls">Hide</button>
   <button type="button" class="btn-ghost replay-exit-btn" id="btn-replay-exit" data-i18n="replay.exitReplay">Exit Replay</button>
   <p class="replay-handoff-note" id="replay-handoff-note" hidden data-i18n="replay.handoffNote">Replay complete — you have control. CPU plays the opponent.</p>
+</div>
 </div>
 
 <div id="spectate-bar" class="spectate-bar" hidden aria-live="polite">
@@ -2712,7 +2715,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=142"></script>
+<script src="i18n.js?v=143"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=17"></script>
 <script src="client/js/news.js?v=30"></script>
@@ -10863,13 +10866,32 @@ function syncReplayControlBar(previewStep) {
   if (typeof G === 'undefined') return;
   const viewing = isReplayViewing();
   document.body.classList.toggle('tcg-replay-view-mode', viewing);
+  const dock = el('replay-control-dock');
   const bar = el('replay-control-bar');
   if (!bar) return;
   const active = viewing || G.replayHandoff;
   const inReplay = viewing;
+  if (G.replayBarAutohide == null) {
+    try { G.replayBarAutohide = localStorage.getItem('tcgReplayBarAutohide') === '1'; } catch (e) { G.replayBarAutohide = false; }
+  }
+  document.body.classList.toggle('tcg-replay-bar-autohide', !!(active && G.replayBarAutohide));
+  if (dock) {
+    dock.hidden = !active;
+    dock.classList.toggle('show', active);
+    dock.setAttribute('aria-hidden', active ? 'false' : 'true');
+    if (!active) dock.classList.remove('replay-bar-peek');
+  }
   bar.hidden = !active;
   bar.classList.toggle('show', active);
   bar.setAttribute('aria-hidden', active ? 'false' : 'true');
+  const hideBtn = el('btn-replay-hide-bar');
+  if (hideBtn) {
+    hideBtn.hidden = !active;
+    const hideLabel = typeof t === 'function' ? t('replay.hideBar') : 'Hide';
+    const pinLabel = typeof t === 'function' ? t('replay.pinBar') : 'Pin';
+    hideBtn.textContent = G.replayBarAutohide ? pinLabel : hideLabel;
+    hideBtn.title = typeof t === 'function' ? t('replay.hideBarTitle') : 'Hide replay controls (hover or tap the bottom to show again)';
+  }
   const displayStep = previewStep != null ? previewStep : G.replayStep;
   const total = G.replayTotal || 0;
   const label = el('replay-step-label');
@@ -16601,6 +16623,32 @@ async function bootApp() {
   on('btn-replay-last', 'click', () => replayGotoStep(G.replayTotal));
   on('btn-replay-play', 'click', toggleReplayAutoPlay);
   on('btn-replay-exit', 'click', exitReplayViewing);
+  on('btn-replay-hide-bar', 'click', (e) => {
+    e.stopPropagation();
+    G.replayBarAutohide = !G.replayBarAutohide;
+    try { localStorage.setItem('tcgReplayBarAutohide', G.replayBarAutohide ? '1' : '0'); } catch (err) { /* ignore */ }
+    const dock = el('replay-control-dock');
+    if (dock && !G.replayBarAutohide) dock.classList.remove('replay-bar-peek');
+    syncReplayControlBar();
+  });
+  const replayDock = el('replay-control-dock');
+  if (replayDock && !replayDock._tcgReplayDockBound) {
+    replayDock._tcgReplayDockBound = true;
+    replayDock.addEventListener('pointerdown', (e) => {
+      if (!document.body.classList.contains('tcg-replay-bar-autohide')) return;
+      if (e.target.closest('#replay-control-bar') && !e.target.closest('#btn-replay-hide-bar')) {
+        replayDock.classList.add('replay-bar-peek');
+        return;
+      }
+      if (!e.target.closest('#replay-control-bar')) {
+        replayDock.classList.add('replay-bar-peek');
+      }
+    });
+    replayDock.addEventListener('mouseleave', () => {
+      if (!document.body.classList.contains('tcg-replay-bar-autohide')) return;
+      replayDock.classList.remove('replay-bar-peek');
+    });
+  }
   document.addEventListener('keydown', (e) => {
     if (!isReplayViewing()) return;
     const tag = String(e.target?.tagName || '');
