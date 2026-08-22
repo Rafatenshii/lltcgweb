@@ -15,6 +15,12 @@ function tcgApkAssetUrlEligible(string $url): bool
         $path = substr($path, 0, $qPos);
     }
     $path = str_replace('\\', '/', $path);
+    if (preg_match('#(?:^|/)api\.php$#', $path)) {
+        return false;
+    }
+    if (preg_match('#_catalog\.json$#', $path)) {
+        return false;
+    }
     if (preg_match('#cardimg\.php$#', $path)) {
         return true;
     }
