@@ -98,11 +98,11 @@ function assertExperimentAllowedForRoom(array $body): void {
     }
 }
 
-function validateExperimentDeckPayload(array $main, array $energy, array $cardsData): array {
+function validateExperimentDeckPayload(array $main, array $energy, array $cardsData, bool $allowIncomplete = false): array {
     $main = array_values(array_map('strval', $main));
     $energy = array_values(array_map('strval', $energy));
     $cardMap = tcgBuildCardMap($cardsData);
-    $validation = tcgValidateDeckLists($main, $energy, $cardMap, null);
+    $validation = tcgValidateDeckLists($main, $energy, $cardMap, null, $allowIncomplete);
     if (!$validation['valid']) {
         throw new Exception('Invalid deck: ' . implode('; ', $validation['errors']));
     }

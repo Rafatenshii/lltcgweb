@@ -2753,7 +2753,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=147"></script>
+<script src="i18n.js?v=148"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=30"></script>
@@ -8619,6 +8619,12 @@ function deckListsAreLegal(main, energy) {
   return deckMainLovecaPoints(main) <= LOVECA_POINT_LIMIT;
 }
 
+function savedDeckIsPlayable(d) {
+  if (!d) return false;
+  if (typeof d.legal === 'boolean') return d.legal;
+  return deckListsAreLegal(d.main_deck || [], d.energy_deck || []);
+}
+
 function layoutDeckBuilderActions(experiment) {
   const bar = el('deck-builder-actions');
   if (!bar) return;
@@ -8731,11 +8737,11 @@ function syncDeckBuilderChrome() {
         saveBtn.textContent = A.experimentPassword ? t('deck.updateSavedDeck') : t('deck.generatePassword');
       }
       saveBtn.hidden = false;
-      saveBtn.disabled = !legal;
+      saveBtn.disabled = signedExp ? false : !legal;
     } else {
       saveBtn.hidden = false;
       saveBtn.textContent = t('deck.savePreset');
-      saveBtn.disabled = !legal;
+      saveBtn.disabled = false;
     }
   }
   const shareBtn = el('btn-deck-share-password');
@@ -10230,7 +10236,12 @@ function renderDeckBuilder(opts = {}) {
       b.className = 'deck-slot-btn' + (i === A.deckSlot ? ' active' : '');
       const saved = A.decks.find(d => d.slot === i);
       if (saved?.equipped) b.classList.add('equipped');
-      b.textContent = '#' + i + (saved ? ' ✓' : '');
+      b.textContent = '#' + i + (saved
+        ? (savedDeckIsPlayable(saved) ? ' ✓' : ' …')
+        : '');
+      b.title = saved
+        ? ((saved.name || ('Deck ' + i)) + (savedDeckIsPlayable(saved) ? '' : (' · ' + (t('deck.inProgress') || 'In progress'))))
+        : '';
       b.onclick = () => selectDeckSlot(i);
       slots.appendChild(b);
     }
@@ -10500,7 +10511,11 @@ function renderExperimentSlots() {
     b.type = 'button';
     b.className = 'deck-slot-btn' + (i === A.experimentSlot ? ' active' : '');
     b.textContent = saved ? (saved.name || ('Exp ' + i)) : String(i);
-    b.title = saved ? `${saved.name || 'Experiment'} · ${saved.main_count || 0} cards` : t('deck.emptySlot') || 'Empty';
+    if (saved && !savedDeckIsPlayable(saved)) b.textContent += ' …';
+    b.title = saved
+      ? `${saved.name || 'Experiment'} · ${saved.main_count || 0} cards`
+        + (savedDeckIsPlayable(saved) ? '' : (' · ' + (t('deck.inProgress') || 'In progress')))
+      : t('deck.emptySlot') || 'Empty';
     b.onclick = () => selectExperimentSlot(i);
     slots.appendChild(b);
   }
@@ -10513,8 +10528,8 @@ function selectExperimentSlot(slot) {
   A.deckSleeveId = normalizeDeckSleeveId(saved?.sleeve_id);
   A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id);
   A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness);
-  if (saved?.main_deck?.length) {
-    A.deckMain = [...saved.main_deck];
+  if (saved) {
+    A.deckMain = [...(saved.main_deck || [])];
     A.deckEnergy = [...(saved.energy_deck || [])];
     if (saved.share_password) {
       A.experimentPassword = saved.share_password;
@@ -12883,11 +12898,10 @@ async function saveExperimentDeckPassword() {
 async function saveExperimentPresetToAccount() {
   el('deck-err').textContent = '';
   normalizeSavedDeckLists();
-  if (!deckListsAreLegal(A.deckMain, A.deckEnergy)) {
-    const c = deckCounts();
-    el('deck-err').textContent = c.lovecaPoints > c.lovecaLimit
-      ? t('deck.lovecaDeckIllegal', { total: c.lovecaPoints, limit: c.lovecaLimit })
-      : t('deck.deckIllegalSize');
+  const legal = deckListsAreLegal(A.deckMain, A.deckEnergy);
+  const c = deckCounts();
+  if (c.lovecaPoints > c.lovecaLimit) {
+    el('deck-err').textContent = t('deck.lovecaDeckIllegal', { total: c.lovecaPoints, limit: c.lovecaLimit });
     return;
   }
   const btn = el('btn-deck-save');
@@ -12903,7 +12917,7 @@ async function saveExperimentPresetToAccount() {
       playmat_id: normalizeDeckPlaymatId(A.deckPlaymatId),
       playmat_brightness: normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness),
     };
-    if (A.experimentPassword) body.share_password = A.experimentPassword;
+    if (legal && A.experimentPassword) body.share_password = A.experimentPassword;
     const sleeveId = body.sleeve_id;
     const playmatId = body.playmat_id;
     const playmatBrightness = body.playmat_brightness;
@@ -12918,7 +12932,9 @@ async function saveExperimentPresetToAccount() {
     A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness ?? playmatBrightness);
     renderExperimentSlots();
     renderDeckBuilder();
-    el('deck-err').textContent = t('deck.experimentSaved') || 'Experiment deck saved to your account.';
+    el('deck-err').textContent = legal
+      ? (t('deck.experimentSaved') || 'Experiment deck saved to your account.')
+      : (t('deck.savedInProgress') || 'Saved as an in-progress deck. Finish it before using it in a match.');
   } catch (e) {
     el('deck-err').textContent = e.message;
   } finally {
@@ -12955,7 +12971,9 @@ async function saveDeckPreset() {
     A.deckPlaymatId = normalizeDeckPlaymatId(saved?.playmat_id ?? playmatId);
     A.deckPlaymatBrightness = normalizeDeckPlaymatBrightness(saved?.playmat_brightness ?? playmatBrightness);
     renderDeckBuilder();
-    el('deck-err').textContent = 'Saved!';
+    el('deck-err').textContent = deckListsAreLegal(A.deckMain, A.deckEnergy)
+      ? (t('deck.saved') || 'Saved!')
+      : (t('deck.savedInProgress') || 'Saved as an in-progress deck. Finish it before using it in a match.');
   } catch (e) { el('deck-err').textContent = e.message; }
 }
 
@@ -14624,7 +14642,7 @@ function renderRankedDeckOptions(opts = {}) {
   }
 
   if (!startersOnly) {
-    const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+    const saved = (A.decks || []).filter(savedDeckIsPlayable);
     if (saved.length) {
       const presetGroup = document.createElement('optgroup');
       presetGroup.label = 'Saved presets';
@@ -18807,7 +18825,7 @@ function renderLobbyDeckOptions(opts = {}) {
     expGroup.label = t('deck.experimentTitle') || 'Deck Experiment';
 
     if (!guest) {
-      const savedExp = (A.experimentDecks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      const savedExp = (A.experimentDecks || []).filter(savedDeckIsPlayable);
       savedExp.forEach(d => {
         const o = document.createElement('option');
         o.value = 'experiment_preset:' + d.slot;
@@ -18829,7 +18847,7 @@ function renderLobbyDeckOptions(opts = {}) {
     }
 
     if (!guest) {
-      const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      const saved = (A.decks || []).filter(savedDeckIsPlayable);
       if (saved.length) {
         const presetGroup = document.createElement('optgroup');
         presetGroup.label = t('deck.savedPresets') || 'Saved presets';
@@ -18876,7 +18894,7 @@ function renderLobbyDeckOptions(opts = {}) {
       randomOpt.textContent = t('deck.randomDeck');
       sel.appendChild(randomOpt);
 
-      const saved = (A.decks || []).filter(d => (d.main_count ?? d.main_deck?.length ?? 0) >= 60);
+      const saved = (A.decks || []).filter(savedDeckIsPlayable);
       if (saved.length) {
         const presetGroup = document.createElement('optgroup');
         presetGroup.label = 'Saved presets';
@@ -33151,7 +33169,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-loop.js?v=31"></script>
 <script src="client/js/cpu-ai.js?v=11"></script>
 <script src="client/js/portrait-bridge.js?v=25"></script>
-<script src="client/js/portrait-deck.js?v=4"></script>
+<script src="client/js/portrait-deck.js?v=5"></script>
 <script src="client/js/portrait-board.js?v=22"></script>
 <script>void bootApp();</script>
 </body>

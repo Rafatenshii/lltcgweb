@@ -483,9 +483,12 @@ function tcgApiDeckList(array $body): array {
         FROM tcg_deck_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
+    $cardMap = tcgBuildCardMap(tcgLoadCardsData());
+    $owned = tcgGetCollectionMap($uid);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $main = json_decode($row['main_deck'], true) ?: [];
         $energy = json_decode($row['energy_deck'], true) ?: [];
+        $legal = tcgValidateDeckLists($main, $energy, $cardMap, $owned)['valid'];
         $decks[] = [
             'id' => intval($row['id']),
             'slot' => intval($row['slot']),
@@ -499,6 +502,8 @@ function tcgApiDeckList(array $body): array {
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
             'energy_count' => count($energy),
+            'legal' => $legal,
+            'in_progress' => !$legal,
         ];
     }
     if (empty($decks) && !empty($user['starter_deck'])) {
@@ -534,10 +539,11 @@ function tcgApiDeckSave(array $body): array {
     $cards = tcgLoadCardsData();
     $cardMap = tcgBuildCardMap($cards);
     $owned = tcgGetCollectionMap($uid);
-    $validation = tcgValidateDeckLists($main, $energy, $cardMap, $owned);
+    $validation = tcgValidateDeckLists($main, $energy, $cardMap, $owned, true);
     if (!$validation['valid']) {
         throw new Exception(implode('; ', $validation['errors']));
     }
+    $playLegal = tcgValidateDeckLists($main, $energy, $cardMap, $owned)['valid'];
     $db = tcgDb();
     $now = time();
     $hasSleeve = array_key_exists('sleeve_id', $body);
@@ -601,6 +607,10 @@ function tcgApiDeckSave(array $body): array {
         $playmatId = tcgNormalizePlaymatId($pmRow['playmat_id'] ?? '');
         $playmatBrightness = tcgNormalizePlaymatBrightness($pmRow['playmat_brightness'] ?? 1.0);
     }
+    if (!$playLegal) {
+        $db->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ? AND slot = ?')
+            ->execute([$uid, $slot]);
+    }
     return [
         'success' => true,
         'slot' => $slot,
@@ -609,6 +619,8 @@ function tcgApiDeckSave(array $body): array {
         'playmat_id' => $playmatId,
         'playmat_brightness' => $playmatBrightness,
         'validation' => $validation,
+        'legal' => $playLegal,
+        'in_progress' => !$playLegal,
     ];
 }
 
@@ -677,9 +689,11 @@ function tcgApiExperimentPresetList(array $body): array {
         FROM tcg_experiment_presets WHERE discord_id = ? ORDER BY slot ASC');
     $stmt->execute([$uid]);
     $decks = [];
+    $cardMap = tcgBuildCardMap(tcgLoadCardsData());
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $main = json_decode((string)$row['main_deck'], true) ?: [];
         $energy = json_decode((string)$row['energy_deck'], true) ?: [];
+        $legal = tcgValidateDeckLists($main, $energy, $cardMap, null)['valid'];
         $decks[] = [
             'id' => intval($row['id']),
             'slot' => intval($row['slot']),
@@ -693,6 +707,8 @@ function tcgApiExperimentPresetList(array $body): array {
             'updated_at' => intval($row['updated_at']),
             'main_count' => count($main),
             'energy_count' => count($energy),
+            'legal' => $legal,
+            'in_progress' => !$legal,
         ];
     }
     return [
@@ -717,7 +733,7 @@ function tcgApiExperimentPresetSave(array $body): array {
         throw new Exception('Invalid deck payload', 400);
     }
     $cards = tcgLoadCardsData();
-    $validated = validateExperimentDeckPayload($main, $energy, $cards);
+    $validated = validateExperimentDeckPayload($main, $energy, $cards, true);
     $share = normalizeExperimentPassword((string)($body['share_password'] ?? ''));
     if ($share !== '' && (strlen($share) < 4 || strlen($share) > EXPERIMENT_PASSWORD_MAX)) {
         throw new Exception('Share password must be 4–' . EXPERIMENT_PASSWORD_MAX . ' letters/numbers', 400);
@@ -929,10 +945,18 @@ function tcgApiDeckEquip(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $slot = intval($body['slot'] ?? 0);
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT slot FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
+    $stmt = $db->prepare('SELECT slot, main_deck, energy_deck FROM tcg_deck_presets WHERE discord_id = ? AND slot = ?');
     $stmt->execute([$uid, $slot]);
-    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
         throw new Exception('Deck not found');
+    }
+    $main = json_decode((string)$row['main_deck'], true) ?: [];
+    $energy = json_decode((string)$row['energy_deck'], true) ?: [];
+    $owned = tcgGetCollectionMap($uid);
+    $play = tcgValidateDeckLists($main, $energy, tcgBuildCardMap(tcgLoadCardsData()), $owned);
+    if (!$play['valid']) {
+        throw new Exception('This preset is in progress and cannot be equipped for ranked until it is a legal 60+12 deck');
     }
     $db->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ?')->execute([$uid]);
     $db->prepare('UPDATE tcg_deck_presets SET equipped = 1 WHERE discord_id = ? AND slot = ?')

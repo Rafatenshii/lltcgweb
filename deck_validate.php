@@ -95,13 +95,19 @@ function tcgBuildCardMap(array $cardsData): array {
     return $map;
 }
 
-function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap, ?array $owned = null): array {
+function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap, ?array $owned = null, bool $allowIncomplete = false): array {
     $errors = [];
-    if (count($mainDeck) !== TCG_MAIN_DECK_SIZE) {
-        $errors[] = 'Main deck must be exactly ' . TCG_MAIN_DECK_SIZE . ' cards (got ' . count($mainDeck) . ')';
+    $mainN = count($mainDeck);
+    $energyN = count($energyDeck);
+    if ($mainN > TCG_MAIN_DECK_SIZE) {
+        $errors[] = 'Main deck cannot exceed ' . TCG_MAIN_DECK_SIZE . ' cards (got ' . $mainN . ')';
+    } elseif (!$allowIncomplete && $mainN !== TCG_MAIN_DECK_SIZE) {
+        $errors[] = 'Main deck must be exactly ' . TCG_MAIN_DECK_SIZE . ' cards (got ' . $mainN . ')';
     }
-    if (count($energyDeck) !== TCG_ENERGY_SLOTS) {
-        $errors[] = 'Energy deck must be exactly ' . TCG_ENERGY_SLOTS . ' cards (got ' . count($energyDeck) . ')';
+    if ($energyN > TCG_ENERGY_SLOTS) {
+        $errors[] = 'Energy deck cannot exceed ' . TCG_ENERGY_SLOTS . ' cards (got ' . $energyN . ')';
+    } elseif (!$allowIncomplete && $energyN !== TCG_ENERGY_SLOTS) {
+        $errors[] = 'Energy deck must be exactly ' . TCG_ENERGY_SLOTS . ' cards (got ' . $energyN . ')';
     }
 
     $mainCounts = [];
@@ -137,10 +143,14 @@ function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap
         }
     }
 
-    if ($members !== TCG_MEMBER_SLOTS) {
+    if ($members > TCG_MEMBER_SLOTS) {
+        $errors[] = 'Main deck cannot have more than ' . TCG_MEMBER_SLOTS . ' Member cards (got ' . $members . ')';
+    } elseif (!$allowIncomplete && $members !== TCG_MEMBER_SLOTS) {
         $errors[] = 'Main deck must have exactly ' . TCG_MEMBER_SLOTS . ' Member cards (got ' . $members . ')';
     }
-    if ($lives !== TCG_LIVE_SLOTS) {
+    if ($lives > TCG_LIVE_SLOTS) {
+        $errors[] = 'Main deck cannot have more than ' . TCG_LIVE_SLOTS . ' Live cards (got ' . $lives . ')';
+    } elseif (!$allowIncomplete && $lives !== TCG_LIVE_SLOTS) {
         $errors[] = 'Main deck must have exactly ' . TCG_LIVE_SLOTS . ' Live cards (got ' . $lives . ')';
     }
 

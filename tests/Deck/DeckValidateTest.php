@@ -85,6 +85,21 @@ final class DeckValidateTest extends TestCase
         $this->assertNotEmpty($result['errors']);
     }
 
+    public function testIncompleteDraftCanSaveWithoutPlayLegalSize(): void
+    {
+        $draft = tcgValidateDeckLists(['PL!N-sd1-001-SD'], ['LL-E-001-SD'], $this->cardMap, null, true);
+        $this->assertTrue($draft['valid'], implode('; ', $draft['errors']));
+        $play = tcgValidateDeckLists(['PL!N-sd1-001-SD'], ['LL-E-001-SD'], $this->cardMap, null, false);
+        $this->assertFalse($play['valid']);
+    }
+
+    public function testIncompleteDraftStillRejectsOversize(): void
+    {
+        $main = array_fill(0, 61, 'PL!N-sd1-001-SD');
+        $result = tcgValidateDeckLists($main, [], $this->cardMap, null, true);
+        $this->assertFalse($result['valid']);
+    }
+
     /** Claimed starters stay legal when collection check is skipped (exchanged cards). */
     public function testStarterListsValidWithoutCollectionOwnership(): void
     {

@@ -167,7 +167,10 @@
       let label = '#' + i;
       if (saved) {
         const name = saved.name || (experiment ? ('Exp ' + i) : ('Deck ' + i));
-        label = '#' + i + ' · ' + name + (saved.equipped ? ' ★' : '');
+        const wip = typeof global.savedDeckIsPlayable === 'function'
+          ? !global.savedDeckIsPlayable(saved)
+          : false;
+        label = '#' + i + ' · ' + name + (saved.equipped ? ' ★' : '') + (wip ? ' …' : '');
       }
       html.push('<option value="' + i + '"' + (i === active ? ' selected' : '') + '>' +
         String(label).replace(/</g, '') + '</option>');
