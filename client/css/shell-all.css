@@ -2770,31 +2770,24 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
   color:#fde68a;font-size:10px;font-weight:800;line-height:14px;text-align:center
 }
 .stage-slot.opp .member-stacked-energy{bottom:auto;top:-6px}
-.member-stacked-cards{
-  position:absolute;left:2px;bottom:20px;
-  z-index:4;pointer-events:none;display:flex;align-items:flex-end
+.member-under-stack{
+  position:absolute;inset:0;z-index:0;pointer-events:none;overflow:visible
 }
-.member-stacked-cards .stack-faces{
-  position:relative;width:22px;height:28px
+.under-chip{
+  position:absolute;overflow:hidden;border-radius:3px;pointer-events:auto;
+  box-shadow:0 1px 4px rgba(0,0,0,.45);background:rgba(0,0,0,.2)
 }
-.member-stacked-cards .stack-face{
-  position:absolute;left:0;bottom:0;width:16px;height:22px;border-radius:2px;
-  background:linear-gradient(160deg,#f8fafc 0%,#94a3b8 100%);
-  border:1px solid rgba(255,255,255,.55);
-  box-shadow:0 1px 3px rgba(0,0,0,.4)
+.under-chip .card-portrait-in-landscape{
+  pointer-events:none
 }
-.member-stacked-cards .stack-face:nth-child(1){transform:translate(0,0);z-index:3}
-.member-stacked-cards .stack-face:nth-child(2){transform:translate(3px,-3px);z-index:2;opacity:.9}
-.member-stacked-cards .stack-face:nth-child(3){transform:translate(6px,-6px);z-index:1;opacity:.75}
-.member-stacked-cards .stacked-cards-count{
-  position:absolute;top:-5px;right:-4px;z-index:5;
-  min-width:16px;height:16px;padding:0 3px;margin:0;
+.member-under-stack .stacked-cards-count{
+  position:absolute;z-index:6;pointer-events:none;
+  min-width:18px;height:18px;padding:0 4px;margin:0;
   border-radius:999px;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.35);
-  color:#e2e8f0;font-size:10px;font-weight:800;line-height:14px;text-align:center;
-  box-shadow:0 1px 3px rgba(0,0,0,.45)
+  color:#e2e8f0;font-size:10px;font-weight:800;line-height:16px;text-align:center;
+  box-shadow:0 1px 3px rgba(0,0,0,.45);white-space:nowrap
 }
-.stage-slot.opp .member-stacked-cards{bottom:auto;top:20px}
-.perf-card .member-stacked-cards{bottom:22px;left:2px}
+.perf-card.member:has(.member-under-stack){overflow:visible}
 .field-badge .badge-val{
   font-size:clamp(15px,4.5cqw,21px);font-weight:800;color:#fff;
   text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95),0 1px 5px rgba(0,0,0,.92),0 2px 8px rgba(0,0,0,.88);

@@ -7079,7 +7079,12 @@ async function perfPopulateBase(ctx) {
   });
   perfSetYellSideInstant(ctx, myId, false);
   perfSetYellSideInstant(ctx, oppId, false);
-  requestAnimationFrame(() => layoutPerfLiveRows());
+  requestAnimationFrame(() => {
+    layoutPerfLiveRows();
+    document.querySelectorAll('#perf-spectacle .perf-card.member').forEach((cardEl) => {
+      if (typeof layoutMemberUnderStack === 'function') layoutMemberUnderStack(cardEl);
+    });
+  });
 }
 
 function perfSetYellSideInstant(ctx, pid, showAllCards) {
@@ -9527,34 +9532,73 @@ function countMemberStackedMembers(member) {
   const stack = member.stacked_members;
   return Array.isArray(stack) ? stack.length : 0;
 }
+function layoutMemberUnderStack(hostEl) {
+  const stack = hostEl?.querySelector?.('.member-under-stack');
+  if (!stack || !hostEl) return;
+  const hostW = hostEl.clientWidth;
+  const hostH = hostEl.clientHeight;
+  if (hostW < 8 || hostH < 8) return;
+  const chips = [...stack.querySelectorAll('.under-chip')];
+  const n = Math.max(1, chips.length);
+  const metrics = typeof memberUnderStackMetrics === 'function'
+    ? memberUnderStackMetrics(hostW, hostH, n)
+    : (() => {
+      let chipH = Math.min(hostW, hostH);
+      const chipW = chipH * (88 / 63);
+      const peek = Math.max(10, Math.min(hostW * 0.3, chipW * 0.2));
+      const span = Math.max(0, hostH - chipH);
+      const step = n > 1 ? span / (n - 1) : 0;
+      return { chipW, chipH, peek, step, startY: n > 1 ? 0 : Math.max(0, (hostH - chipH) / 2) };
+    })();
+  chips.forEach((chip, i) => {
+    chip.style.width = metrics.chipW + 'px';
+    chip.style.height = metrics.chipH + 'px';
+    chip.style.left = (hostW - metrics.chipW + metrics.peek) + 'px';
+    chip.style.top = (metrics.startY + i * metrics.step) + 'px';
+    chip.style.zIndex = String(i + 1);
+  });
+  const badge = stack.querySelector('.stacked-cards-count');
+  if (badge) {
+    badge.style.left = (hostW + metrics.peek + 2) + 'px';
+    badge.style.top = Math.max(0, hostH / 2 - 9) + 'px';
+  }
+}
+
 function appendMemberStackedMembersBadge(slotEl, member) {
-  const count = countMemberStackedMembers(member);
+  const stackCards = member.stacked_members || [];
+  const count = stackCards.length;
   if (count <= 0) return;
-  const stack = member.stacked_members || [];
-  const names = stack
+  const names = stackCards
     .map(c => (c && (c.name_en || c.name || c.card_no)) || '?')
     .filter(Boolean);
   const wrap = document.createElement('div');
-  wrap.className = 'member-stacked-cards';
+  wrap.className = 'member-under-stack';
   wrap.title = names.length
     ? `${count} under: ${names.join(', ')}`
     : `${count} card${count === 1 ? '' : 's'} stacked under this Member`;
-  const faces = document.createElement('div');
-  faces.className = 'stack-faces';
-  faces.setAttribute('aria-hidden', 'true');
-  // Visual depth: up to 3 layers, independent of count (count is in the pill).
-  const layers = Math.min(3, Math.max(1, count));
-  for (let i = 0; i < layers; i++) {
-    const face = document.createElement('span');
-    face.className = 'stack-face';
-    faces.appendChild(face);
-  }
-  wrap.appendChild(faces);
+  stackCards.forEach((raw) => {
+    const c = typeof enrichCard === 'function' ? enrichCard(raw) : raw;
+    const chip = document.createElement('div');
+    chip.className = 'under-chip';
+    if (c?.instance_id) chip.dataset.iid = c.instance_id;
+    chip.classList.toggle('card-arriving', !!(G._animHideIids?.has(c?.instance_id)));
+    if (typeof isLiveCard === 'function' && isLiveCard(c)) {
+      if (typeof appendCardFaceFill === 'function') appendCardFaceFill(chip, c);
+    } else if (typeof appendLiveStorageMemberFace === 'function') {
+      appendLiveStorageMemberFace(chip, c);
+    }
+    chip.onclick = (ev) => {
+      ev.stopPropagation();
+      if (!G.isSpectator) showCard(c, null, G.gameState, G.playerId);
+    };
+    wrap.appendChild(chip);
+  });
   const badge = document.createElement('span');
   badge.className = 'stacked-cards-count';
-  badge.textContent = '×' + count;
+  badge.textContent = '(x' + count + ')';
   wrap.appendChild(badge);
   slotEl.appendChild(wrap);
+  requestAnimationFrame(() => layoutMemberUnderStack(slotEl));
 }
 function estimateBatonWrEnergyActivation(me, occupant, incomingCard) {
   if (!me || !occupant || !incomingCard) return 0;

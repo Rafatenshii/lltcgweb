@@ -2126,6 +2126,7 @@ function layoutStageSlots(prefix) {
     mslot.style.flex = '0 0 auto';
     mslot.style.maxWidth = '';
     if (mslot.classList.contains('stage-flip')) syncStageFlipInnerSize(mslot, fit);
+    if (typeof layoutMemberUnderStack === 'function') layoutMemberUnderStack(mslot);
   }
 }
 

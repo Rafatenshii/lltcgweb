@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=89">
+<link rel="stylesheet" href="client/css/shell-all.css?v=90">
 <link rel="stylesheet" href="client/css/prompts.css?v=3">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -19830,6 +19830,35 @@ function rectCenteredInZone(zoneRect, cw, ch, alignBottom = false) {
   return { left, top, width: cw, height: ch };
 }
 
+/** Destination rect for a stacked-under chip (landscape, peeking right of the host). */
+function projectUnderChipRect(slotWrap, index, count) {
+  if (!slotWrap) return null;
+  const mslot = slotWrap.querySelector('.mslot');
+  const host = mslot || slotWrap;
+  const zr = host.getBoundingClientRect();
+  if (zr.width < 4 || zr.height < 4) return null;
+  const metrics = memberUnderStackMetrics(zr.width, zr.height, Math.max(1, count || 1));
+  const i = Math.max(0, Math.min(index || 0, Math.max(0, (count || 1) - 1)));
+  return {
+    left: zr.right - metrics.chipW + metrics.peek,
+    top: zr.top + metrics.startY + i * metrics.step,
+    width: metrics.chipW,
+    height: metrics.chipH,
+  };
+}
+
+function memberUnderStackMetrics(hostW, hostH, n) {
+  let chipH = hostW;
+  if (chipH > hostH) chipH = hostH;
+  const chipW = chipH * (88 / 63);
+  const peek = Math.max(10, Math.min(hostW * 0.3, chipW * 0.2));
+  const count = Math.max(1, n || 1);
+  const span = Math.max(0, hostH - chipH);
+  const step = count > 1 ? span / (count - 1) : 0;
+  const startY = count > 1 ? 0 : Math.max(0, (hostH - chipH) / 2);
+  return { chipW, chipH, peek, step, startY };
+}
+
 function projectFieldCardRect(loc, card, myId) {
   if (!loc) return null;
   const pre = loc.pid === myId ? 'my' : 'opp';
@@ -19840,6 +19869,17 @@ function projectFieldCardRect(loc, card, myId) {
     if (zr.width < 4 || zr.height < 4) return null;
     const fit = fitStageMemberCardSize(zr.width, zr.height);
     return rectCenteredInZone(zr, fit.cw, fit.ch, true);
+  }
+  if (loc.zone === 'under') {
+    const wrap = el(`${pre}-stage-${loc.slot || 'center'}`);
+    const iid = loc.card?.instance_id;
+    const chip = iid
+      ? wrap?.querySelector(`.under-chip[data-iid="${CSS.escape(iid)}"]`)
+      : wrap?.querySelectorAll('.under-chip')[loc.index ?? 0];
+    const cr = rectFromEl(chip);
+    if (cr) return cr;
+    const n = Math.max(loc.index ?? 0, wrap?.querySelectorAll('.under-chip').length || 0) + 1;
+    return projectUnderChipRect(wrap, loc.index ?? 0, n);
   }
   if (loc.zone === 'live') {
     const zone = el(`${pre}-live-${loc.index ?? 0}`);
@@ -19963,8 +20003,8 @@ function flightOrientClass(card, zone) {
   if (zone === 'hand') {
     return 'flight-portrait';
   }
-  if (zone === 'live') {
-    // Live storage slots are always landscape (Members use rotated portrait art).
+  if (zone === 'live' || zone === 'under') {
+    // Live storage and stacked-under Members use landscape shells.
     return 'flight-landscape';
   }
   if (zone === 'main_deck' || zone === 'waiting_room' || zone === 'energy_deck') {
@@ -19980,7 +20020,7 @@ function flightInnerRotation(card, zone, faceDown = false) {
   if (!zone || !card) return 0;
   if (isLiveCard(card) || isMemberCard(card)) return 0;
   if (zone === 'hand') return 0;
-  if (zone === 'live') {
+  if (zone === 'live' || zone === 'under') {
     if (liveStorageUseArtSpin(card)) return 90;
     return 0;
   }
@@ -20051,6 +20091,14 @@ function isMemberCard(card) {
   return card?.card_type === 'メンバー' || card?.card_type_en === 'Member';
 }
 
+function isMemberPortraitToUnderFlight(card, fromZone, toZone) {
+  return isMemberCard(card) && toZone === 'under' && fromZone !== 'under';
+}
+
+function isMemberUnderToPortraitFlight(card, fromZone, toZone) {
+  return isMemberCard(card) && fromZone === 'under' && toZone !== 'under' && toZone !== 'live';
+}
+
 function isMemberHandToLiveFlight(card, fromZone, toZone) {
   return isMemberCard(card) && fromZone === 'hand' && toZone === 'live';
 }
@@ -20068,6 +20116,32 @@ function isMemberStageWaitToWrFlight(card, fromZone, toZone, sourceNode = null) 
   if (!isMemberCard(card) || fromZone !== 'stage' || toZone !== 'waiting_room') return false;
   if (memberInWait(card)) return true;
   return !!sourceNode?.classList?.contains('member-in-wait');
+}
+
+function findUnderChipNode(m, myId) {
+  const pid = m.from?.pid || m.to?.pid;
+  const slot = m.from?.slot || m.to?.slot;
+  if (!pid || !slot || !m.iid) return null;
+  const pre = pid === myId ? 'my' : 'opp';
+  return el(`${pre}-stage-${slot}`)?.querySelector(`.under-chip[data-iid="${CSS.escape(m.iid)}"]`) || null;
+}
+
+function cloneUnderStackFace(node, card) {
+  if (node) {
+    const art = node.querySelector('.card-portrait-in-landscape, .card-landscape-in-portrait, .card-art');
+    if (art) return art.cloneNode(true);
+    const img = node.querySelector('img, .noimg');
+    if (img) {
+      const wrap = document.createElement('div');
+      wrap.className = 'card-portrait-in-landscape storage-member-art';
+      wrap.appendChild(img.cloneNode(true));
+      return wrap;
+    }
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'card-portrait-in-landscape storage-member-art';
+  appendCardFaceFill(wrap, card);
+  return wrap;
 }
 
 function findStageCardNode(m, myId) {
@@ -20102,7 +20176,9 @@ function isMemberLiveToWrFlight(card, fromZone, toZone) {
 function isMemberStorageCrossFlight(card, fromZone, toZone) {
   return isPortraitHandToLiveFlight(card, fromZone, toZone)
     || isMemberLiveToHandFlight(card, fromZone, toZone)
-    || isMemberLiveToWrFlight(card, fromZone, toZone);
+    || isMemberLiveToWrFlight(card, fromZone, toZone)
+    || isMemberPortraitToUnderFlight(card, fromZone, toZone)
+    || isMemberUnderToPortraitFlight(card, fromZone, toZone);
 }
 
 function findHandCardNode(m, state, myId) {
@@ -20345,6 +20421,18 @@ function captureFlightArtClones(moves, myId = G.playerId, stateBefore = G.gameSt
         ? cloneMemberLiveStorageBack(node, m.card)
         : cloneMemberLiveStorageFace(node, m.card);
       if (clone) G._flightLiveArtClones.set(m.iid, clone);
+    } else if (isMemberPortraitToUnderFlight(m.card, fromZone, toZone)) {
+      const node = fromZone === 'hand'
+        ? findHandCardNode(m, stateBefore, myId)
+        : (fromZone === 'stage' ? findStageCardNode(m, myId) : findUnderChipNode(m, myId));
+      const clone = faceDown
+        ? cloneHandMemberCrossBack(node, m.card)
+        : cloneHandMemberCrossFace(node, m.card);
+      if (clone) G._flightHandArtClones.set(m.iid, clone);
+    } else if (isMemberUnderToPortraitFlight(m.card, fromZone, toZone)) {
+      const node = findUnderChipNode(m, myId);
+      const clone = cloneUnderStackFace(node, m.card);
+      if (clone) G._flightHandArtClones.set(m.iid, clone);
     } else if (isMemberStageWaitToWrFlight(m.card, fromZone, toZone, findStageCardNode(m, myId))) {
       const node = findStageCardNode(m, myId);
       const clone = cloneStageWaitMemberFace(node, m.card);
@@ -20363,7 +20451,8 @@ function appendFlightFace(parent, card, orientClass, opts = {}) {
       return;
     }
   }
-  if (isPortraitHandToLiveFlight(card, fromZone, toZone)) {
+  if (isPortraitHandToLiveFlight(card, fromZone, toZone)
+      || isMemberPortraitToUnderFlight(card, fromZone, toZone)) {
     const handClone = iid && G._flightHandArtClones?.get(iid);
     if (handClone) {
       parent.appendChild(handClone);
@@ -20371,6 +20460,18 @@ function appendFlightFace(parent, card, orientClass, opts = {}) {
     }
     const wrap = document.createElement('div');
     wrap.className = 'card-portrait-in-landscape storage-member-art member-flight-from-portrait';
+    appendCardFaceFill(wrap, card);
+    parent.appendChild(wrap);
+    return;
+  }
+  if (isMemberUnderToPortraitFlight(card, fromZone, toZone)) {
+    const underClone = iid && G._flightHandArtClones?.get(iid);
+    if (underClone) {
+      parent.appendChild(underClone);
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'card-portrait-in-landscape storage-member-art';
     appendCardFaceFill(wrap, card);
     parent.appendChild(wrap);
     return;
@@ -20959,6 +21060,7 @@ function shouldFlyFaceDownForMove(m, myId, state) {
   if (G.isSpectator) {
     if (from === 'hand' || to === 'hand') return false;
   }
+  if (to === 'under' || from === 'under') return false;
   // Own live storage: face-up to the owner; opponent stays hidden until reveal.
   if (to === 'live' && from !== 'live') return pid !== myId;
   if (pid === myId && isHiddenSourceToHand(m)) return true;
@@ -21082,6 +21184,9 @@ function findCardInState(state, iid, pid) {
   for (const pool of pools) {
     for (const c of pool || []) {
       if (c?.instance_id === iid) return c;
+      for (const under of c?.stacked_members || []) {
+        if (under?.instance_id === iid) return under;
+      }
     }
   }
   return null;
@@ -22129,6 +22234,14 @@ function targetRectForLoc(loc, spec, finalState, myId, handSlots, preferBefore) 
     if (occupied) return rectFromEl(occupied);
     return projectFieldCardRect(loc, card, myId);
   }
+  if (loc.zone === 'under') {
+    const chip = iid
+      ? document.querySelector(`.under-chip[data-iid="${CSS.escape(iid)}"]`)
+      : null;
+    const cr = rectFromEl(chip);
+    if (cr) return cr;
+    return projectFieldCardRect(loc, card, myId);
+  }
   if (loc.zone === 'live') {
     const pre = loc.pid === myId ? 'my' : 'opp';
     const zone = el(`${pre}-live-${loc.index ?? 0}`);
@@ -22897,7 +23010,7 @@ async function executeCardMoveAnimation(m, opts) {
   }
 }
 
-const VISIBLE_FROM_ZONES = ['hand', 'live', 'stage', 'success', 'energy'];
+const VISIBLE_FROM_ZONES = ['hand', 'live', 'stage', 'success', 'energy', 'under'];
 
 function fromRectFromSavedPrev(spec, fromLoc, prevRects) {
   if (!spec.iid || !fromLoc || !prevRects?.[spec.iid]) return null;
@@ -24673,7 +24786,12 @@ function buildLocationMap(state) {
       map[c.instance_id] = { ...loc, pid, card: c };
     };
     (p.hand || []).forEach((c, i) => put(c, { zone: 'hand', index: i }));
-    Object.entries(p.stage || {}).forEach(([slot, c]) => put(c, { zone: 'stage', slot }));
+    Object.entries(p.stage || {}).forEach(([slot, c]) => {
+      put(c, { zone: 'stage', slot });
+      (c?.stacked_members || []).forEach((under, i) => {
+        put(under, { zone: 'under', slot, index: i, hostIid: c.instance_id });
+      });
+    });
     (p.live_zone || []).forEach((c, i) => put(c, { zone: 'live', index: liveZoneSlot(c, i) }));
     (p.success_lives || []).forEach((c, i) => put(c, { zone: 'success', index: i }));
     (p.energy_zone || []).forEach((c, i) => put(c, { zone: 'energy', index: i }));
@@ -24695,7 +24813,7 @@ function buildLocationMap(state) {
 function locSame(a, b) {
   if (!a || !b) return false;
   if (a.pid !== b.pid || a.zone !== b.zone) return false;
-  if (a.zone === 'stage') return a.slot === b.slot;
+  if (a.zone === 'stage' || a.zone === 'under') return a.slot === b.slot && (a.zone !== 'under' || a.index === b.index);
   if (['live', 'hand', 'energy'].includes(a.zone)) return a.index === b.index;
   return true;
 }
@@ -24705,7 +24823,7 @@ function shouldAnimateMove(from, to) {
   if (locSame(from, to)) return false;
   // Index-only hand reflows are handled by layoutHandFan shift — not card flights.
   if (from.zone === 'hand' && to.zone === 'hand' && from.pid === to.pid) return false;
-  const visible = ['hand', 'stage', 'live', 'success', 'energy', 'surveil'];
+  const visible = ['hand', 'stage', 'live', 'success', 'energy', 'surveil', 'under'];
   const pile = ['main_deck', 'waiting_room', 'energy_deck'];
   if (from.zone === 'surveil' && (to.zone === 'hand' || to.zone === 'waiting_room')) return true;
   if (pile.includes(from.zone) && visible.includes(to.zone)) return true;
@@ -24896,6 +25014,7 @@ function zoneElement(loc, myId) {
     energy: `${pre}-energy`,
     success: `${pre}-pips`,
     stage: `${pre}-stage-${loc.slot || 'center'}`,
+    under: `${pre}-stage-${loc.slot || 'center'}`,
     live: `${pre}-live-${loc.index ?? 0}`,
   };
   return el(ids[loc.zone]);
@@ -25037,10 +25156,12 @@ function flyCard(card, fromRect, toRect, delayMs = 0, opts = {}) {
               }
               const wrap = inner.querySelector('.card-portrait-in-landscape');
               if (wrap) {
-                if (isPortraitHandToLiveFlight(card, fromZone, toZone)) {
+            if (isPortraitHandToLiveFlight(card, fromZone, toZone)
+                || isMemberPortraitToUnderFlight(card, fromZone, toZone)) {
                   wrap.classList.remove('member-flight-from-portrait');
                 } else if (isMemberLiveToWrFlight(card, fromZone, toZone)
-                    || isMemberLiveToHandFlight(card, fromZone, toZone)) {
+                    || isMemberLiveToHandFlight(card, fromZone, toZone)
+                    || isMemberUnderToPortraitFlight(card, fromZone, toZone)) {
                   wrap.classList.add('member-flight-from-portrait');
                 }
               }
@@ -25095,12 +25216,18 @@ async function playCardMoveAnimations(prevState, nextState, prevRects, myId, han
   if (!G._flightHandArtClones?.size && !G._flightLiveArtClones?.size) {
     captureFlightArtClones(moves, myId, prevState);
   }
-  const placements = moves.filter(isHandToLivePlacementMove);
-  const draws = moves.filter(m => isHiddenSourceToHand(m));
-  const other = moves.filter(m => !isHandToLivePlacementMove(m) && !isHiddenSourceToHand(m));
+  const isUnderUnstack = (m) => m.from?.zone === 'under' && m.to?.zone !== 'under';
+  const hostLeavesWithUnstack = (m) => m.from?.zone === 'stage'
+    && moves.some((u) => isUnderUnstack(u) && u.from?.pid === m.from?.pid && u.from?.slot === m.from?.slot);
+  const unstackFirst = moves.filter(isUnderUnstack);
+  const hostAfterUnstack = moves.filter(hostLeavesWithUnstack);
+  const deferred = new Set([...unstackFirst, ...hostAfterUnstack]);
+  const placements = moves.filter(m => isHandToLivePlacementMove(m) && !deferred.has(m));
+  const draws = moves.filter(m => isHiddenSourceToHand(m) && !deferred.has(m));
+  const other = moves.filter(m => !isHandToLivePlacementMove(m) && !isHiddenSourceToHand(m) && !deferred.has(m));
   const sortKey = m => {
     const z = m.from?.zone || '';
-    if (z === 'hand' || z === 'stage' || z === 'live') return 0;
+    if (z === 'hand' || z === 'stage' || z === 'live' || z === 'under') return 0;
     if (z === 'main_deck' || z === 'energy_deck') return 1;
     return 2;
   };
@@ -25124,14 +25251,14 @@ async function playCardMoveAnimations(prevState, nextState, prevRects, myId, han
     })));
   };
   try {
-    // Live set: finish storage placements before replacement draws so order
-    // matches the table (place → draw), not parallel ghost overlap.
+    if (unstackFirst.length) await playBatch(unstackFirst);
+    if (hostAfterUnstack.length) await playBatch(hostAfterUnstack);
     if (placements.length && draws.length) {
       await playBatch(placements);
       await playBatch(other);
       await playBatch(draws);
     } else {
-      await playBatch(moves);
+      await playBatch(moves.filter(m => !deferred.has(m)));
     }
   } finally {
     clearWrPileAnimPending();
@@ -33008,8 +33135,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=102"></script>
-<script src="client/js/board-render.js?v=36"></script>
+<script src="client/js/spectacle.js?v=103"></script>
+<script src="client/js/board-render.js?v=37"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
