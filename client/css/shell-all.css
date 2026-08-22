@@ -4041,6 +4041,9 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
   pointer-events:none;z-index:6;
 }
 .perf-card.member .perf-member-blade .bicon.sm{width:14px;height:14px}
+.perf-card.member .perf-member-blade .perf-blade-mod,
+.perf-blade-row .perf-blade-num.perf-blade-mod,
+.perf-card.member .perf-member-blade-delta{color:#FBBF24;font-weight:800}
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }

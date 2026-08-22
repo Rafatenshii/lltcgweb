@@ -580,6 +580,9 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
   pointer-events:none;z-index:6;
 }
 .perf-card.member .perf-member-blade .bicon.sm{width:14px;height:14px}
+.perf-card.member .perf-member-blade .perf-blade-mod,
+.perf-blade-row .perf-blade-num.perf-blade-mod,
+.perf-card.member .perf-member-blade-delta{color:#FBBF24;font-weight:800}
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }
@@ -1510,6 +1513,27 @@ body.missions-overlay-open{overflow:hidden}
 .apk-asset-first-launch-card h2{margin:0 0 10px;font-size:1.25rem}
 .apk-asset-first-launch-card p{margin:0 0 10px;font-size:14px;line-height:1.45;color:rgba(255,255,255,.88)}
 .apk-asset-first-launch-actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.apk-asset-logo{
+  display:block;width:min(320px,78vw);height:auto;margin:0 auto 16px
+}
+.apk-asset-dl-title{margin:0 0 12px;font-size:15px;font-weight:700;text-align:center}
+.apk-asset-bar{
+  position:relative;height:16px;border-radius:999px;overflow:hidden;
+  background:rgba(0,0,0,.45);border:1px solid rgba(186,228,255,.35)
+}
+.apk-asset-bar-fill{
+  height:100%;width:0%;border-radius:999px;
+  background:linear-gradient(90deg,#5eead4,#38bdf8,#a78bfa);
+  background-size:200% 100%;
+  animation:apk-asset-bar-shine 1.4s linear infinite;
+  transition:width .18s ease-out
+}
+@keyframes apk-asset-bar-shine{
+  0%{background-position:0% 50%}
+  100%{background-position:200% 50%}
+}
+.apk-asset-bar-label{margin:8px 0 0;text-align:center;font-size:13px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.9)}
+.llc-menu-screen .options-apk-bar{margin:8px 0 4px}
 .llc-menu-screen .queue-other-modes{
   margin:2px 0 10px;
   text-align:center;

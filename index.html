@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=85">
+<link rel="stylesheet" href="client/css/shell-all.css?v=86">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -25793,10 +25793,10 @@ function fillCardDetailPanel(prefix, card, s, myId) {
     const sv = addBox(lbl);
     if (iconName) sv.appendChild(mkGameIcon(iconName, 'ticon', lbl));
     sv.appendChild(document.createTextNode(String(v)));
-    if (bonusN > 0) {
+    if (bonusN) {
       const bonusEl = document.createElement('span');
       bonusEl.className = 'stat-mod-bonus';
-      bonusEl.textContent = '+' + bonusN;
+      bonusEl.textContent = bonusN > 0 ? '+' + bonusN : String(bonusN);
       bonusEl.title = 'From active modifiers';
       sv.appendChild(bonusEl);
     }
@@ -25804,7 +25804,7 @@ function fillCardDetailPanel(prefix, card, s, myId) {
   if (card.cost !== undefined) addS(t('card.cost'), effectiveCost(card, me?.hand || []), 'icon_energy.png');
   const lovecaPt = deckLovecaPointForCard(card.card_no);
   if (lovecaPt > 0) addS(t('deck.lovecaPointLabel'), lovecaPt);
-  if (card.blade != null || (stageCtx && memberModifierBladeBonus(stageCtx.member, s, stageCtx.pid, stageCtx.slot) > 0)) {
+  if (card.blade != null || (stageCtx && memberModifierBladeBonus(stageCtx.member, s, stageCtx.pid, stageCtx.slot))) {
     const printedBlade = card.printed_blade_override != null
       ? Number(card.printed_blade_override)
       : Number(card.blade || 0);
@@ -27262,6 +27262,15 @@ function tcgClientCountStageMembers(p) {
   return Object.values(p?.stage || {}).filter(Boolean).length;
 }
 
+function tcgClientStageHasHigherCostMember(p, self, excludeId = '') {
+  const selfCost = Number(self?.cost || 0);
+  return Object.values(p?.stage || {}).some((mbr) => {
+    if (!mbr) return false;
+    if (excludeId && (mbr.instance_id || '') === excludeId) return false;
+    return Number(mbr.cost || 0) > selfCost;
+  });
+}
+
 function tcgClientCountOppWait(state, pid) {
   const opp = pid === 'p1' ? 'p2' : 'p1';
   return Object.values(state?.players?.[opp]?.stage || {}).filter(m => m && !(m.active ?? true)).length;
@@ -27351,7 +27360,7 @@ function memberModifierBladeBonus(member, state, pid, slot) {
   if (!member) return 0;
   let bonus = Number(member.live_blade_bonus || 0);
   bonus += clientMemberContinuousBladeBonus(member, state, pid, slot);
-  return Math.max(0, bonus);
+  return bonus;
 }
 
 /** Extra hearts on this member from Live grants + active Always conditions (not printed). */
@@ -27540,6 +27549,16 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
         bonus += Number(ab.amount ?? 3);
       }
     }
+    if (type === 'blade_if_higher_cost_on_stage') {
+      if (tcgClientStageHasHigherCostMember(p, member, member.instance_id || '')) {
+        bonus += Number(ab.amount ?? 0);
+      }
+    }
+    if (type === 'lose_blade_if_solo_stage') {
+      if (tcgClientCountStageMembers(p) <= 1) {
+        bonus -= Number(ab.amount ?? 1);
+      }
+    }
     if (type === 'continuous_hearts_in_slot' && (ab.slot || '') === slot) {
       // hearts only — no blade
     }
@@ -27569,6 +27588,15 @@ function estimateYellBlade(s, pid) {
   );
   total += bothStages;
   return total;
+}
+
+function yellBladeHasModifier(s, pid) {
+  const p = s?.players?.[pid];
+  if (!p) return false;
+  return Object.entries(p.stage || {}).some(([slot, m]) => {
+    if (!m) return false;
+    return !!memberModifierBladeBonus(m, s, pid, slot);
+  });
 }
 
 function renderStageBoardHeartRow(container, hearts) {
@@ -27657,13 +27685,13 @@ function stageYellBladeFor(s, pid, myId) {
   // Do NOT use yell_reveal.length here. Extra Yell effects (e.g. Kurage mill)
   // stack many reveal cards while Blade stays fixed — Math.max(..., yellCount)
   // was showing 45+ "Blades" after ~3 extra draws.
-  return Math.max(
-    Number.isFinite(fromBoard) ? fromBoard : 0,
-    Number.isFinite(fromPerf) ? fromPerf : 0,
-    Number.isFinite(fromSnap) ? fromSnap : 0,
-    fromLog || 0,
-    estimated,
-  );
+  // Do NOT Math.max(server, estimated): estimated used to omit blade penalties
+  // (solo −3), so max kept the printed total. Prefer server computeYellBladeTotal,
+  // then the client estimate that now mirrors those continuous mods.
+  if (Number.isFinite(fromPerf)) return fromPerf;
+  if (Number.isFinite(fromSnap)) return fromSnap;
+  if (Number.isFinite(fromBoard)) return fromBoard;
+  return fromLog || estimated;
 }
 
 /** Client mirror of server getLiveScoreBonus for HUD/storage previews when stage_board is stale. */
@@ -32965,8 +32993,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=101"></script>
-<script src="client/js/board-render.js?v=35"></script>
+<script src="client/js/spectacle.js?v=102"></script>
+<script src="client/js/board-render.js?v=36"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

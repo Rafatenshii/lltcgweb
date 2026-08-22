@@ -1250,18 +1250,20 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
     if (mbr) {
       const stageOwnerPid = isMe ? myId : oppPid;
       const bladeBonus = memberModifierBladeBonus(mbr, s, stageOwnerPid, slot);
-      if (mbr.blade != null || bladeBonus > 0) {
+      if (mbr.blade != null || bladeBonus) {
         const printedBlade = mbr.printed_blade_override != null
           ? Number(mbr.printed_blade_override)
           : Number(mbr.blade || 0);
         const badge = mkFieldBadge('blade', 'icon_blade.png', printedBlade, 'Blade');
-        if (bladeBonus > 0) {
+        if (bladeBonus) {
           const bonusEl = document.createElement('span');
           bonusEl.className = 'badge-val-bonus';
-          bonusEl.textContent = '+' + bladeBonus;
+          bonusEl.textContent = bladeBonus > 0 ? '+' + bladeBonus : String(bladeBonus);
           badge.appendChild(bonusEl);
           badge.classList.add('score-boosted');
-          badge.title = `Printed ${printedBlade} + ${bladeBonus} from modifiers`;
+          badge.title = bladeBonus > 0
+            ? `Printed ${printedBlade} + ${bladeBonus} from modifiers`
+            : `Printed ${printedBlade} ${bladeBonus} from modifiers`;
         }
         d.appendChild(badge);
       }

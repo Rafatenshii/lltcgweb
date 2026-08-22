@@ -4701,16 +4701,30 @@ function perfCardEl(card, kind, opts = {}) {
       wd.textContent = 'Wait';
       d.appendChild(wd);
     }
-    const rawBlade = (Number(c.blade) || 0) + (Number(c.live_blade_bonus) || 0);
+    const printedBlade = Number(c.printed_blade_override != null ? c.printed_blade_override : c.blade) || 0;
+    const bladeBonus = (typeof memberModifierBladeBonus === 'function' && opts.state && opts.pid)
+      ? memberModifierBladeBonus(c, opts.state, opts.pid, opts.slot || '')
+      : Number(c.live_blade_bonus || 0);
+    const rawBlade = printedBlade + bladeBonus;
     // Wait members do not contribute blade — show 0 so the spectacle matches the board.
     const blade = inWait ? 0 : rawBlade;
-    if (blade > 0 || inWait) {
+    if (blade !== 0 || inWait || printedBlade || bladeBonus) {
       const badge = document.createElement('div');
       badge.className = 'perf-member-blade' + (inWait ? ' perf-member-blade-wait' : '');
       badge.appendChild(mkGameIcon('icon_blade.png', 'bicon sm', 'Blade'));
       const num = document.createElement('span');
+      num.className = 'perf-member-blade-num';
       num.textContent = String(blade);
-      badge.appendChild(num);
+      if (!inWait && bladeBonus) {
+        num.classList.add('perf-blade-mod');
+        const delta = document.createElement('span');
+        delta.className = 'perf-member-blade-delta';
+        delta.textContent = bladeBonus > 0 ? '+' + bladeBonus : String(bladeBonus);
+        badge.appendChild(num);
+        badge.appendChild(delta);
+      } else {
+        badge.appendChild(num);
+      }
       d.appendChild(badge);
     }
     appendPerfMemberLiveCostBadge(d, c);
@@ -5984,7 +5998,7 @@ function perfFillHearts(container, hearts) {
   if (groupHeartsByColor(hearts).length >= 4) container.classList.add('dense');
 }
 
-function perfRenderBladeRow(bladeEl, totalBlade, { pending = false } = {}) {
+function perfRenderBladeRow(bladeEl, totalBlade, { pending = false, modified = false } = {}) {
   if (!bladeEl) return null;
   bladeEl.hidden = false;
   bladeEl.classList.toggle('perf-blade-pending', pending);
@@ -5992,7 +6006,7 @@ function perfRenderBladeRow(bladeEl, totalBlade, { pending = false } = {}) {
   bladeEl.innerHTML = '';
   bladeEl.appendChild(mkGameIcon('icon_blade.png', 'bicon', 'Blade'));
   const num = document.createElement('span');
-  num.className = 'perf-blade-num';
+  num.className = 'perf-blade-num' + (modified ? ' perf-blade-mod' : '');
   num.textContent = String(totalBlade);
   bladeEl.appendChild(num);
   return num;
@@ -7057,8 +7071,12 @@ async function perfPopulateBase(ctx) {
   await Promise.all([...mineEnriched, ...oppEnriched].map(c => ensureCardImageLoaded(c)));
   mineEnriched.forEach(c => mineLives?.appendChild(perfCardEl(c, 'live', { state: next, pid: myId })));
   oppEnriched.forEach(c => oppLives?.appendChild(perfCardEl(c, 'live', { state: next, pid: oppId })));
-  Object.values(me?.stage || {}).forEach(m => { if (m) mineStage?.appendChild(perfCardEl(enrichCard(m), 'member')); });
-  Object.values(opp?.stage || {}).forEach(m => { if (m) oppStage?.appendChild(perfCardEl(enrichCard(m), 'member')); });
+  Object.entries(me?.stage || {}).forEach(([slot, m]) => {
+    if (m) mineStage?.appendChild(perfCardEl(enrichCard(m), 'member', { state: next, pid: myId, slot }));
+  });
+  Object.entries(opp?.stage || {}).forEach(([slot, m]) => {
+    if (m) oppStage?.appendChild(perfCardEl(enrichCard(m), 'member', { state: next, pid: oppId, slot }));
+  });
   perfSetYellSideInstant(ctx, myId, false);
   perfSetYellSideInstant(ctx, oppId, false);
   requestAnimationFrame(() => layoutPerfLiveRows());
@@ -7069,6 +7087,7 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
   const stageHearts = perfRawStageHeartsForPlayer(ctx, pid);
   const yellCards = ctx.next.yell_reveal?.[pid] || [];
   const totalBlade = stageYellBladeFor(ctx.next, pid, ctx.myId);
+  const bladeModified = typeof yellBladeHasModifier === 'function' && yellBladeHasModifier(ctx.next, pid);
   const heartsEl = el(isMine ? 'perf-mine-hearts' : 'perf-opp-hearts');
   const bladeEl = el(isMine ? 'perf-mine-blade' : 'perf-opp-blade');
   const deckEl = el(isMine ? 'perf-mine-deck' : 'perf-opp-deck');
@@ -7111,7 +7130,7 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
     if (yellDrawTotal && liveCardsHaveDrawPerYellDraw(liveCards)) {
       perfBumpYellDrawPending(deckEl, pid, yellDrawTotal, { animate: false });
     }
-    perfRenderBladeRow(bladeEl, 0, { pending: false });
+    perfRenderBladeRow(bladeEl, 0, { pending: false, modified: bladeModified });
     const finalHearts = mergeHeartStatRows(
       stageHearts,
       perfContinuousHeartsForPlayer(ctx, pid),
@@ -7124,7 +7143,7 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
     yellRow.innerHTML = '';
     yellRow.style.transform = '';
     yellRow.classList.remove('perf-yell-many');
-    perfRenderBladeRow(bladeEl, totalBlade, { pending: true });
+    perfRenderBladeRow(bladeEl, totalBlade, { pending: true, modified: bladeModified });
     perfFillHearts(heartsEl, stageHearts);
   }
 }
@@ -7294,6 +7313,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
   const stageHearts = perfRawStageHeartsForPlayer(ctx, pid);
   const yellCards = ctx.next.yell_reveal?.[pid] || [];
   const totalBlade = stageYellBladeFor(ctx.next, pid, ctx.myId);
+  const bladeModified = typeof yellBladeHasModifier === 'function' && yellBladeHasModifier(ctx.next, pid);
   const heartsEl = el(isMine ? 'perf-mine-hearts' : 'perf-opp-hearts');
   const bladeEl = el(isMine ? 'perf-mine-blade' : 'perf-opp-blade');
   const deckEl = el(isMine ? 'perf-mine-deck' : 'perf-opp-deck');
@@ -7313,7 +7333,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
   if (!onlyNew) {
     shown.clear();
     perfFillHearts(heartsEl, stageHearts);
-    const bladeNum = perfRenderBladeRow(bladeEl, totalBlade, { pending: false });
+    const bladeNum = perfRenderBladeRow(bladeEl, totalBlade, { pending: false, modified: bladeModified });
     yellRow.innerHTML = '';
     var grants = perfContinuousHeartGrantsForPlayer(ctx, pid);
     var grantHeartCount = grants.reduce((n, g) => n + (g.hearts?.length || 0), 0);
@@ -7351,7 +7371,7 @@ async function perfAnimateYellSide(ctx, pid, opts = {}) {
       if (hearts.length) await perfSleepYell(120, introPace);
     }
   } else {
-    var bladeNum = bladeEl.querySelector('.perf-blade-num') || perfRenderBladeRow(bladeEl, totalBlade, { pending: false });
+    var bladeNum = bladeEl.querySelector('.perf-blade-num') || perfRenderBladeRow(bladeEl, totalBlade, { pending: false, modified: bladeModified });
     var grants = [];
     var yellSteps = Math.max(yellCards.length, totalBlade, 1);
     var ownedPool = buildHeartPoolFromRows(
