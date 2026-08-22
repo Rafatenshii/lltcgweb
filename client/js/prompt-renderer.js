@@ -3758,10 +3758,28 @@ global.renderPrompt = function renderPrompt(s, myId){
     return null;
   }
 
-  function isInsideSkillPromptWindow(target, overlay) {
-    if (!overlay || !target || !(target instanceof Node)) return false;
-    const shell = overlay.querySelector('.mbox, .hand-pick-shell');
-    return !!(shell && (shell === target || shell.contains(target)));
+  function eventEl(target) {
+    if (target instanceof Element) return target;
+    if (target instanceof Node) return target.parentElement;
+    return null;
+  }
+
+  /** True when the event is on the skill window itself (keep r-click card info there). */
+  function isInsideSkillPromptWindow(target) {
+    const node = eventEl(target);
+    if (!node || typeof node.closest !== 'function') return false;
+    if (node.closest('#modal-card.open, #modal-card .mbox')) return true;
+    return !!node.closest('.mbox, .hand-pick-shell, .prompt-branch-box');
+  }
+
+  function peekBlockedByOtherUi() {
+    if (document.body.classList.contains('perf-spectacle-active')) return true;
+    const get = global.el || ((id) => document.getElementById(id));
+    if (get('modal-card')?.classList.contains('open')) return true;
+    if (get('overlay-win')?.classList.contains('open')) return true;
+    if (get('overlay-coin')?.classList.contains('open')) return true;
+    if (get('overlay-mull')?.classList.contains('open')) return true;
+    return false;
   }
 
   /**
@@ -3769,8 +3787,8 @@ global.renderPrompt = function renderPrompt(s, myId){
    * (hide prompt + dim/blur). Release restores the prompt.
    */
   global.initPromptBoardPeek = function initPromptBoardPeek() {
-    if (global.G?._promptBoardPeekBound) return;
-    if (global.G) global.G._promptBoardPeekBound = true;
+    if (global._promptBoardPeekBound) return;
+    global._promptBoardPeekBound = true;
 
     let peekActive = false;
     let peekPointerId = null;
@@ -3785,40 +3803,43 @@ global.renderPrompt = function renderPrompt(s, myId){
 
     function startPeek(pointerId) {
       peekActive = true;
-      peekPointerId = pointerId;
-      suppressContextMenuUntil = performance.now() + 800;
+      peekPointerId = pointerId == null ? null : pointerId;
+      suppressContextMenuUntil = performance.now() + 1200;
       document.body.classList.add('prompt-board-peek', 'prompt-board-peek-holding');
     }
 
-    document.addEventListener('pointerdown', (e) => {
+    function tryStartFromEvent(e) {
       if (e.button !== 2) return;
-      const ov = openBoardPeekPromptOverlay();
-      if (!ov) return;
-      // Card-info modal sits above prompts — don't steal its right-click.
-      if (global.el?.('modal-card')?.classList.contains('open')) return;
-      if (isInsideSkillPromptWindow(e.target, ov)) return;
-
+      if (!openBoardPeekPromptOverlay()) return;
+      if (peekBlockedByOtherUi()) return;
+      if (isInsideSkillPromptWindow(e.target)) return;
       startPeek(e.pointerId);
-      try {
-        document.documentElement.setPointerCapture(e.pointerId);
-      } catch (_) { /* ignore */ }
-      e.preventDefault();
-    }, true);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+    }
 
-    const onRelease = (e) => {
+    function onRelease(e) {
       if (!peekActive) return;
-      if (peekPointerId != null && e.pointerId !== peekPointerId) return;
-      if (e.type === 'pointerup' && e.button !== 2 && e.pointerId !== peekPointerId) return;
-      try {
-        if (peekPointerId != null) {
-          document.documentElement.releasePointerCapture(peekPointerId);
-        }
-      } catch (_) { /* ignore */ }
+      if (e && peekPointerId != null && e.pointerId != null && e.pointerId !== peekPointerId) {
+        return;
+      }
+      if (e && e.type === 'pointerup' && e.button != null && e.button !== 2 && e.pointerId !== peekPointerId) {
+        return;
+      }
       endPeek();
-    };
+    }
 
-    document.addEventListener('pointerup', onRelease, true);
-    document.addEventListener('pointercancel', onRelease, true);
+    // Capture on window so release still fires after the dim layer is hidden.
+    // Do not setPointerCapture on <html> — browsers drop it immediately (lostpointercapture → peek never sticks).
+    window.addEventListener('pointerdown', tryStartFromEvent, true);
+    window.addEventListener('mousedown', (e) => {
+      if (window.PointerEvent) return;
+      tryStartFromEvent(e);
+    }, true);
+    window.addEventListener('pointerup', onRelease, true);
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 2) onRelease(e);
+    }, true);
+    window.addEventListener('pointercancel', onRelease, true);
     window.addEventListener('blur', endPeek);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') endPeek();
@@ -3828,12 +3849,11 @@ global.renderPrompt = function renderPrompt(s, myId){
       if (!peekActive && performance.now() >= suppressContextMenuUntil) return;
       const ov = openBoardPeekPromptOverlay();
       if (!ov) return;
-      if (isInsideSkillPromptWindow(e.target, ov)) return;
+      if (isInsideSkillPromptWindow(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
     }, true);
 
-    // If the prompt closes while peeking, clear the peek class.
     const mo = new MutationObserver(() => {
       if (peekActive && !openBoardPeekPromptOverlay()) endPeek();
     });

@@ -2737,9 +2737,16 @@ html.tcg-portrait-play .overlay.open.hand-pick-overlay{
   box-sizing:border-box;
 }
 html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open,
-html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open{
-  align-items:center!important;
-  justify-content:center!important;
+html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open,
+html.tcg-portrait-play body.prompt-board-peek #overlay-prompt.open,
+html.tcg-portrait-play body.prompt-board-peek #overlay-pick.open,
+html.tcg-portrait-play body.prompt-board-peek #overlay-hand-pick.open,
+html.tcg-portrait-play body.prompt-board-peek #overlay-heart.open,
+html.tcg-portrait-play body.prompt-board-peek #overlay-surveil.open{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  background:transparent!important;
 }
 html.tcg-portrait-play .overlay.open .mbox,
 html.tcg-portrait-play .overlay.open .hand-pick-shell,
@@ -2778,8 +2785,9 @@ html.tcg-portrait-play .hand-pick-actions{
 }
 html.tcg-portrait-play body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox,
 html.tcg-portrait-play body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell{
-  max-height:min(78dvh,680px);
-  margin:0 auto!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
 }
 
 /* Headings + copy centered */

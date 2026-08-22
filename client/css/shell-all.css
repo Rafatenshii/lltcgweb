@@ -3463,6 +3463,26 @@ body:has(.overlay.skill-hand-preserve.open)::before{
   pointer-events:none;
 }
 .overlay.skill-hand-preserve.open .mbox{pointer-events:auto}
+body.prompt-board-peek .overlay.skill-hand-preserve.open,
+body.prompt-board-peek .overlay.hand-pick-overlay.open,
+body.prompt-board-peek #overlay-prompt.open,
+body.prompt-board-peek #overlay-pick.open,
+body.prompt-board-peek #overlay-hand-pick.open,
+body.prompt-board-peek #overlay-heart.open,
+body.prompt-board-peek #overlay-surveil.open{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+  background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+body.prompt-board-peek:has(.overlay.skill-hand-preserve.open)::before,
+body.prompt-board-peek:has(.overlay.hand-pick-overlay.open)::before{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+  background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  mask-image:none!important;-webkit-mask-image:none!important;
+}
+body.prompt-board-peek .overlay.hand-pick-overlay.open .hand-pick-shell,
+body.prompt-board-peek .overlay.skill-hand-preserve.open .mbox{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+}
 body:has(.overlay.skill-hand-preserve.open) #screen-game .my-hand-strip{
   position:relative;z-index:915;
 }
