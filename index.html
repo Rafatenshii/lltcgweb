@@ -8093,6 +8093,31 @@ function deckCounts() {
   };
 }
 
+/** Saved-deck display/storage order: Member → Live → Energy, then card number. */
+function savedDeckTypeRank(cardNo) {
+  const c = G.allCards[cardNo] || {};
+  const t = c.card_type || '';
+  const en = String(c.card_type_en || '').toLowerCase();
+  if (t === 'メンバー' || en === 'member') return 0;
+  if (t === 'ライブ' || en === 'live') return 1;
+  if (t === 'エネルギー' || en === 'energy') return 2;
+  return 3;
+}
+
+function sortSavedDeckCardNos(nos) {
+  return (nos || []).slice().sort((a, b) => {
+    const ra = savedDeckTypeRank(a);
+    const rb = savedDeckTypeRank(b);
+    if (ra !== rb) return ra - rb;
+    return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+  });
+}
+
+function normalizeSavedDeckLists() {
+  A.deckMain = sortSavedDeckCardNos(A.deckMain);
+  A.deckEnergy = sortSavedDeckCardNos(A.deckEnergy);
+}
+
 function countInDeck(cardNo) {
   return A.deckMain.filter(n => n === cardNo).length + A.deckEnergy.filter(n => n === cardNo).length;
 }
@@ -8546,6 +8571,7 @@ async function apiExperimentCall(action, body = {}) {
 function applyExperimentDeckToBuilder(data) {
   A.deckMain = [...(data.main_deck || [])];
   A.deckEnergy = [...(data.energy_deck || [])];
+  normalizeSavedDeckLists();
   if (data && Object.prototype.hasOwnProperty.call(data, 'sleeve_id')) {
     A.deckSleeveId = normalizeDeckSleeveId(data.sleeve_id);
   }
@@ -9998,6 +10024,7 @@ function renderExperimentPoolChunked(searchQ, savedScroll = null) {
 }
 
 function renderDeckCurrentList(experiment) {
+  normalizeSavedDeckLists();
   const c = deckCounts();
   const statsEl = el('deck-current-stats');
   if (statsEl) {
@@ -12791,6 +12818,7 @@ async function importAccountDeckFromDecklog(raw) {
 
 async function saveExperimentDeckPassword() {
   el('deck-err').textContent = '';
+  normalizeSavedDeckLists();
   if (!deckListsAreLegal(A.deckMain, A.deckEnergy)) {
     const c = deckCounts();
     el('deck-err').textContent = c.lovecaPoints > c.lovecaLimit
@@ -12854,6 +12882,7 @@ async function saveExperimentDeckPassword() {
 
 async function saveExperimentPresetToAccount() {
   el('deck-err').textContent = '';
+  normalizeSavedDeckLists();
   if (!deckListsAreLegal(A.deckMain, A.deckEnergy)) {
     const c = deckCounts();
     el('deck-err').textContent = c.lovecaPoints > c.lovecaLimit
@@ -12907,6 +12936,7 @@ async function saveDeckPreset() {
     const sleeveId = normalizeDeckSleeveId(A.deckSleeveId);
     const playmatId = normalizeDeckPlaymatId(A.deckPlaymatId);
     const playmatBrightness = normalizeDeckPlaymatBrightness(A.deckPlaymatBrightness);
+    normalizeSavedDeckLists();
     await accountPost('deck_save', {
       slot: A.deckSlot,
       name: el('inp-deck-name').value.trim() || 'My Deck',
@@ -13058,6 +13088,7 @@ async function equipDeck() {
   try {
     const sleeveId = normalizeDeckSleeveId(A.deckSleeveId);
     if (deckListsAreLegal(A.deckMain, A.deckEnergy)) {
+      normalizeSavedDeckLists();
       await accountPost('deck_save', {
         slot: A.deckSlot,
         name: el('inp-deck-name')?.value.trim() || 'My Deck',
