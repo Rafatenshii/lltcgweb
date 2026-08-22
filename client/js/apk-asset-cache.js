@@ -139,7 +139,7 @@
     if (!isNativeApk()) return;
     if (!('serviceWorker' in global.navigator)) return;
     try {
-      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=3', { scope: './' });
+      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=4', { scope: './' });
     } catch (e) { /* ignore */ }
   }
 
@@ -147,6 +147,22 @@
     const cache = await openCache();
     if (!cache) return null;
     return cache.match(absUrl(url));
+  }
+
+  async function blobUrlFor(url) {
+    if (!isNativeApk() || !url) return '';
+    const abs = absUrl(url);
+    if (state.blobMap[abs]) return state.blobMap[abs];
+    try {
+      const hit = await cacheMatch(abs);
+      if (!hit || !hit.ok) return '';
+      const blob = await hit.blob();
+      const obj = URL.createObjectURL(blob);
+      state.blobMap[abs] = obj;
+      return obj;
+    } catch (e) {
+      return '';
+    }
   }
 
   async function cachePutUrl(url) {
@@ -501,6 +517,7 @@
     setMode,
     getStatus,
     ensureCached,
+    blobUrlFor,
     rewriteSync,
     pauseFull,
     resumeFull,

@@ -282,14 +282,24 @@
     if (!stampAudioEnabled()) return;
     const src = stamp.voice ? assetUrl(stamp.voice) : (stamp.se ? assetUrl(stamp.se) : '');
     if (!src) return;
+    const start = (playSrc) => {
+      try {
+        if (!voiceAudio) voiceAudio = new Audio();
+        voiceAudio.pause();
+        voiceAudio.src = playSrc;
+        voiceAudio.volume = getStampVoiceVolume();
+        var p = voiceAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(function () {});
+      } catch (e) {}
+    };
     try {
-      if (!voiceAudio) voiceAudio = new Audio();
-      voiceAudio.pause();
-      voiceAudio.src = src;
-      voiceAudio.volume = getStampVoiceVolume();
-      var p = voiceAudio.play();
-      if (p && typeof p.catch === 'function') p.catch(function () {});
-    } catch (e) {}
+      const Apk = global.LLTCG_APK_ASSETS;
+      if (Apk && typeof Apk.blobUrlFor === 'function' && typeof Apk.isNativeApk === 'function' && Apk.isNativeApk()) {
+        Apk.blobUrlFor(src).then((blobUrl) => start(blobUrl || src)).catch(() => start(src));
+        return;
+      }
+    } catch (e2) { /* network src */ }
+    start(src);
   }
 
   function stampPopKey(pop) {

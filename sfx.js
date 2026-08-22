@@ -93,12 +93,26 @@
     return null;
   }
 
+  function attachCachedSrc(file, audio) {
+    try {
+      var Apk = window.LLTCG_APK_ASSETS;
+      if (!Apk || typeof Apk.blobUrlFor !== 'function') return;
+      if (typeof Apk.isNativeApk === 'function' && !Apk.isNativeApk()) return;
+      Apk.blobUrlFor(BASE + file).then(function (blobUrl) {
+        if (!blobUrl || !audio) return;
+        audio.src = blobUrl;
+        try { audio.load(); } catch (e2) { /* ignore */ }
+      }).catch(function () { /* network src remains */ });
+    } catch (e) { /* ignore */ }
+  }
+
   function warmFile(file) {
     if (!file) return;
     if (!pool[file]) {
       var a = new Audio(BASE + file);
       a.preload = 'auto';
       pool[file] = a;
+      attachCachedSrc(file, a);
     }
   }
 

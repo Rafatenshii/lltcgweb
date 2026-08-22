@@ -59,6 +59,9 @@ final class ApkAssetManifestTest extends TestCase
         $this->assertStringNotContainsString('status: 504', $sw);
         $this->assertStringContainsString('_catalog', $sw);
         $this->assertStringContainsString('api.php', $sw);
+        $this->assertStringContainsString('Accept-Ranges', $sw);
+        $this->assertStringContainsString('status: 206', $sw);
+        $this->assertStringContainsString('destination === \'audio\'', $sw);
     }
 
     public function testBuildScriptMatchesCommittedManifestCount(): void
