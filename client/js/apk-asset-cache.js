@@ -6,6 +6,7 @@
   'use strict';
 
   const MODE_KEY = 'tcg_apk_asset_mode';
+  const COMPLETE_KEY = 'tcg_apk_full_complete';
   const CACHE_NAME = 'lltcg-apk-assets-v1';
   const MODE_URL = './apk-asset-mode.json';
   const MANIFEST_URL = 'apk_asset_manifest.json?v=1';
@@ -276,11 +277,17 @@
         } catch (e) {
           state.progress.failed++;
         }
-        if (idx % 8 === 0) notify();
+        if (idx % 2 === 0) notify();
       }
     };
     await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
     state.running = false;
+    const finished = state.progress.total > 0
+      && (state.progress.done + state.progress.failed) >= state.progress.total
+      && !state.paused;
+    if (finished) {
+      try { localStorage.setItem(COMPLETE_KEY, '1'); } catch (e) { /* ignore */ }
+    }
     notify();
   }
 
@@ -291,6 +298,7 @@
     await writeModeRecord(mode);
     notify();
     if (mode === 'full') {
+      try { localStorage.removeItem(COMPLETE_KEY); } catch (e) { /* ignore */ }
       void runFullQueue();
     } else {
       state.paused = true;
@@ -316,6 +324,7 @@
     state.fsIndex = Object.create(null);
     persistFsIndex();
     state.progress = { done: 0, total: 0, failed: 0 };
+    try { localStorage.removeItem(COMPLETE_KEY); } catch (e) { /* ignore */ }
     notify();
   }
 
@@ -337,6 +346,75 @@
     if (global.LLTCG_PLAYMATS) wrap(global.LLTCG_PLAYMATS, 'imageUrl');
   }
 
+  function isFullComplete() {
+    try { return localStorage.getItem(COMPLETE_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function pctOf(st) {
+    const tot = st.progress.total || 0;
+    const n = (st.progress.done || 0) + (st.progress.failed || 0);
+    if (tot <= 0) return st.running ? 1 : 0;
+    return Math.max(0, Math.min(100, Math.round((n / tot) * 100)));
+  }
+
+  function setBar(el, fill, pct) {
+    if (!el || !fill) return;
+    fill.style.width = pct + '%';
+    el.setAttribute('aria-valuenow', String(pct));
+    el.hidden = false;
+  }
+
+  function showDownloadOverlay(active) {
+    const overlay = document.getElementById('apk-asset-first-launch');
+    const choice = document.getElementById('apk-asset-choice-block');
+    const prog = document.getElementById('apk-asset-progress-block');
+    if (!overlay) return;
+    overlay.hidden = !active;
+    if (choice) choice.hidden = active;
+    if (prog) prog.hidden = !active;
+    if (active && typeof global.LLTCG_I18N?.applyI18n === 'function') {
+      global.LLTCG_I18N.applyI18n(overlay);
+    }
+  }
+
+  function paintProgress(st) {
+    const pct = pctOf(st);
+    const downloading = st.mode === 'full' && (st.running || (st.progress.total > 0 && !isFullComplete()));
+    const overlay = document.getElementById('apk-asset-first-launch');
+    const choice = document.getElementById('apk-asset-choice-block');
+    if (downloading && overlay) {
+      overlay.hidden = false;
+      if (choice) choice.hidden = true;
+      const prog = document.getElementById('apk-asset-progress-block');
+      if (prog) prog.hidden = false;
+      setBar(document.getElementById('apk-asset-bar'), document.getElementById('apk-asset-bar-fill'), pct);
+      const lab = document.getElementById('apk-asset-bar-label');
+      if (lab) {
+        const bits = [tApk('options.apkAssets.percent', '{pct}%', { pct })];
+        if (st.progress.total) {
+          bits.push(tApk('options.apkAssets.progress', '{done} / {total} files', {
+            done: st.progress.done,
+            total: st.progress.total,
+          }));
+        }
+        if (st.paused) bits.push(tApk('options.apkAssets.paused', 'paused'));
+        lab.textContent = bits.join(' · ');
+      }
+    } else if (overlay && getMode()) {
+      overlay.hidden = true;
+    }
+    const optBar = document.getElementById('options-apk-asset-bar');
+    const optFill = document.getElementById('options-apk-asset-bar-fill');
+    if (optBar && optFill) {
+      if (st.mode === 'full' && st.progress.total) {
+        optBar.hidden = false;
+        setBar(optBar, optFill, pct);
+      } else {
+        optBar.hidden = true;
+      }
+    }
+  }
+
   function bindUi() {
     const overlay = document.getElementById('apk-asset-first-launch');
     const opts = document.getElementById('options-apk-assets-row');
@@ -354,7 +432,11 @@
     state.mode = mode;
     if (!mode && overlay) {
       overlay.hidden = false;
-    } else if (overlay) {
+      const choice = document.getElementById('apk-asset-choice-block');
+      const prog = document.getElementById('apk-asset-progress-block');
+      if (choice) choice.hidden = false;
+      if (prog) prog.hidden = true;
+    } else if (overlay && !(mode === 'full' && !isFullComplete())) {
       overlay.hidden = true;
     }
     const btnFull = document.getElementById('btn-apk-assets-full');
@@ -365,8 +447,9 @@
     const btnResume = document.getElementById('btn-apk-opt-resume');
     const btnClear = document.getElementById('btn-apk-opt-clear');
     const choose = async (m) => {
+      if (m === 'full') showDownloadOverlay(true);
       await setMode(m);
-      if (overlay) overlay.hidden = true;
+      if (m !== 'full' && overlay) overlay.hidden = true;
     };
     btnFull?.addEventListener('click', () => void choose('full'));
     btnDemand?.addEventListener('click', () => void choose('on_demand'));
@@ -378,8 +461,12 @@
       const msg = tApk('options.apkAssets.clearConfirm', 'Delete downloaded card art and cosmetics from this device?');
       if (global.confirm(msg)) void clearCache();
     });
-    onStatus(updateOptionsStatus);
+    onStatus((st) => {
+      updateOptionsStatus(st);
+      paintProgress(st);
+    });
     updateOptionsStatus(getStatus());
+    paintProgress(getStatus());
     if (mode === 'full') void runFullQueue();
   }
 

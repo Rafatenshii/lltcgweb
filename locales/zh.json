@@ -503,6 +503,8 @@
       "title": "游戏数据（Android）",
       "lead": "可将卡图和外观保存在本机。安装包仍然很小；完整下载约占用 1.3 GB。对战仍需联网。",
       "wifi": "完整下载请使用 Wi‑Fi。",
+      "downloading": "正在下载游戏数据…",
+      "percent": "{pct}%",
       "full": "全部下载",
       "demand": "需要时再下载",
       "modeFull": "全部下载",

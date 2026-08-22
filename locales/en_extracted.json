@@ -606,6 +606,8 @@
       "title": "Game data (Android)",
       "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
       "wifi": "Use Wi‑Fi for the full download.",
+      "downloading": "Downloading game data…",
+      "percent": "{pct}%",
       "full": "Download all",
       "demand": "Download when needed",
       "modeFull": "Download all",
