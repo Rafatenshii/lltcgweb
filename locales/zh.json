@@ -499,6 +499,22 @@
     "discordPresenceLink": "Link Discord for Presence",
     "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
     "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+    "apkAssets": {
+      "title": "游戏数据（Android）",
+      "lead": "可将卡图和外观保存在本机。安装包仍然很小；完整下载约占用 1.3 GB。对战仍需联网。",
+      "wifi": "完整下载请使用 Wi‑Fi。",
+      "full": "全部下载",
+      "demand": "需要时再下载",
+      "modeFull": "全部下载",
+      "modeDemand": "需要时再下载",
+      "modeUnset": "尚未选择",
+      "progress": "{done} / {total} 个文件",
+      "paused": "已暂停",
+      "pause": "暂停下载",
+      "resume": "继续下载",
+      "clear": "删除已下载数据",
+      "clearConfirm": "删除本机上的卡图和外观吗？"
+    },
     "foil": "Enhanced textures",
     "leaveActiveConfirm": "Leave the active match and return to the hub?",
     "reset": {
