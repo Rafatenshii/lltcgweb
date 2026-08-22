@@ -363,21 +363,20 @@
     const rawW = board.clientWidth || global.innerWidth || 360;
     // Tablets: keep a phone-like column so the mat does not stretch edge-to-edge.
     const layoutW = size === 'tablet' ? Math.min(rawW, 720) : rawW;
-    const pad = size === 'tablet' ? 24 : 16;
-    let cardMul = 1.5;
-    let mineFrac = 0.58;
+    let cardMul = 1.55;
+    let mineFrac = 0.70;
     let oppFrac = 0.50;
     if (size === 'square') {
-      cardMul = 1.22;
-      mineFrac = 0.46;
+      cardMul = 1.28;
+      mineFrac = 0.58;
       oppFrac = 0.40;
     } else if (size === 'tablet') {
-      cardMul = 1.38;
-      mineFrac = 0.55;
+      cardMul = 1.42;
+      mineFrac = 0.62;
       oppFrac = 0.48;
     }
     const cardSlots = 5;
-    const cardW = Math.max(44, ((layoutW - pad) / cardSlots) * cardMul);
+    const cardW = Math.max(44, (layoutW / cardSlots) * cardMul);
     const cardH = cardW * (88 / 63);
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');

@@ -1176,11 +1176,12 @@ html.tcg-portrait-play{
   /* Keep the original large hand cards. The fan overlaps them into five visible
      positions; later cards extend into horizontal scroll. */
   --p-hand-visible: 5;
-  --p-hand-pad-x: 8px;
-  --p-card-w: calc(((100vw - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.5);
+  --p-hand-pad-x: 0px;
+  --p-card-w: calc((100vw / var(--p-hand-visible)) * 1.55);
   --p-card-h: calc(var(--p-card-w) * 88 / 63);
-  /* Strip rows are shorter than cards so hands peek over the stage (PC energy-deck overlap) */
-  --p-hand-mine: calc(var(--p-card-h) * 0.58);
+  /* Strip shorter than the card so the fan peeks over the stage, but tall
+     enough that card bottoms stay above the home indicator. */
+  --p-hand-mine: calc(var(--p-card-h) * 0.70);
   --p-hand-opp: calc(var(--p-card-h) * 0.50);
   --p-card-w-opp: calc(var(--p-card-w) * 0.92);
   --p-gap: 0px;
@@ -1203,9 +1204,9 @@ html.tcg-portrait-play{
 
 /* Square foldables: reclaim vertical space so both fields stay playable. */
 html.tcg-portrait-play.tcg-portrait-square{
-  --p-hand-pad-x: 10px;
-  --p-card-w: calc(((min(100vw, 100%) - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.22);
-  --p-hand-mine: calc(var(--p-card-h) * 0.46);
+  --p-hand-pad-x: 0px;
+  --p-card-w: calc((min(100vw, 100%) / var(--p-hand-visible)) * 1.28);
+  --p-hand-mine: calc(var(--p-card-h) * 0.58);
   --p-hand-opp: calc(var(--p-card-h) * 0.40);
   --p-field-min: 96px;
   --p-hud-max: 18vh;
@@ -1215,10 +1216,10 @@ html.tcg-portrait-play.tcg-portrait-square{
 
 /* Tablets + mouse-desktop portrait: cap content width and keep stage cells readable. */
 html.tcg-portrait-play.tcg-portrait-tablet{
-  --p-hand-pad-x: 16px;
+  --p-hand-pad-x: 0px;
   --p-board-max-w: min(720px, 100%);
-  --p-card-w: calc(((min(720px, 100vw) - (var(--p-hand-pad-x) * 2)) / var(--p-hand-visible)) * 1.38);
-  --p-hand-mine: calc(var(--p-card-h) * 0.55);
+  --p-card-w: calc((min(720px, 100vw) / var(--p-hand-visible)) * 1.42);
+  --p-hand-mine: calc(var(--p-card-h) * 0.62);
   --p-hand-opp: calc(var(--p-card-h) * 0.48);
   --p-field-min: 160px;
   --p-hud-max: 22vh;
@@ -1273,8 +1274,8 @@ html.tcg-portrait-play #portrait-board{
     "my-field"
     "my-hand";
   gap: var(--p-gap);
-  /* Flush to top/bottom — no hand margins (safe-area only on sides if needed) */
-  padding: 0 var(--p-hand-pad-x);
+  /* Hands bleed past the viewport edges; lift the bottom row above the home bar. */
+  padding: 0 0 calc(14px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   background: #0a1220;
   position: relative;
@@ -1379,11 +1380,10 @@ html.tcg-portrait-play #screen-game .hand-strip{
   padding:0!important;
   background:transparent!important;
   border:none!important;
-  /* Allow cards to overhang into the field; keep horizontal scroll */
-  overflow-x:auto!important;
+  /* Bleed off the left/right of the screen instead of inset scroll gutters */
+  overflow-x:visible!important;
   overflow-y:visible!important;
   z-index:7!important;
-  -webkit-overflow-scrolling:touch;
   touch-action:pan-x;
   scrollbar-width:none;
 }
@@ -1394,8 +1394,8 @@ html.tcg-portrait-play #screen-game .hand-strip{
 html.tcg-portrait-play .pb-my-hand .my-hand-strip,
 html.tcg-portrait-play #screen-game .pb-my-hand .hand-strip{
   --p-raise-room: 28px;
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
+  overflow-x:visible!important;
+  overflow-y:visible!important;
   padding-top: var(--p-raise-room)!important;
   margin-top: calc(var(--p-raise-room) * -1)!important;
   height: calc(100% + var(--p-raise-room))!important;
@@ -1404,7 +1404,7 @@ html.tcg-portrait-play #screen-game .pb-my-hand .hand-strip{
 }
 html.tcg-portrait-play .pb-opp-hand .opp-hand-strip{
   align-items:flex-start;
-  overflow-x:auto!important;
+  overflow-x:visible!important;
   overflow-y:visible!important;
   touch-action:pan-x;
 }
@@ -1426,7 +1426,7 @@ html.tcg-portrait-play #hand-row{
   height:auto!important;
   min-height:0!important;
   margin:0 auto;
-  padding:0 4px;
+  padding:0;
   box-sizing:border-box;
   overflow:visible!important;
 }
