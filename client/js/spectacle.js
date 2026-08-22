@@ -24,6 +24,17 @@ function isSlideshowTutorial() {
  * Live interactive tutorial: pause the Performance show until the current guide
  * step's spectacle_gate matches (player taps Next), then continue.
  */
+function tutorialLiveSpectacleNeedsHold() {
+  if (!G.tutorialLive || !G.isTutorial) return false;
+  const st = G.tutorialData?.steps?.[G.tutorialStep];
+  if (!st) return false;
+  if (st.spectacle_gate) return true;
+  if (st.kind === 'watch' && st.goal?.type === 'live_judge_reached') return true;
+  // cpu_after is still ending LIVE set — Performance teaching steps are next.
+  if (st.goal?.type === 'end_live_set' || st.id === 'set_live') return true;
+  return false;
+}
+
 async function awaitTutorialLiveSpectacleGate(gate) {
   if (!G.tutorialLive || !G.isTutorial) return;
   const order = ['intro', 'hearts', 'hearts2', 'pre_yell'];
@@ -66,8 +77,10 @@ async function awaitTutorialLiveSpectacleGate(gate) {
       await sleep(100);
       continue;
     }
-    // Guide already past this gate (or no gate) — continue the show.
-    return;
+    // Already past this gate.
+    if (stIdx > gateIdx) return;
+    // No spectacle_gate yet (cpu_after / set_live) — do not fast-forward the show.
+    await sleep(100);
   }
 }
 
@@ -4271,7 +4284,8 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     return false;
   }
   const showTurn = opts.forceShowTurn ?? inferLiveShowTurn(perfPrev, next);
-  if (liveShowPerformancePresentedForTurn(showTurn) || liveSpectacleDoneForTurn(showTurn)) {
+  if (!tutorialLiveSpectacleNeedsHold()
+      && (liveShowPerformancePresentedForTurn(showTurn) || liveSpectacleDoneForTurn(showTurn))) {
     TCG_DEBUG.log('live', 'spectacle skip: already presented this turn', { showTurn });
     savePerfSpectacleDoneKey(perfPrev, next, showTurn);
     markLiveShowPerformancePresented(showTurn);
@@ -4307,7 +4321,12 @@ async function runPerformanceSpectacle(perfPrev, next, myId, opts = {}) {
     await perfSleep(500);
     ran = G._perfSpectaclePhase === 'judge';
   } finally {
-    perfCloseSpectacle();
+    const holdTut = typeof tutorialLiveSpectacleNeedsHold === 'function'
+      && tutorialLiveSpectacleNeedsHold()
+      && G._perfSpectaclePhase
+      && G._perfSpectaclePhase !== 'closed'
+      && perfPhaseIdx(G._perfSpectaclePhase) < perfPhaseIdx('judge');
+    if (!holdTut) perfCloseSpectacle();
     G._skipJudgeOverlay = false;
     if (ran) {
       markLiveShowPerformancePresented(showTurn);
@@ -7798,8 +7817,10 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
   const tgtIdx = perfPhaseIdx(targetPhase);
   const yellOppIdx = perfPhaseIdx('yell_opp');
   const showTurn = liveShowTurnFromBoards(next, prev);
-  const perfYellDone = liveShowPerformancePresentedForTurn(showTurn)
-    || liveSpectacleDoneForTurn(showTurn);
+  const tutHoldIntro = typeof tutorialLiveSpectacleNeedsHold === 'function'
+    && tutorialLiveSpectacleNeedsHold();
+  const perfYellDone = !tutHoldIntro && (liveShowPerformancePresentedForTurn(showTurn)
+    || liveSpectacleDoneForTurn(showTurn));
   // Once-per-turn Performance: chrome close / later stage seeks must not re-fly yells.
   if (animate && perfYellDone && tgtIdx >= yellOppIdx && (cur === 'closed' || curIdx < yellOppIdx)) {
     TCG_DEBUG.log('live', 'perfSeek skip yell climb (already presented)', {
@@ -8265,6 +8286,9 @@ function liveShowHeartsResolvedFromBoard(board) {
     return true;
   }
   if (board.phase === 'live_success_effects') return true;
+  if (typeof tutorialLiveSpectacleNeedsHold === 'function' && tutorialLiveSpectacleNeedsHold()) {
+    return false;
+  }
   if (typeof liveRoundPerfLogsComplete === 'function' && liveRoundPerfLogsComplete(board)) {
     return true;
   }
