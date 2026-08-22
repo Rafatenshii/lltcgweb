@@ -9,7 +9,7 @@
   const COMPLETE_KEY = 'tcg_apk_full_complete';
   const CACHE_NAME = 'lltcg-apk-assets-v1';
   const MODE_URL = './apk-asset-mode.json';
-  const MANIFEST_URL = 'apk_asset_manifest.json?v=1';
+  const MANIFEST_URL = 'apk_asset_manifest.json?v=2';
   const FS_DIR = 'apk-assets';
   const CONCURRENCY = 4;
 
@@ -139,7 +139,7 @@
     if (!isNativeApk()) return;
     if (!('serviceWorker' in global.navigator)) return;
     try {
-      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=2', { scope: './' });
+      await global.navigator.serviceWorker.register('./apk-asset-sw.js?v=3', { scope: './' });
     } catch (e) { /* ignore */ }
   }
 

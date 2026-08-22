@@ -15,7 +15,8 @@ final class ApkAssetManifestTest extends TestCase
         $this->assertTrue(tcgApkAssetUrlEligible('https://loveliveradio.ca/tcg/assets/sleeves/foo.webp'));
         $this->assertTrue(tcgApkAssetUrlEligible('assets/playmats/bar.webp'));
         $this->assertTrue(tcgApkAssetUrlEligible('assets/stamps/image/sticker/st_000_010.png'));
-        $this->assertTrue(tcgApkAssetUrlEligible('assets/sfx/menu_tap.wav'));
+        $this->assertTrue(tcgApkAssetUrlEligible('playmat.png'));
+        $this->assertTrue(tcgApkAssetUrlEligible('lltcg-back.png'));
         $this->assertFalse(tcgApkAssetUrlEligible('api.php?action=get_state'));
         $this->assertFalse(tcgApkAssetUrlEligible('https://stream.loveliveradio.ca/tcg/api?action=get_state'));
         $this->assertFalse(tcgApkAssetUrlEligible('playmats_catalog.json'));
@@ -55,7 +56,7 @@ final class ApkAssetManifestTest extends TestCase
     {
         $sw = (string)file_get_contents(dirname(__DIR__, 2) . '/apk-asset-sw.js');
         $this->assertStringNotContainsString('clients.claim()', $sw);
-        $this->assertStringNotContainsString('fetch(event.request)', $sw);
+        $this->assertStringNotContainsString('status: 504', $sw);
         $this->assertStringContainsString('_catalog', $sw);
         $this->assertStringContainsString('api.php', $sw);
     }

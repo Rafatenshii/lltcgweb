@@ -1,4 +1,4 @@
-/* APK-only: serve Cache Storage hits for card/cosmetic/SFX. Misses use a new URL fetch. */
+/* APK-only: cache hits for card/cosmetic/SFX. Misses go to the network as a URL fetch. */
 const CACHE_NAME = 'lltcg-apk-assets-v1';
 
 function isAssetRequest(url) {
@@ -10,6 +10,7 @@ function isAssetRequest(url) {
     if (/\/api\.php$/i.test(path)) return false;
     if (/_catalog\.json$/i.test(path)) return false;
     if (/cardimg\.php$/i.test(path)) return true;
+    if (/\/(playmat|lltcg-back)\.png$/i.test(path)) return true;
     return /\/assets\/(sleeves|playmats|stamps|sfx)\//i.test(path);
   } catch (e) {
     return false;
@@ -43,15 +44,7 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const hit = await cache.match(url);
       if (hit && hit.ok) return hit;
-    } catch (e) { /* fall through */ }
-    try {
-      return await fetch(url, { credentials: 'same-origin', mode: 'cors' });
-    } catch (e2) {
-      try {
-        return await fetch(url, { credentials: 'same-origin', mode: 'same-origin' });
-      } catch (e3) {
-        return new Response('', { status: 504, statusText: 'Asset fetch failed' });
-      }
-    }
+    } catch (e) { /* network */ }
+    return fetch(url, { credentials: 'same-origin', mode: 'cors', redirect: 'follow' });
   })());
 });

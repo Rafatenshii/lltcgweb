@@ -155,6 +155,10 @@
     if (!myId && global.G && (global.G.playerId === 'p1' || global.G.playerId === 'p2')) {
       myId = global.G.playerId;
     }
+    if (!myId && global.G && global.G.isSpectator) {
+      const view = global.G.spectatorViewAs;
+      myId = (view === 'p1' || view === 'p2') ? view : 'p1';
+    }
     if (!state || !state.players || !myId) {
       clearMatchPlaymats(root);
       lastMatchPlaymatState = null;
@@ -184,7 +188,11 @@
       void loadCatalog().then(() => {
         pendingCatalogReapply = false;
         if (lastMatchPlaymatState) {
-          applyMatchPlaymats(lastMatchPlaymatState, { myId: global.G && global.G.playerId });
+          applyMatchPlaymats(lastMatchPlaymatState, {
+            myId: (global.G && (global.G.playerId === 'p1' || global.G.playerId === 'p2'))
+              ? global.G.playerId
+              : (global.G && global.G.isSpectator ? (global.G.spectatorViewAs === 'p2' ? 'p2' : 'p1') : null),
+          });
         }
       });
     }
