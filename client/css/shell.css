@@ -1490,6 +1490,26 @@ body.missions-overlay-open{overflow:hidden}
 }
 .llc-menu-screen .options-discord-presence .account-lead{margin:6px 0 8px;font-size:12px}
 .llc-menu-screen .options-discord-presence .btn-out{width:auto;display:inline-flex}
+.llc-menu-screen .options-apk-assets{
+  margin:10px 0 12px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(186,228,255,.28);background:rgba(8,18,36,.35)
+}
+.llc-menu-screen .options-apk-assets h3{margin:0 0 6px;font-size:15px}
+.llc-menu-screen .options-apk-assets-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.llc-menu-screen .options-apk-assets-actions .btn-out{width:auto;display:inline-flex}
+.apk-asset-first-launch{
+  position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;
+  padding:max(16px, env(safe-area-inset-top)) 18px;background:rgba(4,8,18,.78)
+}
+.apk-asset-first-launch[hidden]{display:none!important}
+.apk-asset-first-launch-card{
+  width:min(440px,100%);max-height:min(88vh,640px);overflow:auto;
+  padding:20px 18px;border-radius:14px;background:#0c1730;
+  border:1px solid rgba(186,228,255,.35);color:#eef6ff
+}
+.apk-asset-first-launch-card h2{margin:0 0 10px;font-size:1.25rem}
+.apk-asset-first-launch-card p{margin:0 0 10px;font-size:14px;line-height:1.45;color:rgba(255,255,255,.88)}
+.apk-asset-first-launch-actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .llc-menu-screen .queue-other-modes{
   margin:2px 0 10px;
   text-align:center;
