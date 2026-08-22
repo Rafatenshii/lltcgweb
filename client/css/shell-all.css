@@ -3362,9 +3362,8 @@ body.tutorial-mode:not(.tutorial-live-mode) #overlay-coin{pointer-events:none}
 /* Landscape-native Live art fills a landscape flight shell without rotation.
    Do NOT flatten .card-portrait-in-landscape here — face-down Live backs (and
    member art) must keep the 90° spin so portrait art sits correctly in the
-   landscape borders (opp hand → live storage). */
-.card-flight.flight-deck-live .flight-inner .card-landscape-in-portrait,
-.card-flight.flight-deck-live .flight-inner .card-art.live-sideways,
+   landscape borders (opp hand → live storage).
+   Deck/WR (.flight-deck-live) are portrait piles — keep the 90° Live wrapper. */
 .card-flight.flight-landscape .flight-inner .card-landscape-in-portrait,
 .card-flight.flight-landscape .flight-inner .card-art.live-sideways{
   width:100%;height:100%;transform:translate(-50%, -50%) rotate(0deg);

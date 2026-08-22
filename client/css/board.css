@@ -2750,8 +2750,6 @@ body.tutorial-mode:not(.tutorial-live-mode) #overlay-coin{pointer-events:none}
   transform:translate(-50%, -50%) rotate(90deg);transform-origin:center center;
   overflow:hidden;
 }
-.card-flight.flight-deck-live .flight-inner .card-landscape-in-portrait,
-.card-flight.flight-deck-live .flight-inner .card-art.live-sideways,
 .card-flight.flight-landscape .flight-inner .card-landscape-in-portrait,
 .card-flight.flight-landscape .flight-inner .card-art.live-sideways,
 .card-flight.flight-landscape .flight-inner .card-portrait-in-landscape{
