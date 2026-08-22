@@ -345,6 +345,38 @@ function replayEnsureMemberOnStage(array &$state, string $pid, string $cardId, s
     $p['stage'][$slot] = $card;
 }
 
+/** Put a recorded Baton Touch target on the exact Stage slot (swap or pull off-stage). */
+function replayPlaceMemberOnExactSlot(array &$state, string $pid, string $cardId, string $slot): void {
+    $slots = ['center', 'left', 'right'];
+    if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2') || !in_array($slot, $slots, true)) {
+        return;
+    }
+    $p = &$state['players'][$pid];
+    $here = $p['stage'][$slot] ?? null;
+    if ($here && ($here['instance_id'] ?? '') === $cardId) {
+        return;
+    }
+    foreach ($slots as $s) {
+        if ($s === $slot) {
+            continue;
+        }
+        $m = $p['stage'][$s] ?? null;
+        if ($m && ($m['instance_id'] ?? '') === $cardId) {
+            $p['stage'][$s] = $here;
+            $p['stage'][$slot] = $m;
+            return;
+        }
+    }
+    $card = replayTakeCardForStageRepair($p, $cardId);
+    if (!$card) {
+        return;
+    }
+    if ($here) {
+        $p['waiting_room'][] = $here;
+    }
+    $p['stage'][$slot] = $card;
+}
+
 /** Best-effort: put a recorded card back in hand when replay state drifted (legacy exports). */
 function replayEnsureCardInHand(array &$state, string $pid, string $cardId): void {
     if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2')) {
@@ -481,6 +513,10 @@ function replayPrepareRecordedPlayAction(array $state, string $pid, string $type
         }
     } elseif ($type === 'play_member' && !empty($data['card_id'])) {
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
+        $slot = (string)($data['slot'] ?? 'center');
+        if (!empty($data['baton_id'])) {
+            replayPlaceMemberOnExactSlot($state, $pid, (string)$data['baton_id'], $slot);
+        }
     } elseif ($type === 'activate_ability' && !empty($data['card_id'])) {
         $found = findActivatedAbilitySource($state['players'][$pid], (string)$data['card_id']);
         // Leave WR-only activates in the Waiting Room for the first apply.
@@ -761,6 +797,34 @@ function replayLooksLikePromptInteractionError(string $msg): bool {
     return false;
 }
 
+/** Engine validation that means the replay board drifted — skip rather than abort seek. */
+function replayLooksLikeSeekDriftError(string $msg): bool {
+    $needles = [
+        'Invalid Baton Touch target',
+        'cannot be sent to the Waiting Room via Baton Touch',
+        'Cannot use Baton Touch when play cost is 0',
+        'Cannot enter this Stage area this turn',
+        'Cannot replace a Member that was played this turn',
+        'Not enough active energy',
+        'Member not on stage',
+        'Card not found on Stage or in Waiting Room',
+        'Card not in hand',
+        'Not a member card',
+        'Not in LIVE Phase',
+        'Already locked in LIVE selection',
+        'Live Card storage is full',
+        'Live card no longer in storage',
+        'Invalid Live card',
+        'Choose a Live card',
+    ];
+    foreach ($needles as $needle) {
+        if (str_contains($msg, $needle)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Best-effort state repair before retrying a desynced recorded action. */
 function replayApplyFixForRetry(array $state, string $pid, string $type, array $data, Throwable $e): array {
     $msg = $e->getMessage();
@@ -795,6 +859,16 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
     }
     if ($type === 'play_member' && !empty($data['card_id'])) {
         replayEnsureCardInHand($state, $pid, (string)$data['card_id']);
+        if (!empty($data['baton_id'])
+            && (str_contains($msg, 'Invalid Baton Touch')
+                || str_contains($msg, 'Baton Touch'))) {
+            replayPlaceMemberOnExactSlot(
+                $state,
+                $pid,
+                (string)$data['baton_id'],
+                (string)($data['slot'] ?? 'center')
+            );
+        }
     }
     if ($type === 'activate_ability' && !empty($data['card_id'])) {
         if (str_contains($msg, 'Member not on stage')
@@ -895,10 +969,7 @@ function replayApplyRecordedAction(array $state, string $pid, string $type, arra
     if ($type === 'resolve_prompt'
         || $type === 'anti_softlock_skip'
         || replayLooksLikePromptInteractionError($msg)
-        || str_contains($msg, 'Cannot replace a Member that was played this turn')
-        || str_contains($msg, 'Not enough active energy')
-        || str_contains($msg, 'Member not on stage')
-        || str_contains($msg, 'Card not found on Stage or in Waiting Room')) {
+        || replayLooksLikeSeekDriftError($msg)) {
         return replaySoftSkipPendingPrompt(
             $state,
             '#' . $index . ' ' . $type . ': ' . $msg,
