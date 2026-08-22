@@ -5987,20 +5987,30 @@ function perfOutcomeLabel(att) {
   return '…';
 }
 
-/** Index of the current Performance round in the log (not prior turns). */
-function currentPerformanceRoundLogStart(next) {
+/** Index of this turn's Performance Phase header (includes both performers). */
+function currentPerformancePhaseLogStart(next) {
   const log = next?.log || [];
   for (let i = log.length - 1; i >= 0; i--) {
-    const msg = log[i]?.msg || '';
-    // Per-performer Live Start uses "=== Live Start Effects (Name) ===".
-    // Matching only the bare marker left the 2nd performer's window anchored at
-    // the 1st Live Start, so "performed Live!" from the 1st suppressed prompts.
-    if (msg === '=== Performance Phase ===' || /^=== Live Start Effects/.test(msg)) return i;
+    if ((log[i]?.msg || '') === '=== Performance Phase ===') return i;
   }
   for (let i = log.length - 1; i >= 0; i--) {
     if ((log[i]?.msg || '') === '=== LIVE Phase ===') return i + 1;
   }
   return 0;
+}
+
+/**
+ * Latest per-performer Live Start (or Performance Phase) marker.
+ * Used to wait on the 2nd performer's Live Start after the 1st already logged
+ * "performed Live!". Do not use this window for round-wide success / judge copy.
+ */
+function currentPerformanceRoundLogStart(next) {
+  const log = next?.log || [];
+  for (let i = log.length - 1; i >= 0; i--) {
+    const msg = log[i]?.msg || '';
+    if (msg === '=== Performance Phase ===' || /^=== Live Start Effects/.test(msg)) return i;
+  }
+  return currentPerformancePhaseLogStart(next);
 }
 
 function playerAttemptedLiveThisRound(next, pid) {
@@ -6013,7 +6023,7 @@ function playerAttemptedLiveThisRound(next, pid) {
   }
   const name = next?.players?.[pid]?.name;
   if (!name) return false;
-  const start = currentPerformanceRoundLogStart(next);
+  const start = currentPerformancePhaseLogStart(next);
   for (let i = start; i < (next?.log || []).length; i++) {
     const msg = next.log[i]?.msg || '';
     if (msg.includes(`${name} is performing Live with`)) return true;
@@ -6025,7 +6035,7 @@ function playerAttemptedLiveThisRound(next, pid) {
 function playerHasPerfLogThisRound(next, pid) {
   const name = next?.players?.[pid]?.name;
   if (!name) return false;
-  const start = currentPerformanceRoundLogStart(next);
+  const start = currentPerformancePhaseLogStart(next);
   for (let i = start; i < (next?.log || []).length; i++) {
     const msg = next.log[i]?.msg || '';
     if (!msg.startsWith(name)) continue;
@@ -6040,7 +6050,7 @@ function liveRoundPerfLogsComplete(next) {
   if (!next?.players) return false;
   const attempted = ['p1', 'p2'].filter(pid => playerAttemptedLiveThisRound(next, pid));
   if (!attempted.length) {
-    const start = currentPerformanceRoundLogStart(next);
+    const start = currentPerformancePhaseLogStart(next);
     return (next.log || []).slice(start).some(e => e.msg === 'No Lives played this turn.');
   }
   return attempted.every(pid => playerHasPerfLogThisRound(next, pid));
@@ -6060,7 +6070,7 @@ function liveRoundJudgeReady(next) {
       && !isDeferredLiveSuccessPrompt(next)) {
     return false;
   }
-  const start = currentPerformanceRoundLogStart(next);
+  const start = currentPerformancePhaseLogStart(next);
   return (next.log || []).slice(start).some(e => /^Live Scores: /.test(e.msg || ''));
 }
 
@@ -6070,7 +6080,7 @@ function perfLiveSuccessCountFromLog(next, pid, prev = null) {
   if (!playerAttemptedLiveThisRound(next, pid)) return 0;
   const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`^${esc} performed Live! Blades: \\d+ \\| Hearts: \\[[^\\]]*\\] \\| Live success: (\\d+)`);
-  const start = prev ? (prev.log?.length || 0) : currentPerformanceRoundLogStart(next);
+  const start = prev ? (prev.log?.length || 0) : currentPerformancePhaseLogStart(next);
   const log = (next.log || []).slice(start);
   for (let i = log.length - 1; i >= 0; i--) {
     const m = (log[i].msg || '').match(re);
@@ -6087,7 +6097,7 @@ function perfLiveFailCountFromLog(next, pid, prev = null) {
   const re = new RegExp(
     `^${esc} performed Live! Blades: \\d+ \\| Hearts: \\[[^\\]]*\\] \\| Live success: \\d+ \\| Failed: (\\d+)`
   );
-  const start = prev ? (prev.log?.length || 0) : currentPerformanceRoundLogStart(next);
+  const start = prev ? (prev.log?.length || 0) : currentPerformancePhaseLogStart(next);
   const log = (next.log || []).slice(start);
   for (let i = log.length - 1; i >= 0; i--) {
     const m = (log[i].msg || '').match(re);
@@ -6157,10 +6167,14 @@ function playerLiveRoundSucceeded(next, pid) {
     return false;
   }
   if (next?.live_round_success && pid in next.live_round_success) {
-    if (!playerHasPerfLogThisRound(next, pid)) {
-      return false;
+    if (playerHasPerfLogThisRound(next, pid)
+        || next.phase === 'live_judge'
+        || next.live_show?.stage === 'judge'
+        || next.live_show?.stage === 'outcomes'
+        || liveRoundPerfLogsComplete(next)) {
+      return !!next.live_round_success[pid];
     }
-    return !!next.live_round_success[pid];
+    return false;
   }
   const snap = next?._live_round_success_snapshot;
   if (snap && pid in snap) return !!snap[pid];
@@ -6171,7 +6185,7 @@ function playerLiveRoundSucceeded(next, pid) {
   const re = new RegExp(
     `^${esc} performed Live! Blades: \\d+ \\| Hearts: \\[[^\\]]*\\] \\| Live success: (\\d+) \\| Failed: (\\d+)(?: \\| Round: failed \\(not all Lives succeeded\\))?`
   );
-  const start = currentPerformanceRoundLogStart(next);
+  const start = currentPerformancePhaseLogStart(next);
   for (let i = (next?.log || []).length - 1; i >= start; i--) {
     const msg = next.log[i].msg || '';
     const m = msg.match(re);
@@ -6362,7 +6376,7 @@ function perfLiveScoreBonusForPlayer(ctx, pid) {
 
 function perfJudgeScoresFromLog(next, myId) {
   if (!bothPlayersClearedLiveThisRound(next)) return null;
-  const start = currentPerformanceRoundLogStart(next);
+  const start = currentPerformancePhaseLogStart(next);
   for (let i = (next?.log || []).length - 1; i >= start; i--) {
     const m = (next.log[i].msg || '').match(/^Live Scores: (.+?) = (\d+) \| (.+?) = (\d+)/);
     if (!m) continue;
