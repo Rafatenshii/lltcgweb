@@ -1705,7 +1705,8 @@ html.tcg-mobile-portrait #llc-sky-bg{opacity:.35}
 }
 #tcg-phone-fs-btn:active{transform:scale(.97)}
 html.tcg-phone-device #tcg-phone-fs-btn.show{display:block}
-html.tcg-fs-native #tcg-phone-fs-btn{display:none!important}
+html.tcg-fs-native #tcg-phone-fs-btn,
+html.tcg-android-apk #tcg-phone-fs-btn{display:none!important}
 html.tcg-phone-device.tcg-mobile-viewport,
 html.tcg-phone-device.tcg-mobile-viewport body{
   width:100vw;height:100dvh;min-height:100dvh;max-height:100dvh;

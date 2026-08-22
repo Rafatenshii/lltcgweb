@@ -44,6 +44,9 @@ html.tcg-portrait-play.tcg-mobile-portrait #opp-skill-wait-banner{
 html.tcg-portrait-play #tcg-phone-fs-btn{display:none!important}
 html.tcg-portrait-play.tcg-phone-device #tcg-phone-fs-btn.show,
 html.tcg-portrait-play #tcg-phone-fs-btn.show{display:block!important}
+html.tcg-android-apk #tcg-phone-fs-btn,
+html.tcg-portrait-play.tcg-android-apk #tcg-phone-fs-btn,
+html.tcg-portrait-play.tcg-android-apk #tcg-phone-fs-btn.show{display:none!important}
 html.tcg-portrait-play #llc-sky-bg{opacity:.55}
 
 /* ═══════════════════════════════════════════

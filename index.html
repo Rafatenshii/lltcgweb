@@ -53,6 +53,7 @@
       ls = '1';
     }
     var forceOn = fromQueryOn || fromUa || fromCap || ls === '1';
+    if (fromUa || fromCap) root.classList.add('tcg-android-apk');
     var forceOff = ls === '0' && !fromUa && !fromCap && !fromQueryOn;
     var w = window.innerWidth || 0;
     var h = window.innerHeight || 0;
@@ -104,12 +105,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=83">
+<link rel="stylesheet" href="client/css/shell-all.css?v=84">
 <link rel="stylesheet" href="client/css/prompts.css?v=1">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
-<link rel="stylesheet" href="client/css/portrait.css?v=83">
+<link rel="stylesheet" href="client/css/portrait.css?v=84">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -17916,9 +17917,16 @@ async function tcgRequestFullscreen() {
 function tcgUpdatePhoneFsUI() {
   const root = document.documentElement;
   const btn = el('tcg-phone-fs-btn');
+  const apk = typeof tcgPortraitForceNative === 'function' && tcgPortraitForceNative();
+  root.classList.toggle('tcg-android-apk', apk);
   const native = tcgFullscreenActive();
   root.classList.toggle('tcg-fs-native', native);
   if (!btn) return;
+  if (apk) {
+    btn.hidden = true;
+    btn.classList.remove('show');
+    return;
+  }
   const gameActive = el('screen-game')?.classList.contains('active');
   const landscapeGame = root.classList.contains('tcg-phone-landscape');
   const portraitGame = tcgPortraitPlayActive();
@@ -18159,6 +18167,7 @@ function bindPhoneFullscreen() {
   document.addEventListener('webkitfullscreenchange', onFsChange);
   btn?.addEventListener('click', () => { tcgRequestFullscreen(); });
   document.addEventListener('pointerdown', (e) => {
+    if (typeof tcgPortraitForceNative === 'function' && tcgPortraitForceNative()) return;
     if (G._phoneFsAutoAttempted || tcgFullscreenActive()) return;
     if (!tcgIsSmallPhone() && !tcgPortraitPlayActive()) return;
     if (!tcgFullscreenSupported()) return;
