@@ -842,8 +842,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <div class="options-apk-assets-actions">
             <button type="button" class="btn-out" id="btn-apk-opt-full" data-i18n="options.apkAssets.full">Download all</button>
             <button type="button" class="btn-out" id="btn-apk-opt-demand" data-i18n="options.apkAssets.demand">Download when needed</button>
-            <button type="button" class="btn-out" id="btn-apk-opt-pause" data-i18n="options.apkAssets.pause">Pause download</button>
-            <button type="button" class="btn-out" id="btn-apk-opt-resume" data-i18n="options.apkAssets.resume">Resume download</button>
+            <button type="button" class="btn-out" id="btn-apk-opt-pause" hidden data-i18n="options.apkAssets.pause">Pause download</button>
+            <button type="button" class="btn-out" id="btn-apk-opt-resume" hidden data-i18n="options.apkAssets.resume">Resume download</button>
             <button type="button" class="btn-out" id="btn-apk-opt-clear" data-i18n="options.apkAssets.clear">Delete downloaded data</button>
           </div>
         </div>
@@ -2772,7 +2772,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/tournament.js?v=16"></script>
 <script src="client/js/sleeves.js?v=15"></script>
 <script src="client/js/playmats.js?v=8"></script>
-<script src="client/js/apk-asset-cache.js?v=6"></script>
+<script src="client/js/apk-asset-cache.js?v=7"></script>
 <script src="client/js/shop-new.js?v=2"></script>
 <script src="client/js/ranked-pr-reward.js?v=6"></script>
 <script src="client/js/missions.js?v=13"></script>

@@ -68,6 +68,7 @@
       mode: state.mode || getMode(),
       paused: state.paused,
       running: state.running,
+      complete: isFullComplete(),
       progress: { ...state.progress },
     };
   }
@@ -424,7 +425,8 @@
     const optBar = document.getElementById('options-apk-asset-bar');
     const optFill = document.getElementById('options-apk-asset-bar-fill');
     if (optBar && optFill) {
-      if (st.mode === 'full' && st.progress.total) {
+      const showBar = st.mode === 'full' && st.progress.total && !st.complete && (st.running || st.paused);
+      if (showBar) {
         optBar.hidden = false;
         setBar(optBar, optFill, pct);
       } else {
@@ -488,8 +490,18 @@
     if (mode === 'full' && !isFullComplete()) void runFullQueue();
   }
 
+  function syncOptionsDownloadButtons(st) {
+    const complete = !!(st.complete || isFullComplete());
+    const fullActive = st.mode === 'full' && !complete && (st.running || st.paused);
+    const btnPause = document.getElementById('btn-apk-opt-pause');
+    const btnResume = document.getElementById('btn-apk-opt-resume');
+    if (btnPause) btnPause.hidden = !(fullActive && !st.paused);
+    if (btnResume) btnResume.hidden = !(fullActive && st.paused);
+  }
+
   function updateOptionsStatus(st) {
     const el = document.getElementById('options-apk-assets-status');
+    syncOptionsDownloadButtons(st);
     if (!el) return;
     const mode = st.mode === 'full'
       ? tApk('options.apkAssets.modeFull', 'Download all')
@@ -497,7 +509,7 @@
         ? tApk('options.apkAssets.modeDemand', 'Download when needed')
         : tApk('options.apkAssets.modeUnset', 'Not chosen yet'));
     let extra = '';
-    if (st.mode === 'full' && st.progress.total) {
+    if (st.mode === 'full' && st.progress.total && !(st.complete || isFullComplete())) {
       extra = ' — ' + tApk('options.apkAssets.progress', '{done} / {total} files', {
         done: st.progress.done,
         total: st.progress.total,
