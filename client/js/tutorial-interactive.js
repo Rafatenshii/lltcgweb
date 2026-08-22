@@ -70,16 +70,27 @@
         return liveZoneHasCardNo(s, myId, goal.card_no);
       case 'end_live_set':
         return !!s.live_ready?.[myId] || s.phase === 'performance' || s.phase === 'live_judge';
-      case 'live_judge_reached':
+      case 'live_judge_reached': {
+        const atJudge = s.phase === 'live_judge' || s.phase === 'main_first' || s.phase === 'main_second';
+        if (!atJudge) {
+          if (G()) G()._tutJudgeWaitSince = 0;
+          return false;
+        }
         if (G()?.tutorialLive) {
           // Wait out the Performance show — server may already be on live_judge
           // while the client spectacle is still playing.
-          if (G()._perfSpectacleActive || G()._liveRoundPlaybackActive
-              || G()._liveSpectacleGateRunning || G()._livePollHold) {
-            return false;
+          const busy = !!(G()._perfSpectacleActive || G()._liveRoundPlaybackActive
+              || G()._liveSpectacleGateRunning || G()._livePollHold);
+          if (busy) {
+            const now = Date.now();
+            if (!G()._tutJudgeWaitSince) G()._tutJudgeWaitSince = now;
+            if (now - G()._tutJudgeWaitSince < 12000) return false;
+          } else {
+            G()._tutJudgeWaitSince = 0;
           }
         }
-        return s.phase === 'live_judge' || s.phase === 'main_first' || s.phase === 'main_second';
+        return true;
+      }
       default:
         return false;
     }
@@ -89,6 +100,7 @@
     if (!isLive()) return false;
     const st = step();
     if (!st) return false;
+    if (action === 'resolve_prompt' || action === 'anti_softlock_skip') return true;
     if (st.kind === 'info' || st.kind === 'watch') return false;
     const g = st.goal;
     if (!g) return true;
@@ -109,6 +121,10 @@
         return g.type === 'ack_coin_flip' || g.type === 'choose_first_player';
       case 'choose_first_player':
         return g.type === 'choose_first_player' || g.type === 'ack_coin_flip';
+      case 'resolve_prompt':
+      case 'anti_softlock_skip':
+        // Watch/info steps still hide Next; prompts (failed-Yell retry, etc.) must resolve.
+        return true;
       default:
         return false;
     }
@@ -400,7 +416,7 @@
       const bootEpoch = G()._gameSessionEpoch;
       const g = G();
       await loadTutorialLocalePacks();
-      const r = await fetch('./tutorial_guide.json?v=19', { cache: 'no-store' });
+      const r = await fetch('./tutorial_guide.json?v=20', { cache: 'no-store' });
       if (!r.ok) throw new Error('Could not load tutorial guide (HTTP ' + r.status + ')');
       const data = await r.json();
       if (!data?.steps?.length) throw new Error('Tutorial guide has no steps');

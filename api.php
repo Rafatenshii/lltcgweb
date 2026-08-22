@@ -1577,7 +1577,12 @@ function actionMulligan(array $state, string $pid, array $data): array {
         $redrawn = count($returned);
         [$newCards, $p['main_deck']] = drawCards($p['main_deck'], $redrawn);
         $p['main_deck'] = array_merge($p['main_deck'], $returned);
-        shuffle($p['main_deck']);
+        // Guided tutorial keeps a scripted deck order (shuffle:false on create).
+        // Shuffling the remainder after mulligan would randomize Yell and can
+        // softlock the Performance watch step when blade hearts never appear.
+        if (empty($state['tutorial_guide'])) {
+            shuffle($p['main_deck']);
+        }
         $p['hand'] = array_merge($kept, $newCards);
     }
     $p['ready_mulligan'] = true;
