@@ -91,7 +91,7 @@ writeFixture('mulligan_keep.json', replayPayload(
     ],
     [
         'final_phase' => 'main_first',
-        'status' => 'setup',
+        'status' => 'playing',
         'winner' => null,
         'pending_prompt' => null,
     ]
