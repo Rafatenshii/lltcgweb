@@ -57,7 +57,6 @@
     'playmat-shop': 1,
     'sleeve-shop': 1,
     'card-list': 1,
-    leaderboard: 1,
     lobby: 1,
     tournament: 1,
   };

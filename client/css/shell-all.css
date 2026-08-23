@@ -4878,7 +4878,17 @@ body.missions-overlay-open{overflow:hidden}
   box-shadow:0 0 0 1px rgba(186,228,255,.35)}
 #overlay-missions .missions-scroll{
   flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
-  padding-right:4px;margin-right:-2px;-webkit-overflow-scrolling:touch}
+  padding-right:6px;margin-right:-2px;-webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.12)}
+#overlay-missions .missions-scroll::-webkit-scrollbar{width:6px}
+#overlay-missions .missions-scroll::-webkit-scrollbar-track{
+  background:rgba(255,255,255,.12);border-radius:999px;margin:6px 0}
+#overlay-missions .missions-scroll::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,var(--pink-l),var(--pink));border-radius:999px;
+  border:1px solid rgba(255,255,255,.28);box-shadow:0 0 8px rgba(255,107,168,.28)}
+#overlay-missions .missions-scroll::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,#fff,var(--pink-l))}
 #overlay-missions .missions-scroll .llc-menu-list{margin-top:0}
 #overlay-missions .missions-item{
   cursor:default;align-items:center;justify-content:space-between;gap:12px;min-height:62px;padding:12px 14px}
@@ -6233,9 +6243,19 @@ body.tcg-debug-on .llc-menu-item.tcg-debug-only{display:flex}
   overflow-y:auto;
   min-height:100%;
   box-sizing:border-box;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,179,209,.75) rgba(255,255,255,.12);
 }
+#screen-leaderboard.llc-menu-screen::-webkit-scrollbar{width:6px}
+#screen-leaderboard.llc-menu-screen::-webkit-scrollbar-track{
+  background:rgba(255,255,255,.12);border-radius:999px;margin:6px 0}
+#screen-leaderboard.llc-menu-screen::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,var(--pink-l),var(--pink));border-radius:999px;
+  border:1px solid rgba(255,255,255,.28);box-shadow:0 0 8px rgba(255,107,168,.28)}
+#screen-leaderboard.llc-menu-screen::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,#fff,var(--pink-l))}
 #screen-leaderboard .account-shell.wide{
-  max-width:min(760px,96vw);
+  max-width:min(720px,96vw);
   margin-block:0;
   align-self:center;
 }
