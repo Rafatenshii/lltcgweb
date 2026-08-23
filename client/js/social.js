@@ -585,16 +585,26 @@
   }
 
   const COST_ORDER = ['1-3', '4', '5-8', '9', '10-11', '12-15', '16+'];
-  const HEART_ORDER = [
-    { key: 'pink', file: 'blade_heart01.png', aliases: ['桃'] },
-    { key: 'red', file: 'blade_heart02.png', aliases: ['赤'] },
-    { key: 'yellow', file: 'blade_heart03.png', aliases: ['黄'] },
-    { key: 'green', file: 'blade_heart04.png', aliases: ['緑'] },
-    { key: 'blue', file: 'blade_heart05.png', aliases: ['青'] },
-    { key: 'purple', file: 'blade_heart06.png', aliases: ['紫'] },
-    { key: 'any', file: 'heart00.png', aliases: ['gray', 'grey', 'colourless', 'colorless'] },
-    { key: 'all', file: 'icon_b_all.png' },
+  const HEART_COLORS = [
+    { key: 'pink', aliases: ['桃'] },
+    { key: 'red', aliases: ['赤'] },
+    { key: 'yellow', aliases: ['黄'] },
+    { key: 'green', aliases: ['緑'] },
+    { key: 'blue', aliases: ['青'] },
+    { key: 'purple', aliases: ['紫'] },
+    { key: 'any', aliases: ['gray', 'grey', 'colourless', 'colorless'] },
+    { key: 'all' },
   ];
+  const BLADE_HEART_FILES = {
+    pink: 'blade_heart01.png', red: 'blade_heart02.png', yellow: 'blade_heart03.png',
+    green: 'blade_heart04.png', blue: 'blade_heart05.png', purple: 'blade_heart06.png',
+    any: 'heart00.png', all: 'icon_b_all.png',
+  };
+  const HEART_FILES = {
+    pink: 'heart01.png', red: 'heart02.png', yellow: 'heart03.png',
+    green: 'heart04.png', blue: 'heart05.png', purple: 'heart06.png',
+    any: 'heart00.png', all: 'icon_b_all.png',
+  };
 
   function heartCount(blades, spec) {
     let n = Number(blades[spec.key] || 0);
@@ -624,7 +634,7 @@
       .concat(prev.lives || []);
     const row = items.length
       ? items.map((c) =>
-        `<span class="social-preview-card${liveClass(c)}"><span class="social-preview-face">${cardFaceHtml(c)}</span><em>×${c.count || c.count || 1}</em></span>`
+        `<span class="social-preview-card${liveClass(c)}"><span class="social-preview-face">${cardFaceHtml(c)}</span><em>×${c.count || 1}</em></span>`
       ).join('')
       : '<span class="social-preview-empty">—</span>';
     return `<button type="button" class="social-deck-preview" id="btn-deck-open">
@@ -643,7 +653,7 @@
     const c = deck.composition || {};
     const buckets = c.cost_buckets || {};
     const blades = c.blade_hearts || {};
-    const types = c.types || {};
+    const hearts = c.hearts || {};
     const desc = String(deckDesc || deck.desc || '').trim();
     const name = String(deck.name || '').trim();
     if (!_deckOpen) {
@@ -661,15 +671,14 @@
       n: Number(buckets[k] || 0),
       foot: esc(k),
     }));
-    const heartCols = HEART_ORDER.map((spec) => ({
+    const bladeCols = HEART_COLORS.map((spec) => ({
       n: heartCount(blades, spec),
-      foot: `<img class="social-log-heart" src="icons/${spec.file}" alt="${esc(spec.key)}">`,
+      foot: `<img class="social-log-heart" src="icons/${BLADE_HEART_FILES[spec.key]}" alt="${esc(spec.key)}">`,
     }));
-    const memberN = types.member || 0;
-    const liveN = types.live || 0;
-    const energyN = types.energy || 0;
-    const mainN = memberN + liveN;
-    const heartN = c.blade_heart_total != null ? c.blade_heart_total : HEART_ORDER.reduce((s, spec) => s + heartCount(blades, spec), 0);
+    const heartCols = HEART_COLORS.filter((spec) => spec.key !== 'all').map((spec) => ({
+      n: heartCount(hearts, spec),
+      foot: `<img class="social-log-heart" src="icons/${HEART_FILES[spec.key]}" alt="${esc(spec.key)}">`,
+    }));
     const grid = (deck.cards || []).map((card) =>
       `<button type="button" class="social-card-thumb${liveClass(card)}" data-card="${esc(card.card_no)}">${cardFaceHtml(card)}</button>`
     ).join('');
@@ -679,16 +688,8 @@
       <button type="button" class="btn-ghost" id="btn-deck-close">${tt('profile.closeDeck', 'Hide full deck')}</button>
       <div class="social-log-wrap">
         ${logChart(tt('profile.cost', 'Cost'), costCols)}
-        ${logChart(tt('profile.bladeHearts', 'Blade hearts'), heartCols)}
-        <div class="social-log-summary">
-          <div><span>${tt('profile.members', 'Member')}</span><b>${memberN}</b></div>
-          <div><span>${tt('profile.lives', 'Live')}</span><b>${liveN}</b></div>
-          <div><span>${tt('profile.bladeHeartCount', 'Blade hearts')}</span><b>${heartN}</b></div>
-          <p class="social-log-total">${mainN} / 60</p>
-          <hr>
-          <div><span>${tt('profile.energy', 'Energy')}</span><b>${energyN}</b></div>
-          <p class="social-log-total">${energyN} / 12</p>
-        </div>
+        ${logChart(tt('profile.bladeHearts', 'Blade hearts'), bladeCols)}
+        ${logChart(tt('profile.hearts', 'Hearts'), heartCols)}
       </div>
       <div class="social-deck-grid">${grid}</div>`;
     document.getElementById('btn-deck-close')?.addEventListener('click', () => {

@@ -523,9 +523,9 @@ button.social-bar-art { cursor: pointer; }
   background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; padding: 0 4px;
 }
 .social-preview-hint { font-size: 12px; font-weight: 800; opacity: .85; }
-.social-log-wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; margin: 12px 0; }
-.social-log-chart { flex: 1 1 160px; min-width: 140px; }
-.social-log-title { text-align: center; font-weight: 800; margin-bottom: 6px; font-size: 13px; }
+.social-log-wrap { display: flex; flex-wrap: nowrap; gap: 8px; align-items: stretch; margin: 12px 0; }
+.social-log-chart { flex: 1 1 0; min-width: 0; }
+.social-log-title { text-align: center; font-weight: 800; margin-bottom: 4px; font-size: 11px; }
 .social-log-cols { display: flex; align-items: flex-end; gap: 4px; background: rgba(255,255,255,.1); border-radius: 8px; padding: 8px 6px 6px; min-height: 120px; }
 .social-log-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .social-log-cap {
@@ -536,17 +536,7 @@ button.social-bar-art { cursor: pointer; }
 .social-log-bar { width: 70%; max-width: 18px; background: #e89aa4; border-radius: 3px 3px 0 0; }
 .social-log-foot { margin-top: 4px; font-size: 9px; font-weight: 800; text-align: center; line-height: 1.1; }
 .social-log-heart { width: 16px; height: 16px; object-fit: contain; display: block; }
-.social-log-summary {
-  flex: 0 1 140px;
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  justify-content: center;
-}
-.social-log-summary div { display: flex; justify-content: space-between; gap: 8px; border-left: 3px solid #f4c36a; padding-left: 8px; }
-.social-log-total { margin: 2px 0 0; text-align: right; font-weight: 800; }
-.social-log-summary hr { border: 0; border-top: 1px solid rgba(255,255,255,.2); margin: 6px 0; }
+.social-log-heart { width: 14px; height: 14px; }
 .social-idol-face { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.28); }
 .social-idol-face.is-empty { display: block; }
 .social-friend-id { display: inline-flex; align-items: center; margin: 4px 0 0; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(186,228,255,.45); background: rgba(52,163,243,.22); color: #fff; font: inherit; font-size: 13px; font-weight: 800; letter-spacing: .04em; cursor: pointer; }
@@ -562,9 +552,9 @@ button.social-bar-art { cursor: pointer; }
 .social-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .social-preview-card em { position: absolute; right: 2px; bottom: 2px; z-index: 1; font-style: normal; font-size: 10px; font-weight: 800; background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; padding: 0 4px; }
 .social-preview-hint { font-size: 12px; font-weight: 800; opacity: .85; }
-.social-log-wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; margin: 12px 0; }
-.social-log-chart { flex: 1 1 160px; min-width: 140px; }
-.social-log-title { text-align: center; font-weight: 800; margin-bottom: 6px; font-size: 13px; }
+.social-log-wrap { display: flex; flex-wrap: nowrap; gap: 8px; align-items: stretch; margin: 12px 0; }
+.social-log-chart { flex: 1 1 0; min-width: 0; }
+.social-log-title { text-align: center; font-weight: 800; margin-bottom: 4px; font-size: 11px; }
 .social-log-cols { display: flex; align-items: flex-end; gap: 4px; background: rgba(255,255,255,.1); border-radius: 8px; padding: 8px 6px 6px; min-height: 120px; }
 .social-log-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .social-log-cap { font-size: 10px; font-weight: 800; background: #2a2a33; color: #fff; border-radius: 999px; padding: 1px 5px; margin-bottom: 4px; }

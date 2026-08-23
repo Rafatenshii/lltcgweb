@@ -266,21 +266,41 @@ function tcgSocialBladeColor(string $color): string {
     };
 }
 
+function tcgSocialAddHeartCounts($raw, array &$dest): void {
+    if (!is_array($raw)) {
+        return;
+    }
+    foreach ($raw as $h) {
+        $color = is_array($h) ? (string)($h['color'] ?? $h['colour'] ?? '') : (string)$h;
+        $color = tcgSocialBladeColor($color);
+        if ($color === '') {
+            continue;
+        }
+        $n = is_array($h) ? max(1, intval($h['count'] ?? $h['n'] ?? 1)) : 1;
+        $dest[$color] = ($dest[$color] ?? 0) + $n;
+    }
+}
+
 function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): array {
     $buckets = ['1-3' => 0, '4' => 0, '5-8' => 0, '9' => 0, '10-11' => 0, '12-15' => 0, '16+' => 0];
     $blades = [];
+    $hearts = [];
     $types = ['member' => 0, 'live' => 0, 'energy' => 0];
-    $countCard = static function (string $no) use (&$buckets, &$blades, &$types, $cardMap): void {
+    $countCard = static function (string $no) use (&$buckets, &$blades, &$hearts, &$types, $cardMap): void {
         $card = $cardMap[$no] ?? null;
         if (!is_array($card)) {
             return;
         }
-        $en = strtolower((string)($card['card_type_en'] ?? ''));
-        if ($en === 'member' || ($card['card_type'] ?? '') === 'メンバー') {
+        $en = strtolower((string)($card['card_type_en'] ?? $card['card_type'] ?? ''));
+        $jp = (string)($card['card_type'] ?? '');
+        $isMember = $en === 'member' || $jp === 'メンバー';
+        $isLive = $en === 'live' || $jp === 'ライブ';
+        $isEnergy = $en === 'energy' || $jp === 'エネルギー';
+        if ($isMember) {
             $types['member']++;
-        } elseif ($en === 'live' || ($card['card_type'] ?? '') === 'ライブ') {
+        } elseif ($isLive) {
             $types['live']++;
-        } elseif ($en === 'energy' || ($card['card_type'] ?? '') === 'エネルギー') {
+        } elseif ($isEnergy) {
             $types['energy']++;
         }
         $cost = intval($card['cost'] ?? 0);
@@ -288,17 +308,10 @@ function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): a
             $b = tcgSocialCostBucket($cost);
             $buckets[$b] = ($buckets[$b] ?? 0) + 1;
         }
-        $bh = $card['blade_hearts'] ?? [];
-        if (is_array($bh)) {
-            foreach ($bh as $h) {
-                $color = is_array($h) ? (string)($h['color'] ?? '') : (string)$h;
-                $color = tcgSocialBladeColor($color);
-                if ($color === '') {
-                    continue;
-                }
-                $n = is_array($h) ? max(1, intval($h['count'] ?? 1)) : 1;
-                $blades[$color] = ($blades[$color] ?? 0) + $n;
-            }
+        tcgSocialAddHeartCounts($card['blade_hearts'] ?? [], $blades);
+        // Printed member hearts only — live `hearts` are requirements, not supply.
+        if ($isMember) {
+            tcgSocialAddHeartCounts($card['hearts'] ?? [], $hearts);
         }
     };
     foreach ($main as $no) {
@@ -311,11 +324,17 @@ function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): a
     foreach ($blades as $n) {
         $heartTotal += intval($n);
     }
+    $regularTotal = 0;
+    foreach ($hearts as $n) {
+        $regularTotal += intval($n);
+    }
     return [
         'cost_buckets' => $buckets,
         'blade_hearts' => $blades,
+        'hearts' => $hearts,
         'types' => $types,
         'blade_heart_total' => $heartTotal,
+        'heart_total' => $regularTotal,
     ];
 }
 
