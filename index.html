@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=94">
+<link rel="stylesheet" href="client/css/shell-all.css?v=95">
 <link rel="stylesheet" href="client/css/prompts.css?v=3">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -19977,15 +19977,12 @@ function projectUnderChipRect(slotWrap, index, count) {
 }
 
 function memberUnderStackMetrics(hostW, hostH, n) {
-  let chipH = hostW;
-  if (chipH > hostH) chipH = hostH;
-  const chipW = chipH * (88 / 63);
-  const peek = Math.max(10, Math.min(hostW * 0.3, chipW * 0.2));
+  const chipW = hostW;
+  const chipH = hostH;
+  const peek = Math.max(8, Math.min(hostW * 0.22, 16));
   const count = Math.max(1, n || 1);
-  const span = Math.max(0, hostH - chipH);
-  const step = count > 1 ? span / (count - 1) : 0;
-  const startY = count > 1 ? 0 : Math.max(0, (hostH - chipH) / 2);
-  return { chipW, chipH, peek, step, startY };
+  const step = count > 1 ? peek * 0.45 : 0;
+  return { chipW, chipH, peek, step, startY: 0 };
 }
 
 function projectFieldCardRect(loc, card, myId) {
@@ -33341,7 +33338,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=105"></script>
+<script src="client/js/spectacle.js?v=106"></script>
 <script src="client/js/board-render.js?v=40"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>

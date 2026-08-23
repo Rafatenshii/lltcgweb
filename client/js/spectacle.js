@@ -9576,18 +9576,14 @@ function layoutMemberUnderStack(hostEl) {
   const metrics = typeof memberUnderStackMetrics === 'function'
     ? memberUnderStackMetrics(hostW, hostH, n)
     : (() => {
-      let chipH = Math.min(hostW, hostH);
-      const chipW = chipH * (88 / 63);
-      const peek = Math.max(10, Math.min(hostW * 0.3, chipW * 0.2));
-      const span = Math.max(0, hostH - chipH);
-      const step = n > 1 ? span / (n - 1) : 0;
-      return { chipW, chipH, peek, step, startY: n > 1 ? 0 : Math.max(0, (hostH - chipH) / 2) };
+      const peek = Math.max(8, Math.min(hostW * 0.22, 16));
+      return { chipW: hostW, chipH: hostH, peek, step: n > 1 ? peek * 0.45 : 0, startY: 0 };
     })();
   chips.forEach((chip, i) => {
     chip.style.width = metrics.chipW + 'px';
     chip.style.height = metrics.chipH + 'px';
-    chip.style.left = (hostW - metrics.chipW + metrics.peek) + 'px';
-    chip.style.top = (metrics.startY + i * metrics.step) + 'px';
+    chip.style.left = (metrics.peek + i * metrics.step) + 'px';
+    chip.style.top = (metrics.startY || 0) + 'px';
     chip.style.zIndex = String(i + 1);
   });
   const badge = stack.querySelector('.stacked-cards-count');
@@ -9615,11 +9611,8 @@ function appendMemberStackedMembersBadge(slotEl, member) {
     chip.className = 'under-chip';
     if (c?.instance_id) chip.dataset.iid = c.instance_id;
     chip.classList.toggle('card-arriving', !!(G._animHideIids?.has(c?.instance_id)));
-    if (typeof isLiveCard === 'function' && isLiveCard(c)) {
-      if (typeof appendCardFaceFill === 'function') appendCardFaceFill(chip, c);
-    } else if (typeof appendLiveStorageMemberFace === 'function') {
-      appendLiveStorageMemberFace(chip, c);
-    }
+    if (typeof appendCardFaceFill === 'function') appendCardFaceFill(chip, c);
+    else if (typeof appendCardFace === 'function') appendCardFace(chip, c, { sideways: false });
     chip.onclick = (ev) => {
       ev.stopPropagation();
       if (!G.isSpectator) showCard(c, null, G.gameState, G.playerId);
