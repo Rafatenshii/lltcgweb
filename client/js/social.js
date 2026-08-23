@@ -251,12 +251,16 @@
     if (!el) return;
     let z = 8760;
     document.querySelectorAll('.social-overlay.open').forEach((n) => {
+      n.classList.remove('social-stack-top');
       if (n === el) return;
       const nz = parseInt(n.style.zIndex || window.getComputedStyle(n).zIndex, 10);
       if (Number.isFinite(nz)) z = Math.max(z, nz);
     });
-    el.style.zIndex = String(Math.min(z + 10, 8880));
-    el.classList.add('open');
+    /* Friends is later in the DOM than Profile, so equal z-index keeps Profile hidden.
+       Re-append + bump z so View from Recents stacks on top. Card inspect stays at 8900. */
+    if (el.parentNode) el.parentNode.appendChild(el);
+    el.style.setProperty('z-index', String(Math.min(z + 20, 8880)));
+    el.classList.add('open', 'social-stack-top');
     el.setAttribute('aria-hidden', 'false');
     document.body.classList.add('social-overlay-open');
     applyI18n(el);
@@ -264,7 +268,7 @@
   function closeOverlay(id) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.classList.remove('open');
+    el.classList.remove('open', 'social-stack-top');
     el.setAttribute('aria-hidden', 'true');
     el.style.removeProperty('z-index');
     if (!document.querySelector('.social-overlay.open')) {

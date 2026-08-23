@@ -82,6 +82,7 @@ body.social-overlay-open .llc-sky-dim::after {
   -webkit-backdrop-filter: blur(5px);
 }
 .social-overlay.open { display: flex; }
+.social-overlay.open.social-stack-top { z-index: 8785; }
 /* Card inspect (#modal-card is z-index 940) must sit above profile / friends. */
 body.social-overlay-open #modal-card,
 body.social-overlay-open #modal-card.open {
