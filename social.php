@@ -445,6 +445,19 @@ function tcgSocialLiveCardNo(string $liveName): string {
     return $map[$q] ?? '';
 }
 
+/** Split "Honoka Kosaka" / "Kosaka Honoka" into comparable name tokens. */
+function tcgSocialIdolNameTokens(string $s): array {
+    $parts = preg_split('/[\s・･.\'’\-]+/u', strtolower(trim($s))) ?: [];
+    $out = [];
+    foreach ($parts as $p) {
+        $p = trim($p);
+        if ($p !== '') {
+            $out[] = $p;
+        }
+    }
+    return $out;
+}
+
 function tcgSocialIdolPortraitUrl(string $idolName): string {
     $q = strtolower(trim($idolName));
     if ($q === '') {
@@ -458,25 +471,36 @@ function tcgSocialIdolPortraitUrl(string $idolName): string {
             $rows = is_array($raw['items'] ?? null) ? $raw['items'] : (is_array($raw) ? $raw : []);
         }
     }
-    $first = explode(' ', $q)[0];
+    $qTokens = tcgSocialIdolNameTokens($q);
+    $tokenUrl = '';
+    $tokenLen = 0;
     foreach ($rows as $p) {
         if (!is_array($p)) {
             continue;
         }
-        $id = strtolower((string)($p['id'] ?? ''));
-        $name = strtolower((string)($p['name'] ?? ''));
         $url = (string)($p['portrait'] ?? '');
         if ($url === '') {
             continue;
         }
-        if ($q === $id || $q === $name || $first === $id || $first === $name) {
+        $id = strtolower((string)($p['id'] ?? ''));
+        $name = strtolower((string)($p['name'] ?? ''));
+        $keys = [];
+        foreach ([$id, $name] as $k) {
+            if ($k !== '') {
+                $keys[$k] = true;
+            }
+        }
+        if (isset($keys[$q])) {
             return $url;
         }
-        if ($id !== '' && (str_contains($q, $id) || str_contains($name, $q))) {
-            return $url;
+        foreach (array_keys($keys) as $k) {
+            if (in_array($k, $qTokens, true) && strlen($k) >= $tokenLen) {
+                $tokenUrl = $url;
+                $tokenLen = strlen($k);
+            }
         }
     }
-    return '';
+    return $tokenUrl;
 }
 
 function tcgSocialShowcase(string $discordId): array {
