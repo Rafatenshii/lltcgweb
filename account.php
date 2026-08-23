@@ -53,6 +53,7 @@ require_once __DIR__ . '/missions.php';
 require_once __DIR__ . '/login_bonus.php';
 require_once __DIR__ . '/presence_actions.php';
 require_once __DIR__ . '/tournament.php';
+require_once __DIR__ . '/social.php';
 if (is_file(__DIR__ . '/local_dev_auth.php')) {
     require_once __DIR__ . '/local_dev_auth.php';
 }
@@ -147,6 +148,17 @@ try {
         case 'tournament_join_match': echo json_encode(tcgApiTournamentJoinMatch($body)); break;
         case 'tournament_eligible_decks': echo json_encode(tcgApiTournamentEligibleDecks($body)); break;
         case 'timezone_set':          echo json_encode(tcgApiTimezoneSet($body)); break;
+        case 'social_profile':        echo json_encode(tcgApiSocialGetProfile($body)); break;
+        case 'social_stats':          echo json_encode(tcgApiSocialGetStats($body)); break;
+        case 'social_save_profile':   echo json_encode(tcgApiSocialSaveProfile($body)); break;
+        case 'social_friends':        echo json_encode(tcgApiSocialFriends($body)); break;
+        case 'social_friend_add':     echo json_encode(tcgApiSocialFriendAdd($body)); break;
+        case 'social_friend_accept':  echo json_encode(tcgApiSocialFriendRespond($body, true)); break;
+        case 'social_friend_decline': echo json_encode(tcgApiSocialFriendRespond($body, false)); break;
+        case 'social_friend_remove':  echo json_encode(tcgApiSocialFriendRemove($body)); break;
+        case 'social_report':         echo json_encode(tcgApiSocialReport($body)); break;
+        case 'social_mod_inbox':      echo json_encode(tcgApiSocialModInbox($body)); break;
+        case 'social_mod_action':     echo json_encode(tcgApiSocialModAction($body)); break;
         case 'local_dev_status':
             if (!function_exists('tcgApiLocalDevStatus')) {
                 throw new Exception('Local fake auth unavailable', 404);
@@ -202,6 +214,8 @@ function tcgApiMe(array $body): array {
             'starter_deck' => $user['starter_deck'] ?? null,
             'starter_deck_label' => !empty($user['starter_deck']) ? tcgStarterLabel($user['starter_deck']) : null,
             'needs_starter' => empty($user['starter_deck']),
+            'friend_code' => tcgSocialEnsureFriendCode($uid),
+            'is_social_mod' => tcgSocialIsOwner($uid),
         ],
         'daily' => $daily,
         'ranked_pr' => $rankedPr,
@@ -1418,6 +1432,16 @@ function tcgApiMissionGameFinished(array $body): array {
     }
     $completions = tcgMissionOnGameFinished($state);
     $coinGrants = tcgCoinsOnGameFinished($state);
+    $mode = strtolower((string)($state['mode'] ?? ''));
+    if (empty($state['cpu_solo']) && $mode !== 'ranked' && $mode !== 'cpu' && !str_contains($mode, 'cpu')) {
+        $p1Id = (string)($p1['discord_id'] ?? '');
+        $p2Id = (string)($p2['discord_id'] ?? '');
+        $winnerPid = $state['winner'] ?? null;
+        $winnerId = $winnerPid === 'p1' ? $p1Id : ($winnerPid === 'p2' ? $p2Id : null);
+        if (function_exists('tcgRecordPvpResult')) {
+            tcgRecordPvpResult((string)($state['room_id'] ?? ''), $mode !== '' ? $mode : 'casual', $p1Id, $p2Id, $winnerId);
+        }
+    }
     return [
         'success' => true,
         'mission_completions' => $completions,

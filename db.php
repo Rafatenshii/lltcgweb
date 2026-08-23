@@ -553,6 +553,14 @@ function tcgDbMigrateBootstrap(PDO $db): void {
     tcgDbEnsureColumn($db, 'tcg_users', 'login_days_bootstrapped', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'free_sleeve_claims', 'INTEGER NOT NULL DEFAULT 0');
     tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");
+    tcgDbEnsureColumn($db, 'tcg_users', 'friend_code', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_users', 'bio', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_users', 'bio_locked', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'profile_warnings', 'INTEGER NOT NULL DEFAULT 0');
+    tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_id', 'INTEGER');
+    tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_visibility', "TEXT NOT NULL DEFAULT 'private'");
+    tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_desc', 'TEXT');
+    tcgDbEnsureColumn($db, 'tcg_users', 'title_id', 'TEXT');
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_owned_sleeves (
         discord_id TEXT NOT NULL,
         sleeve_id TEXT NOT NULL,
@@ -805,6 +813,11 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
                 $row['updated_at'] = $now;
             }
         }
+        if (function_exists('tcgSocialEnsureFriendCode')) {
+            tcgSocialEnsureFriendCode($discordId);
+            $stmt->execute([$discordId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+        }
         return $row;
     }
     $db->prepare('INSERT INTO tcg_users (discord_id, username, avatar_url, created_at, updated_at)
@@ -820,7 +833,13 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
     $db->prepare('INSERT OR IGNORE INTO tcg_rank (discord_id, game_mode, updated_at) VALUES (?, ?, ?)')
         ->execute([$discordId, 'standard', $now]);
     $stmt->execute([$discordId]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (function_exists('tcgSocialEnsureFriendCode')) {
+        tcgSocialEnsureFriendCode($discordId);
+        $stmt->execute([$discordId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+    }
+    return $row;
 }
 
 /**

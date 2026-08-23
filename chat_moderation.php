@@ -118,3 +118,23 @@ function tcgAssertTournamentTitleAllowed(string $title): void {
         throw new Exception('Blocked word(s) detected in tournament name', 400);
     }
 }
+
+/**
+ * Validate player-authored profile / deck text (bio, featured-deck description).
+ * @throws Exception
+ */
+function tcgAssertProfileTextAllowed(string $text, string $field = 'bio', int $maxLen = 100): void {
+    $text = trim($text);
+    if (mb_strlen($text) > $maxLen) {
+        throw new Exception($field . ' is too long (max ' . $maxLen . ')', 400);
+    }
+    if ($text === '') {
+        return;
+    }
+    if (tcgTextContainsLink($text)) {
+        throw new Exception('Please do not put links in your ' . $field, 400);
+    }
+    if (tcgTextContainsSlur($text)) {
+        throw new Exception('Blocked word(s) detected', 400);
+    }
+}

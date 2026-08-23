@@ -438,6 +438,13 @@ function tcgApplyRankedResultFromWebhook(array $body): array {
     } catch (Throwable $e) {
         // Elo/PR already applied — missions are best-effort on Hostinger.
     }
+    try {
+        require_once __DIR__ . '/social.php';
+        $winnerId = $winnerPid === 'p1' ? $p1Id : ($winnerPid === 'p2' ? $p2Id : null);
+        tcgRecordPvpResult($roomId, 'ranked', $p1Id, $p2Id, $winnerId);
+    } catch (Throwable $e) {
+        // Profile history is best-effort.
+    }
 
     $coinGrants = [];
     try {

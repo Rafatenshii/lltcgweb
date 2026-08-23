@@ -1,0 +1,152 @@
+/* Social rail — fixed 16:9 gutter. Do not change .account-shell metrics. */
+#social-rail {
+  position: fixed;
+  right: max(10px, calc((100vw - min(720px, 96vw)) / 2 - 76px));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+#social-rail[hidden] { display: none !important; }
+.social-rail-btn {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: rgba(20, 28, 48, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.social-rail-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+.social-rail-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.social-rail-btn.is-mod {
+  outline: 2px solid #f4c36a;
+}
+@media (max-width: 1279px) {
+  #social-rail { right: 8px; gap: 10px; }
+  .social-rail-btn { width: 44px; height: 44px; }
+}
+
+.social-overlay.llc-menu-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 8760;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 24px) 16px;
+  background: rgba(4, 10, 24, 0.78);
+  overflow: auto;
+}
+.social-overlay.open { display: flex; }
+.social-overlay .account-shell {
+  width: 100%;
+  max-width: min(720px, 96vw);
+  margin: auto;
+}
+.social-panel { max-height: min(82vh, 760px); overflow: auto; }
+.social-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.social-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #223;
+}
+.social-code { font-family: ui-monospace, monospace; letter-spacing: 0.06em; }
+.social-bio { width: 100%; min-height: 72px; resize: vertical; }
+.social-showcase {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.social-showcase button,
+.social-card-thumb {
+  width: 72px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.25);
+  padding: 0;
+  cursor: pointer;
+}
+.social-showcase img,
+.social-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.social-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.social-row img.av { width: 36px; height: 36px; border-radius: 50%; }
+.social-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.social-tabs button[aria-selected="true"] { font-weight: 800; }
+.social-bars { display: flex; flex-direction: column; gap: 6px; }
+.social-bar {
+  display: grid;
+  grid-template-columns: 88px 1fr 36px;
+  gap: 8px;
+  align-items: center;
+}
+.social-bar-track {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+}
+.social-bar-fill {
+  height: 100%;
+  background: #e89aa4;
+  border-radius: 6px;
+}
+.social-bar-n {
+  font-size: 12px;
+  background: #1a1a22;
+  color: #fff;
+  border-radius: 999px;
+  text-align: center;
+  padding: 1px 6px;
+}
+.social-comp-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.social-chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.28);
+}
+.social-deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.social-err { color: #ffb4b4; min-height: 1.2em; }
+.social-char-count { font-size: 12px; opacity: 0.8; text-align: right; }
+.rank-name.social-name-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+body.social-overlay-open { overflow: hidden; }
