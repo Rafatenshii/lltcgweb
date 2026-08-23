@@ -548,10 +548,12 @@ button.social-bar-art { cursor: pointer; }
 .social-log-heart { width: 16px; height: 16px; object-fit: contain; display: block; }
 .social-report { margin: 12px 0 4px; }
 .social-report-confirm {
+  display: none;
   margin-top: 8px;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 107, 168, 0.45);
   background: rgba(0, 0, 0, 0.22);
 }
+.social-report-confirm.is-open { display: block; }
 .social-report-confirm p { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }

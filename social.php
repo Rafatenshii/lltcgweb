@@ -87,8 +87,18 @@ function tcgSocialRandomFriendCode(): string {
 }
 
 function tcgSocialNormalizeFriendCode(string $raw): string {
-    $s = strtoupper(preg_replace('/\s+/', '', trim($raw)) ?? '');
-    return strtr($s, ['I' => '1', 'L' => '1', 'O' => '0', 'U' => 'V']);
+    $s = preg_replace('/[^0-9A-Z]/', '', strtoupper(trim($raw))) ?? '';
+    // Crockford I/L/O/U only applies to the 6-character payload — never the LC prefix
+    // (L→1 would turn LCXXXXXX into 1CXXXXXX and reject every real code).
+    if (str_starts_with($s, 'LC')) {
+        $rest = substr($s, 2);
+    } elseif (str_starts_with($s, '1C') && strlen($s) >= 8) {
+        $rest = substr($s, 2);
+    } else {
+        $rest = $s;
+    }
+    $rest = strtr($rest, ['I' => '1', 'L' => '1', 'O' => '0', 'U' => 'V']);
+    return 'LC' . $rest;
 }
 
 function tcgSocialEnsureFriendCode(string $discordId): string {
@@ -999,11 +1009,11 @@ function tcgApiSocialFriends(array $body): array {
 function tcgApiSocialFriendAdd(array $body): array {
     $uid = tcgRequireAuthUser($body);
     tcgSocialEnsureSchema();
-    $code = tcgSocialNormalizeFriendCode((string)($body['friend_code'] ?? ''));
+    $code = tcgSocialNormalizeFriendCode((string)($body['friend_code'] ?? $body['code'] ?? ''));
     if (!preg_match('/^LC[0-9A-HJKMNP-TV-Z]{6}$/', $code)) {
         throw new Exception('Invalid friend code', 400);
     }
-    $st = tcgDb()->prepare('SELECT discord_id FROM tcg_users WHERE friend_code = ?');
+    $st = tcgDb()->prepare('SELECT discord_id FROM tcg_users WHERE upper(friend_code) = ?');
     $st->execute([$code]);
     $other = (string)$st->fetchColumn();
     if ($other === '') {
@@ -1040,7 +1050,7 @@ function tcgApiSocialFriendAdd(array $body): array {
 
 function tcgApiSocialFriendRespond(array $body, bool $accept): array {
     $uid = tcgRequireAuthUser($body);
-    $other = trim((string)($body['user_id'] ?? ''));
+    $other = trim((string)($body['user_id'] ?? $body['target_id'] ?? $body['id'] ?? ''));
     if ($other === '') {
         throw new Exception('user_id required', 400);
     }

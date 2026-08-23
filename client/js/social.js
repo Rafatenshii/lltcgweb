@@ -409,7 +409,7 @@
       <div id="profile-deck-view"></div>
       ${!self ? `<div class="social-report">
         <button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>
-        <div class="social-report-confirm" id="profile-report-confirm" hidden>
+        <div class="social-report-confirm" id="profile-report-confirm">
           <p>${esc(tt('profile.reportAsk', 'Report this player? This sends their profile text to moderators.'))}</p>
           <div class="social-picker-actions">
             <button type="button" class="btn-grad" id="btn-profile-report-yes">${tt('profile.reportConfirm', 'Yes, report')}</button>
@@ -470,24 +470,22 @@
     document.getElementById('btn-profile-save')?.addEventListener('click', () => saveProfile(p));
     document.getElementById('btn-profile-report')?.addEventListener('click', () => {
       const box = document.getElementById('profile-report-confirm');
-      const btn = document.getElementById('btn-profile-report');
-      if (box) box.hidden = false;
-      if (btn) btn.hidden = true;
+      if (!box) return;
+      box.classList.add('is-open');
+      box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
     document.getElementById('btn-profile-report-no')?.addEventListener('click', () => {
-      const box = document.getElementById('profile-report-confirm');
-      const btn = document.getElementById('btn-profile-report');
-      if (box) box.hidden = true;
-      if (btn) btn.hidden = false;
+      document.getElementById('profile-report-confirm')?.classList.remove('is-open');
     });
     document.getElementById('btn-profile-report-yes')?.addEventListener('click', async () => {
+      const ask = tt('profile.reportAsk', 'Report this player? This sends their profile text to moderators.');
+      if (typeof window.confirm === 'function' && !window.confirm(ask)) return;
       const yes = document.getElementById('btn-profile-report-yes');
       if (yes) yes.disabled = true;
       try {
         await accountPost('social_report', { user_id: p.id, field: 'bio', snippet: p.bio || '' });
         setErr('profile-err', tt('profile.reported', 'Report sent.'));
-        const box = document.getElementById('profile-report-confirm');
-        if (box) box.hidden = true;
+        document.getElementById('profile-report-confirm')?.classList.remove('is-open');
       } catch (e) {
         setErr('profile-err', e.message);
         if (yes) yes.disabled = false;
@@ -762,7 +760,10 @@
         ev.preventDefault();
         setErr('friends-err', '');
         try {
-          await accountPost('social_friend_add', { friend_code: document.getElementById('friends-code-input')?.value || '' });
+          await accountPost('social_friend_add', {
+            friend_code: document.getElementById('friends-code-input')?.value || '',
+            code: document.getElementById('friends-code-input')?.value || '',
+          });
           await refreshFriends();
         } catch (e) { setErr('friends-err', e.message); }
       });
@@ -771,10 +772,18 @@
       });
       root.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openProfile(b.getAttribute('data-open'))));
       root.querySelectorAll('[data-acc]').forEach((b) => b.addEventListener('click', async () => {
-        await accountPost('social_friend_accept', { user_id: b.getAttribute('data-acc') }); refreshFriends();
+        setErr('friends-err', '');
+        try {
+          await accountPost('social_friend_accept', { user_id: b.getAttribute('data-acc') });
+          refreshFriends();
+        } catch (e) { setErr('friends-err', e.message); }
       }));
       root.querySelectorAll('[data-dec]').forEach((b) => b.addEventListener('click', async () => {
-        await accountPost('social_friend_decline', { user_id: b.getAttribute('data-dec') }); refreshFriends();
+        setErr('friends-err', '');
+        try {
+          await accountPost('social_friend_decline', { user_id: b.getAttribute('data-dec') });
+          refreshFriends();
+        } catch (e) { setErr('friends-err', e.message); }
       }));
       root.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', async () => {
         await accountPost('social_friend_remove', { user_id: b.getAttribute('data-rm') }); refreshFriends();

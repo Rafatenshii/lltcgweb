@@ -25,6 +25,14 @@ final class SocialFriendCodeTest extends TestCase
         }
     }
 
+    public function testNormalizeKeepsLcPrefix(): void
+    {
+        $this->assertSame('LC0A2B3C', tcgSocialNormalizeFriendCode('lc0a2b3c'));
+        $this->assertSame('LC0A2B3C', tcgSocialNormalizeFriendCode('LC 0A2B3C'));
+        $this->assertSame('LC0A2B3C', tcgSocialNormalizeFriendCode('1C0A2B3C'));
+        $this->assertSame('LC10A2B3', tcgSocialNormalizeFriendCode('LCI0A2B3'));
+    }
+
     public function testSlurRejectedInBio(): void
     {
         $this->expectException(\Exception::class);
