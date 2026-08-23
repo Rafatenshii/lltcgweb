@@ -581,27 +581,33 @@
       const data = await accountPost('social_stats', { user_id: userId });
       const modes = (data.modes || []).map((m) => {
         const pct = (m.win_pct != null ? m.win_pct : m.winPct);
-        const line = (m.wl_known === false || m.wl_known === false)
-          ? `${m.games} ${tt('profile.games', 'games')}`
-          : `${m.games} · ${m.wins}–${m.losses} (${pct}%)`;
-        return `<div class="social-row"><span>${esc(formatMode(m.mode))}</span><span>${line}</span></div>`;
+        const known = !(m.wl_known === false || m.wl_known === false);
+        const rec = known
+          ? `${m.wins}–${m.losses}`
+          : `${m.games} ${tt('profile.games', 'games')}`;
+        const sub = known && m.games ? `${m.games} · ${pct}%` : '';
+        return `<div class="social-stat-chip"><span class="social-stat-chip-label">${esc(formatMode(m.mode))}</span><strong>${esc(rec)}</strong>${sub ? `<span class="social-stat-chip-sub">${esc(sub)}</span>` : ''}</div>`;
       }).join('');
-      const opps = (data.opponents || []).map((o) =>
-        `<button type="button" class="social-row" data-uid="${esc(o.id)}"><img class="av" src="${esc(o.avatar_url || o.avatar_url || '')}" alt=""><span>${esc(o.username)}</span><span>${o.wins}–${o.losses}</span></button>`
+      const opps = (data.opponents || []).filter((o) => (Number(o.wins) + Number(o.losses)) > 0).map((o) =>
+        `<button type="button" class="social-opp-row" data-uid="${esc(o.id)}">${o.avatar_url || o.avatar_url ? `<img class="av" src="${esc(o.avatar_url || o.avatar_url)}" alt="">` : '<span class="av av-empty"></span>'}<span class="social-opp-name">${esc(o.username)}</span><span class="social-record">${Number(o.wins)}–${Number(o.losses)}</span></button>`
       ).join('');
       const idols = statBars(data.idols, 'idol');
       const units = statBars(data.units, 'unit');
       const lives = statBars(data.lives, 'live');
-      const hist = (data.history || []).map((h) =>
-        `<div class="social-row"><span>${esc(formatMode(h.mode))}</span><span>${esc(h.result)}</span><span>${esc(h.opponent && h.opponent.username ? h.opponent.username : '')}</span></div>`
-      ).join('');
+      const hist = (data.history || []).map((h) => {
+        const res = String(h.result || '');
+        const name = h.opponent && h.opponent.username ? h.opponent.username : '';
+        return `<div class="social-hist-row"><span class="social-result social-result--${esc(res)}">${esc(res)}</span><span class="social-hist-name">${esc(name)}</span><span class="social-hist-mode">${esc(formatMode(h.mode))}</span></div>`;
+      }).join('');
       root.innerHTML = `
-        <h3>${tt('profile.byMode', 'By mode')}</h3>${modes || '<p>—</p>'}
-        <h3>${tt('profile.opponents', 'Most-played opponents')}</h3>${opps || '<p>—</p>'}
-        <h3>${tt('profile.idols', 'Top idols')}</h3><div class="social-bars">${idols || '<p>—</p>'}</div>
-        <h3>${tt('profile.units', 'Top units')}</h3><div class="social-bars">${units || '<p>—</p>'}</div>
-        <h3>${tt('profile.lives', 'Live Success')}</h3><div class="social-bars">${lives || '<p>—</p>'}</div>
-        <h3>${tt('profile.history', 'Match history')}</h3>${hist || '<p>—</p>'}`;
+        <div class="social-stats">
+          <section class="social-stat-block"><h3>${tt('profile.byMode', 'By mode')}</h3><div class="social-stat-chips">${modes || '<p class="social-stat-empty">—</p>'}</div></section>
+          <section class="social-stat-block"><h3>${tt('profile.opponents', 'Most-played opponents')}</h3><div class="social-opp-list">${opps || '<p class="social-stat-empty">—</p>'}</div></section>
+          <section class="social-stat-block"><h3>${tt('profile.idols', 'Top idols')}</h3><div class="social-bars">${idols || '<p class="social-stat-empty">—</p>'}</div></section>
+          <section class="social-stat-block"><h3>${tt('profile.units', 'Top units')}</h3><div class="social-bars">${units || '<p class="social-stat-empty">—</p>'}</div></section>
+          <section class="social-stat-block"><h3>${tt('profile.lives', 'Live Success')}</h3><div class="social-bars">${lives || '<p class="social-stat-empty">—</p>'}</div></section>
+          <section class="social-stat-block"><h3>${tt('profile.history', 'Match history')}</h3><div class="social-hist-list">${hist || '<p class="social-stat-empty">—</p>'}</div></section>
+        </div>`;
       root.querySelectorAll('[data-uid]').forEach((b) => {
         b.addEventListener('click', () => { closeOverlay('overlay-profile-stats'); openProfile(b.getAttribute('data-uid')); });
       });

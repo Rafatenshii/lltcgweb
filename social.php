@@ -151,12 +151,19 @@ function tcgSocialUserStub(string $discordId): array {
     $stmt = tcgDb()->prepare('SELECT discord_id, username, avatar_url, friend_code FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $name = trim((string)($row['username'] ?? ''));
     return [
         'id' => $discordId,
-        'username' => (string)($row['username'] ?? 'Player'),
+        'username' => $name !== '' ? $name : 'Player',
         'avatar_url' => $row['avatar_url'] ?? null,
         'friend_code' => (string)($row['friend_code'] ?? ''),
+        'known' => $row !== [],
     ];
+}
+
+function tcgSocialMatchHasWinner(array $row): bool {
+    $w = trim((string)($row['winner_id'] ?? ''));
+    return $w !== '';
 }
 
 function tcgRecordPvpResult(string $roomId, string $mode, string $p1Id, string $p2Id, ?string $winnerId): void {
@@ -476,7 +483,10 @@ function tcgSocialCollectMatchRows(string $discordId): array {
             $p1 = (string)$row['p1_id'];
             $p2 = (string)$row['p2_id'];
             $wp = (string)($row['winner_pid'] ?? '');
-            $winner = $wp === 'p1' ? $p1 : ($wp === 'p2' ? $p2 : null);
+            if ($wp !== 'p1' && $wp !== 'p2') {
+                continue;
+            }
+            $winner = $wp === 'p1' ? $p1 : $p2;
             $byRoom[$rid] = [
                 'room_id' => $rid,
                 'mode' => 'ranked',
@@ -558,7 +568,10 @@ function tcgSocialOpponents(string $discordId, int $limit = 8): array {
     foreach (tcgSocialCollectMatchRows($discordId) as $row) {
         $oppId = $row['p1_id'] === $discordId ? $row['p2_id'] : $row['p1_id'];
         $oppId = trim((string)$oppId);
-        if ($oppId === '' || strcasecmp($oppId, 'cpu') === 0) {
+        if ($oppId === '' || strcasecmp($oppId, 'cpu') === 0 || $oppId === $discordId) {
+            continue;
+        }
+        if (!tcgSocialMatchHasWinner($row)) {
             continue;
         }
         if (!isset($bucket[$oppId])) {
@@ -567,14 +580,21 @@ function tcgSocialOpponents(string $discordId, int $limit = 8): array {
         $bucket[$oppId]['games']++;
         if ($row['winner_id'] === $discordId) {
             $bucket[$oppId]['wins']++;
-        } elseif ($row['winner_id'] !== null) {
+        } else {
             $bucket[$oppId]['losses']++;
         }
     }
     uasort($bucket, static fn ($a, $b) => $b['games'] <=> $a['games']);
     $out = [];
     foreach (array_slice($bucket, 0, $limit, true) as $oppId => $n) {
+        if (intval($n['games']) < 1 || (intval($n['wins']) + intval($n['losses'])) < 1) {
+            continue;
+        }
         $stub = tcgSocialUserStub((string)$oppId);
+        if (empty($stub['known'])) {
+            continue;
+        }
+        unset($stub['known']);
         $stub['wins'] = intval($n['wins']);
         $stub['losses'] = intval($n['losses']);
         $stub['games'] = intval($n['games']);
@@ -593,9 +613,14 @@ function tcgSocialMatchHistory(string $discordId, int $offset = 0, int $limit = 
     foreach ($rows as $row) {
         $seen[$row['room_id']] = true;
         $oppId = $row['p1_id'] === $discordId ? $row['p2_id'] : $row['p1_id'];
-        $win = $row['winner_id'] === null
-            ? 'draw'
-            : ($row['winner_id'] === $discordId ? 'win' : 'loss');
+        $oppId = trim((string)$oppId);
+        if ($oppId === '' || strcasecmp($oppId, 'cpu') === 0) {
+            continue;
+        }
+        if (!tcgSocialMatchHasWinner($row)) {
+            continue;
+        }
+        $win = $row['winner_id'] === $discordId ? 'win' : 'loss';
         $out[] = [
             'room_id' => $row['room_id'],
             'mode' => $row['mode'],
@@ -628,6 +653,8 @@ function tcgSocialMatchHistory(string $discordId, int $offset = 0, int $limit = 
                     $result = ($winner === $saver) ? 'win' : 'loss';
                 } elseif ($winner !== '') {
                     $result = (strcasecmp($winner, $discordId) === 0 || strcasecmp($winner, $saver) === 0) ? 'win' : 'loss';
+                } else {
+                    continue;
                 }
                 $out[] = [
                     'room_id' => $rid,
