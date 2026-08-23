@@ -137,21 +137,8 @@ function tryResolveAbilityEffectSwitchAddFromWr(
             break;
 
         case 'both_add_wr_live_to_hand':
-            foreach (['p1', 'p2'] as $id) {
-                $pl = &$state['players'][$id];
-                $cfg = ['group' => '', 'filter' => 'live'];
-                $added = addFromWaitingRoomWithChoice($state, $id, $source, $ab, $ctx, $cfg, 1);
-                if ($added === null) {
-                    $state = addLog($state, $state['players'][$id]['name'] .
-                        " — [$name] choose a Live card from Waiting Room.");
-                    break;
-                }
-                if ($added > 0) {
-                    $state = addLog($state, $state['players'][$id]['name'] .
-                        " — [$name] added 1 Live card from Waiting Room to hand.");
-                }
-                unset($pl);
-            }
+            $opp = ($pid === 'p1') ? 'p2' : 'p1';
+            $state = continueBothAddWrLiveToHand($state, $source, $ab, $ctx, $name, [$pid, $opp]);
             break;
 
         case 'add_wr_live_if_opp_hand_ahead':
@@ -192,5 +179,45 @@ function tryResolveAbilityEffectSwitchAddFromWr(
             break;
 
     }
+    return $state;
+}
+
+/**
+ * Sequential "each player adds 1 Live from their WR" — controller first, then opponent.
+ * Stops when a pick prompt opens; remaining seats resume via finishPromptEffects.
+ */
+function continueBothAddWrLiveToHand(
+    array $state,
+    array $source,
+    array $ab,
+    array $ctx,
+    string $name,
+    array $remaining
+): array {
+    $cfg = ['group' => '', 'filter' => 'live'];
+    foreach (array_values($remaining) as $i => $id) {
+        if (!isset($state['players'][$id])) {
+            continue;
+        }
+        $added = addFromWaitingRoomWithChoice($state, $id, $source, $ab, $ctx, $cfg, 1);
+        if ($added === null) {
+            $rest = array_values(array_slice($remaining, $i + 1));
+            $state['_resume_both_add_wr_live'] = [
+                'source' => $source,
+                'ability' => $ab,
+                'ctx' => $ctx,
+                'name' => $name,
+                'remaining' => $rest,
+            ];
+            $state = addLog($state, $state['players'][$id]['name'] .
+                " — [$name] choose a Live card from Waiting Room.");
+            return $state;
+        }
+        if ($added > 0) {
+            $state = addLog($state, $state['players'][$id]['name'] .
+                " — [$name] added 1 Live card from Waiting Room to hand.");
+        }
+    }
+    unset($state['_resume_both_add_wr_live']);
     return $state;
 }

@@ -73,6 +73,22 @@ function finishPromptEffects(array $state): array {
             return $state;
         }
     }
+    // Resume Setsuna Yuki (PL!N-bp4-007) — opponent still needs a WR Live pick.
+    if (empty($state['pending_prompt']) && !empty($state['_resume_both_add_wr_live'])) {
+        $r = $state['_resume_both_add_wr_live'];
+        unset($state['_resume_both_add_wr_live']);
+        $state = continueBothAddWrLiveToHand(
+            $state,
+            is_array($r['source'] ?? null) ? $r['source'] : [],
+            is_array($r['ability'] ?? null) ? $r['ability'] : [],
+            is_array($r['ctx'] ?? null) ? $r['ctx'] : [],
+            (string)($r['name'] ?? 'Member'),
+            array_values($r['remaining'] ?? [])
+        );
+        if (!empty($state['pending_prompt'])) {
+            return $state;
+        }
+    }
     // Resume deferred On Enter after an On Leave prompt (Position Change, etc.) (#104).
     if (empty($state['pending_prompt']) && !empty($state['_resume_on_enter'])) {
         $r = $state['_resume_on_enter'];
