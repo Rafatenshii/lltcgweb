@@ -1159,9 +1159,13 @@ function tcgApiSocialFriendRemove(array $body): array {
 function tcgApiSocialReport(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $target = trim((string)($body['user_id'] ?? ''));
-    $field = (string)($body['field'] ?? 'bio');
-    if (!in_array($field, ['bio', 'deck_desc'], true)) {
-        $field = 'bio';
+    $field = (string)($body['reason'] ?? $body['field'] ?? 'bio');
+    if (in_array($field, ['bio', 'deck_desc', 'profile_bio'], true)) {
+        $field = 'profile_bio';
+    } elseif (in_array($field, ['alt_abuse', 'leaderboard_alt'], true)) {
+        $field = 'alt_abuse';
+    } else {
+        $field = 'profile_bio';
     }
     if ($target === '' || $target === $uid) {
         throw new Exception('Invalid report target', 400);

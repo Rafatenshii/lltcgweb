@@ -595,3 +595,13 @@ button.social-bar-art { cursor: pointer; }
 }
 .social-report-confirm.is-open { display: block; }
 .social-report-confirm p { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
+.social-report-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.social-report-opt input { margin-top: 2px; flex-shrink: 0; }

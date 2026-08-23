@@ -14,6 +14,13 @@
   function accountPost(action, body) {
     return global.accountPost(action, body || {});
   }
+  function reportReasonLabel(field) {
+    const f = String(field || '');
+    if (f === 'alt_abuse' || f === 'leaderboard_alt') {
+      return tt('profile.reportReasonAlt', 'Leaderboard Alt Abuse');
+    }
+    return tt('profile.reportReasonBio', 'Profile/deck bio');
+  }
   function esc(s) {
     return String(s || '')
       .replace(/&/g, '&amp;')
@@ -455,7 +462,15 @@
       ${!self ? `<div class="social-report">
         <button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>
         <div class="social-report-confirm" id="profile-report-confirm">
-          <p>${esc(tt('profile.reportAsk', 'Report this player? This sends their profile text to moderators.'))}</p>
+          <p>${esc(tt('profile.reportAsk', 'Choose a reason. Moderators will review this report.'))}</p>
+          <label class="social-report-opt">
+            <input type="radio" name="profile-report-reason" value="profile_bio" checked>
+            ${esc(tt('profile.reportReasonBio', 'Profile/deck bio'))}
+          </label>
+          <label class="social-report-opt">
+            <input type="radio" name="profile-report-reason" value="alt_abuse">
+            ${esc(tt('profile.reportReasonAlt', 'Leaderboard Alt Abuse'))}
+          </label>
           <div class="social-picker-actions">
             <button type="button" class="btn-grad" id="btn-profile-report-yes">${tt('profile.reportConfirm', 'Yes, report')}</button>
             <button type="button" class="btn-ghost" id="btn-profile-report-no">${tt('social.close', 'Cancel')}</button>
@@ -549,12 +564,15 @@
       document.getElementById('profile-report-confirm')?.classList.remove('is-open');
     });
     document.getElementById('btn-profile-report-yes')?.addEventListener('click', async () => {
-      const ask = tt('profile.reportAsk', 'Report this player? This sends their profile text to moderators.');
-      if (typeof window.confirm === 'function' && !window.confirm(ask)) return;
+      const reason = document.querySelector('input[name="profile-report-reason"]:checked')?.value || 'profile_bio';
       const yes = document.getElementById('btn-profile-report-yes');
       if (yes) yes.disabled = true;
+      const deckDesc = String(p.featured_deck?.desc || '');
+      const snippet = reason === 'alt_abuse'
+        ? String(p.username || p.friend_code || p.id || '')
+        : [p.bio, deckDesc].filter(Boolean).join('\n').slice(0, 200);
       try {
-        await accountPost('social_report', { user_id: p.id, field: 'bio', snippet: p.bio || '' });
+        await accountPost('social_report', { user_id: p.id, field: reason, reason, snippet });
         setErr('profile-err', tt('profile.reported', 'Report sent.'));
         document.getElementById('profile-report-confirm')?.classList.remove('is-open');
       } catch (e) {
@@ -876,7 +894,7 @@
       const data = await accountPost('social_mod_inbox', {});
       root.innerHTML = (data.reports || []).map((r) => `
         <div class="social-row" style="flex-wrap:wrap">
-          <div><strong>${esc(r.username || r.target_id)}</strong> · ${esc(r.field)} · ${tt('profileMod.warns', 'Warnings')}: ${r.profile_warnings || 0}</div>
+          <div><strong>${esc(r.username || r.target_id)}</strong> · ${esc(reportReasonLabel(r.field))} · ${tt('profileMod.warns', 'Warnings')}: ${r.profile_warnings || 0}</div>
           <p>${esc(r.snippet || r.bio || '')}</p>
           <button type="button" class="btn-ghost" data-act="clear_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.clearBio', 'Clear bio')}</button>
           <button type="button" class="btn-ghost" data-act="warn" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.warn', 'Warn')}</button>
