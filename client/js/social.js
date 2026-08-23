@@ -142,8 +142,9 @@
           <div class="hub-stat">${tt('profile.noTitles', 'No titles yet')}</div>
         </div>
       </div>
-      ${self ? `<textarea class="social-bio" id="profile-bio" maxlength="${bioMax}">${esc(p.bio || '')}</textarea>
-        <div class="social-char-count" id="profile-bio-count"></div>` : `<p>${esc(p.bio || tt('profile.emptyBio', 'No bio yet.'))}</p>`}
+      ${self ? `<div class="field"><label for="profile-bio">${tt('profile.bio', 'Bio')}</label>
+        <textarea class="social-bio" id="profile-bio" maxlength="${bioMax}">${esc(p.bio || '')}</textarea>
+        <div class="social-char-count" id="profile-bio-count"></div></div>` : `<p>${esc(p.bio || tt('profile.emptyBio', 'No bio yet.'))}</p>`}
       ${p.bio_locked && self ? `<p class="social-err">${tt('profile.bioLocked', 'Bio editing is locked.')}</p>` : ''}
       <h4 data-i18n="profile.showcase">${tt('profile.showcase', 'Showcase')}</h4>
       <div class="social-showcase" id="profile-showcase">${show}</div>
@@ -151,13 +152,16 @@
          · ${tt('profile.unranked', 'Unranked games')}: ${p.unranked_games || 0}</p>
       <button type="button" class="btn-ghost" id="btn-profile-stats">${tt('profile.gameStats', 'Game stats')}</button>
       <h4>${tt('profile.featuredDeck', 'Featured deck')}</h4>
-      ${self ? `<select id="profile-deck-vis">
+      ${self ? `<div class="field"><label for="profile-deck-vis">${tt('profile.visibility', 'Visibility')}</label>
+        <span class="llc-select-wrap"><select id="profile-deck-vis">
           <option value="private">${tt('profile.visPrivate', 'Private')}</option>
           <option value="friends">${tt('profile.visFriends', 'Friends')}</option>
           <option value="public">${tt('profile.visPublic', 'Public')}</option>
-        </select>
-        <textarea id="profile-deck-desc" maxlength="200">${esc(deck.desc || '')}</textarea>
-        <select id="profile-deck-id"><option value="0">${tt('profile.useEquipped', 'Currently equipped')}</option></select>
+        </select></span></div>
+        <div class="field"><label for="profile-deck-desc">${tt('profile.deckDesc', 'Deck description')}</label>
+        <textarea id="profile-deck-desc" maxlength="200">${esc(deck.desc || '')}</textarea></div>
+        <div class="field"><label for="profile-deck-id">${tt('profile.featuredDeck', 'Featured deck')}</label>
+        <span class="llc-select-wrap"><select id="profile-deck-id"><option value="0">${tt('profile.useEquipped', 'Currently equipped')}</option></select></span></div>
         <button type="button" class="btn-grad" id="btn-profile-save">${tt('profile.save', 'Save')}</button>` : ''}
       <div id="profile-deck-view"></div>
       ${!self ? `<button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>` : ''}
@@ -309,8 +313,11 @@
           <button type="button" data-tab="requests" aria-selected="${_friendsTab === 'requests'}">${tt('friends.tabRequests', 'Requests')}</button>
           <button type="button" data-tab="recent" aria-selected="${_friendsTab === 'recent'}">${tt('friends.tabRecent', 'Recent')}</button>
         </div>
-        <form id="friends-add-form">
-          <input id="friends-code-input" maxlength="12" placeholder="${esc(tt('friends.codePlaceholder', 'LCXXXXXX'))}">
+        <form id="friends-add-form" class="social-add-form">
+          <div class="field">
+            <label for="friends-code-input">${tt('friends.add', 'Add')}</label>
+            <input id="friends-code-input" maxlength="12" placeholder="${esc(tt('friends.codePlaceholder', 'LCXXXXXX'))}">
+          </div>
           <button type="submit" class="btn-grad">${tt('friends.add', 'Add')}</button>
         </form>
         <p class="social-err" id="friends-err"></p>
@@ -351,10 +358,10 @@
         <div class="social-row" style="flex-wrap:wrap">
           <div><strong>${esc(r.username || r.target_id)}</strong> · ${esc(r.field)} · ${tt('profileMod.warns', 'Warnings')}: ${r.profile_warnings || 0}</div>
           <p>${esc(r.snippet || r.bio || '')}</p>
-          <button type="button" data-act="clear_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.clearBio', 'Clear bio')}</button>
-          <button type="button" data-act="warn" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.warn', 'Warn')}</button>
-          <button type="button" data-act="lock_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.lockBio', 'Lock bio')}</button>
-          <button type="button" data-act="dismiss" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.dismiss', 'Dismiss')}</button>
+          <button type="button" class="btn-ghost" data-act="clear_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.clearBio', 'Clear bio')}</button>
+          <button type="button" class="btn-ghost" data-act="warn" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.warn', 'Warn')}</button>
+          <button type="button" class="btn-ghost" data-act="lock_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.lockBio', 'Lock bio')}</button>
+          <button type="button" class="btn-ghost" data-act="dismiss" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.dismiss', 'Dismiss')}</button>
         </div>`).join('') || `<p>${tt('profileMod.empty', 'No open reports.')}</p>`;
       root.querySelectorAll('[data-act]').forEach((b) => {
         b.addEventListener('click', async () => {

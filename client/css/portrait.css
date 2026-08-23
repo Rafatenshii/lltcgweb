@@ -139,7 +139,15 @@ html.tcg-portrait-play #overlay-missions.open,
 html.tcg-portrait-play #overlay-mission-starter.llc-menu-screen,
 html.tcg-portrait-play #overlay-mission-starter.open,
 html.tcg-portrait-play #overlay-news.llc-menu-screen,
-html.tcg-portrait-play #overlay-news.open{
+html.tcg-portrait-play #overlay-news.open,
+html.tcg-portrait-play #overlay-profile.llc-menu-screen,
+html.tcg-portrait-play #overlay-profile.open,
+html.tcg-portrait-play #overlay-profile-stats.llc-menu-screen,
+html.tcg-portrait-play #overlay-profile-stats.open,
+html.tcg-portrait-play #overlay-friends.llc-menu-screen,
+html.tcg-portrait-play #overlay-friends.open,
+html.tcg-portrait-play #overlay-profile-mod.llc-menu-screen,
+html.tcg-portrait-play #overlay-profile-mod.open{
   display:flex!important;
   align-items:center;
   justify-content:center;
@@ -154,13 +162,18 @@ html.tcg-portrait-play #overlay-news.open{
 html.tcg-portrait-play #overlay-login-bonus:not(.open),
 html.tcg-portrait-play #overlay-missions:not(.open),
 html.tcg-portrait-play #overlay-mission-starter:not(.open),
-html.tcg-portrait-play #overlay-news:not(.open){
+html.tcg-portrait-play #overlay-news:not(.open),
+html.tcg-portrait-play #overlay-profile:not(.open),
+html.tcg-portrait-play #overlay-profile-stats:not(.open),
+html.tcg-portrait-play #overlay-friends:not(.open),
+html.tcg-portrait-play #overlay-profile-mod:not(.open){
   display:none!important;
 }
 html.tcg-portrait-play #overlay-login-bonus .login-bonus-shell,
 html.tcg-portrait-play #overlay-missions .missions-shell,
 html.tcg-portrait-play #overlay-mission-starter .mission-starter-shell,
-html.tcg-portrait-play #overlay-news .news-shell{
+html.tcg-portrait-play #overlay-news .news-shell,
+html.tcg-portrait-play .social-overlay .social-shell{
   width:100%;
   max-width:min(520px,96vw);
   margin-block:auto;
