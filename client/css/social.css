@@ -88,7 +88,7 @@ body.social-overlay-open #modal-card.open {
   z-index: 8900;
 }
 .social-overlay .social-shell {
-  max-width: min(520px, 94vw);
+  max-width: min(720px, 96vw);
   width: 100%;
   margin-block: auto;
   min-height: 0;

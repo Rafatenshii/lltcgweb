@@ -172,12 +172,22 @@ html.tcg-portrait-play #overlay-profile-mod:not(.open){
 html.tcg-portrait-play #overlay-login-bonus .login-bonus-shell,
 html.tcg-portrait-play #overlay-missions .missions-shell,
 html.tcg-portrait-play #overlay-mission-starter .mission-starter-shell,
-html.tcg-portrait-play #overlay-news .news-shell,
-html.tcg-portrait-play .social-overlay .social-shell{
+html.tcg-portrait-play #overlay-news .news-shell{
   width:100%;
   max-width:min(520px,96vw);
   margin-block:auto;
   /* Hug content so a short panel sits mid-screen (not a tall empty blue slab). */
+  flex:0 1 auto;
+  height:auto;
+  max-height:min(78dvh,720px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+html.tcg-portrait-play .social-overlay .social-shell{
+  width:100%;
+  max-width:100%;
+  margin-block:auto;
   flex:0 1 auto;
   height:auto;
   max-height:min(78dvh,720px);
