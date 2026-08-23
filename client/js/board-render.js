@@ -1274,7 +1274,7 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
       if (typeof stageMemberLiveCostInfo === 'function') {
         const costInfo = stageMemberLiveCostInfo(mbr);
         if (costInfo.delta) {
-          const costBadge = mkFieldBadge('cost', 'icon_energy.png', costInfo.effective, 'Cost');
+          const costBadge = mkFieldBadge('cost', 'icon_energy.png', costInfo.printed, 'Cost');
           const bonusEl = document.createElement('span');
           bonusEl.className = 'badge-val-bonus';
           bonusEl.textContent = (costInfo.delta > 0 ? '+' : '') + costInfo.delta;

@@ -4081,7 +4081,8 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 .perf-card.member .perf-member-blade .bicon.sm{width:14px;height:14px}
 .perf-card.member .perf-member-blade .perf-blade-mod,
 .perf-blade-row .perf-blade-num.perf-blade-mod,
-.perf-card.member .perf-member-blade-delta{color:#FBBF24;font-weight:800}
+.perf-card.member .perf-member-blade-delta,
+.perf-blade-row .perf-member-blade-delta{color:#FBBF24;font-weight:800}
 .perf-card.member .perf-member-blade.perf-member-blade-wait{
   opacity:.78;filter:grayscale(.35);
 }
@@ -4113,7 +4114,9 @@ body.perf-spectacle-active:has(.overlay.skill-hand-preserve.open)::before{
 }
 .perf-card.live .perf-live-req .heart-stat-count{font-variant-numeric:tabular-nums}
 .perf-card.live .perf-live-req .heart-stat-count-mod,
-.lcard.live-card .stage-hearts.live-req .heart-stat-count-mod{
+.lcard.live-card .stage-hearts.live-req .heart-stat-count-mod,
+.perf-card.live .perf-live-req .stat-mod-bonus,
+.lcard.live-card .stage-hearts.live-req .stat-mod-bonus{
   color:#FBBF24;text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.9);
 }
 .perf-card.live .perf-live-req .heart-stat-count-tick{

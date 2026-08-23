@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=92">
+<link rel="stylesheet" href="client/css/shell-all.css?v=93">
 <link rel="stylesheet" href="client/css/prompts.css?v=3">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -26007,7 +26007,16 @@ function fillCardDetailPanel(prefix, card, s, myId) {
       sv.appendChild(bonusEl);
     }
   };
-  if (card.cost !== undefined) addS(t('card.cost'), effectiveCost(card, me?.hand || []), 'icon_energy.png');
+  if (card.cost !== undefined) {
+    if (stageCtx && typeof stageMemberLiveCostInfo === 'function') {
+      const costInfo = stageMemberLiveCostInfo(stageCtx.member);
+      addS(t('card.cost'), costInfo.printed, 'icon_energy.png', costInfo.delta);
+    } else {
+      const printedCost = Number(card.cost || 0);
+      const effCost = effectiveCost(card, me?.hand || []);
+      addS(t('card.cost'), printedCost, 'icon_energy.png', effCost - printedCost);
+    }
+  }
   const lovecaPt = deckLovecaPointForCard(card.card_no);
   if (lovecaPt > 0) addS(t('deck.lovecaPointLabel'), lovecaPt);
   if (card.blade != null || (stageCtx && memberModifierBladeBonus(stageCtx.member, s, stageCtx.pid, stageCtx.slot))) {
@@ -26024,15 +26033,23 @@ function fillCardDetailPanel(prefix, card, s, myId) {
     ? memberModifierHeartGroups(stageCtx.member, s, stageCtx.pid, stageCtx.slot)
     : [];
   if (isLiveCard(card)) {
-    let req = card.required_hearts?.length ? card.required_hearts : card.hearts;
+    const printedReq = card.required_hearts?.length ? card.required_hearts : card.hearts;
+    let req = printedReq;
     // Match spectacle HUD: show Live Start / aura reductions, not only printed hearts.
     if (req?.length && typeof effectiveLiveRequiredHearts === 'function' && s && myId) {
       req = effectiveLiveRequiredHearts(card, s, myId);
     } else if (req?.length && typeof applyClientLiveHeartReductions === 'function') {
       req = applyClientLiveHeartReductions(req, card);
     }
-    if (req?.length) {
-      appendHeartStatCounts(addBox(t('card.requiredHearts'), 'sv heart-stat'), req);
+    if (printedReq?.length || req?.length) {
+      const deltas = typeof heartModifierDeltas === 'function'
+        ? heartModifierDeltas(printedReq || [], req || [])
+        : [];
+      appendHeartStatCounts(
+        addBox(t('card.requiredHearts'), 'sv heart-stat'),
+        printedReq?.length ? printedReq : req,
+        { countDeltas: deltas }
+      );
     }
   } else {
     if (card.hearts?.length || heartBonus.length) {
@@ -27770,6 +27787,20 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
     }
   }
   return bonus;
+}
+
+function estimateYellBladePrinted(s, pid) {
+  const p = s?.players?.[pid];
+  if (!p) return 0;
+  let total = 0;
+  Object.entries(p.stage || {}).forEach(([, m]) => {
+    if (!m || !memberContributesBladeToYell(m)) return;
+    const printed = m.printed_blade_override != null
+      ? Number(m.printed_blade_override)
+      : Number(m.blade || 0);
+    total += printed;
+  });
+  return total;
 }
 
 function estimateYellBlade(s, pid) {
@@ -33123,14 +33154,47 @@ function groupHeartsByColor(hearts) {
   return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
 }
 
-function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center', bonusHearts = null, modifiedColors = null } = {}) {
+function heartModifierDeltas(printed, effective) {
+  const pMap = new Map();
+  const eMap = new Map();
+  const add = (map, rows) => {
+    (typeof groupHeartsByColor === 'function' ? groupHeartsByColor(rows || []) : (rows || [])).forEach((h) => {
+      const c = typeof normalizeHeartColor === 'function'
+        ? normalizeHeartColor(h.color || 'any')
+        : (h.color || 'any');
+      map.set(c, (map.get(c) || 0) + Number(h.count || 1));
+    });
+  };
+  add(pMap, printed);
+  add(eMap, effective);
+  const out = [];
+  const colors = new Set([...pMap.keys(), ...eMap.keys()]);
+  colors.forEach((color) => {
+    const delta = (eMap.get(color) || 0) - (pMap.get(color) || 0);
+    if (delta) out.push({ color, delta });
+  });
+  return out;
+}
+
+function appendHeartStatCounts(container, hearts, { lg = true, field = false, align = 'center', bonusHearts = null, countDeltas = null } = {}) {
   if (!container) return;
   const printed = groupHeartsByColor(hearts || []);
-  const bonusMap = new Map();
+  const deltaMap = new Map();
   groupHeartsByColor(bonusHearts || []).forEach(h => {
-    bonusMap.set(h.color, (bonusMap.get(h.color) || 0) + (h.count || 1));
+    deltaMap.set(h.color, (deltaMap.get(h.color) || 0) + (h.count || 1));
   });
-  if (!printed.length && !bonusMap.size) return;
+  const extraDeltas = countDeltas instanceof Map
+    ? [...countDeltas.entries()].map(([color, delta]) => ({ color, delta }))
+    : (countDeltas || []);
+  extraDeltas.forEach((h) => {
+    const color = typeof normalizeHeartColor === 'function'
+      ? normalizeHeartColor(h.color || 'any')
+      : (h.color || 'any');
+    const n = Number(h.delta != null ? h.delta : h.count || 0);
+    if (!n) return;
+    deltaMap.set(color, (deltaMap.get(color) || 0) + n);
+  });
+  if (!printed.length && !deltaMap.size) return;
   container.style.display = 'flex';
   container.style.flexWrap = 'wrap';
   container.style.justifyContent = align === 'start' ? 'flex-start'
@@ -33139,43 +33203,35 @@ function appendHeartStatCounts(container, hearts, { lg = true, field = false, al
     : (align === 'end' ? 'flex-end' : 'center');
   container.style.gap = '4px 8px';
   container.innerHTML = '';
-  const modSet = modifiedColors instanceof Set
-    ? modifiedColors
-    : (modifiedColors ? new Set(modifiedColors) : null);
-  const appendPrinted = (h) => {
-    const row = document.createElement('span');
-    row.className = 'heart-stat-row';
-    row.dataset.color = h.color;
-    row.appendChild(mkHeartIcon(h.color, lg, field));
-    const countEl = document.createElement('span');
-    countEl.className = 'heart-stat-count';
-    if (modSet?.has(h.color)) countEl.classList.add('heart-stat-count-mod');
-    countEl.textContent = String(h.count);
-    row.appendChild(countEl);
-    container.appendChild(row);
-  };
-  const appendBonus = (color, count) => {
-    if (!(count > 0)) return;
-    const row = document.createElement('span');
-    row.className = 'heart-stat-row heart-stat-mod';
-    row.dataset.color = color;
-    row.title = 'From active modifiers';
-    row.appendChild(mkHeartIcon(color, lg, field));
+  const appendDelta = (row, delta) => {
+    if (!delta) return;
     const bonusEl = document.createElement('span');
     bonusEl.className = 'stat-mod-bonus';
-    bonusEl.textContent = '+' + count;
+    bonusEl.textContent = delta > 0 ? '+' + delta : String(delta);
+    bonusEl.title = 'From active modifiers';
     row.appendChild(bonusEl);
+  };
+  const appendRow = (color, printedCount, delta) => {
+    const row = document.createElement('span');
+    row.className = 'heart-stat-row' + (delta ? ' heart-stat-mod' : '');
+    row.dataset.color = color;
+    row.appendChild(mkHeartIcon(color, lg, field));
+    if (printedCount) {
+      const countEl = document.createElement('span');
+      countEl.className = 'heart-stat-count';
+      countEl.textContent = String(printedCount);
+      row.appendChild(countEl);
+    }
+    appendDelta(row, delta);
     container.appendChild(row);
   };
   printed.forEach(h => {
-    appendPrinted(h);
-    if (bonusMap.has(h.color)) {
-      appendBonus(h.color, bonusMap.get(h.color));
-      bonusMap.delete(h.color);
-    }
+    const delta = deltaMap.get(h.color) || 0;
+    deltaMap.delete(h.color);
+    appendRow(h.color, h.count, delta);
   });
-  sortHeartsByDisplayOrder([...bonusMap.entries()].map(([color, count]) => ({ color, count })))
-    .forEach(h => appendBonus(h.color, h.count));
+  sortHeartsByDisplayOrder([...deltaMap.entries()].map(([color, delta]) => ({ color, count: delta })))
+    .forEach(h => appendRow(h.color, 0, h.count));
 }
 
 function appendHeartIcons(container, hearts, lg=false, field=false){
@@ -33216,8 +33272,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=104"></script>
-<script src="client/js/board-render.js?v=39"></script>
+<script src="client/js/spectacle.js?v=105"></script>
+<script src="client/js/board-render.js?v=40"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
