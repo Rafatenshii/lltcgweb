@@ -2969,7 +2969,6 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 throw new Exception('Choose a Live card from your Waiting Room');
             }
             $ownerP['success_lives'][] = $wrLive;
-            notifyLiveEnteredSuccess($state, $owner, $wrLive);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Member') . '] put ' .
                 cardDisplayName($wrLive) . ' from Waiting Room into Success Live area.');
@@ -3073,7 +3072,6 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             array_splice($ownerP['hand'], $handIdx, 1);
             $ownerP['hand'][] = $successCard;
             $ownerP['success_lives'][] = $handLive;
-            notifyLiveEnteredSuccess($state, $owner, $handLive);
             $srcName = $prompt['source_name'] ?? 'Member';
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . $srcName . '] swapped ' .

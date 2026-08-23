@@ -1887,7 +1887,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             $ownerP['live_zone'] = $liveZone;
             $ownerP['success_lives'] = $success;
             $state['players'][$owner] = $ownerP;
-            notifyLiveEnteredSuccess($state, $owner, $wrLive);
+            notifyLiveEnteredSuccess($state, $owner, $removed);
             $wrName = $wrLive['name_en'] ?? $wrLive['name'] ?? 'Live';
             unset($state['pending_prompt']);
             $state = addLog(

@@ -14,6 +14,9 @@
  *
  * Match-primary (Redis) buffers increments on room state as `_play_stat_deltas`
  * and posts them to Hostinger on finish so hub missions see the same counters.
+ *
+ * live_success = a Live was performed and succeeded (not merely moved into
+ * the Success pile by a swap/replace effect).
  */
 
 require_once __DIR__ . '/db.php';
@@ -462,7 +465,7 @@ function notifyMemberEnteredStage(array &$state, string $pid, array $member): vo
     tcgTrackPlayerCardEvent($state, $pid, TCG_PLAY_TRACKER_STAGE, $member);
 }
 
-/** Live (or tracked card) entered Success Live storage. */
+/** Successful Live *performance* (hearts met). Do not call for effect-only Success-pile moves. */
 function notifyLiveEnteredSuccess(array &$state, string $pid, array $live): void {
     tcgTrackPlayerCardEvent($state, $pid, TCG_PLAY_TRACKER_LIVE_SUCCESS, $live);
 }
