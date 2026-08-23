@@ -828,8 +828,17 @@
         ? `<h4>${tt('friends.incoming', 'Incoming')}</h4>${listFor(data.incoming, 'in') || '<p>—</p>'}
            <h4>${tt('friends.outgoing', 'Outgoing')}</h4>${listFor(data.outgoing, 'out') || '<p>—</p>'}`
         : _friendsTab === 'recent'
-          ? listFor(data.recent, 'recent') || '<p>—</p>'
+          ? `<p class="social-vis-hint">${esc(tt('friends.recentHint', "Users you've played against recently"))}</p>${listFor(data.recent, 'recent') || '<p>—</p>'}`
           : listFor(data.friends, 'friends') || '<p>—</p>';
+      const addForm = _friendsTab === 'requests'
+        ? `<form id="friends-add-form" class="social-add-form">
+          <div class="field">
+            <label for="friends-code-input">${tt('friends.add', 'Add')}</label>
+            <input id="friends-code-input" maxlength="12" placeholder="${esc(tt('friends.codePlaceholder', 'LCXXXXXX'))}">
+          </div>
+          <button type="submit" class="btn-grad">${tt('friends.add', 'Add')}</button>
+        </form>`
+        : '';
       root.innerHTML = `
         <p class="social-friend-id-row">${friendIdBtn(data.friend_code)}
            <span>(${data.count || 0}/${data.cap || 25})</span></p>
@@ -838,13 +847,7 @@
           <button type="button" data-tab="requests" aria-selected="${_friendsTab === 'requests'}">${tt('friends.tabRequests', 'Requests')}</button>
           <button type="button" data-tab="recent" aria-selected="${_friendsTab === 'recent'}">${tt('friends.tabRecent', 'Recent')}</button>
         </div>
-        <form id="friends-add-form" class="social-add-form">
-          <div class="field">
-            <label for="friends-code-input">${tt('friends.add', 'Add')}</label>
-            <input id="friends-code-input" maxlength="12" placeholder="${esc(tt('friends.codePlaceholder', 'LCXXXXXX'))}">
-          </div>
-          <button type="submit" class="btn-grad">${tt('friends.add', 'Add')}</button>
-        </form>
+        ${addForm}
         <p class="social-err" id="friends-err"></p>
         <div>${pane}</div>`;
       root.querySelectorAll('[data-tab]').forEach((b) => {
