@@ -18,11 +18,13 @@
   height: 56px;
   border: 0;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 0;
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer;
-  background: rgba(20, 28, 48, 0.55);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 .social-rail-btn img {
   width: 100%;
@@ -30,13 +32,18 @@
   object-fit: contain;
   display: block;
   pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }
 .social-rail-btn:disabled {
   opacity: 0.42;
   cursor: not-allowed;
 }
 .social-rail-btn.is-mod {
-  outline: 2px solid #f4c36a;
+  color: #f4c36a;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 56px;
+  background: transparent;
 }
 @media (max-width: 1279px) {
   #social-rail { right: 8px; gap: 10px; }
