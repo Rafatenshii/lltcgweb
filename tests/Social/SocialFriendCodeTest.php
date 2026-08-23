@@ -50,4 +50,21 @@ final class SocialFriendCodeTest extends TestCase
         tcgAssertProfileTextAllowed('Hello from muse', 'bio', 100);
         $this->assertTrue(true);
     }
+
+    public function testFriendStatusFromRow(): void
+    {
+        $this->assertSame('none', tcgSocialFriendStatusFromRow(null, 'a'));
+        $this->assertSame('friends', tcgSocialFriendStatusFromRow([
+            'status' => 'accepted',
+            'requester_id' => 'a',
+        ], 'a'));
+        $this->assertSame('outgoing', tcgSocialFriendStatusFromRow([
+            'status' => 'pending',
+            'requester_id' => 'a',
+        ], 'a'));
+        $this->assertSame('incoming', tcgSocialFriendStatusFromRow([
+            'status' => 'pending',
+            'requester_id' => 'b',
+        ], 'a'));
+    }
 }

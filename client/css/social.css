@@ -546,6 +546,18 @@ button.social-bar-art { cursor: pointer; }
 .social-log-bar { width: 70%; max-width: 18px; background: #e89aa4; border-radius: 3px 3px 0 0; }
 .social-log-foot { margin-top: 4px; font-size: 9px; font-weight: 800; text-align: center; line-height: 1.1; }
 .social-log-heart { width: 16px; height: 16px; object-fit: contain; display: block; }
+.social-friend-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.social-friend-status {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  opacity: .9;
+}
 .social-report { margin: 12px 0 4px; }
 .social-report-confirm {
   display: none;

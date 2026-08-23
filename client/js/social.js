@@ -328,6 +328,26 @@
     }
   }
 
+  function friendActionsHtml(data, p) {
+    if (data.is_self) return '';
+    const st = data.friend_status || (data.is_friend ? 'friends' : 'none');
+    if (st === 'friends') {
+      return `<p class="social-friend-status">${esc(tt('friends.alreadyFriends', 'Friends'))}</p>`;
+    }
+    if (st === 'outgoing') {
+      return `<p class="social-friend-status">${esc(tt('friends.requestSent', 'Friend request sent'))}</p>`;
+    }
+    if (st === 'incoming') {
+      return `<div class="social-friend-actions">
+        <button type="button" class="btn-grad" id="btn-profile-accept">${esc(tt('friends.accept', 'Accept'))}</button>
+        <button type="button" class="btn-ghost" id="btn-profile-decline">${esc(tt('friends.decline', 'Decline'))}</button>
+      </div>`;
+    }
+    return `<div class="social-friend-actions">
+      <button type="button" class="btn-grad" id="btn-profile-add-friend">${esc(tt('friends.addFromProfile', 'Send friend request'))}</button>
+    </div>`;
+  }
+
   function friendIdBtn(code) {
     const id = String(code || '');
     if (!id) return '';
@@ -369,6 +389,7 @@
           <div class="hub-stat">${tt('profile.noTitles', 'No titles yet')}</div>
         </div>
       </div>
+      ${friendActionsHtml(data, p)}
       ${bioText ? `<p class="social-bio-text">${esc(bioText)}</p>` : ''}
       ${self && !_editing ? `<button type="button" class="btn-ghost" id="btn-profile-edit">${tt('profile.edit', 'Edit')}</button>` : ''}
       ${self && _editing ? `<div class="field"><label for="profile-bio">${tt('profile.bio', 'Bio')}</label>
@@ -468,6 +489,32 @@
     });
     document.getElementById('btn-profile-stats')?.addEventListener('click', () => openStats(p.id));
     document.getElementById('btn-profile-save')?.addEventListener('click', () => saveProfile(p));
+    document.getElementById('btn-profile-add-friend')?.addEventListener('click', async () => {
+      setErr('profile-err', '');
+      const btn = document.getElementById('btn-profile-add-friend');
+      if (btn) btn.disabled = true;
+      try {
+        await accountPost('social_friend_add', { user_id: p.id });
+        await openProfile(p.id);
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        setErr('profile-err', e.message);
+      }
+    });
+    document.getElementById('btn-profile-accept')?.addEventListener('click', async () => {
+      setErr('profile-err', '');
+      try {
+        await accountPost('social_friend_accept', { user_id: p.id });
+        await openProfile(p.id);
+      } catch (e) { setErr('profile-err', e.message); }
+    });
+    document.getElementById('btn-profile-decline')?.addEventListener('click', async () => {
+      setErr('profile-err', '');
+      try {
+        await accountPost('social_friend_decline', { user_id: p.id });
+        await openProfile(p.id);
+      } catch (e) { setErr('profile-err', e.message); }
+    });
     document.getElementById('btn-profile-report')?.addEventListener('click', () => {
       const box = document.getElementById('profile-report-confirm');
       if (!box) return;

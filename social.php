@@ -139,14 +139,33 @@ function tcgSocialPair(string $a, string $b): array {
     return $a < $b ? [$a, $b] : [$b, $a];
 }
 
-function tcgSocialAreFriends(string $a, string $b): bool {
-    if ($a === '' || $b === '' || $a === $b) {
-        return false;
+function tcgSocialFriendStatusFromRow(?array $row, string $viewer): string {
+    if (!$row) {
+        return 'none';
     }
-    [$lo, $hi] = tcgSocialPair($a, $b);
-    $stmt = tcgDb()->prepare('SELECT 1 FROM tcg_friends WHERE user_lo = ? AND user_hi = ? AND status = ?');
-    $stmt->execute([$lo, $hi, 'accepted']);
-    return (bool)$stmt->fetchColumn();
+    $status = (string)($row['status'] ?? '');
+    if ($status === 'accepted') {
+        return 'friends';
+    }
+    if ($status !== 'pending') {
+        return 'none';
+    }
+    return ((string)($row['requester_id'] ?? '') === $viewer) ? 'outgoing' : 'incoming';
+}
+
+function tcgSocialFriendStatus(string $viewer, string $target): string {
+    if ($viewer === '' || $target === '' || $viewer === $target) {
+        return 'none';
+    }
+    [$lo, $hi] = tcgSocialPair($viewer, $target);
+    $stmt = tcgDb()->prepare('SELECT status, requester_id FROM tcg_friends WHERE user_lo = ? AND user_hi = ?');
+    $stmt->execute([$lo, $hi]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    return tcgSocialFriendStatusFromRow($row, $viewer);
+}
+
+function tcgSocialAreFriends(string $a, string $b): bool {
+    return tcgSocialFriendStatus($a, $b) === 'friends';
 }
 
 function tcgSocialFriendCount(string $discordId): int {
@@ -886,11 +905,13 @@ function tcgApiSocialGetProfile(array $body): array {
         throw new Exception('Player not found', 404);
     }
     $isSelf = $viewer === $target;
-    $friends = tcgSocialAreFriends($viewer, $target);
+    $friendStatus = $isSelf ? 'self' : tcgSocialFriendStatus($viewer, $target);
+    $friends = $friendStatus === 'friends';
     return [
         'success' => true,
         'is_self' => $isSelf,
         'is_friend' => $friends,
+        'friend_status' => $friendStatus,
         'is_mod' => tcgSocialIsOwner($viewer),
         'profile' => [
             'id' => $target,
@@ -1045,18 +1066,27 @@ function tcgApiSocialFriends(array $body): array {
 function tcgApiSocialFriendAdd(array $body): array {
     $uid = tcgRequireAuthUser($body);
     tcgSocialEnsureSchema();
-    $code = tcgSocialNormalizeFriendCode((string)($body['friend_code'] ?? $body['code'] ?? ''));
-    if (!preg_match('/^LC[0-9A-HJKMNP-TV-Z]{6}$/', $code)) {
-        throw new Exception('Invalid friend code', 400);
-    }
-    $st = tcgDb()->prepare('SELECT discord_id FROM tcg_users WHERE upper(friend_code) = ?');
-    $st->execute([$code]);
-    $other = (string)$st->fetchColumn();
-    if ($other === '') {
-        throw new Exception('No player with that code', 404);
+    $other = trim((string)($body['user_id'] ?? $body['target_id'] ?? ''));
+    if ($other !== '') {
+        $st = tcgDb()->prepare('SELECT 1 FROM tcg_users WHERE discord_id = ?');
+        $st->execute([$other]);
+        if (!$st->fetchColumn()) {
+            throw new Exception('Player not found', 404);
+        }
+    } else {
+        $code = tcgSocialNormalizeFriendCode((string)($body['friend_code'] ?? $body['code'] ?? ''));
+        if (!preg_match('/^LC[0-9A-HJKMNP-TV-Z]{6}$/', $code)) {
+            throw new Exception('Invalid friend code', 400);
+        }
+        $st = tcgDb()->prepare('SELECT discord_id FROM tcg_users WHERE upper(friend_code) = ?');
+        $st->execute([$code]);
+        $other = (string)$st->fetchColumn();
+        if ($other === '') {
+            throw new Exception('No player with that code', 404);
+        }
     }
     if ($other === $uid) {
-        throw new Exception('That is your own code', 400);
+        throw new Exception('Cannot friend yourself', 400);
     }
     if (tcgSocialFriendCount($uid) >= TCG_SOCIAL_FRIEND_CAP) {
         throw new Exception('Friend list is full (25)', 400);
