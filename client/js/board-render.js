@@ -742,7 +742,9 @@ async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
     clearWrPileAnimPending();
     if (G._animHideIids) {
       for (const iid of [...G._animHideIids]) {
-        if (!G._liveStorageDepartedIids?.has(iid)) {
+        if (!(typeof liveStorageDepartureLatched === 'function'
+            ? liveStorageDepartureLatched(iid)
+            : G._liveStorageDepartedIids?.has(String(iid)))) {
           if (typeof clearAnimHideIid === 'function') clearAnimHideIid(iid);
           else G._animHideIids.delete(iid);
         }
@@ -2198,10 +2200,11 @@ function renderLiveSlots(prefix, zone, isMe, pid){
 
     // A held pre-outcome snapshot can be repainted while a newer state is
     // committing. Once a flight has handed off, never recreate that source.
-    if (card?.instance_id && (
+    const slotIid = card?.instance_id || existingCard?.dataset?.iid;
+    if (slotIid && (
       (typeof liveStorageDepartureLatched === 'function'
-        ? liveStorageDepartureLatched(card.instance_id, s?.turn ?? s?.live_show?.turn)
-        : G._liveStorageDepartedIids?.has(card.instance_id))
+        ? liveStorageDepartureLatched(slotIid, s?.turn ?? s?.live_show?.turn)
+        : G._liveStorageDepartedIids?.has(String(slotIid)))
     )) {
       e.innerHTML = '';
       continue;
@@ -2245,9 +2248,9 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     const doFlip = flipPending;
     const canFlipSeat = hiddenSpectate || isOpp;
 
-    if (existingCard?.dataset.iid === card.instance_id) {
+    if (existingCard?.dataset.iid != null && String(existingCard.dataset.iid) === String(card.instance_id)) {
       if (existingCard.classList.contains('live-storage-flip')) {
-        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id) || G._animHideIids?.has(String(card.instance_id))));
         // Outside the reveal sequence, collapse leftover flip shells (never re-arm).
         if (typeof shouldSuppressLiveStorageFlipsNow === 'function' && shouldSuppressLiveStorageFlipsNow(s)) {
           if (settleLiveStorageFlipCard(existingCard, card)) {
@@ -2283,7 +2286,7 @@ function renderLiveSlots(prefix, zone, isMe, pid){
         // Face-up outside active reveal playback: do not rebuild a flip shell (causes
         // "already revealed / never-played" cards to flip again during Main).
         if (!G._liveRoundPlaybackActive) {
-          existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+          existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id) || G._animHideIids?.has(String(card.instance_id))));
           applyCardFoilFx(existingCard, card);
           continue;
         }
@@ -2295,17 +2298,17 @@ function renderLiveSlots(prefix, zone, isMe, pid){
         continue;
       }
       if (!flipPending && !G._liveFlipScheduled?.has(flipKey) && liveStorageCardShowsFace(existingCard)) {
-        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id) || G._animHideIids?.has(String(card.instance_id))));
         applyCardFoilFx(existingCard, card);
         continue;
       }
       if (canFlipSeat && !card.revealed && existingCard.classList.contains('live-storage-facedown') && !doFlip) {
-        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id) || G._animHideIids?.has(String(card.instance_id))));
         continue;
       }
       // Hidden spectate: keep face-down shell until this performer's reveal.
       if (hiddenSpectate && !showFace && existingCard.classList.contains('live-storage-facedown') && !doFlip) {
-        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
+        existingCard.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id) || G._animHideIids?.has(String(card.instance_id))));
         continue;
       }
     }

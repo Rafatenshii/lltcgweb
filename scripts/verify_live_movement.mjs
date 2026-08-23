@@ -40,6 +40,7 @@ const fnNames = [
   'movementLedgerKey',
   'ensureMovementLedger',
   'resetMovementLedger',
+  'liveCardIidKey',
   'latchLiveStorageDeparture',
   'liveStorageDepartureLatched',
   'shouldClearAnimHideAfterHandoff',
@@ -180,6 +181,20 @@ ok('handoff must not unhide a latched Live-storage source',
   shouldClearAnimHideAfterHandoff('live-1', 'live') === false
   && shouldClearAnimHideAfterHandoff('keep-1', 'live') === true
   && shouldClearAnimHideAfterHandoff('live-1', 'hand') === true);
+
+ok('departure latch matches number vs string iid', (() => {
+  resetMovementLedger();
+  G._livePostRevealBoard = {
+    players: {
+      p1: { live_zone: [{ instance_id: 42 }] },
+      p2: { live_zone: [] },
+    },
+  };
+  latchLiveStorageDeparture(42, 7);
+  return liveStorageDepartureLatched('42') === true
+    && liveStorageDepartureLatched(42) === true
+    && G._livePostRevealBoard.players.p1.live_zone.length === 0;
+})());
 
 // different round can reserve again
 resetMovementLedger();

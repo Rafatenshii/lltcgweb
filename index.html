@@ -21466,16 +21466,23 @@ function resetMovementLedger() {
   G._liveStorageDepartedRound = null;
 }
 
+/** JSON iids may be numbers; DOM data-iid is always a string. Latch keys must match both. */
+function liveCardIidKey(iid) {
+  if (iid == null || iid === '') return '';
+  return String(iid);
+}
+
 function latchLiveStorageDeparture(iid, roundId = null) {
-  if (!iid) return;
+  const key = liveCardIidKey(iid);
+  if (!key) return;
   if (!G._liveStorageDepartedIids) G._liveStorageDepartedIids = new Set();
-  G._liveStorageDepartedIids.add(iid);
+  G._liveStorageDepartedIids.add(key);
   if (roundId != null) G._liveStorageDepartedRound = roundId;
   if (G._livePostRevealBoard?.players) {
     for (const pid of ['p1', 'p2']) {
       const p = G._livePostRevealBoard.players[pid];
       if (!p?.live_zone) continue;
-      p.live_zone = p.live_zone.filter(c => c && c.instance_id !== iid);
+      p.live_zone = p.live_zone.filter(c => c && liveCardIidKey(c.instance_id) !== key);
     }
   }
 }
@@ -21486,7 +21493,8 @@ function stripLivePostRevealBoardCard(iid) {
 
 function liveStorageDepartureLatched(iid, roundId = null) {
   // roundId is kept for callers; turn vs live_show.turn must not unlatch.
-  return !!(iid && G._liveStorageDepartedIids?.has(iid));
+  const key = liveCardIidKey(iid);
+  return !!(key && G._liveStorageDepartedIids?.has(key));
 }
 
 /** True when a move handoff must not un-hide the source (Live storage already left). */
@@ -21510,7 +21518,8 @@ function markLiveStorageSourceGone(iid, fromLoc, myId) {
       const zoneEl = typeof el === 'function' ? el(`${pre}-live-${i}`) : document.getElementById(`${pre}-live-${i}`);
       if (!zoneEl) continue;
       zoneEl.querySelectorAll('.lcard.live-card').forEach(card => {
-        if (card.dataset.iid !== iid) return;
+        const cardIid = card.dataset.iid || card.parentElement?.dataset?.iid;
+        if (liveCardIidKey(cardIid) !== liveCardIidKey(iid)) return;
         card.remove();
       });
       if (!zoneEl.querySelector('.lcard.live-card')) zoneEl.innerHTML = '';
@@ -21670,11 +21679,14 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
     }
     if (G._animHideIids) {
       for (const iid of [...G._animHideIids]) {
-        if (!G._liveStorageDepartedIids?.has(iid)) clearAnimHideIid(iid);
+        if (!liveStorageDepartureLatched(iid)) clearAnimHideIid(iid);
       }
     }
     G._animHideIids = null;
     clearHandArrivingFlags();
+    if (typeof syncLiveStorageSlotsFromState === 'function') {
+      syncLiveStorageSlotsFromState(final, myId);
+    }
   }
   return true;
 }
@@ -21838,8 +21850,8 @@ async function playLivePhaseTransition(prev, final, myId, opts = {}) {
 
 function clearHandArrivingFlags() {
   document.querySelectorAll('.card-arriving').forEach(d => {
-    const iid = d.dataset?.iid;
-    if (iid && G._liveStorageDepartedIids?.has(iid)) return;
+    const iid = d.dataset?.iid || d.parentElement?.dataset?.iid;
+    if (iid && liveStorageDepartureLatched(iid)) return;
     d.classList.remove('card-arriving');
   });
 }
@@ -33205,7 +33217,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=104"></script>
-<script src="client/js/board-render.js?v=38"></script>
+<script src="client/js/board-render.js?v=39"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
