@@ -10858,7 +10858,21 @@
       byMode: 'By mode',
       opponents: 'Most-played opponents',
       idols: 'Top idols',
-      history: 'Match history'
+      history: 'Match history',
+      friendId: 'Friend ID',
+      copied: 'Copied',
+      edit: 'Edit',
+      bio: 'Bio',
+      deckDesc: 'Deck description',
+      visibility: 'Visibility',
+      openDeck: 'View full deck',
+      closeDeck: 'Hide full deck',
+      members: 'Member',
+      lives: 'Live',
+      energy: 'Energy',
+      cost: 'Cost',
+      bladeHearts: 'Blade hearts',
+      bladeHeartCount: 'Blade hearts'
     },
     friends: {
       view: 'View',
@@ -10887,7 +10901,7 @@
   var I18N_SOCIAL_LOCALES = {
     ja: {
       social: { profile: 'プロフィール', friends: 'フレンド', close: '閉じる', loading: '読み込み中…', error: 'エラーが発生しました', signInHint: 'プロフィールとフレンドはDiscordログイン後に使えます', moderation: 'モデレーション' },
-      profile: { noTitles: '称号はまだありません', emptyBio: '自己紹介はまだありません。', bioLocked: '自己紹介は編集できません。', showcase: 'ショーケース', rankedWl: 'ランク', unranked: 'カジュアル対戦数', gameStats: '対戦統計', featuredDeck: '公開デッキ', visPrivate: '非公開', visFriends: 'フレンドのみ', visPublic: '公開', useEquipped: '装備中のデッキ', save: '保存', report: '通報', reported: '通報を送りました。', deckHidden: 'このデッキは非公開です。', types: 'メンバー / ライブ / エネルギー', byMode: 'モード別', opponents: 'よく対戦した相手', idols: 'よく使ったメンバー', history: '対戦履歴' },
+      profile: { noTitles: '称号はまだありません', emptyBio: '自己紹介はまだありません。', bioLocked: '自己紹介は編集できません。', showcase: 'ショーケース', rankedWl: 'ランク', unranked: 'カジュアル対戦数', gameStats: '対戦統計', featuredDeck: '公開デッキ', visPrivate: '非公開', visFriends: 'フレンドのみ', visPublic: '公開', useEquipped: '装備中のデッキ', save: '保存', report: '通報', reported: '通報を送りました。', deckHidden: 'このデッキは非公開です。', types: 'メンバー / ライブ / エネルギー', byMode: 'モード別', opponents: 'よく対戦した相手', idols: 'よく使ったメンバー', history: '対戦履歴', friendId: 'フレンドID', copied: 'コピーしました', edit: '編集', bio: '自己紹介', deckDesc: 'デッキ説明', visibility: '公開設定', openDeck: 'デッキを見る', closeDeck: '閉じる', members: 'メンバー', lives: 'ライブ', energy: 'エネルギー', cost: 'コスト', bladeHearts: 'ブレードハート', bladeHeartCount: 'ブレードハートの数' },
       friends: { view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', yourCode: 'あなたのコード', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '追加' },
       profileMod: { title: '通報', warns: '警告', clearBio: '自己紹介を消去', warn: '警告', lockBio: '自己紹介をロック', dismiss: '却下', empty: '未処理の通報はありません。' }
     },

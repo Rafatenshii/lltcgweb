@@ -203,6 +203,21 @@ function tcgSocialCostBucket(int $cost): string {
     return '16+';
 }
 
+function tcgSocialBladeColor(string $color): string {
+    $c = strtolower(trim($color));
+    return match ($c) {
+        'pink', 'rose', '桃' => 'pink',
+        'red', '赤' => 'red',
+        'yellow', 'gold', '黄' => 'yellow',
+        'green', '緑' => 'green',
+        'blue', '青' => 'blue',
+        'purple', '紫' => 'purple',
+        'all', '全' => 'all',
+        'any', 'gray', 'grey', 'colourless', 'colorless', '無' => 'any',
+        default => $c,
+    };
+}
+
 function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): array {
     $buckets = ['1-3' => 0, '4' => 0, '5-8' => 0, '9' => 0, '10-11' => 0, '12-15' => 0, '16+' => 0];
     $blades = [];
@@ -229,6 +244,7 @@ function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): a
         if (is_array($bh)) {
             foreach ($bh as $h) {
                 $color = is_array($h) ? (string)($h['color'] ?? '') : (string)$h;
+                $color = tcgSocialBladeColor($color);
                 if ($color === '') {
                     continue;
                 }
@@ -243,7 +259,16 @@ function tcgSocialDeckComposition(array $main, array $energy, array $cardMap): a
     foreach ($energy as $no) {
         $countCard((string)$no);
     }
-    return ['cost_buckets' => $buckets, 'blade_hearts' => $blades, 'types' => $types];
+    $heartTotal = 0;
+    foreach ($blades as $n) {
+        $heartTotal += intval($n);
+    }
+    return [
+        'cost_buckets' => $buckets,
+        'blade_hearts' => $blades,
+        'types' => $types,
+        'blade_heart_total' => $heartTotal,
+    ];
 }
 
 function tcgSocialFeaturedDeckPayload(array $user, string $viewerId, bool $areFriends): array {
@@ -300,9 +325,71 @@ function tcgSocialFeaturedDeckPayload(array $user, string $viewerId, bool $areFr
     }
     $meta['name'] = tcgNormalizeDeckPresetName((string)($row['name'] ?? 'Deck'));
     $meta['composition'] = tcgSocialDeckComposition($main, $energy, $cardMap);
+    $meta['preview'] = tcgSocialDeckPreview($main, $cardMap);
     $meta['cards'] = $cards;
     $meta['featured_deck_id'] = intval($row['id'] ?? $deckId) ?: null;
     return $meta;
+}
+
+/** Most-copied Member / Live cards for the featured-deck thumbnail (3 + 3). */
+function tcgSocialDeckPreview(array $main, array $cardMap): array {
+    $members = [];
+    $lives = [];
+    foreach ($main as $no) {
+        $no = (string)$no;
+        $card = $cardMap[$no] ?? null;
+        $en = strtolower((string)($card['card_type_en'] ?? ''));
+        $jp = (string)($card['card_type'] ?? '');
+        if ($en === 'member' || $jp === 'メンバー') {
+            $members[$no] = ($members[$no] ?? 0) + 1;
+        } elseif ($en === 'live' || $jp === 'ライブ') {
+            $lives[$no] = ($lives[$no] ?? 0) + 1;
+        }
+    }
+    arsort($members);
+    arsort($lives);
+    $pick = static function (array $counts): array {
+        $out = [];
+        foreach (array_slice($counts, 0, 3, true) as $no => $n) {
+            $out[] = ['card_no' => (string)$no, 'count' => intval($n)];
+        }
+        return $out;
+    };
+    return ['members' => $pick($members), 'lives' => $pick($lives)];
+}
+
+function tcgSocialIdolPortraitUrl(string $idolName): string {
+    $q = strtolower(trim($idolName));
+    if ($q === '') {
+        return '';
+    }
+    $rows = function_exists('tcgLoadIdolPortraits') ? tcgLoadIdolPortraits() : [];
+    if ($rows === []) {
+        $path = __DIR__ . '/idol_portraits.json';
+        if (is_file($path)) {
+            $raw = json_decode((string)file_get_contents($path), true);
+            $rows = is_array($raw['items'] ?? null) ? $raw['items'] : (is_array($raw) ? $raw : []);
+        }
+    }
+    $first = explode(' ', $q)[0];
+    foreach ($rows as $p) {
+        if (!is_array($p)) {
+            continue;
+        }
+        $id = strtolower((string)($p['id'] ?? ''));
+        $name = strtolower((string)($p['name'] ?? ''));
+        $url = (string)($p['portrait'] ?? '');
+        if ($url === '') {
+            continue;
+        }
+        if ($q === $id || $q === $name || $first === $id || $first === $name) {
+            return $url;
+        }
+        if ($id !== '' && (str_contains($q, $id) || str_contains($name, $q))) {
+            return $url;
+        }
+    }
+    return '';
 }
 
 function tcgSocialShowcase(string $discordId): array {
@@ -421,7 +508,12 @@ function tcgSocialIdolUsage(string $discordId): array {
     $rows = tcgListPlayStats($discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL);
     $out = [];
     foreach (array_slice($rows, 0, 12) as $row) {
-        $out[] = ['idol' => (string)$row['key'], 'count' => intval($row['count'])];
+        $name = (string)$row['key'];
+        $out[] = [
+            'idol' => $name,
+            'count' => intval($row['count']),
+            'portrait' => tcgSocialIdolPortraitUrl($name),
+        ];
     }
     return $out;
 }

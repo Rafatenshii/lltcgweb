@@ -47,6 +47,9 @@
 
   let _screen = 'auth';
   let _friendsTab = 'friends';
+  let _editing = false;
+  let _deckOpen = false;
+  let _profileCache = null;
 
   /** Menus whose shell is already wider than the 720px hub column. */
   const WIDE_RAIL_SCREENS = {
@@ -111,10 +114,46 @@
     if (root) root.innerHTML = tt('social.loading', 'Loading…');
     try {
       const data = await accountPost('social_profile', { user_id: uid });
+      _editing = false;
+      _deckOpen = false;
       renderProfile(data);
     } catch (e) {
       if (root) root.textContent = e.message || tt('social.error', 'Could not load profile');
     }
+  }
+
+  function copyText(text, btn) {
+    const v = String(text || '');
+    if (!v) return;
+    const done = () => {
+      if (btn) {
+        btn.classList.add('is-copied');
+        const prev = btn.getAttribute('data-label') || btn.textContent;
+        btn.setAttribute('data-label', prev);
+        btn.textContent = tt('profile.copied', 'Copied');
+        setTimeout(() => {
+          btn.classList.remove('is-copied');
+          btn.textContent = prev;
+        }, 1400);
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(v).then(done).catch(() => {});
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = v;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+      ta.remove();
+      done();
+    }
+  }
+
+  function friendIdBtn(code) {
+    const id = String(code || '');
+    if (!id) return '';
+    return `<button type="button" class="social-friend-id" data-copy="${esc(id)}">${esc(tt('profile.friendId', 'Friend ID'))}: ${esc(id)}</button>`;
   }
 
   function renderProfile(data) {
@@ -122,6 +161,7 @@
     const self = !!data.is_self;
     const root = document.getElementById('profile-body');
     if (!root) return;
+    _profileCache = data;
     const bioMax = 100;
     const vis = p.featured_deck?.visibility || 'private';
     const deck = p.featured_deck || {};
@@ -132,18 +172,27 @@
       }</button>`;
     }).join('');
     const ranked = p.ranked || {};
+    const bioText = String(p.bio || '').trim();
+    const deckDesc = String(deck.desc || '').trim();
+    const visLabel = vis === 'public'
+      ? tt('profile.visPublic', 'Public')
+      : vis === 'friends'
+        ? tt('profile.visFriends', 'Friends')
+        : tt('profile.visPrivate', 'Private');
     root.innerHTML = `
       <div class="social-head">
         <img class="social-avatar" alt="" src="${esc(p.avatar_url || '')}">
         <div>
           <h3>${esc(p.username || 'Player')}</h3>
-          <div class="social-code">${esc(p.friend_code || '')}</div>
+          ${friendIdBtn(p.friend_code)}
           <div class="hub-stat">${tt('profile.noTitles', 'No titles yet')}</div>
         </div>
       </div>
-      ${self ? `<div class="field"><label for="profile-bio">${tt('profile.bio', 'Bio')}</label>
+      ${bioText ? `<p class="social-bio-text">${esc(bioText)}</p>` : ''}
+      ${self && !_editing ? `<button type="button" class="btn-ghost" id="btn-profile-edit">${tt('profile.edit', 'Edit')}</button>` : ''}
+      ${self && _editing ? `<div class="field"><label for="profile-bio">${tt('profile.bio', 'Bio')}</label>
         <textarea class="social-bio" id="profile-bio" maxlength="${bioMax}">${esc(p.bio || '')}</textarea>
-        <div class="social-char-count" id="profile-bio-count"></div></div>` : `<p>${esc(p.bio || tt('profile.emptyBio', 'No bio yet.'))}</p>`}
+        <div class="social-char-count" id="profile-bio-count"></div></div>` : ''}
       ${p.bio_locked && self ? `<p class="social-err">${tt('profile.bioLocked', 'Bio editing is locked.')}</p>` : ''}
       <h4 data-i18n="profile.showcase">${tt('profile.showcase', 'Showcase')}</h4>
       <div class="social-showcase" id="profile-showcase">${show}</div>
@@ -151,7 +200,7 @@
          · ${tt('profile.unranked', 'Unranked games')}: ${p.unranked_games || 0}</p>
       <button type="button" class="btn-ghost" id="btn-profile-stats">${tt('profile.gameStats', 'Game stats')}</button>
       <h4>${tt('profile.featuredDeck', 'Featured deck')}</h4>
-      ${self ? `<div class="field"><label for="profile-deck-vis">${tt('profile.visibility', 'Visibility')}</label>
+      ${self && _editing ? `<div class="field"><label for="profile-deck-vis">${tt('profile.visibility', 'Visibility')}</label>
         <span class="llc-select-wrap"><select id="profile-deck-vis">
           <option value="private">${tt('profile.visPrivate', 'Private')}</option>
           <option value="friends">${tt('profile.visFriends', 'Friends')}</option>
@@ -161,7 +210,9 @@
         <textarea id="profile-deck-desc" maxlength="200">${esc(deck.desc || '')}</textarea></div>
         <div class="field"><label for="profile-deck-id">${tt('profile.featuredDeck', 'Featured deck')}</label>
         <span class="llc-select-wrap"><select id="profile-deck-id"><option value="0">${tt('profile.useEquipped', 'Currently equipped')}</option></select></span></div>
-        <button type="button" class="btn-grad" id="btn-profile-save">${tt('profile.save', 'Save')}</button>` : ''}
+        <button type="button" class="btn-grad" id="btn-profile-save">${tt('profile.save', 'Save')}</button>
+        <button type="button" class="btn-ghost" id="btn-profile-edit-cancel">${tt('social.close', 'Close')}</button>` : ''}
+      ${self && !_editing ? `<p class="social-vis-hint">${esc(visLabel)}</p>` : ''}
       <div id="profile-deck-view"></div>
       ${!self ? `<button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>` : ''}
       <p class="social-err" id="profile-err"></p>
@@ -185,6 +236,17 @@
     root.querySelectorAll('[data-card]').forEach((b) => {
       b.addEventListener('click', () => inspectCard(b.getAttribute('data-card')));
     });
+    root.querySelectorAll('[data-copy]').forEach((b) => {
+      b.addEventListener('click', () => copyText(b.getAttribute('data-copy'), b));
+    });
+    document.getElementById('btn-profile-edit')?.addEventListener('click', () => {
+      _editing = true;
+      renderProfile(_profileCache);
+    });
+    document.getElementById('btn-profile-edit-cancel')?.addEventListener('click', () => {
+      _editing = false;
+      renderProfile(_profileCache);
+    });
     document.getElementById('btn-profile-stats')?.addEventListener('click', () => openStats(p.id));
     document.getElementById('btn-profile-save')?.addEventListener('click', () => saveProfile(p));
     document.getElementById('btn-profile-report')?.addEventListener('click', async () => {
@@ -193,11 +255,56 @@
         setErr('profile-err', tt('profile.reported', 'Report sent.'));
       } catch (e) { setErr('profile-err', e.message); }
     });
-    renderDeckComp(deck);
+    renderDeckComp(deck, deckDesc);
     applyI18n(root);
   }
 
-  function renderDeckComp(deck) {
+  const COST_ORDER = ['1-3', '4', '5-8', '9', '10-11', '12-15', '16+'];
+  const HEART_ORDER = [
+    { key: 'pink', file: 'blade_heart01.png', aliases: ['桃'] },
+    { key: 'red', file: 'blade_heart02.png', aliases: ['赤'] },
+    { key: 'yellow', file: 'blade_heart03.png', aliases: ['黄'] },
+    { key: 'green', file: 'blade_heart04.png', aliases: ['緑'] },
+    { key: 'blue', file: 'blade_heart05.png', aliases: ['青'] },
+    { key: 'purple', file: 'blade_heart06.png', aliases: ['紫'] },
+    { key: 'any', file: 'heart00.png', aliases: ['gray', 'grey', 'colourless', 'colorless'] },
+    { key: 'all', file: 'icon_b_all.png' },
+  ];
+
+  function heartCount(blades, spec) {
+    let n = Number(blades[spec.key] || 0);
+    (spec.aliases || []).forEach((a) => { n += Number(blades[a] || 0); });
+    return n;
+  }
+
+  function logChart(title, cols) {
+    const max = Math.max(1, ...cols.map((c) => c.n));
+    return `<div class="social-log-chart">
+      <div class="social-log-title">${esc(title)}</div>
+      <div class="social-log-cols">${cols.map((c) => {
+        const h = c.n > 0 ? Math.max(8, Math.round(100 * c.n / max)) : 0;
+        return `<div class="social-log-col">
+          <div class="social-log-cap">${c.n}</div>
+          <div class="social-log-track"><div class="social-log-bar" style="height:${h}%"></div></div>
+          <div class="social-log-foot">${c.foot}</div>
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  }
+
+  function deckPreviewHtml(deck) {
+    const prev = deck.preview || {};
+    const row = (arr) => (arr || []).map((c) =>
+      `<span class="social-preview-card"><img src="${esc(cardImg(c.card_no))}" alt=""><em>×${c.count || 1}</em></span>`
+    ).join('') || '<span class="social-preview-empty">—</span>';
+    return `<button type="button" class="social-deck-preview" id="btn-deck-open">
+      <div class="social-preview-row">${row(prev.members)}</div>
+      <div class="social-preview-row">${row(prev.lives)}</div>
+      <span class="social-preview-hint">${esc(tt('profile.openDeck', 'View full deck'))}</span>
+    </button>`;
+  }
+
+  function renderDeckComp(deck, deckDesc) {
     const box = document.getElementById('profile-deck-view');
     if (!box) return;
     if (!deck.visible) {
@@ -208,18 +315,57 @@
     const buckets = c.cost_buckets || {};
     const blades = c.blade_hearts || {};
     const types = c.types || {};
-    const chips = Object.keys(buckets).map((k) => `<span class="social-chip">${esc(k)}: ${buckets[k]}</span>`).join('');
-    const hearts = Object.keys(blades).map((k) => `<span class="social-chip">${esc(k)} ×${blades[k]}</span>`).join('');
+    const desc = String(deckDesc || deck.desc || '').trim();
+    const name = String(deck.name || '').trim();
+    if (!_deckOpen) {
+      box.innerHTML = `
+        ${name ? `<p class="social-deck-name"><strong>${esc(name)}</strong></p>` : ''}
+        ${desc ? `<p class="social-bio-text">${esc(desc)}</p>` : ''}
+        ${deckPreviewHtml(deck)}`;
+      document.getElementById('btn-deck-open')?.addEventListener('click', () => {
+        _deckOpen = true;
+        renderDeckComp(deck, desc);
+      });
+      return;
+    }
+    const costCols = COST_ORDER.map((k) => ({
+      n: Number(buckets[k] || 0),
+      foot: esc(k),
+    }));
+    const heartCols = HEART_ORDER.map((spec) => ({
+      n: heartCount(blades, spec),
+      foot: `<img class="social-log-heart" src="icons/${spec.file}" alt="${esc(spec.key)}">`,
+    }));
+    const memberN = types.member || 0;
+    const liveN = types.live || 0;
+    const energyN = types.energy || 0;
+    const mainN = memberN + liveN;
+    const heartN = c.blade_heart_total != null ? c.blade_heart_total : HEART_ORDER.reduce((s, spec) => s + heartCount(blades, spec), 0);
     const grid = (deck.cards || []).map((card) =>
       `<button type="button" class="social-card-thumb" data-card="${esc(card.card_no)}"><img src="${esc(cardImg(card.card_no))}" alt=""></button>`
     ).join('');
     box.innerHTML = `
-      <p><strong>${esc(deck.name || '')}</strong></p>
-      <p>${esc(deck.desc || '')}</p>
-      <div class="social-comp-row">${chips}</div>
-      <div class="social-comp-row">${hearts}</div>
-      <p>${tt('profile.types', 'Member / Live / Energy')}: ${types.member || 0} / ${types.live || 0} / ${types.energy || 0}</p>
+      ${name ? `<p class="social-deck-name"><strong>${esc(name)}</strong></p>` : ''}
+      ${desc ? `<p class="social-bio-text">${esc(desc)}</p>` : ''}
+      <button type="button" class="btn-ghost" id="btn-deck-close">${tt('profile.closeDeck', 'Hide full deck')}</button>
+      <div class="social-log-wrap">
+        ${logChart(tt('profile.cost', 'Cost'), costCols)}
+        ${logChart(tt('profile.bladeHearts', 'Blade hearts'), heartCols)}
+        <div class="social-log-summary">
+          <div><span>${tt('profile.members', 'Member')}</span><b>${memberN}</b></div>
+          <div><span>${tt('profile.lives', 'Live')}</span><b>${liveN}</b></div>
+          <div><span>${tt('profile.bladeHeartCount', 'Blade hearts')}</span><b>${heartN}</b></div>
+          <p class="social-log-total">${mainN} / 60</p>
+          <hr>
+          <div><span>${tt('profile.energy', 'Energy')}</span><b>${energyN}</b></div>
+          <p class="social-log-total">${energyN} / 12</p>
+        </div>
+      </div>
       <div class="social-deck-grid">${grid}</div>`;
+    document.getElementById('btn-deck-close')?.addEventListener('click', () => {
+      _deckOpen = false;
+      renderDeckComp(deck, desc);
+    });
     box.querySelectorAll('[data-card]').forEach((b) => {
       b.addEventListener('click', () => inspectCard(b.getAttribute('data-card')));
     });
@@ -239,6 +385,8 @@
         featured_deck_id: parseInt(document.getElementById('profile-deck-id')?.value || '0', 10),
         showcase,
       });
+      _editing = false;
+      _deckOpen = false;
       renderProfile(data);
     } catch (e) {
       setErr('profile-err', e.message);
@@ -259,7 +407,7 @@
       ).join('');
       const maxIdol = Math.max(1, ...(data.idols || []).map((i) => i.count));
       const idols = (data.idols || []).map((i) =>
-        `<div class="social-bar"><span>${esc(i.idol)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * i.count / maxIdol)}%"></div></div><span class="social-bar-n">${i.count}</span></div>`
+        `<div class="social-bar">${i.portrait ? `<img class="social-idol-face" src="${esc(i.portrait)}" alt="">` : '<span class="social-idol-face is-empty"></span>'}<span>${esc(i.idol)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * i.count / maxIdol)}%"></div></div><span class="social-bar-n">${i.count}</span></div>`
       ).join('');
       const hist = (data.history || []).map((h) =>
         `<div class="social-row"><span>${esc(h.mode)}</span><span>${esc(h.result)}</span><span>${esc(h.opponent?.username || '')}</span></div>`
@@ -305,8 +453,8 @@
           ? listFor(data.recent, 'recent') || '<p>—</p>'
           : listFor(data.friends, 'friends') || '<p>—</p>';
       root.innerHTML = `
-        <p>${tt('friends.yourCode', 'Your code')}: <strong class="social-code">${esc(data.friend_code || '')}</strong>
-           (${data.count || 0}/${data.cap || 25})</p>
+        <p class="social-friend-id-row">${friendIdBtn(data.friend_code)}
+           <span>(${data.count || 0}/${data.cap || 25})</span></p>
         <div class="social-tabs">
           <button type="button" data-tab="friends" aria-selected="${_friendsTab === 'friends'}">${tt('friends.tabFriends', 'Friends')}</button>
           <button type="button" data-tab="requests" aria-selected="${_friendsTab === 'requests'}">${tt('friends.tabRequests', 'Requests')}</button>
@@ -331,6 +479,9 @@
           await accountPost('social_friend_add', { friend_code: document.getElementById('friends-code-input')?.value || '' });
           await refreshFriends();
         } catch (e) { setErr('friends-err', e.message); }
+      });
+      root.querySelectorAll('[data-copy]').forEach((b) => {
+        b.addEventListener('click', () => copyText(b.getAttribute('data-copy'), b));
       });
       root.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openProfile(b.getAttribute('data-open'))));
       root.querySelectorAll('[data-acc]').forEach((b) => b.addEventListener('click', async () => {
