@@ -50,6 +50,131 @@
     global.showCard(lookupCard(no), null, global.G?.gameState, global.G?.playerId);
   }
 
+  let _pickSlot = 0;
+
+  function cardLabel(no) {
+    const c = lookupCard(no);
+    const fn = global.cardLocaleName;
+    return (typeof fn === 'function' ? fn(c) : '') || c.name_en || c.name || no;
+  }
+
+  async function ensureCollection() {
+    const A = global.A;
+    if (A && Array.isArray(A.collection) && A.collection.length) return A.collection;
+    if (typeof global.refreshCollection === 'function') {
+      await global.refreshCollection();
+      return (global.A && global.A.collection) || [];
+    }
+    const res = await accountPost('collection', {});
+    const list = res.collection || [];
+    if (A) {
+      A.collection = list;
+      A.collectionMap = {};
+      list.forEach((row) => { A.collectionMap[row.card_no] = row.qty; });
+    }
+    return list;
+  }
+
+  function ownedCollectionCards() {
+    const A = global.A || {};
+    const G = global.G || {};
+    const seen = new Set();
+    const out = [];
+    (A.collection || []).forEach((row) => {
+      const no = String(row && row.card_no || '');
+      const qty = Number(row && (row.qty != null ? row.qty : row.count) || 0);
+      if (!no || qty < 1 || seen.has(no)) return;
+      seen.add(no);
+      const card = (row && row.card) || (G.allCards && G.allCards[no]) || { card_no: no, name: no };
+      out.push({ card_no: no, card, qty });
+    });
+    out.sort((a, b) => cardLabel(a.card_no).localeCompare(cardLabel(b.card_no), undefined, { sensitivity: 'base' }));
+    return out;
+  }
+
+  function showcaseSlots(profile) {
+    const by = {};
+    (profile.showcase || []).forEach((s, i) => {
+      const slot = intvalSafe(s.slot) || (i + 1);
+      if (slot >= 1 && slot <= 3) by[slot] = String(s.card_no || '');
+    });
+    return [1, 2, 3].map((i) => ({ slot: i, card_no: by[i] || '' }));
+  }
+
+  function intvalSafe(n) {
+    const v = parseInt(n, 10);
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function setShowcaseSlot(slot, cardNo) {
+    const btn = document.querySelector('#profile-showcase [data-slot="' + slot + '"]');
+    if (!btn) return;
+    const no = String(cardNo || '');
+    btn.setAttribute('data-card', no);
+    if (no) {
+      btn.classList.remove('is-empty');
+      btn.innerHTML = `<img src="${esc(cardImg(no))}" alt="">`;
+    } else {
+      btn.classList.add('is-empty');
+      btn.textContent = '+';
+    }
+  }
+
+  function hideShowcasePicker() {
+    _pickSlot = 0;
+    const box = document.getElementById('profile-card-picker');
+    if (box) box.hidden = true;
+    document.querySelectorAll('#profile-showcase .social-card-thumb').forEach((b) => {
+      b.classList.remove('is-picking');
+    });
+  }
+
+  function fillShowcasePickerGrid(query) {
+    const grid = document.getElementById('profile-card-grid');
+    if (!grid) return;
+    const q = String(query || '').trim().toLowerCase();
+    const cards = ownedCollectionCards().filter((row) => {
+      if (!q) return true;
+      const hay = [row.card_no, cardLabel(row.card_no), row.card.name_en, row.card.name].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+    if (!cards.length) {
+      grid.innerHTML = `<p class="social-picker-empty">${esc(tt('profile.noOwnedCards', 'No matching cards in your collection.'))}</p>`;
+      return;
+    }
+    grid.innerHTML = cards.map((row) =>
+      `<button type="button" class="social-picker-card" data-pick="${esc(row.card_no)}" title="${esc(cardLabel(row.card_no))}"><img src="${esc(cardImg(row.card_no))}" alt=""></button>`
+    ).join('');
+    grid.querySelectorAll('[data-pick]').forEach((b) => {
+      b.addEventListener('click', () => {
+        if (_pickSlot < 1) return;
+        setShowcaseSlot(_pickSlot, b.getAttribute('data-pick'));
+        hideShowcasePicker();
+      });
+    });
+  }
+
+  async function openShowcasePicker(slot) {
+    _pickSlot = slot;
+    document.querySelectorAll('#profile-showcase .social-card-thumb').forEach((b) => {
+      b.classList.toggle('is-picking', parseInt(b.getAttribute('data-slot'), 10) === slot);
+    });
+    const box = document.getElementById('profile-card-picker');
+    const grid = document.getElementById('profile-card-grid');
+    if (!box || !grid) return;
+    box.hidden = false;
+    grid.innerHTML = `<p class="social-picker-empty">${esc(tt('social.loading', 'Loading…'))}</p>`;
+    try {
+      await ensureCollection();
+    } catch (e) {
+      grid.innerHTML = `<p class="social-picker-empty">${esc(e.message || 'Could not load collection')}</p>`;
+      return;
+    }
+    const search = document.getElementById('profile-card-search');
+    if (search) search.value = '';
+    fillShowcasePickerGrid('');
+  }
+
   let _screen = 'auth';
   let _friendsTab = 'friends';
   let _editing = false;
@@ -170,9 +295,12 @@
     const bioMax = 100;
     const vis = p.featured_deck?.visibility || 'private';
     const deck = p.featured_deck || {};
-    const show = (p.showcase || []).map((s) => {
+    const show = showcaseSlots(p).map((s) => {
       const no = s.card_no || '';
-      return `<button type="button" class="social-card-thumb" data-card="${esc(no)}" ${no ? '' : 'disabled'}>${
+      const canPick = self && _editing;
+      const disabled = !canPick && !no ? 'disabled' : '';
+      const empty = no ? '' : ' is-empty';
+      return `<button type="button" class="social-card-thumb${empty}" data-slot="${s.slot}" data-card="${esc(no)}" ${disabled}>${
         no ? `<img src="${esc(cardImg(no))}" alt="">` : '+'
       }</button>`;
     }).join('');
@@ -201,6 +329,18 @@
       ${p.bio_locked && self ? `<p class="social-err">${tt('profile.bioLocked', 'Bio editing is locked.')}</p>` : ''}
       <h4 data-i18n="profile.showcase">${tt('profile.showcase', 'Showcase')}</h4>
       <div class="social-showcase" id="profile-showcase">${show}</div>
+      ${self && _editing ? `<p class="social-vis-hint">${esc(tt('profile.showcaseHint', 'Tap a slot to choose a card from your collection.'))}</p>
+        <div id="profile-card-picker" class="social-card-picker" hidden>
+          <div class="field">
+            <label for="profile-card-search">${tt('profile.searchCollection', 'Search collection')}</label>
+            <input id="profile-card-search" type="search" autocomplete="off">
+          </div>
+          <div class="social-picker-actions">
+            <button type="button" class="btn-ghost" id="profile-card-clear">${tt('profile.clearSlot', 'Clear slot')}</button>
+            <button type="button" class="btn-ghost" id="profile-card-cancel">${tt('social.close', 'Close')}</button>
+          </div>
+          <div class="social-picker-grid" id="profile-card-grid"></div>
+        </div>` : ''}
       <p>${tt('profile.rankedWl', 'Ranked')}: ${ranked.wins || 0}–${ranked.losses || 0}
          · ${tt('profile.unranked', 'Unranked games')}: ${p.unranked_games || 0}</p>
       <button type="button" class="btn-ghost" id="btn-profile-stats">${tt('profile.gameStats', 'Game stats')}</button>
@@ -238,15 +378,32 @@
     const count = document.getElementById('profile-bio-count');
     const tick = () => { if (count && bio) count.textContent = `${bio.value.length}/${bioMax}`; };
     if (bio) { bio.addEventListener('input', tick); tick(); }
-    root.querySelectorAll('[data-card]').forEach((b) => {
+    root.querySelectorAll('#profile-showcase .social-card-thumb').forEach((b) => {
+      b.addEventListener('click', () => {
+        const slot = parseInt(b.getAttribute('data-slot'), 10);
+        const no = b.getAttribute('data-card') || '';
+        if (self && _editing) openShowcasePicker(slot);
+        else if (no) inspectCard(no);
+      });
+    });
+    root.querySelectorAll('#profile-deck-view [data-card], .social-preview-card[data-card]').forEach((b) => {
       b.addEventListener('click', () => inspectCard(b.getAttribute('data-card')));
     });
+    document.getElementById('profile-card-search')?.addEventListener('input', (e) => {
+      fillShowcasePickerGrid(e.target.value);
+    });
+    document.getElementById('profile-card-clear')?.addEventListener('click', () => {
+      if (_pickSlot >= 1) setShowcaseSlot(_pickSlot, '');
+      hideShowcasePicker();
+    });
+    document.getElementById('profile-card-cancel')?.addEventListener('click', () => hideShowcasePicker());
     root.querySelectorAll('[data-copy]').forEach((b) => {
       b.addEventListener('click', () => copyText(b.getAttribute('data-copy'), b));
     });
     document.getElementById('btn-profile-edit')?.addEventListener('click', () => {
       _editing = true;
       renderProfile(_profileCache);
+      ensureCollection().catch(() => {});
     });
     document.getElementById('btn-profile-edit-cancel')?.addEventListener('click', () => {
       _editing = false;
