@@ -48,10 +48,25 @@
   let _screen = 'auth';
   let _friendsTab = 'friends';
 
+  /** Menus whose shell is already wider than the 720px hub column. */
+  const WIDE_RAIL_SCREENS = {
+    deck: 1,
+    booster: 1,
+    'pack-results': 1,
+    sticker: 1,
+    'playmat-shop': 1,
+    'sleeve-shop': 1,
+    'card-list': 1,
+    leaderboard: 1,
+    lobby: 1,
+    tournament: 1,
+  };
+
   function syncSocialRail(screenId) {
     _screen = screenId || _screen;
     const rail = document.getElementById('social-rail');
     if (!rail) return;
+    rail.classList.toggle('social-rail--edge', !!WIDE_RAIL_SCREENS[_screen]);
     const hide = _screen === 'game' || !signedIn();
     rail.hidden = hide;
     const logged = signedIn();
