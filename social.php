@@ -94,9 +94,13 @@ function tcgSocialNormalizeFriendCode(string $raw): string {
 function tcgSocialEnsureFriendCode(string $discordId): string {
     tcgSocialEnsureSchema();
     $db = tcgDb();
-    $stmt = $db->prepare('SELECT friend_code FROM tcg_users WHERE discord_id = ?');
-    $stmt->execute([$discordId]);
-    $existing = trim((string)$stmt->fetchColumn());
+    try {
+        $stmt = $db->prepare('SELECT friend_code FROM tcg_users WHERE discord_id = ?');
+        $stmt->execute([$discordId]);
+        $existing = trim((string)$stmt->fetchColumn());
+    } catch (Throwable $e) {
+        return '';
+    }
     if ($existing !== '' && preg_match('/^LC[0-9A-HJKMNP-TV-Z]{6}$/', $existing)) {
         return $existing;
     }
@@ -411,6 +415,9 @@ function tcgSocialMatchHistory(string $discordId, int $offset = 0, int $limit = 
 }
 
 function tcgSocialIdolUsage(string $discordId): array {
+    if (!function_exists('tcgListPlayStats')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
     $rows = tcgListPlayStats($discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL);
     $out = [];
     foreach (array_slice($rows, 0, 12) as $row) {

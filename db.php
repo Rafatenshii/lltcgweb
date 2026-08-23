@@ -320,6 +320,68 @@ function tcgDbMigrate(PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");
     });
 
+    // Profile/friends columns — bootstrap_v2 already ran on Hostinger, so these
+    // must be a once-migration (same pattern as preferred_timezone / seal_pr).
+    tcgDbRunMigrationOnce($db, 'social_profile_20260823', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_users', 'friend_code', 'TEXT');
+        tcgDbEnsureColumn($db, 'tcg_users', 'bio', 'TEXT');
+        tcgDbEnsureColumn($db, 'tcg_users', 'bio_locked', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_users', 'profile_warnings', 'INTEGER NOT NULL DEFAULT 0');
+        tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_id', 'INTEGER');
+        tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_visibility', "TEXT NOT NULL DEFAULT 'private'");
+        tcgDbEnsureColumn($db, 'tcg_users', 'featured_deck_desc', 'TEXT');
+        tcgDbEnsureColumn($db, 'tcg_users', 'title_id', 'TEXT');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_profile_showcase (
+            discord_id TEXT NOT NULL,
+            slot INTEGER NOT NULL,
+            card_no TEXT NOT NULL DEFAULT \'\',
+            PRIMARY KEY (discord_id, slot)
+        )');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_friends (
+            user_lo TEXT NOT NULL,
+            user_hi TEXT NOT NULL,
+            requester_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (user_lo, user_hi)
+        )');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_friends_status ON tcg_friends(status, updated_at)');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_pvp_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            room_id TEXT NOT NULL UNIQUE,
+            mode TEXT NOT NULL,
+            p1_id TEXT NOT NULL,
+            p2_id TEXT NOT NULL,
+            winner_id TEXT,
+            ended_at INTEGER NOT NULL
+        )');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_pvp_p1 ON tcg_pvp_results(p1_id, ended_at)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_pvp_p2 ON tcg_pvp_results(p2_id, ended_at)');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_profile_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reporter_id TEXT NOT NULL,
+            target_id TEXT NOT NULL,
+            field TEXT NOT NULL,
+            snippet TEXT NOT NULL DEFAULT \'\',
+            status TEXT NOT NULL DEFAULT \'open\',
+            created_at INTEGER NOT NULL
+        )');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_profile_mod_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            target_id TEXT NOT NULL,
+            actor_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            note TEXT NOT NULL DEFAULT \'\',
+            created_at INTEGER NOT NULL
+        )');
+        try {
+            $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_users_friend_code ON tcg_users(friend_code) WHERE friend_code IS NOT NULL AND friend_code != \'\'');
+        } catch (Throwable $e) {
+            // Duplicate empties / older SQLite without partial indexes.
+        }
+    });
+
     $done = true;
 }
 
