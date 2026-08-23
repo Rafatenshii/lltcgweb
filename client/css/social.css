@@ -210,11 +210,15 @@ body.social-overlay-open #modal-card.open {
 .social-bio { width: 100%; min-height: 72px; resize: vertical; }
 .social-showcase {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   margin: 12px 0;
+  overflow-x: auto;
 }
 .social-showcase button,
 .social-card-thumb {
+  position: relative;
+  flex: 0 0 auto;
   width: 72px;
   height: 100px;
   border-radius: 8px;
@@ -226,6 +230,25 @@ body.social-overlay-open #modal-card.open {
 }
 .social-showcase img,
 .social-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.social-picker-card { position: relative; }
+.social-live-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% * 88 / 63);
+  height: calc(100% * 63 / 88);
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.social-live-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
 .social-card-thumb.is-empty {
   display: flex;
   align-items: center;
@@ -261,6 +284,7 @@ body.social-overlay-open #modal-card.open {
   padding-right: 4px;
 }
 .social-picker-card {
+  position: relative;
   aspect-ratio: 63 / 88;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -489,11 +513,12 @@ button.social-bar-art { cursor: pointer; }
   text-align: left;
 }
 .social-deck-preview:hover { border-color: #ffd0e4; }
-.social-preview-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.social-preview-card { position: relative; width: 56px; height: 78px; border-radius: 6px; overflow: hidden; display: block; border: 1px solid rgba(255,255,255,.2); }
+.social-preview-row { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 8px; overflow-x: auto; }
+.social-preview-card { position: relative; flex: 0 0 auto; width: 56px; height: 78px; border-radius: 6px; overflow: hidden; display: block; border: 1px solid rgba(255,255,255,.2); }
+.social-preview-face { position: absolute; inset: 0; }
 .social-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .social-preview-card em {
-  position: absolute; right: 2px; bottom: 2px;
+  position: absolute; right: 2px; bottom: 2px; z-index: 1;
   font-style: normal; font-size: 10px; font-weight: 800;
   background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; padding: 0 4px;
 }
@@ -531,10 +556,11 @@ button.social-bar-art { cursor: pointer; }
 .social-vis-hint { font-size: 12px; opacity: .75; margin: 0 0 8px; }
 .social-deck-preview { display: block; width: 100%; margin: 8px 0 12px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.28); background: rgba(0,0,0,.22); cursor: pointer; color: inherit; text-align: left; }
 .social-deck-preview:hover { border-color: #ffd0e4; }
-.social-preview-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.social-preview-card { position: relative; width: 56px; height: 78px; border-radius: 6px; overflow: hidden; display: block; border: 1px solid rgba(255,255,255,.2); }
+.social-preview-row { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 8px; overflow-x: auto; }
+.social-preview-card { position: relative; flex: 0 0 auto; width: 56px; height: 78px; border-radius: 6px; overflow: hidden; display: block; border: 1px solid rgba(255,255,255,.2); }
+.social-preview-face { position: absolute; inset: 0; }
 .social-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.social-preview-card em { position: absolute; right: 2px; bottom: 2px; font-style: normal; font-size: 10px; font-weight: 800; background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; padding: 0 4px; }
+.social-preview-card em { position: absolute; right: 2px; bottom: 2px; z-index: 1; font-style: normal; font-size: 10px; font-weight: 800; background: rgba(0,0,0,.7); color: #fff; border-radius: 6px; padding: 0 4px; }
 .social-preview-hint { font-size: 12px; font-weight: 800; opacity: .85; }
 .social-log-wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; margin: 12px 0; }
 .social-log-chart { flex: 1 1 160px; min-width: 140px; }

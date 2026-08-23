@@ -81,6 +81,28 @@
       || (A.collection || []).find((r) => r && r.card_no === no)?.card
       || { card_no: no, name: no };
   }
+  function isLiveCardMeta(cardOrNo) {
+    const card = (cardOrNo && typeof cardOrNo === 'object')
+      ? cardOrNo
+      : lookupCard(cardOrNo);
+    if (typeof global.isLiveCard === 'function' && card && (card.card_type || card.card_type_en)) {
+      return !!global.isLiveCard(card);
+    }
+    const en = String(card.card_type_en || card.type_en || '').toLowerCase();
+    const jp = String(card.card_type || '');
+    return en === 'live' || jp === 'ライブ';
+  }
+  function cardFaceHtml(cardOrNo) {
+    const no = String((cardOrNo && typeof cardOrNo === 'object')
+      ? (cardOrNo.card_no || cardOrNo.no || '')
+      : (cardOrNo || ''));
+    if (!no) return '';
+    const img = `<img src="${esc(cardImg(no))}" alt="">`;
+    return isLiveCardMeta(cardOrNo || no) ? `<span class="social-live-art">${img}</span>` : img;
+  }
+  function liveClass(cardOrNo) {
+    return isLiveCardMeta(cardOrNo) ? ' is-live' : '';
+  }
   function inspectCard(no) {
     if (!no || typeof global.showCard !== 'function') return;
     global.showCard(lookupCard(no), null, global.G?.gameState, global.G?.playerId);
@@ -147,10 +169,12 @@
     if (!btn) return;
     const no = String(cardNo || '');
     btn.setAttribute('data-card', no);
+    btn.classList.toggle('is-live', !!no && isLiveCardMeta(no));
     if (no) {
       btn.classList.remove('is-empty');
-      btn.innerHTML = `<img src="${esc(cardImg(no))}" alt="">`;
+      btn.innerHTML = cardFaceHtml(no);
     } else {
+      btn.classList.remove('is-live');
       btn.classList.add('is-empty');
       btn.textContent = '+';
     }
@@ -179,7 +203,7 @@
       return;
     }
     grid.innerHTML = cards.map((row) =>
-      `<button type="button" class="social-picker-card" data-pick="${esc(row.card_no)}" title="${esc(cardLabel(row.card_no))}"><img src="${esc(cardImg(row.card_no))}" alt=""></button>`
+      `<button type="button" class="social-picker-card${liveClass(row.card || row.card_no)}" data-pick="${esc(row.card_no)}" title="${esc(cardLabel(row.card_no))}">${cardFaceHtml(row.card || row.card_no)}</button>`
     ).join('');
     grid.querySelectorAll('[data-pick]').forEach((b) => {
       b.addEventListener('click', () => {
@@ -368,8 +392,8 @@
       const canPick = self && _editing;
       const disabled = !canPick && !no ? 'disabled' : '';
       const empty = no ? '' : ' is-empty';
-      return `<button type="button" class="social-card-thumb${empty}" data-slot="${s.slot}" data-card="${esc(no)}" ${disabled}>${
-        no ? `<img src="${esc(cardImg(no))}" alt="">` : '+'
+      return `<button type="button" class="social-card-thumb${empty}${no ? liveClass(no) : ''}" data-slot="${s.slot}" data-card="${esc(no)}" ${disabled}>${
+        no ? cardFaceHtml(no) : '+'
       }</button>`;
     }).join('');
     const ranked = p.ranked || {};
@@ -577,12 +601,16 @@
 
   function deckPreviewHtml(deck) {
     const prev = deck.preview || {};
-    const row = (arr) => (arr || []).map((c) =>
-      `<span class="social-preview-card"><img src="${esc(cardImg(c.card_no))}" alt=""><em>×${c.count || 1}</em></span>`
-    ).join('') || '<span class="social-preview-empty">—</span>';
+    const items = []
+      .concat(prev.members || [])
+      .concat(prev.lives || []);
+    const row = items.length
+      ? items.map((c) =>
+        `<span class="social-preview-card${liveClass(c)}"><span class="social-preview-face">${cardFaceHtml(c)}</span><em>×${c.count || c.count || 1}</em></span>`
+      ).join('')
+      : '<span class="social-preview-empty">—</span>';
     return `<button type="button" class="social-deck-preview" id="btn-deck-open">
-      <div class="social-preview-row">${row(prev.members)}</div>
-      <div class="social-preview-row">${row(prev.lives)}</div>
+      <div class="social-preview-row">${row}</div>
       <span class="social-preview-hint">${esc(tt('profile.openDeck', 'View full deck'))}</span>
     </button>`;
   }
@@ -625,7 +653,7 @@
     const mainN = memberN + liveN;
     const heartN = c.blade_heart_total != null ? c.blade_heart_total : HEART_ORDER.reduce((s, spec) => s + heartCount(blades, spec), 0);
     const grid = (deck.cards || []).map((card) =>
-      `<button type="button" class="social-card-thumb" data-card="${esc(card.card_no)}"><img src="${esc(cardImg(card.card_no))}" alt=""></button>`
+      `<button type="button" class="social-card-thumb${liveClass(card)}" data-card="${esc(card.card_no)}">${cardFaceHtml(card)}</button>`
     ).join('');
     box.innerHTML = `
       ${name ? `<p class="social-deck-name"><strong>${esc(name)}</strong></p>` : ''}

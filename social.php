@@ -396,10 +396,15 @@ function tcgSocialDeckPreview(array $main, array $cardMap): array {
     }
     arsort($members);
     arsort($lives);
-    $pick = static function (array $counts): array {
+    $pick = function (array $counts) use ($cardMap): array {
         $out = [];
         foreach (array_slice($counts, 0, 3, true) as $no => $n) {
-            $out[] = ['card_no' => (string)$no, 'count' => intval($n)];
+            $c = $cardMap[(string)$no] ?? null;
+            $out[] = [
+                'card_no' => (string)$no,
+                'count' => intval($n),
+                'card_type_en' => is_array($c) ? (string)($c['card_type_en'] ?? '') : '',
+            ];
         }
         return $out;
     };
