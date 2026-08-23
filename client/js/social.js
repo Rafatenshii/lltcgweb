@@ -367,7 +367,16 @@
         <button type="button" class="btn-ghost" id="btn-profile-edit-cancel">${tt('social.close', 'Close')}</button>` : ''}
       ${self && !_editing ? `<p class="social-vis-hint">${esc(visLabel)}</p>` : ''}
       <div id="profile-deck-view"></div>
-      ${!self ? `<button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>` : ''}
+      ${!self ? `<div class="social-report">
+        <button type="button" class="btn-ghost" id="btn-profile-report">${tt('profile.report', 'Report')}</button>
+        <div class="social-report-confirm" id="profile-report-confirm" hidden>
+          <p>${esc(tt('profile.reportAsk', 'Report this player? This sends their profile text to moderators.'))}</p>
+          <div class="social-picker-actions">
+            <button type="button" class="btn-grad" id="btn-profile-report-yes">${tt('profile.reportConfirm', 'Yes, report')}</button>
+            <button type="button" class="btn-ghost" id="btn-profile-report-no">${tt('social.close', 'Cancel')}</button>
+          </div>
+        </div>
+      </div>` : ''}
       <p class="social-err" id="profile-err"></p>
     `;
     const visEl = document.getElementById('profile-deck-vis');
@@ -419,11 +428,30 @@
     });
     document.getElementById('btn-profile-stats')?.addEventListener('click', () => openStats(p.id));
     document.getElementById('btn-profile-save')?.addEventListener('click', () => saveProfile(p));
-    document.getElementById('btn-profile-report')?.addEventListener('click', async () => {
+    document.getElementById('btn-profile-report')?.addEventListener('click', () => {
+      const box = document.getElementById('profile-report-confirm');
+      const btn = document.getElementById('btn-profile-report');
+      if (box) box.hidden = false;
+      if (btn) btn.hidden = true;
+    });
+    document.getElementById('btn-profile-report-no')?.addEventListener('click', () => {
+      const box = document.getElementById('profile-report-confirm');
+      const btn = document.getElementById('btn-profile-report');
+      if (box) box.hidden = true;
+      if (btn) btn.hidden = false;
+    });
+    document.getElementById('btn-profile-report-yes')?.addEventListener('click', async () => {
+      const yes = document.getElementById('btn-profile-report-yes');
+      if (yes) yes.disabled = true;
       try {
         await accountPost('social_report', { user_id: p.id, field: 'bio', snippet: p.bio || '' });
         setErr('profile-err', tt('profile.reported', 'Report sent.'));
-      } catch (e) { setErr('profile-err', e.message); }
+        const box = document.getElementById('profile-report-confirm');
+        if (box) box.hidden = true;
+      } catch (e) {
+        setErr('profile-err', e.message);
+        if (yes) yes.disabled = false;
+      }
     });
     renderDeckComp(deck, deckDesc);
     applyI18n(root);

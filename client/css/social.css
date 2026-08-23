@@ -515,3 +515,12 @@ body.social-overlay-open #modal-card.open {
 .social-log-bar { width: 70%; max-width: 18px; background: #e89aa4; border-radius: 3px 3px 0 0; }
 .social-log-foot { margin-top: 4px; font-size: 9px; font-weight: 800; text-align: center; line-height: 1.1; }
 .social-log-heart { width: 16px; height: 16px; object-fit: contain; display: block; }
+.social-report { margin: 12px 0 4px; }
+.social-report-confirm {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 107, 168, 0.45);
+  background: rgba(0, 0, 0, 0.22);
+}
+.social-report-confirm p { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
