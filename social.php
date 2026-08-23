@@ -150,11 +150,23 @@ function tcgSocialAreFriends(string $a, string $b): bool {
 }
 
 function tcgSocialFriendCount(string $discordId): int {
+    tcgSocialEnsureSchema();
     $stmt = tcgDb()->prepare(
         'SELECT COUNT(*) FROM tcg_friends WHERE status = \'accepted\' AND (user_lo = ? OR user_hi = ?)'
     );
     $stmt->execute([$discordId, $discordId]);
     return intval($stmt->fetchColumn());
+}
+
+function tcgSocialAttachFriendMissions(array $payload, string $a, string $b): array {
+    if (!function_exists('tcgMissionCheckFriendCount')) {
+        require_once __DIR__ . '/missions.php';
+    }
+    $done = tcgMissionMergeCompletions(
+        tcgMissionCheckFriendCount($a),
+        tcgMissionCheckFriendCount($b)
+    );
+    return tcgMissionAttachCompletions($payload, $done);
 }
 
 function tcgSocialUserStub(string $discordId): array {
@@ -1061,7 +1073,7 @@ function tcgApiSocialFriendAdd(array $body): array {
         if ($row['requester_id'] !== $uid) {
             tcgDb()->prepare('UPDATE tcg_friends SET status = ?, updated_at = ? WHERE user_lo = ? AND user_hi = ?')
                 ->execute(['accepted', $now, $lo, $hi]);
-            return ['success' => true, 'accepted' => true];
+            return tcgSocialAttachFriendMissions(['success' => true, 'accepted' => true], $uid, $other);
         }
         return ['success' => true, 'pending' => true];
     }
@@ -1094,6 +1106,7 @@ function tcgApiSocialFriendRespond(array $body, bool $accept): array {
         }
         tcgDb()->prepare('UPDATE tcg_friends SET status = ?, updated_at = ? WHERE user_lo = ? AND user_hi = ?')
             ->execute(['accepted', time(), $lo, $hi]);
+        return tcgSocialAttachFriendMissions(['success' => true], $uid, $other);
     } else {
         tcgDb()->prepare('DELETE FROM tcg_friends WHERE user_lo = ? AND user_hi = ?')->execute([$lo, $hi]);
     }

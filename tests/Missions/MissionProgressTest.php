@@ -661,4 +661,35 @@ final class MissionProgressTest extends TestCase
         ]));
         $this->assertSame(100, tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, $idol));
     }
+
+    public function testFriendMissionsCompleteAndClaimGemsAndCoins(): void
+    {
+        require_once dirname(__DIR__, 2) . '/social.php';
+        require_once dirname(__DIR__, 2) . '/coins.php';
+        tcgSocialEnsureSchema();
+
+        $other = 'test_friend_other_' . bin2hex(random_bytes(3));
+        tcgEnsureUser($other, ['username' => 'Friend Other']);
+        [$lo, $hi] = tcgSocialPair($this->discordId, $other);
+        $now = time();
+        tcgDb()->prepare(
+            'INSERT INTO tcg_friends (user_lo, user_hi, requester_id, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        )->execute([$lo, $hi, $this->discordId, 'accepted', $now, $now]);
+
+        $done = tcgMissionCheckFriendCount($this->discordId);
+        $this->assertContains('ms_friend_1', array_column($done, 'id'));
+        $this->assertNotContains('ms_friend_10', array_column($done, 'id'));
+        $this->assertTrue(tcgMissionIsCompleted($this->discordId, 'ms_friend_1', ''));
+        $this->assertFalse(tcgMissionIsCompleted($this->discordId, 'ms_friend_10', ''));
+
+        $gemsBefore = tcgGetStarGems($this->discordId);
+        $coinsBefore = tcgGetCoins($this->discordId);
+        $claim = tcgMissionClaim($this->discordId, 'ms_friend_1');
+        $this->assertSame('star_gems_and_coins', $claim['mission']['reward_type']);
+        $this->assertSame(100, $claim['star_gems_gained']);
+        $this->assertSame(100, $claim['coins_gained']);
+        $this->assertSame($gemsBefore + 100, tcgGetStarGems($this->discordId));
+        $this->assertSame($coinsBefore + 100, tcgGetCoins($this->discordId));
+    }
 }

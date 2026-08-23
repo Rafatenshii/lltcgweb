@@ -158,6 +158,8 @@
         "profileBanner": "Update your profile banner",
         "profileFlag": "Set a flag on your profile",
         "profileStamps": "Set favorite stickers",
+        "friend1": "Add a friend",
+        "friend10": "Add 10 friends",
         "ranked1": "Play 1 ranked match",
         "unranked1": "Play 1 unranked match",
         "ranked5": "Play 5 ranked matches",
@@ -195,7 +197,8 @@
       "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
       "rewardFreeSleeve": "Free sleeve claim",
       "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
+      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)",
+      "claimedGemsAndCoinsToast": "Claimed {title} (+{gems} · +{coins} Coins)"
     },
     "language": {
       "label": "Language",
@@ -1898,6 +1901,8 @@
         "profileBanner": "プロフィールバナーを設定",
         "profileFlag": "プロフィールに国旗を設定",
         "profileStamps": "お気に入りスタンプを設定",
+        "friend1": "フレンドを1人追加",
+        "friend10": "フレンドを10人追加",
         "ranked1": "ランクマッチを1回プレイ",
         "unranked1": "カジュアルマッチを1回プレイ",
         "ranked5": "ランクマッチを5回プレイ",
@@ -1937,6 +1942,7 @@
       "claimedFreeSleeveToast": "{title} を受け取りました — スリーブショップで無料受取が可能です",
       "claimedCoinsAndPrToast": "{title} を受け取りました（+{coins} コイン · PRパック）",
       "claimedCoinsToast": "{title} を受け取りました（+{coins} コイン）",
+      "claimedGemsAndCoinsToast": "{title} を受け取りました（+{gems} · +{coins} コイン）",
       "starterPickTitle": "スターターデッキを選ぶ",
       "starterPickConfirm": "スターターを解放",
       "starterPickCancel": "キャンセル"
@@ -4835,6 +4841,8 @@
         "profileBanner": "Actualiza tu banner de perfil",
         "profileFlag": "Pon una bandera en tu perfil",
         "profileStamps": "Configura sellos favoritos",
+        "friend1": "Añade un amigo",
+        "friend10": "Añade 10 amigos",
         "ranked1": "Juega 1 partida clasificatoria",
         "ranked10": "Juega 10 partidas clasificatorias",
         "ranked100": "Juega 100 partidas clasificatorias",
@@ -4873,7 +4881,8 @@
       "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
       "rewardFreeSleeve": "Funda gratis",
       "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
+      "claimedCoinsToast": "Reclamaste {title} (+{coins} monedas)",
+      "claimedGemsAndCoinsToast": "Reclamaste {title} (+{gems} · +{coins} monedas)"
     },
     "stamps": {
       "audio": "Audio de sellos",
@@ -6623,6 +6632,8 @@
         "profileBanner": "프로필 배너 변경",
         "profileFlag": "프로필에 국기 설정",
         "profileStamps": "즐겨찾는 스티커 설정",
+        "friend1": "친구 1명 추가",
+        "friend10": "친구 10명 추가",
         "ranked1": "랭크 매치 1회 플레이",
         "ranked10": "랭크 매치 10회 플레이",
         "ranked100": "랭크 매치 100회 플레이",
@@ -6661,7 +6672,8 @@
       "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
       "rewardFreeSleeve": "무료 슬리브",
       "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
+      "claimedCoinsToast": "{title} 수령 (+{coins} 코인)",
+      "claimedGemsAndCoinsToast": "{title} 수령 (+{gems} · +{coins} 코인)"
     },
     "stamps": {
       "audio": "스탬프 오디오",
@@ -8411,6 +8423,8 @@
         "profileBanner": "更新个人资料横幅",
         "profileFlag": "在个人资料上设置旗帜",
         "profileStamps": "设置喜爱贴纸",
+        "friend1": "添加 1 位好友",
+        "friend10": "添加 10 位好友",
         "ranked1": "进行 1 场排名对战",
         "ranked10": "进行 10 场排名对战",
         "ranked100": "进行 100 场排名对战",
@@ -8449,7 +8463,8 @@
       "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
       "rewardFreeSleeve": "免费卡套领取",
       "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
+      "claimedCoinsToast": "已领取 {title}（+{coins} 金币）",
+      "claimedGemsAndCoinsToast": "已领取 {title}（+{gems} · +{coins} 金币）"
     },
     "stamps": {
       "audio": "贴纸语音",
@@ -10174,6 +10189,8 @@
         "cards800": "มีการ์ดครบ 800 ใบ",
         "profileBanner": "อัปเดตแบนเนอร์โปรไฟล์",
         "profileStamps": "ตั้งสติกเกอร์โปรด",
+        "friend1": "เพิ่มเพื่อน 1 คน",
+        "friend10": "เพิ่มเพื่อน 10 คน",
         "ranked1": "เล่นแมตช์แรงก์ 1 ครั้ง",
         "ranked10": "เล่นแมตช์แรงก์ 10 ครั้ง",
         "ranked100": "เล่นแมตช์แรงก์ 100 ครั้ง",
@@ -10213,7 +10230,8 @@
       "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
       "rewardFreeSleeve": "รับซองฟรี",
       "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
-      "claimedCoinsToast": "Claimed {title} (+{coins} Coins)"
+      "claimedCoinsToast": "รับ {title} แล้ว (+{coins} เหรียญ)",
+      "claimedGemsAndCoinsToast": "รับ {title} แล้ว (+{gems} · +{coins} เหรียญ)"
     },
     "stamps": {
       "audio": "เสียงแสตมป์",
@@ -10872,7 +10890,32 @@
       energy: 'Energy',
       cost: 'Cost',
       bladeHearts: 'Blade hearts',
-      bladeHeartCount: 'Blade hearts'
+      bladeHeartCount: 'Blade hearts',
+      showcaseHint: 'Tap a slot to choose a card from your collection.',
+      searchCollection: 'Search collection',
+      clearSlot: 'Clear slot',
+      reportAsk: 'Report this player? This sends their profile text to moderators.',
+      reportConfirm: 'Yes, report',
+      modeRanked: 'Ranked',
+      modeCasual: 'Casual',
+      modeMatch: 'Match',
+      games: 'games',
+      units: 'Top units',
+      noOwnedCards: 'No matching cards in your collection.',
+      noTitles: 'No titles yet',
+      rankedWl: 'Ranked',
+      gameStats: 'Game stats',
+      featuredDeck: 'Featured deck',
+      visPrivate: 'Private',
+      visFriends: 'Friends',
+      visPublic: 'Public',
+      useEquipped: 'Currently equipped',
+      deckHidden: 'This deck is private.',
+      byMode: 'By mode',
+      deckDesc: 'Deck description',
+      openDeck: 'View full deck',
+      closeDeck: 'Hide full deck',
+      friendId: 'Friend ID'
     },
     friends: {
       view: 'View',
@@ -10886,7 +10929,16 @@
       tabRequests: 'Requests',
       tabRecent: 'Recent',
       codePlaceholder: 'LCXXXXXX',
-      add: 'Add'
+      add: 'Add',
+      view: 'View',
+      accept: 'Accept',
+      decline: 'Decline',
+      remove: 'Remove',
+      incoming: 'Incoming',
+      outgoing: 'Outgoing',
+      tabFriends: 'Friends',
+      tabRequests: 'Requests',
+      tabRecent: 'Recent'
     },
     profileMod: {
       title: 'Reports',
@@ -10895,39 +10947,49 @@
       warn: 'Warn',
       lockBio: 'Lock bio',
       dismiss: 'Dismiss',
+      empty: 'No open reports.',
+      warns: 'Warnings',
+      clearBio: 'Clear bio',
+      lockBio: 'Lock bio',
+      dismiss: 'Dismiss',
+      empty: 'No open reports.',
+      warns: 'Warnings',
+      clearBio: 'Clear bio',
+      lockBio: 'Lock bio',
+      dismiss: 'Dismiss',
       empty: 'No open reports.'
     }
   };
   var I18N_SOCIAL_LOCALES = {
     ja: {
       social: { profile: 'プロフィール', friends: 'フレンド', close: '閉じる', loading: '読み込み中…', error: 'エラーが発生しました', signInHint: 'プロフィールとフレンドはDiscordログイン後に使えます', moderation: 'モデレーション' },
-      profile: { noTitles: '称号はまだありません', emptyBio: '自己紹介はまだありません。', bioLocked: '自己紹介は編集できません。', showcase: 'ショーケース', rankedWl: 'ランク', unranked: 'カジュアル対戦数', gameStats: '対戦統計', featuredDeck: '公開デッキ', visPrivate: '非公開', visFriends: 'フレンドのみ', visPublic: '公開', useEquipped: '装備中のデッキ', save: '保存', report: '通報', reported: '通報を送りました。', deckHidden: 'このデッキは非公開です。', types: 'メンバー / ライブ / エネルギー', byMode: 'モード別', opponents: 'よく対戦した相手', idols: 'よく使ったメンバー', history: '対戦履歴', friendId: 'フレンドID', copied: 'コピーしました', edit: '編集', bio: '自己紹介', deckDesc: 'デッキ説明', visibility: '公開設定', openDeck: 'デッキを見る', closeDeck: '閉じる', members: 'メンバー', lives: 'ライブ', energy: 'エネルギー', cost: 'コスト', bladeHearts: 'ブレードハート', bladeHeartCount: 'ブレードハートの数' },
-      friends: { view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', yourCode: 'あなたのコード', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '追加' },
-      profileMod: { title: '通報', warns: '警告', clearBio: '自己紹介を消去', warn: '警告', lockBio: '自己紹介をロック', dismiss: '却下', empty: '未処理の通報はありません。' }
+      profile: { noTitles: '称号はまだありません', emptyBio: '自己紹介はまだありません。', bioLocked: '自己紹介は編集できません。', showcase: 'ショーケース', rankedWl: 'ランク', unranked: 'カジュアル対戦数', gameStats: '対戦統計', featuredDeck: '公開デッキ', visPrivate: '非公開', visFriends: 'フレンドのみ', visPublic: '公開', useEquipped: '装備中のデッキ', save: '保存', report: '通報', reported: '通報を送りました。', deckHidden: 'このデッキは非公開です。', types: 'メンバー / ライブ / エネルギー', byMode: 'モード別', opponents: 'よく対戦した相手', idols: 'よく使ったメンバー', history: '対戦履歴', friendId: 'フレンドID', copied: 'コピーしました', edit: '編集', bio: '自己紹介', deckDesc: 'デッキ説明', visibility: '公開設定', openDeck: 'デッキを見る', closeDeck: '閉じる', members: 'メンバー', lives: 'ライブ', energy: 'エネルギー', cost: 'コスト', bladeHearts: 'ブレードハート', bladeHeartCount: 'ブレードハートの数', showcaseHint: '枠をタップして所持カードから選びます。', searchCollection: 'コレクションを検索', clearSlot: '枠を空にする', reportAsk: 'このプレイヤーを通報しますか？プロフィールの文章がモデレーターに送られます。', reportConfirm: '通報する', modeRanked: 'ランク', modeCasual: 'カジュアル', modeMatch: 'マッチ', games: '試合', units: 'よく使ったユニット', noOwnedCards: '該当する所持カードがありません。' },
+      friends: { view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', yourCode: 'あなたのコード', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '追加', view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近' },
+      profileMod: { title: '通報', warns: '警告', clearBio: '自己紹介を消去', warn: '警告', lockBio: '自己紹介をロック', dismiss: '却下', empty: '未処理の通報はありません。', warns: '警告', clearBio: '自己紹介を消去', lockBio: '自己紹介をロック', dismiss: '却下', empty: '未処理の通報はありません。' }
     },
     es: {
       social: { profile: 'Perfil', friends: 'Amigos', close: 'Cerrar', loading: 'Cargando…', error: 'Algo salió mal', signInHint: 'Inicia sesión con Discord para usar Perfil y Amigos', moderation: 'Moderación' },
-      profile: { noTitles: 'Aún no hay títulos', emptyBio: 'Sin biografía.', bioLocked: 'La biografía está bloqueada.', showcase: 'Destacadas', rankedWl: 'Clasificatoria', unranked: 'Partidas casuales', gameStats: 'Estadísticas', featuredDeck: 'Mazo destacado', visPrivate: 'Privado', visFriends: 'Amigos', visPublic: 'Público', useEquipped: 'Mazo equipado', save: 'Guardar', report: 'Reportar', reported: 'Reporte enviado.', deckHidden: 'Este mazo es privado.', types: 'Miembro / Live / Energía', byMode: 'Por modo', opponents: 'Rivales más frecuentes', idols: 'Ídolos más usadas', history: 'Historial' },
-      friends: { view: 'Ver', accept: 'Aceptar', decline: 'Rechazar', remove: 'Quitar', incoming: 'Entrantes', outgoing: 'Salientes', yourCode: 'Tu código', tabFriends: 'Amigos', tabRequests: 'Solicitudes', tabRecent: 'Recientes', codePlaceholder: 'LCXXXXXX', add: 'Añadir' },
-      profileMod: { title: 'Reportes', warns: 'Avisos', clearBio: 'Borrar bio', warn: 'Avisar', lockBio: 'Bloquear bio', dismiss: 'Descartar', empty: 'No hay reportes abiertos.' }
+      profile: { noTitles: 'Aún no hay títulos', emptyBio: 'Sin biografía.', bioLocked: 'La biografía está bloqueada.', showcase: 'Destacadas', rankedWl: 'Clasificatoria', unranked: 'Partidas casuales', gameStats: 'Estadísticas', featuredDeck: 'Mazo destacado', visPrivate: 'Privado', visFriends: 'Amigos', visPublic: 'Público', useEquipped: 'Mazo equipado', save: 'Guardar', report: 'Reportar', reported: 'Reporte enviado.', deckHidden: 'Este mazo es privado.', types: 'Miembro / Live / Energía', byMode: 'Por modo', opponents: 'Rivales más frecuentes', idols: 'Ídolos más usadas', history: 'Historial', friendId: 'ID de amigo', copied: 'Copiado', edit: 'Editar', bio: 'Bio', deckDesc: 'Descripción del mazo', visibility: 'Visibilidad', openDeck: 'Ver mazo completo', closeDeck: 'Ocultar mazo', members: 'Miembro', lives: 'Live', energy: 'Energía', cost: 'Coste', bladeHearts: 'Corazones blade', bladeHeartCount: 'Corazones blade', showcaseHint: 'Toca un espacio para elegir una carta de tu colección.', searchCollection: 'Buscar colección', clearSlot: 'Vaciar espacio', reportAsk: '¿Reportar a este jugador? Se enviará su texto de perfil a los moderadores.', reportConfirm: 'Sí, reportar', modeRanked: 'Clasificatoria', modeCasual: 'Casual', modeMatch: 'Partida', games: 'partidas', units: 'Unidades más usadas', noOwnedCards: 'No hay cartas coincidentes en tu colección.' },
+      friends: { view: 'Ver', accept: 'Aceptar', decline: 'Rechazar', remove: 'Quitar', incoming: 'Entrantes', outgoing: 'Salientes', yourCode: 'Tu código', tabFriends: 'Amigos', tabRequests: 'Solicitudes', tabRecent: 'Recientes', codePlaceholder: 'LCXXXXXX', add: 'Añadir', view: 'Ver', accept: 'Aceptar', decline: 'Rechazar', remove: 'Quitar', incoming: 'Entrantes', outgoing: 'Salientes', tabFriends: 'Amigos', tabRequests: 'Solicitudes', tabRecent: 'Recientes' },
+      profileMod: { title: 'Reportes', warns: 'Avisos', clearBio: 'Borrar bio', warn: 'Avisar', lockBio: 'Bloquear bio', dismiss: 'Descartar', empty: 'No hay reportes abiertos.', warns: 'Avisos', clearBio: 'Borrar bio', lockBio: 'Bloquear bio', dismiss: 'Descartar', empty: 'No hay reportes abiertos.' }
     },
     ko: {
       social: { profile: '프로필', friends: '친구', close: '닫기', loading: '불러오는 중…', error: '문제가 발생했습니다', signInHint: '프로필과 친구는 Discord 로그인 후 사용할 수 있습니다', moderation: '관리' },
-      profile: { noTitles: '칭호가 아직 없습니다', emptyBio: '소개가 없습니다.', bioLocked: '소개를 수정할 수 없습니다.', showcase: '쇼케이스', rankedWl: '랭크', unranked: '캐주얼 판수', gameStats: '전적', featuredDeck: '대표 덱', visPrivate: '비공개', visFriends: '친구만', visPublic: '공개', useEquipped: '장착 중인 덱', save: '저장', report: '신고', reported: '신고가 접수되었습니다.', deckHidden: '이 덱은 비공개입니다.', types: '멤버 / 라이브 / 에너지', byMode: '모드별', opponents: '자주 만난 상대', idols: '많이 쓴 멤버', history: '대전 기록' },
-      friends: { view: '보기', accept: '수락', decline: '거절', remove: '삭제', incoming: '받은 요청', outgoing: '보낸 요청', yourCode: '내 코드', tabFriends: '친구', tabRequests: '요청', tabRecent: '최근', codePlaceholder: 'LCXXXXXX', add: '추가' },
-      profileMod: { title: '신고', warns: '경고', clearBio: '소개 삭제', warn: '경고', lockBio: '소개 잠금', dismiss: '닫기', empty: '열린 신고가 없습니다.' }
+      profile: { noTitles: '칭호가 아직 없습니다', emptyBio: '소개가 없습니다.', bioLocked: '소개를 수정할 수 없습니다.', showcase: '쇼케이스', rankedWl: '랭크', unranked: '캐주얼 판수', gameStats: '전적', featuredDeck: '대표 덱', visPrivate: '비공개', visFriends: '친구만', visPublic: '공개', useEquipped: '장착 중인 덱', save: '저장', report: '신고', reported: '신고가 접수되었습니다.', deckHidden: '이 덱은 비공개입니다.', types: '멤버 / 라이브 / 에너지', byMode: '모드별', opponents: '자주 만난 상대', idols: '많이 쓴 멤버', history: '대전 기록', friendId: '친구 ID', copied: '복사됨', edit: '편집', bio: '소개', deckDesc: '덱 설명', visibility: '공개 설정', openDeck: '전체 덱 보기', closeDeck: '덱 숨기기', members: '멤버', lives: '라이브', energy: '에너지', cost: '코스트', bladeHearts: '블레이드 하트', bladeHeartCount: '블레이드 하트', showcaseHint: '칸을 눌러 보유 카드에서 고르세요.', searchCollection: '컬렉션 검색', clearSlot: '칸 비우기', reportAsk: '이 플레이어를 신고할까요? 프로필 문구가 관리자에게 전달됩니다.', reportConfirm: '신고하기', modeRanked: '랭크', modeCasual: '캐주얼', modeMatch: '매치', games: '판', units: '많이 쓴 유닛', noOwnedCards: '조건에 맞는 보유 카드가 없습니다.' },
+      friends: { view: '보기', accept: '수락', decline: '거절', remove: '삭제', incoming: '받은 요청', outgoing: '보낸 요청', yourCode: '내 코드', tabFriends: '친구', tabRequests: '요청', tabRecent: '최근', codePlaceholder: 'LCXXXXXX', add: '추가', view: '보기', accept: '수락', decline: '거절', remove: '삭제', incoming: '받은 요청', outgoing: '보낸 요청', tabFriends: '친구', tabRequests: '요청', tabRecent: '최근' },
+      profileMod: { title: '신고', warns: '경고', clearBio: '소개 삭제', warn: '경고', lockBio: '소개 잠금', dismiss: '닫기', empty: '열린 신고가 없습니다.', warns: '경고', clearBio: '소개 삭제', lockBio: '소개 잠금', dismiss: '닫기', empty: '열린 신고가 없습니다.' }
     },
     zh: {
       social: { profile: '个人资料', friends: '好友', close: '关闭', loading: '加载中…', error: '出错了', signInHint: '登录 Discord 后可使用个人资料和好友', moderation: '管理' },
-      profile: { noTitles: '暂无称号', emptyBio: '还没有简介。', bioLocked: '简介已锁定。', showcase: '展示', rankedWl: '排位', unranked: '休闲场次', gameStats: '对战统计', featuredDeck: '展示卡组', visPrivate: '私密', visFriends: '仅好友', visPublic: '公开', useEquipped: '当前装备卡组', save: '保存', report: '举报', reported: '已提交举报。', deckHidden: '该卡组未公开。', types: '成员 / Live / 能量', byMode: '按模式', opponents: '常对战对手', idols: '常用成员', history: '对战记录' },
-      friends: { view: '查看', accept: '接受', decline: '拒绝', remove: '删除', incoming: '收到', outgoing: '已发送', yourCode: '你的代码', tabFriends: '好友', tabRequests: '申请', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '添加' },
-      profileMod: { title: '举报', warns: '警告', clearBio: '清空简介', warn: '警告', lockBio: '锁定简介', dismiss: '忽略', empty: '暂无待处理举报。' }
+      profile: { noTitles: '暂无称号', emptyBio: '还没有简介。', bioLocked: '简介已锁定。', showcase: '展示', rankedWl: '排位', unranked: '休闲场次', gameStats: '对战统计', featuredDeck: '展示卡组', visPrivate: '私密', visFriends: '仅好友', visPublic: '公开', useEquipped: '当前装备卡组', save: '保存', report: '举报', reported: '已提交举报。', deckHidden: '该卡组未公开。', types: '成员 / Live / 能量', byMode: '按模式', opponents: '常对战对手', idols: '常用成员', history: '对战记录', friendId: '好友 ID', copied: '已复制', edit: '编辑', bio: '简介', deckDesc: '卡组说明', visibility: '可见性', openDeck: '查看完整卡组', closeDeck: '隐藏卡组', members: '成员', lives: 'Live', energy: '能量', cost: '费用', bladeHearts: '利刃之心', bladeHeartCount: '利刃之心', showcaseHint: '点按栏位从收藏中选择卡片。', searchCollection: '搜索收藏', clearSlot: '清空栏位', reportAsk: '要举报这名玩家吗？其资料文字会发给管理员。', reportConfirm: '确认举报', modeRanked: '排位', modeCasual: '休闲', modeMatch: '对战', games: '场', units: '常用组合', noOwnedCards: '收藏中没有符合的卡片。' },
+      friends: { view: '查看', accept: '接受', decline: '拒绝', remove: '删除', incoming: '收到', outgoing: '已发送', yourCode: '你的代码', tabFriends: '好友', tabRequests: '申请', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '添加', view: '查看', accept: '接受', decline: '拒绝', remove: '删除', incoming: '收到', outgoing: '已发送', tabFriends: '好友', tabRequests: '申请', tabRecent: '最近' },
+      profileMod: { title: '举报', warns: '警告', clearBio: '清空简介', warn: '警告', lockBio: '锁定简介', dismiss: '忽略', empty: '暂无待处理举报。', warns: '警告', clearBio: '清空简介', lockBio: '锁定简介', dismiss: '忽略', empty: '暂无待处理举报。' }
     },
     th: {
       social: { profile: 'โปรไฟล์', friends: 'เพื่อน', close: 'ปิด', loading: 'กำลังโหลด…', error: 'เกิดข้อผิดพลาด', signInHint: 'เข้าสู่ระบบ Discord เพื่อใช้โปรไฟล์และเพื่อน', moderation: 'ผู้ดูแล' },
-      profile: { noTitles: 'ยังไม่มีตำแหน่ง', emptyBio: 'ยังไม่มีประวัติ', bioLocked: 'ล็อกการแก้ไขประวัติแล้ว', showcase: 'โชว์เคส', rankedWl: 'แรงก์', unranked: 'เกมแคชชวล', gameStats: 'สถิติ', featuredDeck: 'เด็คแนะนำ', visPrivate: 'ส่วนตัว', visFriends: 'เพื่อน', visPublic: 'สาธารณะ', useEquipped: 'เด็คที่สวมอยู่', save: 'บันทึก', report: 'รายงาน', reported: 'ส่งรายงานแล้ว', deckHidden: 'เด็คนี้เป็นส่วนตัว', types: 'สมาชิก / ไลฟ์ / เอนเนอร์จี', byMode: 'ตามโหมด', opponents: 'คู่ต่อสู้ที่เจอบ่อย', idols: 'ไอดอลที่ใช้บ่อย', history: 'ประวัติการแข่ง' },
-      friends: { view: 'ดู', accept: 'ยอมรับ', decline: 'ปฏิเสธ', remove: 'ลบ', incoming: 'ขาเข้า', outgoing: 'ขาออก', yourCode: 'รหัสของคุณ', tabFriends: 'เพื่อน', tabRequests: 'คำขอ', tabRecent: 'ล่าสุด', codePlaceholder: 'LCXXXXXX', add: 'เพิ่ม' },
-      profileMod: { title: 'รายงาน', warns: 'คำเตือน', clearBio: 'ล้างประวัติ', warn: 'เตือน', lockBio: 'ล็อกประวัติ', dismiss: 'ปิด', empty: 'ไม่มีรายงานค้าง' }
+      profile: { noTitles: 'ยังไม่มีตำแหน่ง', emptyBio: 'ยังไม่มีประวัติ', bioLocked: 'ล็อกการแก้ไขประวัติแล้ว', showcase: 'โชว์เคส', rankedWl: 'แรงก์', unranked: 'เกมแคชชวล', gameStats: 'สถิติ', featuredDeck: 'เด็คแนะนำ', visPrivate: 'ส่วนตัว', visFriends: 'เพื่อน', visPublic: 'สาธารณะ', useEquipped: 'เด็คที่สวมอยู่', save: 'บันทึก', report: 'รายงาน', reported: 'ส่งรายงานแล้ว', deckHidden: 'เด็คนี้เป็นส่วนตัว', types: 'สมาชิก / ไลฟ์ / เอนเนอร์จี', byMode: 'ตามโหมด', opponents: 'คู่ต่อสู้ที่เจอบ่อย', idols: 'ไอดอลที่ใช้บ่อย', history: 'ประวัติการแข่ง', friendId: 'รหัสเพื่อน', copied: 'คัดลอกแล้ว', edit: 'แก้ไข', bio: 'ประวัติ', deckDesc: 'คำอธิบายเด็ค', visibility: 'การมองเห็น', openDeck: 'ดูเด็คทั้งหมด', closeDeck: 'ซ่อนเด็ค', members: 'สมาชิก', lives: 'ไลฟ์', energy: 'เอนเนอร์จี', cost: 'ต้นทุน', bladeHearts: 'เบลดฮาร์ต', bladeHeartCount: 'เบลดฮาร์ต', showcaseHint: 'แตะช่องเพื่อเลือกการ์ดจากคอลเลกชัน', searchCollection: 'ค้นหาคอลเลกชัน', clearSlot: 'ล้างช่อง', reportAsk: 'รายงานผู้เล่นคนนี้หรือไม่ ข้อความโปรไฟล์จะถูกส่งให้ผู้ดูแล', reportConfirm: 'ใช่ รายงาน', modeRanked: 'แรงก์', modeCasual: 'แคชชวล', modeMatch: 'แมตช์', games: 'เกม', units: 'ยูนิตที่ใช้บ่อย', noOwnedCards: 'ไม่มีการ์ดที่ตรงในคอลเลกชัน' },
+      friends: { view: 'ดู', accept: 'ยอมรับ', decline: 'ปฏิเสธ', remove: 'ลบ', incoming: 'ขาเข้า', outgoing: 'ขาออก', yourCode: 'รหัสของคุณ', tabFriends: 'เพื่อน', tabRequests: 'คำขอ', tabRecent: 'ล่าสุด', codePlaceholder: 'LCXXXXXX', add: 'เพิ่ม', view: 'ดู', accept: 'ยอมรับ', decline: 'ปฏิเสธ', remove: 'ลบ', incoming: 'ขาเข้า', outgoing: 'ขาออก', tabFriends: 'เพื่อน', tabRequests: 'คำขอ', tabRecent: 'ล่าสุด' },
+      profileMod: { title: 'รายงาน', warns: 'คำเตือน', clearBio: 'ล้างประวัติ', warn: 'เตือน', lockBio: 'ล็อกประวัติ', dismiss: 'ปิด', empty: 'ไม่มีรายงานค้าง', warns: 'คำเตือน', clearBio: 'ล้างประวัติ', lockBio: 'ล็อกประวัติ', dismiss: 'ปิด', empty: 'ไม่มีรายงานค้าง' }
     }
   };
   function deepFillI18n(target, src) {

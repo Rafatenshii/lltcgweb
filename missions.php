@@ -25,6 +25,8 @@ function tcgMissionDefinitions(): array {
         ['id' => 'ms_profile_banner', 'type' => 'milestone', 'reward' => 100, 'sort' => 100, 'i18n_key' => 'missions.milestone.profileBanner'],
         ['id' => 'ms_profile_flag', 'type' => 'milestone', 'reward' => 100, 'sort' => 105, 'i18n_key' => 'missions.milestone.profileFlag'],
         ['id' => 'ms_profile_stamps', 'type' => 'milestone', 'reward' => 100, 'sort' => 110, 'i18n_key' => 'missions.milestone.profileStamps'],
+        ['id' => 'ms_friend_1', 'type' => 'milestone', 'reward' => 100, 'coins_reward' => 100, 'reward_type' => 'star_gems_and_coins', 'sort' => 115, 'i18n_key' => 'missions.milestone.friend1', 'threshold' => 1],
+        ['id' => 'ms_friend_10', 'type' => 'milestone', 'reward' => 500, 'coins_reward' => 500, 'reward_type' => 'star_gems_and_coins', 'sort' => 116, 'i18n_key' => 'missions.milestone.friend10', 'threshold' => 10],
         // 6 extra starters after the initial pick (7 total) — one every 400 cards.
         ['id' => 'ms_cards_400', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 150, 'i18n_key' => 'missions.milestone.cards400', 'threshold' => 400],
         ['id' => 'ms_cards_800', 'type' => 'milestone', 'reward' => 0, 'reward_type' => 'starter_choice', 'reward_fallback' => 200, 'sort' => 151, 'i18n_key' => 'missions.milestone.cards800', 'threshold' => 800],
@@ -397,6 +399,9 @@ function tcgMissionListForUser(string $discordId): array {
         if (isset($def['threshold'])) {
             $entry['threshold'] = intval($def['threshold']);
         }
+        if (isset($def['coins_reward'])) {
+            $entry['coins_reward'] = intval($def['coins_reward']);
+        }
         if ($rewardType === 'starter_choice') {
             if ($starterOptions === null) {
                 if (!function_exists('tcgStarterOptionsWithOwned')) {
@@ -422,6 +427,13 @@ function tcgMissionListForUser(string $discordId): array {
             $entry['progress'] = min($totalCards, intval($def['threshold']));
         } elseif (str_starts_with($def['id'], 'ms_sticker_') && isset($def['threshold'])) {
             $entry['progress'] = min($stickerExchanges, intval($def['threshold']));
+        } elseif (str_starts_with($def['id'], 'ms_friend_') && isset($def['threshold'])) {
+            if (!function_exists('tcgSocialFriendCount')) {
+                require_once __DIR__ . '/social.php';
+            }
+            $friends = tcgSocialFriendCount($discordId);
+            $entry['progress'] = min($friends, intval($def['threshold']));
+            $entry['friend_count'] = $friends;
         } elseif ($def['id'] === 'ms_login_days_10' && isset($def['threshold'])) {
             require_once __DIR__ . '/sleeve_shop.php';
             $loginDays = tcgGetLoginDays($discordId);
@@ -520,6 +532,31 @@ function tcgMissionClaim(string $discordId, string $missionId, ?string $starterK
             'coins' => $coins,
             'coins_gained' => $coinsGain,
             'pr_pack' => $prPack,
+        ];
+    }
+
+    if ($rewardType === 'star_gems_and_coins') {
+        require_once __DIR__ . '/coins.php';
+        $gemsGain = max(0, intval($def['reward'] ?? 0));
+        $coinsGain = max(0, intval($def['coins_reward'] ?? $def['reward'] ?? 0));
+        $db->prepare('UPDATE tcg_mission_progress SET claimed_at = ? WHERE discord_id = ? AND mission_id = ? AND period_key = ?')
+            ->execute([$now, $discordId, $missionId, $periodKey]);
+        $gems = $gemsGain > 0 ? tcgAddStarGems($discordId, $gemsGain) : tcgGetStarGems($discordId);
+        $coins = $coinsGain > 0 ? tcgAddCoins($discordId, $coinsGain) : tcgGetCoins($discordId);
+        return [
+            'mission' => [
+                'id' => $missionId,
+                'i18n_key' => $def['i18n_key'],
+                'i18n_vars' => is_array($def['i18n_vars'] ?? null) ? $def['i18n_vars'] : null,
+                'reward' => $gemsGain,
+                'coins_reward' => $coinsGain,
+                'reward_type' => 'star_gems_and_coins',
+                'status' => 'claimed',
+            ],
+            'star_gems' => $gems,
+            'star_gems_gained' => $gemsGain,
+            'coins' => $coins,
+            'coins_gained' => $coinsGain,
         ];
     }
 
@@ -749,6 +786,25 @@ function tcgMissionCheckStickerExchangeThresholds(string $discordId): array {
         }
         $threshold = intval($def['threshold'] ?? 0);
         if ($threshold > 0 && $exchanges >= $threshold) {
+            $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $def['id']));
+        }
+    }
+    return $completions;
+}
+
+/** Mark friend-count milestones complete when thresholds are met. */
+function tcgMissionCheckFriendCount(string $discordId): array {
+    if (!function_exists('tcgSocialFriendCount')) {
+        require_once __DIR__ . '/social.php';
+    }
+    $friends = tcgSocialFriendCount($discordId);
+    $completions = [];
+    foreach (tcgMissionDefinitions() as $def) {
+        if (($def['type'] ?? '') !== 'milestone' || !str_starts_with($def['id'], 'ms_friend_')) {
+            continue;
+        }
+        $threshold = intval($def['threshold'] ?? 0);
+        if ($threshold > 0 && $friends >= $threshold) {
             $completions = tcgMissionMergeCompletions($completions, tcgMissionMarkCompleted($discordId, $def['id']));
         }
     }
@@ -1061,6 +1117,20 @@ function tcgMissionBackfillRetroactive(string $discordId): void {
         }
     }
 
+    if (!function_exists('tcgSocialFriendCount')) {
+        require_once __DIR__ . '/social.php';
+    }
+    $friendCount = tcgSocialFriendCount($discordId);
+    foreach (tcgMissionDefinitions() as $def) {
+        if (($def['type'] ?? '') !== 'milestone' || !str_starts_with($def['id'], 'ms_friend_')) {
+            continue;
+        }
+        $threshold = intval($def['threshold'] ?? 0);
+        if ($threshold > 0 && $friendCount >= $threshold) {
+            tcgMissionMarkCompletedSilent($discordId, $def['id']);
+        }
+    }
+
     $totalCards = tcgCollectionTotalCards($discordId);
     foreach (tcgMissionDefinitions() as $def) {
         if (($def['type'] ?? '') !== 'milestone' || !str_starts_with($def['id'], 'ms_cards_')) {
@@ -1247,6 +1317,19 @@ function tcgMissionRetract(string $discordId, string $missionId, ?string $period
         require_once __DIR__ . '/coins.php';
         try {
             tcgDeductCoins($discordId, min($reward, tcgGetCoins($discordId)));
+        } catch (Throwable $e) {
+            // Soft clawback: leave balance alone if deduct fails.
+        }
+    } elseif ($wasClaimed && $rewardType === 'star_gems_and_coins') {
+        if ($reward > 0) {
+            $before = tcgGetStarGems($discordId);
+            tcgSoftClawbackStarGems($discordId, $reward);
+            $gemsClawed = max(0, $before - tcgGetStarGems($discordId));
+        }
+        require_once __DIR__ . '/coins.php';
+        $coinsGain = max(0, intval($def['coins_reward'] ?? $reward));
+        try {
+            tcgDeductCoins($discordId, min($coinsGain, tcgGetCoins($discordId)));
         } catch (Throwable $e) {
             // Soft clawback: leave balance alone if deduct fails.
         }

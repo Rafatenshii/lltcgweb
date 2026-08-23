@@ -1315,6 +1315,8 @@
       "profileBanner": "更新个人资料横幅",
       "profileFlag": "在个人资料上设置旗帜",
       "profileStamps": "设置喜爱贴纸",
+      "friend1": "添加 1 位好友",
+      "friend10": "添加 10 位好友",
       "ranked1": "进行 1 场排名对战",
       "ranked10": "进行 10 场排名对战",
       "ranked100": "进行 100 场排名对战",
@@ -1353,7 +1355,7 @@
     "claimedCoinsAndPrToast": "已领取 {title}（+{coins} 金币 · PR包）",
     "rewardFreeSleeve": "免费卡套领取",
     "claimedFreeSleeveToast": "已领取 {title} — 可在卡套商店免费领取",
-    "claimedCoinsToast": "+{n} Coins"
+    "claimedCoinsToast": "+{coins} Coins"
   },
   "stamps": {
     "audio": "贴纸语音",

@@ -1315,6 +1315,8 @@
       "profileBanner": "프로필 배너 변경",
       "profileFlag": "프로필에 국기 설정",
       "profileStamps": "즐겨찾는 스티커 설정",
+      "friend1": "친구 1명 추가",
+      "friend10": "친구 10명 추가",
       "ranked1": "랭크 매치 1회 플레이",
       "ranked10": "랭크 매치 10회 플레이",
       "ranked100": "랭크 매치 100회 플레이",
@@ -1353,7 +1355,7 @@
     "claimedCoinsAndPrToast": "{title} 수령 (+{coins} 코인 · PR 팩)",
     "rewardFreeSleeve": "무료 슬리브",
     "claimedFreeSleeveToast": "{title} 수령 — 슬리브 샵에서 무료 수령 가능",
-    "claimedCoinsToast": "+{n} Coins"
+    "claimedCoinsToast": "+{coins} Coins"
   },
   "stamps": {
     "audio": "스탬프 오디오",

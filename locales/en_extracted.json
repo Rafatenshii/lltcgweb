@@ -144,6 +144,8 @@
       "profileBanner": "Update your profile banner",
       "profileFlag": "Set a flag on your profile",
       "profileStamps": "Set favorite stickers",
+      "friend1": "Add a friend",
+      "friend10": "Add 10 friends",
       "ranked1": "Play 1 ranked match",
       "unranked1": "Play 1 unranked match",
       "ranked5": "Play 5 ranked matches",
@@ -181,7 +183,8 @@
     "claimedCoinsAndPrToast": "Claimed {title} (+{coins} Coins · PR Pack)",
     "rewardFreeSleeve": "Free sleeve claim",
     "claimedFreeSleeveToast": "Claimed {title} — free sleeve unlocked in the Sleeve Shop",
-    "claimedCoinsToast": "+{n} Coins"
+    "claimedCoinsToast": "Claimed {title} (+{coins} Coins)",
+    "claimedGemsAndCoinsToast": "Claimed {title} (+{gems} · +{coins} Coins)"
   },
   "language": {
     "label": "Language",

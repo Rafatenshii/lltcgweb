@@ -1291,6 +1291,8 @@
       "profileBanner": "Actualiza tu banner de perfil",
       "profileFlag": "Pon una bandera en tu perfil",
       "profileStamps": "Configura sellos favoritos",
+      "friend1": "Añade un amigo",
+      "friend10": "Añade 10 amigos",
       "ranked1": "Juega 1 partida clasificatoria",
       "ranked10": "Juega 10 partidas clasificatorias",
       "ranked100": "Juega 100 partidas clasificatorias",
@@ -1329,7 +1331,7 @@
     "claimedCoinsAndPrToast": "Reclamaste {title} (+{coins} monedas · Pack PR)",
     "rewardFreeSleeve": "Funda gratis",
     "claimedFreeSleeveToast": "Reclamaste {title} — funda gratis en la Tienda de fundas",
-    "claimedCoinsToast": "+{n} Coins"
+    "claimedCoinsToast": "+{coins} Coins"
   },
   "stamps": {
     "audio": "Audio de sellos",

@@ -172,8 +172,28 @@
         + progressBit
         + ' · ' + missionStatusLabel(m.status);
     }
+    if (m.reward_type === 'star_gems_and_coins') {
+      let progressBit = '';
+      if (m.threshold != null && m.status !== 'claimed') {
+        const cur = Number(m.progress != null ? m.progress : 0);
+        progressBit = ' · ' + cur.toLocaleString() + ' / ' + Number(m.threshold).toLocaleString();
+      }
+      const coins = Number(m.coins_reward != null ? m.coins_reward : m.reward || 0);
+      return '+' + Number(m.reward || 0).toLocaleString()
+        + ' <span class="star-gem-inline">' + starGemIconHtml(16) + '</span>'
+        + ' · +' + coins.toLocaleString()
+        + ' <span class="star-gem-inline">' + coinIconHtml(16) + '</span>'
+        + progressBit
+        + ' · ' + missionStatusLabel(m.status);
+    }
+    let progressBit = '';
+    if (m.threshold != null && m.status !== 'claimed') {
+      const cur = Number(m.progress != null ? m.progress : 0);
+      progressBit = ' · ' + cur.toLocaleString() + ' / ' + Number(m.threshold).toLocaleString();
+    }
     return '+' + Number(m.reward || 0).toLocaleString()
       + ' <span class="star-gem-inline">' + starGemIconHtml(16) + '</span>'
+      + progressBit
       + ' · ' + missionStatusLabel(m.status);
   }
 
@@ -345,6 +365,13 @@
           coins: res.coins_gained || res.mission?.reward || 0,
           n: res.coins_gained || res.mission?.reward || 0,
         }) || ('Claimed ' + title + ' (+' + (res.coins_gained || 0) + ' Coins)'), 3200);
+      } else if ((res.mission?.reward_type || res.reward_type) === 'star_gems_and_coins') {
+        global.toastSuccess(t('missions.claimedGemsAndCoinsToast', {
+          title,
+          gems: res.star_gems_gained || res.mission?.reward || 0,
+          coins: res.coins_gained || res.mission?.coins_reward || 0,
+          reward: res.star_gems_gained || res.mission?.reward || 0,
+        }) || ('Claimed ' + title + ' (+' + (res.star_gems_gained || 0) + ' · +' + (res.coins_gained || 0) + ' Coins)'), 3200);
       } else {
         global.toastSuccess(t('missions.claimedToast', {
           title,

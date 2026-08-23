@@ -1290,6 +1290,8 @@
       "cards800": "มีการ์ดครบ 800 ใบ",
       "profileBanner": "อัปเดตแบนเนอร์โปรไฟล์",
       "profileStamps": "ตั้งสติกเกอร์โปรด",
+      "friend1": "เพิ่มเพื่อน 1 คน",
+      "friend10": "เพิ่มเพื่อน 10 คน",
       "ranked1": "เล่นแมตช์แรงก์ 1 ครั้ง",
       "ranked10": "เล่นแมตช์แรงก์ 10 ครั้ง",
       "ranked100": "เล่นแมตช์แรงก์ 100 ครั้ง",
@@ -1329,7 +1331,7 @@
     "claimedCoinsAndPrToast": "รับ {title} แล้ว (+{coins} เหรียญ · แพ็ก PR)",
     "rewardFreeSleeve": "รับซองฟรี",
     "claimedFreeSleeveToast": "รับ {title} แล้ว — รับซองฟรีได้ที่ร้านซองการ์ด",
-    "claimedCoinsToast": "+{n} Coins"
+    "claimedCoinsToast": "+{coins} Coins"
   },
   "stamps": {
     "audio": "เสียงแสตมป์",
