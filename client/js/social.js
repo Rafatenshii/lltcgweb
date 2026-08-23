@@ -213,6 +213,13 @@
   function openOverlay(id) {
     const el = document.getElementById(id);
     if (!el) return;
+    let z = 8760;
+    document.querySelectorAll('.social-overlay.open').forEach((n) => {
+      if (n === el) return;
+      const nz = parseInt(n.style.zIndex || window.getComputedStyle(n).zIndex, 10);
+      if (Number.isFinite(nz)) z = Math.max(z, nz);
+    });
+    el.style.zIndex = String(Math.min(z + 10, 8880));
     el.classList.add('open');
     el.setAttribute('aria-hidden', 'false');
     document.body.classList.add('social-overlay-open');
@@ -223,6 +230,7 @@
     if (!el) return;
     el.classList.remove('open');
     el.setAttribute('aria-hidden', 'true');
+    el.style.removeProperty('z-index');
     if (!document.querySelector('.social-overlay.open')) {
       document.body.classList.remove('social-overlay-open');
     }
