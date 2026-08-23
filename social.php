@@ -365,6 +365,76 @@ function tcgSocialDeckPreview(array $main, array $cardMap): array {
     return ['members' => $pick($members), 'lives' => $pick($lives)];
 }
 
+function tcgSocialUnitLogoUrl(string $unit): string {
+    $label = function_exists('tcgPlayStatUnitDisplayName')
+        ? tcgPlayStatUnitDisplayName($unit)
+        : $unit;
+    $aliases = [
+        "μ's" => "µ's",
+        "Μ's" => "µ's",
+        'Muse' => "µ's",
+        "Mu's" => "µ's",
+        'Sunshine' => 'Aqours',
+        'Superstar' => 'Liella!',
+        'Niji' => 'Nijigasaki',
+        'Hasu' => 'Hasunosora',
+        'Hasunosora Girls High School Idol Club' => 'Hasunosora',
+    ];
+    $key = $aliases[$label] ?? $label;
+    if (function_exists('tcgSleeveShopUnitIconUrl')) {
+        return tcgSleeveShopUnitIconUrl($key);
+    }
+    return match ($key) {
+        "µ's" => 'https://i.idol.st/static/img/i_unit/%CE%BC-s.png',
+        'Aqours' => 'https://i.idol.st/static/img/i_unit/Aqours.png',
+        'Nijigasaki' => 'https://i.idol.st/static/img/i_unit/Nijigasaki-High-School.png',
+        'Liella!', 'Liella' => 'https://i.idol.st/static/img/i_unit/Liella.png',
+        'Hasunosora' => 'https://i.idol.st/static/img/i_unit/Hasunosora-Girls-High-School-Idol-Club.png',
+        default => 'https://i.idol.st/static/img/i_unit/Other.png',
+    };
+}
+
+/** First Live card_no whose live_name / English name matches. */
+function tcgSocialLiveCardNo(string $liveName): string {
+    static $map = null;
+    $q = strtolower(trim($liveName));
+    if ($q === '') {
+        return '';
+    }
+    if ($map === null) {
+        $map = [];
+        if (!function_exists('tcgLoadCardsData') || !function_exists('tcgBuildCardMap')) {
+            return '';
+        }
+        foreach (tcgBuildCardMap(tcgLoadCardsData()) as $no => $card) {
+            if (!is_array($card)) {
+                continue;
+            }
+            $isLive = function_exists('tcgCardIsLive')
+                ? tcgCardIsLive($card)
+                : (strtolower((string)($card['card_type_en'] ?? '')) === 'live'
+                    || ($card['card_type'] ?? '') === 'ライブ');
+            if (!$isLive) {
+                continue;
+            }
+            $names = [];
+            if (function_exists('cardPlayTrackTags')) {
+                foreach (cardPlayTrackTags($card)['live_names'] ?? [] as $ln) {
+                    $names[] = strtolower(trim((string)$ln));
+                }
+            }
+            $names[] = strtolower(trim((string)($card['name_en'] ?? '')));
+            $names[] = strtolower(trim((string)($card['name'] ?? '')));
+            foreach ($names as $n) {
+                if ($n !== '' && !isset($map[$n])) {
+                    $map[$n] = (string)$no;
+                }
+            }
+        }
+    }
+    return $map[$q] ?? '';
+}
+
 function tcgSocialIdolPortraitUrl(string $idolName): string {
     $q = strtolower(trim($idolName));
     if ($q === '') {
@@ -726,6 +796,8 @@ function tcgSocialUnitUsage(string $discordId): array {
         $out[] = [
             'unit' => $label,
             'count' => intval($count),
+            'logo' => tcgSocialUnitLogoUrl((string)$name),
+            'portrait' => tcgSocialUnitLogoUrl((string)$name),
         ];
     }
     return $out;
@@ -741,9 +813,12 @@ function tcgSocialLiveUsage(string $discordId): array {
         if ($n++ >= 8) {
             break;
         }
+        $name = (string)$row['key'];
+        $cardNo = tcgSocialLiveCardNo($name);
         $out[] = [
-            'live' => (string)$row['key'],
+            'live' => $name,
             'count' => intval($row['count']),
+            'card_no' => $cardNo,
         ];
     }
     return $out;

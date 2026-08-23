@@ -387,6 +387,36 @@ body.social-overlay-open #modal-card.open {
   border: 1px solid rgba(255,255,255,.28);
 }
 .social-idol-face.is-empty { display: block; }
+.social-bar-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+}
+button.social-bar-art { cursor: pointer; }
+.social-unit-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  background: rgba(0,0,0,.18);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.22);
+  padding: 2px;
+  box-sizing: border-box;
+}
+.social-live-thumb {
+  width: 36px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(0,0,0,.25);
+  display: block;
+}
 .social-bar-track {
   height: 10px;
   border-radius: 6px;

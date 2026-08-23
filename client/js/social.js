@@ -32,11 +32,47 @@
     const A = global.A || {};
     return !!A.user?.is_social_mod;
   }
-  function cardImg(no) {
+  function cardImg(no, width) {
+    const w = width == null ? 180 : width;
     if (!no) return '';
-    if (typeof global.cachedCardImgUrl === 'function') return global.cachedCardImgUrl(no, 180);
+    if (typeof global.cachedCardImgUrl === 'function') return global.cachedCardImgUrl(no, w);
     const base = global.CARDIMG || './cardimg.php';
-    return `${base}?card_no=${encodeURIComponent(no)}&w=180`;
+    return `${base}?card_no=${encodeURIComponent(no)}${w ? `&w=${w}` : ''}`;
+  }
+  function unitLogoUrl(unit) {
+    const u = String(unit || '');
+    const aliases = {
+      "μ's": "µ's",
+      Muse: "µ's",
+      "Mu's": "µ's",
+      Sunshine: 'Aqours',
+      Superstar: 'Liella!',
+      Niji: 'Nijigasaki',
+      Hasu: 'Hasunosora',
+    };
+    const key = aliases[u] || u;
+    if (typeof global.sleeveShopUnitIcon === 'function') return global.sleeveShopUnitIcon(key);
+    const icons = global.SLEEVE_SHOP_UNIT_ICONS;
+    return (icons && (icons[key] || icons.Other)) || '';
+  }
+  function findLiveCardNo(name) {
+    const q = String(name || '').trim().toLowerCase();
+    if (!q) return '';
+    const G = global.G || {};
+    const bag = G.allCards || G.cardsByNo || {};
+    const list = Array.isArray(bag) ? bag : Object.values(bag);
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      if (!c) continue;
+      const type = String(c.card_type_en || c.type_en || '').toLowerCase();
+      const jp = String(c.card_type || '');
+      if (type !== 'live' && jp !== 'ライブ') continue;
+      const names = [c.name_en, c.name, c.live_name, c.play_track && c.play_track.live_name];
+      if (names.some((n) => String(n || '').trim().toLowerCase() === q)) {
+        return String(c.card_no || c.no || '');
+      }
+    }
+    return '';
   }
   function lookupCard(no) {
     const G = global.G || {};
@@ -599,13 +635,29 @@
     return m || tt('profile.modeMatch', 'Match');
   }
 
-  function statBars(rows, labelKey) {
+  function statBars(rows, labelKey, kind) {
     const list = rows || [];
     const max = Math.max(1, ...list.map((r) => r.count));
     return list.map((r) => {
-      const face = r.portrait || r.portrait;
       const label = r[labelKey] || r.idol || r.unit || r.live || '';
-      return `<div class="social-bar">${face ? `<img class="social-idol-face" src="${esc(face)}" alt="">` : '<span class="social-idol-face is-empty"></span>'}<span>${esc(label)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * r.count / max)}%"></div></div><span class="social-bar-n">${r.count}</span></div>`;
+      let cardNo = String(r.card_no || '');
+      let face = r.logo || r.portrait || '';
+      let imgClass = 'social-idol-face';
+      if (kind === 'unit') {
+        if (!face) face = unitLogoUrl(label);
+        imgClass = 'social-unit-logo';
+      } else if (kind === 'live') {
+        if (!cardNo) cardNo = findLiveCardNo(label);
+        if (cardNo) face = cardImg(cardNo, 96);
+        imgClass = 'social-live-thumb';
+      }
+      const img = face
+        ? `<img class="${imgClass}" src="${esc(face)}" alt="">`
+        : '<span class="social-idol-face is-empty"></span>';
+      const art = cardNo
+        ? `<button type="button" class="social-bar-art" data-card="${esc(cardNo)}">${img}</button>`
+        : `<span class="social-bar-art">${img}</span>`;
+      return `<div class="social-bar">${art}<span>${esc(label)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * r.count / max)}%"></div></div><span class="social-bar-n">${r.count}</span></div>`;
     }).join('');
   }
 
@@ -627,9 +679,9 @@
       const opps = (data.opponents || []).filter((o) => (Number(o.wins) + Number(o.losses)) > 0).map((o) =>
         `<button type="button" class="social-opp-row" data-uid="${esc(o.id)}">${o.avatar_url || o.avatar_url ? `<img class="av" src="${esc(o.avatar_url || o.avatar_url)}" alt="">` : '<span class="av av-empty"></span>'}<span class="social-opp-name">${esc(o.username)}</span><span class="social-record">${Number(o.wins)}–${Number(o.losses)}</span></button>`
       ).join('');
-      const idols = statBars(data.idols, 'idol');
-      const units = statBars(data.units, 'unit');
-      const lives = statBars(data.lives, 'live');
+      const idols = statBars(data.idols, 'idol', 'idol');
+      const units = statBars(data.units, 'unit', 'unit');
+      const lives = statBars(data.lives, 'live', 'live');
       const hist = (data.history || []).map((h) => {
         const res = String(h.result || '');
         const name = h.opponent && h.opponent.username ? h.opponent.username : '';
@@ -646,6 +698,9 @@
         </div>`;
       root.querySelectorAll('[data-uid]').forEach((b) => {
         b.addEventListener('click', () => { closeOverlay('overlay-profile-stats'); openProfile(b.getAttribute('data-uid')); });
+      });
+      root.querySelectorAll('[data-card]').forEach((b) => {
+        b.addEventListener('click', () => inspectCard(b.getAttribute('data-card')));
       });
     } catch (e) {
       if (root) root.textContent = e.message;
