@@ -393,29 +393,52 @@
     }
   }
 
+  function formatMode(mode) {
+    const m = String(mode || '');
+    if (m === 'ranked') return tt('profile.modeRanked', 'Ranked');
+    if (m === 'casual' || m === 'unranked') return tt('profile.modeCasual', 'Casual');
+    if (m === 'match') return tt('profile.modeMatch', 'Match');
+    return m || tt('profile.modeMatch', 'Match');
+  }
+
+  function statBars(rows, labelKey) {
+    const list = rows || [];
+    const max = Math.max(1, ...list.map((r) => r.count));
+    return list.map((r) => {
+      const face = r.portrait || r.portrait;
+      const label = r[labelKey] || r.idol || r.unit || r.live || '';
+      return `<div class="social-bar">${face ? `<img class="social-idol-face" src="${esc(face)}" alt="">` : '<span class="social-idol-face is-empty"></span>'}<span>${esc(label)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * r.count / max)}%"></div></div><span class="social-bar-n">${r.count}</span></div>`;
+    }).join('');
+  }
+
   async function openStats(userId) {
     openOverlay('overlay-profile-stats');
     const root = document.getElementById('profile-stats-body');
     if (root) root.innerHTML = tt('social.loading', 'Loading…');
     try {
       const data = await accountPost('social_stats', { user_id: userId });
-      const modes = (data.modes || []).map((m) =>
-        `<div class="social-row"><span>${esc(m.mode)}</span><span>${m.games} · ${m.wins}–${m.losses} (${m.win_pct}%)</span></div>`
-      ).join('');
+      const modes = (data.modes || []).map((m) => {
+        const pct = (m.win_pct != null ? m.win_pct : m.winPct);
+        const line = (m.wl_known === false || m.wl_known === false)
+          ? `${m.games} ${tt('profile.games', 'games')}`
+          : `${m.games} · ${m.wins}–${m.losses} (${pct}%)`;
+        return `<div class="social-row"><span>${esc(formatMode(m.mode))}</span><span>${line}</span></div>`;
+      }).join('');
       const opps = (data.opponents || []).map((o) =>
-        `<button type="button" class="social-row" data-uid="${esc(o.id)}"><img class="av" src="${esc(o.avatar_url || '')}" alt=""><span>${esc(o.username)}</span><span>${o.wins}–${o.losses}</span></button>`
+        `<button type="button" class="social-row" data-uid="${esc(o.id)}"><img class="av" src="${esc(o.avatar_url || o.avatar_url || '')}" alt=""><span>${esc(o.username)}</span><span>${o.wins}–${o.losses}</span></button>`
       ).join('');
-      const maxIdol = Math.max(1, ...(data.idols || []).map((i) => i.count));
-      const idols = (data.idols || []).map((i) =>
-        `<div class="social-bar">${i.portrait ? `<img class="social-idol-face" src="${esc(i.portrait)}" alt="">` : '<span class="social-idol-face is-empty"></span>'}<span>${esc(i.idol)}</span><div class="social-bar-track"><div class="social-bar-fill" style="width:${Math.round(100 * i.count / maxIdol)}%"></div></div><span class="social-bar-n">${i.count}</span></div>`
-      ).join('');
+      const idols = statBars(data.idols, 'idol');
+      const units = statBars(data.units, 'unit');
+      const lives = statBars(data.lives, 'live');
       const hist = (data.history || []).map((h) =>
-        `<div class="social-row"><span>${esc(h.mode)}</span><span>${esc(h.result)}</span><span>${esc(h.opponent?.username || '')}</span></div>`
+        `<div class="social-row"><span>${esc(formatMode(h.mode))}</span><span>${esc(h.result)}</span><span>${esc(h.opponent && h.opponent.username ? h.opponent.username : '')}</span></div>`
       ).join('');
       root.innerHTML = `
         <h3>${tt('profile.byMode', 'By mode')}</h3>${modes || '<p>—</p>'}
         <h3>${tt('profile.opponents', 'Most-played opponents')}</h3>${opps || '<p>—</p>'}
         <h3>${tt('profile.idols', 'Top idols')}</h3><div class="social-bars">${idols || '<p>—</p>'}</div>
+        <h3>${tt('profile.units', 'Top units')}</h3><div class="social-bars">${units || '<p>—</p>'}</div>
+        <h3>${tt('profile.lives', 'Live Success')}</h3><div class="social-bars">${lives || '<p>—</p>'}</div>
         <h3>${tt('profile.history', 'Match history')}</h3>${hist || '<p>—</p>'}`;
       root.querySelectorAll('[data-uid]').forEach((b) => {
         b.addEventListener('click', () => { closeOverlay('overlay-profile-stats'); openProfile(b.getAttribute('data-uid')); });

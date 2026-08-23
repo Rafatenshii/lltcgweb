@@ -427,51 +427,157 @@ function tcgSocialRankedWl(string $discordId): array {
     return ['wins' => intval($row[0]), 'losses' => intval($row[1]), 'games' => intval($row[2])];
 }
 
-function tcgSocialModeStats(string $discordId): array {
+function tcgSocialRoomKey(string $roomId): string {
+    return strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
+}
+
+/**
+ * PvP rows already stored for the social overlay, plus ranked seats the Elo
+ * path finished even when tcg_pvp_results was skipped.
+ *
+ * @return list<array{room_id:string,mode:string,p1_id:string,p2_id:string,winner_id:?string,ended_at:int}>
+ */
+function tcgSocialCollectMatchRows(string $discordId): array {
+    tcgSocialEnsureSchema();
+    $byRoom = [];
     $stmt = tcgDb()->prepare(
-        'SELECT mode,
-                COUNT(*) AS games,
-                SUM(CASE WHEN winner_id = ? THEN 1 ELSE 0 END) AS wins,
-                SUM(CASE WHEN winner_id IS NOT NULL AND winner_id != ? THEN 1 ELSE 0 END) AS losses
-         FROM tcg_pvp_results
-         WHERE p1_id = ? OR p2_id = ?
-         GROUP BY mode'
+        'SELECT room_id, mode, p1_id, p2_id, winner_id, ended_at
+         FROM tcg_pvp_results WHERE p1_id = ? OR p2_id = ?'
     );
-    $stmt->execute([$discordId, $discordId, $discordId, $discordId]);
-    $out = [];
+    $stmt->execute([$discordId, $discordId]);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $g = intval($row['games']);
-        $w = intval($row['wins']);
-        $out[] = [
-            'mode' => (string)$row['mode'],
-            'games' => $g,
-            'wins' => $w,
-            'losses' => intval($row['losses']),
-            'win_pct' => $g > 0 ? round(100 * $w / $g, 1) : 0,
+        $rid = tcgSocialRoomKey((string)$row['room_id']);
+        if ($rid === '') {
+            $rid = 'pvp-' . md5((string)$row['room_id'] . (string)($row['ended_at'] ?? ''));
+        }
+        $win = trim((string)($row['winner_id'] ?? ''));
+        $mode = strtolower(trim((string)$row['mode']));
+        $byRoom[$rid] = [
+            'room_id' => $rid,
+            'mode' => $mode !== '' ? $mode : 'casual',
+            'p1_id' => (string)$row['p1_id'],
+            'p2_id' => (string)$row['p2_id'],
+            'winner_id' => $win === '' ? null : $win,
+            'ended_at' => intval($row['ended_at'] ?? 0),
         ];
     }
+    try {
+        $stmt = tcgDb()->prepare(
+            'SELECT room_id, p1_id, p2_id, winner_pid, created_at, game_mode, status
+             FROM tcg_ranked_matches
+             WHERE (p1_id = ? OR p2_id = ?) AND status = \'done\''
+        );
+        $stmt->execute([$discordId, $discordId]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $rid = tcgSocialRoomKey((string)$row['room_id']);
+            if ($rid === '' || isset($byRoom[$rid])) {
+                continue;
+            }
+            $p1 = (string)$row['p1_id'];
+            $p2 = (string)$row['p2_id'];
+            $wp = (string)($row['winner_pid'] ?? '');
+            $winner = $wp === 'p1' ? $p1 : ($wp === 'p2' ? $p2 : null);
+            $byRoom[$rid] = [
+                'room_id' => $rid,
+                'mode' => 'ranked',
+                'p1_id' => $p1,
+                'p2_id' => $p2,
+                'winner_id' => $winner,
+                'ended_at' => intval($row['created_at'] ?? 0),
+            ];
+        }
+    } catch (Throwable $e) {
+        // Hostinger DBs that predate winner_pid still serve tcg_pvp_results / tcg_rank.
+    }
+    return array_values($byRoom);
+}
+
+function tcgSocialModeEntry(string $mode, int $games, int $wins, int $losses, bool $wlKnown): array {
+    $pct = $games > 0 && $wlKnown ? round(100 * $wins / $games, 1) : 0.0;
+    return [
+        'mode' => $mode,
+        'games' => $games,
+        'wins' => $wins,
+        'losses' => $losses,
+        'win_pct' => $pct,
+        'winPct' => $pct,
+        'wl_known' => $wlKnown,
+    ];
+}
+
+function tcgSocialModeStats(string $discordId): array {
+    $bucket = [];
+    foreach (tcgSocialCollectMatchRows($discordId) as $row) {
+        $mode = (string)$row['mode'];
+        if (!isset($bucket[$mode])) {
+            $bucket[$mode] = ['games' => 0, 'wins' => 0, 'losses' => 0];
+        }
+        $bucket[$mode]['games']++;
+        if ($row['winner_id'] === $discordId) {
+            $bucket[$mode]['wins']++;
+        } elseif ($row['winner_id'] !== null) {
+            $bucket[$mode]['losses']++;
+        }
+    }
+    $ranked = tcgSocialRankedWl($discordId);
+    if ($ranked['games'] > 0) {
+        $bucket['ranked'] = [
+            'games' => $ranked['games'],
+            'wins' => $ranked['wins'],
+            'losses' => $ranked['losses'],
+        ];
+    }
+    $casualPlayed = function_exists('tcgGetUnrankedGames') ? tcgGetUnrankedGames($discordId) : 0;
+    $casualFromMatches = $bucket['casual']['games'] ?? 0;
+    if ($casualPlayed > $casualFromMatches) {
+        $bucket['casual'] = [
+            'games' => $casualPlayed,
+            'wins' => $bucket['casual']['wins'] ?? 0,
+            'losses' => $bucket['casual']['losses'] ?? 0,
+            'wl_known' => (($bucket['casual']['wins'] ?? 0) + ($bucket['casual']['losses'] ?? 0)) > 0,
+        ];
+    }
+    $out = [];
+    foreach ($bucket as $mode => $n) {
+        $w = intval($n['wins'] ?? 0);
+        $l = intval($n['losses'] ?? 0);
+        $g = intval($n['games'] ?? 0);
+        $known = array_key_exists('wl_known', $n) ? (bool)$n['wl_known'] : ($w + $l) > 0 || $g > 0;
+        if ($mode === 'casual' && $w === 0 && $l === 0 && $g > 0 && ($casualPlayed > $casualFromMatches)) {
+            $known = false;
+        }
+        $out[] = tcgSocialModeEntry((string)$mode, $g, $w, $l, $known);
+    }
+    usort($out, static fn ($a, $b) => $b['games'] <=> $a['games']);
     return $out;
 }
 
 function tcgSocialOpponents(string $discordId, int $limit = 8): array {
-    $stmt = tcgDb()->prepare(
-        'SELECT CASE WHEN p1_id = ? THEN p2_id ELSE p1_id END AS opp,
-                SUM(CASE WHEN winner_id = ? THEN 1 ELSE 0 END) AS wins,
-                SUM(CASE WHEN winner_id IS NOT NULL AND winner_id != ? THEN 1 ELSE 0 END) AS losses,
-                COUNT(*) AS games
-         FROM tcg_pvp_results
-         WHERE p1_id = ? OR p2_id = ?
-         GROUP BY opp
-         ORDER BY games DESC
-         LIMIT ?'
-    );
-    $stmt->execute([$discordId, $discordId, $discordId, $discordId, $discordId, $limit]);
+    $limit = max(1, min(25, $limit));
+    $bucket = [];
+    foreach (tcgSocialCollectMatchRows($discordId) as $row) {
+        $oppId = $row['p1_id'] === $discordId ? $row['p2_id'] : $row['p1_id'];
+        $oppId = trim((string)$oppId);
+        if ($oppId === '' || strcasecmp($oppId, 'cpu') === 0) {
+            continue;
+        }
+        if (!isset($bucket[$oppId])) {
+            $bucket[$oppId] = ['wins' => 0, 'losses' => 0, 'games' => 0];
+        }
+        $bucket[$oppId]['games']++;
+        if ($row['winner_id'] === $discordId) {
+            $bucket[$oppId]['wins']++;
+        } elseif ($row['winner_id'] !== null) {
+            $bucket[$oppId]['losses']++;
+        }
+    }
+    uasort($bucket, static fn ($a, $b) => $b['games'] <=> $a['games']);
     $out = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $stub = tcgSocialUserStub((string)$row['opp']);
-        $stub['wins'] = intval($row['wins']);
-        $stub['losses'] = intval($row['losses']);
-        $stub['games'] = intval($row['games']);
+    foreach (array_slice($bucket, 0, $limit, true) as $oppId => $n) {
+        $stub = tcgSocialUserStub((string)$oppId);
+        $stub['wins'] = intval($n['wins']);
+        $stub['losses'] = intval($n['losses']);
+        $stub['games'] = intval($n['games']);
         $out[] = $stub;
     }
     return $out;
@@ -480,17 +586,17 @@ function tcgSocialOpponents(string $discordId, int $limit = 8): array {
 function tcgSocialMatchHistory(string $discordId, int $offset = 0, int $limit = 20): array {
     $limit = max(1, min(50, $limit));
     $offset = max(0, $offset);
-    $stmt = tcgDb()->prepare(
-        'SELECT * FROM tcg_pvp_results WHERE p1_id = ? OR p2_id = ? ORDER BY ended_at DESC LIMIT ? OFFSET ?'
-    );
-    $stmt->execute([$discordId, $discordId, $limit, $offset]);
-    $rows = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $rows = tcgSocialCollectMatchRows($discordId);
+    usort($rows, static fn ($a, $b) => $b['ended_at'] <=> $a['ended_at']);
+    $out = [];
+    $seen = [];
+    foreach ($rows as $row) {
+        $seen[$row['room_id']] = true;
         $oppId = $row['p1_id'] === $discordId ? $row['p2_id'] : $row['p1_id'];
-        $win = ($row['winner_id'] === null || $row['winner_id'] === '')
+        $win = $row['winner_id'] === null
             ? 'draw'
             : ($row['winner_id'] === $discordId ? 'win' : 'loss');
-        $rows[] = [
+        $out[] = [
             'room_id' => $row['room_id'],
             'mode' => $row['mode'],
             'result' => $win,
@@ -498,21 +604,119 @@ function tcgSocialMatchHistory(string $discordId, int $offset = 0, int $limit = 
             'opponent' => tcgSocialUserStub((string)$oppId),
         ];
     }
-    return $rows;
+    if (count($out) < $offset + $limit) {
+        try {
+            $stmt = tcgDb()->prepare(
+                'SELECT room_id, opponent_name, winner, saver_player_id, saved_at
+                 FROM tcg_replays WHERE discord_id = ? ORDER BY saved_at DESC LIMIT 40'
+            );
+            $stmt->execute([$discordId]);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $rid = tcgSocialRoomKey((string)$row['room_id']);
+                if ($rid !== '' && isset($seen[$rid])) {
+                    continue;
+                }
+                $oppName = trim((string)($row['opponent_name'] ?? ''));
+                if ($oppName === '' || preg_match('/cpu/i', $oppName)) {
+                    continue;
+                }
+                $seen[$rid !== '' ? $rid : ('replay-' . md5($oppName . (string)$row['saved_at']))] = true;
+                $winner = (string)($row['winner'] ?? '');
+                $saver = (string)($row['saver_player_id'] ?? '');
+                $result = 'draw';
+                if ($winner === 'p1' || $winner === 'p2') {
+                    $result = ($winner === $saver) ? 'win' : 'loss';
+                } elseif ($winner !== '') {
+                    $result = (strcasecmp($winner, $discordId) === 0 || strcasecmp($winner, $saver) === 0) ? 'win' : 'loss';
+                }
+                $out[] = [
+                    'room_id' => $rid,
+                    'mode' => 'match',
+                    'result' => $result,
+                    'ended_at' => intval($row['saved_at'] ?? 0),
+                    'opponent' => [
+                        'id' => '',
+                        'username' => $oppName,
+                        'avatar_url' => null,
+                        'friend_code' => '',
+                    ],
+                ];
+            }
+        } catch (Throwable $e) {
+            // Replays are a display fallback only.
+        }
+        usort($out, static fn ($a, $b) => $b['ended_at'] <=> $a['ended_at']);
+    }
+    return array_slice($out, $offset, $limit);
 }
 
-function tcgSocialIdolUsage(string $discordId): array {
+function tcgSocialMergedPlayDim(string $discordId, string $dim): array {
     if (!function_exists('tcgListPlayStats')) {
         require_once __DIR__ . '/play_stats.php';
     }
-    $rows = tcgListPlayStats($discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL);
+    $map = [];
+    foreach ([TCG_PLAY_TRACKER_STAGE, TCG_PLAY_TRACKER_LIVE_SUCCESS] as $tracker) {
+        foreach (tcgListPlayStats($discordId, $tracker, $dim) as $row) {
+            $key = trim((string)$row['key']);
+            if ($key === '') {
+                continue;
+            }
+            $map[$key] = ($map[$key] ?? 0) + intval($row['count']);
+        }
+    }
+    arsort($map);
+    return $map;
+}
+
+function tcgSocialIdolUsage(string $discordId): array {
     $out = [];
-    foreach (array_slice($rows, 0, 12) as $row) {
-        $name = (string)$row['key'];
+    $n = 0;
+    foreach (tcgSocialMergedPlayDim($discordId, TCG_PLAY_DIM_IDOL) as $name => $count) {
+        if ($n++ >= 12) {
+            break;
+        }
+        $portrait = tcgSocialIdolPortraitUrl($name);
         $out[] = [
             'idol' => $name,
+            'count' => intval($count),
+            'portrait' => $portrait,
+            'portrait' => $portrait,
+        ];
+    }
+    return $out;
+}
+
+function tcgSocialUnitUsage(string $discordId): array {
+    $out = [];
+    $n = 0;
+    foreach (tcgSocialMergedPlayDim($discordId, TCG_PLAY_DIM_UNIT) as $name => $count) {
+        if ($n++ >= 8) {
+            break;
+        }
+        $label = function_exists('tcgPlayStatUnitDisplayName')
+            ? tcgPlayStatUnitDisplayName((string)$name)
+            : (string)$name;
+        $out[] = [
+            'unit' => $label,
+            'count' => intval($count),
+        ];
+    }
+    return $out;
+}
+
+function tcgSocialLiveUsage(string $discordId): array {
+    if (!function_exists('tcgListPlayStats')) {
+        require_once __DIR__ . '/play_stats.php';
+    }
+    $out = [];
+    $n = 0;
+    foreach (tcgListPlayStats($discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_LIVE_NAME) as $row) {
+        if ($n++ >= 8) {
+            break;
+        }
+        $out[] = [
+            'live' => (string)$row['key'],
             'count' => intval($row['count']),
-            'portrait' => tcgSocialIdolPortraitUrl($name),
         ];
     }
     return $out;
@@ -559,7 +763,7 @@ function tcgApiSocialGetProfile(array $body): array {
 
 function tcgApiSocialGetStats(array $body): array {
     $viewer = tcgRequireAuthUser($body);
-    $target = trim((string)($body['user_id'] ?? $viewer));
+    $target = trim((string)($body['user_id'] ?? $body['userId'] ?? $viewer));
     if ($target === '') {
         $target = $viewer;
     }
@@ -569,6 +773,8 @@ function tcgApiSocialGetStats(array $body): array {
         'modes' => tcgSocialModeStats($target),
         'opponents' => tcgSocialOpponents($target),
         'idols' => tcgSocialIdolUsage($target),
+        'units' => tcgSocialUnitUsage($target),
+        'lives' => tcgSocialLiveUsage($target),
         'history' => tcgSocialMatchHistory($target, intval($body['offset'] ?? 0), intval($body['limit'] ?? 20)),
     ];
 }

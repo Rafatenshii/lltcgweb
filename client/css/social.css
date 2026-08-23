@@ -233,9 +233,14 @@ body.social-overlay-open .llc-sky-dim::after {
 .social-bars { display: flex; flex-direction: column; gap: 6px; }
 .social-bar {
   display: grid;
-  grid-template-columns: 28px minmax(72px, 88px) 1fr 36px;
+  grid-template-columns: 28px minmax(72px, 1.2fr) minmax(48px, 1fr) auto;
   gap: 8px;
   align-items: center;
+}
+.social-bar > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .social-idol-face {
   width: 28px;

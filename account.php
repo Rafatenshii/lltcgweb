@@ -1439,7 +1439,7 @@ function tcgApiMissionGameFinished(array $body): array {
     $completions = tcgMissionOnGameFinished($state);
     $coinGrants = tcgCoinsOnGameFinished($state);
     $mode = strtolower((string)($state['mode'] ?? ''));
-    if (empty($state['cpu_solo']) && $mode !== 'ranked' && $mode !== 'cpu' && !str_contains($mode, 'cpu')) {
+    if (empty($state['cpu_solo']) && $mode !== 'cpu' && !str_contains($mode, 'cpu')) {
         $p1Id = (string)($p1['discord_id'] ?? '');
         $p2Id = (string)($p2['discord_id'] ?? '');
         $winnerPid = $state['winner'] ?? null;
