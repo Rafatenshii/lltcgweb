@@ -814,9 +814,13 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
             }
         }
         if (function_exists('tcgSocialEnsureFriendCode')) {
-            tcgSocialEnsureFriendCode($discordId);
-            $stmt->execute([$discordId]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+            try {
+                tcgSocialEnsureFriendCode($discordId);
+                $stmt->execute([$discordId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+            } catch (Throwable $e) {
+                // Login must not fail if friend-code assign races a unique index.
+            }
         }
         return $row;
     }
@@ -835,9 +839,13 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
     $stmt->execute([$discordId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (function_exists('tcgSocialEnsureFriendCode')) {
-        tcgSocialEnsureFriendCode($discordId);
-        $stmt->execute([$discordId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+        try {
+            tcgSocialEnsureFriendCode($discordId);
+            $stmt->execute([$discordId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: $row;
+        } catch (Throwable $e) {
+            // Login must not fail if friend-code assign races a unique index.
+        }
     }
     return $row;
 }

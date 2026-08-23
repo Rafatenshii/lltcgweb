@@ -214,7 +214,13 @@ function tcgApiMe(array $body): array {
             'starter_deck' => $user['starter_deck'] ?? null,
             'starter_deck_label' => !empty($user['starter_deck']) ? tcgStarterLabel($user['starter_deck']) : null,
             'needs_starter' => empty($user['starter_deck']),
-            'friend_code' => tcgSocialEnsureFriendCode($uid),
+            'friend_code' => (function () use ($uid, $user) {
+                try {
+                    return tcgSocialEnsureFriendCode($uid);
+                } catch (Throwable $e) {
+                    return (string)($user['friend_code'] ?? '');
+                }
+            })(),
             'is_social_mod' => tcgSocialIsOwner($uid),
         ],
         'daily' => $daily,

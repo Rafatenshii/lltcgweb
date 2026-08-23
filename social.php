@@ -4,10 +4,9 @@
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/chat_moderation.php';
-require_once __DIR__ . '/play_stats.php';
-require_once __DIR__ . '/cards_data.php';
-require_once __DIR__ . '/deck_validate.php';
-require_once __DIR__ . '/booster.php';
+// Cards / collection / equipped-deck helpers are already loaded by account.php
+// (play_stats.php, cards_data.php, deck_validate.php, booster.php). Do not
+// re-require those with mismatched casings — Linux Hostinger would 500 /me.
 
 const TCG_SOCIAL_OWNER_ID = '213038604975472640';
 const TCG_SOCIAL_FRIEND_CAP = 25;
@@ -27,7 +26,7 @@ function tcgSocialEnsureSchema(): void {
     $done = true;
     $db = tcgDb();
     try {
-        $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_users_friend_code ON tcg_users(friend_code)');
+        $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_users_friend_code ON tcg_users(friend_code) WHERE friend_code IS NOT NULL AND friend_code != \'\'' );
     } catch (Throwable $e) {
         // Unique index may fail if duplicate empties exist; friend-code assign still retries.
     }
@@ -116,7 +115,7 @@ function tcgSocialEnsureFriendCode(string $discordId): string {
             continue;
         }
     }
-    throw new Exception('Could not assign friend code', 500);
+    return $existing;
 }
 
 function tcgSocialPair(string $a, string $b): array {
