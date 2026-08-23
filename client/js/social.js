@@ -33,12 +33,17 @@
     return !!A.user?.is_social_mod;
   }
   function cardImg(no) {
+    if (!no) return '';
+    if (typeof global.cachedCardImgUrl === 'function') return global.cachedCardImgUrl(no, 180);
     const base = global.CARDIMG || './cardimg.php';
-    return `${base}?no=${encodeURIComponent(no)}&w=180`;
+    return `${base}?card_no=${encodeURIComponent(no)}&w=180`;
   }
   function lookupCard(no) {
     const G = global.G || {};
-    return (G.allCards && G.allCards[no]) || { card_no: no, name: no };
+    const A = global.A || {};
+    return (G.allCards && G.allCards[no])
+      || (A.collection || []).find((r) => r && r.card_no === no)?.card
+      || { card_no: no, name: no };
   }
   function inspectCard(no) {
     if (!no || typeof global.showCard !== 'function') return;

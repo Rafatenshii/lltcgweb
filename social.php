@@ -338,7 +338,7 @@ function tcgSocialDeckPreview(array $main, array $cardMap): array {
     foreach ($main as $no) {
         $no = (string)$no;
         $card = $cardMap[$no] ?? null;
-        $en = strtolower((string)($card['card_type_en'] ?? ''));
+        $en = strtolower((string)($card['card_type_en'] ?? $card['type_en'] ?? ''));
         $jp = (string)($card['card_type'] ?? '');
         if ($en === 'member' || $jp === 'メンバー') {
             $members[$no] = ($members[$no] ?? 0) + 1;
