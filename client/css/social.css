@@ -12,7 +12,32 @@
   pointer-events: none;
 }
 #social-rail[hidden] { display: none !important; }
-.social-rail-burger { display: none; }
+.social-rail-burger {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  background: url("../../bg/ptn.png") top center / 200px 200px repeat, rgba(52, 163, 243, 0.92);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.social-rail-burger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.34);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+.social-rail-burger:active { transform: translateY(0) scale(0.97); }
+#social-rail.is-open .social-rail-burger {
+  background: url("../../bg/ptn.png") top center / 200px 200px repeat, rgba(232, 72, 153, 0.9);
+  border-color: rgba(255, 179, 209, 0.85);
+}
 .social-rail-burger-bars,
 .social-rail-burger-bars::before,
 .social-rail-burger-bars::after {
@@ -102,28 +127,14 @@
     align-items: flex-end;
     gap: 8px;
   }
-  .social-rail-burger {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 1px solid rgba(186, 228, 255, 0.45);
-    border-radius: 50%;
-    background: rgba(6, 14, 28, 0.82);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
+  .social-rail-burger { display: flex; align-items: center; justify-content: center; }
   .social-rail-panel {
     display: none;
-    padding: 8px;
+    padding: 10px;
     border-radius: 16px;
-    background: rgba(6, 14, 28, 0.88);
-    border: 1px solid rgba(186, 228, 255, 0.28);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.44);
+    background: url("../../bg/ptn.png") top center / 200px 200px repeat, rgba(38, 132, 210, 0.92);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 163, 243, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
     gap: 8px;
   }
   #social-rail.is-open .social-rail-panel { display: flex; }
@@ -144,25 +155,16 @@ html.tcg-mobile-viewport .social-rail-burger {
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid rgba(186, 228, 255, 0.45);
-  border-radius: 50%;
-  background: rgba(6, 14, 28, 0.82);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
 }
 html.tcg-phone-device .social-rail-panel,
 html.tcg-portrait-play .social-rail-panel,
 html.tcg-mobile-viewport .social-rail-panel {
   display: none;
-  padding: 8px;
+  padding: 10px;
   border-radius: 16px;
-  background: rgba(6, 14, 28, 0.88);
-  border: 1px solid rgba(186, 228, 255, 0.28);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  background: url("../../bg/ptn.png") top center / 200px 200px repeat, rgba(38, 132, 210, 0.92);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 163, 243, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
   gap: 8px;
 }
 html.tcg-phone-device #social-rail.is-open .social-rail-panel,

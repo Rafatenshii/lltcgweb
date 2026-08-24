@@ -259,11 +259,20 @@
     tournament: 1,
   };
 
-  function closeSocialMenu() {
+  function playSocialSfx(id, volume) {
+    try {
+      if (typeof global.sfxPlay === 'function') global.sfxPlay(id, { volume: volume ?? 0.9 });
+      else global.LLTCG_SFX?.play?.(id, { volume: volume ?? 0.9 });
+    } catch (e) { /* ignore */ }
+  }
+
+  function closeSocialMenu(opts) {
     const rail = document.getElementById('social-rail');
     const btn = document.getElementById('btn-social-menu');
+    const wasOpen = !!(rail && rail.classList.contains('is-open'));
     rail?.classList.remove('is-open');
     btn?.setAttribute('aria-expanded', 'false');
+    if (wasOpen && !opts?.silent) playSocialSfx('menu_back', 0.85);
   }
 
   function toggleSocialMenu() {
@@ -273,6 +282,7 @@
     const open = !rail.classList.contains('is-open');
     rail.classList.toggle('is-open', open);
     btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    playSocialSfx(open ? 'menu_tap' : 'menu_back', open ? 0.95 : 0.85);
   }
 
   function syncSocialRail(screenId) {
@@ -285,7 +295,7 @@
     else if (WIDE_RAIL_SCREENS[_screen]) rail.classList.add('social-rail--edge');
     const hide = _screen === 'game' || !signedIn();
     rail.hidden = hide;
-    if (hide) closeSocialMenu();
+    if (hide) closeSocialMenu({ silent: true });
     const logged = signedIn();
     rail.querySelectorAll('button[data-social]').forEach((btn) => {
       btn.disabled = !logged;
@@ -312,7 +322,8 @@
     el.classList.add('open', 'social-stack-top');
     el.setAttribute('aria-hidden', 'false');
     document.body.classList.add('social-overlay-open');
-    closeSocialMenu();
+    closeSocialMenu({ silent: true });
+    playSocialSfx('screen_open', 0.9);
     applyI18n(el);
   }
   function closeOverlay(id) {
