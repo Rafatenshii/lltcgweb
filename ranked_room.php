@@ -116,6 +116,7 @@ function tcgCreateRankedRoomPair(
                 : tcgGetCollectionMap($uid);
             $v = tcgValidateDeckLists($deck['main_nos'], $deck['energy_nos'], $cardMap, $ownedCheck);
             if (!$v['valid']) {
+                tcgUnequipIllegalEquippedLoadout($uid);
                 tcgQueueLeave($uid, $gameMode);
                 return null;
             }

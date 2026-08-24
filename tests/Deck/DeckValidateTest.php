@@ -113,4 +113,37 @@ final class DeckValidateTest extends TestCase
         $catalogOnly = tcgValidateDeckLists($main, $energy, $this->cardMap, null);
         $this->assertTrue($catalogOnly['valid'], implode('; ', $catalogOnly['errors']));
     }
+
+    public function testPlusPrintingSharesFourCopyLimitWithBase(): void
+    {
+        $base = 'PL!-bp3-004-P';
+        $plus = 'PL!-bp3-004-P＋';
+        $this->assertArrayHasKey($base, $this->cardMap);
+        $this->assertArrayHasKey($plus, $this->cardMap);
+        $this->assertSame(tcgDeckCopyIdentity($base), tcgDeckCopyIdentity($plus));
+        $main = array_merge(array_fill(0, 3, $base), array_fill(0, 2, $plus));
+        $result = tcgValidateDeckLists($main, [], $this->cardMap, null, true);
+        $this->assertFalse($result['valid']);
+        $this->assertTrue(
+            (bool) preg_grep('/Too many copies of .+ including alternate versions/', $result['errors']),
+            implode('; ', $result['errors'])
+        );
+        $ok = array_merge(array_fill(0, 2, $base), array_fill(0, 2, $plus));
+        $okResult = tcgValidateDeckLists($ok, [], $this->cardMap, null, true);
+        $this->assertTrue($okResult['valid'], implode('; ', $okResult['errors']));
+    }
+
+    public function testEnergyPlusPrintingSharesTwelveCopyLimit(): void
+    {
+        $base = 'PL!-bp3-030-PE';
+        $plus = 'PL!-bp3-030-PE＋';
+        $this->assertArrayHasKey($base, $this->cardMap);
+        $this->assertArrayHasKey($plus, $this->cardMap);
+        $energy = array_merge(array_fill(0, 7, $base), array_fill(0, 6, $plus));
+        $result = tcgValidateDeckLists([], $energy, $this->cardMap, null, true);
+        $this->assertFalse($result['valid']);
+        $ok = array_merge(array_fill(0, 6, $base), array_fill(0, 6, $plus));
+        $okResult = tcgValidateDeckLists([], $ok, $this->cardMap, null, true);
+        $this->assertTrue($okResult['valid'], implode('; ', $okResult['errors']));
+    }
 }

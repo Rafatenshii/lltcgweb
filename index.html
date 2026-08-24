@@ -8279,6 +8279,35 @@ function countInDeck(cardNo) {
   return A.deckMain.filter(n => n === cardNo).length + A.deckEnergy.filter(n => n === cardNo).length;
 }
 
+/** Base printing and trailing + / ＋ share the 4-copy (or 12 energy) slot. */
+function deckCopyIdentity(cardNo) {
+  const no = String(cardNo || '').replace(/＋/g, '+').trim();
+  return no.replace(/\++$/, '') || no;
+}
+
+function countInDeckIdentity(cardNo) {
+  const id = deckCopyIdentity(cardNo);
+  const n = (list) => list.filter(x => deckCopyIdentity(x) === id).length;
+  return n(A.deckMain) + n(A.deckEnergy);
+}
+
+function deckExceedsCopyLimits(main, energy) {
+  const bump = (map, no, max) => {
+    const id = deckCopyIdentity(no);
+    map[id] = (map[id] || 0) + 1;
+    return map[id] > max;
+  };
+  const mainIds = {};
+  for (const no of main || []) {
+    if (bump(mainIds, no, DECK_MAX_COPIES)) return true;
+  }
+  const energyIds = {};
+  for (const no of energy || []) {
+    if (bump(energyIds, no, DECK_MAX_ENERGY_COPIES)) return true;
+  }
+  return false;
+}
+
 function copyCardNoToClipboard(cardNo) {
   const text = String(cardNo || '').trim();
   if (!text) {
@@ -8773,6 +8802,7 @@ function deckListsAreLegal(main, energy) {
   const members = main.filter(n => G.allCards[n]?.card_type === 'メンバー').length;
   const lives = main.filter(n => G.allCards[n]?.card_type === 'ライブ').length;
   if (members !== 48 || lives !== 12) return false;
+  if (deckExceedsCopyLimits(main, energy)) return false;
   return deckMainLovecaPoints(main) <= LOVECA_POINT_LIMIT;
 }
 
@@ -10085,8 +10115,9 @@ function experimentPoolEntries(searchQ) {
     const type = c0.card_type;
     if (type !== 'メンバー' && type !== 'ライブ' && type !== 'エネルギー') return;
     const inDeck = countInDeck(c0.card_no);
+    const ident = countInDeckIdentity(c0.card_no);
     const maxOwn = experimentMaxOwned(c0.card_no, type);
-    const available = maxOwn - inDeck;
+    const available = Math.min(maxOwn - inDeck, maxOwn - ident);
     if (available <= 0) return;
     out.push({ c0, type, available, _idx: idx++ });
   });
@@ -10444,6 +10475,8 @@ function renderDeckBuilder(opts = {}) {
       const type = c0.card_type;
       if (type !== 'メンバー' && type !== 'ライブ' && type !== 'エネルギー') return;
       const inDeck = countInDeck(row.card_no);
+      const ident = countInDeckIdentity(row.card_no);
+      const maxCopies = type === 'エネルギー' ? DECK_MAX_ENERGY_COPIES : DECK_MAX_COPIES;
       const committed = A.decklogSubPickFor
         ? decklogSubPickCommittedCount(row.card_no, A.decklogSubPickFor)
         : 0;
@@ -10452,7 +10485,7 @@ function renderDeckBuilder(opts = {}) {
         : 0;
       const available = A.decklogSubPickFor
         ? Math.max(0, row.qty - committed)
-        : (row.qty - inDeck);
+        : Math.min(row.qty - inDeck, maxCopies - ident);
       const showQty = A.decklogSubPickFor ? Math.max(0, available - draftOf) : available;
       if (available <= 0 && draftOf <= 0) return;
       if (A.decklogSubPickFor && row.card_no === A.decklogSubPickFor) return;
@@ -10538,14 +10571,15 @@ function addCardToDeck(cardNo, type) {
   const c = deckCounts();
   const haveMain = A.deckMain.filter(n => n === cardNo).length;
   const haveEnergy = A.deckEnergy.filter(n => n === cardNo).length;
+  const haveIdent = countInDeckIdentity(cardNo);
   const experiment = A.deckBuilderMode === 'experiment';
   const maxOwn = experiment
     ? experimentMaxOwned(cardNo, type)
     : (A.collectionMap[cardNo] || 0);
   if (type === 'エネルギー') {
-    if (haveEnergy >= maxOwn || haveEnergy >= 12) return;
+    if (haveEnergy >= maxOwn || haveIdent >= DECK_MAX_ENERGY_COPIES || haveEnergy >= 12) return;
   } else {
-    if (haveMain + haveEnergy >= maxOwn || haveMain >= 4) return;
+    if (haveMain + haveEnergy >= maxOwn || haveIdent >= DECK_MAX_COPIES) return;
   }
   if (type === 'メンバー' && c.members >= 48) return;
   if (type === 'ライブ' && c.lives >= 12) return;

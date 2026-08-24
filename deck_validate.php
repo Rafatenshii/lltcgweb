@@ -121,10 +121,10 @@ function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap
 
     $members = 0;
     $lives = 0;
+    $mainIdentityCounts = [];
     foreach ($mainCounts as $no => $qty) {
-        if ($qty > TCG_MAX_COPIES) {
-            $errors[] = "Too many copies of $no (max " . TCG_MAX_COPIES . ')';
-        }
+        $id = tcgDeckCopyIdentity((string)$no);
+        $mainIdentityCounts[$id] = ($mainIdentityCounts[$id] ?? 0) + $qty;
         $card = $cardMap[$no] ?? null;
         if (!$card) {
             $errors[] = "Unknown card: $no";
@@ -142,6 +142,11 @@ function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap
             $errors[] = "Not enough copies of $no in collection";
         }
     }
+    foreach ($mainIdentityCounts as $id => $qty) {
+        if ($qty > TCG_MAX_COPIES) {
+            $errors[] = "Too many copies of $id including alternate versions (max " . TCG_MAX_COPIES . ')';
+        }
+    }
 
     if ($members > TCG_MEMBER_SLOTS) {
         $errors[] = 'Main deck cannot have more than ' . TCG_MEMBER_SLOTS . ' Member cards (got ' . $members . ')';
@@ -155,10 +160,10 @@ function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap
     }
 
     $energyTypes = [];
+    $energyIdentityCounts = [];
     foreach ($energyCounts as $no => $qty) {
-        if ($qty > TCG_MAX_ENERGY_COPIES) {
-            $errors[] = "Too many energy copies of $no (max " . TCG_MAX_ENERGY_COPIES . ')';
-        }
+        $id = tcgDeckCopyIdentity((string)$no);
+        $energyIdentityCounts[$id] = ($energyIdentityCounts[$id] ?? 0) + $qty;
         $card = $cardMap[$no] ?? null;
         if (!$card || ($card['card_type'] ?? '') !== 'エネルギー') {
             $errors[] = "Invalid energy card: $no";
@@ -167,6 +172,11 @@ function tcgValidateDeckLists(array $mainDeck, array $energyDeck, array $cardMap
         $energyTypes[$no] = true;
         if ($owned !== null && ($owned[$no] ?? 0) < $qty) {
             $errors[] = "Not enough energy copies of $no in collection";
+        }
+    }
+    foreach ($energyIdentityCounts as $id => $qty) {
+        if ($qty > TCG_MAX_ENERGY_COPIES) {
+            $errors[] = "Too many energy copies of $id including alternate versions (max " . TCG_MAX_ENERGY_COPIES . ')';
         }
     }
 

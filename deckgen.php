@@ -14,6 +14,35 @@ const DECKGEN_ENERGY_SLOTS = 12;
 const DECKGEN_MAX_COPIES   = 4;
 const DECKGEN_MAX_ENERGY_COPIES = 12;
 
+/** Same card for the 4-copy rule: base printing and trailing + / ＋ share a slot. */
+function tcgDeckCopyIdentity(string $cardNo): string {
+    $no = str_replace('＋', '+', trim($cardNo));
+    $stripped = preg_replace('/\++$/', '', $no);
+    return ($stripped !== null && $stripped !== '') ? $stripped : $no;
+}
+
+function tcgCountCopiesByIdentity(array $cardNos, string $cardNo): int {
+    $id = tcgDeckCopyIdentity($cardNo);
+    $n = 0;
+    foreach ($cardNos as $no) {
+        if (tcgDeckCopyIdentity((string)$no) === $id) {
+            $n++;
+        }
+    }
+    return $n;
+}
+
+function deckgenIdentityCount(array $counts, string $cardNo): int {
+    $id = tcgDeckCopyIdentity($cardNo);
+    $n = 0;
+    foreach ($counts as $no => $qty) {
+        if (tcgDeckCopyIdentity((string)$no) === $id) {
+            $n += intval($qty);
+        }
+    }
+    return $n;
+}
+
 const DECKGEN_GROUPS = ["μ's", 'Nijigasaki', 'Sunshine', 'Superstar', 'Hasunosora'];
 /** Deck-builder group chips that actually match card subunit (not school group). */
 const DECKGEN_FILTER_SUBUNIT_GROUPS = ['Saint Snow', 'A-RISE', 'Sunny Passion'];
@@ -241,10 +270,11 @@ function deckgenLovecaCapCopies(array $existingMain, string $cardNo, int $want):
 }
 
 function deckgenAddCopies(array &$list, string $cardNo, int $want, array &$counts, ?array $owned = null): int {
-    $have = $counts[$cardNo] ?? 0;
+    $haveExact = $counts[$cardNo] ?? 0;
+    $have = deckgenIdentityCount($counts, $cardNo);
     $cap  = DECKGEN_MAX_COPIES - $have;
     if ($owned !== null) {
-        $cap = min($cap, max(0, ($owned[$cardNo] ?? 0) - $have));
+        $cap = min($cap, max(0, ($owned[$cardNo] ?? 0) - $haveExact));
     }
     $add = min($want, $cap);
     $add = deckgenLovecaCapCopies($list, $cardNo, $add);
@@ -570,12 +600,13 @@ function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned =
         if ($no === '') {
             return 0;
         }
-        $have   = $counts[$no] ?? 0;
+        $haveExact = $counts[$no] ?? 0;
+        $haveId   = deckgenIdentityCount($counts, $no);
         $maxOwn = $owned !== null ? intval($owned[$no] ?? 0) : DECKGEN_MAX_ENERGY_COPIES;
         $room   = min(
             $want,
-            DECKGEN_MAX_ENERGY_COPIES - $have,
-            $maxOwn - $have,
+            DECKGEN_MAX_ENERGY_COPIES - $haveId,
+            $maxOwn - $haveExact,
             DECKGEN_ENERGY_SLOTS - count($deck)
         );
         for ($i = 0; $i < $room; $i++) {
@@ -755,14 +786,14 @@ function deckgenPickLives(
             if ($no === '') {
                 continue;
             }
-            if (($counts[$no] ?? 0) >= DECKGEN_MAX_COPIES) {
+            if (deckgenIdentityCount($counts, $no) >= DECKGEN_MAX_COPIES) {
                 continue;
             }
             if ($owned !== null && ($counts[$no] ?? 0) >= ($owned[$no] ?? 0)) {
                 continue;
             }
             $copies = min(
-                DECKGEN_MAX_COPIES - ($counts[$no] ?? 0),
+                DECKGEN_MAX_COPIES - deckgenIdentityCount($counts, $no),
                 $want - $added,
                 rand(1, 2)
             );
@@ -791,7 +822,7 @@ function deckgenPickLives(
         if ($no === '') {
             continue;
         }
-        if (($counts[$no] ?? 0) >= DECKGEN_MAX_COPIES) {
+        if (deckgenIdentityCount($counts, $no) >= DECKGEN_MAX_COPIES) {
             continue;
         }
         if ($owned !== null && ($counts[$no] ?? 0) >= ($owned[$no] ?? 0)) {
@@ -1264,7 +1295,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
         if ($cost < 2 || $cost > 6 || $cost === 4) {
             return false;
         }
-        if (($counts[$c['card_no']] ?? 0) >= DECKGEN_MAX_COPIES) {
+        if (deckgenIdentityCount($counts, $c['card_no'] ?? '') >= DECKGEN_MAX_COPIES) {
             return false;
         }
         return deckgenMemberHeartTotal($c) > 0;
@@ -1282,7 +1313,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
         if ($added === 0) {
             $fillers = array_values(array_filter(
                 $fillers,
-                fn($x) => ($counts[$x['card_no']] ?? 0) < DECKGEN_MAX_COPIES
+                fn($x) => deckgenIdentityCount($counts, $x['card_no'] ?? '') < DECKGEN_MAX_COPIES
             ));
             continue;
         }

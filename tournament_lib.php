@@ -559,6 +559,7 @@ function tcgTournamentDeckSnapshotForUser(string $discordId, string $gameMode, ?
     $ownedCheck = (($row['source'] ?? '') === 'starter') ? null : tcgGetCollectionMap($discordId);
     $v = tcgValidateDeckLists($main, $energy, $cardMap, $ownedCheck);
     if (!$v['valid']) {
+        tcgUnequipIllegalEquippedLoadout($discordId);
         throw new Exception('Equipped deck is not legal: ' . implode('; ', $v['errors'] ?? ['invalid']), 400);
     }
 

@@ -1608,6 +1608,26 @@ function tcgGetEquippedDeckRow(string $discordId): ?array {
     return $row;
 }
 
+/**
+ * If the equipped custom preset is no longer legal (copy limits, size, ownership),
+ * clear it so the player can edit. Starter loadouts are left equipped.
+ */
+function tcgUnequipIllegalEquippedLoadout(string $discordId): bool {
+    $row = tcgGetEquippedDeckRow($discordId);
+    if (!$row || (($row['source'] ?? '') === 'starter')) {
+        return false;
+    }
+    $main = json_decode((string)($row['main_deck'] ?? '[]'), true) ?: [];
+    $energy = json_decode((string)($row['energy_deck'] ?? '[]'), true) ?: [];
+    $owned = tcgGetCollectionMap($discordId);
+    $v = tcgValidateDeckLists($main, $energy, tcgBuildCardMap(tcgLoadCardsData()), $owned);
+    if ($v['valid']) {
+        return false;
+    }
+    tcgDb()->prepare('UPDATE tcg_deck_presets SET equipped = 0 WHERE discord_id = ?')->execute([$discordId]);
+    return true;
+}
+
 function tcgWriteDeckPreset(string $discordId, int $slot, string $name, array $main, array $energy, ?bool $equip = null): void {
     if (!defined('TCG_MAX_DECK_PRESETS')) {
         define('TCG_MAX_DECK_PRESETS', 10);

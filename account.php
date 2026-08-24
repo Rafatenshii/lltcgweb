@@ -210,6 +210,7 @@ function tcgApiMe(array $body): array {
     require_once __DIR__ . '/ranked_pr_rewards.php';
     $rankedPr = tcgRankedPrDailyAllowance($uid);
     $rank = tcgRankRow($uid);
+    tcgUnequipIllegalEquippedLoadout($uid);
     $equipped = tcgGetEquippedDeckRow($uid);
     $equippedLoadout = null;
     if ($equipped) {
@@ -509,6 +510,7 @@ function tcgFormatEquippedLoadout(array $body): array {
 function tcgApiDeckList(array $body): array {
     $uid = tcgRequireAuthUser($body);
     $user = tcgEnsureUser($uid, tcgAuthUserProfile($uid));
+    tcgUnequipIllegalEquippedLoadout($uid);
     $db = tcgDb();
     $stmt = $db->prepare('SELECT id, slot, name, main_deck, energy_deck, sleeve_id, playmat_id, playmat_brightness, equipped, updated_at
         FROM tcg_deck_presets WHERE discord_id = ? ORDER BY slot ASC');
@@ -1284,6 +1286,7 @@ function tcgApiRankedJoin(array $body): array {
             : tcgGetCollectionMap($uid);
         $validation = tcgValidateDeckLists($main, $energy, tcgBuildCardMap($cards), $ownedCheck);
         if (!$validation['valid']) {
+            tcgUnequipIllegalEquippedLoadout($uid);
             throw new Exception('Equipped deck is invalid: ' . implode('; ', $validation['errors']), 400);
         }
     }
