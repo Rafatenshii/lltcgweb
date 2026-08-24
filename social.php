@@ -478,17 +478,21 @@ function tcgSocialUnitLogoUrl(string $unit): string {
     };
 }
 
-/** First Live card_no whose live_name / English name matches. */
-function tcgSocialLiveCardNo(string $liveName): string {
-    static $map = null;
+/**
+ * All Live printings for a song title, catalog order (first = previous default art).
+ *
+ * @return list<string>
+ */
+function tcgSocialLivePrintingNos(string $liveName): array {
+    static $byName = null;
     $q = strtolower(trim($liveName));
     if ($q === '') {
-        return '';
+        return [];
     }
-    if ($map === null) {
-        $map = [];
+    if ($byName === null) {
+        $byName = [];
         if (!function_exists('tcgLoadCardsData') || !function_exists('tcgBuildCardMap')) {
-            return '';
+            return [];
         }
         foreach (tcgBuildCardMap(tcgLoadCardsData()) as $no => $card) {
             if (!is_array($card)) {
@@ -509,14 +513,86 @@ function tcgSocialLiveCardNo(string $liveName): string {
             }
             $names[] = strtolower(trim((string)($card['name_en'] ?? '')));
             $names[] = strtolower(trim((string)($card['name'] ?? '')));
-            foreach ($names as $n) {
-                if ($n !== '' && !isset($map[$n])) {
-                    $map[$n] = (string)$no;
+            $noStr = (string)$no;
+            foreach (array_unique($names) as $n) {
+                if ($n === '') {
+                    continue;
+                }
+                if (!isset($byName[$n])) {
+                    $byName[$n] = [];
+                }
+                if (!in_array($noStr, $byName[$n], true)) {
+                    $byName[$n][] = $noStr;
                 }
             }
         }
     }
-    return $map[$q] ?? '';
+    return $byName[$q] ?? [];
+}
+
+/** First Live card_no whose live_name / English name matches. */
+function tcgSocialLiveCardNo(string $liveName): string {
+    $nos = tcgSocialLivePrintingNos($liveName);
+    return $nos[0] ?? '';
+}
+
+/**
+ * Prefer the printing this player used (and owns) over a random higher-rarity catalog hit.
+ *
+ * @param list<string> $printings
+ * @param array<string,int> $useCounts card_no => live_success count
+ * @param array<string,int> $ownedQty card_no => collection qty
+ */
+function tcgSocialPickOwnedOrUsedPrinting(array $printings, array $useCounts, array $ownedQty): string {
+    $bestOwnedUsed = '';
+    $bestOwnedUsedN = -1;
+    $bestUsed = '';
+    $bestUsedN = -1;
+    $bestOwned = '';
+    $bestOwnedN = -1;
+    foreach ($printings as $no) {
+        $no = trim((string)$no);
+        if ($no === '') {
+            continue;
+        }
+        $used = intval($useCounts[$no] ?? 0);
+        $have = intval($ownedQty[$no] ?? 0);
+        if ($used > $bestUsedN) {
+            $bestUsedN = $used;
+            $bestUsed = $no;
+        }
+        if ($have > 0 && $used > $bestOwnedUsedN) {
+            $bestOwnedUsedN = $used;
+            $bestOwnedUsed = $no;
+        }
+        if ($have > $bestOwnedN) {
+            $bestOwnedN = $have;
+            $bestOwned = $no;
+        }
+    }
+    if ($bestOwnedUsedN > 0) {
+        return $bestOwnedUsed;
+    }
+    if ($bestOwnedN > 0) {
+        return $bestOwned;
+    }
+    if ($bestUsedN > 0) {
+        return $bestUsed;
+    }
+    return $printings[0] ?? '';
+}
+
+function tcgSocialLiveCardNoForUser(string $discordId, string $liveName): string {
+    $printings = tcgSocialLivePrintingNos($liveName);
+    if ($printings === []) {
+        return '';
+    }
+    $useCounts = [];
+    foreach (tcgListPlayStats($discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_CARD) as $row) {
+        $useCounts[(string)$row['key']] = intval($row['count']);
+    }
+    $owned = function_exists('tcgGetCollectionMap') ? tcgGetCollectionMap($discordId) : [];
+    return tcgSocialPickOwnedOrUsedPrinting($printings, $useCounts, is_array($owned) ? $owned : []);
 }
 
 /** Split "Honoka Kosaka" / "Kosaka Honoka" into comparable name tokens. */
@@ -922,7 +998,7 @@ function tcgSocialLiveUsage(string $discordId): array {
             break;
         }
         $name = (string)$row['key'];
-        $cardNo = tcgSocialLiveCardNo($name);
+        $cardNo = tcgSocialLiveCardNoForUser($discordId, $name);
         $out[] = [
             'live' => $name,
             'count' => intval($row['count']),

@@ -152,6 +152,31 @@ final class PlayStatsTrackingTest extends TestCase
         $this->assertSame(0, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_STAGE, TCG_PLAY_DIM_IDOL, 'Honoka Kosaka'));
     }
 
+    public function testTutorialGuideDoesNotRecordPlayStats(): void
+    {
+        $live = [
+            'instance_id' => 'tut_live',
+            'card_type' => 'ライブ',
+            'name_en' => 'WE WILL!!',
+            'group' => 'Superstar',
+            'card_no' => 'PL!SP-sd1-023-SD',
+        ];
+        $state = [
+            'tutorial_guide' => true,
+            'players' => [
+                'p1' => [
+                    'id' => 'p1',
+                    'name' => 'Human',
+                    'discord_id' => $this->discordId,
+                    'deck_choice' => 'muse',
+                ],
+            ],
+        ];
+        \notifyLiveEnteredSuccess($state, 'p1', $live);
+        $this->assertSame(0, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_LIVE_NAME, 'WE WILL!!'));
+        $this->assertSame(0, \tcgGetPlayStat($this->discordId, TCG_PLAY_TRACKER_LIVE_SUCCESS, TCG_PLAY_DIM_CARD, 'PL!SP-sd1-023-SD'));
+    }
+
     public function testLiveSuccessTracksLiveNameSeparatelyFromStage(): void
     {
         $live = [

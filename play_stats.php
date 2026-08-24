@@ -378,7 +378,19 @@ function tcgApplyPlayStatDeltasOnce(?string $roomId, array $deltas): bool {
     return true;
 }
 
+/** Guided beginner tutorial (and any mode=tutorial room) must not feed play stats. */
+function tcgMatchIsTutorial(array $state): bool {
+    if (!empty($state['tutorial_guide']) || !empty($state['is_tutorial'])) {
+        return true;
+    }
+    $mode = strtolower(trim((string)($state['mode'] ?? '')));
+    return $mode === 'tutorial';
+}
+
 function tcgPlayStatsSeatIsTrackable(array $state, string $pid): ?string {
+    if (tcgMatchIsTutorial($state)) {
+        return null;
+    }
     $player = $state['players'][$pid] ?? null;
     if (!is_array($player)) {
         return null;
