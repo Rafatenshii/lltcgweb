@@ -13446,10 +13446,10 @@ function renderLeaderboardRows(data) {
 
 async function openLeaderboardScreen() {
   el('leaderboard-err').textContent = '';
-  persistGameMode(currentGameMode());
-  syncGameModeSelects();
+  if (!A.leaderboardViewMode) A.leaderboardViewMode = rankedGameMode();
+  syncLeaderboardModeChrome();
   try {
-    const res = await accountGet('rank_stats', { game_mode: rankedGameMode() });
+    const res = await accountGet('rank_stats', { game_mode: leaderboardViewMode() });
     A.leaderboard = res;
     A.lastLeaderboardData = res;
     renderLeaderboardRows(res);
@@ -13791,7 +13791,7 @@ async function saveBannerCrop() {
     }
     try {
       if (el('screen-leaderboard').classList.contains('active')) {
-        const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
+        const stats = await accountGet('rank_stats', { game_mode: leaderboardViewMode() });
         A.leaderboard = stats;
         A.lastLeaderboardData = stats;
         renderLeaderboardRows(stats);
@@ -13953,7 +13953,7 @@ async function saveProfileFlag() {
     syncProfileFlagStatus();
     renderProfileFlagGrid();
     if (el('screen-leaderboard').classList.contains('active')) {
-      const stats = await accountGet('rank_stats', { game_mode: rankedGameMode() });
+      const stats = await accountGet('rank_stats', { game_mode: leaderboardViewMode() });
       A.leaderboard = stats;
       A.lastLeaderboardData = stats;
       renderLeaderboardRows(stats);
@@ -14237,6 +14237,7 @@ function syncRankedScreenSearchControls(searching) {
 function setRankedSearchingUI(active, waitSeconds) {
   const wasSearching = !!A.rankedSearching;
   A.rankedSearching = !!active;
+  if (!active) A.rankedQueuedGameMode = null;
   if (active && Number.isFinite(waitSeconds)) A.rankedWaitSeconds = waitSeconds;
   const fl = el('ranked-search-float');
   if (fl) fl.hidden = !active;
@@ -14496,6 +14497,22 @@ function rankedGameMode() {
   return normalizeRankedGameMode(currentGameMode());
 }
 
+/** Leaderboard filter only — never the queue / play mode. */
+function leaderboardViewMode() {
+  if (A.leaderboardViewMode) return normalizeRankedGameMode(A.leaderboardViewMode);
+  const sel = el('sel-leaderboard-game-mode');
+  if (sel?.value) return normalizeRankedGameMode(sel.value);
+  return rankedGameMode();
+}
+
+function syncLeaderboardModeChrome() {
+  const m = leaderboardViewMode();
+  const sel = el('sel-leaderboard-game-mode');
+  if (sel && sel.value !== m) sel.value = m;
+  const lbDesc = el('leaderboard-game-mode-desc');
+  if (lbDesc) lbDesc.textContent = gameModeDescription(m);
+}
+
 function isStartersGameMode(mode) {
   return normalizeGameMode(mode ?? currentGameMode()) === 'starters';
 }
@@ -14605,16 +14622,12 @@ function syncGameModeSelects(mode) {
   const rankedM = normalizeRankedGameMode(m);
   const lobbySel = el('sel-lobby-game-mode');
   if (lobbySel && lobbySel.value !== m) lobbySel.value = m;
-  ['sel-ranked-game-mode', 'sel-leaderboard-game-mode'].forEach(id => {
-    const sel = el(id);
-    if (sel && sel.value !== rankedM) sel.value = rankedM;
-  });
+  const rankedSel = el('sel-ranked-game-mode');
+  if (rankedSel && rankedSel.value !== rankedM) rankedSel.value = rankedM;
   const rankedDesc = el('ranked-game-mode-desc');
   if (rankedDesc) rankedDesc.textContent = gameModeDescription(rankedM);
   const lobbyDesc = el('lobby-game-mode-desc');
   if (lobbyDesc) lobbyDesc.textContent = gameModeDescription(m);
-  const lbDesc = el('leaderboard-game-mode-desc');
-  if (lbDesc) lbDesc.textContent = gameModeDescription(rankedM);
   syncDeckPickVisibilityForMode(m);
 }
 
@@ -14636,11 +14649,24 @@ function starterOptionLabel(key) {
     || key;
 }
 
+async function onLeaderboardModeChange() {
+  const next = normalizeRankedGameMode(el('sel-leaderboard-game-mode')?.value);
+  A.leaderboardViewMode = next;
+  syncLeaderboardModeChrome();
+  if (el('screen-leaderboard')?.classList.contains('active')) {
+    await refreshLeaderboardForMode();
+  }
+}
+
 async function onGameModeSelectChange(sourceSelId) {
+  if (sourceSelId === 'sel-leaderboard-game-mode') {
+    await onLeaderboardModeChange();
+    return;
+  }
   const sel = el(sourceSelId);
   if (!sel) return;
   let next = normalizeGameMode(sel.value);
-  if (sourceSelId === 'sel-ranked-game-mode' || sourceSelId === 'sel-leaderboard-game-mode') {
+  if (sourceSelId === 'sel-ranked-game-mode') {
     next = normalizeRankedGameMode(next);
   }
   const prev = currentGameMode();
@@ -14648,11 +14674,13 @@ async function onGameModeSelectChange(sourceSelId) {
     syncGameModeSelects(next);
     return;
   }
+  const queuedRankedMode = A.rankedQueuedGameMode || rankedGameMode();
+  const wasRankedSearching = !!A.rankedSearching;
   rememberCurrentDecksForMode(prev);
   persistGameMode(next);
   syncGameModeSelects(next);
-  if (A.rankedSearching) {
-    try { await cancelRankedSearch(); } catch (e) {}
+  if (wasRankedSearching) {
+    try { await cancelRankedSearch({ gameMode: queuedRankedMode }); } catch (e) {}
   }
   if (A.casualSearching) {
     try { await cancelCasualSearch(); } catch (e) {}
@@ -14701,7 +14729,7 @@ async function refreshRankedScreenModeStats(opts = {}) {
 async function refreshLeaderboardForMode() {
   el('leaderboard-err').textContent = '';
   try {
-    const res = await accountGet('rank_stats', { game_mode: rankedGameMode() });
+    const res = await accountGet('rank_stats', { game_mode: leaderboardViewMode() });
     A.leaderboard = res;
     A.lastLeaderboardData = res;
     renderLeaderboardRows(res);
@@ -14987,6 +15015,7 @@ async function startRankedSearch() {
       await accountPost('leave_active_game', { confirm_resign: 1 });
     }
     const mode = rankedGameMode();
+    A.rankedQueuedGameMode = mode;
     const joinBody = { game_mode: mode };
     if (!isRandomizedGameMode(mode)) {
       const deckKey = el('sel-ranked-deck')?.value || '';
@@ -15016,8 +15045,11 @@ async function startRankedSearch() {
   } catch (e) { el('ranked-err').textContent = e.message; }
 }
 
-async function cancelRankedSearch() {
-  const res = await accountPost('ranked_leave', { game_mode: rankedGameMode() });
+async function cancelRankedSearch(opts = {}) {
+  const mode = normalizeRankedGameMode(
+    opts.gameMode || A.rankedQueuedGameMode || rankedGameMode()
+  );
+  const res = await accountPost('ranked_leave', { game_mode: mode });
   if (res.queue_stats) updateRankedQueueStats(res.queue_stats);
   markRankedSearchActive(false);
   stopRankedPoll();
