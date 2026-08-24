@@ -164,7 +164,8 @@ function deckgenSubunitScoreBonus(array $card, ?string $prefer): int {
     if ($prefer === null) {
         return 0;
     }
-    return deckgenCardMatchesSubunit($card, $prefer) ? 80 : 0;
+    // Larger than any printed-stat score so subunit cards fill first, like a group filter.
+    return deckgenCardMatchesSubunit($card, $prefer) ? 10000 : 0;
 }
 
 function deckgenSubunitLiveBonus(array $card, ?string $prefer): int {
@@ -172,7 +173,40 @@ function deckgenSubunitLiveBonus(array $card, ?string $prefer): int {
     if ($prefer === null) {
         return 0;
     }
-    return deckgenCardMatchesSubunit($card, $prefer) ? 40 : 0;
+    return deckgenCardMatchesSubunit($card, $prefer) ? 10000 : 0;
+}
+
+function deckgenPreferSubunitPool(array $cards, ?string $prefer): array {
+    $prefer = deckgenNormalizePreferSubunit($prefer);
+    if ($prefer === null) {
+        return $cards;
+    }
+    return array_values(array_filter(
+        $cards,
+        static fn(array $c): bool => deckgenCardMatchesSubunit($c, $prefer)
+    ));
+}
+
+function deckgenBuildMembersPreferSubunit(array $memberPool, ?array $owned, ?string $prefer, callable $scoreFn): array {
+    $prefer = deckgenNormalizePreferSubunit($prefer);
+    if ($prefer !== null) {
+        $subPool = deckgenPreferSubunitPool($memberPool, $prefer);
+        if (count($subPool) >= 8) {
+            $main = deckgenBuildBalancedMemberMain($subPool, $owned, $scoreFn);
+            if (count($main) >= DECKGEN_MEMBER_SLOTS) {
+                return $main;
+            }
+        }
+    }
+    return deckgenBuildBalancedMemberMain($memberPool, $owned, $scoreFn);
+}
+
+function deckgenPreferSubunitLivePool(array $lives, ?string $prefer): array {
+    $sub = deckgenPreferSubunitPool($lives, $prefer);
+    if (count($sub) >= DECKGEN_LIVE_SLOTS) {
+        return $sub;
+    }
+    return $lives;
 }
 
 function deckgenSubunitDisplay(?string $subunit): string {
@@ -910,7 +944,7 @@ function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null, ?
         }
     }
     $memberScoreFn = fn($c) => deckgenMemberBuildScore($c) + deckgenSubunitScoreBonus($c, $preferSubunit);
-    $main = deckgenBuildBalancedMemberMain($memberPool, null, $memberScoreFn);
+    $main = deckgenBuildMembersPreferSubunit($memberPool, null, $preferSubunit, $memberScoreFn);
     $counts = deckgenRebuildCounts($main);
     $membersAdded = count($main);
 
@@ -920,7 +954,15 @@ function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null, ?
 
     $colorCounts = deckgenColorCountsFromMain($main, $cardMap);
     $liveFitFn   = fn($c) => deckgenLiveBuildScore($c, $colorCounts) + deckgenSubunitLiveBonus($c, $preferSubunit);
-    $liveNos     = deckgenPickLives($lives, $liveGroup, $colorCounts, null, null, $liveFitFn, $main);
+    $liveNos     = deckgenPickLives(
+        deckgenPreferSubunitLivePool($lives, $preferSubunit),
+        $liveGroup,
+        $colorCounts,
+        null,
+        null,
+        $liveFitFn,
+        $main
+    );
     $energyNo    = deckgenPickEnergy($energies, $mixed ? null : $group);
     $energyDeck  = array_fill(0, DECKGEN_ENERGY_SLOTS, $energyNo);
 
@@ -1020,7 +1062,7 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
     $nameEn  = $subLabel !== '' ? "Auto-built ($display · $subLabel)" : "Auto-built ($display)";
 
     $memberScoreFn = fn($c) => deckgenMemberBuildScore($c) + deckgenSubunitScoreBonus($c, $preferSubunit);
-    $main = deckgenBuildBalancedMemberMain($memberPool, $owned, $memberScoreFn);
+    $main = deckgenBuildMembersPreferSubunit($memberPool, $owned, $preferSubunit, $memberScoreFn);
     $membersAdded = count($main);
 
     if ($membersAdded < DECKGEN_MEMBER_SLOTS) {
@@ -1053,7 +1095,15 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
     }
     $colorCounts = deckgenColorCountsFromMain($main, $cardMap);
     $liveFitFn   = fn($c) => deckgenLiveBuildScore($c, $colorCounts) + deckgenSubunitLiveBonus($c, $preferSubunit);
-    $liveNos     = deckgenPickLives($livePool, $liveGroup, $colorCounts, $owned, null, $liveFitFn, $main);
+    $liveNos     = deckgenPickLives(
+        deckgenPreferSubunitLivePool($livePool, $preferSubunit),
+        $liveGroup,
+        $colorCounts,
+        $owned,
+        null,
+        $liveFitFn,
+        $main
+    );
     if (count($liveNos) < DECKGEN_LIVE_SLOTS) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
@@ -1241,6 +1291,12 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
     }
 
     $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
+    if ($preferSubunit !== null) {
+        $subMembers = deckgenPreferSubunitPool($memberPool, $preferSubunit);
+        if (count($subMembers) >= 8) {
+            $memberPool = $subMembers;
+        }
+    }
     $display = deckgenGroupDisplay($group);
     $tierLabel = ucfirst($tier);
     $subLabel = $preferSubunit !== null ? deckgenSubunitDisplay($preferSubunit) : '';
@@ -1359,6 +1415,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
             $livePool = $filteredLives;
         }
     }
+    $livePool = deckgenPreferSubunitLivePool($livePool, $preferSubunit);
     $liveNos   = deckgenPickLives($livePool, $liveGroup, $colorCounts, null, $liveTargets, $liveFitFn, $main);
     $energyGroup = deckgenIsSchoolGroup($group) ? $group : null;
     $energyNo  = deckgenPickEnergy($energies, $energyGroup);
