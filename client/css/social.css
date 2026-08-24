@@ -12,10 +12,16 @@
   pointer-events: none;
 }
 #social-rail[hidden] { display: none !important; }
-/* Wider shells (deck / booster / shops / lobby) already use the 720px gutter.
-   Park the rail on the viewport’s outer right so we do not overlap or shrink them. */
+/* Wider shells (deck / shops / lobby): park on the viewport’s outer right. */
 #social-rail.social-rail--edge {
   right: max(10px, env(safe-area-inset-right, 0px));
+}
+/* Booster page is 1200px — sit just outside that column, same idea as the 720px hub. */
+#social-rail.social-rail--booster {
+  right: max(10px, calc((100vw - min(1200px, 98vw)) / 2 - 76px));
+}
+#social-rail.social-rail--pack {
+  right: max(10px, calc((100vw - min(1100px, 98vw)) / 2 - 76px));
 }
 .social-rail-btn {
   pointer-events: auto;

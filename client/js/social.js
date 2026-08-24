@@ -251,8 +251,6 @@
   /** Menus whose shell is already wider than the 720px hub column. */
   const WIDE_RAIL_SCREENS = {
     deck: 1,
-    booster: 1,
-    'pack-results': 1,
     sticker: 1,
     'playmat-shop': 1,
     'sleeve-shop': 1,
@@ -265,7 +263,10 @@
     _screen = screenId || _screen;
     const rail = document.getElementById('social-rail');
     if (!rail) return;
-    rail.classList.toggle('social-rail--edge', !!WIDE_RAIL_SCREENS[_screen]);
+    rail.classList.remove('social-rail--edge', 'social-rail--booster', 'social-rail--pack');
+    if (_screen === 'booster') rail.classList.add('social-rail--booster');
+    else if (_screen === 'pack-results') rail.classList.add('social-rail--pack');
+    else if (WIDE_RAIL_SCREENS[_screen]) rail.classList.add('social-rail--edge');
     const hide = _screen === 'game' || !signedIn();
     rail.hidden = hide;
     const logged = signedIn();
