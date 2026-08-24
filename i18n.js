@@ -1864,8 +1864,8 @@
         "title": "Replays"
       },
       "shop": {
-        "sub": "Sleeves & playmats",
-        "title": "Shop"
+        "sub": "スリーブとプレイマット",
+        "title": "ショップ"
       },
       "sticker": {
         "sub": "Convert spare cards",
@@ -3618,8 +3618,8 @@
         "title": "Boosters"
       },
       "cardList": {
-        "sub": "Browse the full catalog",
-        "title": "Card List"
+        "sub": "Consulta todas las cartas",
+        "title": "Lista de cartas"
       },
       "deck": {
         "sub": "Build and equip decks",
@@ -3639,8 +3639,8 @@
         "title": "Replays"
       },
       "shop": {
-        "sub": "Sleeves & playmats",
-        "title": "Shop"
+        "sub": "Fundas y tapetes",
+        "title": "Tienda"
       },
       "sleeveShop": {
         "sub": "Buy sleeves with Coins",
@@ -5387,8 +5387,8 @@
         "title": "Boosters"
       },
       "cardList": {
-        "sub": "Browse the full catalog",
-        "title": "Card List"
+        "sub": "모든 카드 보기",
+        "title": "카드 목록"
       },
       "deck": {
         "sub": "Build and equip decks",
@@ -5408,8 +5408,8 @@
         "title": "Replays"
       },
       "shop": {
-        "sub": "Sleeves & playmats",
-        "title": "Shop"
+        "sub": "슬리브와 플레이매트",
+        "title": "상점"
       },
       "sleeveShop": {
         "sub": "Buy sleeves with Coins",
@@ -7180,8 +7180,8 @@
         "title": "Boosters"
       },
       "cardList": {
-        "sub": "Browse the full catalog",
-        "title": "Card List"
+        "sub": "浏览全部卡牌",
+        "title": "卡牌列表"
       },
       "deck": {
         "sub": "Build and equip decks",
@@ -7201,8 +7201,8 @@
         "title": "Replays"
       },
       "shop": {
-        "sub": "Sleeves & playmats",
-        "title": "Shop"
+        "sub": "卡套和垫布",
+        "title": "商店"
       },
       "sleeveShop": {
         "sub": "Buy sleeves with Coins",
@@ -8973,8 +8973,8 @@
         "title": "Boosters"
       },
       "cardList": {
-        "sub": "Browse the full catalog",
-        "title": "Card List"
+        "sub": "ดูการ์ดทั้งหมด",
+        "title": "รายการการ์ด"
       },
       "deck": {
         "sub": "Build and equip decks",
@@ -8994,8 +8994,8 @@
         "title": "Replays"
       },
       "shop": {
-        "sub": "Sleeves & playmats",
-        "title": "Shop"
+        "sub": "ซองการ์ดและเพลย์แมต",
+        "title": "ร้านค้า"
       },
       "sleeveShop": {
         "sub": "Buy sleeves with Coins",
@@ -10662,9 +10662,37 @@
   }
 };
 
+  function firstI18nString() {
+    for (var i = 0; i < arguments.length; i++) {
+      var v = arguments[i];
+      if (typeof v === 'string' && v.trim() !== '') return v;
+    }
+    return undefined;
+  }
+
+  function pickLocalizedText(isEn, current, enVal) {
+    var aliases = [];
+    var i;
+    for (i = 3; i < arguments.length; i++) aliases.push(arguments[i]);
+    if (typeof current === 'string' && current.trim() !== '' && current !== enVal) return current;
+    if (isEn && typeof current === 'string' && current.trim() !== '') return current;
+    return firstI18nString.apply(null, aliases.concat([current, enVal]));
+  }
+
+  function ensureHubButton(hub, name) {
+    if (typeof hub[name] === 'string') {
+      hub[name] = { title: hub[name] };
+    } else if (!hub[name] || typeof hub[name] !== 'object' || Array.isArray(hub[name])) {
+      hub[name] = {};
+    }
+    return hub[name];
+  }
+
   function mergeLocaleAliases(loc) {
     if (!loc) return;
-    loc.tagline = loc.logo && loc.logo.tagline;
+    var isEn = loc === STRINGS.en;
+    var enHub = (STRINGS.en && STRINGS.en.hub) || {};
+    loc.tagline = firstI18nString(loc.tagline, loc.logo && loc.logo.tagline);
     loc.lang = loc.lang || {};
     loc.lobby = loc.lobby || {};
     loc.lobby.cpuSleeve = loc.lobby.cpuSleeve || 'CPU sleeve';
@@ -10680,27 +10708,27 @@
     loc.lang.label = (loc.language && loc.language.label) || loc.lang.label;
     loc.auth = loc.auth || {};
     loc.auth.unranked = loc.auth.unranked || {};
-    loc.auth.unranked.title = loc.menu && loc.menu.unrankedPlay;
-    loc.auth.unranked.sub = loc.menu && loc.menu.unrankedSub;
+    loc.auth.unranked.title = pickLocalizedText(isEn, loc.auth.unranked.title, STRINGS.en.auth && STRINGS.en.auth.unranked && STRINGS.en.auth.unranked.title, loc.menu && loc.menu.unrankedPlay);
+    loc.auth.unranked.sub = pickLocalizedText(isEn, loc.auth.unranked.sub, STRINGS.en.auth && STRINGS.en.auth.unranked && STRINGS.en.auth.unranked.sub, loc.menu && loc.menu.unrankedSub);
     loc.auth.deckExperiment = loc.auth.deckExperiment || {};
-    loc.auth.deckExperiment.title = loc.menu && loc.menu.deckExperiment;
-    loc.auth.deckExperiment.sub = loc.menu && loc.menu.deckExperimentSub;
+    loc.auth.deckExperiment.title = pickLocalizedText(isEn, loc.auth.deckExperiment.title, STRINGS.en.auth && STRINGS.en.auth.deckExperiment && STRINGS.en.auth.deckExperiment.title, loc.menu && loc.menu.deckExperiment);
+    loc.auth.deckExperiment.sub = pickLocalizedText(isEn, loc.auth.deckExperiment.sub, STRINGS.en.auth && STRINGS.en.auth.deckExperiment && STRINGS.en.auth.deckExperiment.sub, loc.menu && loc.menu.deckExperimentSub);
     loc.auth.tutorial = loc.auth.tutorial || {};
-    loc.auth.tutorial.title = loc.menu && loc.menu.howToPlay;
-    loc.auth.tutorial.sub = loc.menu && loc.menu.howToPlaySub;
+    loc.auth.tutorial.title = pickLocalizedText(isEn, loc.auth.tutorial.title, STRINGS.en.auth && STRINGS.en.auth.tutorial && STRINGS.en.auth.tutorial.title, loc.menu && loc.menu.howToPlay);
+    loc.auth.tutorial.sub = pickLocalizedText(isEn, loc.auth.tutorial.sub, STRINGS.en.auth && STRINGS.en.auth.tutorial && STRINGS.en.auth.tutorial.sub, loc.menu && loc.menu.howToPlaySub);
     loc.hub = loc.hub || {};
-    loc.hub.booster = loc.hub.booster || {};
-    loc.hub.booster.title = loc.hub.openBoosters;
-    loc.hub.booster.sub = loc.hub.openBoostersSub;
-    loc.hub.sticker = loc.hub.sticker || {};
-    loc.hub.sticker.title = (loc.sticker && loc.sticker.title) || loc.hub.stickerShop || loc.hub.sticker.title || 'Sticker Exchange';
-    loc.hub.sticker.sub = loc.hub.stickerShopSub || 'Trade seals for cards from your packs';
+    var booster = ensureHubButton(loc.hub, 'booster');
+    booster.title = pickLocalizedText(isEn, booster.title, enHub.booster && enHub.booster.title, loc.hub.openBoosters);
+    booster.sub = pickLocalizedText(isEn, booster.sub, enHub.booster && enHub.booster.sub, loc.hub.openBoostersSub);
+    var sticker = ensureHubButton(loc.hub, 'sticker');
+    sticker.title = pickLocalizedText(isEn, sticker.title, enHub.sticker && enHub.sticker.title, loc.hub.stickerShop, loc.sticker && loc.sticker.title);
+    sticker.sub = pickLocalizedText(isEn, sticker.sub, enHub.sticker && enHub.sticker.sub, loc.hub.stickerShopSub);
     loc.hub.sleeveShop = loc.hub.sleeveShop || {};
     loc.hub.sleeveShop.title = loc.hub.sleeveShop.title || (loc.sleeveShop && loc.sleeveShop.title) || 'Sleeve Shop';
     loc.hub.sleeveShop.sub = loc.hub.sleeveShop.sub || 'Spend Coins on card sleeves';
     loc.hub.shop = loc.hub.shop || {};
-    loc.hub.shop.title = loc.hub.shop.title || 'Shop';
-    loc.hub.shop.sub = loc.hub.shop.sub || 'Sleeves and playmats';
+    loc.hub.shop.title = pickLocalizedText(isEn, loc.hub.shop.title, enHub.shop && enHub.shop.title, loc.shop && loc.shop.title);
+    loc.hub.shop.sub = pickLocalizedText(isEn, loc.hub.shop.sub, enHub.shop && enHub.shop.sub);
     loc.shop = loc.shop || {};
     loc.shop.title = loc.shop.title || loc.hub.shop.title || 'Shop';
     loc.shop.backHub = loc.shop.backHub || loc.hub.backHub || '← Hub';
@@ -10778,48 +10806,44 @@
     loc.sleeveShop.series.hasunosoraSchool = loc.sleeveShop.series.hasunosoraSchool || "Hasunosora Girls' High School";
 
     loc.hub.cardList = loc.hub.cardList || {};
-    loc.hub.cardList.title = loc.hub.cardList.title || (loc.cardList && loc.cardList.title) || 'Card List';
-    loc.hub.cardList.sub = loc.hub.cardList.sub || (loc.cardList && loc.cardList.hubSub) || 'Browse every card';
-    loc.hub.deck = loc.hub.deck || {};
-    loc.hub.deck.title = loc.hub.deckBuilder;
-    loc.hub.deck.sub = loc.hub.deckBuilderSub;
-    loc.hub.experiment = loc.hub.experiment || {};
-    loc.hub.experiment.title = loc.hub.experiment.title || (loc.menu && loc.menu.deckExperiment) || 'Deck Experiment';
-    loc.hub.experiment.sub = loc.hub.experiment.sub || (loc.menu && loc.menu.deckExperimentSub) || 'Any card — Free only';
-    loc.hub.ranked = loc.hub.ranked || {};
-    loc.hub.ranked.title = loc.hub.rankedPvp;
-    loc.hub.ranked.sub = loc.hub.rankedPvpSub;
-    var hubLbTitle = loc.hub.leaderboard;
-    var hubLbSub = loc.hub.leaderboardSub;
-    loc.hub.leaderboard = { title: hubLbTitle, sub: hubLbSub };
-    var hubUnrankedTitle = typeof loc.hub.unranked === 'string' ? loc.hub.unranked : (loc.hub.unranked && loc.hub.unranked.title);
-    loc.hub.unranked = {
-      title: hubUnrankedTitle || (loc.menu && loc.menu.unrankedPlay),
-      sub: loc.hub.unrankedSub || (loc.menu && loc.menu.unrankedSub),
-    };
-    loc.hub.tournament = {
-      title: loc.hub.tournamentMode || 'Tournament Mode',
-      sub: loc.hub.tournamentModeSub || 'Coming Soon',
-      subLive: loc.hub.tournamentModeSubLive || 'Events & brackets',
-    };
-    loc.auth.tournament = {
-      title: loc.hub.tournament.title,
-      sub: loc.hub.tournament.sub,
-      subLive: loc.hub.tournament.subLive,
-    };
+    loc.hub.cardList.title = pickLocalizedText(isEn, loc.hub.cardList.title, enHub.cardList && enHub.cardList.title, loc.cardList && loc.cardList.title);
+    loc.hub.cardList.sub = pickLocalizedText(isEn, loc.hub.cardList.sub, enHub.cardList && enHub.cardList.sub, loc.cardList && loc.cardList.hubSub);
+    var deckBtn = ensureHubButton(loc.hub, 'deck');
+    deckBtn.title = pickLocalizedText(isEn, deckBtn.title, enHub.deck && enHub.deck.title, loc.hub.deckBuilder);
+    deckBtn.sub = pickLocalizedText(isEn, deckBtn.sub, enHub.deck && enHub.deck.sub, loc.hub.deckBuilderSub);
+    var experiment = ensureHubButton(loc.hub, 'experiment');
+    experiment.title = pickLocalizedText(isEn, experiment.title, enHub.experiment && enHub.experiment.title, loc.menu && loc.menu.deckExperiment, loc.deck && loc.deck.experimentTitle);
+    experiment.sub = pickLocalizedText(isEn, experiment.sub, enHub.experiment && enHub.experiment.sub, loc.menu && loc.menu.deckExperimentSub);
+    var rankedBtn = ensureHubButton(loc.hub, 'ranked');
+    rankedBtn.title = pickLocalizedText(isEn, rankedBtn.title, enHub.ranked && enHub.ranked.title, loc.hub.rankedPvp);
+    rankedBtn.sub = pickLocalizedText(isEn, rankedBtn.sub, enHub.ranked && enHub.ranked.sub, loc.hub.rankedPvpSub);
+    var lb = ensureHubButton(loc.hub, 'leaderboard');
+    lb.title = pickLocalizedText(isEn, lb.title, enHub.leaderboard && enHub.leaderboard.title, loc.ranked && loc.ranked.leaderboard, loc.leaderboard && loc.leaderboard.title);
+    lb.sub = pickLocalizedText(isEn, lb.sub, enHub.leaderboard && enHub.leaderboard.sub, loc.hub.leaderboardSub);
+    var unrankedBtn = ensureHubButton(loc.hub, 'unranked');
+    unrankedBtn.title = pickLocalizedText(isEn, unrankedBtn.title, enHub.unranked && enHub.unranked.title, loc.menu && loc.menu.unrankedPlay);
+    unrankedBtn.sub = pickLocalizedText(isEn, unrankedBtn.sub, enHub.unranked && enHub.unranked.sub, loc.hub.unrankedSub, loc.menu && loc.menu.unrankedSub);
+    var tour = ensureHubButton(loc.hub, 'tournament');
+    tour.title = pickLocalizedText(isEn, tour.title, enHub.tournament && enHub.tournament.title, loc.hub.tournamentMode);
+    tour.sub = pickLocalizedText(isEn, tour.sub, enHub.tournament && enHub.tournament.sub, loc.hub.tournamentModeSub);
+    tour.subLive = pickLocalizedText(isEn, tour.subLive, enHub.tournament && enHub.tournament.subLive, loc.hub.tournamentModeSubLive);
+    loc.auth.tournament = loc.auth.tournament || {};
+    loc.auth.tournament.title = pickLocalizedText(isEn, loc.auth.tournament.title, STRINGS.en.auth && STRINGS.en.auth.tournament && STRINGS.en.auth.tournament.title, tour.title);
+    loc.auth.tournament.sub = pickLocalizedText(isEn, loc.auth.tournament.sub, STRINGS.en.auth && STRINGS.en.auth.tournament && STRINGS.en.auth.tournament.sub, tour.sub);
+    loc.auth.tournament.subLive = pickLocalizedText(isEn, loc.auth.tournament.subLive, STRINGS.en.auth && STRINGS.en.auth.tournament && STRINGS.en.auth.tournament.subLive, tour.subLive);
     loc.hub.tutorial = loc.hub.tutorial || {};
-    loc.hub.tutorial.title = loc.menu && loc.menu.howToPlay;
-    loc.hub.tutorial.sub = loc.menu && loc.menu.howToPlaySub;
+    loc.hub.tutorial.title = pickLocalizedText(isEn, loc.hub.tutorial.title, enHub.tutorial && enHub.tutorial.title, loc.menu && loc.menu.howToPlay);
+    loc.hub.tutorial.sub = pickLocalizedText(isEn, loc.hub.tutorial.sub, enHub.tutorial && enHub.tutorial.sub, loc.menu && loc.menu.howToPlaySub);
     if (!loc.hub.tutorial.officialVideo) {
       loc.hub.tutorial.officialVideo = (loc.hub && loc.hub.officialVideo)
         || 'Official 8-min video ↗';
     }
     loc.auth.replay = loc.auth.replay || {};
-    loc.auth.replay.title = loc.replay && loc.replay.menuTitle;
-    loc.auth.replay.sub = loc.replay && loc.replay.menuSubAuth;
+    loc.auth.replay.title = pickLocalizedText(isEn, loc.auth.replay.title, STRINGS.en.auth && STRINGS.en.auth.replay && STRINGS.en.auth.replay.title, loc.replay && loc.replay.menuTitle);
+    loc.auth.replay.sub = pickLocalizedText(isEn, loc.auth.replay.sub, STRINGS.en.auth && STRINGS.en.auth.replay && STRINGS.en.auth.replay.sub, loc.replay && loc.replay.menuSubAuth);
     loc.hub.replay = loc.hub.replay || {};
-    loc.hub.replay.title = loc.replay && loc.replay.menuTitle;
-    loc.hub.replay.sub = loc.replay && loc.replay.menuSubHub;
+    loc.hub.replay.title = pickLocalizedText(isEn, loc.hub.replay.title, enHub.replay && enHub.replay.title, loc.replay && loc.replay.menuTitle);
+    loc.hub.replay.sub = pickLocalizedText(isEn, loc.hub.replay.sub, enHub.replay && enHub.replay.sub, loc.replay && loc.replay.menuSubHub);
     loc.options = loc.options || {};
     loc.options.back = loc.options.backHub;
     loc.options.foil = loc.options.enhancedTextures;
