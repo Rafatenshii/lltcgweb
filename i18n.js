@@ -33,6 +33,7 @@
       "guestPrompt": "Sign in with Discord to save your collection and play ranked.",
       "guestPlayHint": "Play unranked without an account, or sign in for ranked.",
       "sessionExpired": "Session expired — sign in again, or play unranked without an account.",
+      "accountBanned": "This Discord account is banned from Loveca.",
       "loadError": "Could not load account — you can still play unranked.",
       "guestTimeout": "Sign-in check timed out — play unranked, or retry Discord sign-in."
     },
@@ -10968,16 +10969,17 @@
       lockBio: 'Lock bio',
       dismiss: 'Dismiss',
       empty: 'No open reports.',
-      warns: 'Warnings',
-      clearBio: 'Clear bio',
-      lockBio: 'Lock bio',
-      dismiss: 'Dismiss',
-      empty: 'No open reports.',
-      warns: 'Warnings',
-      clearBio: 'Clear bio',
-      lockBio: 'Lock bio',
-      dismiss: 'Dismiss',
-      empty: 'No open reports.'
+      ban: 'Ban account',
+      banConfirm: 'Ban this Discord account? Records are wiped, opponents lose W–L from games against them, and they cannot sign in. A snapshot is kept so you can unban.',
+      banlist: 'Banlist',
+      unban: 'Unban & restore',
+      unbanConfirm: 'Unban this account and restore its snapshot?',
+      emptyBans: 'No banned accounts.',
+      warnNoticeTitle: 'Account warning',
+      warnNoticeAlt: 'You were warned for leaderboard alt abuse.',
+      warnNoticeBio: 'You were warned for your profile or deck bio.',
+      warnNoticeOk: 'OK',
+      bannedSignIn: 'This Discord account is banned from Loveca.'
     }
   };
   var I18N_SOCIAL_LOCALES = {

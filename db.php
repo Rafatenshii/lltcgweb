@@ -382,6 +382,30 @@ function tcgDbMigrate(PDO $db): void {
         }
     });
 
+    tcgDbRunMigrationOnce($db, 'account_bans_20260824', function (PDO $db): void {
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_account_bans (
+            discord_id TEXT PRIMARY KEY,
+            username TEXT NOT NULL DEFAULT \'\',
+            reason TEXT NOT NULL DEFAULT \'\',
+            snapshot_json TEXT NOT NULL,
+            adjustments_json TEXT NOT NULL DEFAULT \'[]\',
+            banned_by TEXT NOT NULL,
+            banned_at INTEGER NOT NULL,
+            restored_at INTEGER,
+            restored_by TEXT
+        )');
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_user_notices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            discord_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            reason TEXT NOT NULL DEFAULT \'\',
+            created_at INTEGER NOT NULL,
+            acked_at INTEGER
+        )');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_user_notices_pending
+            ON tcg_user_notices(discord_id, acked_at)');
+    });
+
     $done = true;
 }
 
@@ -850,7 +874,31 @@ function tcgDiscordAvatarUrl(string $userId, ?string $avatarHash = null): string
     return 'https://cdn.discordapp.com/embed/avatars/' . $idx . '.png';
 }
 
+function tcgAssertNotBanned(string $discordId): void {
+    $discordId = trim($discordId);
+    if ($discordId === '') {
+        return;
+    }
+    try {
+        $st = tcgDb()->prepare(
+            'SELECT 1 FROM tcg_account_bans WHERE discord_id = ? AND restored_at IS NULL LIMIT 1'
+        );
+        $st->execute([$discordId]);
+        if ($st->fetchColumn()) {
+            throw new Exception('This Discord account is banned from Loveca.', 403);
+        }
+    } catch (Exception $e) {
+        if (intval($e->getCode()) === 403) {
+            throw $e;
+        }
+        // Missing table before migration.
+    }
+}
+
 function tcgEnsureUser(string $discordId, array $profile = []): array {
+    if (function_exists('tcgAssertNotBanned')) {
+        tcgAssertNotBanned($discordId);
+    }
     $db = tcgDb();
     $now = time();
     $stmt = $db->prepare('SELECT * FROM tcg_users WHERE discord_id = ?');

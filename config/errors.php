@@ -107,6 +107,9 @@ function tcgPublicErrorMessage(Throwable $e, int $httpCode): string {
  */
 function tcgPublicErrorPayload(Throwable $e, int $httpCode): array {
     $payload = ['error' => tcgPublicErrorMessage($e, $httpCode)];
+    if ($httpCode === 403 && str_contains(strtolower($e->getMessage()), 'banned')) {
+        $payload['code'] = 'account_banned';
+    }
     if ($httpCode === 503 && tcgIsRetryableBusyFault($e)) {
         $payload['retryable'] = true;
         $payload['code'] = preg_match('/^(Cannot acquire lock|Lock timeout)/', $e->getMessage())

@@ -3,6 +3,7 @@
  * Profile, friends, featured deck, and owner moderation (Hostinger account API).
  */
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/account_ban.php';
 require_once __DIR__ . '/chat_moderation.php';
 // Cards / collection / equipped-deck helpers are already loaded by account.php
 // (play_stats.php, cards_data.php, deck_validate.php, booster.php). Do not
@@ -74,6 +75,7 @@ function tcgSocialEnsureSchema(): void {
         note TEXT NOT NULL DEFAULT \'\',
         created_at INTEGER NOT NULL
     )');
+    tcgBanEnsureSchema();
 }
 
 function tcgSocialRandomFriendCode(): string {
@@ -1335,30 +1337,67 @@ function tcgApiSocialModAction(array $body): array {
     }
     $target = trim((string)($body['user_id'] ?? ''));
     $action = (string)($body['mod_action'] ?? '');
-    if ($target === '' || !in_array($action, ['clear_bio', 'warn', 'lock_bio', 'unlock_bio', 'dismiss'], true)) {
+    if ($target === '' || !in_array($action, ['clear_bio', 'warn', 'lock_bio', 'unlock_bio', 'dismiss', 'ban'], true)) {
         throw new Exception('Invalid action', 400);
     }
     tcgSocialEnsureSchema();
     $db = tcgDb();
     $now = time();
+    $rid = intval($body['report_id'] ?? 0);
+    $reportField = trim((string)($body['reason'] ?? $body['note'] ?? ''));
+    if ($rid > 0 && $reportField === '') {
+        $rf = $db->prepare('SELECT field FROM tcg_profile_reports WHERE id = ?');
+        $rf->execute([$rid]);
+        $reportField = (string)($rf->fetchColumn() ?: '');
+    }
     if ($action === 'clear_bio') {
         $db->prepare('UPDATE tcg_users SET bio = ?, updated_at = ? WHERE discord_id = ?')->execute(['', $now, $target]);
     } elseif ($action === 'warn') {
         $db->prepare('UPDATE tcg_users SET profile_warnings = COALESCE(profile_warnings,0)+1, updated_at = ? WHERE discord_id = ?')
             ->execute([$now, $target]);
+        $warnReason = $reportField !== '' ? $reportField : 'profile_bio';
+        tcgBanInsertNotice($target, 'warn', $warnReason);
     } elseif ($action === 'lock_bio') {
         $db->prepare('UPDATE tcg_users SET bio_locked = 1, updated_at = ? WHERE discord_id = ?')->execute([$now, $target]);
     } elseif ($action === 'unlock_bio') {
         $db->prepare('UPDATE tcg_users SET bio_locked = 0, updated_at = ? WHERE discord_id = ?')->execute([$now, $target]);
+    } elseif ($action === 'ban') {
+        tcgBanAccount($target, $uid, $reportField !== '' ? $reportField : 'moderation');
     }
-    $rid = intval($body['report_id'] ?? 0);
     if ($rid > 0) {
         $db->prepare('UPDATE tcg_profile_reports SET status = ? WHERE id = ?')->execute(['closed', $rid]);
-    } elseif ($action === 'dismiss') {
+    } elseif (in_array($action, ['dismiss', 'ban'], true)) {
         $db->prepare('UPDATE tcg_profile_reports SET status = ? WHERE target_id = ? AND status = ?')
             ->execute(['closed', $target, 'open']);
     }
     $db->prepare('INSERT INTO tcg_profile_mod_actions (target_id, actor_id, action, note, created_at) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$target, $uid, $action, (string)($body['note'] ?? ''), $now]);
+        ->execute([$target, $uid, $action, $reportField, $now]);
+    return ['success' => true];
+}
+
+function tcgApiSocialBanList(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    if (!tcgSocialIsOwner($uid)) {
+        throw new Exception('Forbidden', 403);
+    }
+    tcgSocialEnsureSchema();
+    return ['success' => true, 'bans' => tcgBanListActive()];
+}
+
+function tcgApiSocialBanUnban(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    if (!tcgSocialIsOwner($uid)) {
+        throw new Exception('Forbidden', 403);
+    }
+    $target = trim((string)($body['user_id'] ?? ''));
+    if ($target === '') {
+        throw new Exception('Invalid action', 400);
+    }
+    return tcgUnbanAccount($target, $uid);
+}
+
+function tcgApiSocialNoticeAck(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgBanAckNotice($uid, intval($body['notice_id'] ?? 0));
     return ['success' => true];
 }

@@ -160,6 +160,9 @@ try {
         case 'social_report':         echo json_encode(tcgApiSocialReport($body)); break;
         case 'social_mod_inbox':      echo json_encode(tcgApiSocialModInbox($body)); break;
         case 'social_mod_action':     echo json_encode(tcgApiSocialModAction($body)); break;
+        case 'social_ban_list':       echo json_encode(tcgApiSocialBanList($body)); break;
+        case 'social_ban_unban':      echo json_encode(tcgApiSocialBanUnban($body)); break;
+        case 'social_notice_ack':     echo json_encode(tcgApiSocialNoticeAck($body)); break;
         case 'push_register':         echo json_encode(tcgApiPushRegister($body)); break;
         case 'push_unregister':       echo json_encode(tcgApiPushUnregister($body)); break;
         case 'match_invite':          echo json_encode(tcgApiMatchInvite($body)); break;
@@ -261,6 +264,7 @@ function tcgApiMe(array $body): array {
         'starter_options' => tcgStarterDecks(),
         'missions' => tcgMissionSummaryForUser($uid),
         'tournament_enabled' => tcgUserMayUseTournaments($uid),
+        'notices' => function_exists('tcgBanPendingNotices') ? tcgBanPendingNotices($uid) : [],
     ];
 }
 

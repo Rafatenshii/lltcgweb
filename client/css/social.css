@@ -598,7 +598,7 @@ button.social-bar-art { cursor: pointer; }
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
   gap: 6px;
 }
-.social-err { color: #ffb4b4; min-height: 1.2em; }
+.social-banlist-title { margin: 16px 0 8px; font-size: 16px; }
 .social-char-count { font-size: 12px; opacity: 0.8; text-align: right; }
 .rank-name.social-name-link {
   cursor: pointer;

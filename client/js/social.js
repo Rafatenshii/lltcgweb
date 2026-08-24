@@ -309,6 +309,7 @@
     });
     const modBtn = document.getElementById('btn-social-mod');
     if (modBtn) modBtn.hidden = !isMod();
+    if (logged) showPendingNotices();
   }
 
   function openOverlay(id) {
@@ -930,23 +931,30 @@
     if (!isMod()) return;
     openOverlay('overlay-profile-mod');
     const root = document.getElementById('profile-mod-body');
+    const bansRoot = document.getElementById('profile-mod-bans');
     try {
       const data = await accountPost('social_mod_inbox', {});
       root.innerHTML = (data.reports || []).map((r) => `
         <div class="social-row" style="flex-wrap:wrap">
           <div><strong>${esc(r.username || r.target_id)}</strong> · ${esc(reportReasonLabel(r.field))} · ${tt('profileMod.warns', 'Warnings')}: ${r.profile_warnings || 0}</div>
           <p>${esc(r.snippet || r.bio || '')}</p>
-          <button type="button" class="btn-ghost" data-act="clear_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.clearBio', 'Clear bio')}</button>
-          <button type="button" class="btn-ghost" data-act="warn" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.warn', 'Warn')}</button>
-          <button type="button" class="btn-ghost" data-act="lock_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.lockBio', 'Lock bio')}</button>
-          <button type="button" class="btn-ghost" data-act="dismiss" data-id="${esc(r.target_id)}" data-rid="${r.id}">${tt('profileMod.dismiss', 'Dismiss')}</button>
+          <button type="button" class="btn-ghost" data-act="clear_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}" data-reason="${esc(r.field || '')}">${tt('profileMod.clearBio', 'Clear bio')}</button>
+          <button type="button" class="btn-ghost" data-act="warn" data-id="${esc(r.target_id)}" data-rid="${r.id}" data-reason="${esc(r.field || '')}">${tt('profileMod.warn', 'Warn')}</button>
+          <button type="button" class="btn-ghost" data-act="lock_bio" data-id="${esc(r.target_id)}" data-rid="${r.id}" data-reason="${esc(r.field || '')}">${tt('profileMod.lockBio', 'Lock bio')}</button>
+          <button type="button" class="btn-ghost" data-act="ban" data-id="${esc(r.target_id)}" data-rid="${r.id}" data-reason="${esc(r.field || '')}">${tt('profileMod.ban', 'Ban account')}</button>
+          <button type="button" class="btn-ghost" data-act="dismiss" data-id="${esc(r.target_id)}" data-rid="${r.id}" data-reason="${esc(r.field || '')}">${tt('profileMod.dismiss', 'Dismiss')}</button>
         </div>`).join('') || `<p>${tt('profileMod.empty', 'No open reports.')}</p>`;
       root.querySelectorAll('[data-act]').forEach((b) => {
         b.addEventListener('click', async () => {
+          const act = b.getAttribute('data-act');
+          if (act === 'ban' && !window.confirm(tt('profileMod.banConfirm', 'Ban this Discord account? Records are wiped and they cannot sign in. A snapshot is kept for unban.'))) {
+            return;
+          }
           await accountPost('social_mod_action', {
             user_id: b.getAttribute('data-id'),
             report_id: parseInt(b.getAttribute('data-rid') || '0', 10),
-            mod_action: b.getAttribute('data-act'),
+            mod_action: act,
+            reason: b.getAttribute('data-reason') || '',
           });
           openMod();
         });
@@ -954,6 +962,67 @@
     } catch (e) {
       root.textContent = e.message;
     }
+    if (bansRoot) {
+      try {
+        const bans = await accountPost('social_ban_list', {});
+        bansRoot.innerHTML = (bans.bans || []).map((row) => `
+          <div class="social-row" style="flex-wrap:wrap">
+            <div><strong>${esc(row.username || row.discord_id)}</strong> · ${esc(row.discord_id)} · ${esc(reportReasonLabel(row.reason))}</div>
+            <button type="button" class="btn-ghost" data-unban="${esc(row.discord_id)}">${tt('profileMod.unban', 'Unban & restore')}</button>
+          </div>`).join('') || `<p>${tt('profileMod.emptyBans', 'No banned accounts.')}</p>`;
+        bansRoot.querySelectorAll('[data-unban]').forEach((b) => {
+          b.addEventListener('click', async () => {
+            if (!window.confirm(tt('profileMod.unbanConfirm', 'Unban this account and restore its snapshot?'))) return;
+            await accountPost('social_ban_unban', { user_id: b.getAttribute('data-unban') });
+            openMod();
+          });
+        });
+      } catch (e) {
+        bansRoot.textContent = e.message;
+      }
+    }
+  }
+
+  let _pendingNotice = null;
+
+  async function showPendingNotices() {
+    const notices = (global.A && global.A.profile && global.A.profile.notices) || [];
+    const pending = notices.filter((n) => n && n.kind === 'warn');
+    if (!pending.length) return;
+    const n = pending[0];
+    _pendingNotice = n;
+    const overlay = document.getElementById('overlay-social-notice');
+    const body = document.getElementById('social-notice-body');
+    const reason = String(n.reason || '');
+    const msg = (reason === 'alt_abuse' || reason === 'leaderboard_alt')
+      ? tt('profileMod.warnNoticeAlt', 'You were warned for leaderboard alt abuse.')
+      : tt('profileMod.warnNoticeBio', 'You were warned for your profile or deck bio.');
+    if (body) body.textContent = msg;
+    if (overlay) {
+      overlay.hidden = false;
+      openOverlay('overlay-social-notice');
+    }
+  }
+
+  async function ackPendingNotice() {
+    const n = _pendingNotice;
+    if (!n) {
+      closeOverlay('overlay-social-notice');
+      const el = document.getElementById('overlay-social-notice');
+      if (el) el.hidden = true;
+      return;
+    }
+    try {
+      await accountPost('social_notice_ack', { notice_id: n.id });
+    } catch (e) { /* ignore */ }
+    if (global.A && global.A.profile && Array.isArray(global.A.profile.notices)) {
+      global.A.profile.notices = global.A.profile.notices.filter((x) => Number(x.id) !== Number(n.id));
+    }
+    _pendingNotice = null;
+    closeOverlay('overlay-social-notice');
+    const el = document.getElementById('overlay-social-notice');
+    if (el) el.hidden = true;
+    showPendingNotices();
   }
 
   function bind() {
@@ -977,6 +1046,7 @@
     document.getElementById('btn-profile-stats-close')?.addEventListener('click', () => closeOverlay('overlay-profile-stats'));
     document.getElementById('btn-friends-close')?.addEventListener('click', () => closeOverlay('overlay-friends'));
     document.getElementById('btn-profile-mod-close')?.addEventListener('click', () => closeOverlay('overlay-profile-mod'));
+    document.getElementById('btn-social-notice-ok')?.addEventListener('click', () => ackPendingNotice());
   }
 
   global.syncSocialRail = syncSocialRail;

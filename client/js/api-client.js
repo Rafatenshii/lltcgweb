@@ -435,6 +435,7 @@
     if (!d.success && d.error) {
       const err = new Error(d.error);
       err.httpStatus = r.status || 400;
+      if (d.code) err.code = d.code;
       throw tagAccountError(err, urls);
     }
     if (!r.ok) {
