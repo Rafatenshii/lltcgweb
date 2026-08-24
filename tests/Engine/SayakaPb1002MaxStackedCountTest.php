@@ -42,6 +42,9 @@ final class SayakaPb1002MaxStackedCountTest extends TestCase
     public function testFourStacksStillCapLiveStartAtThree(): void
     {
         $sayaka = $this->cardByNo('PL!HS-pb1-002-R', 'sayaka');
+        $this->assertSame(0, intval($sayaka['blade'] ?? 0));
+        $this->assertSame([['color' => 'blue', 'count' => 1]], $sayaka['hearts'] ?? null);
+        $this->assertSame([], $sayaka['blade_hearts'] ?? []);
         $ab = $sayaka['abilities'][1] ?? [];
         $this->assertSame('live_start_cost_hearts_per_stacked', $ab['type'] ?? null);
         $this->assertSame(3, intval($ab['max_stacked'] ?? 0));
@@ -80,11 +83,13 @@ final class SayakaPb1002MaxStackedCountTest extends TestCase
             $this->assertCount(4, $m['stacked_members'] ?? []);
             $this->assertSame(12, intval($m['live_cost_bonus'] ?? 0));
             $this->assertSame(14, \getEffectiveStageMemberCost($state, 'p1', $m));
+            $this->assertSame(0, intval($m['live_blade_bonus'] ?? 0));
             $blues = array_values(array_filter(
-                $state['live_modifiers']['p1']['bonus_hearts'] ?? [],
+                $m['bonus_hearts'] ?? [],
                 static fn($c) => $c === 'blue'
             ));
             $this->assertCount(3, $blues);
+            $this->assertCount(4, \memberPerformanceHeartsFlat($m));
         } finally {
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }

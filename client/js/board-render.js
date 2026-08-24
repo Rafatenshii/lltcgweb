@@ -1254,10 +1254,10 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
     if (mbr) {
       const stageOwnerPid = isMe ? myId : oppPid;
       const bladeBonus = memberModifierBladeBonus(mbr, s, stageOwnerPid, slot);
-      if (mbr.blade != null || bladeBonus) {
-        const printedBlade = mbr.printed_blade_override != null
-          ? Number(mbr.printed_blade_override)
-          : Number(mbr.blade || 0);
+      const printedBlade = mbr.printed_blade_override != null
+        ? Number(mbr.printed_blade_override)
+        : Number(mbr.blade || 0);
+      if (printedBlade || bladeBonus) {
         const badge = mkFieldBadge('blade', 'icon_blade.png', printedBlade, 'Blade');
         if (bladeBonus) {
           const bonusEl = document.createElement('span');

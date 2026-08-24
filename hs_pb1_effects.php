@@ -97,7 +97,7 @@ function hsPb1ApplyContinuousBlade(array $member, array $state, string $pid, str
     foreach ($member['abilities'] ?? [] as $ab) {
         if (($ab['trigger'] ?? '') !== 'continuous') continue;
         $type = $ab['type'] ?? '';
-        if ($type === 'cost_blade_per_stacked_max') {
+        if ($type === 'cost_blade_per_stacked_max' && empty($ab['heart_color'])) {
             $stacked = min(
                 count($member['stacked_members'] ?? []),
                 intval($ab['max_stacked'] ?? 3)
@@ -466,13 +466,16 @@ function hsResolveHasunosoraPb1Effect(array $state, string $pid, array $source, 
             }
             $costPlus = $stacked * intval($ab['cost_plus_per'] ?? 4);
             $slot = $ctx['slot'] ?? findMemberSlot($p, $source['instance_id'] ?? '');
+            $heartColor = $ab['heart_color'] ?? 'blue';
+            $heartN = $stacked * intval($ab['heart_per'] ?? 1);
             if ($slot !== null && $slot !== '' && !empty($p['stage'][$slot])) {
                 $p['stage'][$slot]['live_cost_bonus'] =
                     intval($p['stage'][$slot]['live_cost_bonus'] ?? 0) + $costPlus;
-            }
-            $heartColor = $ab['heart_color'] ?? 'blue';
-            $heartN = $stacked * intval($ab['heart_per'] ?? 1);
-            if ($heartN > 0) {
+                // Member-scoped hearts (not Blade): show on this Member and count for Live.
+                if ($heartN > 0) {
+                    addBonusHeartsToMember($p['stage'][$slot], [['color' => $heartColor, 'count' => $heartN]]);
+                }
+            } elseif ($heartN > 0) {
                 addBonusHeartsToModifier($state, $pid, [['color' => $heartColor, 'count' => $heartN]]);
             }
             $state = addLog($state, $state['players'][$pid]['name'] .
