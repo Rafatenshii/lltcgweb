@@ -2823,7 +2823,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=158"></script>
+<script src="i18n.js?v=159"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=30"></script>
@@ -25716,11 +25716,15 @@ function stripEnRuleKwPrefixes(text) {
     .trim();
 }
 
-/** Parenthetical ALL-blade reminder is global rules text, not a card skill. */
+/** Parenthetical printed reminders (ALL-blade / Yell Score) are global rules, not card skills. */
 function stripAllBladeHeartsRulesReminder(text) {
   let s = String(text || '');
   s = s.replace(
     /[ \t]*[（(][^）\n)]{0,220}?(?:ALL\s*ブレード|ALL\s*blades?|When checking Required Hearts[\s\S]{0,90}?any color|필요\s*하트[\s\S]{0,90}?아무\s*색|检查所需[\s\S]{0,90}?(?:任何颜色|任意颜色)|หัวใจที่ต้องการ[\s\S]{0,90}?สีใดก็ได้)[^）\n)]{0,90}?[）)][ \t]*/giu,
+    ''
+  );
+  s = s.replace(
+    /[ \t]*[（(][^）\n)]{0,220}?(?:エールで出たスコア|成功したライブのスコアの合計|For each Score[\s\S]{0,80}?Yell|Score revealed for Yell)[^）\n)]{0,120}?[）)][ \t]*/giu,
     ''
   );
   s = s.replace(

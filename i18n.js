@@ -12634,7 +12634,12 @@
     if (loc === 'ko') return card.text_ko || card.text || '';
     if (loc === 'zh') return card.text_zh || card.text || '';
     if (loc === 'th') return card.text_th || card.text || '';
-    return card.text || card.text_jp || '';
+    var en = card.text || '';
+    if (en) return en;
+    var jp = card.text_jp || '';
+    // Parenthetical JP-only reminders (Yell Score / ALL-blade) are not English skills.
+    if (!/[\[【]/.test(jp) && /^[（(]/.test(jp.trim())) return '';
+    return jp;
   }
 
   var KO_CARD_TYPE_MAP = {
