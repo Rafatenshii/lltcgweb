@@ -84,7 +84,7 @@
       "tournamentModeSubLive": "Events & brackets",
       "loginBonus": "Login",
       "apk": {
-        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
         "title": "Play on Android? Get the APK launcher!"
       },
       "booster": {
@@ -1835,7 +1835,7 @@
       "loginBonus": "ログイン",
       "apk": {
         "title": "Androidで遊ぶ？APKランチャーを入手！",
-        "sub": "Loveca v1.1をダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
+        "sub": "Loveca v1.2をダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
       },
       "tournamentModeSubLive": "イベント＆ブラケット",
       "booster": {
@@ -3609,7 +3609,7 @@
       "tournamentModeSubLive": "Eventos y brackets",
       "loginBonus": "Bonus",
       "apk": {
-        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
         "title": "Play on Android? Get the APK launcher!"
       },
       "booster": {
@@ -5378,7 +5378,7 @@
       "tournamentModeSubLive": "이벤트 & 브래킷",
       "loginBonus": "로그인",
       "apk": {
-        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
         "title": "Play on Android? Get the APK launcher!"
       },
       "booster": {
@@ -7171,7 +7171,7 @@
       "tournamentModeSubLive": "赛事与对阵表",
       "loginBonus": "登录",
       "apk": {
-        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
         "title": "Play on Android? Get the APK launcher!"
       },
       "booster": {
@@ -8964,7 +8964,7 @@
       "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต",
       "loginBonus": "โบนัส",
       "apk": {
-        "sub": "Download Loveca v1.1, allow unknown apps, then open the APK.",
+        "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
         "title": "Play on Android? Get the APK launcher!"
       },
       "booster": {

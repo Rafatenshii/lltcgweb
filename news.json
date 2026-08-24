@@ -2,6 +2,28 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-android-apk-12",
+      "date": "2026-08-23",
+      "banner": "downloads/loveca-icon-192.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Loveca for Android v1.2 is here!",
+        "ja": "Android版Loveca v1.2が登場！",
+        "es": "¡Loveca para Android v1.2 ya está aquí!",
+        "ko": "안드로이드용 Loveca v1.2 출시!",
+        "zh": "Loveca Android v1.2 上线！",
+        "th": "Loveca สำหรับ Android v1.2 มาแล้ว!"
+      },
+      "body": {
+        "en": "**Loveca v1.2** is the current unofficial Android app — a portrait launcher that loads the live site so you get the same hub, decks, and matches as on desktop.\n\n**What's new**\n- **Friend notifications** — when a friend queues ranked/unranked or invites you to a room, the Android app can ping you even if Loveca is in the background. Allow notifications when Android asks.\n\n**Download**\n- [Download Loveca.apk](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- Or open the [GitHub Releases page](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2)\n\n**Install tips**\n- Allow installs from your browser or file manager if Android asks.\n- After install, open **Loveca** and sign in with Discord as usual. Install over v1.1 (same package / signing key) — you do not need to uninstall first.\n- Web updates still ship automatically — you only need a new APK when the app shell itself changes.\n\nOn Android browsers you can also find the download from the hub menu.",
+        "ja": "**Loveca v1.2**が現在の非公式Androidアプリです。ポートレート表示のランチャーで、PCと同じハブ・デッキ・対戦をそのまま遊べます。\n\n**新機能**\n- **フレンド通知** — 友だちがランク／アンランクに入ったときやルームに招いたとき、Lovecaがバックグラウンドでも通知できます。Androidの確認では通知を許可してください。\n\n**ダウンロード**\n- [Loveca.apkをダウンロード](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- または[GitHub Releasesページ](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2)を開く\n\n**インストールのヒント**\n- Androidから確認が出たら、ブラウザ／ファイルアプリからのインストールを許可してください。\n- インストール後は **Loveca** を開き、いつもどおりDiscordでサインインします。v1.1の上に上書きできます（同じパッケージ／署名キー）。アンインストールは不要です。\n- Web側の更新は自動で届きます。APKの入れ直しが必要なのはアプリ本体の変更時だけです。\n\nAndroidブラウザではハブメニューからもダウンロードできます。",
+        "es": "**Loveca v1.2** es la app no oficial actual para Android: un lanzador en vertical que carga el sitio en vivo, con el mismo hub, mazos y partidas que en PC.\n\n**Novedades**\n- **Notificaciones de amigos** — si un amigo entra en ranked/unranked o te invita a una sala, la app puede avisarte aunque Loveca esté en segundo plano. Permite notificaciones cuando Android lo pida.\n\n**Descarga**\n- [Descargar Loveca.apk](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- O abre la [página de Releases en GitHub](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2)\n\n**Consejos de instalación**\n- Permite instalar desde el navegador o el gestor de archivos si Android lo pide.\n- Tras instalar, abre **Loveca** e inicia sesión con Discord. Instálala encima de v1.1 (mismo paquete / clave de firma); no hace falta desinstalar.\n- Las actualizaciones web llegan solas; solo necesitas un APK nuevo cuando cambie el shell.\n\nEn navegadores Android también puedes descargarla desde el menú del hub.",
+        "ko": "**Loveca v1.2**이 현재 비공식 안드로이드 앱입니다. 세로 화면 런처로 라이브 사이트를 불러와 PC와 같은 허브·덱·매치를 즐길 수 있습니다.\n\n**새 기능**\n- **친구 알림** — 친구가 랭크/언랭크 큐에 들어가거나 방으로 초대하면, Loveca가 백그라운드여도 알림을 받을 수 있습니다. Android가 물으면 알림을 허용하세요.\n\n**다운로드**\n- [Loveca.apk 다운로드](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- 또는 [GitHub Releases 페이지](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2) 열기\n\n**설치 팁**\n- Android가 요청하면 브라우저/파일 관리자에서 설치를 허용하세요.\n- 설치 후 **Loveca**를 열고 평소처럼 Discord로 로그인하세요. v1.1 위에 덮어쓰기 설치하면 됩니다(같은 패키지/서명 키).\n- 웹 업데이트는 자동입니다. APK는 앱 셸이 바뀔 때만 다시 받으면 됩니다.\n\n안드로이드 브라우저에서는 허브 메뉴에서도 다운로드할 수 있습니다.",
+        "zh": "**Loveca v1.2** 是当前的非官方 Android 应用——竖屏启动器会加载线上站点，主页、牌组与对局体验与电脑端相同。\n\n**新内容**\n- **好友通知** — 好友进入排名/非排名队列或邀请你进房间时，即使 Loveca 在后台也可以收到通知。请在 Android 询问时允许通知。\n\n**下载**\n- [下载 Loveca.apk](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- 或打开 [GitHub Releases 页面](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2)\n\n**安装提示**\n- 若 Android 提示，请允许来自浏览器或文件管理器的安装。\n- 安装后打开 **Loveca**，照常使用 Discord 登录。可直接覆盖安装 v1.1（相同包名／签名密钥），无需先卸载。\n- 网站更新会自动生效；只有应用外壳变更时才需要新的 APK。\n\n在 Android 浏览器中也可从主页菜单下载。",
+        "th": "**Loveca v1.2** คือแอป Android แบบไม่เป็นทางการรุ่นปัจจุบัน — ตัวเปิดแนวตั้งที่โหลดเว็บไซต์จริง จึงใช้ฮับ เด็ค และแมตช์แบบเดียวกับบนคอมพิวเตอร์ได้\n\n**มีอะไรใหม่**\n- **การแจ้งเตือนเพื่อน** — เมื่อเพื่อนเข้าคิวแรงก์/อันแรงก์ หรือชวนเข้าห้อง แอปสามารถแจ้งได้แม้ Loveca อยู่เบื้องหลัง อนุญาตการแจ้งเตือนเมื่อ Android ถาม\n\n**ดาวน์โหลด**\n- [ดาวน์โหลด Loveca.apk](https://github.com/Yumegipsu/lltcgweb/releases/download/android-v1.2/Loveca.apk)\n- หรือเปิด [หน้า GitHub Releases](https://github.com/Yumegipsu/lltcgweb/releases/tag/android-v1.2)\n\n**เคล็ดลับติดตั้ง**\n- หาก Android ถาม ให้อนุญาตติดตั้งจากเบราว์เซอร์หรือตัวจัดการไฟล์\n- หลังติดตั้ง เปิด **Loveca** แล้วล็อกอินด้วย Discord ตามปกติ ติดตั้งทับ v1.1 ได้ (แพ็กเกจ/คีย์ลงชื่อเดียวกัน) ไม่ต้องถอนก่อน\n- อัปเดตฝั่งเว็บมาอัตโนมัติ — ต้องโหลด APK ใหม่เฉพาะเมื่อตัวแอปเองเปลี่ยน\n\nบนเบราว์เซอร์ Android ดาวน์โหลดจากเมนูฮับได้ด้วย"
+      }
+    },
+    {
       "id": "2026-08-tournament-mode",
       "date": "2026-08-21",
       "banner": "tcglogo.png",
