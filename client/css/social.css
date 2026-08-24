@@ -77,6 +77,10 @@
 #social-rail.social-rail--pack {
   right: max(10px, calc((100vw - min(1100px, 98vw)) / 2 - 76px));
 }
+/* Card list shell is 1120px — sit just outside that column. */
+#social-rail.social-rail--card-list {
+  right: max(10px, calc((100vw - min(1120px, 98vw)) / 2 - 76px));
+}
 .social-rail-btn {
   pointer-events: auto;
   width: 56px;
