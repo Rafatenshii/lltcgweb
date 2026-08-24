@@ -2420,6 +2420,15 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
+<!-- Public skill reveal (opponent must see revealed cards) -->
+<div class="overlay" id="overlay-skill-reveal" aria-hidden="true">
+  <div class="mbox skill-reveal-box">
+    <h2 id="skill-reveal-ttl">Revealed</h2>
+    <p id="skill-reveal-msg" class="prompt-branch-msg"></p>
+    <div class="pickgrid" id="skill-reveal-grid"></div>
+  </div>
+</div>
+
 <!-- Hand pick (discard / cost) -->
 <div class="overlay skill-hand-preserve" id="overlay-pick">
   <div class="mbox" style="max-width:720px">
@@ -21315,7 +21324,36 @@ function markHandRevealFlip(iid) {
 }
 
 function isHandSkillRevealSpec(spec) {
-  return !!spec?.reveal && spec.from === 'hand' && spec.to === 'hand';
+  if (!spec?.reveal) return false;
+  if (spec.from === 'hand' && spec.to === 'hand') return true;
+  return !!(spec.card && spec.card.instance_id);
+}
+
+async function playHandSkillRevealSpec(spec, finalState, myId, delayMs = 0) {
+  const card = spec.card
+    || findCardInState(finalState, spec.iid, spec.pid)
+    || (typeof enrichCard === 'function' ? enrichCard(spec.card) : null);
+  if (!card) return;
+  if (delayMs > 0) await sleep(delayMs);
+  if (typeof showPublicSkillRevealOverlay === 'function' && spec.card) {
+    showPublicSkillRevealOverlay({
+      pid: spec.pid,
+      source_name: spec.source_name || '',
+      from: spec.from || 'hand',
+      cards: [spec.card],
+      seq: finalState?.seq,
+    }, myId);
+  }
+  G.gameState = finalState;
+  renderGame(finalState, { skipLog: true });
+  if (spec.pid === myId) {
+    beginHandDrawReveal(spec.iid, finalState, myId);
+    const elCard = el('hand-row')?.querySelector(`.hcard[data-iid="${CSS.escape(spec.iid)}"]`);
+    elCard?.classList.add('hand-skill-revealed');
+  } else if (spec.from === 'hand') {
+    beginOppHandSkillReveal(spec.iid, finalState, spec.pid);
+  }
+  await sleep(HAND_DRAW_FLIP_MS + 180);
 }
 
 function beginOppHandSkillReveal(iid, state, ownerId) {
@@ -21338,22 +21376,6 @@ function beginOppHandSkillReveal(iid, state, ownerId) {
   markHandRevealFlip(iid);
   scheduleHandDrawReveal(cardEl, iid);
   cardEl.classList.add('hand-skill-revealed');
-}
-
-async function playHandSkillRevealSpec(spec, finalState, myId, delayMs = 0) {
-  const card = findCardInState(finalState, spec.iid, spec.pid);
-  if (!card) return;
-  if (delayMs > 0) await sleep(delayMs);
-  G.gameState = finalState;
-  renderGame(finalState, { skipLog: true });
-  if (spec.pid === myId) {
-    beginHandDrawReveal(spec.iid, finalState, myId);
-    const elCard = el('hand-row')?.querySelector(`.hcard[data-iid="${CSS.escape(spec.iid)}"]`);
-    elCard?.classList.add('hand-skill-revealed');
-  } else {
-    beginOppHandSkillReveal(spec.iid, finalState, spec.pid);
-  }
-  await sleep(HAND_DRAW_FLIP_MS + 180);
 }
 
 function staggerDelayForDrawMoves(moves, index) {

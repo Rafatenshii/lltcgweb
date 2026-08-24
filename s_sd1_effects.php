@@ -404,6 +404,7 @@ function sSd1ResolvePrompt(
             if (!$picked) {
                 throw new Exception('Invalid hand card');
             }
+            $state = queuePublicSkillReveal($state, $owner, [$picked], $prompt['source_name'] ?? 'Member', 'hand');
             $state['pending_prompt'] = array_merge($prompt, [
                 'step'          => 'deck_pos',
                 'revealed_id'   => $cardId,

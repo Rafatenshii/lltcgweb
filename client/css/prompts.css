@@ -103,3 +103,10 @@ html.tcg-mobile-viewport .prompt-board-peek-rail {
   box-shadow: 0 6px 18px rgba(0,0,0,.45);
 }
 
+.skill-reveal-box {
+  max-width: 760px;
+}
+.skill-reveal-box #skill-reveal-grid {
+  margin-top: 8px;
+}
+

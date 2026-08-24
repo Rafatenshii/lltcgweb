@@ -65,6 +65,11 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
 
         case 'reveal_deck_until_live':
             $found = revealFromDeckUntil($p, ['filter' => 'live'], $state, $pid);
+            $revealedPile = $p['_deck_until_revealed'] ?? [];
+            unset($p['_deck_until_revealed']);
+            if (!empty($revealedPile)) {
+                $state = queuePublicSkillReveal($state, $pid, $revealedPile, $name, 'deck_to_wr');
+            }
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ($found ? " — [$name] revealed Live " . ($found['name_en'] ?? $found['name']) . ' from deck.'
                     : " — [$name] revealed deck; no Live found."));
@@ -397,6 +402,7 @@ function nijiResolveNijigasakiEffect(array $state, string $pid, array $source, a
         case 'reveal_top_play_or_position':
             if (!empty($p['main_deck'])) {
                 $top = array_shift($p['main_deck']);
+                $state = queuePublicSkillReveal($state, $pid, [$top], $name, 'deck');
                 if (($top['card_type'] ?? '') === 'メンバー' && intval($top['cost'] ?? 99) <= intval($ab['max_cost'] ?? 9)) {
                     $p['hand'][] = $top;
                     $srcId = $source['instance_id'] ?? '';

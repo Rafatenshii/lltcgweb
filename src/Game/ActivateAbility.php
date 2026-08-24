@@ -286,6 +286,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         ];
         $state = addLog($state, $state['players'][$pid]['name'] .
             " — [$mName] revealed " . cardDisplayName($revealed) . ' from hand.');
+        $state = queuePublicSkillReveal($state, $pid, [$revealed], $mName, 'hand');
     } elseif (($ab['type'] ?? '') === 'wait_pick_member_grant_live_score') {
         if (!empty($ab['center_only']) && $slot !== 'center') {
             throw new Exception('This ability can only be used from the Center position');
@@ -389,15 +390,21 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         }
         discardFromHandByIds($p, $ids);
         $found = revealFromDeckUntil($p, $choices[$filterKey], $state, $pid);
+        $revealedPile = $p['_deck_until_revealed'] ?? [];
+        unset($p['_deck_until_revealed']);
+        $mName = $member['name_en'] ?? $member['name'] ?? 'Member';
+        if (!empty($revealedPile)) {
+            $state = queuePublicSkillReveal($state, $pid, $revealedPile, $mName, 'deck_to_wr');
+        }
         markAbilityUsed($member, $abilityIdx);
         $p['stage'][$slot] = $member;
         if ($found) {
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . ($member['name_en'] ?? $member['name']) . '] revealed ' .
+                ' — [' . $mName . '] revealed ' .
                 ($found['name_en'] ?? $found['name']) . ' from deck and added it to hand.');
         } else {
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . ($member['name_en'] ?? $member['name']) . '] searched the deck; no matching card found.');
+                ' — [' . $mName . '] searched the deck; no matching card found.');
         }
     } elseif (($ab['type'] ?? '') === 'wait_self_draw_discard_activate') {
         waitMember($member, $state);

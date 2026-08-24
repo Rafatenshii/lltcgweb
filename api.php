@@ -5234,6 +5234,14 @@ function filterStateForPlayer(array $state, string $token): array {
     $myId    = getPlayerIdByToken($state, $token);
     $oppId   = $myId ? (($myId === 'p1') ? 'p2' : 'p1') : null;
     $filtered = $state;
+    // Break lingering &$state['players'][$id] references (tests and some resolvers)
+    // so opponent-hand redaction cannot wipe the real match.
+    if (isset($state['players']) && is_array($state['players'])) {
+        $filtered['players'] = [];
+        foreach ($state['players'] as $pid => $player) {
+            $filtered['players'][$pid] = is_array($player) ? array_replace([], $player) : $player;
+        }
+    }
 
     // Hide opponent's hand in human vs human; keep visible for solo CPU (client AI)
     if ($oppId && isset($filtered['players'][$oppId])) {
@@ -5260,6 +5268,25 @@ function filterStateForPlayer(array $state, string $token): array {
             }
         }
         unset($lc);
+    }
+
+    $prompt = $filtered['pending_prompt'] ?? null;
+    if (is_array($prompt)) {
+        $responder = (string)($prompt['responder'] ?? $prompt['owner'] ?? '');
+        if ($myId && $responder !== $myId && pendingPromptIsPrivateLook($prompt)) {
+            $filtered['pending_prompt'] = [
+                'type' => 'wait_look',
+                'owner' => $prompt['owner'] ?? $responder,
+                'responder' => $responder,
+                'source_name' => $prompt['source_name'] ?? '',
+                'prompt' => 'Opponent is looking at cards…',
+            ];
+            unset($filtered['surveil_stash']);
+        } elseif ($myId && $responder !== $myId) {
+            unset($filtered['surveil_stash']);
+        }
+    } else {
+        unset($filtered['surveil_stash']);
     }
 
     // Hide own token too (client stores it already)

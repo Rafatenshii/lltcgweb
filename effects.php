@@ -1347,12 +1347,14 @@ function revealDeckTopLiveScore(array &$state, string $pid, array $source, int $
 function lookRevealFilter(array &$p, int $look, string $filter, int $pick, string $group = '', string $nameContains = ''): int {
     $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
     $picked = 0;
+    $pickedCards = [];
     $rest = [];
     foreach ($top as $c) {
         $label = $c['name_en'] ?? $c['name'] ?? '';
         $nameOk = $nameContains === '' || str_contains($label, $nameContains);
         if ($picked < $pick && $nameOk && cardMatchesGroup($c, $group, $filter)) {
             $p['hand'][] = $c;
+            $pickedCards[] = $c;
             $picked++;
         } else {
             $rest[] = $c;
@@ -1361,16 +1363,19 @@ function lookRevealFilter(array &$p, int $look, string $filter, int $pick, strin
     if (!empty($rest)) {
         $p['waiting_room'] = array_merge($p['waiting_room'], $rest);
     }
+    $p['_look_reveal_picked'] = $pickedCards;
     return $picked;
 }
 
 function lookRevealGroup(array &$p, int $look, string $group, string $filter, int $pick): int {
     $top = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
     $picked = 0;
+    $pickedCards = [];
     $rest = [];
     foreach ($top as $c) {
         if ($picked < $pick && cardMatchesGroup($c, $group, $filter)) {
             $p['hand'][] = $c;
+            $pickedCards[] = $c;
             $picked++;
         } else {
             $rest[] = $c;
@@ -1379,7 +1384,83 @@ function lookRevealGroup(array &$p, int $look, string $group, string $filter, in
     if (!empty($rest)) {
         $p['waiting_room'] = array_merge($p['waiting_room'], $rest);
     }
+    $p['_look_reveal_picked'] = $pickedCards;
     return $picked;
+}
+
+/**
+ * Face-up skill reveal: both players (and the log) see these cards.
+ * Use for card text that says Reveal — not for private Look-at-deck piles.
+ */
+function queuePublicSkillReveal(
+    array $state,
+    string $pid,
+    array $cards,
+    string $sourceName,
+    string $from = 'deck'
+): array {
+    $cards = array_values(array_filter($cards, static fn($c) => is_array($c) && $c));
+    if ($cards === []) {
+        return $state;
+    }
+    $fromPhrase = match ($from) {
+        'hand' => 'from hand',
+        'waiting_room' => 'from the Waiting Room',
+        'deck_to_wr' => 'from deck',
+        default => 'from deck',
+    };
+    $names = implode(', ', array_map('cardDisplayName', $cards));
+    $anims = [];
+    foreach ($cards as $c) {
+        $iid = (string)($c['instance_id'] ?? '');
+        if ($iid === '') {
+            continue;
+        }
+        $zoneFrom = match ($from) {
+            'hand' => 'hand',
+            'waiting_room' => 'waiting_room',
+            'deck_to_wr' => 'main_deck',
+            default => 'main_deck',
+        };
+        $zoneTo = match ($from) {
+            'hand' => 'hand',
+            'deck_to_wr' => 'waiting_room',
+            default => 'hand',
+        };
+        $anims[] = animSpec($iid, $zoneFrom, $zoneTo, $pid, [
+            'reveal' => true,
+            'card' => cardPromptSummary($c),
+        ]);
+    }
+    $state['skill_reveals'] = [
+        'seq' => intval($state['seq'] ?? 0),
+        'pid' => $pid,
+        'from' => $from,
+        'source_name' => $sourceName,
+        'cards' => array_map('cardPromptSummary', $cards),
+    ];
+    return addLog(
+        $state,
+        $state['players'][$pid]['name'] . " — [$sourceName] revealed $names $fromPhrase.",
+        'effect',
+        $anims
+    );
+}
+
+function pendingPromptIsPrivateLook(array $prompt): bool {
+    $type = (string)($prompt['type'] ?? '');
+    return in_array($type, [
+        'pick_looked_deck_hand',
+        'look_top_optional_wr',
+        'look_deck_top_arrange',
+        'look_top_optional_bottom',
+        'look_top_arrange_rest_wr',
+        'look_top_arrange_rest_bottom',
+        'look_deck_bottom_optional_deck_position',
+        'surveil2_mus_ability_choice',
+        'look_top_optional_deck_bottom',
+        'look_top_arrange_rest_deck_bottom',
+    ], true);
 }
 
 function cardMatchesLookPick(array $card, array $cfg): bool {
@@ -1650,7 +1731,7 @@ function applyLookPickHand(array &$p, array $looked, array $pickIds): array {
     $pickSet = array_flip(array_values(array_filter($pickIds)));
     $rest = [];
     foreach ($looked as $c) {
-        $id = $c['instance_id'] ?? '';
+        $id = (string)($c['instance_id'] ?? $c['id'] ?? '');
         if ($id !== '' && isset($pickSet[$id])) {
             $p['hand'][] = $c;
             unset($pickSet[$id]);
@@ -1681,8 +1762,7 @@ function beginLookRevealPick(array $state, string $pid, string $name, array &$p,
     if (count($top) === 1 && !$optional && !empty($eligible)) {
         $rest = applyLookPickHand($p, $top, [$top[0]['instance_id'] ?? '']);
         $state = appendDeckCardsToWaitingRoom($state, $pid, $rest);
-        return addLog($state, $state['players'][$pid]['name'] .
-            " — [$name] looked at 1 card; added 1 to hand.");
+        return queuePublicSkillReveal($state, $pid, [$top[0]], $name, 'deck');
     }
 
     $eligibleIds = array_values(array_filter(array_map(
@@ -2716,6 +2796,7 @@ function revealFromDeckUntil(array &$p, array $cfg, ?array &$state = null, ?stri
             $p['waiting_room'][] = $c;
         }
     }
+    $p['_deck_until_revealed'] = $revealed;
     return $found;
 }
 
@@ -5572,9 +5653,7 @@ function redactEffectDetailForOpponent(string $detail): string {
     $rules = [
         '/\bdrew [^.]+\./' => 'drew a card.',
         '/\bput [^.]+ into the Waiting Room\./' => 'put a card into the Waiting Room.',
-        '/\brevealed [^.]+ from deck top\./' => 'revealed a card from deck top.',
-        '/\brevealed [^.]+ from deck and added it to hand\./' => 'revealed a card from deck and added it to hand.',
-        '/\bopponent revealed [^.]+ from hand\./' => 'opponent revealed a card from hand.',
+        // Reveal is public: do not redact card names from "revealed …" log lines.
         '/\badded [^.]+ from Waiting Room to hand\./' => 'added a card from Waiting Room to hand.',
         '/\badded [^.]+ on top of deck\./' => 'added a card on top of deck.',
         '/\bdiscarded [^.]+\./' => 'discarded a card.',

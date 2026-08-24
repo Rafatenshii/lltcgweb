@@ -1161,6 +1161,7 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             $ownerP['stage'][$slot]['stacked_members'] = [];
         }
         $ownerP['stage'][$slot]['stacked_members'][] = $stacked;
+        $state = queuePublicSkillReveal($state, $owner, [$stacked], $prompt['source_name'] ?? 'Member', 'hand');
         if (!empty($prompt['once_per_turn'])) {
             $abilities = $ownerP['stage'][$slot]['abilities'] ?? [];
             $idx = $prompt['ability_idx'] ?? null;
@@ -1242,6 +1243,7 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
             }
             // Reveal without committing disposition yet — player sees the card (#79).
             $top = $ownerP['main_deck'][0];
+            $state = queuePublicSkillReveal($state, $owner, [$top], $prompt['source_name'] ?? 'Member', 'deck');
             $state['pending_prompt'] = [
                 'type'           => 'pick_number_reveal_deck_top',
                 'step'           => 'resolve_reveal',

@@ -2209,13 +2209,18 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         $ids = $data['card_ids'] ?? [];
         $milestones = $prompt['milestones'] ?? [10, 20, 30, 40, 50];
         $total = 0;
+        $revealed = [];
         foreach ($ownerP['hand'] as $c) {
             if (in_array($c['instance_id'] ?? '', $ids, true)
                 && ($c['card_type'] ?? '') === 'メンバー') {
                 $total += intval($c['cost'] ?? 0);
+                $revealed[] = $c;
             }
         }
         unset($state['pending_prompt']);
+        if (!empty($revealed)) {
+            $state = queuePublicSkillReveal($state, $owner, $revealed, $prompt['source_name'] ?? 'Member', 'hand');
+        }
         if (in_array($total, $milestones, true)) {
             $then = $ability['then'] ?? ['type' => 'live_score_bonus', 'amount' => 1];
             $state = applyModifierEffect($state, $owner, $then);
@@ -3028,7 +3033,8 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . $srcName . '] revealed ' . cardDisplayName($found) . ' from hand.',
                 'effect',
-                [animSpec($handLiveId, 'hand', 'hand', $owner, ['reveal' => true])]);
+                [animSpec($handLiveId, 'hand', 'hand', $owner, ['reveal' => true, 'card' => cardPromptSummary($found)])]);
+            $state = queuePublicSkillReveal($state, $owner, [$found], $srcName, 'hand');
             $state['pending_prompt'] = [
                 'type'          => 'optional_success_live_swap',
                 'owner'         => $owner,
@@ -3763,6 +3769,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
     }
 
     if ($promptType === 'pick_looked_deck_hand') {
+        $ownerP = &$state['players'][$owner];
         $looked = $state['surveil_stash'] ?? [];
         $eligibleIds = $prompt['eligible_ids'] ?? [];
         $pickCount = intval($prompt['pick_count'] ?? 1);
@@ -3913,9 +3920,17 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     return $state;
                 }
             }
-            $restLooked = applyLookPickHand($ownerP, $looked, $pickIds);
+            $pickedCards = [];
+            foreach ($looked as $c) {
+                $cid = (string)($c['instance_id'] ?? $c['id'] ?? '');
+                if ($cid !== '' && in_array($cid, $pickIds, true)) {
+                    $pickedCards[] = $c;
+                }
+            }
+            $restLooked = applyLookPickHand($state['players'][$owner], $looked, $pickIds);
             unset($state['pending_prompt']);
             $state = appendDeckCardsToWaitingRoom($state, $owner, $restLooked);
+            $state = queuePublicSkillReveal($state, $owner, $pickedCards, $srcName, 'deck');
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] added $pickedN card(s) from looked deck to hand.");
             $then = $ability['then'] ?? [];
@@ -4215,6 +4230,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $cardId = $data['card_id'] ?? '';
             $picked = putHandLiveOnDeckBottom($ownerP, $cardId);
             if (!$picked) throw new Exception('Choose a Live card from your hand');
+            $state = queuePublicSkillReveal($state, $owner, [$picked], $prompt['source_name'] ?? 'Member', 'hand');
             $state = addLog($state, $state['players'][$owner]['name'] .
                 ' — [' . ($prompt['source_name'] ?? 'Member') . '] revealed ' .
                 cardDisplayName($picked) . ' and put it on the bottom of the deck.');
@@ -4419,6 +4435,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         if (!$revealed) {
             throw new Exception('Choose a Live card from your hand');
         }
+        $state = queuePublicSkillReveal($state, $owner, [$revealed], $srcName, 'hand');
         $needle = $revealed['name_en'] ?? $revealed['name'] ?? '';
         $wrLives = array_values(array_filter(
             $ownerP['waiting_room'],

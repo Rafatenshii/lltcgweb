@@ -819,6 +819,7 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             if (!empty($p['main_deck'])) {
                 $top = array_shift($p['main_deck']);
                 $p['hand'][] = $top;
+                $state = queuePublicSkillReveal($state, $pid, [$top], $name, 'deck');
                 if (($top['card_type'] ?? '') === 'メンバー' && empty($top['blade_hearts'])) {
                     $state['live_modifiers'][$pid]['live_score_bonus'] =
                         intval($state['live_modifiers'][$pid]['live_score_bonus'] ?? 0) + 1;
@@ -1969,6 +1970,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             $p['stage'][$slot]['stacked_members'] = [];
         }
         $p['stage'][$slot]['stacked_members'][] = $stacked;
+        $state = queuePublicSkillReveal($state, $owner, [$stacked], $prompt['source_name'] ?? 'Member', 'hand');
         if (!empty($ab['grant_heart_choice'])) {
             $heartChoices = ['pink', 'yellow', 'purple', 'green', 'blue', 'red'];
             $state['pending_prompt'] = [

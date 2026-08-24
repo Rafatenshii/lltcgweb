@@ -3439,6 +3439,7 @@ function bp7ResolvePrompt(array $state, string $owner, array $prompt, string $ch
             $member = $state['players'][$owner]['stage'][$srcSlot];
             $member['stacked_members'] = array_merge($member['stacked_members'] ?? [], [$card]);
             $state['players'][$owner]['stage'][$srcSlot] = $member;
+            $state = queuePublicSkillReveal($state, $owner, [$card], $name, 'hand');
             $drawn = drawCardsForPlayer($state, $owner, max(0, intval($ab['draw'] ?? 2)));
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$name] revealed " . cardDisplayName($card) .

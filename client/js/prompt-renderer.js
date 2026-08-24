@@ -2232,7 +2232,49 @@ global.renderPromptDiscardHandBranch = function renderPromptDiscardHandBranch(s,
   });
 };
 
+global.showPublicSkillRevealOverlay = function showPublicSkillRevealOverlay(rev, myId){
+  if (!rev?.cards?.length) return;
+  const ovl = el('overlay-skill-reveal');
+  const grid = el('skill-reveal-grid');
+  const ttl = el('skill-reveal-ttl');
+  const msg = el('skill-reveal-msg');
+  if (!ovl || !grid) return;
+  const who = (rev.pid && myId && rev.pid !== myId) ? 'Opponent revealed' : 'Revealed';
+  if (ttl) ttl.textContent = who;
+  if (msg) {
+    const src = rev.source_name ? ` (${rev.source_name})` : '';
+    msg.textContent = `${rev.cards.length} card${rev.cards.length === 1 ? '' : 's'}${src}`;
+  }
+  grid.innerHTML = '';
+  rev.cards.forEach((raw) => {
+    const card = (typeof enrichCard === 'function') ? enrichCard(raw) : raw;
+    if (typeof mkPickCardEl === 'function') {
+      grid.appendChild(mkPickCardEl(card, 'prompt-look-card pickcard', null));
+    }
+  });
+  ovl.classList.add('open');
+  ovl.setAttribute('aria-hidden', 'false');
+  const hold = 1800 + Math.min(4, rev.cards.length) * 400;
+  clearTimeout(G._skillRevealTimer);
+  G._skillRevealTimer = setTimeout(() => {
+    ovl.classList.remove('open');
+    ovl.setAttribute('aria-hidden', 'true');
+  }, hold);
+};
+
+global.showPublicSkillRevealFromState = function showPublicSkillRevealFromState(s, myId){
+  const rev = s?.skill_reveals;
+  if (!rev?.cards?.length) return;
+  const key = `${rev.seq}:${rev.pid}:${(rev.cards || []).map(c => c.instance_id).join(',')}`;
+  if (G._lastSkillRevealKey === key) return;
+  G._lastSkillRevealKey = key;
+  showPublicSkillRevealOverlay(rev, myId);
+};
+
 global.renderPrompt = function renderPrompt(s, myId){
+  if (typeof showPublicSkillRevealFromState === 'function') {
+    showPublicSkillRevealFromState(s, myId);
+  }
   let pr=s.pending_prompt;
   const viewerId = myId;
   const replayViewing = typeof global.isReplayViewing === 'function' && global.isReplayViewing();

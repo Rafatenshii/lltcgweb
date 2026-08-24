@@ -29,6 +29,7 @@ function tryResolveAbilityEffectSwitchReveal(
             ));
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] revealed hand ($handSummary).");
+            $state = queuePublicSkillReveal($state, $pid, $p['hand'] ?? [], $name, 'hand');
             if (!$hasLive) {
                 $picked = lookRevealGroup(
                     $p,
@@ -37,8 +38,14 @@ function tryResolveAbilityEffectSwitchReveal(
                     $ab['filter'] ?? 'live',
                     intval($ab['pick'] ?? 1)
                 );
-                $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] looked at deck top; added $picked Live card(s) to hand.");
+                $pickedCards = $p['_look_reveal_picked'] ?? [];
+                unset($p['_look_reveal_picked']);
+                if (!empty($pickedCards)) {
+                    $state = queuePublicSkillReveal($state, $pid, $pickedCards, $name, 'deck');
+                } else {
+                    $state = addLog($state, $state['players'][$pid]['name'] .
+                        " — [$name] looked at deck top; added $picked Live card(s) to hand.");
+                }
             }
             break;
 
@@ -57,6 +64,7 @@ function tryResolveAbilityEffectSwitchReveal(
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] revealed $revealedCount card(s), including $liveCount Live card(s); score +$bonus.");
             if (!empty($top)) {
+                $state = queuePublicSkillReveal($state, $pid, $top, $name, 'deck_to_wr');
                 $p['waiting_room'] = array_merge($p['waiting_room'], $top);
             }
             break;
