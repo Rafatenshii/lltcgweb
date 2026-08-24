@@ -2,6 +2,29 @@
   "version": 1,
   "posts": [
     {
+      "id": "2026-08-profile-friends",
+      "date": "2026-08-23",
+      "publishedAt": "2026-08-24T03:05:00Z",
+      "banner": "tcglogo.png",
+      "bannerStyle": "full",
+      "title": {
+        "en": "Profiles & Friends are live!",
+        "ja": "プロフィール＆フレンド機能が登場！",
+        "es": "¡Perfiles y amigos ya están aquí!",
+        "ko": "프로필 & 친구 기능 출시!",
+        "zh": "个人主页与好友功能上线！",
+        "th": "โปรไฟล์และเพื่อนมาแล้ว!"
+      },
+      "body": {
+        "en": "**Profiles and Friends** are on Loveca Web — sign in with Discord, then use the **Profile** and **Friends** buttons on the right of the hub (and most menus).\n\n**Your profile**\n- Set a short **bio** and a **card showcase** from cards you own.\n- Feature a saved deck, with a description and visibility: **Private**, **Friends**, or **Public**.\n- See ranked record, unranked games, and a fuller **Game stats** page.\n- Your **Friend ID** is on your profile — tap it to copy.\n\n**Friends**\n- Add people with a Friend ID, or send a request from their profile.\n- Open **Requests** to accept or decline, and **Recent** to find players you’ve just played.\n- Friend list cap is **25**.\n\n**Play together**\n- From **Unranked Play**, **Invite a friend** makes a room and notifies them. If they accept, they join your match.\n- On another player’s profile you can send a friend request, view their public/friends-visible deck, or **Report** if something looks wrong.\n\nFind a friend, share your Friend ID, and queue up!",
+        "ja": "**プロフィール**と**フレンド**がLoveca Webに登場。Discordでサインインすると、ハブ（と多くのメニュー）右側の **プロフィール**／**フレンド** ボタンから使えます。\n\n**自分のプロフィール**\n- 短い**自己紹介**と、所持カードからの**ショーケース**を設定できます。\n- 保存デッキを紹介でき、説明と公開範囲（**非公開**／**フレンド**／**公開**）を選べます。\n- ランク戦績、アンランク試合数、詳しい**対戦統計**も見られます。\n- **フレンドID**はプロフィールにあります。タップでコピーできます。\n\n**フレンド**\n- フレンドIDで追加するか、相手のプロフィールから申請できます。\n- **申請**で承認／拒否、**最近**で直前に対戦したプレイヤーを探せます。\n- フレンド上限は **25人** です。\n\n**一緒に遊ぶ**\n- **アンランク対戦**の **フレンドを招待** でルームを作り、相手に通知します。承諾すると対戦に参加します。\n- 他のプレイヤーのプロフィールから申請、公開／フレンド向けデッキの確認、問題があれば**報告**もできます。\n\nフレンドIDを共有して、一緒にキューに入りましょう！",
+        "es": "**Perfiles y amigos** ya están en Loveca Web: inicia sesión con Discord y usa los botones **Perfil** y **Amigos** a la derecha del hub (y en la mayoría de menús).\n\n**Tu perfil**\n- Pon una **bio** corta y un **escaparate** con cartas que tengas.\n- Destaca un mazo guardado, con descripción y visibilidad: **Privado**, **Amigos** o **Público**.\n- Mira el récord ranked, partidas unranked y **Estadísticas** más completas.\n- Tu **ID de amigo** está en el perfil — tócalo para copiarlo.\n\n**Amigos**\n- Añade con un ID de amigo o envía una solicitud desde su perfil.\n- En **Solicitudes** aceptas o rechazas; en **Recientes** encuentras a quien acabas de jugar.\n- El límite es **25** amigos.\n\n**Jugar juntos**\n- En **Juego unranked**, **Invitar a un amigo** crea una sala y les avisa. Si aceptan, entran a tu partida.\n- En el perfil de otro puedes solicitar amistad, ver su mazo público/visible para amigos, o **Reportar** si algo no cuadra.\n\n¡Comparte tu ID e id a cola!",
+        "ko": "**프로필**과 **친구**가 Loveca Web에 추가되었습니다. Discord로 로그인한 뒤, 허브(와 대부분의 메뉴) 오른쪽 **프로필** / **친구** 버튼으로 이용하세요.\n\n**내 프로필**\n- 짧은 **소개**와, 보유 카드로 **쇼케이스**를 꾸밀 수 있습니다.\n- 저장한 덱을 소개하고, 설명과 공개 범위(**비공개** / **친구** / **공개**)를 고를 수 있습니다.\n- 랭크 전적, 언랭크 판수, 자세한 **게임 통계**도 볼 수 있습니다.\n- **친구 ID**는 프로필에 있습니다. 탭하면 복사됩니다.\n\n**친구**\n- 친구 ID로 추가하거나, 상대 프로필에서 요청을 보낼 수 있습니다.\n- **요청**에서 수락/거절하고, **최근**에서 방금 대전한 플레이어를 찾을 수 있습니다.\n- 친구 한도는 **25명**입니다.\n\n**같이 플레이**\n- **언랭크 플레이**의 **친구 초대**로 방을 만들고 알립니다. 수락하면 매치에 들어옵니다.\n- 다른 사람 프로필에서 친구 요청, 공개/친구 공개 덱 확인, 문제가 있으면 **신고**할 수 있습니다.\n\n친구 ID를 공유하고 같이 큐에 들어가 보세요!",
+        "zh": "**个人主页**和**好友**已加入 Loveca Web——用 Discord 登录后，可在主页（以及大多数菜单）右侧使用 **个人主页** 和 **好友** 按钮。\n\n**你的主页**\n- 可写简短**简介**，并用已拥有的卡牌布置**展示栏**。\n- 可展示一套已保存牌组，并设置说明与可见范围：**私密**、**仅好友** 或 **公开**。\n- 可查看排名战绩、非排名场次，以及更完整的**对战统计**。\n- **好友 ID** 显示在主页上，点按即可复制。\n\n**好友**\n- 用好友 ID 添加，或从对方主页发送申请。\n- 在 **申请** 中同意或拒绝，在 **最近** 中查找刚对战过的玩家。\n- 好友上限为 **25** 人。\n\n**一起玩**\n- 在 **非排名对战** 中，**邀请好友** 会创建房间并通知对方；对方同意后即可加入你的对局。\n- 在他人主页可发送好友申请、查看其公开／好友可见的牌组，若有问题可 **举报**。\n\n分享好友 ID，一起排队吧！",
+        "th": "**โปรไฟล์**และ**เพื่อน**มาใน Loveca Web แล้ว — ล็อกอินด้วย Discord แล้วใช้ปุ่ม **โปรไฟล์** กับ **เพื่อน** ด้านขวาของฮับ (และเมนูส่วนใหญ่)\n\n**โปรไฟล์ของคุณ**\n- ตั้ง **แนะนำตัว** สั้น ๆ และ **โชว์เคสการ์ด** จากของที่มี\n- โชว์เด็คที่บันทึก พร้อมคำอธิบายและการมองเห็น: **ส่วนตัว**, **เพื่อน**, หรือ **สาธารณะ**\n- ดูสถิติแรงก์ แมตช์อันแรงก์ และหน้า **สถิติเกม** แบบละเอียด\n- **รหัสเพื่อน** อยู่บนโปรไฟล์ — แตะเพื่อคัดลอก\n\n**เพื่อน**\n- เพิ่มด้วยรหัสเพื่อน หรือส่งคำขอจากโปรไฟล์เขา\n- เปิด **คำขอ** เพื่อรับ/ปฏิเสธ และ **ล่าสุด** เพื่อหาคนที่เพิ่งเล่นด้วย\n- จำกัดเพื่อน **25** คน\n\n**เล่นด้วยกัน**\n- ใน **อันแรงก์** ใช้ **ชวนเพื่อน** เพื่อสร้างห้องและแจ้งเขา ถ้าเขายอมรับจะเข้าแมตช์คุณ\n- จากโปรไฟล์คนอื่น ส่งคำขอเพื่อน ดูเด็คที่เปิด/ให้เพื่อนเห็น หรือ **รายงาน** ถ้ามีปัญหา\n\nแชร์รหัสเพื่อนแล้วเข้าคิวด้วยกันเลย!"
+      }
+    },
+    {
       "id": "2026-08-android-apk-12",
       "date": "2026-08-23",
       "banner": "downloads/loveca-icon-192.png",
