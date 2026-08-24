@@ -679,13 +679,31 @@ function tcgSocialShowcase(string $discordId): array {
     return $out;
 }
 
-function tcgSocialRankedWl(string $discordId): array {
+/**
+ * Ranked W–L for the same board as hub / leaderboard (one game_mode, not a SUM
+ * across standard + starters + randomized).
+ *
+ * @return array{wins:int,losses:int,games:int,draws:int,game_mode:string}
+ */
+function tcgSocialRankedWl(string $discordId, mixed $gameMode = null): array {
+    require_once __DIR__ . '/game_mode.php';
+    $mode = tcgNormalizeRankedGameMode($gameMode ?? TCG_GAME_MODE_STANDARD);
     $stmt = tcgDb()->prepare(
-        'SELECT COALESCE(SUM(wins),0), COALESCE(SUM(losses),0), COALESCE(SUM(games),0) FROM tcg_rank WHERE discord_id = ?'
+        'SELECT COALESCE(wins,0), COALESCE(losses,0), COALESCE(games,0), COALESCE(draws,0)
+         FROM tcg_rank WHERE discord_id = ? AND game_mode = ?'
     );
-    $stmt->execute([$discordId]);
-    $row = $stmt->fetch(PDO::FETCH_NUM) ?: [0, 0, 0];
-    return ['wins' => intval($row[0]), 'losses' => intval($row[1]), 'games' => intval($row[2])];
+    $stmt->execute([$discordId, $mode]);
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    if (!$row) {
+        return ['wins' => 0, 'losses' => 0, 'games' => 0, 'draws' => 0, 'game_mode' => $mode];
+    }
+    return [
+        'wins' => intval($row[0]),
+        'losses' => intval($row[1]),
+        'games' => intval($row[2]),
+        'draws' => intval($row[3]),
+        'game_mode' => $mode,
+    ];
 }
 
 function tcgSocialRoomKey(string $roomId): string {
@@ -1041,7 +1059,7 @@ function tcgApiSocialGetProfile(array $body): array {
             'bio_locked' => intval($user['bio_locked'] ?? 0) === 1,
             'title_id' => $user['title_id'] ?? null,
             'profile_warnings' => tcgSocialIsOwner($viewer) ? intval($user['profile_warnings'] ?? 0) : null,
-            'ranked' => tcgSocialRankedWl($target),
+            'ranked' => tcgSocialRankedWl($target, $body['game_mode'] ?? null),
             'unranked_games' => intval($user['unranked_games'] ?? 0),
             'showcase' => tcgSocialShowcase($target),
             'featured_deck' => tcgSocialFeaturedDeckPayload($user, $viewer, $friends),

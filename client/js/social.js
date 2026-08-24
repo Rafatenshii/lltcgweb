@@ -32,6 +32,13 @@
     const A = global.A || {};
     return String(A.user?.id || A.profile?.user?.id || '');
   }
+  function profileRankedMode() {
+    try {
+      if (typeof global.rankedGameMode === 'function') return global.rankedGameMode();
+      if (typeof global.currentGameMode === 'function') return global.currentGameMode();
+    } catch (e) { /* ignore */ }
+    return 'standard';
+  }
   function signedIn() {
     return !!myId();
   }
@@ -351,7 +358,7 @@
     const root = document.getElementById('profile-body');
     if (root) root.innerHTML = tt('social.loading', 'Loading…');
     try {
-      const data = await accountPost('social_profile', { user_id: uid });
+      const data = await accountPost('social_profile', { user_id: uid, game_mode: profileRankedMode() });
       _editing = false;
       _deckOpen = false;
       renderProfile(data);
