@@ -161,7 +161,42 @@ final class MakiBp6006Reveal5Test extends TestCase
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'pink']);
         $this->assertEmpty($state['pending_prompt'] ?? null);
         $this->assertSame(0, intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0));
-        $this->assertCount(6, $state['players']['p1']['waiting_room']); // discard + 5 revealed
+        // Last 5 of deck were looked at → empty deck refreshes (discard h0 becomes the new deck),
+        // then the 5 revealed mill to Waiting Room.
+        $this->assertCount(5, $state['players']['p1']['waiting_room']);
+        $this->assertCount(1, $state['players']['p1']['main_deck']);
+        $this->assertSame('h0', $state['players']['p1']['main_deck'][0]['instance_id'] ?? '');
         $this->assertCount(0, $state['players']['p1']['hand']);
+    }
+
+    public function testRevealRefreshesDeckWhenFewerThanFiveRemain(): void
+    {
+        $maki = $this->cardByNo('PL!-bp6-006-R＋', 'maki_refresh');
+        $hand = [$this->memberWithHeart('h0', 'pink')];
+        $deck = [
+            $this->memberWithHeart('d0', 'pink'),
+            $this->liveRequiring('d1', 'pink'),
+        ];
+        $state = $this->baseState($maki, $deck, $hand);
+        $state['players']['p1']['waiting_room'] = [
+            $this->memberWithHeart('w0', 'pink'),
+            $this->memberWithHeart('w1', 'pink'),
+            $this->liveRequiring('w2', 'pink'),
+        ];
+
+        $state = \actionActivateAbility($state, 'p1', [
+            'card_id' => 'maki_refresh',
+            'ability_index' => 0,
+            'discard_ids' => ['h0'],
+        ]);
+        $state = \actionResolvePrompt($state, 'p1', ['choice' => 'pink']);
+
+        $this->assertSame('maki_reveal5_pick_mus', $state['pending_prompt']['type'] ?? null);
+        $this->assertCount(5, $state['pending_prompt']['revealed_cards'] ?? []);
+        $ids = array_column($state['pending_prompt']['revealed_cards'], 'instance_id');
+        $this->assertContains('d0', $ids);
+        $this->assertContains('d1', $ids);
+        $this->assertCount(1, $state['players']['p1']['main_deck']);
+        $this->assertCount(0, $state['players']['p1']['waiting_room']);
     }
 }

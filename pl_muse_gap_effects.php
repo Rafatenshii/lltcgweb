@@ -1424,6 +1424,31 @@ function plMuseGapOpenColorThresholdReveal5ColorPrompt(
  * Reveal deck top N; if all match the color threshold, pick a μ's card among them
  * and grant Blade; otherwise mill all revealed to Waiting Room.
  */
+/**
+ * Take the top N of the main deck. When the deck runs out mid-look, shuffle
+ * Waiting Room into a new deck and keep taking until N or no cards remain.
+ */
+function plMuseGapTakeDeckTopRefreshing(array &$state, string $pid, int $look): array {
+    $p = &$state['players'][$pid];
+    $revealed = [];
+    $look = max(0, $look);
+    for ($i = 0; $i < $look; $i++) {
+        if (empty($p['main_deck']) && function_exists('refreshMainDeckFromWaitingRoom')) {
+            if (refreshMainDeckFromWaitingRoom($state, $pid) <= 0) {
+                break;
+            }
+        }
+        if (empty($p['main_deck'])) {
+            break;
+        }
+        $revealed[] = array_shift($p['main_deck']);
+        if (empty($p['main_deck']) && function_exists('refreshMainDeckFromWaitingRoom')) {
+            refreshMainDeckFromWaitingRoom($state, $pid);
+        }
+    }
+    return $revealed;
+}
+
 function plMuseGapResolveColorThresholdReveal5(
     array $state,
     string $pid,
@@ -1439,7 +1464,7 @@ function plMuseGapResolveColorThresholdReveal5(
     $group = $ab['group'] ?? "μ's";
     $bladeAmt = intval($ab['blade_amount'] ?? 3);
 
-    $revealed = array_splice($p['main_deck'], 0, min($look, count($p['main_deck'])));
+    $revealed = plMuseGapTakeDeckTopRefreshing($state, $pid, $look);
     foreach ($revealed as &$rc) {
         mergeCardCatalogFields($rc);
     }
