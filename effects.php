@@ -6370,6 +6370,16 @@ function takeFromPendingYellPool(
             }
         }
     }
+    if ($picked) {
+        $ownerP['waiting_room'] = array_values(array_filter(
+            $ownerP['waiting_room'] ?? [],
+            static fn($c) => ($c['instance_id'] ?? '') !== $cardId
+        ));
+        $ownerP['yell_cards'] = array_values(array_filter(
+            $ownerP['yell_cards'] ?? [],
+            static fn($c) => ($c['instance_id'] ?? '') !== $cardId
+        ));
+    }
     if (!$picked) {
         foreach ($prompt['candidates'] ?? [] as $c) {
             if (($c['instance_id'] ?? '') === $cardId) {

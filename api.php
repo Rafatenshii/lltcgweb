@@ -2821,6 +2821,7 @@ function drawYellCardsForPlayer(array $state, string $pid): array {
         mergeYellCardCatalogFields($yc);
     }
     unset($yc);
+    $state = recordYellRevealSnapshot($state, $pid, $yellCards, true);
     return [$state, $yellCards, $totalBlade, $drawBlade, $yellReduction];
 }
 
@@ -2828,6 +2829,41 @@ function drawYellCardsForPlayer(array $state, string $pid): array {
 function currentPlayerYellCards(array $state, string $pid): array {
     $p = $state['players'][$pid] ?? [];
     return $p['yell_cards'] ?? $state['yell_reveal'][$pid] ?? $state['_last_yell_cards'] ?? [];
+}
+
+function recordYellRevealSnapshot(array $state, string $pid, array $cards, bool $replace = false): array {
+    if ($replace) {
+        $state['_yell_revealed_snapshot'][$pid] = array_values($cards);
+        return $state;
+    }
+    $byId = [];
+    foreach ($state['_yell_revealed_snapshot'][$pid] ?? [] as $c) {
+        $id = (string)($c['instance_id'] ?? '');
+        if ($id !== '') {
+            $byId[$id] = $c;
+        }
+    }
+    foreach ($cards as $c) {
+        $id = (string)($c['instance_id'] ?? '');
+        if ($id !== '') {
+            $byId[$id] = $c;
+        } else {
+            $byId[] = $c;
+        }
+    }
+    $state['_yell_revealed_snapshot'][$pid] = array_values($byId);
+    return $state;
+}
+
+function snapshotPerformanceLiveScores(array $state): array {
+    if (!empty($state['_perf_live_score_snapshot']) && is_array($state['_perf_live_score_snapshot'])) {
+        return $state;
+    }
+    $state['_perf_live_score_snapshot'] = [
+        'p1' => getLiveTotalScore($state, 'p1'),
+        'p2' => getLiveTotalScore($state, 'p2'),
+    ];
+    return $state;
 }
 
 /** Keep yell_cards, yell_reveal, and _last_yell_cards in sync during Performance. */
@@ -2838,6 +2874,7 @@ function syncPlayerYellPools(array $state, string $pid, array $yellCards): array
     }
     $state['yell_reveal'][$pid] = $yellCards;
     $state['_last_yell_cards'] = $yellCards;
+    $state = recordYellRevealSnapshot($state, $pid, $yellCards, false);
     $state['_last_yell_live_count'] = countYellLiveCards($yellCards);
     $state['_last_yell_live_count_' . $pid] = countYellLiveCards($yellCards);
     return $state;
@@ -2964,6 +3001,7 @@ function finishYellRetryAndHearts(array $state): array {
 }
 
 function resolvePerformanceHeartsAfterYell(array $state): array {
+    $state = snapshotPerformanceLiveScores($state);
     $first  = $state['first_player'];
     $second = ($first === 'p1') ? 'p2' : 'p1';
     $attempting = $state['live_attempt'] ?? ['p1', 'p2'];

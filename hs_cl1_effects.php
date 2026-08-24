@@ -59,7 +59,50 @@ function hsCl1CombinedLiveScore(array $state): int {
 }
 
 function hsCl1LiveScoresTied(array $state): bool {
+    $snap = $state['_perf_live_score_snapshot'] ?? null;
+    if (is_array($snap) && isset($snap['p1'], $snap['p2'])) {
+        return intval($snap['p1']) === intval($snap['p2']);
+    }
     return getLiveTotalScore($state, 'p1') === getLiveTotalScore($state, 'p2');
+}
+
+/** Cards revealed by this Performance's Yell, including ones already milled to WR. */
+function hsCl1YellRevealPool(array $state, string $pid, array $p, array $ctx = []): array {
+    $byId = [];
+    $add = static function (array $cards) use (&$byId): void {
+        foreach ($cards as &$c) {
+            if (!$c || !is_array($c)) {
+                continue;
+            }
+            if (function_exists('mergeCardCatalogFields')) {
+                mergeCardCatalogFields($c);
+            }
+            $id = (string)($c['instance_id'] ?? '');
+            $key = $id !== '' ? $id : ('anon_' . count($byId));
+            $byId[$key] = $c;
+        }
+        unset($c);
+    };
+    $add(is_array($ctx['yell_cards'] ?? null) ? $ctx['yell_cards'] : []);
+    $add($p['_pending_yell_wr'] ?? []);
+    $add($p['yell_cards'] ?? []);
+    $add($state['_yell_revealed_snapshot'][$pid] ?? []);
+    $add($state['yell_reveal'][$pid] ?? []);
+    $add($state['_last_yell_cards'] ?? []);
+    $snapIds = [];
+    foreach ($state['_yell_revealed_snapshot'][$pid] ?? [] as $c) {
+        $iid = (string)($c['instance_id'] ?? '');
+        if ($iid !== '') {
+            $snapIds[$iid] = true;
+        }
+    }
+    foreach ($p['waiting_room'] ?? [] as $c) {
+        $iid = (string)($c['instance_id'] ?? '');
+        if ($iid !== '' && isset($snapIds[$iid])) {
+            $add([$c]);
+        }
+    }
+    return array_values($byId);
 }
 
 function hsResolveHasunosoraCl1Effect(array $state, string $pid, array $source, array $ab, array $ctx = []): array {
@@ -143,16 +186,30 @@ function hsResolveHasunosoraCl1Effect(array $state, string $pid, array $source, 
         case 'live_success_pick_yell_if_tied_score':
             if (($ctx['phase'] ?? '') !== 'live_success') break;
             if (!hsCl1LiveScoresTied($state)) break;
-            $yellPool = $ctx['yell_cards'] ?? $p['_pending_yell_wr'] ?? [];
+            $yellPool = hsCl1YellRevealPool($state, $pid, $p, $ctx);
             $candidates = array_values(array_filter(
                 $yellPool,
                 fn($c) => cardMatchesYellPick($c, $ab)
             ));
             if (empty($candidates)) break;
             if (count($candidates) === 1) {
-                $p['hand'][] = $candidates[0];
+                $picked = $candidates[0];
+                $pickedId = (string)($picked['instance_id'] ?? '');
+                if ($pickedId !== '' && function_exists('takeFromPendingYellPool')) {
+                    $fromPool = takeFromPendingYellPool(
+                        $p,
+                        $pickedId,
+                        ['candidates' => array_map('cardPromptSummary', $candidates)],
+                        $state,
+                        $pid
+                    );
+                    if ($fromPool) {
+                        $picked = $fromPool;
+                    }
+                }
+                $p['hand'][] = $picked;
                 $state = addLog($state, $state['players'][$pid]['name'] .
-                    ' — [' . $name . '] added ' . cardDisplayName($candidates[0]) . ' from Yell to hand (tied score).');
+                    ' — [' . $name . '] added ' . cardDisplayName($picked) . ' from Yell to hand (tied score).');
                 break;
             }
             $state['pending_prompt'] = [
