@@ -20058,13 +20058,17 @@ function projectUnderChipRect(slotWrap, index, count) {
   };
 }
 
+/** Landscape under-cards (88:63), stacked like Live Success, height ≤ host. Peek to the right. */
 function memberUnderStackMetrics(hostW, hostH, n) {
-  const chipW = hostW;
-  const chipH = hostH;
-  const peek = Math.max(8, Math.min(hostW * 0.22, 16));
+  let chipH = hostW;
+  if (chipH > hostH) chipH = hostH;
+  const chipW = chipH * (88 / 63);
+  const peek = Math.max(10, Math.min(hostW * 0.3, chipW * 0.2));
   const count = Math.max(1, n || 1);
-  const step = count > 1 ? peek * 0.45 : 0;
-  return { chipW, chipH, peek, step, startY: 0 };
+  const span = Math.max(0, hostH - chipH);
+  const step = count > 1 ? span / (count - 1) : 0;
+  const startY = count > 1 ? 0 : Math.max(0, (hostH - chipH) / 2);
+  return { chipW, chipH, peek, step, startY };
 }
 
 function projectFieldCardRect(loc, card, myId) {
@@ -27385,6 +27389,18 @@ function bindSpectatorInspectOnRenderedCards(s) {
   });
 }
 
+/** Stage host that has this card in stacked_members (under-stack inspect). */
+function findStageHostForStackedCard(me, card) {
+  const iid = card?.instance_id;
+  if (!iid || !me?.stage) return null;
+  for (const m of Object.values(me.stage)) {
+    if (!m) continue;
+    const under = m.stacked_members || [];
+    if (under.some(u => u?.instance_id === iid)) return m;
+  }
+  return null;
+}
+
 // ── CARD MODAL ───────────────────────────────────────
 function showCard(card, iid, s, myId, forceSlot) {
   clearPickerCardHover();
@@ -27404,7 +27420,8 @@ function showCard(card, iid, s, myId, forceSlot) {
   const actionsEl=el('cd-actions'); actionsEl.innerHTML='';
   const isMain=ph==='main_first'||ph==='main_second';
 
-  if(iid && card.card_type==='メンバー' && isMe && isMain) {
+  const inHand = !!(card.instance_id && (me?.hand || []).some(c => c?.instance_id === card.instance_id));
+  if(inHand && card.card_type==='メンバー' && isMe && isMain) {
     if(forceSlot){ closeM('modal-card'); playToSlot(card,forceSlot,s,myId,null); return; }
     fillMemberPlayActions(actionsEl, card, s, myId, {
       interactive: true,
@@ -27414,14 +27431,13 @@ function showCard(card, iid, s, myId, forceSlot) {
 
   const onStage = card.instance_id && me?.stage &&
     Object.values(me.stage).some(m => m?.instance_id === card.instance_id);
+  const stackedHost = (!onStage && isMe) ? findStageHostForStackedCard(me, card) : null;
+  const actionCard = stackedHost || card;
   const inWr = card.instance_id && (me?.waiting_room||[]).some(c => c?.instance_id === card.instance_id);
-  const canActivate = (onStage || inWr) && card.card_type==='メンバー' && isMe && isMain;
+  const canActivate = (onStage || inWr || stackedHost) && actionCard.card_type==='メンバー' && isMe && isMain;
   if(canActivate){
-    const stageSlot = onStage
-      ? Object.entries(me.stage||{}).find(([,m])=>m?.instance_id===card.instance_id)?.[0]
-      : null;
     collectActivatableAbilities(s, myId)
-      .filter(a => a.card.instance_id === card.instance_id)
+      .filter(a => a.card.instance_id === actionCard.instance_id)
       .forEach(({ card: c, idx, ability, used, needEnergy, wrBlock }) => {
       const b=document.createElement('button');
       b.className='btn-phase'; b.style.marginTop='8px'; b.style.width='100%';
@@ -33443,7 +33459,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=106"></script>
+<script src="client/js/spectacle.js?v=107"></script>
 <script src="client/js/board-render.js?v=40"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
