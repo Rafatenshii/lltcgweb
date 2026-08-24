@@ -2370,7 +2370,7 @@ html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow,
 html.tcg-portrait-play #screen-game #hc-actions{
   display:flex!important;
-  flex-direction:row;
+  flex-direction:column;
   flex-wrap:nowrap;
   justify-content:center;
   align-items:stretch;
@@ -2387,9 +2387,14 @@ html.tcg-portrait-play #screen-game #hc-actions{
   padding-bottom:max(4px, var(--tcg-chrome-bottom, 0px));
   background:rgba(8,12,24,.97);
 }
+html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow,
+html.tcg-portrait-play #screen-game .card-hover-panel .slotrow,
+html.tcg-portrait-play #screen-game #hc-actions .hc-slotrow{
+  flex-direction:row;
+}
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-slotrow .btn-smol,
 html.tcg-portrait-play #screen-game .card-hover-panel .slotrow button,
-html.tcg-portrait-play #screen-game #hc-actions button{
+html.tcg-portrait-play #screen-game #hc-actions .hc-slotrow button{
   flex:1 1 0;
   min-width:0;
   max-width:104px;
@@ -2397,6 +2402,23 @@ html.tcg-portrait-play #screen-game #hc-actions button{
   font-size:13px;
   font-weight:800;
   border-radius:10px;
+}
+html.tcg-portrait-play #screen-game #hc-actions .hc-ability-actions{
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:none;
+  gap:8px;
+}
+html.tcg-portrait-play #screen-game #hc-actions .hc-ability-btn,
+html.tcg-portrait-play #modal-card.open #cd-actions button{
+  flex:0 0 auto;
+  width:100%;
+  max-width:none;
+  min-height:48px;
+  font-size:14px;
+  font-weight:800;
+  border-radius:12px;
 }
 html.tcg-portrait-play #screen-game .card-hover-panel .hc-live-place{
   display:none;

@@ -869,7 +869,14 @@
       } else if (typeof global.refreshHandPreviewPanel === 'function') {
         global.refreshHandPreviewPanel(card, s || global.G?.gameState, myId || global.G?.playerId);
       }
-      if (typeof global.fillMemberPlayActions === 'function' && global.el) {
+      if (typeof global.fillCardInfoActions === 'function' && global.el) {
+        global.fillCardInfoActions(global.el('hc-actions'), card, s || global.G?.gameState, myId || global.G?.playerId, {
+          interactive: true,
+          onPlay: function () {
+            if (typeof global.clearPlaySelection === 'function') global.clearPlaySelection();
+          },
+        });
+      } else if (typeof global.fillMemberPlayActions === 'function' && global.el) {
         global.fillMemberPlayActions(global.el('hc-actions'), card, s || global.G?.gameState, myId || global.G?.playerId, {
           interactive: true,
           onPlay: function () {

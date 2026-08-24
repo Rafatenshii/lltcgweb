@@ -110,7 +110,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
-<link rel="stylesheet" href="client/css/portrait.css?v=89">
+<link rel="stylesheet" href="client/css/portrait.css?v=90">
 <link rel="stylesheet" href="client/css/social.css?v=26">
 
 </head>
@@ -26602,6 +26602,64 @@ function getPlayPreviewCard(s, myId) {
   return card?.card_type === 'メンバー' ? card : null;
 }
 
+function cardIsInPlayerHand(card, s, myId) {
+  const iid = card?.instance_id;
+  if (!iid) return false;
+  return (s?.players?.[myId]?.hand || []).some(c => c?.instance_id === iid);
+}
+
+/** Activated skill buttons for card inspect (modal + mobile info sheet). */
+function fillActivatedAbilityButtons(container, card, s, myId, { onActivate = null } = {}) {
+  if (!container || !card || !s || G.isSpectator) return 0;
+  if (G.isTutorial && !G.tutorialLive) return 0;
+  const ph = s.phase;
+  const isMe = s.active_player === myId;
+  const isMain = ph === 'main_first' || ph === 'main_second';
+  const me = s.players?.[myId];
+  if (!isMe || !isMain || card.card_type !== 'メンバー') return 0;
+  const onStage = card.instance_id && me?.stage
+    && Object.values(me.stage).some(m => m?.instance_id === card.instance_id);
+  const stackedHost = (!onStage) ? findStageHostForStackedCard(me, card) : null;
+  const actionCard = stackedHost || card;
+  const inWr = card.instance_id && (me?.waiting_room || []).some(c => c?.instance_id === card.instance_id);
+  if (!(onStage || inWr || stackedHost)) return 0;
+  const rows = collectActivatableAbilities(s, myId)
+    .filter(a => a.card.instance_id === actionCard.instance_id);
+  if (!rows.length) return 0;
+  rows.forEach(({ card: c, idx, ability, used, needEnergy, wrBlock }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn-phase hc-ability-btn';
+    b.style.marginTop = '8px';
+    b.style.width = '100%';
+    if (used || needEnergy || wrBlock) b.disabled = true;
+    b.appendChild(mkSkillTypeIcons('Activated', 'ticon'));
+    b.appendChild(document.createTextNode(' ' + abilityLabel(ability)));
+    b.onclick = (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (onActivate) onActivate();
+      activateAbilityFromCard(c, idx, ability, s, myId);
+    };
+    container.appendChild(b);
+  });
+  return rows.length;
+}
+
+function fillCardInfoActions(container, card, s, myId, opts = {}) {
+  if (!container) return;
+  container.innerHTML = '';
+  const inHand = cardIsInPlayerHand(card, s, myId);
+  if (inHand) {
+    fillMemberPlayActions(container, card, s, myId, opts);
+  }
+  const abilityWrap = document.createElement('div');
+  abilityWrap.className = 'hc-ability-actions';
+  const n = fillActivatedAbilityButtons(abilityWrap, card, s, myId, opts);
+  if (n) container.appendChild(abilityWrap);
+  container.style.display = container.childNodes.length ? '' : 'none';
+}
+
 function fillMemberPlayActions(container, card, s, myId, { interactive = false, onPlay = null } = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -26609,7 +26667,8 @@ function fillMemberPlayActions(container, card, s, myId, { interactive = false, 
   const isMe = s?.active_player === myId;
   const isMain = ph === 'main_first' || ph === 'main_second';
   const me = s?.players?.[myId];
-  if (!card || card.card_type !== 'メンバー' || !isMe || !isMain) {
+  const inHand = cardIsInPlayerHand(card, s, myId);
+  if (!card || card.card_type !== 'メンバー' || !isMe || !isMain || !inHand) {
     container.style.display = 'none';
     return;
   }
@@ -26706,8 +26765,14 @@ function refreshHandPreviewPanel(card, s, myId) {
   }
   setLiveSelMultiPreviewVisible(false);
   fillCardDetailPanel('hc', card, s, myId);
-  fillMemberPlayActions(el('hc-actions'), card, s, myId, {
-    interactive: (!G.isTutorial || G.tutorialLive) && (G.selCard === card.instance_id || G.drag?.iid === card.instance_id),
+  fillCardInfoActions(el('hc-actions'), card, s, myId, {
+    interactive: (!G.isTutorial || G.tutorialLive),
+    onPlay: null,
+    onActivate: () => {
+      if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+        clearHoverCardPreview();
+      }
+    },
   });
   const panel = el('card-hover-panel');
   const empty = el('hc-empty');
@@ -27417,39 +27482,17 @@ function showCard(card, iid, s, myId, forceSlot) {
 
   G._modalCardRef = { card, iid, s, myId, forceSlot: forceSlot || null };
 
-  const actionsEl=el('cd-actions'); actionsEl.innerHTML='';
+  const actionsEl=el('cd-actions');
   const isMain=ph==='main_first'||ph==='main_second';
-
-  const inHand = !!(card.instance_id && (me?.hand || []).some(c => c?.instance_id === card.instance_id));
-  if(inHand && card.card_type==='メンバー' && isMe && isMain) {
-    if(forceSlot){ closeM('modal-card'); playToSlot(card,forceSlot,s,myId,null); return; }
-    fillMemberPlayActions(actionsEl, card, s, myId, {
-      interactive: true,
-      onPlay: () => closeM('modal-card'),
-    });
+  const inHand = cardIsInPlayerHand(card, s, myId);
+  if(inHand && card.card_type==='メンバー' && isMe && isMain && forceSlot){
+    closeM('modal-card'); playToSlot(card,forceSlot,s,myId,null); return;
   }
-
-  const onStage = card.instance_id && me?.stage &&
-    Object.values(me.stage).some(m => m?.instance_id === card.instance_id);
-  const stackedHost = (!onStage && isMe) ? findStageHostForStackedCard(me, card) : null;
-  const actionCard = stackedHost || card;
-  const inWr = card.instance_id && (me?.waiting_room||[]).some(c => c?.instance_id === card.instance_id);
-  const canActivate = (onStage || inWr || stackedHost) && actionCard.card_type==='メンバー' && isMe && isMain;
-  if(canActivate){
-    collectActivatableAbilities(s, myId)
-      .filter(a => a.card.instance_id === actionCard.instance_id)
-      .forEach(({ card: c, idx, ability, used, needEnergy, wrBlock }) => {
-      const b=document.createElement('button');
-      b.className='btn-phase'; b.style.marginTop='8px'; b.style.width='100%';
-      if(used) b.disabled=true;
-      if(needEnergy) b.disabled=true;
-      if(wrBlock) b.disabled=true;
-      b.appendChild(mkSkillTypeIcons('Activated', 'ticon'));
-      b.appendChild(document.createTextNode(' ' + abilityLabel(ability)));
-      b.onclick=()=> activateAbilityFromCard(c, idx, ability, s, myId);
-      actionsEl.appendChild(b);
-    });
-  }
+  fillCardInfoActions(actionsEl, card, s, myId, {
+    interactive: true,
+    onPlay: () => closeM('modal-card'),
+    onActivate: () => closeM('modal-card'),
+  });
   openM('modal-card');
 }
 
@@ -33467,7 +33510,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=32"></script>
 <script src="client/js/cpu-ai.js?v=11"></script>
-<script src="client/js/portrait-bridge.js?v=25"></script>
+<script src="client/js/portrait-bridge.js?v=26"></script>
 <script src="client/js/portrait-deck.js?v=5"></script>
 <script src="client/js/portrait-board.js?v=22"></script>
 <script>void bootApp();</script>
