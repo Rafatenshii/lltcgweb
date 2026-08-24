@@ -1186,12 +1186,16 @@ function tcgApiDeckAutoBuild(array $body): array {
     }
     $forcedGroup = $groupPref === '' ? null : $groupPref;
     $explicitGroup = $forcedGroup !== null && $forcedGroup !== '' && strcasecmp($forcedGroup, 'mixed') !== 0;
+    $subunitPref = function_exists('deckgenNormalizePreferSubunit')
+        ? deckgenNormalizePreferSubunit($body['subunit'] ?? '')
+        : (trim((string)($body['subunit'] ?? '')) ?: null);
     // Explicit UI group filter: never silently replace with the starter loadout.
     $gen = generateCollectionDeckLists(
         $cards['cards'] ?? [],
         $owned,
         $forcedGroup,
-        $explicitGroup ? null : $starterLists
+        $explicitGroup ? null : $starterLists,
+        $subunitPref
     );
     $cardMap = tcgBuildCardMap($cards);
     $validation = tcgValidateDeckLists($gen['main_deck'], $gen['energy_deck'], $cardMap, $owned);
@@ -1213,6 +1217,7 @@ function tcgApiDeckAutoBuild(array $body): array {
         'build' => [
             'name' => $gen['name_en'],
             'group' => $gen['group'],
+            'subunit' => $gen['subunit'] ?? ($subunitPref ?? ''),
             'summary' => $gen['summary'] ?? '',
             'main_deck' => $gen['main_deck'],
             'energy_deck' => $gen['energy_deck'],

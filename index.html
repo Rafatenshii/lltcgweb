@@ -13197,18 +13197,17 @@ async function randomExperimentDeck() {
   const btn = el('btn-deck-auto-build');
   el('deck-err').textContent = '';
   const prevLabel = btn?.textContent;
-  const group = deckAutoBuildGroupPref();
+  const body = deckAutoBuildPrefBody();
   if (btn) { btn.disabled = true; btn.textContent = 'Building…'; }
   try {
-    const body = group ? { group } : {};
     const res = await apiExperimentCall('experiment_random_deck', body);
     A.deckMain = [...(res.main_deck || [])];
     A.deckEnergy = [...(res.energy_deck || [])];
     A.experimentPassword = '';
     renderDeckBuilder({ deferPool: true });
-    const builtGroup = res.group || group;
-    el('deck-err').textContent = builtGroup
-      ? `Random legal deck built from ${deckFilterGroupLabel(builtGroup)}.`
+    const hint = deckAutoBuildPrefHint(res.group || body.group, res.subunit || body.subunit);
+    el('deck-err').textContent = hint
+      ? `Random legal deck built from ${hint}.`
       : 'Random legal deck built from the full card pool.';
   } catch (e) {
     el('deck-err').textContent = e.message;
@@ -13223,6 +13222,28 @@ function deckAutoBuildGroupPref() {
   return g || '';
 }
 
+/** Active SUBUNIT chip — empty means no subunit preference. */
+function deckAutoBuildSubunitPref() {
+  const s = (deckPoolFilterState().subunit || '').trim();
+  return s || '';
+}
+
+function deckAutoBuildPrefBody() {
+  const body = {};
+  const group = deckAutoBuildGroupPref();
+  const subunit = deckAutoBuildSubunitPref();
+  if (group) body.group = group;
+  if (subunit) body.subunit = subunit;
+  return body;
+}
+
+function deckAutoBuildPrefHint(group, subunit) {
+  const parts = [];
+  if (group && group !== 'mixed' && group !== 'starter') parts.push(deckFilterGroupLabel(group));
+  if (subunit) parts.push(deckFilterSubunitLabel(subunit));
+  return parts.join(' · ');
+}
+
 async function autoBuildDeckFromCollection() {
   if (A.deckBuilderMode === 'experiment') {
     return randomExperimentDeck();
@@ -13234,11 +13255,10 @@ async function autoBuildDeckFromCollection() {
     return;
   }
   const prevLabel = btn?.textContent;
-  const group = deckAutoBuildGroupPref();
+  const body = deckAutoBuildPrefBody();
   if (btn) { btn.disabled = true; btn.textContent = t('deck.building'); }
   try {
     await refreshCollection();
-    const body = group ? { group } : {};
     const res = await accountPost('deck_auto_build', body);
     const build = res.build || {};
     A.deckMain = [...(build.main_deck || [])];
@@ -13248,9 +13268,9 @@ async function autoBuildDeckFromCollection() {
       el('inp-deck-name').value = build.name || curName || 'My Deck';
     }
     renderDeckBuilder();
-    const builtGroup = build.group || group;
-    el('deck-err').textContent = (builtGroup && builtGroup !== 'mixed')
-      ? `${t('deck.autoBuiltSuccess')} (${deckFilterGroupLabel(builtGroup)})`
+    const hint = deckAutoBuildPrefHint(build.group || body.group, build.subunit || body.subunit);
+    el('deck-err').textContent = hint
+      ? `${t('deck.autoBuiltSuccess')} (${hint})`
       : t('deck.autoBuiltSuccess');
   } catch (e) {
     el('deck-err').textContent = e.message;

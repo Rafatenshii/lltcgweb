@@ -303,12 +303,19 @@ function apiExperimentRandomDeck(array $body): array {
         ? (string)$body['tier']
         : 'normal';
     $group = trim((string)($body['group'] ?? ''));
-    $gen = generateEnhancedCpuDeckLists($cards, $tier, $group !== '' ? $group : null);
+    $subunit = trim((string)($body['subunit'] ?? ''));
+    $gen = generateEnhancedCpuDeckLists(
+        $cards,
+        $tier,
+        $group !== '' ? $group : null,
+        $subunit !== '' ? $subunit : null
+    );
     validateExperimentDeckPayload($gen['main_deck'], $gen['energy_deck'], $data);
     return [
         'success'     => true,
         'name'        => 'Random Deck',
         'group'       => $gen['group'] ?? $group,
+        'subunit'     => $gen['subunit'] ?? $subunit,
         'main_deck'   => array_values($gen['main_deck'] ?? []),
         'energy_deck' => array_values($gen['energy_deck'] ?? []),
     ];

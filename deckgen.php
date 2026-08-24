@@ -78,6 +78,88 @@ function deckgenFilterMemberPool(array $members, string $filter): array {
     ));
 }
 
+function deckgenNormalizePreferSubunit(?string $subunit): ?string {
+    $subunit = trim((string)$subunit);
+    if ($subunit === '' || strcasecmp($subunit, 'all') === 0) {
+        return null;
+    }
+    return $subunit;
+}
+
+function deckgenCardSubunitList(array $card): array {
+    $out = [];
+    if (($card['subunit'] ?? '') !== '') {
+        $out[] = (string)$card['subunit'];
+    }
+    foreach ($card['subunits'] ?? [] as $s) {
+        if ($s !== '') {
+            $out[] = (string)$s;
+        }
+    }
+    return $out;
+}
+
+function deckgenSubunitsEqual(string $a, string $b): bool {
+    if (function_exists('subunitNamesMatch')) {
+        return subunitNamesMatch($a, $b);
+    }
+    $norm = static fn(string $s): string => mb_strtolower(str_replace('！', '!', trim($s)));
+    if ($norm($a) === $norm($b)) {
+        return true;
+    }
+    if (function_exists('subunitDisplayEn')) {
+        $ea = subunitDisplayEn($a);
+        $eb = subunitDisplayEn($b);
+        if ($ea !== '' && $eb !== '' && $norm($ea) === $norm($eb)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function deckgenCardMatchesSubunit(array $card, string $want): bool {
+    $want = trim($want);
+    if ($want === '') {
+        return true;
+    }
+    foreach (deckgenCardSubunitList($card) as $s) {
+        if (deckgenSubunitsEqual($s, $want)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function deckgenSubunitScoreBonus(array $card, ?string $prefer): int {
+    $prefer = deckgenNormalizePreferSubunit($prefer);
+    if ($prefer === null) {
+        return 0;
+    }
+    return deckgenCardMatchesSubunit($card, $prefer) ? 80 : 0;
+}
+
+function deckgenSubunitLiveBonus(array $card, ?string $prefer): int {
+    $prefer = deckgenNormalizePreferSubunit($prefer);
+    if ($prefer === null) {
+        return 0;
+    }
+    return deckgenCardMatchesSubunit($card, $prefer) ? 40 : 0;
+}
+
+function deckgenSubunitDisplay(?string $subunit): string {
+    $subunit = trim((string)$subunit);
+    if ($subunit === '') {
+        return '';
+    }
+    if (function_exists('subunitDisplayEn')) {
+        $en = subunitDisplayEn($subunit);
+        if ($en !== '') {
+            return $en;
+        }
+    }
+    return $subunit;
+}
+
 function deckgenFilterCanRamp(array $members, string $filter): bool {
     $has4 = $has9 = $has15 = false;
     foreach ($members as $c) {
@@ -749,7 +831,7 @@ function deckgenPickEnergy(array $energies, ?string $group): string {
     return $pool[0]['card_no'] ?? ($energies[0]['card_no'] ?? 'LL-E-003-SD');
 }
 
-function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null): array {
+function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null, ?string $preferSubunit = null): array {
     $cardMap  = [];
     $members  = [];
     $lives    = [];
@@ -785,7 +867,19 @@ function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null): 
         $nameEn       = "Random ($display)";
         $nameJp       = "ランダム（$display）";
     }
-    $main = deckgenBuildBalancedMemberMain($memberPool, null);
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
+    $subLabel = $preferSubunit !== null ? deckgenSubunitDisplay($preferSubunit) : '';
+    if ($subLabel !== '') {
+        if ($mixed) {
+            $nameEn = "Random Deck ($subLabel)";
+            $nameJp = "ランダムデッキ（$subLabel）";
+        } else {
+            $nameEn = "Random ($display · $subLabel)";
+            $nameJp = "ランダム（$display · $subLabel）";
+        }
+    }
+    $memberScoreFn = fn($c) => deckgenMemberBuildScore($c) + deckgenSubunitScoreBonus($c, $preferSubunit);
+    $main = deckgenBuildBalancedMemberMain($memberPool, null, $memberScoreFn);
     $counts = deckgenRebuildCounts($main);
     $membersAdded = count($main);
 
@@ -794,12 +888,14 @@ function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null): 
     }
 
     $colorCounts = deckgenColorCountsFromMain($main, $cardMap);
-    $liveNos     = deckgenPickLives($lives, $liveGroup, $colorCounts, null, null, null, $main);
+    $liveFitFn   = fn($c) => deckgenLiveBuildScore($c, $colorCounts) + deckgenSubunitLiveBonus($c, $preferSubunit);
+    $liveNos     = deckgenPickLives($lives, $liveGroup, $colorCounts, null, null, $liveFitFn, $main);
     $energyNo    = deckgenPickEnergy($energies, $mixed ? null : $group);
     $energyDeck  = array_fill(0, DECKGEN_ENERGY_SLOTS, $energyNo);
 
     return [
         'group'        => $group,
+        'subunit'      => $preferSubunit ?? '',
         'name_en'      => $nameEn,
         'name'         => $nameJp,
         'main_deck'    => array_merge($main, $liveNos),
@@ -809,7 +905,7 @@ function generateRandomDeckLists(array $allCards, ?string $forcedGroup = null): 
     ];
 }
 
-function generateCollectionDeckLists(array $allCards, array $owned, ?string $forcedGroup = null, ?array $starterFallback = null): array {
+function generateCollectionDeckLists(array $allCards, array $owned, ?string $forcedGroup = null, ?array $starterFallback = null, ?string $preferSubunit = null): array {
     if (empty($owned)) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
@@ -887,10 +983,13 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         }
     }
 
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
     $display = $group === 'mixed' ? 'Mixed' : deckgenGroupDisplay($group);
-    $nameEn  = "Auto-built ($display)";
+    $subLabel = $preferSubunit !== null ? deckgenSubunitDisplay($preferSubunit) : '';
+    $nameEn  = $subLabel !== '' ? "Auto-built ($display · $subLabel)" : "Auto-built ($display)";
 
-    $main = deckgenBuildBalancedMemberMain($memberPool, $owned);
+    $memberScoreFn = fn($c) => deckgenMemberBuildScore($c) + deckgenSubunitScoreBonus($c, $preferSubunit);
+    $main = deckgenBuildBalancedMemberMain($memberPool, $owned, $memberScoreFn);
     $membersAdded = count($main);
 
     if ($membersAdded < DECKGEN_MEMBER_SLOTS) {
@@ -922,7 +1021,8 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         }
     }
     $colorCounts = deckgenColorCountsFromMain($main, $cardMap);
-    $liveNos     = deckgenPickLives($livePool, $liveGroup, $colorCounts, $owned, null, null, $main);
+    $liveFitFn   = fn($c) => deckgenLiveBuildScore($c, $colorCounts) + deckgenSubunitLiveBonus($c, $preferSubunit);
+    $liveNos     = deckgenPickLives($livePool, $liveGroup, $colorCounts, $owned, null, $liveFitFn, $main);
     if (count($liveNos) < DECKGEN_LIVE_SLOTS) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
@@ -941,13 +1041,14 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
 
     return [
         'group'        => $group,
+        'subunit'      => $preferSubunit ?? '',
         'name_en'      => $nameEn,
         'name'         => $nameEn,
         'main_deck'    => array_merge($main, $liveNos),
         'energy_deck'  => $energyDeck,
         'member_count' => count($main),
         'live_count'   => count($liveNos),
-        'summary'      => $display . ' · balanced curve · hearts + color-matched Lives',
+        'summary'      => $display . ($subLabel !== '' ? " · $subLabel" : '') . ' · balanced curve · hearts + color-matched Lives',
     ];
 }
 
@@ -1065,7 +1166,7 @@ function generateCpuEasyDeckLists(array $starterDecks, ?string $avoidKey = null)
     ];
 }
 
-function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $forcedGroup = null): array {
+function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $forcedGroup = null, ?string $preferSubunit = null): array {
     $cardMap  = [];
     $members  = [];
     $lives    = [];
@@ -1108,16 +1209,20 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
         throw new Exception('Could not build CPU deck');
     }
 
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
     $display = deckgenGroupDisplay($group);
     $tierLabel = ucfirst($tier);
-    $nameEn    = "CPU · $tierLabel ($display)";
+    $subLabel = $preferSubunit !== null ? deckgenSubunitDisplay($preferSubunit) : '';
+    $nameEn    = $subLabel !== ''
+        ? "CPU · $tierLabel ($display · $subLabel)"
+        : "CPU · $tierLabel ($display)";
 
     $byCost = [];
     foreach ($memberPool as $c) {
         $byCost[intval($c['cost'] ?? 0)][] = $c;
     }
 
-    $scoreFn = fn($c) => deckgenCpuMemberScore($c, $tier);
+    $scoreFn = fn($c) => deckgenCpuMemberScore($c, $tier) + deckgenSubunitScoreBonus($c, $preferSubunit);
 
     $main         = [];
     $counts       = [];
@@ -1164,7 +1269,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
         }
         return deckgenMemberHeartTotal($c) > 0;
     }));
-    usort($fillers, fn($a, $b) => deckgenCpuMemberScore($b, $tier) <=> deckgenCpuMemberScore($a, $tier));
+    usort($fillers, fn($a, $b) => $scoreFn($b) <=> $scoreFn($a));
 
     $guard = 0;
     while ($membersAdded < DECKGEN_MEMBER_SLOTS && $guard++ < 500) {
@@ -1185,7 +1290,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
     }
 
     $ranked = $memberPool;
-    usort($ranked, fn($a, $b) => deckgenCpuMemberScore($b, $tier) <=> deckgenCpuMemberScore($a, $tier));
+    usort($ranked, fn($a, $b) => $scoreFn($b) <=> $scoreFn($a));
     $guard = 0;
     $rankIdx = 0;
     while ($membersAdded < DECKGEN_MEMBER_SLOTS && $guard++ < 500) {
@@ -1209,7 +1314,9 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
     $liveTargets = ($tier === 'hard')
         ? ['low' => 2, 'mid' => 4, 'high' => 6]
         : ['low' => 3, 'mid' => 5, 'high' => 4];
-    $liveFitFn = fn($c) => deckgenCpuLiveFitScore($c, $colorCounts, $tier) + mt_rand(0, 3);
+    $liveFitFn = fn($c) => deckgenCpuLiveFitScore($c, $colorCounts, $tier)
+        + deckgenSubunitLiveBonus($c, $preferSubunit)
+        + mt_rand(0, 3);
     $livePool = $lives;
     $liveGroup = deckgenIsSchoolGroup($group) ? $group : null;
     if ($liveGroup === null && deckgenNormalizeForcedGroup($group) !== null) {
@@ -1228,6 +1335,7 @@ function generateEnhancedCpuDeckLists(array $allCards, string $tier, ?string $fo
 
     return [
         'group'       => $group,
+        'subunit'     => $preferSubunit ?? '',
         'name_en'     => $nameEn,
         'name'        => $nameEn,
         'main_deck'   => array_merge($main, $liveNos),
