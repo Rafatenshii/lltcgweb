@@ -177,7 +177,11 @@
     try {
       var perm = await Push.requestPermissions();
       if (perm.receive !== 'granted') return;
-      await Push.register();
+      /* v1.2 APK has the push plugin but no google-services.json.
+         Push.register() → FirebaseMessaging.getInstance() crashes the whole app. */
+      if (global.LOVECA_FCM_REGISTER === true) {
+        await Push.register();
+      }
       Push.addListener('registration', function (token) {
         if (!token || !token.value) return;
         void accountPost('push_register', { token: token.value, platform: 'android' }).catch(function () {});
