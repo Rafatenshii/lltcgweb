@@ -595,3 +595,33 @@ button.social-bar-art { cursor: pointer; }
   cursor: pointer;
 }
 .social-report-opt input { margin-top: 2px; flex-shrink: 0; }
+
+.friend-push-banner {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 5200;
+  width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(10, 16, 32, 0.94);
+  border: 1px solid rgba(255, 186, 220, 0.35);
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(0,0,0,.4);
+}
+.friend-push-banner p { margin: 0 0 10px; font-weight: 700; font-size: 14px; }
+.friend-push-banner-actions { display: flex; gap: 8px; }
+.friend-invite-list { display: flex; flex-direction: column; gap: 8px; }
+.friend-invite-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -766,6 +766,12 @@ function apiCasualJoin(array $body): array {
         }
         return $payload;
     });
+    if (empty($out['match']) && $selfDiscordId) {
+        if (!function_exists('tcgPushNotifyFriendsQueued')) {
+            require_once __DIR__ . '/push.php';
+        }
+        tcgPushNotifyFriendsQueued($selfDiscordId, 'unranked', $gameMode);
+    }
     $out['queue_stats'] = tcgCasualQueuePublicStats($gameMode);
     $out['game_mode'] = $gameMode;
     return $out;

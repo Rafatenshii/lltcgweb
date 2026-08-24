@@ -111,7 +111,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
 <link rel="stylesheet" href="client/css/portrait.css?v=89">
-<link rel="stylesheet" href="client/css/social.css?v=18">
+<link rel="stylesheet" href="client/css/social.css?v=19">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -1645,6 +1645,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
                   style="text-transform:uppercase;letter-spacing:5px;font-family:'Fredoka One',cursive;font-size:22px;text-align:center">
               </div>
               <button class="btn-out" id="btn-join" data-i18n="lobby.joinRoom">Join Room</button>
+              <button class="btn-out" id="btn-invite-friend" type="button" data-i18n="lobby.inviteFriend">Invite a friend</button>
               <button class="btn-out" id="btn-lobby-spectate" type="button" data-i18n="lobby.spectate">Spectate Match</button>
               <div class="divider" data-i18n="lobby.orMatchRandomly">or match randomly</div>
               <button class="btn-grad" id="btn-casual-search" type="button" data-i18n="lobby.findRandomMatch">Find Random Match</button>
@@ -2555,6 +2556,18 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     </div>
   </div>
 </div>
+<div id="overlay-invite-friend" class="llc-menu-screen social-overlay" aria-modal="true" aria-labelledby="invite-friend-title" hidden>
+  <div class="account-shell social-shell">
+    <div class="panel account-panel social-panel-shell">
+      <div class="account-screen-head">
+        <button type="button" class="btn-ghost" id="btn-invite-friend-close" data-i18n="social.close">Close</button>
+        <h2 id="invite-friend-title" data-i18n="lobby.inviteFriend">Invite a friend</h2>
+      </div>
+      <p class="social-vis-hint" data-i18n="lobby.inviteFriendHint">Creates a room and notifies them. If they accept, they join your match.</p>
+      <div class="social-scroll" id="invite-friend-list"></div>
+    </div>
+  </div>
+</div>
 <div id="overlay-profile-mod" class="llc-menu-screen social-overlay" aria-modal="true" aria-labelledby="profile-mod-title" aria-hidden="true">
   <div class="account-shell social-shell">
     <div class="panel account-panel social-panel-shell">
@@ -2810,11 +2823,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=157"></script>
+<script src="i18n.js?v=158"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=30"></script>
-<script src="client/js/social.js?v=20"></script>
+<script src="client/js/social.js?v=21"></script>
+<script src="client/js/friend-push.js?v=2"></script>
 <script src="client/js/runtime-flags.js?v=5"></script>
 <script src="client/js/api-client.js?v=35"></script>
 <script>
@@ -6211,8 +6225,11 @@ async function initAccountFlow() {
     setTimeout(() => {
       if (peekLovecaSpectate()) void consumeLovecaSpectateInvite();
       else if (peekLovecaChallenge()) void consumeLovecaChallengeInvite();
+      else if (window.LLTCG_FRIEND_PUSH?.consumeAfterLogin) void window.LLTCG_FRIEND_PUSH.consumeAfterLogin();
       else if (window.LLTCG_DISCORD_PRESENCE?.consumePending) void window.LLTCG_DISCORD_PRESENCE.consumePending();
       else void resumeRankedSearchIfQueued();
+      try { window.LLTCG_FRIEND_PUSH?.registerNativePush?.(); } catch (e) { /* ignore */ }
+      try { window.LLTCG_FRIEND_PUSH?.startInvitePoll?.(); } catch (e) { /* ignore */ }
       try { window.LLTCG_DISCORD_PRESENCE?.refresh?.(true); } catch (e) { /* ignore */ }
     }, 0);
   } catch (e) {
@@ -6511,8 +6528,11 @@ async function confirmStarter() {
     setTimeout(() => {
       if (peekLovecaSpectate()) void consumeLovecaSpectateInvite();
       else if (peekLovecaChallenge()) void consumeLovecaChallengeInvite();
+      else if (window.LLTCG_FRIEND_PUSH?.consumeAfterLogin) void window.LLTCG_FRIEND_PUSH.consumeAfterLogin();
       else if (window.LLTCG_DISCORD_PRESENCE?.consumePending) void window.LLTCG_DISCORD_PRESENCE.consumePending();
       else void resumeRankedSearchIfQueued();
+      try { window.LLTCG_FRIEND_PUSH?.registerNativePush?.(); } catch (e) { /* ignore */ }
+      try { window.LLTCG_FRIEND_PUSH?.startInvitePoll?.(); } catch (e) { /* ignore */ }
       try { window.LLTCG_DISCORD_PRESENCE?.refresh?.(true); } catch (e) { /* ignore */ }
     }, 0);
   } catch (e) { el('starter-err').textContent = e.message; }

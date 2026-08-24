@@ -177,6 +177,25 @@ function tcgSocialFriendCount(string $discordId): int {
     return intval($stmt->fetchColumn());
 }
 
+/** @return list<string> */
+function tcgSocialAcceptedFriendIds(string $discordId): array {
+    tcgSocialEnsureSchema();
+    $stmt = tcgDb()->prepare(
+        'SELECT user_lo, user_hi FROM tcg_friends WHERE status = \'accepted\' AND (user_lo = ? OR user_hi = ?)'
+    );
+    $stmt->execute([$discordId, $discordId]);
+    $ids = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $lo = (string)($row['user_lo'] ?? '');
+        $hi = (string)($row['user_hi'] ?? '');
+        $other = $lo === $discordId ? $hi : $lo;
+        if ($other !== '') {
+            $ids[] = $other;
+        }
+    }
+    return $ids;
+}
+
 function tcgSocialAttachFriendMissions(array $payload, string $a, string $b): array {
     if (!function_exists('tcgMissionCheckFriendCount')) {
         require_once __DIR__ . '/missions.php';

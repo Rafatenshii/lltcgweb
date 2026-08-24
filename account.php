@@ -54,6 +54,7 @@ require_once __DIR__ . '/login_bonus.php';
 require_once __DIR__ . '/presence_actions.php';
 require_once __DIR__ . '/tournament.php';
 require_once __DIR__ . '/social.php';
+require_once __DIR__ . '/push.php';
 if (is_file(__DIR__ . '/local_dev_auth.php')) {
     require_once __DIR__ . '/local_dev_auth.php';
 }
@@ -159,6 +160,12 @@ try {
         case 'social_report':         echo json_encode(tcgApiSocialReport($body)); break;
         case 'social_mod_inbox':      echo json_encode(tcgApiSocialModInbox($body)); break;
         case 'social_mod_action':     echo json_encode(tcgApiSocialModAction($body)); break;
+        case 'push_register':         echo json_encode(tcgApiPushRegister($body)); break;
+        case 'push_unregister':       echo json_encode(tcgApiPushUnregister($body)); break;
+        case 'match_invite':          echo json_encode(tcgApiMatchInvite($body)); break;
+        case 'match_invites_pending': echo json_encode(tcgApiMatchInvitesPending($body)); break;
+        case 'match_invite_accept':   echo json_encode(tcgApiMatchInviteRespond($body, true)); break;
+        case 'match_invite_decline':  echo json_encode(tcgApiMatchInviteRespond($body, false)); break;
         case 'local_dev_status':
             if (!function_exists('tcgApiLocalDevStatus')) {
                 throw new Exception('Local fake auth unavailable', 404);
@@ -1323,6 +1330,9 @@ function tcgApiRankedJoin(array $body): array {
             'queue_stats' => tcgQueuePublicStats($gameMode),
             'game_mode' => $gameMode,
         ];
+    }
+    if (function_exists('tcgPushNotifyFriendsQueued')) {
+        tcgPushNotifyFriendsQueued($uid, 'ranked', $gameMode);
     }
     return [
         'success' => true,
