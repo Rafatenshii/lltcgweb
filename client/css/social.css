@@ -602,8 +602,7 @@ button.social-bar-art { cursor: pointer; }
 .social-char-count { font-size: 12px; opacity: 0.8; text-align: right; }
 .rank-name.social-name-link {
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
 }
 .social-friend-id {
   display: inline-flex;
