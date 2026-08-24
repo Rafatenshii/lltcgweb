@@ -105,12 +105,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=95">
+<link rel="stylesheet" href="client/css/shell-all.css?v=96">
 <link rel="stylesheet" href="client/css/prompts.css?v=3">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
-<link rel="stylesheet" href="client/css/portrait.css?v=88">
+<link rel="stylesheet" href="client/css/portrait.css?v=89">
 <link rel="stylesheet" href="client/css/social.css?v=18">
 
 </head>
@@ -18688,6 +18688,11 @@ function layoutHandFan(fanEl, opts = {}) {
     const stripEl = fanEl.closest('.my-hand-strip, .opp-hand-strip, .hand-strip');
     if (stripEl) stripEl.style.touchAction = 'pan-x';
   } else {
+    if (mobile) {
+      fanEl.style.width = 'max-content';
+      fanEl.style.minWidth = '100%';
+      fanEl.style.maxWidth = 'none';
+    }
     // Stay inside the playmat column on every PC width (clear portrait max-content).
     if (!mobile) {
       fanEl.style.width = '100%';
@@ -26878,6 +26883,22 @@ function finishHandDrag(e) {
   snapDragBackToHand();
 }
 
+/** Nearest hand ancestor that can actually scroll horizontally. */
+function handScrollRoot(fromEl) {
+  if (!fromEl || !fromEl.closest) return null;
+  const nodes = [
+    fromEl.closest('.pb-my-hand'),
+    fromEl.closest('.pb-opp-hand'),
+    fromEl.closest('.my-hand-strip'),
+    fromEl.closest('.opp-hand-strip'),
+    fromEl.closest('.hand-strip'),
+  ].filter(Boolean);
+  for (const el of nodes) {
+    if (el.scrollWidth > el.clientWidth + 2) return el;
+  }
+  return nodes[0] || null;
+}
+
 function onDocPointerMove(e) {
   if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
   if (G.drag && e.pointerId === G.drag.pointerId) {
@@ -26895,22 +26916,24 @@ function onDocPointerMove(e) {
   const dy = e.clientY - hp.sy;
   const dist = Math.hypot(dx, dy);
   const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
+  const mobileVp = typeof tcgMobileViewportActive === 'function' && tcgMobileViewportActive();
   const android = typeof tcgIsAndroidClient === 'function' && tcgIsAndroidClient();
-  // Portrait: slightly higher threshold so a firm tap isn't treated as a scroll.
-  const moveThresh = portrait ? Math.max(DRAG_THRESHOLD, 16) : DRAG_THRESHOLD;
+  const handPanMode = portrait || mobileVp;
+  // Portrait / phone: slightly higher threshold so a firm tap isn't treated as a scroll.
+  const moveThresh = handPanMode ? Math.max(DRAG_THRESHOLD, 16) : DRAG_THRESHOLD;
   if (dist <= moveThresh) return;
 
-  if (portrait) {
+  if (handPanMode) {
     // Only horizontal travel counts as scroll. Vertical finger jitter must not kill taps.
     if (Math.abs(dx) > moveThresh && Math.abs(dx) >= Math.abs(dy) * 0.75) {
       hp.moved = true;
       hp.portraitPan = true;
       if (hp.longPressTimer) { clearTimeout(hp.longPressTimer); hp.longPressTimer = null; }
       clearHoverCardPreview();
-      const strip = hp.el?.closest?.('.my-hand-strip, .opp-hand-strip, .hand-strip');
-      if (strip) {
+      const scroller = handScrollRoot(hp.el);
+      if (scroller) {
         if (hp._lastPanX == null) hp._lastPanX = hp.sx;
-        strip.scrollLeft += hp._lastPanX - e.clientX;
+        scroller.scrollLeft += hp._lastPanX - e.clientX;
         hp._lastPanX = e.clientX;
       }
       return;
@@ -27074,10 +27097,11 @@ function bindHandCardEvents(d, card, s, myId) {
     if (G.animating && !(G.tutorialLive && typeof tutBlocks === 'function' && !tutBlocks('hand'))) return;
     if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
     const portrait = typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive();
+    const mobileVp = typeof tcgMobileViewportActive === 'function' && tcgMobileViewportActive();
     const android = typeof tcgIsAndroidClient === 'function' && tcgIsAndroidClient();
-    // Portrait: allow horizontal hand pan — do not preventDefault / capture until we know intent.
+    // Phone: allow horizontal hand pan — do not preventDefault / capture until we know intent.
     // Tap completion is handled in onDocPointerUp via finishPortraitHandTap.
-    if (!portrait) {
+    if (!portrait && !mobileVp) {
       e.preventDefault();
       try { d.setPointerCapture(e.pointerId); } catch (_) {}
     }

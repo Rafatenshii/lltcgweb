@@ -1801,7 +1801,7 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .game-wide-wrap{
   --mobile-hand-card-h:44cqh;
   --mobile-hand-half:calc(var(--mobile-hand-card-h) / 2);
   --mobile-hand-peek:var(--mobile-hand-half);
-  --mobile-hand-rest-offset:var(--mobile-hand-half);
+  --mobile-hand-rest-offset:calc(var(--mobile-hand-card-h) * 0.34);
   --mobile-hand-tap-lift:var(--mobile-hand-half);
   --mobile-hand-raise:var(--mobile-hand-card-h);
   --hand-strip-h:var(--mobile-hand-peek);
@@ -1952,7 +1952,7 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .playmat-column{
   width:auto!important;max-width:none!important;
   overflow:visible;position:relative;
   display:flex;flex-direction:column;
-  --mobile-hand-rest-offset:var(--mobile-hand-half);
+  --mobile-hand-rest-offset:calc(var(--mobile-hand-card-h) * 0.34);
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .playmat-mat-viewport{
   display:flex;flex-direction:column;
@@ -2002,11 +2002,19 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .playmat-column.mat-f
   display:none!important;
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .hand-strip.my-hand-strip{
-  flex:0 0 var(--mobile-hand-peek);height:var(--mobile-hand-peek);min-height:var(--mobile-hand-peek);
-  z-index:28;overflow:visible;padding-bottom:0;align-items:stretch;
+  --mobile-hand-scroll-pad:calc(var(--mobile-hand-card-h) * 0.22);
+  flex:0 0 calc(var(--mobile-hand-peek) + var(--mobile-hand-scroll-pad));
+  height:calc(var(--mobile-hand-peek) + var(--mobile-hand-scroll-pad));
+  min-height:calc(var(--mobile-hand-peek) + var(--mobile-hand-scroll-pad));
+  z-index:28;overflow-x:auto;overflow-y:hidden;padding-bottom:0;
+  padding-top:var(--mobile-hand-scroll-pad);box-sizing:border-box;align-items:stretch;
+  touch-action:pan-x;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  scrollbar-width:none;
 }
+html.tcg-mobile-viewport #screen-game .game-viewport-frame .hand-strip.my-hand-strip::-webkit-scrollbar{display:none}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .my-hand-strip .hand-fan{
   align-items:flex-end;height:100%;overflow:visible;
+  width:max-content;min-width:100%;
   transform:translateY(var(--mobile-hand-rest-offset));
   transition:transform .22s cubic-bezier(.22,1,.36,1);
 }
@@ -2026,6 +2034,7 @@ html.tcg-mobile-viewport #screen-game .game-viewport-frame .hcard{width:auto}
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .my-hand-strip .hcard{
   height:var(--mobile-hand-card-h);
   transform-origin:center bottom;
+  touch-action:pan-x;
   transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .18s ease,border-color .18s ease;
 }
 html.tcg-mobile-viewport #screen-game .game-viewport-frame .my-hand-strip .hcard:not(.play-sel):not(.hover-sel){
