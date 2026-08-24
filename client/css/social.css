@@ -66,9 +66,13 @@
   align-items: center;
   gap: inherit;
 }
-/* Wider shells (deck / shops / lobby): park on the viewport’s outer right. */
+/* Wider shells (deck / shops): park on the viewport’s outer right. */
 #social-rail.social-rail--edge {
   right: max(10px, env(safe-area-inset-right, 0px));
+}
+/* Unranked lobby is 920px — sit just outside that column, same idea as ranked’s 720px hub. */
+#social-rail.social-rail--lobby {
+  right: max(10px, calc((100vw - min(920px, 96vw)) / 2 - 76px));
 }
 /* Booster page is 1200px — sit just outside that column, same idea as the 720px hub. */
 #social-rail.social-rail--booster {
@@ -124,6 +128,7 @@
   #social-rail,
   #social-rail.social-rail--edge,
   #social-rail.social-rail--booster,
+  #social-rail.social-rail--lobby,
   #social-rail.social-rail--pack {
     top: max(10px, env(safe-area-inset-top, 0px));
     right: max(10px, env(safe-area-inset-right, 0px));

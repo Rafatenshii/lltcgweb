@@ -254,7 +254,6 @@
     sticker: 1,
     'playmat-shop': 1,
     'sleeve-shop': 1,
-    lobby: 1,
     tournament: 1,
   };
 
@@ -288,12 +287,12 @@
     _screen = screenId || _screen;
     const rail = document.getElementById('social-rail');
     if (!rail) return;
-    rail.classList.remove('social-rail--edge', 'social-rail--booster', 'social-rail--pack', 'social-rail--card-list');
+    rail.classList.remove('social-rail--edge', 'social-rail--booster', 'social-rail--pack', 'social-rail--card-list', 'social-rail--lobby');
     if (_screen === 'booster') rail.classList.add('social-rail--booster');
-    else if (_screen === 'pack-results') rail.classList.add('social-rail--pack');
+    else if (_screen === 'lobby') rail.classList.add('social-rail--lobby');
     else if (_screen === 'card-list') rail.classList.add('social-rail--card-list');
     else if (WIDE_RAIL_SCREENS[_screen]) rail.classList.add('social-rail--edge');
-    const hide = _screen === 'game' || !signedIn();
+    const hide = _screen === 'game' || _screen === 'pack-results' || !signedIn();
     rail.hidden = hide;
     if (hide) closeSocialMenu({ silent: true });
     const logged = signedIn();
