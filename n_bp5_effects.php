@@ -580,7 +580,7 @@ function nBp5ResolveActivatedAbility(
             if (!$liveCard) {
                 throw new Exception('Choose a Live from Waiting Room');
             }
-            $payScore = intval($liveCard['score'] ?? 0);
+            $payScore = liveCardCharacteristicScore($liveCard);
             if ($payScore > 0 && !payEnergyCost($p, $payScore)) {
                 throw new Exception("Need $payScore active Energy (Live score)");
             }
@@ -589,7 +589,7 @@ function nBp5ResolveActivatedAbility(
                 $p['waiting_room'],
                 fn($c) => ($c['instance_id'] ?? '') !== $liveId
             ));
-            $p['hand'][] = $liveCard;
+            $p['hand'][] = liveCardRestorePrintedScore($liveCard);
             markAbilityUsed($member, $abilityIdx);
             $p['stage'][$slot] = $member;
             $state = addLog($state, $state['players'][$pid]['name'] .
@@ -782,7 +782,7 @@ function nBp5AdvanceDiscardPayWrLiveScoreAfterDiscard(
         if (($c['card_type'] ?? '') !== 'ライブ') {
             continue;
         }
-        $score = intval($c['score'] ?? 0);
+        $score = liveCardCharacteristicScore($c);
         if ($score > $activeEnergy) {
             continue;
         }
@@ -889,7 +889,7 @@ function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
             if (!$liveCard) {
                 throw new Exception('Choose a Live from Waiting Room');
             }
-            $payScore = intval($liveCard['score'] ?? 0);
+            $payScore = liveCardCharacteristicScore($liveCard);
             if ($payScore > 0 && !payEnergyCost($ownerP, $payScore)) {
                 throw new Exception("Need $payScore active Energy (Live score)");
             }
@@ -897,7 +897,7 @@ function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
                 $ownerP['waiting_room'],
                 fn($c) => ($c['instance_id'] ?? '') !== $liveId
             ));
-            $ownerP['hand'][] = $liveCard;
+            $ownerP['hand'][] = liveCardRestorePrintedScore($liveCard);
             unset($state['pending_prompt']);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] paid $payScore Energy; added Live to hand.");

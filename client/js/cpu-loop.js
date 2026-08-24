@@ -4926,7 +4926,7 @@ function cpuResolvePromptSmart(s, cpu, pr, tier) {
   }
   if (pr.type === 'optional_pay_energy_on_enter' || pr.type === 'optional_pay_energy_if_baton') {
     const ab = pr.ability || {};
-    const cost = pr.pay_cost || ab.cost || 1;
+    const cost = (pr.pay_cost ?? ab.cost ?? 1);
     const score = cpuScoreOptionalAbility(
       { ...ab, type: ab.type || pr.type, cost },
       cpu, tier, ae, hand, winPressure, read

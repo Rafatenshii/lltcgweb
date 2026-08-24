@@ -434,6 +434,27 @@ function liveCardPrintedScore(array $card): int {
     return intval($card['score'] ?? 0);
 }
 
+/**
+ * Score used while a Live is not being performed (WR / hand / deck).
+ * Live Start bonuses stay on `score` after the Live; those must not apply here
+ * (e.g. Shizuku bp5-003 paying Energy equal to a WR Live's score).
+ */
+function liveCardCharacteristicScore(array $card): int {
+    return liveCardPrintedScore($card);
+}
+
+/** Strip Live-performance score modifiers so the card's printed score is the characteristic. */
+function liveCardRestorePrintedScore(array $card): array {
+    if (($card['card_type'] ?? '') !== 'ライブ' && ($card['card_type_en'] ?? '') !== 'Live') {
+        return $card;
+    }
+    $printed = liveCardPrintedScore($card);
+    $card['_printed_score'] = $printed;
+    $card['score'] = $printed;
+    unset($card['live_score_bonus'], $card['_effect_score_bonus']);
+    return $card;
+}
+
 function sumLiveZoneCardScores(array $zone): int {
     $sum = 0;
     foreach ($zone as $c) {
@@ -4959,11 +4980,11 @@ function cardMatchesWrPick(array $card, array $cfg): bool {
     }
     if (($filter === 'live' || ($card['card_type'] ?? '') === 'ライブ')
         && isset($cfg['max_live_score'])) {
-        return intval($card['score'] ?? 0) <= intval($cfg['max_live_score']);
+        return liveCardCharacteristicScore($card) <= intval($cfg['max_live_score']);
     }
     if (($filter === 'live' || ($card['card_type'] ?? '') === 'ライブ')
         && isset($cfg['min_live_score'])) {
-        return intval($card['score'] ?? 0) >= intval($cfg['min_live_score']);
+        return liveCardCharacteristicScore($card) >= intval($cfg['min_live_score']);
     }
     if (isset($cfg['min_required_hearts'])
         && ($filter === 'live' || ($card['card_type'] ?? '') === 'ライブ')) {
@@ -4975,7 +4996,7 @@ function cardMatchesWrPick(array $card, array $cfg): bool {
         return countRequiredHearts($card) >= $min;
     }
     if (isset($cfg['min_score']) && ($filter === 'live' || ($card['card_type'] ?? '') === 'ライブ')) {
-        return intval($card['score'] ?? 0) >= intval($cfg['min_score']);
+        return liveCardCharacteristicScore($card) >= intval($cfg['min_score']);
     }
     return true;
 }
@@ -4996,7 +5017,7 @@ function cardMatchesYellPick(array $card, array $cfg): bool {
             return intval($card['cost'] ?? 0) <= intval($cfg['max_member_cost'] ?? 99);
         }
         if (($card['card_type'] ?? '') === 'ライブ') {
-            return intval($card['score'] ?? 0) <= intval($cfg['max_live_score'] ?? 99);
+            return liveCardCharacteristicScore($card) <= intval($cfg['max_live_score'] ?? 99);
         }
         return false;
     }
@@ -6390,8 +6411,9 @@ function cardPromptSummary(array $c): array {
     if (array_key_exists('blade', $c)) {
         $summary['blade'] = $c['blade'];
     }
-    if (array_key_exists('score', $c)) {
-        $summary['score'] = $c['score'];
+    if (array_key_exists('score', $c) || array_key_exists('_printed_score', $c)) {
+        $isLive = ($c['card_type'] ?? '') === 'ライブ' || ($c['card_type_en'] ?? '') === 'Live';
+        $summary['score'] = $isLive ? liveCardCharacteristicScore($c) : intval($c['score'] ?? 0);
     }
     if (!empty($c['subunit'])) {
         $summary['subunit'] = $c['subunit'];
