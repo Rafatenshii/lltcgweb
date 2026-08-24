@@ -88,7 +88,7 @@ function hsCl1YellRevealPool(array $state, string $pid, array $p, array $ctx = [
     $add($p['yell_cards'] ?? []);
     $add($state['_yell_revealed_snapshot'][$pid] ?? []);
     $add($state['yell_reveal'][$pid] ?? []);
-    $add($state['_last_yell_cards'] ?? []);
+    // Do not merge `_last_yell_cards`: it is the most recent Yell for either seat.
     $snapIds = [];
     foreach ($state['_yell_revealed_snapshot'][$pid] ?? [] as $c) {
         $iid = (string)($c['instance_id'] ?? '');
@@ -217,7 +217,7 @@ function hsResolveHasunosoraCl1Effect(array $state, string $pid, array $source, 
                 'owner'       => $pid,
                 'responder'   => $pid,
                 'source_name' => $name,
-                'prompt'      => 'Combined Live Score is tied — choose 1 Yell card to add to your hand.',
+                'prompt'      => 'Combined Live Score is tied — choose 1 of your Yell cards to add to your hand.',
                 'candidates'  => array_map('cardPromptSummary', $candidates),
                 'ability'     => $ab,
             ];
