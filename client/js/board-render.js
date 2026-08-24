@@ -1235,11 +1235,13 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
         d.onclick = G.isSpectator ? null : () => showCard(mbr, null, s, myId);
         applyCardFoilFx(d, mbr);
       }
-      const heartGroups = memberEffectiveHeartGroups(mbr);
-      if (heartGroups.length) {
+      const printedHearts = (typeof memberPrintedHeartGroups === 'function')
+        ? memberPrintedHeartGroups(mbr)
+        : (mbr.hearts || []);
+      if (printedHearts.length) {
         const hr = document.createElement('div');
         hr.className = 'stage-hearts';
-        appendHeartIcons(hr, heartGroups, false, true);
+        appendHeartIcons(hr, printedHearts, false, true);
         d.appendChild(hr);
       }
       applyMemberWaitVisual(d, mbr, { animate: true });
@@ -1270,6 +1272,20 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
             : `Printed ${printedBlade} ${bladeBonus} from modifiers`;
         }
         d.appendChild(badge);
+      }
+      const heartBonus = (typeof memberModifierHeartGroups === 'function')
+        ? memberModifierHeartGroups(mbr, s, stageOwnerPid, slot)
+        : [];
+      if (heartBonus.length && typeof appendHeartStatCounts === 'function') {
+        const heartBadge = document.createElement('div');
+        heartBadge.className = 'field-badge field-hearts';
+        heartBadge.title = 'Hearts gained until Live ends';
+        appendHeartStatCounts(heartBadge, mbr.hearts || [], {
+          lg: false,
+          field: true,
+          bonusHearts: heartBonus,
+        });
+        d.appendChild(heartBadge);
       }
       if (typeof stageMemberLiveCostInfo === 'function') {
         const costInfo = stageMemberLiveCostInfo(mbr);

@@ -4722,6 +4722,19 @@ function perfCardEl(card, kind, opts = {}) {
       }
       d.appendChild(badge);
     }
+    const heartBonus = (typeof memberModifierHeartGroups === 'function' && opts.state && opts.pid)
+      ? memberModifierHeartGroups(c, opts.state, opts.pid, opts.slot || '')
+      : [];
+    if (heartBonus.length && typeof appendHeartStatCounts === 'function') {
+      const hr = document.createElement('div');
+      hr.className = 'perf-member-hearts';
+      appendHeartStatCounts(hr, c.hearts || [], {
+        lg: false,
+        field: true,
+        bonusHearts: heartBonus,
+      });
+      d.appendChild(hr);
+    }
     appendPerfMemberLiveCostBadge(d, c);
     appendMemberStackedMembersBadge(d, c);
   } else {

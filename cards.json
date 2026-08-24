@@ -26182,14 +26182,11 @@
             "group": "Hasunosora",
             "booster_pack": "プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ",
             "cost": 2,
-            "blade": 0,
-            "hearts": [
-                {
-                    "color": "blue",
-                    "count": 1
-                }
+            "blade": 1,
+            "hearts": [],
+            "blade_hearts": [
+                "blue"
             ],
-            "blade_hearts": [],
             "rarity": "P+",
             "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Live Start] Until this Live ends, for each Member card under this Member, this Member's cost gets +4 and you gain 1 Blue Heart. This ability counts at most 3 Member cards under this Member.",
             "text_jp": "[起動] [ターン1回] 手札の「村野さやか」のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。\n\n[ライブ開始時] ライブ終了時まで、このメンバーの下にあるメンバーカード1枚につき、このカードのコストを＋４して青ハートを得る。この能力では下にあるメンバーカードは3枚までしか数えない。",
@@ -26229,14 +26226,11 @@
             "group": "Hasunosora",
             "booster_pack": "プレミアムブースター 蓮ノ空女学院スクールアイドルクラブ",
             "cost": 2,
-            "blade": 0,
-            "hearts": [
-                {
-                    "color": "blue",
-                    "count": 1
-                }
+            "blade": 1,
+            "hearts": [],
+            "blade_hearts": [
+                "blue"
             ],
-            "blade_hearts": [],
             "rarity": "R",
             "text": "[Activated] [Once per Turn] Reveal 1 \"Sayaka Murano\" Member card from your hand: put the revealed card under this Member.\n[Live Start] Until this Live ends, for each Member card under this Member, this Member's cost gets +4 and you gain 1 Blue Heart. This ability counts at most 3 Member cards under this Member.",
             "text_jp": "[起動] [ターン1回] 手札の「村野さやか」のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。\n\n[ライブ開始時] ライブ終了時まで、このメンバーの下にあるメンバーカード1枚につき、このカードのコストを＋４して青ハートを得る。この能力では下にあるメンバーカードは3枚までしか数えない。",

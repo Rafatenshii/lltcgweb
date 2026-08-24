@@ -2120,6 +2120,32 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-ga
 .stage-slot.opp .mslot .field-badge.field-blade{
   top:0;bottom:auto;padding:0 0 3px;transform:translateY(-42%);
 }
+.mslot .field-badge.field-hearts{
+  position:absolute;left:auto;right:0;width:auto;margin:0;padding:2px 5px;
+  border-radius:8px;background:rgba(0,0,0,.72);z-index:9;gap:2px;
+  transition:transform .2s cubic-bezier(.22,1,.36,1);
+}
+.stage-slot:not(.opp) .mslot .field-badge.field-hearts{
+  top:auto;bottom:0;transform:translate(8%, 42%);
+}
+.stage-slot.opp .mslot .field-badge.field-hearts{
+  top:0;bottom:auto;transform:translate(8%, -42%);
+}
+.field-badge.field-hearts .heart-stat-row{
+  display:inline-flex;align-items:center;gap:2px;
+}
+.field-badge.field-hearts .heart-stat-count{
+  font-size:clamp(15px,4.5cqw,21px);font-weight:800;color:#fff;
+  text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95);
+}
+.field-badge.field-hearts .stat-mod-bonus{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(15px,4.5cqw,21px);font-weight:800;color:#FBBF24;
+  text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95);
+}
+.field-badge.field-hearts .hicon{
+  width:clamp(16px,4.4cqw,22px);height:clamp(16px,4.4cqw,22px);
+}
 .live-slot-wrap:not(.opp) .field-badge{
   position:absolute;left:0;right:0;padding:3px 0 0;margin:0;order:unset;
 }

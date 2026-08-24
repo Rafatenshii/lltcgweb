@@ -105,12 +105,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=98">
+<link rel="stylesheet" href="client/css/shell-all.css?v=99">
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
-<link rel="stylesheet" href="client/css/portrait.css?v=90">
+<link rel="stylesheet" href="client/css/portrait.css?v=91">
 <link rel="stylesheet" href="client/css/social.css?v=26">
 
 </head>
@@ -27871,6 +27871,18 @@ function memberModifierHeartGroups(member, state, pid, slot) {
   return sortHeartsByDisplayOrder([...map.entries()].map(([color, count]) => ({ color, count })));
 }
 
+function memberPrintedHeartGroups(m) {
+  if (!m) return [];
+  const treat = m.hearts_treat_as || null;
+  const replace = (Array.isArray(m.replaced_hearts) && m.replaced_hearts[0]) || null;
+  const groups = [];
+  (m.hearts || []).forEach(hg => {
+    const color = normalizeHeartColor(treat || replace || hg.color || 'any');
+    groups.push({ color, count: hg.count || 1 });
+  });
+  return groups;
+}
+
 function memberEffectiveHeartGroups(m) {
   if (!m) return [];
   const treat = m.hearts_treat_as || null;
@@ -33470,10 +33482,10 @@ function appendHeartStatCounts(container, hearts, { lg = true, field = false, al
     row.className = 'heart-stat-row' + (delta ? ' heart-stat-mod' : '');
     row.dataset.color = color;
     row.appendChild(mkHeartIcon(color, lg, field));
-    if (printedCount) {
+    if (printedCount || delta) {
       const countEl = document.createElement('span');
       countEl.className = 'heart-stat-count';
-      countEl.textContent = String(printedCount);
+      countEl.textContent = String(printedCount || 0);
       row.appendChild(countEl);
     }
     appendDelta(row, delta);
@@ -33526,8 +33538,8 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=107"></script>
-<script src="client/js/board-render.js?v=41"></script>
+<script src="client/js/spectacle.js?v=108"></script>
+<script src="client/js/board-render.js?v=42"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>

@@ -1818,6 +1818,36 @@ html.tcg-portrait-play #screen-game .mslot .field-badge.field-blade .badge-val{
   font-size:24px!important;
   line-height:1!important;
 }
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts{
+  z-index:12!important;
+  width:auto!important;
+  max-width:100%;
+  left:auto!important;
+  right:4%!important;
+  display:flex!important;
+  padding:2px 5px!important;
+  border-radius:8px;
+  background:rgba(0,0,0,.72);
+}
+html.tcg-portrait-play #screen-game .stage-slot:not(.opp) .mslot .field-badge.field-hearts{
+  top:auto!important;
+  bottom:0!important;
+  transform: translate(0, -36%)!important;
+}
+html.tcg-portrait-play #screen-game .stage-slot.opp .mslot .field-badge.field-hearts{
+  top:auto!important;
+  bottom:0!important;
+  transform: translate(0, -72%)!important;
+}
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts .hicon{
+  width:22px!important;
+  height:22px!important;
+}
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts .heart-stat-count,
+html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts .stat-mod-bonus{
+  font-size:20px!important;
+  line-height:1!important;
+}
 
 html.tcg-portrait-play .pb-hud{
   display:flex;
