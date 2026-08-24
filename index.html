@@ -106,7 +106,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="client/css/shell-all.css?v=97">
-<link rel="stylesheet" href="client/css/prompts.css?v=3">
+<link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
@@ -2408,6 +2408,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
     <h2 id="prompt-ttl" data-i18n="prompt.respond">Respond</h2>
     <div id="prompt-effect" class="prompt-effect-text" hidden></div>
     <p id="prompt-msg" class="prompt-branch-msg"></p>
+    <div id="prompt-look-cards" class="prompt-look-cards" hidden></div>
     <p id="prompt-sub" class="prompt-branch-sub" hidden></p>
     <div id="prompt-text-wrap" class="prompt-text-wrap" hidden>
       <input type="text" id="prompt-text-input" class="prompt-text-input" autocomplete="off" maxlength="120"
@@ -2860,7 +2861,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/state-apply.js?v=69"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
-<script src="client/js/prompt-renderer.js?v=91"></script>
+<script src="client/js/prompt-renderer.js?v=92"></script>
 <script src="client/js/tutorial-interactive.js?v=25"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>

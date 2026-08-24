@@ -80,3 +80,26 @@ html.tcg-portrait-play .prompt-board-peek-rail,
 html.tcg-mobile-viewport .prompt-board-peek-rail {
   display: none !important;
 }
+
+/* Look-at-top (Kanan, etc.): show the peeked card on Yes/No prompts. */
+.prompt-look-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.prompt-look-cards[hidden] { display: none !important; }
+.prompt-look-cards .prompt-look-card {
+  width: min(168px, 42vw);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.prompt-look-cards .prompt-look-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.45);
+}
+

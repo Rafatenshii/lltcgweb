@@ -1771,6 +1771,31 @@ function hidePromptEffectText(){
   box.innerHTML='';
 }
 
+function hidePromptLookCards(){
+  const wrap=el('prompt-look-cards');
+  if(!wrap) return;
+  wrap.hidden=true;
+  wrap.innerHTML='';
+}
+
+function renderPromptLookCards(pr){
+  const wrap=el('prompt-look-cards');
+  if(!wrap) return;
+  const cards=pr?.looked_cards||pr?.look_cards||[];
+  if(!cards.length){
+    hidePromptLookCards();
+    return;
+  }
+  wrap.innerHTML='';
+  wrap.hidden=false;
+  cards.forEach((raw)=>{
+    if(!raw) return;
+    const card=(typeof enrichCard==='function')?enrichCard(raw):raw;
+    wrap.appendChild(mkPickCardEl(card,'prompt-look-card pickcard',null));
+  });
+  if(!wrap.childElementCount) hidePromptLookCards();
+}
+
 
 global.sendResolvePrompt = function sendResolvePrompt(choice, extra={}){
   if (isReplayPromptReadOnlyState(G.gameState)) return;
@@ -1788,6 +1813,7 @@ global.renderSelfActivationPrompt = function renderSelfActivationPrompt(pr, s, m
   const msgEl=el('prompt-msg');
   msgEl.textContent=promptQuestionText(pr, effectDisplay, s);
   msgEl.className='prompt-cost-question';
+  renderPromptLookCards(pr);
   const subEl=el('prompt-sub');
   subEl.hidden=false;
   subEl.textContent=t('prompt.activateSub');
@@ -2215,6 +2241,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     ovl?.classList.remove('open');
     hideTextAnswerPrompt();
     hidePromptEffectText();
+    hidePromptLookCards();
     closeM('overlay-hand-pick');
     closeM('overlay-pick');
     closeM('overlay-heart');
@@ -2227,6 +2254,7 @@ global.renderPrompt = function renderPrompt(s, myId){
       ovl?.classList.remove('open');
       hideTextAnswerPrompt();
       hidePromptEffectText();
+      hidePromptLookCards();
       closeM('overlay-hand-pick');
       closeM('overlay-pick');
       closeM('overlay-heart');
@@ -3684,6 +3712,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     ovl.classList.remove('open');
     hideTextAnswerPrompt();
     hidePromptEffectText();
+    hidePromptLookCards();
     closeM('overlay-hand-pick');
     closeM('overlay-pick');
     closeM('overlay-heart');
@@ -3706,6 +3735,7 @@ global.renderPrompt = function renderPrompt(s, myId){
     return;
   }
   hidePromptEffectText();
+  renderPromptLookCards(pr);
   const branch=isBranchChoicePrompt(pr);
   const subEl=el('prompt-sub');
   el('prompt-ttl').textContent=promptSourceDisplayName(pr, s);
