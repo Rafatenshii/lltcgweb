@@ -111,7 +111,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=11">
 <link rel="stylesheet" href="client/css/portrait.css?v=89">
-<link rel="stylesheet" href="client/css/social.css?v=20">
+<link rel="stylesheet" href="client/css/social.css?v=21">
 
 </head>
 <body role="application" aria-label="Love Live! TCG web player">
@@ -126,15 +126,20 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </div>
 
 <nav id="social-rail" hidden>
-  <button type="button" class="social-rail-btn" id="btn-social-profile" data-social="1" data-i18n-aria-label="social.profile">
-    <img src="assets/ui/icon-profile.png" alt="">
+  <button type="button" class="social-rail-burger" id="btn-social-menu" aria-expanded="false" aria-controls="social-rail-panel" data-i18n-aria-label="social.menu">
+    <span class="social-rail-burger-bars" aria-hidden="true"></span>
   </button>
-  <button type="button" class="social-rail-btn" id="btn-social-friends" data-social="1" data-i18n-aria-label="social.friends">
-    <img src="assets/ui/icon-friends.png" alt="">
-  </button>
-  <button type="button" class="social-rail-btn is-mod" id="btn-social-mod" hidden data-i18n-aria-label="social.moderation">
-    <span aria-hidden="true">!</span>
-  </button>
+  <div id="social-rail-panel" class="social-rail-panel">
+    <button type="button" class="social-rail-btn" id="btn-social-profile" data-social="1" data-i18n-aria-label="social.profile">
+      <img src="assets/ui/icon-profile.png" alt="">
+    </button>
+    <button type="button" class="social-rail-btn" id="btn-social-friends" data-social="1" data-i18n-aria-label="social.friends">
+      <img src="assets/ui/icon-friends.png" alt="">
+    </button>
+    <button type="button" class="social-rail-btn is-mod" id="btn-social-mod" hidden data-i18n-aria-label="social.moderation">
+      <span aria-hidden="true">!</span>
+    </button>
+  </div>
 </nav>
 
 <div id="tcg-mobile-rotate-hint" aria-live="polite" aria-hidden="true" hidden>
@@ -2823,11 +2828,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=159"></script>
+<script src="i18n.js?v=160"></script>
 <script src="log_i18n.js?v=16"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=30"></script>
-<script src="client/js/social.js?v=22"></script>
+<script src="client/js/social.js?v=23"></script>
 <script src="client/js/friend-push.js?v=2"></script>
 <script src="client/js/runtime-flags.js?v=5"></script>
 <script src="client/js/api-client.js?v=35"></script>

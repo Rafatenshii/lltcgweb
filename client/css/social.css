@@ -12,6 +12,35 @@
   pointer-events: none;
 }
 #social-rail[hidden] { display: none !important; }
+.social-rail-burger { display: none; }
+.social-rail-burger-bars,
+.social-rail-burger-bars::before,
+.social-rail-burger-bars::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+  position: relative;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.social-rail-burger-bars::before,
+.social-rail-burger-bars::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.social-rail-burger-bars::before { top: -6px; }
+.social-rail-burger-bars::after { top: 6px; }
+#social-rail.is-open .social-rail-burger-bars { background: transparent; }
+#social-rail.is-open .social-rail-burger-bars::before { top: 0; transform: rotate(45deg); }
+#social-rail.is-open .social-rail-burger-bars::after { top: 0; transform: rotate(-45deg); }
+.social-rail-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: inherit;
+}
 /* Wider shells (deck / shops / lobby): park on the viewport’s outer right. */
 #social-rail.social-rail--edge {
   right: max(10px, env(safe-area-inset-right, 0px));
@@ -60,6 +89,85 @@
   #social-rail { right: 8px; gap: 10px; }
   .social-rail-btn { width: 44px; height: 44px; }
 }
+
+/* Phones / small menus: burger in the top-right instead of a side rail. */
+@media (max-width: 1023px) {
+  #social-rail,
+  #social-rail.social-rail--edge,
+  #social-rail.social-rail--booster,
+  #social-rail.social-rail--pack {
+    top: max(10px, env(safe-area-inset-top, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    transform: none;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .social-rail-burger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(186, 228, 255, 0.45);
+    border-radius: 50%;
+    background: rgba(6, 14, 28, 0.82);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .social-rail-panel {
+    display: none;
+    padding: 8px;
+    border-radius: 16px;
+    background: rgba(6, 14, 28, 0.88);
+    border: 1px solid rgba(186, 228, 255, 0.28);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    gap: 8px;
+  }
+  #social-rail.is-open .social-rail-panel { display: flex; }
+}
+
+html.tcg-phone-device #social-rail,
+html.tcg-portrait-play #social-rail,
+html.tcg-mobile-viewport #social-rail {
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  transform: none;
+  align-items: flex-end;
+  gap: 8px;
+}
+html.tcg-phone-device .social-rail-burger,
+html.tcg-portrait-play .social-rail-burger,
+html.tcg-mobile-viewport .social-rail-burger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(186, 228, 255, 0.45);
+  border-radius: 50%;
+  background: rgba(6, 14, 28, 0.82);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+html.tcg-phone-device .social-rail-panel,
+html.tcg-portrait-play .social-rail-panel,
+html.tcg-mobile-viewport .social-rail-panel {
+  display: none;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(6, 14, 28, 0.88);
+  border: 1px solid rgba(186, 228, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  gap: 8px;
+}
+html.tcg-phone-device #social-rail.is-open .social-rail-panel,
+html.tcg-portrait-play #social-rail.is-open .social-rail-panel,
+html.tcg-mobile-viewport #social-rail.is-open .social-rail-panel { display: flex; }
 
 body.social-overlay-open { overflow: hidden; }
 body.social-overlay-open .llc-sky-dim {

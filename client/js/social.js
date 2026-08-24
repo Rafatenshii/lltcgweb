@@ -259,6 +259,22 @@
     tournament: 1,
   };
 
+  function closeSocialMenu() {
+    const rail = document.getElementById('social-rail');
+    const btn = document.getElementById('btn-social-menu');
+    rail?.classList.remove('is-open');
+    btn?.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleSocialMenu() {
+    const rail = document.getElementById('social-rail');
+    const btn = document.getElementById('btn-social-menu');
+    if (!rail || rail.hidden) return;
+    const open = !rail.classList.contains('is-open');
+    rail.classList.toggle('is-open', open);
+    btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   function syncSocialRail(screenId) {
     _screen = screenId || _screen;
     const rail = document.getElementById('social-rail');
@@ -269,6 +285,7 @@
     else if (WIDE_RAIL_SCREENS[_screen]) rail.classList.add('social-rail--edge');
     const hide = _screen === 'game' || !signedIn();
     rail.hidden = hide;
+    if (hide) closeSocialMenu();
     const logged = signedIn();
     rail.querySelectorAll('button[data-social]').forEach((btn) => {
       btn.disabled = !logged;
@@ -295,6 +312,7 @@
     el.classList.add('open', 'social-stack-top');
     el.setAttribute('aria-hidden', 'false');
     document.body.classList.add('social-overlay-open');
+    closeSocialMenu();
     applyI18n(el);
   }
   function closeOverlay(id) {
@@ -922,6 +940,19 @@
   }
 
   function bind() {
+    document.getElementById('btn-social-menu')?.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleSocialMenu();
+    });
+    document.addEventListener('click', (ev) => {
+      const rail = document.getElementById('social-rail');
+      if (!rail || rail.hidden || !rail.classList.contains('is-open')) return;
+      if (rail.contains(ev.target)) return;
+      closeSocialMenu();
+    });
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') closeSocialMenu();
+    });
     document.getElementById('btn-social-profile')?.addEventListener('click', () => openProfile());
     document.getElementById('btn-social-friends')?.addEventListener('click', () => openFriends());
     document.getElementById('btn-social-mod')?.addEventListener('click', () => openMod());
