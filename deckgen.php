@@ -67,6 +67,11 @@ function deckgenIsSchoolGroup(string $group): bool {
     return in_array($group, DECKGEN_GROUPS, true);
 }
 
+/** Group chips that are really subunits (rival units). Prefer those cards; fill gaps from the rest. */
+function deckgenIsSubunitStyleGroup(string $group): bool {
+    return in_array($group, DECKGEN_FILTER_SUBUNIT_GROUPS, true);
+}
+
 function deckgenCardMatchesGroupFilter(array $card, string $filter): bool {
     $filter = trim($filter);
     if ($filter === '' || strcasecmp($filter, 'mixed') === 0) {
@@ -189,20 +194,24 @@ function deckgenPreferSubunitPool(array $cards, ?string $prefer): array {
 
 function deckgenBuildMembersPreferSubunit(array $memberPool, ?array $owned, ?string $prefer, callable $scoreFn): array {
     $prefer = deckgenNormalizePreferSubunit($prefer);
-    if ($prefer !== null) {
-        $subPool = deckgenPreferSubunitPool($memberPool, $prefer);
-        if (count($subPool) >= 8) {
-            $main = deckgenBuildBalancedMemberMain($subPool, $owned, $scoreFn);
-            if (count($main) >= DECKGEN_MEMBER_SLOTS) {
-                return $main;
-            }
-        }
+    if ($prefer === null) {
+        return deckgenBuildBalancedMemberMain($memberPool, $owned, $scoreFn);
     }
-    return deckgenBuildBalancedMemberMain($memberPool, $owned, $scoreFn);
+    $subPool = deckgenPreferSubunitPool($memberPool, $prefer);
+    $main = deckgenBuildBalancedMemberMain($subPool, $owned, $scoreFn);
+    if (count($main) >= DECKGEN_MEMBER_SLOTS) {
+        return $main;
+    }
+    $rest = array_values(array_filter(
+        $memberPool,
+        static fn(array $c): bool => !deckgenCardMatchesSubunit($c, $prefer)
+    ));
+    return deckgenContinueMemberFill($main, $rest, $owned, $scoreFn);
 }
 
 function deckgenPreferSubunitLivePool(array $lives, ?string $prefer): array {
     $sub = deckgenPreferSubunitPool($lives, $prefer);
+    // Exclusive only when there are enough distinct matching lives to fill 12 slots.
     if (count($sub) >= DECKGEN_LIVE_SLOTS) {
         return $sub;
     }
@@ -439,6 +448,14 @@ function deckgenBuildBalancedMemberMain(array $memberPool, ?array $owned, ?calla
         );
     }
 
+    return deckgenContinueMemberFill($main, $memberPool, $owned, $scoreFn);
+}
+
+/** Continue filling member slots from $memberPool without discarding cards already chosen. */
+function deckgenContinueMemberFill(array $main, array $memberPool, ?array $owned, callable $scoreFn): array {
+    $counts = deckgenRebuildCounts($main);
+    $membersAdded = count($main);
+
     $fillOrder = ['mid', 'high', 'top', 'ramp4', 'low'];
     $guard = 0;
     while ($membersAdded < DECKGEN_MEMBER_SLOTS && $guard++ < 800) {
@@ -468,7 +485,13 @@ function deckgenBuildBalancedMemberMain(array $memberPool, ?array $owned, ?calla
 
     if ($membersAdded < DECKGEN_MEMBER_SLOTS) {
         $ranked = $memberPool;
-        usort($ranked, fn($a, $b) => deckgenMemberCurveSortScore($b) <=> deckgenMemberCurveSortScore($a));
+        usort($ranked, function ($a, $b) use ($scoreFn) {
+            $scoreDiff = $scoreFn($b) <=> $scoreFn($a);
+            if ($scoreDiff !== 0) {
+                return $scoreDiff;
+            }
+            return deckgenMemberCurveSortScore($b) <=> deckgenMemberCurveSortScore($a);
+        });
         $rankIdx = 0;
         $guard = 0;
         while ($membersAdded < DECKGEN_MEMBER_SLOTS && $guard++ < 800) {
@@ -597,7 +620,22 @@ function deckgenEnergyBuildScore(array $card): int {
     return $score;
 }
 
-function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned = null): array {
+function deckgenEnergyArchetypeRank(array $card, ?string $group, ?string $preferSubunit): int {
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
+    $group = deckgenNormalizeForcedGroup($group);
+    if ($preferSubunit !== null && deckgenCardMatchesSubunit($card, $preferSubunit)) {
+        return 2;
+    }
+    if ($group !== null && deckgenCardMatchesGroupFilter($card, $group)) {
+        return 1;
+    }
+    if ($group !== null && ($card['group'] ?? '') === $group) {
+        return 1;
+    }
+    return 0;
+}
+
+function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned = null, ?string $preferSubunit = null): array {
     $pool = $energies;
     if ($owned !== null) {
         $pool = deckgenFilterOwnedPool($pool, $owned);
@@ -606,14 +644,10 @@ function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned =
         return [];
     }
 
-    if ($group !== null && $group !== '' && $group !== 'mixed') {
-        $groupPool = array_values(array_filter($pool, fn($c) => ($c['group'] ?? '') === $group));
-        if (!empty($groupPool)) {
-            $pool = $groupPool;
-        }
-    }
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
+    $group = deckgenNormalizeForcedGroup($group);
 
-    usort($pool, function ($a, $b) use ($owned) {
+    $sortEnergy = static function (array $a, array $b) use ($owned): int {
         $scoreDiff = deckgenEnergyBuildScore($b) <=> deckgenEnergyBuildScore($a);
         if ($scoreDiff !== 0) {
             return $scoreDiff;
@@ -624,7 +658,23 @@ function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned =
             return $qtyB <=> $qtyA;
         }
         return strcmp((string)($a['card_no'] ?? ''), (string)($b['card_no'] ?? ''));
-    });
+    };
+
+    $ranked = [[], [], []];
+    foreach ($pool as $c) {
+        $ranked[deckgenEnergyArchetypeRank($c, $group, $preferSubunit)][] = $c;
+    }
+    foreach ($ranked as &$tier) {
+        usort($tier, $sortEnergy);
+    }
+    unset($tier);
+
+    // School-only: keep exclusive school energy when no subunit preference and some school energy exists.
+    if ($preferSubunit === null && $group !== null && deckgenIsSchoolGroup($group) && !empty($ranked[1])) {
+        $orderedPools = [$ranked[1]];
+    } else {
+        $orderedPools = [$ranked[2], $ranked[1], $ranked[0]];
+    }
 
     $deck   = [];
     $counts = [];
@@ -650,29 +700,35 @@ function deckgenBuildEnergyDeck(array $energies, ?string $group, ?array $owned =
         return $room;
     };
 
-    // Pass 1: one copy of each unique energy (fancy first) before any duplicates.
-    foreach ($pool as $c) {
-        if (count($deck) >= DECKGEN_ENERGY_SLOTS) {
-            break;
+    $fillFrom = function (array $tierPool) use (&$deck, $tryAdd): void {
+        if (empty($tierPool) || count($deck) >= DECKGEN_ENERGY_SLOTS) {
+            return;
         }
-        $tryAdd($c, 1);
-    }
-
-    // Pass 2: round-robin extras — spread copies before stacking the same card.
-    $guard = 0;
-    while (count($deck) < DECKGEN_ENERGY_SLOTS && $guard++ < 500) {
-        $progress = false;
-        foreach ($pool as $c) {
+        foreach ($tierPool as $c) {
             if (count($deck) >= DECKGEN_ENERGY_SLOTS) {
+                return;
+            }
+            $tryAdd($c, 1);
+        }
+        $guard = 0;
+        while (count($deck) < DECKGEN_ENERGY_SLOTS && $guard++ < 500) {
+            $progress = false;
+            foreach ($tierPool as $c) {
+                if (count($deck) >= DECKGEN_ENERGY_SLOTS) {
+                    return;
+                }
+                if ($tryAdd($c, 1) > 0) {
+                    $progress = true;
+                }
+            }
+            if (!$progress) {
                 break;
             }
-            if ($tryAdd($c, 1) > 0) {
-                $progress = true;
-            }
         }
-        if (!$progress) {
-            break;
-        }
+    };
+
+    foreach ($orderedPools as $tierPool) {
+        $fillFrom($tierPool);
     }
 
     return $deck;
@@ -803,7 +859,18 @@ function deckgenPickLives(
         }
     }
     foreach (['low', 'mid', 'high'] as $bucket) {
-        usort($$bucket, fn($a, $b) => ($b['fit'] + mt_rand(0, 2)) <=> ($a['fit'] + mt_rand(0, 2)));
+        usort($$bucket, static function ($a, $b) {
+            $prefA = ($a['fit'] ?? 0) >= 5000 ? 1 : 0;
+            $prefB = ($b['fit'] ?? 0) >= 5000 ? 1 : 0;
+            if ($prefA !== $prefB) {
+                return $prefB <=> $prefA;
+            }
+            $fitDiff = ($b['fit'] ?? 0) <=> ($a['fit'] ?? 0);
+            if ($fitDiff !== 0) {
+                return $fitDiff;
+            }
+            return strcmp((string)($a['card']['card_no'] ?? ''), (string)($b['card']['card_no'] ?? ''));
+        });
     }
 
     $targets = $bucketTargets ?? ['low' => 4, 'mid' => 4, 'high' => 4];
@@ -850,8 +917,26 @@ function deckgenPickLives(
         }
     }
 
-    while (count($picked) < DECKGEN_LIVE_SLOTS) {
-        $c  = $pool[array_rand($pool)];
+    $remainder = array_merge($low, $mid, $high);
+    usort($remainder, static function ($a, $b) {
+        $prefA = ($a['fit'] ?? 0) >= 5000 ? 1 : 0;
+        $prefB = ($b['fit'] ?? 0) >= 5000 ? 1 : 0;
+        if ($prefA !== $prefB) {
+            return $prefB <=> $prefA;
+        }
+        return ($b['fit'] ?? 0) <=> ($a['fit'] ?? 0);
+    });
+    $ri = 0;
+    $guard = 0;
+    while (count($picked) < DECKGEN_LIVE_SLOTS && $guard++ < 800) {
+        if (empty($remainder)) {
+            break;
+        }
+        if ($ri >= count($remainder)) {
+            $ri = 0;
+        }
+        $c  = $remainder[$ri]['card'];
+        $ri++;
         $no = $c['card_no'] ?? '';
         if ($no === '') {
             continue;
@@ -1013,6 +1098,7 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         throw new Exception('Could not assemble a legal deck.');
     }
 
+    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
     if ($forcedGroup === 'mixed') {
         $group = 'mixed';
         $memberPool = $members;
@@ -1021,12 +1107,21 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         if ($forced !== null) {
             // Honor an explicit UI group filter — do not silently switch schools.
             $group = $forced;
-            $memberPool = deckgenFilterMemberPool($members, $forced);
-            if (count($memberPool) < 8) {
-                if ($starterFallback !== null) {
-                    return deckgenStarterBuildResult($starterFallback);
+            if (deckgenIsSubunitStyleGroup($forced)) {
+                // Rival units (Sunny Passion / A-RISE / Saint Snow) are small.
+                // Prefer their cards, then fill remaining slots from the rest of the collection.
+                $memberPool = $members;
+                if ($preferSubunit === null) {
+                    $preferSubunit = $forced;
                 }
-                throw new Exception('Not enough owned cards to auto-build for ' . deckgenGroupDisplay($forced) . '.');
+            } else {
+                $memberPool = deckgenFilterMemberPool($members, $forced);
+                if (count($memberPool) < 8) {
+                    if ($starterFallback !== null) {
+                        return deckgenStarterBuildResult($starterFallback);
+                    }
+                    throw new Exception('Not enough owned cards to auto-build for ' . deckgenGroupDisplay($forced) . '.');
+                }
             }
         } else {
             $starterGroup = null;
@@ -1056,9 +1151,11 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         }
     }
 
-    $preferSubunit = deckgenNormalizePreferSubunit($preferSubunit);
     $display = $group === 'mixed' ? 'Mixed' : deckgenGroupDisplay($group);
     $subLabel = $preferSubunit !== null ? deckgenSubunitDisplay($preferSubunit) : '';
+    if ($subLabel !== '' && strcasecmp($subLabel, $display) === 0) {
+        $subLabel = '';
+    }
     $nameEn  = $subLabel !== '' ? "Auto-built ($display · $subLabel)" : "Auto-built ($display)";
 
     $memberScoreFn = fn($c) => deckgenMemberBuildScore($c) + deckgenSubunitScoreBonus($c, $preferSubunit);
@@ -1111,8 +1208,8 @@ function generateCollectionDeckLists(array $allCards, array $owned, ?string $for
         throw new Exception('Could not assemble a legal deck.');
     }
 
-    $energyGroup = ($group !== 'mixed' && deckgenIsSchoolGroup($group)) ? $group : null;
-    $energyDeck = deckgenBuildEnergyDeck($energies, $energyGroup, $owned);
+    $energyGroup = ($group !== 'mixed') ? $group : null;
+    $energyDeck = deckgenBuildEnergyDeck($energies, $energyGroup, $owned, $preferSubunit);
     if (count($energyDeck) < DECKGEN_ENERGY_SLOTS) {
         if ($starterFallback !== null) {
             return deckgenStarterBuildResult($starterFallback);
