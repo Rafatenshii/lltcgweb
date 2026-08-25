@@ -2294,7 +2294,7 @@ function beginPerformancePhase(array $state): array {
         $first = $state['first_player'] ?? 'p1';
         $second = ($first === 'p1') ? 'p2' : 'p1';
         foreach ([$first, $second] as $pid) {
-            if (playerAttemptingLivePerformance($state, $pid)) {
+            if (playerParticipatingInLiveRound($state, $pid)) {
                 $state['live_attempt'][] = $pid;
             }
         }
@@ -2332,8 +2332,8 @@ function beginPerformancePhase(array $state): array {
     $state = revealAllLiveStorage($state);
     return beginLiveStartEffectPhase(
         $state,
-        playerAttemptingLivePerformance($state, 'p1'),
-        playerAttemptingLivePerformance($state, 'p2')
+        playerParticipatingInLiveRound($state, 'p1'),
+        playerParticipatingInLiveRound($state, 'p2')
     );
 }
 
@@ -2355,13 +2355,26 @@ function performanceRoundHasLiveCards(array $state): bool {
     return false;
 }
 
-/** True when this player placed at least one Live card in Live storage this round. */
-function playerAttemptingLivePerformance(array $state, string $pid): bool {
+/** True when this player placed any card in Live storage this round (Live or Member bluff). */
+function playerParticipatingInLiveRound(array $state, string $pid): bool {
     if (!empty($state['live_modifiers'][$pid]['cannot_live'])) {
         return false;
     }
     foreach ($state['players'][$pid]['live_zone'] ?? [] as $c) {
-        if (isLiveTypeCard($c)) {
+        if ($c) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** True when this player has at least one Live card in Live storage to perform. */
+function playerAttemptingLivePerformance(array $state, string $pid): bool {
+    if (!playerParticipatingInLiveRound($state, $pid)) {
+        return false;
+    }
+    foreach ($state['players'][$pid]['live_zone'] ?? [] as $c) {
+        if ($c && isLiveTypeCard($c)) {
             return true;
         }
     }
