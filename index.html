@@ -28116,7 +28116,7 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
         * Number(ab.amount ?? 1);
     }
     if (type === 'blade_if_other_subunit') {
-      if (tcgClientCountOtherSubunitOnStage(p, ab.subunit || '', member.instance_id || '', true) > 0) {
+      if (tcgClientCountOtherSubunitOnStage(p, ab.subunit || '', member.instance_id || '', false) > 0) {
         bonus += Number(ab.amount ?? 0);
       }
     }

@@ -7,8 +7,8 @@ namespace LLTCG\Tests\Engine;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Ceras PL!HS-bp5-007 Always is a flat +2 while another standing Edel Note
- * Member is on Stage — not +2 per other Edel, and not from a Waited Izumi.
+ * Ceras PL!HS-bp5-007 Always is a flat +2 while another Edel Note Member is
+ * on Stage (Waited Members still count). Wait only blocks printed Blade to Yell.
  */
 final class CerasEdelNoteBladeTest extends TestCase
 {
@@ -81,7 +81,7 @@ final class CerasEdelNoteBladeTest extends TestCase
         );
     }
 
-    public function testWaitedIzumiDoesNotEnableCerasPlusTwo(): void
+    public function testWaitedIzumiEnablesCerasAlwaysButNotYellBlade(): void
     {
         $ceras = $this->cardByNo('PL!HS-bp5-007-P', 'ceras');
         $izumi = $this->cardByNo('PL!HS-bp5-008-R', 'izumi');
@@ -96,14 +96,14 @@ final class CerasEdelNoteBladeTest extends TestCase
 
         $this->assertTrue(\memberIsInWait($state['players']['p1']['stage']['left']));
         $this->assertSame(
-            $printed,
+            $printed + 2,
             \getMemberBlade($ceras, $state, 'p1', 'center'),
-            'Waited Izumi must not count as the other Edel Note Member for Ceras Always'
+            'Waited Izumi still counts as another Edel Note Member on Stage for Ceras Always'
         );
         $this->assertSame(
-            $printed,
+            $printed + 2,
             \computeYellBladeTotal($state, 'p1'),
-            'Waited Izumi printed blade must not hit Yell; Ceras has no Always bonus'
+            'Waited Izumi printed blade must not hit Yell; only Ceras contributes'
         );
     }
 

@@ -3824,7 +3824,8 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
             }
             if (($ab['trigger'] ?? '') === 'continuous'
                 && ($ab['type'] ?? '') === 'blade_if_other_subunit') {
-                if (countOtherStandingSubunitOnStage(
+                // Waited Members are still on Stage for "another Member on Stage" Always.
+                if (countOtherSubunitOnStage(
                     $state['players'][$pid],
                     $ab['subunit'] ?? '',
                     $member['instance_id'] ?? ''
@@ -4819,23 +4820,6 @@ function countOtherSubunitOnStage(array $p, string $subunit, string $excludeId =
         // Use cardMatchesSubunit — catalog mixes half-width ! and full-width ！
         // on Mira-Cra Park! (Megumi bp2-006 Always would otherwise never count).
         if (cardMatchesSubunit($mbr, $subunit)) $n++;
-    }
-    return $n;
-}
-
-/** Other subunit Members that are standing (not Wait). */
-function countOtherStandingSubunitOnStage(array $p, string $subunit, string $excludeId = ''): int {
-    $n = 0;
-    foreach ($p['stage'] as $mbr) {
-        if (!$mbr || memberIsInWait($mbr)) {
-            continue;
-        }
-        if ($excludeId !== '' && ($mbr['instance_id'] ?? '') === $excludeId) {
-            continue;
-        }
-        if (cardMatchesSubunit($mbr, $subunit)) {
-            $n++;
-        }
     }
     return $n;
 }
