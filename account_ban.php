@@ -56,6 +56,7 @@ function tcgBanDiscordTables(): array {
         'tcg_coin_grants',
         'tcg_push_tokens',
         'tcg_push_queue_ping',
+        'tcg_tournament_start_reminders',
         'tcg_user_notices',
         'tcg_tournament_entrants',
         'tcg_tournament_user_stats',

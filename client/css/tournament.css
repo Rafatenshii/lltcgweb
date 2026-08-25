@@ -64,6 +64,14 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
 .tournament-card:hover {
   border-color: rgba(186, 228, 255, 0.75);
 }
+.tournament-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.tournament-card-wrap .tournament-card {
+  width: 100%;
+}
 .tournament-card-title {
   font-weight: 700;
   font-size: 1.05rem;
@@ -687,4 +695,59 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
 }
 .tournament-register-password input {
   padding: 8px 10px;
+}
+
+.tournament-remind {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 12, 32, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.tournament-card-wrap .tournament-remind {
+  margin: 0 0 2px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+.tournament-card-wrap .tournament-card {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.tournament-card-wrap:has(.tournament-remind) .tournament-card {
+  margin-bottom: 0;
+}
+.tournament-remind-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.tournament-remind-toggle input {
+  margin-top: 3px;
+}
+.tournament-remind-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.tournament-remind-chip {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+.tournament-remind-chip.is-on {
+  border-color: rgba(186, 228, 255, 0.85);
+  background: rgba(80, 160, 255, 0.28);
+}
+.tournament-remind-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

@@ -145,6 +145,8 @@ try {
         case 'tournament_force_result': echo json_encode(tcgApiTournamentForceResult($body)); break;
         case 'tournament_cancel':    echo json_encode(tcgApiTournamentCancel($body)); break;
         case 'tournament_tick':      echo json_encode(tcgApiTournamentTick($body)); break;
+        case 'tournament_start_reminders_get': echo json_encode(tcgApiTournamentStartRemindersGet($body)); break;
+        case 'tournament_start_reminders_set': echo json_encode(tcgApiTournamentStartRemindersSet($body)); break;
         case 'tournament_report':    echo json_encode(tcgApiTournamentReport($body)); break;
         case 'tournament_join_match': echo json_encode(tcgApiTournamentJoinMatch($body)); break;
         case 'tournament_eligible_decks': echo json_encode(tcgApiTournamentEligibleDecks($body)); break;

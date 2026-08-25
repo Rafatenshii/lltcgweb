@@ -382,6 +382,18 @@ function tcgDbMigrate(PDO $db): void {
         }
     });
 
+    tcgDbRunMigrationOnce($db, 'tournament_start_reminders_20260824', function (PDO $db): void {
+        $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_start_reminders (
+            discord_id TEXT NOT NULL,
+            tournament_id TEXT NOT NULL,
+            offset_sec INTEGER NOT NULL,
+            sent_at INTEGER,
+            PRIMARY KEY (discord_id, tournament_id, offset_sec)
+        )');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_start_reminders_due
+            ON tcg_tournament_start_reminders(sent_at, tournament_id)');
+    });
+
     tcgDbRunMigrationOnce($db, 'account_bans_20260824', function (PDO $db): void {
         $db->exec('CREATE TABLE IF NOT EXISTS tcg_account_bans (
             discord_id TEXT PRIMARY KEY,
@@ -820,6 +832,15 @@ function tcgDbEnsureTournamentSchema(PDO $db): void {
     )');
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_ledger_tid
         ON tcg_tournament_ledger(tournament_id)');
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_start_reminders (
+        discord_id TEXT NOT NULL,
+        tournament_id TEXT NOT NULL,
+        offset_sec INTEGER NOT NULL,
+        sent_at INTEGER,
+        PRIMARY KEY (discord_id, tournament_id, offset_sec)
+    )');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_start_reminders_due
+        ON tcg_tournament_start_reminders(sent_at, tournament_id)');
 }
 
 function tcgDbEnsureColumn(PDO $db, string $table, string $column, string $definition): void {

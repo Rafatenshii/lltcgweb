@@ -17,9 +17,16 @@ function tcgApiTournamentTick(array $body): array {
         foreach ($ids as $tid) {
             $results[] = tcgTournamentTickOne((string)$tid);
         }
+        if (function_exists('tcgPushDispatchTournamentStartReminders')) {
+            tcgPushDispatchTournamentStartReminders();
+        }
         return ['success' => true, 'ticked' => $results];
     }
-    return tcgTournamentTickOne($id);
+    $out = tcgTournamentTickOne($id);
+    if (function_exists('tcgPushDispatchTournamentStartReminders')) {
+        tcgPushDispatchTournamentStartReminders();
+    }
+    return $out;
 }
 
 /** @return array<string,mixed> */

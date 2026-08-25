@@ -221,6 +221,123 @@
 
   const REMIND_KEY = 'tcg_tournament_remind_dismissed';
   const SESSION_KEY = 'tcg_tournament_ui_session';
+  const START_REMIND_KEY = 'tcg_tournament_open';
+  const START_REMIND_OFFSETS = [
+    { sec: 300, key: 'tournament.startRemind.m5', label: '5 min' },
+    { sec: 600, key: 'tournament.startRemind.m10', label: '10 min' },
+    { sec: 1800, key: 'tournament.startRemind.m30', label: '30 min' },
+    { sec: 3600, key: 'tournament.startRemind.h1', label: '1 hour' },
+    { sec: 10800, key: 'tournament.startRemind.h3', label: '3 hours' },
+    { sec: 36000, key: 'tournament.startRemind.h10', label: '10 hours' },
+  ];
+
+  function isAndroidShell() {
+    try {
+      var ua = navigator.userAgent || '';
+      if (/LoveCaAndroid/i.test(ua)) return true;
+      if (global.Capacitor && typeof global.Capacitor.isNativePlatform === 'function') {
+        return !!global.Capacitor.isNativePlatform();
+      }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+
+  function allowedStartRemindSecs() {
+    return START_REMIND_OFFSETS.map((o) => o.sec);
+  }
+
+  function startRemindOffsetsOf(row) {
+    const allow = allowedStartRemindSecs();
+    const raw = (row && row.start_reminder_offsets) || [];
+    return raw.map(Number).filter((n) => allow.indexOf(n) !== -1);
+  }
+
+  function applyStartRemindLocal(tid, offsets) {
+    const id = String(tid || '');
+    (state.list || []).forEach((row) => {
+      if (String(row.id) === id) row.start_reminder_offsets = offsets.slice();
+    });
+    if (state.detail && state.detail.tournament && String(state.detail.tournament.id) === id) {
+      state.detail.tournament.start_reminder_offsets = offsets.slice();
+    }
+  }
+
+  function startRemindPanelHtml(tid, offsets, status) {
+    if (!isAndroidShell()) return '';
+    const st = String(status || '');
+    if (st !== 'open' && st !== 'checkin') return '';
+    const on = offsets.length > 0;
+    const chips = START_REMIND_OFFSETS.map((o) => {
+      const sel = offsets.indexOf(o.sec) !== -1;
+      return (
+        '<button type="button" class="tournament-remind-chip' + (sel ? ' is-on' : '') + '"'
+        + ' data-remind-off="' + o.sec + '"'
+        + (on ? '' : ' disabled')
+        + '>' + escapeHtml(t(o.key, o.label)) + '</button>'
+      );
+    }).join('');
+    return (
+      '<div class="tournament-remind" data-remind-panel="' + escapeAttr(tid) + '">'
+      + '<label class="tournament-remind-toggle">'
+      + '<input type="checkbox" data-remind-master="' + escapeAttr(tid) + '"' + (on ? ' checked' : '') + '>'
+      + '<span>' + escapeHtml(t(
+        'tournament.startRemind.toggle',
+        'Notify me when this tournament is starting soon'
+      )) + '</span></label>'
+      + '<div class="tournament-remind-chips">' + chips + '</div>'
+      + '</div>'
+    );
+  }
+
+  async function persistStartReminders(tid, offsets) {
+    const allow = allowedStartRemindSecs();
+    const next = (offsets || []).map(Number).filter((n) => allow.indexOf(n) !== -1)
+      .filter((n, i, arr) => arr.indexOf(n) === i)
+      .sort((a, b) => a - b);
+    applyStartRemindLocal(tid, next);
+    if (state.view === 'list') renderList();
+    else if (state.view === 'detail') renderDetail();
+    try {
+      const res = await global.accountPost('tournament_start_reminders_set', {
+        tournament_id: tid,
+        offsets: next,
+      });
+      if (res && Array.isArray(res.offsets)) {
+        applyStartRemindLocal(tid, res.offsets.map(Number));
+      }
+    } catch (e) {
+      setErr(e.message || String(e));
+    }
+  }
+
+  function bindRemindPanels(root) {
+    if (!root || !isAndroidShell()) return;
+    root.querySelectorAll('[data-remind-panel]').forEach((panel) => {
+      const tid = panel.getAttribute('data-remind-panel');
+      panel.addEventListener('click', (ev) => ev.stopPropagation());
+      const master = panel.querySelector('[data-remind-master]');
+      if (master) {
+        master.addEventListener('change', () => {
+          if (master.checked) void persistStartReminders(tid, [600]);
+          else void persistStartReminders(tid, []);
+        });
+      }
+      panel.querySelectorAll('[data-remind-off]').forEach((chip) => {
+        chip.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const sec = Number(chip.getAttribute('data-remind-off'));
+          let cur = startRemindOffsetsOf(
+            (state.list || []).find((r) => String(r.id) === String(tid))
+            || (state.detail && state.detail.tournament)
+          );
+          if (cur.indexOf(sec) !== -1) cur = cur.filter((n) => n !== sec);
+          else cur = cur.concat([sec]);
+          void persistStartReminders(tid, cur);
+        });
+      });
+    });
+  }
 
   function persistSession() {
     try {
@@ -313,6 +430,7 @@
 
   /** Resume bulletin/event after refresh once auth + allowlist are ready. */
   function tryResumeSession() {
+    if (consumeTournamentDeepLink()) return true;
     const saved = readSession();
     if (!saved) return false;
     if (!global.TCG_TOURNAMENTS_ENABLED && !clientEnabled()) return false;
@@ -321,6 +439,22 @@
       tournamentId: saved.tournamentId || null,
     });
     return true;
+  }
+
+  function consumeTournamentDeepLink() {
+    try {
+      const raw = (sessionStorage.getItem(START_REMIND_KEY) || '').trim().toUpperCase();
+      if (!raw || !/^[A-Z0-9]{6,16}$/.test(raw)) return false;
+      sessionStorage.removeItem(START_REMIND_KEY);
+      if (!global.TCG_TOURNAMENTS_ENABLED && !clientEnabled()) {
+        sessionStorage.setItem(START_REMIND_KEY, raw);
+        return false;
+      }
+      openScreen({ view: 'detail', tournamentId: raw });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function showView(name) {
@@ -596,8 +730,10 @@
       const fog = (row.settings && row.settings.fog) || 'hidden_hands';
       const delay = Number((row.settings && row.settings.stream_delay_secs) || 0);
       const rulesKey = (row.settings && row.settings.rules_template) || 'standard';
+      const remind = startRemindPanelHtml(row.id, startRemindOffsetsOf(row), row.status);
       return (
-        '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
+        '<div class="tournament-card-wrap">'
+        + '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
         + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
         + '<div class="tournament-card-meta">'
         + escapeHtml(labelStatus(row.status)) + sep + escapeHtml(labelMode(row.game_mode))
@@ -611,11 +747,14 @@
         + sep + escapeHtml(t('tournament.card.fog', 'fog {fog}', { fog: labelFog(fog, true) }))
         + sep + escapeHtml(t('tournament.card.delay', 'delay {n}s', { n: delay }))
         + '</div></button>'
+        + remind
+        + '</div>'
       );
     }).join('');
     root.querySelectorAll('[data-tid]').forEach((btn) => {
       btn.addEventListener('click', () => openDetail(btn.getAttribute('data-tid')));
     });
+    bindRemindPanels(root);
   }
 
   async function openDetail(id) {
@@ -770,9 +909,11 @@
         + '</p>'
         + '<p class="tournament-rules-blurb">'
         + escapeHtml(rulesTemplateInfo(rulesKey).help)
-        + '</p>';
+        + '</p>'
+        + startRemindPanelHtml(trow.id, startRemindOffsetsOf(trow), trow.status);
     }
     wireAvatarFallbacks(head);
+    bindRemindPanels(head);
     const actions = el('tournament-detail-actions');
     if (actions) {
       const me = res.me;
@@ -1883,6 +2024,10 @@
     stopTickLoop();
     state.tickTimer = global.setInterval(async () => {
       if (!state.open || !screenActive()) return;
+      if (state.view === 'list' && isAndroidShell()) {
+        try { await loadList(); } catch (e) { /* ignore */ }
+        return;
+      }
       if (state.view !== 'detail' || !state.detail || !state.detail.tournament) return;
       const tid = state.detail.tournament.id;
       const st = state.detail.tournament.status;
@@ -2028,6 +2173,7 @@
       setSky(false);
     },
     tryResumeSession: tryResumeSession,
+    consumeDeepLink: consumeTournamentDeepLink,
     refreshFlag: refreshServerFlag,
     applyEnabled: applyEnabled,
     onAvatarError: onAvatarError,

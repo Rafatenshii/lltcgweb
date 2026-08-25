@@ -6,6 +6,7 @@
 
   var LOVECA_FRIEND_QUEUE_KEY = 'tcg_friend_queue';
   var LOVECA_FRIEND_INVITE_KEY = 'tcg_friend_invite';
+  var LOVECA_TOURNAMENT_KEY = 'tcg_tournament_open';
   var pollTimer = null;
   var seenInviteIds = {};
 
@@ -51,6 +52,7 @@
       var lane = (params.get('friend_queue') || '').trim().toLowerCase();
       var mode = (params.get('game_mode') || params.get('mode') || '').trim().toLowerCase();
       var invite = (params.get('friend_invite') || '').trim().toLowerCase();
+      var tournament = (params.get('tournament') || '').trim().toUpperCase();
       var changed = false;
       if (lane === 'ranked' || lane === 'unranked' || lane === 'casual') {
         if (lane === 'casual') lane = 'unranked';
@@ -63,6 +65,11 @@
       if (invite && /^[a-f0-9]{16,32}$/.test(invite)) {
         sessionStorage.setItem(LOVECA_FRIEND_INVITE_KEY, invite);
         params.delete('friend_invite');
+        changed = true;
+      }
+      if (tournament && /^[A-Z0-9]{6,16}$/.test(tournament)) {
+        sessionStorage.setItem(LOVECA_TOURNAMENT_KEY, tournament);
+        params.delete('tournament');
         changed = true;
       }
       if (!changed) return;
@@ -105,6 +112,24 @@
     }
     toast(t('friendPush.queueTapHint', 'Join the queue if you want to play.'), 4200);
     return true;
+  }
+
+  function applyTournamentDeepLink() {
+    try {
+      var tid = (sessionStorage.getItem(LOVECA_TOURNAMENT_KEY) || '').trim().toUpperCase();
+      if (!tid || !/^[A-Z0-9]{6,16}$/.test(tid)) return false;
+      if (global.TCGTournamentUI && typeof global.TCGTournamentUI.consumeDeepLink === 'function') {
+        return !!global.TCGTournamentUI.consumeDeepLink();
+      }
+      if (global.TCGTournamentUI && typeof global.TCGTournamentUI.open === 'function') {
+        sessionStorage.removeItem(LOVECA_TOURNAMENT_KEY);
+        global.TCGTournamentUI.open({ view: 'detail', tournamentId: tid });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   async function acceptInviteId(inviteId) {
@@ -168,6 +193,12 @@
     if (type === 'friend_invite' && inviteId) {
       sessionStorage.setItem(LOVECA_FRIEND_INVITE_KEY, String(inviteId));
       void consumePendingInvite();
+      return;
+    }
+    var tid = String(data.tournament_id || data.tournament || '').trim().toUpperCase();
+    if ((type === 'tournament_start' || tid) && /^[A-Z0-9]{6,16}$/.test(tid)) {
+      sessionStorage.setItem(LOVECA_TOURNAMENT_KEY, tid);
+      applyTournamentDeepLink();
     }
   }
 
@@ -205,6 +236,7 @@
               var lane = (u.searchParams.get('friend_queue') || '').trim();
               var mode = (u.searchParams.get('game_mode') || '').trim();
               var invite = (u.searchParams.get('friend_invite') || '').trim();
+              var tournament = (u.searchParams.get('tournament') || '').trim().toUpperCase();
               if (lane === 'ranked' || lane === 'unranked') {
                 sessionStorage.setItem(LOVECA_FRIEND_QUEUE_KEY, JSON.stringify({
                   lane: lane,
@@ -215,6 +247,10 @@
               if (invite) {
                 sessionStorage.setItem(LOVECA_FRIEND_INVITE_KEY, invite);
                 void consumePendingInvite();
+              }
+              if (tournament && /^[A-Z0-9]{6,16}$/.test(tournament)) {
+                sessionStorage.setItem(LOVECA_TOURNAMENT_KEY, tournament);
+                applyTournamentDeepLink();
               }
             } catch (err) { /* ignore */ }
           });
@@ -371,6 +407,7 @@
 
   function consumeAfterLogin() {
     if (applyQueueDeepLink()) return;
+    if (applyTournamentDeepLink()) return;
     void consumePendingInvite();
   }
 
@@ -385,5 +422,6 @@
     startInvitePoll: startInvitePoll,
     openInvitePicker: openInvitePicker,
     applyQueueDeepLink: applyQueueDeepLink,
+    applyTournamentDeepLink: applyTournamentDeepLink,
   };
 })(window);

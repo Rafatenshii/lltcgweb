@@ -58,6 +58,17 @@ function tcgApiTournamentList(array $body): array {
         $pub['spectator_count'] = tcgTournamentSpectatorCount((string)$row['id']);
         $list[] = $pub;
     }
+    if (function_exists('tcgPushDispatchTournamentStartReminders')) {
+        tcgPushDispatchTournamentStartReminders();
+    }
+    $offsetMap = function_exists('tcgPushTournamentStartOffsetsForUser')
+        ? tcgPushTournamentStartOffsetsForUser($uid, array_map(static fn($r) => (string)($r['id'] ?? ''), $list))
+        : [];
+    foreach ($list as &$pub) {
+        $tid = strtoupper((string)($pub['id'] ?? ''));
+        $pub['start_reminder_offsets'] = $offsetMap[$tid] ?? [];
+    }
+    unset($pub);
     return ['success' => true, 'tournaments' => $list, 'server_now' => $now];
 }
 
@@ -91,6 +102,12 @@ function tcgApiTournamentGet(array $body): array {
     $pub = tcgTournamentPublicRow($row, ['total' => count($entrants), 'checked_in' => $checked]);
     $pub['checkin_opens_at'] = (int)$row['start_at'] - ((int)$row['checkin_mins'] * 60);
     $pub['spectator_count'] = tcgTournamentSpectatorCount($id);
+    if (function_exists('tcgPushTournamentStartOffsetsForUser')) {
+        $off = tcgPushTournamentStartOffsetsForUser($uid, [$id]);
+        $pub['start_reminder_offsets'] = $off[$id] ?? [];
+    } else {
+        $pub['start_reminder_offsets'] = [];
+    }
     $stmt = tcgDb()->prepare('SELECT username, avatar_url FROM tcg_users WHERE discord_id = ?');
     $stmt->execute([(string)$row['host_discord_id']]);
     $hostRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];

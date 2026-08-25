@@ -9,6 +9,10 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/social.php';
 require_once __DIR__ . '/game_mode.php';
 
+/** Optional Android FCM lead times before a scheduled tournament starts. */
+const TCG_PUSH_TOURNAMENT_START_OFFSETS = [300, 600, 1800, 3600, 10800, 36000];
+const TCG_PUSH_TOURNAMENT_START_GRACE_SEC = 90;
+
 const TCG_PUSH_QUEUE_COOLDOWN_SEC = 180;
 const TCG_PUSH_INVITE_TTL_SEC = 900;
 
@@ -46,6 +50,20 @@ function tcgPushEnsureSchema(): void {
         sent_at INTEGER NOT NULL,
         PRIMARY KEY (from_id, to_id, lane, game_mode)
     )');
+    tcgPushEnsureTournamentStartReminderSchema($db);
+}
+
+function tcgPushEnsureTournamentStartReminderSchema(?PDO $db = null): void {
+    $db = $db ?? tcgDb();
+    $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_start_reminders (
+        discord_id TEXT NOT NULL,
+        tournament_id TEXT NOT NULL,
+        offset_sec INTEGER NOT NULL,
+        sent_at INTEGER,
+        PRIMARY KEY (discord_id, tournament_id, offset_sec)
+    )');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_start_reminders_due
+        ON tcg_tournament_start_reminders(sent_at, tournament_id)');
 }
 
 function tcgPushFcmServerKey(): string {
@@ -325,5 +343,198 @@ function tcgApiMatchInviteRespond(array $body, bool $accept): array {
         'room_id' => (string)$row['room_id'],
         'game_mode' => (string)$row['game_mode'],
         'from' => tcgSocialUserStub((string)$row['from_id']),
+    ];
+}
+
+function tcgPushTournamentStartOffsetLabel(int $sec): string {
+    return match ($sec) {
+        300 => '5 min',
+        600 => '10 min',
+        1800 => '30 min',
+        3600 => '1 hour',
+        10800 => '3 hours',
+        36000 => '10 hours',
+        default => $sec . 's',
+    };
+}
+
+/** @param list<mixed> $raw
+ *  @return list<int> */
+function tcgPushNormalizeTournamentStartOffsets(array $raw): array {
+    $allowed = array_fill_keys(TCG_PUSH_TOURNAMENT_START_OFFSETS, true);
+    $out = [];
+    foreach ($raw as $v) {
+        $n = (int)$v;
+        if (isset($allowed[$n])) {
+            $out[$n] = $n;
+        }
+    }
+    $list = array_values($out);
+    sort($list, SORT_NUMERIC);
+    return $list;
+}
+
+/**
+ * @param list<string> $tournamentIds
+ * @return array<string,list<int>>
+ */
+function tcgPushTournamentStartOffsetsForUser(string $discordId, array $tournamentIds): array {
+    tcgPushEnsureSchema();
+    $ids = [];
+    foreach ($tournamentIds as $id) {
+        $tid = strtoupper(trim((string)$id));
+        if ($tid !== '') {
+            $ids[$tid] = $tid;
+        }
+    }
+    if ($discordId === '' || !$ids) {
+        return [];
+    }
+    $list = array_values($ids);
+    $placeholders = implode(',', array_fill(0, count($list), '?'));
+    $stmt = tcgDb()->prepare(
+        "SELECT tournament_id, offset_sec FROM tcg_tournament_start_reminders
+         WHERE discord_id = ? AND tournament_id IN ($placeholders)
+         ORDER BY offset_sec ASC"
+    );
+    $stmt->execute(array_merge([$discordId], $list));
+    $map = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $tid = strtoupper((string)($row['tournament_id'] ?? ''));
+        $map[$tid] = $map[$tid] ?? [];
+        $map[$tid][] = (int)$row['offset_sec'];
+    }
+    return $map;
+}
+
+/**
+ * Send due start-soon FCM globally (all tournaments), not just the ticked id.
+ * Safe to call often: rows are claimed via sent_at.
+ */
+function tcgPushDispatchTournamentStartReminders(): int {
+    try {
+        tcgPushEnsureSchema();
+        $now = time();
+        $grace = TCG_PUSH_TOURNAMENT_START_GRACE_SEC;
+        $stmt = tcgDb()->query(
+            "SELECT r.discord_id, r.tournament_id, r.offset_sec, t.title, t.start_at, t.status
+             FROM tcg_tournament_start_reminders r
+             INNER JOIN tcg_tournaments t ON t.id = r.tournament_id
+             WHERE r.sent_at IS NULL
+               AND t.status IN ('open','checkin')"
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        $sent = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $startAt = (int)($row['start_at'] ?? 0);
+            $offset = (int)($row['offset_sec'] ?? 0);
+            if ($startAt <= 0 || $offset <= 0) {
+                continue;
+            }
+            if ($now < ($startAt - $offset) || $now >= ($startAt + $grace)) {
+                continue;
+            }
+            $uid = (string)$row['discord_id'];
+            $tid = strtoupper((string)$row['tournament_id']);
+            $tokens = tcgPushTokensForUser($uid);
+            if (!$tokens) {
+                continue;
+            }
+            $claim = tcgDb()->prepare(
+                'UPDATE tcg_tournament_start_reminders SET sent_at = ?
+                 WHERE discord_id = ? AND tournament_id = ? AND offset_sec = ? AND sent_at IS NULL'
+            );
+            $claim->execute([$now, $uid, $tid, $offset]);
+            if ($claim->rowCount() < 1) {
+                continue;
+            }
+            $title = trim((string)($row['title'] ?? ''));
+            if ($title === '') {
+                $title = $tid;
+            }
+            $when = tcgPushTournamentStartOffsetLabel($offset);
+            $bodyText = $title . ' starts in ' . $when;
+            tcgPushSendFcm(
+                $tokens,
+                'Loveca',
+                $bodyText,
+                [
+                    'type' => 'tournament_start',
+                    'tournament_id' => $tid,
+                    'offset_sec' => (string)$offset,
+                    'url' => tcgPushDeepLink(['tournament' => $tid]),
+                ]
+            );
+            $sent++;
+        }
+        return $sent;
+    } catch (Throwable $e) {
+        error_log('tcgPushDispatchTournamentStartReminders: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+/** @param array<string,mixed> $body */
+function tcgApiTournamentStartRemindersGet(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    $id = strtoupper(trim((string)($body['tournament_id'] ?? '')));
+    if ($id === '') {
+        throw new Exception('tournament_id required', 400);
+    }
+    $map = tcgPushTournamentStartOffsetsForUser($uid, [$id]);
+    return [
+        'success' => true,
+        'tournament_id' => $id,
+        'offsets' => $map[$id] ?? [],
+    ];
+}
+
+/** @param array<string,mixed> $body */
+function tcgApiTournamentStartRemindersSet(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    $id = strtoupper(trim((string)($body['tournament_id'] ?? '')));
+    if ($id === '') {
+        throw new Exception('tournament_id required', 400);
+    }
+    if (!function_exists('tcgTournamentFetch')) {
+        require_once __DIR__ . '/tournament_lib.php';
+    }
+    $row = tcgTournamentFetch($id);
+    if (!$row) {
+        throw new Exception('Tournament not found', 404);
+    }
+    $raw = $body['offsets'] ?? [];
+    if (!is_array($raw)) {
+        $raw = [];
+    }
+    $offsets = tcgPushNormalizeTournamentStartOffsets($raw);
+    tcgPushEnsureSchema();
+    $db = tcgDb();
+    if (!$offsets) {
+        $db->prepare('DELETE FROM tcg_tournament_start_reminders WHERE discord_id = ? AND tournament_id = ?')
+            ->execute([$uid, $id]);
+        return ['success' => true, 'tournament_id' => $id, 'offsets' => []];
+    }
+    $keep = implode(',', array_map('intval', $offsets));
+    $db->prepare(
+        "DELETE FROM tcg_tournament_start_reminders
+         WHERE discord_id = ? AND tournament_id = ? AND offset_sec NOT IN ($keep)"
+    )->execute([$uid, $id]);
+    $ins = $db->prepare(
+        'INSERT OR IGNORE INTO tcg_tournament_start_reminders
+         (discord_id, tournament_id, offset_sec, sent_at) VALUES (?, ?, ?, NULL)'
+    );
+    foreach ($offsets as $sec) {
+        $ins->execute([$uid, $id, $sec]);
+    }
+    // Late opt-in: fire immediately if the lead window is already open.
+    tcgPushDispatchTournamentStartReminders();
+    $map = tcgPushTournamentStartOffsetsForUser($uid, [$id]);
+    return [
+        'success' => true,
+        'tournament_id' => $id,
+        'offsets' => $map[$id] ?? $offsets,
     ];
 }

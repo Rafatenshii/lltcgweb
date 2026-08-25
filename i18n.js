@@ -1438,6 +1438,15 @@
         "checkinOpen": "Check-in open: {title}",
         "checkinSoon": "Check-in soon: {title}"
       },
+      "startRemind": {
+        "toggle": "Notify me when this tournament is starting soon",
+        "m5": "5 min",
+        "m10": "10 min",
+        "m30": "30 min",
+        "h1": "1 hour",
+        "h3": "3 hours",
+        "h10": "10 hours"
+      },
       "createHeading": "Create tournament",
       "createTzNote": "Start time uses {tz}.",
       "createTzNoteFallback": "Start time uses your selected timezone.",
@@ -3272,6 +3281,15 @@
         "checkinOpen": "チェックイン開始: {title}",
         "checkinSoon": "まもなくチェックイン: {title}"
       },
+      "startRemind": {
+        "toggle": "このトーナメントの開始が近づいたら通知する",
+        "m5": "5分",
+        "m10": "10分",
+        "m30": "30分",
+        "h1": "1時間",
+        "h3": "3時間",
+        "h10": "10時間"
+      },
       "createHeading": "トーナメント作成",
       "createTzNote": "開始時刻は{tz}を使います。",
       "createTzNoteFallback": "開始時刻は選択したタイムゾーンを使います。",
@@ -4989,6 +5007,15 @@
         "title": "Torneo LLTCG",
         "checkinOpen": "Check-in abierto: {title}",
         "checkinSoon": "Check-in pronto: {title}"
+      },
+      "startRemind": {
+        "toggle": "Avisarme cuando este torneo esté por empezar",
+        "m5": "5 min",
+        "m10": "10 min",
+        "m30": "30 min",
+        "h1": "1 hora",
+        "h3": "3 horas",
+        "h10": "10 horas"
       },
       "createHeading": "Crear torneo",
       "createTzNote": "La hora de inicio usa {tz}.",
@@ -6783,6 +6810,15 @@
         "checkinOpen": "체크인 시작: {title}",
         "checkinSoon": "곧 체크인: {title}"
       },
+      "startRemind": {
+        "toggle": "이 토너먼트가 곧 시작되면 알림 받기",
+        "m5": "5분",
+        "m10": "10분",
+        "m30": "30분",
+        "h1": "1시간",
+        "h3": "3시간",
+        "h10": "10시간"
+      },
       "createHeading": "토너먼트 만들기",
       "createTzNote": "시작 시간은 {tz}를 사용합니다.",
       "createTzNoteFallback": "시작 시간은 선택한 시간대를 사용합니다.",
@@ -8576,6 +8612,15 @@
         "checkinOpen": "签到已开始：{title}",
         "checkinSoon": "即将签到：{title}"
       },
+      "startRemind": {
+        "toggle": "本场锦标赛即将开始时通知我",
+        "m5": "5 分钟",
+        "m10": "10 分钟",
+        "m30": "30 分钟",
+        "h1": "1 小时",
+        "h3": "3 小时",
+        "h10": "10 小时"
+      },
       "createHeading": "创建锦标赛",
       "createTzNote": "开始时间使用 {tz}。",
       "createTzNoteFallback": "开始时间使用你选择的时区。",
@@ -10344,6 +10389,15 @@
         "title": "ทัวร์นาเมนต์ LLTCG",
         "checkinOpen": "เปิดเช็คอินแล้ว: {title}",
         "checkinSoon": "ใกล้เช็คอิน: {title}"
+      },
+      "startRemind": {
+        "toggle": "แจ้งเตือนเมื่อทัวร์นาเมนต์นี้ใกล้เริ่ม",
+        "m5": "5 นาที",
+        "m10": "10 นาที",
+        "m30": "30 นาที",
+        "h1": "1 ชั่วโมง",
+        "h3": "3 ชั่วโมง",
+        "h10": "10 ชั่วโมง"
       },
       "createHeading": "สร้างทัวร์นาเมนต์",
       "createTzNote": "เวลาเริ่มใช้ {tz}",
