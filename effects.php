@@ -1389,7 +1389,7 @@ function lookRevealGroup(array &$p, int $look, string $group, string $filter, in
 }
 
 /**
- * Face-up skill reveal: both players (and the log) see these cards.
+ * Face-up skill reveal: opponent popup + log. The revealing player does not get the overlay.
  * Use for card text that says Reveal — not for private Look-at-deck piles.
  */
 function queuePublicSkillReveal(

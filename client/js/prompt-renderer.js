@@ -2277,6 +2277,10 @@ global.showPublicSkillRevealFromState = function showPublicSkillRevealFromState(
   G._lastSkillRevealKey = key;
   G._shownSkillRevealKeys.add(key);
   G._shownSkillRevealKeys.add(idKey);
+  // Revealer already sees the cards (hand / look pile) and the log. Popup is for the opponent.
+  if (!G.isSpectator && rev.pid && myId && rev.pid === myId) {
+    return;
+  }
   showPublicSkillRevealOverlay(rev, myId);
 };
 
