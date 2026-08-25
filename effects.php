@@ -1434,6 +1434,7 @@ function queuePublicSkillReveal(
     }
     $state['skill_reveals'] = [
         'seq' => intval($state['seq'] ?? 0),
+        'turn' => intval($state['turn'] ?? 0),
         'pid' => $pid,
         'from' => $from,
         'source_name' => $sourceName,

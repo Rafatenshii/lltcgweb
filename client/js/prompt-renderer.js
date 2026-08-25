@@ -2265,9 +2265,18 @@ global.showPublicSkillRevealOverlay = function showPublicSkillRevealOverlay(rev,
 global.showPublicSkillRevealFromState = function showPublicSkillRevealFromState(s, myId){
   const rev = s?.skill_reveals;
   if (!rev?.cards?.length) return;
-  const key = `${rev.seq}:${rev.pid}:${(rev.cards || []).map(c => c.instance_id).join(',')}`;
-  if (G._lastSkillRevealKey === key) return;
+  if (s?.spectate_stream_waiting) return;
+  if (rev.turn != null && s?.turn != null && Number(rev.turn) !== Number(s.turn)) return;
+  const ids = (rev.cards || []).map(c => c.instance_id).join(',');
+  const key = `${rev.seq}:${rev.pid}:${ids}`;
+  const idKey = `${rev.pid}:${ids}`;
+  if (!G._shownSkillRevealKeys) G._shownSkillRevealKeys = new Set();
+  if (G._lastSkillRevealKey === key || G._shownSkillRevealKeys.has(key) || G._shownSkillRevealKeys.has(idKey)) {
+    return;
+  }
   G._lastSkillRevealKey = key;
+  G._shownSkillRevealKeys.add(key);
+  G._shownSkillRevealKeys.add(idKey);
   showPublicSkillRevealOverlay(rev, myId);
 };
 

@@ -2640,7 +2640,7 @@ function possessiveName(string $name): string {
 }
 
 function startTurn(array $state): array {
-    unset($state['block_effect_member_activate']);
+    unset($state['block_effect_member_activate'], $state['skill_reveals']);
     // Mulligan / coin-flip leave status=setup; softlock skip + Shift+T require playing.
     $state['status'] = 'playing';
     $state['phase'] = 'active_first';
