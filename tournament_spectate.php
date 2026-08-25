@@ -25,6 +25,66 @@ function tcgTournamentStreamDelaySecs(array $state): int {
     return in_array($delay, [0, 15, 30, 60], true) ? $delay : 0;
 }
 
+/** @param array<string, mixed>|null $p */
+function tcgTournamentSpectateHoldPlayer(?array $p): array {
+    if (!is_array($p)) {
+        return [
+            'name' => '',
+            'hand' => [],
+            'stage' => [],
+            'waiting_room' => [],
+            'live_zone' => [],
+            'clock' => [],
+            'score' => 0,
+            'main_deck' => [],
+            'energy_deck' => [],
+        ];
+    }
+    return [
+        'id' => $p['id'] ?? null,
+        'name' => (string)($p['name'] ?? ''),
+        'hand' => [],
+        'stage' => [],
+        'waiting_room' => [],
+        'live_zone' => [],
+        'clock' => [],
+        'score' => 0,
+        'sleeve_id' => $p['sleeve_id'] ?? '',
+        'playmat_id' => $p['playmat_id'] ?? '',
+        'playmat_brightness' => $p['playmat_brightness'] ?? 1.0,
+        'main_deck' => [],
+        'energy_deck' => [],
+        'deck_label' => (string)($p['deck_label'] ?? ''),
+    ];
+}
+
+/**
+ * Board with names/cosmetics only — never live zones, logs, or prompts.
+ *
+ * @return array<string, mixed>
+ */
+function tcgTournamentSpectateHoldState(array $liveState, int $delay): array {
+    return [
+        'room_id' => $liveState['room_id'] ?? '',
+        'mode' => 'tournament',
+        'game_mode' => $liveState['game_mode'] ?? 'standard',
+        'status' => 'playing',
+        'seq' => 0,
+        'phase' => 'spectate_delay',
+        'turn' => 0,
+        'log' => [],
+        'players' => [
+            'p1' => tcgTournamentSpectateHoldPlayer(is_array($liveState['players']['p1'] ?? null) ? $liveState['players']['p1'] : null),
+            'p2' => tcgTournamentSpectateHoldPlayer(is_array($liveState['players']['p2'] ?? null) ? $liveState['players']['p2'] : null),
+        ],
+        'tournament' => is_array($liveState['tournament'] ?? null) ? $liveState['tournament'] : [],
+        'spectate_hidden_hands' => $liveState['spectate_hidden_hands'] ?? true,
+        'spectate_stream_delayed' => true,
+        'spectate_stream_waiting' => true,
+        'spectate_stream_delay_secs' => $delay,
+    ];
+}
+
 /**
  * Append a lightweight snapshot for delayed spectate (players unaffected).
  * Keeps ~2 minutes of history at ~2s spacing max.
@@ -54,7 +114,6 @@ function tcgTournamentRecordDelayedSnapshot(string $roomId, array $state): void 
     if ($lastTs > 0 && ($now - $lastTs) < 2) {
         return;
     }
-    // Store filtered-ish state without tokens / full decks to keep files small.
     $snap = $state;
     foreach (['p1', 'p2'] as $pid) {
         if (!isset($snap['players'][$pid]) || !is_array($snap['players'][$pid])) {
@@ -76,22 +135,22 @@ function tcgTournamentRecordDelayedSnapshot(string $roomId, array $state): void 
 }
 
 /**
- * For spectators: return the newest snapshot older than stream_delay_secs, else live.
+ * For spectators: newest snapshot at least stream_delay_secs old.
+ * Never returns live state when delay > 0 — holds until a snapshot is old enough.
  *
- * @return array{state: array, delayed: bool, delay_secs: int}
+ * @return array{state: array, delayed: bool, delay_secs: int, waiting: bool}
  */
 function tcgTournamentApplyStreamDelay(string $roomId, array $liveState): array {
     $delay = tcgTournamentStreamDelaySecs($liveState);
     if ($delay <= 0 || ($liveState['mode'] ?? '') !== 'tournament') {
-        return ['state' => $liveState, 'delayed' => false, 'delay_secs' => 0];
+        return ['state' => $liveState, 'delayed' => false, 'delay_secs' => 0, 'waiting' => false];
     }
     $path = tcgTournamentDelayFile($roomId);
-    if (!is_file($path)) {
-        // No history yet — hold spectators on empty-ish wait by returning live with flag.
-        return ['state' => $liveState, 'delayed' => true, 'delay_secs' => $delay];
+    $entries = [];
+    if (is_file($path)) {
+        $raw = json_decode((string)@file_get_contents($path), true);
+        $entries = is_array($raw['entries'] ?? null) ? $raw['entries'] : [];
     }
-    $raw = json_decode((string)@file_get_contents($path), true);
-    $entries = is_array($raw['entries'] ?? null) ? $raw['entries'] : [];
     $cutoff = time() - $delay;
     $pick = null;
     foreach ($entries as $e) {
@@ -103,14 +162,24 @@ function tcgTournamentApplyStreamDelay(string $roomId, array $liveState): array 
         }
     }
     if ($pick === null) {
-        return ['state' => $liveState, 'delayed' => true, 'delay_secs' => $delay];
+        $hold = tcgTournamentSpectateHoldState($liveState, $delay);
+        return ['state' => $hold, 'delayed' => true, 'delay_secs' => $delay, 'waiting' => true];
     }
     $state = $pick['state'];
-    // Preserve live spectator_count / hands policy from live room if missing on snap.
     if (!isset($state['spectate_hidden_hands']) && isset($liveState['spectate_hidden_hands'])) {
         $state['spectate_hidden_hands'] = $liveState['spectate_hidden_hands'];
     }
     $state['spectate_stream_delayed'] = true;
+    $state['spectate_stream_waiting'] = false;
     $state['spectate_stream_delay_secs'] = $delay;
-    return ['state' => $state, 'delayed' => true, 'delay_secs' => $delay];
+    return ['state' => $state, 'delayed' => true, 'delay_secs' => $delay, 'waiting' => false];
+}
+
+/** Seq the spectator client should key off (0 while holding). */
+function tcgTournamentSpectatorViewSeq(string $roomId, array $liveState): int {
+    $applied = tcgTournamentApplyStreamDelay($roomId, $liveState);
+    if (!empty($applied['waiting'])) {
+        return 0;
+    }
+    return (int)($applied['state']['seq'] ?? 0);
 }

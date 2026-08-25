@@ -117,8 +117,66 @@ final class TournamentPhase2Test extends TestCase
         $this->assertSame(15, $applied['delay_secs']);
         $this->assertSame(3, (int)($applied['state']['seq'] ?? 0));
         $this->assertSame('setup', (string)($applied['state']['phase'] ?? ''));
+        $this->assertFalse($applied['waiting'] ?? true);
 
         @unlink($path);
+    }
+
+    public function testStreamDelayHoldDoesNotLeakLiveState(): void
+    {
+        $room = 'T' . strtoupper(bin2hex(random_bytes(2)));
+        $live = [
+            'mode' => 'tournament',
+            'seq' => 42,
+            'phase' => 'live_show',
+            'spectate_stream_delay_secs' => 30,
+            'players' => [
+                'p1' => ['name' => 'Alice', 'hand' => [['card_no' => 'SECRET']], 'main_deck' => [], 'energy_deck' => []],
+                'p2' => ['name' => 'Bob', 'hand' => [['card_no' => 'SECRET2']], 'main_deck' => [], 'energy_deck' => []],
+            ],
+        ];
+        $path = tcgTournamentDelayFile($room);
+        @mkdir(dirname($path), 0755, true);
+        file_put_contents($path, json_encode([
+            'room_id' => $room,
+            'delay_secs' => 30,
+            'entries' => [
+                ['ts' => time() - 5, 'seq' => 42, 'state' => $live],
+            ],
+        ]), LOCK_EX);
+
+        $applied = tcgTournamentApplyStreamDelay($room, $live);
+        $this->assertTrue($applied['delayed']);
+        $this->assertTrue($applied['waiting']);
+        $this->assertSame(0, (int)($applied['state']['seq'] ?? -1));
+        $this->assertSame('spectate_delay', (string)($applied['state']['phase'] ?? ''));
+        $this->assertSame([], $applied['state']['players']['p1']['hand'] ?? ['x']);
+        $this->assertSame('Alice', (string)($applied['state']['players']['p1']['name'] ?? ''));
+
+        @unlink($path);
+    }
+
+    public function testStreamDelayEmptyRingHolds(): void
+    {
+        $room = 'T' . strtoupper(bin2hex(random_bytes(2)));
+        $live = [
+            'mode' => 'tournament',
+            'seq' => 7,
+            'phase' => 'main_first',
+            'spectate_stream_delay_secs' => 30,
+            'players' => [
+                'p1' => ['name' => 'A', 'hand' => [['card_no' => 'X']], 'main_deck' => [], 'energy_deck' => []],
+                'p2' => ['name' => 'B', 'hand' => [], 'main_deck' => [], 'energy_deck' => []],
+            ],
+        ];
+        $path = tcgTournamentDelayFile($room);
+        if (is_file($path)) {
+            @unlink($path);
+        }
+        $applied = tcgTournamentApplyStreamDelay($room, $live);
+        $this->assertTrue($applied['waiting']);
+        $this->assertNotSame(7, (int)($applied['state']['seq'] ?? 7));
+        $this->assertSame([], $applied['state']['players']['p1']['hand'] ?? ['x']);
     }
 
     public function testSpectateListAcceptsTournamentCategory(): void

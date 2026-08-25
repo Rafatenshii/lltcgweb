@@ -209,9 +209,14 @@
       return;
     }
     if(s.seq<=G.lastSeq && G.gameState) {
-      TCG_DEBUG.logOnce('state', `stale:${s.seq}`, 'skip stale', { incoming: s.seq, last: G.lastSeq });
-      if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
-      return;
+      const delayedSpec = !!(G.isSpectator && (s.spectate_stream_delayed || s.spectate_stream_waiting));
+      const sameBoard = (s.seq === (G.gameState.seq ?? 0))
+        && !!s.spectate_stream_waiting === !!G.gameState.spectate_stream_waiting;
+      if (!delayedSpec || sameBoard) {
+        TCG_DEBUG.logOnce('state', `stale:${s.seq}`, 'skip stale', { incoming: s.seq, last: G.lastSeq });
+        if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
+        return;
+      }
     }
     // Spectators use the same queue/apply path as players so LIVE reveal + Performance
     // spectacle can run. Do not force-clear animating / poll hold here.

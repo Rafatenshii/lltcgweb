@@ -823,6 +823,23 @@ function getStatePolling(): void {
             $curSeq = intval($state['seq'] ?? 0);
         }
 
+        // Delayed tournament spectate keys off the delayed snapshot seq, never live seq.
+        if (tcgIsSpectatorToken($playerToken)
+            && ($state['mode'] ?? '') === 'tournament') {
+            require_once __DIR__ . '/tournament_spectate.php';
+            if (tcgTournamentStreamDelaySecs($state) > 0) {
+                $filtered = filterStateForClient($state, $roomId, $playerToken);
+                $viewSeq = intval($filtered['seq'] ?? 0);
+                $waiting = !empty($filtered['spectate_stream_waiting']);
+                if (!$mutated && !$waiting && $lastSeq > 0 && $lastSeq === $viewSeq) {
+                    echo json_encode(['ok' => true, 'unchanged' => true, 'seq' => $viewSeq]);
+                    return;
+                }
+                echo json_encode($filtered);
+                return;
+            }
+        }
+
         // Client already has this seq and nothing mutated — skip filter/encode.
         // force=1 still runs side effects above; if seq did not move, do not
         // re-encode the full ~200KB snapshot (watchdog / duplicate catch-up).
@@ -862,7 +879,14 @@ function getStatePolling(): void {
             saveGame($roomId, $state);
         }
         maybeRecoverUnappliedRankedFinish($roomId, $state);
-        if ($state['seq'] > $lastSeq) {
+        $wakeSeq = intval($state['seq'] ?? 0);
+        if ($isSpectator && ($state['mode'] ?? '') === 'tournament') {
+            require_once __DIR__ . '/tournament_spectate.php';
+            if (tcgTournamentStreamDelaySecs($state) > 0) {
+                $wakeSeq = tcgTournamentSpectatorViewSeq($roomId, $state);
+            }
+        }
+        if ($wakeSeq > $lastSeq) {
             echo json_encode(filterStateForClient($state, $roomId, $playerToken));
             return;
         }

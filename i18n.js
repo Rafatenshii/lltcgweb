@@ -1390,7 +1390,9 @@
       "hiddenHands": "Hidden hands",
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
-      "hiddenHandsTitle": "Hide both players’ hands while spectating"
+      "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "delayHold": "Stream delayed — waiting until {n}s behind live",
+      "delayLive": "Stream delayed {n}s"
     },
     "ui": {
       "fullscreen": "Full screen",
@@ -3233,7 +3235,9 @@
       "waitingJudgePick": "ライブ勝敗判定 — {name} の成功ライブ選択を待っています…",
       "waitingJudgeResolve": "ライブ勝敗判定 — {name} の操作待ち…",
       "listTitleTournament": "トーナメントを観戦",
-      "hiddenHandsOn": "Hands hidden"
+      "hiddenHandsOn": "Hands hidden",
+      "delayHold": "配信遅延 — ライブから{n}秒遅れの映像を待っています",
+      "delayLive": "配信遅延 {n}秒"
     },
     "ui": {
       "fullscreen": "全画面",
@@ -4842,7 +4846,9 @@
       "hiddenHands": "Hidden hands",
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
-      "hiddenHandsTitle": "Hide both players’ hands while spectating"
+      "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "delayHold": "Retraso de stream — esperando hasta {n}s detrás del vivo",
+      "delayLive": "Retraso de stream {n}s"
     },
     "missions": {
       "claim": "Reclamar",
@@ -6644,7 +6650,9 @@
       "hiddenHands": "Hidden hands",
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
-      "hiddenHandsTitle": "Hide both players’ hands while spectating"
+      "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "delayHold": "스트림 지연 — 라이브보다 {n}초 늦은 화면을 기다리는 중",
+      "delayLive": "스트림 지연 {n}초"
     },
     "missions": {
       "claim": "수령",
@@ -8446,7 +8454,9 @@
       "hiddenHands": "Hidden hands",
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
-      "hiddenHandsTitle": "Hide both players’ hands while spectating"
+      "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "delayHold": "直播延迟 — 正在等待落后实况 {n} 秒的画面",
+      "delayLive": "直播延迟 {n}秒"
     },
     "missions": {
       "claim": "领取",
@@ -10224,7 +10234,9 @@
       "hiddenHands": "Hidden hands",
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
-      "hiddenHandsTitle": "Hide both players’ hands while spectating"
+      "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "delayHold": "หน่วงสตรีม — รอภาพที่ช้ากว่าไลฟ์ {n} วินาที",
+      "delayLive": "หน่วงสตรีม {n}วินาที"
     },
     "missions": {
       "claim": "รับ",

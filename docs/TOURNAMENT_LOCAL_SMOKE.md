@@ -43,6 +43,7 @@ Covers bracket pairing, title filter, lifecycle, Phase 2 settings/rules/delay, P
 ## Notes
 
 - Match rooms use `mode: "tournament"` on Hostinger GameStore (not VPS ranked overflow).
+- Stream delay (15/30/60s) holds spectators on an empty board until a snapshot is at least that old; they never receive live seq. Tab-out can lag further.
 - `scripts/tournament_tick.php` advances events with no browser tab.
 - Tournament sky is purple; event times default to **Asia/Tokyo** and follow account `preferred_timezone` (UTC offset shown in the timezone picker).
 - Register opens a deck picker (or Deck Builder shortcut) when no eligible deck is equipped.

@@ -362,6 +362,19 @@
     return !!(d && d.unchanged === true && !d.error);
   }
 
+  function isDelayedTournamentSpectatePayload(d) {
+    return !!(G.isSpectator && d && (d.spectate_stream_delayed || d.spectate_stream_waiting));
+  }
+
+  function noteUnchangedSeq(d) {
+    if (!Number.isFinite(d?.seq)) return;
+    if (isDelayedTournamentSpectatePayload(d) || (G.isSpectator && G.gameState?.spectate_stream_delayed)) {
+      G.lastSeq = d.seq;
+    } else {
+      G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+    }
+  }
+
   function syncFallbackDelayMs() {
     const fails = G._syncFailCount || 0;
     const base = global.TCG_SYNC_FALLBACK_POLL_MS || 5000;
@@ -659,7 +672,7 @@
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
       G._pollRateLimitBackoff = 0;
       if (isUnchangedStatePayload(d)) {
-        if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+        noteUnchangedSeq(d);
       } else {
         if (G._pollFastUntil && (d.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
         onState(d);
@@ -708,10 +721,10 @@
       const d = await parseGameApiResponse(r);
       if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return G.gameState || null;
       if (isUnchangedStatePayload(d)) {
-        if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+        noteUnchangedSeq(d);
         return G.gameState || null;
       }
-      if ((d.seq ?? 0) <= (G.lastSeq ?? 0)) return G.gameState || null;
+      if ((d.seq ?? 0) <= (G.lastSeq ?? 0) && !isDelayedTournamentSpectatePayload(d)) return G.gameState || null;
       // Finished must go through onState/applyFinishedState — advancing lastSeq here
       // alone skips the win overlay and leaves later finished polls as "stale".
       if (d.status === 'finished') {
@@ -804,14 +817,15 @@
         const d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
         if (isUnchangedStatePayload(d)) {
-          if (Number.isFinite(d.seq)) G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq);
+          noteUnchangedSeq(d);
           if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
           return;
         }
         if (force && d.status === 'finished') {
           G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d.seq ?? 0));
         }
-        if (force && G.gameState && (d.seq ?? 0) <= (G.lastSeq ?? 0)) {
+        if (force && G.gameState && (d.seq ?? 0) <= (G.lastSeq ?? 0)
+            && !isDelayedTournamentSpectatePayload(d)) {
           // Hung presentation can advance lastSeq before committing gameState.
           // Still apply when the board is behind the fetched snapshot.
           if ((d.seq ?? 0) <= (G.gameState.seq ?? 0)) {

@@ -104,6 +104,7 @@ function renderGame(s, opts = {}) {
   // Phase bar
   renderPhaseBar(s,me,opp,myId,oppId);
   updateSpectatorCountUI(s);
+  if (typeof updateSpectateStreamDelayUI === 'function') updateSpectateStreamDelayUI(s);
   updatePhaseTimerUI(s);
 
   // Stages (per-slot on playmat)
