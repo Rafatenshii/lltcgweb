@@ -790,6 +790,8 @@ function debugIsSelfStageAbilityType(string $type, array $ab): bool {
         'live_start_all_stage_group_bonus',
         'blade_per_stage_excl_subunit',
         'blade_per_other_subunit',
+        'blade_if_other_subunit',
+        'blade_if_other_subunit',
         'activate_energy_if_other_group',
         'activate_energy_if_other_subunit',
         'draw_if_stage_cost_min',

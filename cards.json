@@ -21927,7 +21927,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "blade_per_other_subunit",
+                    "type": "blade_if_other_subunit",
                     "subunit": "Edel Note",
                     "amount": 2
                 }
@@ -21988,7 +21988,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "blade_per_other_subunit",
+                    "type": "blade_if_other_subunit",
                     "subunit": "Edel Note",
                     "amount": 2
                 }
@@ -22049,7 +22049,7 @@
                 },
                 {
                     "trigger": "continuous",
-                    "type": "blade_per_other_subunit",
+                    "type": "blade_if_other_subunit",
                     "subunit": "Edel Note",
                     "amount": 2
                 }

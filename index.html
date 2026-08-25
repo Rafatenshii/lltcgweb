@@ -11829,6 +11829,8 @@ function debugIsSelfStageAbilityType(type, ab) {
     'live_start_all_stage_group_bonus',
     'blade_per_stage_excl_subunit',
     'blade_per_other_subunit',
+    'blade_if_other_subunit',
+    'blade_if_other_subunit',
     'activate_energy_if_other_group',
     'activate_energy_if_other_subunit',
     'draw_if_stage_cost_min',
@@ -27794,6 +27796,17 @@ function tcgClientCountStageMembers(p) {
   return Object.values(p?.stage || {}).filter(Boolean).length;
 }
 
+function tcgClientCountOtherSubunitOnStage(p, subunit, excludeId = '', standingOnly = false) {
+  if (!subunit) return 0;
+  return Object.values(p?.stage || {}).filter((mbr) => {
+    if (!mbr) return false;
+    if (excludeId && (mbr.instance_id || '') === excludeId) return false;
+    if (standingOnly && typeof memberInWait === 'function' && memberInWait(mbr)) return false;
+    if (typeof cardMatchesSubunit === 'function') return cardMatchesSubunit(mbr, subunit);
+    return (mbr.subunit || '') === subunit;
+  }).length;
+}
+
 function tcgClientStageHasHigherCostMember(p, self, excludeId = '') {
   const selfCost = Number(self?.cost || 0);
   return Object.values(p?.stage || {}).some((mbr) => {
@@ -28095,6 +28108,15 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
     }
     if (type === 'blade_if_higher_cost_on_stage') {
       if (tcgClientStageHasHigherCostMember(p, member, member.instance_id || '')) {
+        bonus += Number(ab.amount ?? 0);
+      }
+    }
+    if (type === 'blade_per_other_subunit') {
+      bonus += tcgClientCountOtherSubunitOnStage(p, ab.subunit || '', member.instance_id || '', false)
+        * Number(ab.amount ?? 1);
+    }
+    if (type === 'blade_if_other_subunit') {
+      if (tcgClientCountOtherSubunitOnStage(p, ab.subunit || '', member.instance_id || '', true) > 0) {
         bonus += Number(ab.amount ?? 0);
       }
     }

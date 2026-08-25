@@ -3822,6 +3822,16 @@ function getMemberBlade(array $member, array $state, string $pid, string $slot =
                     $member['instance_id'] ?? ''
                 ) * intval($ab['amount'] ?? 1);
             }
+            if (($ab['trigger'] ?? '') === 'continuous'
+                && ($ab['type'] ?? '') === 'blade_if_other_subunit') {
+                if (countOtherStandingSubunitOnStage(
+                    $state['players'][$pid],
+                    $ab['subunit'] ?? '',
+                    $member['instance_id'] ?? ''
+                ) > 0) {
+                    $blade += intval($ab['amount'] ?? 0);
+                }
+            }
             if (($ab['trigger'] ?? '') === 'continuous' && ($ab['type'] ?? '') === 'blade_if_success_score_higher') {
                 $opp = ($pid === 'p1') ? 'p2' : 'p1';
                 if (sumSuccessLiveScores($state['players'][$pid], $state, $pid) >
@@ -4809,6 +4819,23 @@ function countOtherSubunitOnStage(array $p, string $subunit, string $excludeId =
         // Use cardMatchesSubunit — catalog mixes half-width ! and full-width ！
         // on Mira-Cra Park! (Megumi bp2-006 Always would otherwise never count).
         if (cardMatchesSubunit($mbr, $subunit)) $n++;
+    }
+    return $n;
+}
+
+/** Other subunit Members that are standing (not Wait). */
+function countOtherStandingSubunitOnStage(array $p, string $subunit, string $excludeId = ''): int {
+    $n = 0;
+    foreach ($p['stage'] as $mbr) {
+        if (!$mbr || memberIsInWait($mbr)) {
+            continue;
+        }
+        if ($excludeId !== '' && ($mbr['instance_id'] ?? '') === $excludeId) {
+            continue;
+        }
+        if (cardMatchesSubunit($mbr, $subunit)) {
+            $n++;
+        }
     }
     return $n;
 }
