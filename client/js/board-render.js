@@ -681,9 +681,48 @@ function collectLiveBluffDiscards(revealState, final) {
   return moves;
 }
 
+/** Live cards dumped from storage when cannot_live (Rurino bp2-014 etc.) before Performance. */
+function collectCannotLiveWrDiscards(revealState, final) {
+  const board = liveStorageBoardForPlayback(revealState) || revealState;
+  const moves = [];
+  for (const pid of ['p1', 'p2']) {
+    const pname = final?.players?.[pid]?.name || pid;
+    const dumped = (final?.log || []).some(e =>
+      (e?.msg || '').includes(`${pname} cannot attempt a Live; Live cards in storage went to the Waiting Room.`));
+    if (!dumped) continue;
+    const prevLive = board.players?.[pid]?.live_zone || [];
+    prevLive.forEach((c, index) => {
+      if (!c || !isLiveTypeCard(c)) return;
+      const iid = c.instance_id;
+      if (!iid) return;
+      const stillInLive = (final.players?.[pid]?.live_zone || [])
+        .some(x => x.instance_id === iid);
+      if (stillInLive) return;
+      const inWr = (final.players?.[pid]?.waiting_room || [])
+        .some(x => x.instance_id === iid);
+      if (!inWr) return;
+      const card = findCardInState(final, iid, pid) || { ...c, revealed: true };
+      moves.push({
+        iid,
+        card: { ...card, revealed: true },
+        from: { zone: 'live', pid, index: liveZoneSlot(c, index), card },
+        to: { zone: 'waiting_room', pid, card },
+      });
+    });
+  }
+  return moves;
+}
+
+function collectLiveStorageWrDiscards(revealState, final) {
+  return [
+    ...collectLiveBluffDiscards(revealState, final),
+    ...collectCannotLiveWrDiscards(revealState, final),
+  ];
+}
+
 /** Animate live-storage cards flying to the Waiting Room (rotation for member bluffs). */
 async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
-  const moves = collectLiveBluffDiscards(fromState, final);
+  const moves = collectLiveStorageWrDiscards(fromState, final);
   if (!moves.length) return false;
   const playback = deepCloneState(fromState);
   G.gameState = playback;

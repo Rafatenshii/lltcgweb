@@ -1833,7 +1833,14 @@ function filterEmptyLivePendingWrMoves(prev, moves, next) {
   if (!suppressLiveWr) return moves;
   return (moves || []).filter(m => {
     if (m.from?.zone !== 'live' || m.to?.zone !== 'waiting_room') return true;
+    const pid = m.from.pid || m.to.pid;
+    const pname = next?.players?.[pid]?.name || pid;
     const card = enrichCard(m.card);
+    if (isLiveTypeCard(card)
+        && (next?.log || []).some(e =>
+          (e?.msg || '').includes(`${pname} cannot attempt a Live; Live cards in storage went to the Waiting Room.`))) {
+      return true;
+    }
     return !isLiveTypeCard(card);
   });
 }

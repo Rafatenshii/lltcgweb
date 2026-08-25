@@ -898,7 +898,7 @@
               await queueEmptyLiveRoundBanner();
               await waitForBannersIdle();
               const revealBoard = G._livePostRevealBoard || wrFrom;
-              if (revealBoard && collectLiveBluffDiscards(revealBoard, s).length) {
+              if (revealBoard && collectLiveStorageWrDiscards(revealBoard, s).length) {
                 await playLiveStorageWrDiscards(revealBoard, s, G.playerId, { initialDelayMs: LIVE_BLUFF_WR_DELAY_MS });
                 animPrev = G.gameState;
               }
@@ -1045,6 +1045,10 @@
       abortGameplayPresentation({ skipAbortFlag: true });
     }
     if (G.isTutorial && !G.tutorialLive) return;
+    if (newEntries.some(e => (e?.msg || '').includes('cannot attempt a Live; Live cards in storage went to the Waiting Room.'))
+        && typeof refreshWaitingRoomPiles === 'function') {
+      void refreshWaitingRoomPiles(G.gameState || s, G.playerId, { clearPending: true });
+    }
     tcgDebugOnStateApplied(prev, s, newEntries);
     ensurePollHoldReleased(G.gameState || s);
     if (!replayForward && !G.animating && !G._perfSpectacleActive && !G._liveSpectacleGateRunning) {

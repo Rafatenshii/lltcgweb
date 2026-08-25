@@ -27230,7 +27230,7 @@ function finishPortraitHandTap(hp) {
   if (typeof tcgPortraitMountBoard === 'function') {
     try { tcgPortraitMountBoard(); } catch (_) { /* ignore */ }
   }
-  if (isLiveSetSelecting(state, myId) && isLiveHandSelectable(tapCard)) {
+  if (isLiveSetSelecting(state, myId) && isLiveHandSelectable(tapCard, state, myId)) {
     if (typeof tutBlocks === 'function' && tutBlocks('set_live_cards')) return;
     toggleLiveSelect(iid, state, myId);
   } else if (canSelectMemberForPlay(tapCard, state, myId)) {
@@ -27373,7 +27373,7 @@ function bindHandCardEvents(d, card, s, myId) {
       if (typeof tutBlocks === 'function' && tutBlocks('hand')) return;
       const state = liveGameState(hp.s);
       const tapCard = findHand(tapIid, state, myId) || card;
-      if (isLiveSetSelecting(state, myId) && isLiveHandSelectable(tapCard)) {
+      if (isLiveSetSelecting(state, myId) && isLiveHandSelectable(tapCard, state, myId)) {
         if (typeof tutBlocks === 'function' && tutBlocks('set_live_cards')) return;
         toggleLiveSelect(tapIid, state, myId);
       } else if (canSelectMemberForPlay(tapCard, state, myId)) {
@@ -29788,8 +29788,11 @@ function isLiveSetSelecting(s, myId) {
   return s.active_player === myId;
 }
 
-function isLiveHandSelectable(card) {
-  return !!(card && (card.card_type === 'ライブ' || card.card_type === 'メンバー'));
+function isLiveHandSelectable(card, s, myId) {
+  if (!card || !(card.card_type === 'ライブ' || card.card_type === 'メンバー')) return false;
+  const pid = myId || G.playerId;
+  if (card.card_type === 'ライブ' && s?.live_modifiers?.[pid]?.cannot_live) return false;
+  return true;
 }
 
 function liveStorageMax(s, myId) {
@@ -30312,8 +30315,12 @@ function toggleLiveSelect(iid, s, myId) {
   if (!iid) return;
   G.liveSel = G.liveSel.filter(id => id && (s?.players?.[myId]?.hand || []).some(c => c.instance_id === id));
   const card = findHand(iid, s, myId);
-  if (!isLiveHandSelectable(card)) {
-    toast(t('toast.onlyLiveOrMember'));
+  if (!isLiveHandSelectable(card, s, myId)) {
+    if (card?.card_type === 'ライブ' && s?.live_modifiers?.[myId]?.cannot_live) {
+      toast(t('toast.cannotLiveStorage', 'You cannot attempt a Live this round — Member bluffs only.'));
+    } else {
+      toast(t('toast.onlyLiveOrMember'));
+    }
     return;
   }
   const slots = liveSlotsLeft(s, myId);
