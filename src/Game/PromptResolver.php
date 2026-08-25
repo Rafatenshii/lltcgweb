@@ -3137,7 +3137,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     ' — [' . ($prompt['source_name'] ?? 'Member') . "] Waited self; looked at top $look.");
                 unset($state['pending_prompt']);
                 $state['seq']++;
-                return $state;
+                return finishPromptEffects($state);
             }
             $state = startSurveilArrangePrompt($state, $owner, $prompt['source_name'] ?? 'Member', $top);
             $state = addLog($state, $state['players'][$owner]['name'] .
@@ -3150,7 +3150,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         }
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'optional_wait_self_look_reveal') {
@@ -3233,7 +3233,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             ' — [' . ($prompt['source_name'] ?? 'Member') . '] skipped optional On Enter effect.');
         unset($state['pending_prompt']);
         $state['seq']++;
-        return $state;
+        return finishPromptEffects($state);
     }
 
     if ($promptType === 'optional_pay_energy_up_to') {
