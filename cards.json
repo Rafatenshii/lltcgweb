@@ -74003,7 +74003,7 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[On Enter] [Left Side] [Right Side] Draw 2 cards and put 2 cards from your hand into the Waiting Room.",
+            "text": "[On Enter] You may put up to 1 card from your Waiting Room on top of your deck.",
             "text_jp": "[登場時] 自分の控え室からカードを1枚までデッキの一番上に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-013-N.png",
             "subunit": "KALEIDOSCORE",
@@ -74011,21 +74011,12 @@
             "abilities": [
                 {
                     "trigger": "on_enter",
-                    "type": "on_enter_side_area",
-                    "slots": [
-                        "left",
-                        "right"
-                    ],
-                    "effect": {
-                        "type": "draw_and_discard",
-                        "draw": 2,
-                        "discard": 2
-                    }
+                    "type": "optional_wr_to_deck_top"
                 }
             ],
-            "text_ko": "[등장 시] [왼쪽] [오른쪽] 카드 2장을 드로우하고 자신의 패에서 카드 2장을 대기실에 놓는다.",
-            "text_zh": "[入场时] [左侧] [右侧] 抽2张牌并将2张手牌放入等候室。",
-            "text_th": "[เมื่อเข้าสนาม] [ฝั่งซ้าย] [ฝั่งขวา] จั่วไพ่ 2 ใบและนำไพ่ 2 ใบจากมือของคุณไปที่ห้องรอ"
+            "text_ko": "[등장 시] 자신의 대기실에서 카드를 1장까지 덱 맨 위에 둘 수 있다.",
+            "text_zh": "[入场时] 你可以将等候室中的最多1张牌放到牌组顶部。",
+            "text_th": "[เมื่อเข้าสนาม] คุณอาจวางการ์ดจากห้องรอของคุณได้สูงสุด 1 ใบไว้บนสุดของเด็ค"
         },
         {
             "card_no": "PL!SP-bp2-014-N",
@@ -74053,27 +74044,20 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[Always] [Left Side] Gain 1 Red heart.",
+            "text": "[On Enter] You may put up to 1 card from your Waiting Room on top of your deck.",
             "text_jp": "[登場時] 自分の控え室からカードを1枚までデッキの一番上に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-014-N.png",
             "subunit": "5yncri5e!",
             "text_es": "Puedes colocar 1 carta de tu Sala de espera en la parte superior de tu mazo.",
             "abilities": [
                 {
-                    "trigger": "continuous",
-                    "type": "continuous_hearts_in_slot",
-                    "slot": "left",
-                    "hearts": [
-                        {
-                            "color": "red",
-                            "count": 1
-                        }
-                    ]
+                    "trigger": "on_enter",
+                    "type": "optional_wr_to_deck_top"
                 }
             ],
-            "text_ko": "[상시] [왼쪽] 빨간 하트 1개를 얻는다.",
-            "text_zh": "[永续] [左侧] 获得 1 颗心形。",
-            "text_th": "[ต่อเนื่อง] [ฝั่งซ้าย] ได้รับหัวใจสีแดง 1 อัน"
+            "text_ko": "[등장 시] 자신의 대기실에서 카드를 1장까지 덱 맨 위에 둘 수 있다.",
+            "text_zh": "[入场时] 你可以将等候室中的最多1张牌放到牌组顶部。",
+            "text_th": "[เมื่อเข้าสนาม] คุณอาจวางการ์ดจากห้องรอของคุณได้สูงสุด 1 ใบไว้บนสุดของเด็ค"
         },
         {
             "card_no": "PL!SP-bp2-015-N",
@@ -74097,27 +74081,27 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[Always] [Right Side] Gain 1 Blue heart.",
+            "text": "[Auto] [Once per turn] When Yell reveals no cards with Blade hearts, gain 1 Purple heart until this Live ends.",
             "text_jp": "[自動] [ターン1回] エールにより公開された自分のカードの中にブレードハートを持つカードがないとき、ライブ終了時まで、紫ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-015-N.png",
             "subunit": "CatChu!",
             "text_es": "Cuando las cartas reveladas para Yell no incluyen cartas con corazón de Blade, hasta que termine este Live, obtienes 1 corazón morado.",
             "abilities": [
                 {
-                    "trigger": "continuous",
-                    "type": "continuous_hearts_in_slot",
-                    "slot": "right",
+                    "trigger": "auto",
+                    "type": "auto_yell_no_blade_heart",
+                    "once_per_turn": true,
                     "hearts": [
                         {
-                            "color": "blue",
+                            "color": "purple",
                             "count": 1
                         }
                     ]
                 }
             ],
-            "text_ko": "[상시] [오른쪽] 파란 하트 1개를 얻는다.",
-            "text_zh": "[永续] [右侧] 获得 1 颗蓝心。",
-            "text_th": "[ต่อเนื่อง] [ฝั่งขวา] ได้รับหัวใจสีฟ้า 1 อัน"
+            "text_ko": "[자동] [턴 1회] Yell로 공개된 자신의 카드 중 Blade 하트를 가진 카드가 없을 때, 이 Live가 끝날 때까지 보라 하트 1개를 얻는다.",
+            "text_zh": "[自动] [每回合1次] 当应援（Yell）公开的自己卡牌中没有Blade心形时，直到本场Live结束，获得1颗紫心。",
+            "text_th": "[อัตโนมัติ] [ครั้งต่อเทิร์น] เมื่อการ์ดที่เปิดเผยจาก Yell ไม่มี Blade heart จนกว่า Live นี้จะจบ ได้รับหัวใจสีม่วง 1 อัน"
         },
         {
             "card_no": "PL!SP-bp2-016-N",
@@ -74205,7 +74189,7 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[On Enter] Put 1 opponent Member with cost 2 or less into Wait.",
+            "text": "[On Enter] You may put up to 1 card from your Waiting Room on top of your deck.",
             "text_jp": "[登場時] 自分の控え室からカードを1枚までデッキの一番上に置く。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-018-N.png",
             "subunit": "CatChu!",
@@ -74213,14 +74197,12 @@
             "abilities": [
                 {
                     "trigger": "on_enter",
-                    "type": "wait_opponent_stage_max_cost",
-                    "max_cost": 2,
-                    "pick_count": 1
+                    "type": "optional_wr_to_deck_top"
                 }
             ],
-            "text_ko": "[등장 시] 놓는다 1 상대 멤버 와 함께 코스트 2 이하 Wait에.",
-            "text_zh": "[入场时] 将对方1名成本2以下的成员置于等待状态。",
-            "text_th": "[เมื่อเข้าสนาม] นำสมาชิกฝ่ายตรงข้าม 1 คนที่มีค่าร่าย 2 หรือน้อยกว่าเข้าสู่การรอ"
+            "text_ko": "[등장 시] 자신의 대기실에서 카드를 1장까지 덱 맨 위에 둘 수 있다.",
+            "text_zh": "[入场时] 你可以将等候室中的最多1张牌放到牌组顶部。",
+            "text_th": "[เมื่อเข้าสนาม] คุณอาจวางการ์ดจากห้องรอของคุณได้สูงสุด 1 ใบไว้บนสุดของเด็ค"
         },
         {
             "card_no": "PL!SP-bp2-019-N",
@@ -74287,22 +74269,27 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[Auto] During your Main Phase, when this Member moves areas, activate 2 Energy.",
+            "text": "[Auto] [Once per turn] When Yell reveals no cards with Blade hearts, gain 1 Red heart until this Live ends.",
             "text_jp": "[自動] [ターン1回] エールにより公開された自分のカードの中にブレードハートを持つカードがないとき、ライブ終了時まで、赤ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-020-N.png",
             "subunit": "5yncri5e!",
-            "text_es": "Cuando las cartas reveladas para Yell no incluyen cartas con corazón de Blade, hasta que termine este Live, obtienes 1 corazón morado.",
+            "text_es": "Cuando las cartas reveladas para Yell no incluyen cartas con corazón de Blade, hasta que termine este Live, obtienes 1 corazón rojo.",
             "abilities": [
                 {
                     "trigger": "auto",
-                    "type": "auto_area_move_energy_wait",
+                    "type": "auto_yell_no_blade_heart",
                     "once_per_turn": true,
-                    "activate_count": 2
+                    "hearts": [
+                        {
+                            "color": "red",
+                            "count": 1
+                        }
+                    ]
                 }
             ],
-            "text_ko": "[자동] 동안 자신의 메인 페이즈, 때 이 멤버 이동한다 영역, 에너지 2개를 활성화한다.",
-            "text_zh": "[自动] 在自己的主要阶段，该成员移动区域时，发动2点能量。",
-            "text_th": "[อัตโนมัติ] ในช่วง เฟสหลัก ของคุณ เมื่อสมาชิกนี้ย้ายพื้นที่ จะเปิดใช้งานพลังงาน 2 หน่วย"
+            "text_ko": "[자동] [턴 1회] Yell로 공개된 자신의 카드 중 Blade 하트를 가진 카드가 없을 때, 이 Live가 끝날 때까지 빨간 하트 1개를 얻는다.",
+            "text_zh": "[自动] [每回合1次] 当应援（Yell）公开的自己卡牌中没有Blade心形时，直到本场Live结束，获得1颗红心。",
+            "text_th": "[อัตโนมัติ] [ครั้งต่อเทิร์น] เมื่อการ์ดที่เปิดเผยจาก Yell ไม่มี Blade heart จนกว่า Live นี้จะจบ ได้รับหัวใจสีแดง 1 อัน"
         },
         {
             "card_no": "PL!SP-bp2-021-N",
@@ -74326,22 +74313,27 @@
             ],
             "blade_hearts": [],
             "rarity": "N",
-            "text": "[On Enter] / [Live Start] Put 1 opponent Member with cost 2 or less into Wait.",
+            "text": "[Auto] [Once per turn] When Yell reveals no cards with Blade hearts, gain 1 Yellow heart until this Live ends.",
             "text_jp": "[自動] [ターン1回] エールにより公開された自分のカードの中にブレードハートを持つカードがないとき、ライブ終了時まで、黄ハートを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/BP02/PL!SP-bp2-021-N.png",
             "subunit": "KALEIDOSCORE",
-            "text_es": "Cuando las cartas reveladas para Yell no incluyen cartas con corazón de Blade, hasta que termine este Live, obtienes 1 corazón morado.",
+            "text_es": "Cuando las cartas reveladas para Yell no incluyen cartas con corazón de Blade, hasta que termine este Live, obtienes 1 corazón amarillo.",
             "abilities": [
                 {
-                    "trigger": "on_enter_or_live_start",
-                    "type": "wait_opponent_stage_max_cost",
-                    "max_cost": 2,
-                    "pick_count": 1
+                    "trigger": "auto",
+                    "type": "auto_yell_no_blade_heart",
+                    "once_per_turn": true,
+                    "hearts": [
+                        {
+                            "color": "yellow",
+                            "count": 1
+                        }
+                    ]
                 }
             ],
-            "text_ko": "[등장 시] / [라이브 개시] 놓는다 1 상대 멤버 와 함께 코스트 2 이하 Wait에.",
-            "text_zh": "[入场时] / [Live开始] 将对手 1 名成本为 2 以下的成员置于等待状态。",
-            "text_th": "[เมื่อเข้าสนาม] / [เริ่ม Live] ใส่สมาชิกฝ่ายตรงข้าม 1 คนที่มีค่าร่าย 2 หรือน้อยกว่าเข้าสู่การรอ"
+            "text_ko": "[자동] [턴 1회] Yell로 공개된 자신의 카드 중 Blade 하트를 가진 카드가 없을 때, 이 Live가 끝날 때까지 노란 하트 1개를 얻는다.",
+            "text_zh": "[自动] [每回合1次] 当应援（Yell）公开的自己卡牌中没有Blade心形时，直到本场Live结束，获得1颗黄心。",
+            "text_th": "[อัตโนมัติ] [ครั้งต่อเทิร์น] เมื่อการ์ดที่เปิดเผยจาก Yell ไม่มี Blade heart จนกว่า Live นี้จะจบ ได้รับหัวใจสีเหลือง 1 อัน"
         },
         {
             "card_no": "PL!SP-bp2-022-N",
@@ -86658,7 +86650,7 @@
                 "yellow"
             ],
             "rarity": "DUO",
-            "text": "[Always] You may Baton Touch with 2 Members.\n[On Enter] If you entered via Baton Touch, draw 1 card for each Liella! Member put into the Waiting Room by that Baton Touch. For each Liella! Member card without a Blade heart among them, gain 1 heart of your choice until this Live ends.",
+            "text": "[Always] You may Baton Touch with 2 Members.\n[On Enter] If you entered via Baton Touch, draw 1 card for each Liella! Member put into the Waiting Room by that Baton Touch. For each Liella! Member without a Blade heart among them, gain +2 Blade until this Live ends.",
             "text_jp": "[常時] このカードのプレイに際し、2人のメンバーとバトンタッチしてもよい。\n\n[登場時] バトンタッチして登場した場合、このバトンタッチによって控え室に置かれた『Liella!』のメンバーカード1枚につき、カードを1枚引く。ブレードハートを持たない『Liella!』のメンバーカード1枚につき、ライブ終了時まで、＋2ブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBSP02/PL!SP-pb2-000-DUO.png",
             "blade": 6,
@@ -86669,17 +86661,16 @@
                 },
                 {
                     "trigger": "on_enter",
-                    "type": "if_double_baton_group_bonus",
+                    "type": "if_baton_wr_group_draw_blade",
                     "group": "Superstar",
-                    "min_baton": 2,
-                    "draw": 2,
-                    "max_cost": 4
+                    "draw_per_member": 1,
+                    "blade_per_no_blade_heart": 2
                 }
             ],
-            "text_es": "[Siempre] Puedes hacer Baton Touch con 2 Miembros.\n[Al entrar] Si entraste mediante Baton Touch, roba 1 carta por cada Miembro de Liella! colocado en la Sala de espera por ese Baton Touch. Por cada carta de Miembro de Liella! sin un corazón de Blade entre ellas, obtienes 1 corazón de tu elección hasta que termine este Live.",
-            "text_ko": "[상시] 멤버 2명으로 바톤 터치를 할 수 있다.\n[등장 시] 바톤 터치로 등장했다면, 그 바톤 터치로 대기실에 놓인 Liella! 멤버 1명마다 카드 1장을 드로우한다. 그중 Blade 하트가 없는 Liella! 멤버 카드 1장마다, 이 라이브가 끝날 때까지 원하는 하트 1개를 얻는다.",
-            "text_zh": "[永续] 您可以与 2 名成员进行指挥棒接触。\n[入场时] 如果您通过 接棒 进​​入，则为每个莉拉抽 1 张卡！成员通过接棒进入等候室。对于每个莉拉！其中不含刀心的成员卡，获得您选择的 1 颗心，直至本场比赛结束。",
-            "text_th": "[ต่อเนื่อง] คุณสามารถ บาตองทัช กับสมาชิก 2 คนได้\n[เมื่อเข้าสนาม] หากคุณเข้าผ่าน บาตองทัช จั่วการ์ด 1 ใบสำหรับแต่ละลีเอลล่า! สมาชิกถูกนำเข้าไปในห้องรอโดย บาตองทัช นั้น เพื่อลิเอลล่าแต่ละคน! บัตรสมาชิกที่ไม่มีหัวใจใบมีด จะได้รับหัวใจที่คุณเลือก 1 ดวงจนกว่า Live นี้จะจบลง"
+            "text_es": "[Siempre] Puedes hacer Baton Touch con 2 Miembros.\n[Al entrar] Si entraste mediante Baton Touch, roba 1 carta por cada Miembro de Liella! colocado en la Sala de espera por ese Baton Touch. Por cada Miembro de Liella! sin corazón de Blade, obtienes +2 Blade hasta que termine este Live.",
+            "text_ko": "[상시] 멤버 2명으로 바톤 터치를 할 수 있다.\n[등장 시] 바톤 터치로 등장했다면, 그 바톤 터치로 대기실에 놓인 Liella! 멤버 1명마다 카드 1장을 드로우한다. Blade 하트가 없는 Liella! 멤버 1장마다 이 Live가 끝날 때까지 +2 Blade를 얻는다.",
+            "text_zh": "[永续] 您可以与 2 名成员进行指挥棒接触。\n[入场时] 如果您通过 接棒 进入，则为每个通过该接棒放入等候室的 Liella! 成员抽 1 张牌。其中不含 Blade 心的 Liella! 成员每张获得 +2 Blade，直至本场 Live 结束。",
+            "text_th": "[ต่อเนื่อง] คุณสามารถ บาตองทัช กับสมาชิก 2 คนได้\n[เมื่อเข้าสนาม] หากเข้าผ่าน บาตองทัช จั่ว 1 ใบต่อ Liella! สมาชิกที่เข้าห้องรอจาก บาตองทัช นั้น สำหรับ Liella! สมาชิกที่ไม่มี Blade heart แต่ละใบ ได้ +2 Blade จนกว่า Live นี้จะจบ"
         },
         {
             "card_no": "PL!SP-pb2-000-R",
@@ -86708,7 +86699,7 @@
                 "yellow"
             ],
             "rarity": "R",
-            "text": "[Always] You may Baton Touch with 2 Members.\n[On Enter] If you entered via Baton Touch, draw 1 card for each Liella! Member put into the Waiting Room by that Baton Touch. For each Liella! Member card without a Blade heart among them, gain 1 heart of your choice until this Live ends.",
+            "text": "[Always] You may Baton Touch with 2 Members.\n[On Enter] If you entered via Baton Touch, draw 1 card for each Liella! Member put into the Waiting Room by that Baton Touch. For each Liella! Member without a Blade heart among them, gain +2 Blade until this Live ends.",
             "text_jp": "[常時] このカードのプレイに際し、2人のメンバーとバトンタッチしてもよい。\n\n[登場時] バトンタッチして登場した場合、このバトンタッチによって控え室に置かれた『Liella!』のメンバーカード1枚につき、カードを1枚引く。ブレードハートを持たない『Liella!』のメンバーカード1枚につき、ライブ終了時まで、＋2ブレードを得る。",
             "image": "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PBSP02/PL!SP-pb2-000-R.png",
             "blade": 6,
@@ -86719,17 +86710,16 @@
                 },
                 {
                     "trigger": "on_enter",
-                    "type": "if_double_baton_group_bonus",
+                    "type": "if_baton_wr_group_draw_blade",
                     "group": "Superstar",
-                    "min_baton": 2,
-                    "draw": 2,
-                    "max_cost": 4
+                    "draw_per_member": 1,
+                    "blade_per_no_blade_heart": 2
                 }
             ],
-            "text_es": "[Siempre] Puedes hacer Baton Touch con 2 Miembros.\n[Al entrar] Si entraste mediante Baton Touch, roba 1 carta por cada Miembro de Liella! colocado en la Sala de espera por ese Baton Touch. Por cada carta de Miembro de Liella! sin un corazón de Blade entre ellas, obtienes 1 corazón de tu elección hasta que termine este Live.",
-            "text_ko": "[상시] 멤버 2명으로 바톤 터치를 할 수 있다.\n[등장 시] 바톤 터치로 등장했다면, 그 바톤 터치로 대기실에 놓인 Liella! 멤버 1명마다 카드 1장을 드로우한다. 그중 Blade 하트가 없는 Liella! 멤버 카드 1장마다, 이 라이브가 끝날 때까지 원하는 하트 1개를 얻는다.",
-            "text_zh": "[永续] 您可以与 2 名成员进行指挥棒接触。\n[入场时] 如果您通过 接棒 进​​入，则为每个莉拉抽 1 张卡！成员通过接棒进入等候室。对于每个莉拉！其中不含刀心的成员卡，获得您选择的 1 颗心，直至本场比赛结束。",
-            "text_th": "[ต่อเนื่อง] คุณสามารถ บาตองทัช กับสมาชิก 2 คนได้\n[เมื่อเข้าสนาม] หากคุณเข้าผ่าน บาตองทัช จั่วการ์ด 1 ใบสำหรับแต่ละลีเอลล่า! สมาชิกถูกนำเข้าไปในห้องรอโดย บาตองทัช นั้น เพื่อลิเอลล่าแต่ละคน! บัตรสมาชิกที่ไม่มีหัวใจใบมีด จะได้รับหัวใจที่คุณเลือก 1 ดวงจนกว่า Live นี้จะจบลง"
+            "text_es": "[Siempre] Puedes hacer Baton Touch con 2 Miembros.\n[Al entrar] Si entraste mediante Baton Touch, roba 1 carta por cada Miembro de Liella! colocado en la Sala de espera por ese Baton Touch. Por cada Miembro de Liella! sin corazón de Blade, obtienes +2 Blade hasta que termine este Live.",
+            "text_ko": "[상시] 멤버 2명으로 바톤 터치를 할 수 있다.\n[등장 시] 바톤 터치로 등장했다면, 그 바톤 터치로 대기실에 놓인 Liella! 멤버 1명마다 카드 1장을 드로우한다. Blade 하트가 없는 Liella! 멤버 1장마다 이 Live가 끝날 때까지 +2 Blade를 얻는다.",
+            "text_zh": "[永续] 您可以与 2 名成员进行指挥棒接触。\n[入场时] 如果您通过 接棒 进入，则为每个通过该接棒放入等候室的 Liella! 成员抽 1 张牌。其中不含 Blade 心的 Liella! 成员每张获得 +2 Blade，直至本场 Live 结束。",
+            "text_th": "[ต่อเนื่อง] คุณสามารถ บาตองทัช กับสมาชิก 2 คนได้\n[เมื่อเข้าสนาม] หากเข้าผ่าน บาตองทัช จั่ว 1 ใบต่อ Liella! สมาชิกที่เข้าห้องรอจาก บาตองทัช นั้น สำหรับ Liella! สมาชิกที่ไม่มี Blade heart แต่ละใบ ได้ +2 Blade จนกว่า Live นี้จะจบ"
         },
         {
             "card_no": "PL!SP-pb2-001-PP",

@@ -1719,6 +1719,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     $anims = [];
     $batonCount = 0;
     $batonGroups = [];
+    $batonWrMembers = [];
     $batonTransferredEnergyCards = [];
     // Defer on_leave until after the incoming Member is placed so Position Change
     // (and similar) can see the post-replace Stage, then resume On Enter (#104).
@@ -1775,6 +1776,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
         $card['baton_wr_member_id'] = $existing['instance_id'] ?? '';
         // Snapshot before WR append / possible immediate deck refresh so On Enter can still stack.
         $card['baton_wr_member'] = $batonSnap;
+        $batonWrMembers[] = $batonSnap;
         $card['entered_via_baton'] = true;
         $card['entered_turn'] = intval($state['turn'] ?? 1);
         $batonCount = 1;
@@ -1809,6 +1811,7 @@ function actionPlayMember(array $state, string $pid, array $data): array {
                 'member' => $batonSnap2,
                 'ctx' => ['baton_incoming' => $card],
             ];
+            $batonWrMembers[] = $batonSnap2;
             $batonCount++;
             if (!empty($existing2['group'])) $batonGroups[] = $existing2['group'];
             if ($batonCount === 2) {
@@ -1823,6 +1826,9 @@ function actionPlayMember(array $state, string $pid, array $data): array {
     if ($batonCount > 0) {
         $card['baton_count'] = $batonCount;
         $card['baton_member_groups'] = $batonGroups;
+        if (!empty($batonWrMembers)) {
+            $card['baton_wr_members'] = $batonWrMembers;
+        }
     }
 
     // Pay energy cost — rested Energy stays in the zone (inactive). Only energy stacked

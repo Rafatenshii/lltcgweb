@@ -31,6 +31,7 @@ function spBp2EffectTypes(): array {
         'hearts_if_center_highest_cost',
         'hearts_if_min_energy',
         'if_baton_wr_group_to_hand',
+        'if_baton_wr_group_draw_blade',
         'if_double_baton_group_bonus',
         'inherit_stacked_group_abilities',
         'leave_stage_add_from_wr',
