@@ -98,6 +98,51 @@ function tryResolveAbilityEffectSwitchBaton(
         case 'allows_double_baton':
             break;
 
+        case 'if_baton_wr_group_draw_blade':
+            if (empty($source['entered_via_baton'])) {
+                break;
+            }
+            $group = (string)($ab['group'] ?? 'Superstar');
+            $members = $source['baton_wr_members'] ?? [];
+            if (empty($members) && !empty($source['baton_wr_member'])) {
+                $members = [$source['baton_wr_member']];
+            }
+            $eligible = array_values(array_filter(
+                $members,
+                fn($m) => is_array($m)
+                    && isMemberCard($m)
+                    && cardMatchesGroup($m, $group, 'member')
+            ));
+            if (empty($eligible)) {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . '] no ' . groupPromptLabel($group) .
+                    ' Members sent to Waiting Room via Baton Touch.');
+                break;
+            }
+            $drawPer = intval($ab['draw_per_member'] ?? 1);
+            $drawCount = count($eligible) * $drawPer;
+            if ($drawCount > 0) {
+                $drawn = drawCardsForPlayer($state, $pid, $drawCount);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . "] drew $drawn (Baton Touch).");
+            }
+            $bladePer = intval($ab['blade_per_no_blade_heart'] ?? 2);
+            $bladeTotal = 0;
+            foreach ($eligible as $m) {
+                if (empty($m['blade_hearts'])) {
+                    $bladeTotal += $bladePer;
+                }
+            }
+            if ($bladeTotal > 0) {
+                $state = applyModifierEffect($state, $pid, [
+                    'type'   => 'blade_bonus',
+                    'amount' => $bladeTotal,
+                ], $source);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    ' — [' . $name . "] gained +$bladeTotal Blade until Live ends (Baton Touch).");
+            }
+            break;
+
         case 'if_double_baton_group_bonus':
             if (intval($source['baton_count'] ?? 0) < intval($ab['min_baton'] ?? 2)) break;
             $group = $ab['group'] ?? '';
