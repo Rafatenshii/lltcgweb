@@ -90,6 +90,8 @@ final class SkillRevealPublicTest extends TestCase
 
         $oppView = \filterStateForPlayer($state, 'p2-token');
         $this->assertContains('rev_live', array_column($oppView['skill_reveals']['cards'] ?? [], 'instance_id'));
+        $this->assertSame('p1', $state['skill_reveals']['pid'] ?? null);
+        $this->assertSame('p1', $oppView['skill_reveals']['pid'] ?? null);
         $log = implode("\n", array_map(
             static fn($e) => is_array($e) ? (string)($e['msg'] ?? '') : (string)$e,
             $oppView['log'] ?? []
@@ -98,6 +100,24 @@ final class SkillRevealPublicTest extends TestCase
         $this->assertStringContainsString('revealed', $log);
         $handIds = array_column($state['players']['p1']['hand'] ?? [], 'instance_id');
         $this->assertContains('rev_live', $handIds);
+
+        $revealAnims = [];
+        foreach ($state['log'] ?? [] as $entry) {
+            if (!is_array($entry) || empty($entry['anim']) || !is_array($entry['anim'])) {
+                continue;
+            }
+            foreach ($entry['anim'] as $anim) {
+                if (!empty($anim['reveal'])) {
+                    $revealAnims[] = $anim;
+                }
+            }
+        }
+        $this->assertNotEmpty($revealAnims);
+        $this->assertSame('p1', $revealAnims[0]['pid'] ?? null);
+        $this->assertSame(
+            'rev_live',
+            $revealAnims[0]['card']['instance_id'] ?? $revealAnims[0]['iid'] ?? null
+        );
     }
 
     public function testSkillRevealClearedOnNewTurn(): void
