@@ -110,7 +110,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
 <link rel="stylesheet" href="client/css/tournament.css?v=13">
-<link rel="stylesheet" href="client/css/portrait.css?v=92">
+<link rel="stylesheet" href="client/css/portrait.css?v=93">
 <link rel="stylesheet" href="client/css/social.css?v=26">
 
 </head>
@@ -18057,6 +18057,23 @@ function tcgPortraitSizeClass(w = window.innerWidth, h = window.innerHeight) {
   return 'phone';
 }
 
+/**
+ * Shrink portrait HUD chrome on smaller CSS viewports (e.g. 360×780 vs ~390×844).
+ * Cards already track width; this scales fixed-px mid-bar controls/fonts.
+ * Returns a unitless factor in [0.82, 1].
+ */
+function tcgPortraitUiScale(w = window.innerWidth, h = window.innerHeight, size = 'phone') {
+  if (size !== 'phone') return 1;
+  const shortSide = Math.min(w, h);
+  const longSide = Math.max(w, h);
+  let s = Math.min(shortSide / 390, longSide / 844);
+  // Common 360-css Android phones: pull density down further so mid-bar chrome
+  // does not dominate playmats the way a near-1.0 scale still does.
+  if (shortSide <= 360) s = Math.min(s, 0.88);
+  if (shortSide <= 340 || longSide <= 680) s = Math.min(s, 0.84);
+  return Math.round(Math.max(0.82, Math.min(1, s)) * 1000) / 1000;
+}
+
 function tcgApplyPortraitPlayState(w = window.innerWidth, h = window.innerHeight) {
   const root = document.documentElement;
   const resolved = tcgResolvePortraitPlayActive(w, h);
@@ -18066,10 +18083,19 @@ function tcgApplyPortraitPlayState(w = window.innerWidth, h = window.innerHeight
   root.dataset.tcgPortraitAuto = resolved.auto ? '1' : '0';
   document.body?.classList.toggle('tcg-portrait-play-body', !!resolved.active);
   const size = resolved.active ? tcgPortraitSizeClass(w, h) : '';
+  const uiScale = resolved.active ? tcgPortraitUiScale(w, h, size || 'phone') : 1;
   root.classList.toggle('tcg-portrait-phone', size === 'phone');
   root.classList.toggle('tcg-portrait-square', size === 'square');
   root.classList.toggle('tcg-portrait-tablet', size === 'tablet');
+  root.classList.toggle('tcg-portrait-phone-sm', !!(resolved.active && size === 'phone' && uiScale < 0.95));
   root.dataset.tcgPortraitSize = size || '';
+  root.dataset.tcgPortraitUiScale = resolved.active ? String(uiScale) : '';
+  if (resolved.active) {
+    root.style.setProperty('--p-ui-scale', String(uiScale));
+  } else {
+    root.style.removeProperty('--p-ui-scale');
+    delete root.dataset.tcgPortraitUiScale;
+  }
   if (resolved.active && !was) {
     try { if (typeof tcgPortraitMountBoard === 'function') tcgPortraitMountBoard(); } catch (_) { /* ignore */ }
   } else if (!resolved.active && was) {
