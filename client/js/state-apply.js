@@ -981,7 +981,7 @@
                 await playCardMoveAnimations(prev, s, G._prevRects, G.playerId, G._handSlotsBefore, handSlotsAfter, moves);
               }
             } finally {
-              clearWrPileAnimPending();
+              clearWrPileAnimPending(s, G.playerId);
               clearHandDepartRemovals();
               clearHandShiftBaselines();
               G._animHideIids = null;
@@ -1002,7 +1002,7 @@
                 await playCardMoveAnimations(animPrev, s, G._prevRects, G.playerId, G._handSlotsBefore, handSlotsAfter, moves);
               }
             } finally {
-              clearWrPileAnimPending();
+              clearWrPileAnimPending(s, G.playerId);
               if (wrCardsAddedWithoutAnimMoves(animPrev, s, moves).length) {
                 void refreshWaitingRoomPiles(s, G.playerId, { clearPending: true });
               }

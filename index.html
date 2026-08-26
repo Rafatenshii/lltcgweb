@@ -2881,7 +2881,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=7"></script>
 <script src="client/js/game-sync.js?v=60"></script>
-<script src="client/js/state-apply.js?v=70"></script>
+<script src="client/js/state-apply.js?v=71"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=8"></script>
 <script src="client/js/prompt-renderer.js?v=94"></script>
@@ -21903,10 +21903,10 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
     await playCardMoveAnimations(fromState, final, prevRects, myId, handBefore, collectHandSlotRects(), moves);
   } finally {
     if (typeof clearLiveStorageExitDestPending === 'function') {
-      clearLiveStorageExitDestPending();
+      clearLiveStorageExitDestPending(final, myId);
     } else {
-      clearWrPileAnimPending();
-      if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending();
+      clearWrPileAnimPending(final, myId);
+      if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending(final, myId);
     }
     if (G._animHideIids) {
       for (const iid of [...G._animHideIids]) {
@@ -22394,11 +22394,12 @@ function commitLiveRoundAfterOutcomes(fallback) {
   // clearing here allowed a newer-seq paint to invent ghost exit flights.
   // Prefer the post-outcome board (empty live_zone). A deferred hold from mid-spectacle
   // still has storage cards and would briefly re-paint them after flights finish.
+  const board = fallback || G.gameState;
   if (typeof clearLiveStorageExitDestPending === 'function') {
-    clearLiveStorageExitDestPending();
+    clearLiveStorageExitDestPending(board, G.playerId);
   } else {
-    if (typeof clearWrPileAnimPending === 'function') clearWrPileAnimPending();
-    if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending();
+    if (typeof clearWrPileAnimPending === 'function') clearWrPileAnimPending(board, G.playerId);
+    if (typeof clearSuccessPileAnimPending === 'function') clearSuccessPileAnimPending(board, G.playerId);
   }
   if (fallback) G._deferredLiveState = fallback;
   commitDeferredLiveState(fallback || G.gameState);
@@ -23192,6 +23193,12 @@ async function executeCardMoveAnimation(m, opts) {
     } else {
       clearAnimHideIid(m.iid);
     }
+    // Still release WR/Success dest hides — otherwise the pile face stays filtered.
+    if (m.to?.zone === 'waiting_room' && typeof wrPileRevealPendingMove === 'function') {
+      void wrPileRevealPendingMove(m.to.pid, m.iid, stateAfter || renderState, myId);
+    } else if (m.to?.zone === 'success' && typeof successPileRevealPendingMove === 'function') {
+      successPileRevealPendingMove(m.to.pid, m.iid, stateAfter || renderState, myId);
+    }
     return;
   }
 
@@ -23221,6 +23228,11 @@ async function executeCardMoveAnimation(m, opts) {
   if (isLiveStorageExit && cardEl && domCardAtMoveLoc(cardEl, m.to, myId)) {
     markLiveStorageSourceGone(m.iid, m.from, myId);
     settleMovementPresentation(reservation.key);
+    if (m.to?.zone === 'waiting_room' && typeof wrPileRevealPendingMove === 'function') {
+      void wrPileRevealPendingMove(m.to.pid, m.iid, stateAfter || renderState, myId);
+    } else if (m.to?.zone === 'success' && typeof successPileRevealPendingMove === 'function') {
+      successPileRevealPendingMove(m.to.pid, m.iid, stateAfter || renderState, myId);
+    }
     return;
   }
   let fr = fromRectFromSavedPrev({ iid: m.iid }, m.from, prevRects);
@@ -23414,10 +23426,17 @@ function batonPassAnimOrder(a, b) {
 async function playAnimSpecBatch(specs, playback, finalState, myId) {
   if (!specs.length) return;
   if (isBatonPassAnimBatch(specs)) {
-    const ordered = [...specs].sort(batonPassAnimOrder);
-    for (const spec of ordered) {
-      if (isPresentationSuperseded()) break;
-      await playAnimSpec(spec, playback, finalState, myId, 0);
+    try {
+      const ordered = [...specs].sort(batonPassAnimOrder);
+      for (const spec of ordered) {
+        if (isPresentationSuperseded()) break;
+        await playAnimSpec(spec, playback, finalState, myId, 0);
+      }
+    } finally {
+      // Handoff is fire-and-forget; always release WR hides and repaint after Baton.
+      if (typeof clearWrPileAnimPending === 'function') {
+        clearWrPileAnimPending(finalState || playback, myId);
+      }
     }
     return;
   }
@@ -23469,7 +23488,7 @@ async function playAnimSpecBatch(specs, playback, finalState, myId) {
     surfaceDeferredSkillPrompt(playback, finalState, myId);
   }
   G._animHideIids = null;
-  clearWrPileAnimPending();
+  clearWrPileAnimPending(finalState || playback, myId);
 }
 
 async function playAnimSpec(spec, playback, finalState, myId, delayMs = 0) {
@@ -23701,7 +23720,7 @@ async function playTailMoveAnimations(playback, final, myId, opts = {}) {
     }
   }
   } finally {
-    clearWrPileAnimPending();
+    clearWrPileAnimPending(final, myId);
     G._animHideIids = null;
     clearHandArrivingFlags();
   }
@@ -25299,7 +25318,7 @@ async function playOpeningHandDeal(prevState, finalState, myId) {
       if (i < indices.length - 1) await sleep(OPENING_DEAL_STAGGER_MS);
     }
   } finally {
-    clearWrPileAnimPending();
+    clearWrPileAnimPending(finalState, myId);
     clearHandShiftBaselines();
     finishOpeningHandDealRender(finalState, myId);
     G._openingHandDealActive = false;
@@ -25566,7 +25585,7 @@ async function playCardMoveAnimations(prevState, nextState, prevRects, myId, han
       await playBatch(moves.filter(m => !deferred.has(m)));
     }
   } finally {
-    clearWrPileAnimPending();
+    clearWrPileAnimPending(nextState, myId);
     clearHandShiftBaselines();
   }
 }
@@ -32219,7 +32238,7 @@ async function playTutorialTransition(fromState, toState, forward) {
     try {
       await playCardMoveAnimations(animFrom, toState, G._prevRects, myId, G._handSlotsBefore, handSlotsAfter);
     } finally {
-      clearWrPileAnimPending();
+      clearWrPileAnimPending(toState, myId);
     }
   }
 
@@ -33643,7 +33662,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=108"></script>
-<script src="client/js/board-render.js?v=43"></script>
+<script src="client/js/board-render.js?v=44"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
