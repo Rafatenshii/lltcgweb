@@ -2064,6 +2064,7 @@ html.tcg-portrait-play .pb-hud .stage-board-grid{
 }
 html.tcg-portrait-play .pb-hud .stage-board-side-lbl{ display:none; }
 html.tcg-portrait-play .pb-hud .stage-board-side{
+  display:flex;
   flex-direction:row;
   align-items:center;
   gap:4px;
