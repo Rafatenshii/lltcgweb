@@ -431,6 +431,35 @@ if (!portraitCss.includes('html.tcg-portrait-play .stamp-picker')
   ok('portrait stamp picker is a high-z bottom sheet');
 }
 
+/* Mid-bar: fixed CSS-px height so populated hearts cannot inflate playmat crush. */
+if (!/--p-hud-h:\s*100px/.test(portraitCss)
+    || /--p-hud-max:\s*26vh/.test(portraitCss)
+    || /--p-hud-max:\s*18vh/.test(portraitCss)
+    || /--p-hud-max:\s*22vh/.test(portraitCss)) {
+  fail('portrait HUD must use a fixed px --p-hud-h (not large vh maxes)');
+} else {
+  ok('portrait HUD uses fixed px --p-hud-h');
+}
+if (!/html\.tcg-portrait-play \.pb-hud\{[^}]*height:\s*var\(--p-hud-h/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud\{[^}]*overflow-y:hidden/.test(portraitCss)) {
+  fail('portrait .pb-hud must lock height and hide vertical overflow');
+} else {
+  ok('portrait .pb-hud locks height with overflow-y hidden');
+}
+if (!/html\.tcg-portrait-play \.pb-hud \.stage-board-hearts\{[^}]*flex-wrap:nowrap/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud \.stage-board-hearts \.heart-stat-row\{[^}]*font-size:10px!important/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud \.stage-board-side\{[^}]*flex-direction:row/.test(portraitCss)) {
+  fail('portrait HUD hearts must stay on one dense inline row');
+} else {
+  ok('portrait HUD hearts stay on one dense inline row');
+}
+if (!/html\.tcg-portrait-play \.pb-phase-row\{[^}]*min-height:34px/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-phase-row\{[^}]*height:34px/.test(portraitCss)) {
+  fail('portrait phase row must reserve a stable End-Main / timer height');
+} else {
+  ok('portrait phase row reserves stable action height');
+}
+
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
   process.exit(process.exitCode);

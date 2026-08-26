@@ -1227,7 +1227,10 @@ html.tcg-portrait-play{
   --opp-hand-card-h: calc(var(--p-card-h) * 0.92);
   --p-board-max-w: 100%;
   --p-field-min: 110px;
-  --p-hud-max: 26vh;
+  /* Fixed CSS-px HUD height so phones with full hearts match empty-board
+     phones — never let mid-bar grow toward a large vh fraction. */
+  --p-hud-h: 100px;
+  --p-hud-max: var(--p-hud-h);
 }
 
 /* Square foldables: reclaim vertical space so both fields stay playable. */
@@ -1237,7 +1240,8 @@ html.tcg-portrait-play.tcg-portrait-square{
   --p-hand-mine: calc(var(--p-card-h) * 0.50);
   --p-hand-opp: calc(var(--p-card-h) * 0.40);
   --p-field-min: 96px;
-  --p-hud-max: 18vh;
+  --p-hud-h: 96px;
+  --p-hud-max: var(--p-hud-h);
   --p-stage-outline-scale: 0.58;
   --p-live-outline-scale: 0.78;
 }
@@ -1250,7 +1254,8 @@ html.tcg-portrait-play.tcg-portrait-tablet{
   --p-hand-mine: calc(var(--p-card-h) * 0.54);
   --p-hand-opp: calc(var(--p-card-h) * 0.48);
   --p-field-min: 160px;
-  --p-hud-max: 22vh;
+  --p-hud-h: 108px;
+  --p-hud-max: var(--p-hud-h);
   --p-stage-outline-scale: 1;
   --p-live-outline-scale: 1;
 }
@@ -1329,11 +1334,14 @@ html.tcg-portrait-play .pb-opp-hand::-webkit-scrollbar{display:none}
 html.tcg-portrait-play .pb-opp-field{ grid-area: opp-field; min-height:0; overflow:visible; display:flex; z-index:4; }
 html.tcg-portrait-play .pb-hud{
   grid-area: hud;
-  flex:0 0 auto;
+  flex:0 0 var(--p-hud-h, var(--p-hud-max, 100px));
+  height: var(--p-hud-h, var(--p-hud-max, 100px));
+  min-height: var(--p-hud-h, var(--p-hud-max, 100px));
+  max-height: var(--p-hud-h, var(--p-hud-max, 100px));
   z-index:8;
-  max-height: var(--p-hud-max, 26vh);
   overflow-x:hidden;
-  overflow-y:auto;
+  overflow-y:hidden;
+  box-sizing:border-box;
 }
 /* Burger Log/Resign pop opens upward — lift the HUD so overflow does not clip it
    under the center info rectangle / adjacent playmat layers. */
@@ -1852,16 +1860,17 @@ html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts .stat-mod-b
 html.tcg-portrait-play .pb-hud{
   display:flex;
   flex-direction:column;
-  gap:3px;
+  justify-content:center;
+  gap:2px;
   position:relative;
-  /* Room for corner names: opp top-right, you bottom-left */
-  padding:18px 6px 18px;
+  /* Corner names are absolute — keep padding tight so HUD height stays fixed. */
+  padding:10px 6px 10px;
   margin:0;
   background: rgba(8, 14, 28, .94);
   border: 1px solid rgba(186,228,255,.22);
   border-radius: 12px;
   box-shadow: 0 4px 18px rgba(0,0,0,.35);
-  overflow:visible;
+  /* overflow-y stays hidden from the grid rule; menu-open lifts it. */
 }
 html.tcg-portrait-play .pb-wins-row{
   display:grid;
@@ -1870,6 +1879,9 @@ html.tcg-portrait-play .pb-wins-row{
   gap:4px;
   width:100%;
   min-width:0;
+  flex:0 0 auto;
+  min-height:22px;
+  max-height:24px;
 }
 html.tcg-portrait-play .pb-side{
   display:flex;
@@ -2036,26 +2048,49 @@ html.tcg-portrait-play .pb-hud .stage-board-panel{
   margin:0;
   background:transparent;
   border:none;
+  flex:0 0 auto;
+  min-height:0;
+  max-height:18px;
+  overflow:hidden;
 }
 html.tcg-portrait-play .pb-hud .stage-board-panel > h4{ display:none; }
 html.tcg-portrait-play .pb-hud .stage-board-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:6px;
+  gap:4px 6px;
+  align-items:center;
+  min-height:0;
+  height:18px;
 }
 html.tcg-portrait-play .pb-hud .stage-board-side-lbl{ display:none; }
+html.tcg-portrait-play .pb-hud .stage-board-side{
+  flex-direction:row;
+  align-items:center;
+  gap:4px;
+  min-width:0;
+  min-height:0;
+  max-height:18px;
+  overflow:hidden;
+}
 html.tcg-portrait-play .pb-hud .stage-board-side.mine{
-  align-items:flex-start;
+  align-items:center;
+  justify-content:flex-start;
 }
 html.tcg-portrait-play .pb-hud .stage-board-side.opp{
-  align-items:flex-end;
+  align-items:center;
+  justify-content:flex-end;
 }
 html.tcg-portrait-play .pb-hud .stage-board-hearts{
-  min-height:14px;
+  min-height:0;
+  max-height:18px;
   display:flex;
-  flex-wrap:wrap;
-  gap:2px 6px;
-  width:100%;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:2px 4px;
+  width:auto;
+  min-width:0;
+  flex:1 1 auto;
+  overflow:hidden;
 }
 html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-hearts,
 html.tcg-portrait-play .pb-hud .stage-board-side.mine .stage-board-yell{
@@ -2069,23 +2104,52 @@ html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-yell{
   text-align:right;
   flex-direction:row;
 }
+html.tcg-portrait-play .pb-hud .stage-board-hearts.empty{
+  font-size:10px!important;
+  line-height:1;
+  min-height:0;
+}
 html.tcg-portrait-play .pb-hud .stage-board-side.opp .stage-board-hearts.empty{
   text-align:right;
   justify-content:flex-end!important;
 }
+html.tcg-portrait-play .pb-hud .stage-board-hearts .heart-stat-row{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  font-size:10px!important;
+  font-weight:800;
+  line-height:1;
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+html.tcg-portrait-play .pb-hud .stage-board-hearts .heart-stat-count,
+html.tcg-portrait-play .pb-hud .stage-board-hearts .stat-mod-bonus{
+  font-size:10px!important;
+  line-height:1!important;
+}
 html.tcg-portrait-play .pb-hud .stage-board-hearts img,
 html.tcg-portrait-play .pb-hud .stage-board-hearts .ticon,
 html.tcg-portrait-play .pb-hud .stage-board-hearts .hicon{
-  width:13px!important;
-  height:13px!important;
+  width:12px!important;
+  height:12px!important;
 }
 html.tcg-portrait-play .pb-hud .stage-board-yell{
   display:flex;
   align-items:center;
-  gap:4px;
+  gap:3px;
   font-size:10px;
+  line-height:1;
   opacity:.85;
-  width:100%;
+  width:auto;
+  flex:0 0 auto;
+  white-space:nowrap;
+  max-height:18px;
+  overflow:hidden;
+}
+html.tcg-portrait-play .pb-hud .stage-board-yell .bicon{
+  width:12px!important;
+  height:12px!important;
 }
 html.tcg-portrait-play .pb-hud .stage-board-active,
 html.tcg-portrait-play .pb-hud .stage-board-abilities{ display:none!important; }
@@ -2096,9 +2160,13 @@ html.tcg-portrait-play .pb-phase-row{
   align-items:center;
   justify-content:center;
   width:100%;
-  padding:2px 0 0;
+  padding:0;
   position:relative;
   z-index:12;
+  flex:0 0 34px;
+  min-height:34px;
+  height:34px;
+  max-height:34px;
 }
 html.tcg-portrait-play .pb-hud.pb-menu-open .pb-phase-row,
 html.tcg-portrait-play .pb-hud:has(.pb-menu-pop:not([hidden])) .pb-phase-row{
@@ -3352,7 +3420,10 @@ html.tcg-portrait-play.tcg-low-end .pb-deck-drawer{
 
 /* ── Square / tablet refinements ── */
 html.tcg-portrait-play.tcg-portrait-square .pb-hud{
-  max-height: var(--p-hud-max, 18vh);
+  flex-basis: var(--p-hud-h, var(--p-hud-max, 96px));
+  height: var(--p-hud-h, var(--p-hud-max, 96px));
+  min-height: var(--p-hud-h, var(--p-hud-max, 96px));
+  max-height: var(--p-hud-h, var(--p-hud-max, 96px));
 }
 html.tcg-portrait-play.tcg-portrait-square #screen-game .card-hover-panel,
 html.tcg-portrait-play.tcg-portrait-square #screen-game #card-hover-panel{
