@@ -1860,11 +1860,11 @@ html.tcg-portrait-play #screen-game .mslot .field-badge.field-hearts .stat-mod-b
 html.tcg-portrait-play .pb-hud{
   display:flex;
   flex-direction:column;
-  justify-content:center;
+  justify-content:flex-start;
   gap:2px;
   position:relative;
   /* Corner names are absolute — keep padding tight so HUD height stays fixed. */
-  padding:10px 6px 10px;
+  padding:10px 6px 8px;
   margin:0;
   background: rgba(8, 14, 28, .94);
   border: 1px solid rgba(186,228,255,.22);
