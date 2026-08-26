@@ -1,0 +1,13 @@
+---
+description: Bug fixes and small game patches go straight to main — do not open GitHub PRs
+alwaysApply: true
+---
+
+# Work on main (no bugfix PRs)
+
+Ship bug fixes, card/engine patches, and small UI fixes **directly on `main`**. Do **not** open GitHub pull requests for that work.
+
+- Edit, commit, and deploy from `main` (Hostinger deploy + GitHub push as usual).
+- Do not create `cursor/…` branches or `gh pr create` for issue fixes.
+- Leave existing open PRs alone unless the operator asks to merge or drop them.
+- A PR is only appropriate when the operator **explicitly** asks for one (or for a large unrelated feature they want reviewed separately).
