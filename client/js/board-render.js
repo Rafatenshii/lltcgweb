@@ -1257,7 +1257,7 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
             requestAnimationFrame(() => scheduleStageFlipReveal(d, flipKey, flipKeys));
           });
         });
-        d.onclick = G.isSpectator ? null : () => showCard(mbr, null, s, myId);
+        d.onclick = G.isSpectator ? null : boardCardShowClickHandler(mbr, s, myId);
       } else if(mbr.image || mbr.card_no){
         const img = document.createElement('img');
         img.alt = mbr.name_en||mbr.name;
@@ -1267,12 +1267,12 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
           d.appendChild(mkNoImg(mbr));
         } else d.appendChild(img);
         d.classList.add('occupied');
-        d.onclick = G.isSpectator ? null : () => showCard(mbr, null, s, myId);
+        d.onclick = G.isSpectator ? null : boardCardShowClickHandler(mbr, s, myId);
         applyCardFoilFx(d, mbr);
       } else {
         d.appendChild(mkNoImg(mbr));
         d.classList.add('occupied');
-        d.onclick = G.isSpectator ? null : () => showCard(mbr, null, s, myId);
+        d.onclick = G.isSpectator ? null : boardCardShowClickHandler(mbr, s, myId);
         applyCardFoilFx(d, mbr);
       }
       const printedHearts = (typeof memberPrintedHeartGroups === 'function')
@@ -1291,6 +1291,9 @@ function renderStageSlots(prefix, stage, isMe, s, myId) {
       appendMemberStackedEnergyBadge(d, mbr, s?.players?.[ownerPid]);
       appendMemberStackedMembersBadge(d, mbr);
       if (isMe) bindMyStageCardInspect(d, mbr, s, myId);
+      if (!G.isSpectator && typeof bindBoardCardLongPressInspect === 'function') {
+        bindBoardCardLongPressInspect(d, mbr, s, myId);
+      }
     }
     outer.appendChild(d);
     if (mbr) {
@@ -2230,8 +2233,13 @@ function renderSuccessLives(id, succs) {
     appendCardFace(d, sc, { sideways: liveStorageUseArtSpin(sc) });
     wrap.appendChild(d);
     wrap.title = sc.name_en || sc.name || 'Live Success';
-    wrap.onclick = () => showCard(sc, null, G.gameState, G.playerId);
+    wrap.onclick = typeof boardCardShowClickHandler === 'function'
+      ? boardCardShowClickHandler(sc, G.gameState, G.playerId)
+      : () => showCard(sc, null, G.gameState, G.playerId);
     bindSuccessLiveHover(wrap, sc, G.gameState, G.playerId);
+    if (typeof bindBoardCardLongPressInspect === 'function') {
+      bindBoardCardLongPressInspect(wrap, sc, G.gameState, G.playerId);
+    }
     stack.appendChild(wrap);
   });
   e.appendChild(stack);
@@ -2389,13 +2397,24 @@ function renderLiveSlots(prefix, zone, isMe, pid){
       d.appendChild(buildLiveStorageFlipInner(card));
       layoutLiveSlots(prefix);
       ensureLiveStorageFlipScheduled(d, card, flipKey, flipKeys, i * LIVE_STORAGE_FLIP_STAGGER_MS, prefix);
-      d.onclick = G.isSpectator ? null : () => showCard(card, null, G.gameState, isMe ? G.playerId : pid);
+      d.onclick = G.isSpectator ? null : (
+        typeof boardCardShowClickHandler === 'function'
+          ? boardCardShowClickHandler(card, G.gameState, isMe ? G.playerId : pid)
+          : () => showCard(card, null, G.gameState, isMe ? G.playerId : pid)
+      );
     } else {
       appendLiveStorageFace(d, card);
-      d.onclick = G.isSpectator ? null : () => showCard(card, null, G.gameState, isMe ? G.playerId : pid);
+      d.onclick = G.isSpectator ? null : (
+        typeof boardCardShowClickHandler === 'function'
+          ? boardCardShowClickHandler(card, G.gameState, isMe ? G.playerId : pid)
+          : () => showCard(card, null, G.gameState, isMe ? G.playerId : pid)
+      );
     }
     d.classList.toggle('card-arriving', !!(G._animHideIids?.has(card.instance_id)));
     if(showFace) applyCardFoilFx(d, card);
+    if (showFace && !G.isSpectator && typeof bindBoardCardLongPressInspect === 'function') {
+      bindBoardCardLongPressInspect(d, card, G.gameState, isMe ? G.playerId : pid);
+    }
     outer.appendChild(d);
     if(showFace && card.score != null && ((!hiddenSpectate && isMe) || card.revealed)){
       const extraBonus = stagePreview && i === lastScoredLiveSlot ? stageBonus : 0;

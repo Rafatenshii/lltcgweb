@@ -27302,6 +27302,77 @@ function bindMyStageCardInspect(mslot, card, s, myId) {
   });
 }
 
+/**
+ * Stage / live-storage (and similar board faces): tap already opens card info;
+ * also open on long-press like hand cards (mobile currently did nothing on hold).
+ */
+function boardCardShowClickHandler(card, s, viewPid) {
+  return () => {
+    if (Date.now() < (G._boardCardLongPressSuppressClickUntil || 0)) return;
+    if (G.isSpectator) return;
+    showCard(card, card?.instance_id || null, s || G.gameState, viewPid || G.playerId);
+  };
+}
+
+function bindBoardCardLongPressInspect(node, card, s, viewPid) {
+  if (!node || !card || G.isSpectator || G.isTutorial) return;
+  if (node.classList?.contains('live-storage-facedown')) return;
+  if (card.revealed === false || card.card_no === '?') return;
+  if (node._boardLongPressBound) return;
+  node._boardLongPressBound = true;
+  node.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    if (G.animating || G.drag) return;
+    const ptr = {
+      sx: e.clientX,
+      sy: e.clientY,
+      moved: false,
+      longFired: false,
+      pointerId: e.pointerId,
+      timer: null,
+    };
+    ptr.timer = setTimeout(() => {
+      if (ptr.moved || G.drag) return;
+      ptr.longFired = true;
+      G._boardCardLongPressSuppressClickUntil = Date.now() + 500;
+      try {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+      } catch (_) { /* ignore */ }
+      const state = (typeof liveGameState === 'function' ? liveGameState(s) : null) || s || G.gameState;
+      showCard(card, card.instance_id || null, state, viewPid || G.playerId);
+    }, typeof LONG_PRESS_MS === 'number' ? LONG_PRESS_MS : 420);
+    const moveThresh = typeof DRAG_THRESHOLD === 'number' ? DRAG_THRESHOLD : 10;
+    const onMove = ev => {
+      if (ev.pointerId !== ptr.pointerId) return;
+      if (Math.hypot(ev.clientX - ptr.sx, ev.clientY - ptr.sy) > moveThresh) {
+        ptr.moved = true;
+        if (ptr.timer) {
+          clearTimeout(ptr.timer);
+          ptr.timer = null;
+        }
+      }
+    };
+    const onUp = ev => {
+      if (ev.pointerId !== ptr.pointerId) return;
+      if (ptr.timer) clearTimeout(ptr.timer);
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onUp, true);
+    };
+    document.addEventListener('pointermove', onMove, true);
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onUp, true);
+  });
+  node.addEventListener('contextmenu', e => {
+    // Avoid the native callout competing with long-press inspect on mobile.
+    if (typeof tcgPortraitPlayActive === 'function' && tcgPortraitPlayActive()) {
+      e.preventDefault();
+    } else if (typeof tcgMobileViewportActive === 'function' && tcgMobileViewportActive()) {
+      e.preventDefault();
+    }
+  });
+}
+
 function bindHandCardEvents(d, card, s, myId) {
   if (G.isSpectator) return;
   // Slideshow tutorial never plays from hand. Live tutorial always binds once —
@@ -33643,7 +33714,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=108"></script>
-<script src="client/js/board-render.js?v=43"></script>
+<script src="client/js/board-render.js?v=44"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
