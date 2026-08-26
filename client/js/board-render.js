@@ -1168,11 +1168,13 @@ function updateOpponentSkillWaitBanner(s, myId) {
   const root = el('opp-skill-wait');
   const sub = el('opp-skill-wait-sub');
   const titleEl = el('opp-skill-wait-title');
+  const leaveBtn = el('btn-opp-skill-wait-leave');
   if (!root) return;
   if (G.isTutorial || G._perfSpectacleActive) {
     root.hidden = true;
     root.classList.remove('show');
     if (sub) sub.textContent = '';
+    if (leaveBtn) leaveBtn.hidden = true;
     return;
   }
   const auth = G.gameState && (!s || (G.gameState.seq ?? 0) >= (s.seq ?? 0)) ? G.gameState : (s || G.gameState);
@@ -1184,6 +1186,7 @@ function updateOpponentSkillWaitBanner(s, myId) {
     root.hidden = true;
     root.classList.remove('show');
     if (sub) sub.textContent = '';
+    if (leaveBtn) leaveBtn.hidden = true;
     clearOpponentSkillWaitLogKey();
     G._sfxOppSkillWait = false;
     clearPvPWatchdog();
@@ -1199,6 +1202,10 @@ function updateOpponentSkillWaitBanner(s, myId) {
   root.classList.add('show');
   if (titleEl) setSplashTitle(titleEl, t('game.opponentSkillWait', { name: oppName }));
   if (sub) sub.textContent = src ? `${oppName} — ${src}` : '';
+  if (leaveBtn) {
+    leaveBtn.hidden = !G.isCPU;
+    leaveBtn.textContent = t('game.cpuWaitLeave', 'Leave match');
+  }
   appendOpponentSkillWaitLog(auth, myId, pr);
   if (!G.isCPU && !G.isSpectator) armPvPWatchdog(auth);
 }

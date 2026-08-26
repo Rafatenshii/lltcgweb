@@ -5143,8 +5143,63 @@ function healStalledLiveShowPerformance(array $state): array {
     return continuePerformanceYellPhase($state, $pid);
 }
 
+/**
+ * CPU prompts are resolved by the browser AI. If that client dies (background tab,
+ * G.animating stuck after Baton, multi-step prompt seq skip), the room freezes
+ * forever — phase timers are off for CPU seats. Heal on get_state / action polls.
+ */
+function applyCpuStuckPromptTimeout(array &$state): bool {
+    if (!isCpuSoloMatch($state) || ($state['status'] ?? '') !== 'playing') {
+        return false;
+    }
+    $prompt = $state['pending_prompt'] ?? null;
+    if (!is_array($prompt)) {
+        return false;
+    }
+    $responder = (string)($prompt['responder'] ?? '');
+    if (!in_array($responder, ['p1', 'p2'], true)
+        || !isCpuPlayer($state['players'][$responder] ?? null)) {
+        return false;
+    }
+    $since = intval($prompt['opened_at'] ?? 0);
+    if ($since <= 0) {
+        $log = $state['action_log'] ?? [];
+        $last = $log ? $log[array_key_last($log)] : null;
+        $since = intval(is_array($last) ? ($last['ts'] ?? 0) : 0);
+        if ($since <= 0) {
+            $since = time();
+        }
+        $state['pending_prompt']['opened_at'] = $since;
+    }
+    if (time() - $since < 20) {
+        return !isset($prompt['opened_at']);
+    }
+    $seqBefore = intval($state['seq'] ?? 0);
+    $beforeKey = (string)($prompt['type'] ?? '') . '|' . (string)($prompt['step'] ?? '');
+    if (function_exists('autoResolvePendingPromptForTimeout')) {
+        $state = autoResolvePendingPromptForTimeout($state, $responder);
+    }
+    $after = $state['pending_prompt'] ?? null;
+    if (is_array($after) && ($after['responder'] ?? '') === $responder) {
+        $afterKey = (string)($after['type'] ?? '') . '|' . (string)($after['step'] ?? '');
+        if ($afterKey === $beforeKey) {
+            if (function_exists('forceDismissPendingPromptForPlayer')) {
+                $state = forceDismissPendingPromptForPlayer(
+                    $state,
+                    $responder,
+                    'CPU prompt timed out'
+                );
+            }
+        } else {
+            $state['pending_prompt']['opened_at'] = time();
+        }
+    }
+    return intval($state['seq'] ?? 0) > $seqBefore || empty($state['pending_prompt']);
+}
+
 /** Auto end main / live when PvP phase timers expire. Returns true if state changed. */
 function applyPhaseTimeouts(array &$state): bool {
+    $cpuPromptChanged = applyCpuStuckPromptTimeout($state);
     if (!empty($state['live_show'])
         && ($state['live_show']['stage'] ?? '') !== 'done'
         && empty($state['pending_prompt'])
@@ -5167,7 +5222,7 @@ function applyPhaseTimeouts(array &$state): bool {
         return true;
     }
     if (!phaseTimerEnabled($state)) {
-        return false;
+        return $cpuPromptChanged;
     }
     initPhaseTimer($state);
     $now = time();
@@ -5288,7 +5343,7 @@ function applyPhaseTimeouts(array &$state): bool {
         }
     }
 
-    return $changed;
+    return $changed || $cpuPromptChanged;
 }
 
 // ─────────────────────────────────────────────

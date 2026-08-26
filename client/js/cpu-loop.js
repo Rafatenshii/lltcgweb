@@ -5413,7 +5413,11 @@ function scheduleCpuContinueAfterAct(type, tries = 0) {
     }
   }
   const setupAct = CPU_SETUP_ACTION_TYPES.has(type);
-  if (!setupAct && (G._liveSpectacleGateRunning || G._liveRoundPlaybackActive
+  const cpuOwnsPrompt = !!(G.gameState?.pending_prompt
+    && G.gameState.pending_prompt.responder === cpuOpponentId());
+  // Chained skill steps must not wait on a stuck Baton/WR animation — the Wait
+  // overlay is already up and the server prompt will otherwise sit forever.
+  if (!setupAct && !cpuOwnsPrompt && (G._liveSpectacleGateRunning || G._liveRoundPlaybackActive
       || (G.animating && tries < 12))) {
     cpuSchedule(() => scheduleCpuContinueAfterAct(type, tries + 1), 280);
     return;
@@ -5589,18 +5593,15 @@ async function cpuAct(type,data) {
     actOk = true;
     TCG_DEBUG.log('action', 'cpuAct ok', type, { seq: d.seq ?? G.lastSeq });
     if (type === 'resolve_prompt' || type === 'anti_softlock_skip') {
-      clearCpuPromptTracking();
+      // Free the busy latch so the next chained step can fire, but do NOT bump
+      // seq / null pending_prompt here. That made pullLatestState treat the new
+      // multi-step prompt as "already applied" (Shioriko Success/WR swap hung
+      // after {choice:'yes'} with pick_success_live still on the server).
+      G._cpuResolveBusy = null;
+      G._cpuPromptScheduled = null;
       cpuResetPromptRetry();
       if (typeof cpuResetPromptAttempts === 'function') cpuResetPromptAttempts();
-      if (typeof d.seq === 'number' && G.gameState && d.seq >= (G.gameState.seq ?? 0)) {
-        // Clear local pending_prompt immediately so Live Start wait / hang UI does not
-        // spin on a stale choose-Live prompt while pullSkillResolutionState catches up.
-        G.gameState = { ...G.gameState, seq: d.seq, pending_prompt: null };
-        if (G.gameState.surveil_stash) delete G.gameState.surveil_stash;
-        purgeStalePendingStatesAfterCpuResolve(d.seq);
-      } else {
-        cpuClearLocalCpuPromptIfResolved(G.gameState);
-      }
+      cpuClearLocalCpuPromptIfResolved(G.gameState);
     }
     try {
       if (G.polling) {
@@ -5639,5 +5640,9 @@ async function cpuAct(type,data) {
     G._cpuActBusyType = null;
     if (inflightKey && G._cpuActInflight === inflightKey) G._cpuActInflight = null;
     if (actOk) scheduleCpuContinueAfterAct(type);
+    if (typeof armCpuPromptHangWatch === 'function'
+        && G.gameState?.pending_prompt?.responder === cpuOpponentId()) {
+      armCpuPromptHangWatch(G.gameState);
+    }
   }
 }
