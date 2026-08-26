@@ -2393,6 +2393,29 @@ function playerAttemptingLivePerformance(array $state, string $pid): bool {
     return false;
 }
 
+/**
+ * Whether Stage/Live [Live Start] skills may resolve for this seat.
+ * Member-bluff-only storage must not fire Live Start. Empty storage is allowed
+ * so isolated skill unit tests can call resolveLiveStartAbilities without a full
+ * Performance setup (real empty seats are already excluded from live_attempt).
+ */
+function playerShouldResolveLiveStart(array $state, string $pid): bool {
+    if (!empty($state['live_modifiers'][$pid]['cannot_live'])) {
+        return false;
+    }
+    $anyStorage = false;
+    foreach ($state['players'][$pid]['live_zone'] ?? [] as $c) {
+        if (!$c) {
+            continue;
+        }
+        $anyStorage = true;
+        if (isLiveTypeCard($c)) {
+            return true;
+        }
+    }
+    return !$anyStorage;
+}
+
 /** Instance ids of Live cards in storage — frozen for spectacle / Live Judge rows. */
 function snapshotLiveShowPlayedLives(array $state): array {
     $out = ['p1' => [], 'p2' => []];

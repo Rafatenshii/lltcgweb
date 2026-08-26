@@ -161,6 +161,12 @@ function resolveLiveStartAbilities(array $state, string $pid): array {
     if (!in_array($pid, $attempting, true)) {
         return $state;
     }
+    // Official Live Start is for performers attempting a Live — Member-bluff-only
+    // storage must not fire Stage [Live Start] (e.g. Kaho blade draw/discard).
+    if (function_exists('playerShouldResolveLiveStart')
+        && !playerShouldResolveLiveStart($state, $pid)) {
+        return $state;
+    }
     // Entry auras must run once per player per Live Start phase (resume re-enters this fn).
     $entryFlags = $state['live_start_entry_applied'] ?? [];
     if (empty($entryFlags[$pid])) {
@@ -392,6 +398,10 @@ function collectOptionalLiveStartAbilities(array $state): array {
     foreach (['p1', 'p2'] as $pid) {
         if (!in_array($pid, $attempting, true)) continue;
         if ($scopePid !== null && $pid !== $scopePid) continue;
+        if (function_exists('playerShouldResolveLiveStart')
+            && !playerShouldResolveLiveStart($state, $pid)) {
+            continue;
+        }
         foreach (liveStartSourcesLeftToRight($state, $pid) as $card) {
             if (isMemberCard($card) && memberLiveStartAbilitiesNegated($card)) {
                 continue;
@@ -763,6 +773,11 @@ function beginLiveStartForPerformer(array $state, string $pid): array {
     $state['phase'] = 'live_start_effects';
     // Keep optional/mandatory resolved markers so already-answered skills do not replay.
     unset($state['live_start_optional_queue']);
+    // Member-bluff-only seats still yell/skip — but do not open Live Start skills.
+    if (function_exists('playerAttemptingLivePerformance')
+        && !playerAttemptingLivePerformance($state, $pid)) {
+        return finishLiveStartEffects($state);
+    }
     if (performanceRoundHasLiveCards($state)) {
         $state = addLog($state, '=== Live Start Effects (' .
             ($state['players'][$pid]['name'] ?? $pid) . ') ===');
