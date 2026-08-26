@@ -7,9 +7,10 @@
 
   const MODE_KEY = 'tcg_apk_asset_mode';
   const COMPLETE_KEY = 'tcg_apk_full_complete';
+  const MANIFEST_STAMP_KEY = 'tcg_apk_manifest_stamp';
   const CACHE_NAME = 'lltcg-apk-assets-v1';
   const MODE_URL = './apk-asset-mode.json';
-  const MANIFEST_URL = 'apk_asset_manifest.json?v=2';
+  const MANIFEST_URL = 'apk_asset_manifest.json?v=3';
   const FS_DIR = 'apk-assets';
   const CONCURRENCY = 4;
 
@@ -17,6 +18,8 @@
     mode: '',
     paused: false,
     running: false,
+    /** 'install' | 'update' — drives progress copy */
+    syncKind: '',
     progress: { done: 0, total: 0, failed: 0 },
     listeners: [],
     fsIndex: Object.create(null),
@@ -68,6 +71,7 @@
       mode: state.mode || getMode(),
       paused: state.paused,
       running: state.running,
+      syncKind: state.syncKind || '',
       complete: isFullComplete(),
       progress: { ...state.progress },
     };
@@ -265,25 +269,103 @@
     if (!r.ok) throw new Error('manifest HTTP ' + r.status);
     const d = await r.json();
     const list = Array.isArray(d?.assets) ? d.assets : [];
-    return list.map((row) => (typeof row === 'string' ? row : row?.url)).filter(Boolean);
+    const urls = list.map((row) => (typeof row === 'string' ? row : row?.url)).filter(Boolean);
+    const stamp = [
+      String(d?.version ?? 1),
+      String(d?.generated_at || ''),
+      String(d?.count ?? urls.length),
+    ].join('|');
+    return { urls, stamp };
   }
 
-  async function runFullQueue() {
+  function getManifestStamp() {
+    try { return localStorage.getItem(MANIFEST_STAMP_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  function setManifestStamp(stamp) {
+    try {
+      if (stamp) localStorage.setItem(MANIFEST_STAMP_KEY, stamp);
+      else localStorage.removeItem(MANIFEST_STAMP_KEY);
+    } catch (e) { /* ignore */ }
+  }
+
+  /** URLs not yet in Cache Storage or FS fallback index. */
+  async function urlsMissingFromCache(urls) {
+    const cache = await openCache();
+    if (!cache) return urls.slice();
+    const missing = [];
+    const chunk = 64;
+    for (let i = 0; i < urls.length; i += chunk) {
+      const slice = urls.slice(i, i + chunk);
+      const flags = await Promise.all(slice.map(async (u) => {
+        const abs = absUrl(u);
+        if (state.fsIndex[abs]) return false;
+        try {
+          const hit = await cache.match(abs, { ignoreVary: true });
+          return !(hit && hit.ok);
+        } catch (e) {
+          return true;
+        }
+      }));
+      for (let j = 0; j < slice.length; j++) {
+        if (flags[j]) missing.push(slice[j]);
+      }
+    }
+    return missing;
+  }
+
+  /**
+   * Download missing manifest assets for full mode.
+   * After a completed pack, boot still runs this so NEW catalog entries
+   * (playmats/sleeves/cardimg) sync with the progress bar — not a full re-DL.
+   */
+  async function runFullQueue(opts) {
+    opts = opts || {};
     if (state.running) return;
     state.running = true;
     state.paused = false;
     notify();
-    let urls = [];
+    let meta;
     try {
-      urls = await loadManifest();
+      meta = await loadManifest();
     } catch (e) {
       state.running = false;
       notify();
       return;
     }
+    const wasComplete = isFullComplete();
+    if (wasComplete && !opts.force && meta.stamp && getManifestStamp() === meta.stamp) {
+      state.running = false;
+      state.syncKind = '';
+      state.progress = { done: 0, total: 0, failed: 0 };
+      notify();
+      return;
+    }
+
+    let urls = meta.urls;
+    try {
+      urls = await urlsMissingFromCache(meta.urls);
+    } catch (e) {
+      urls = meta.urls.slice();
+    }
+
+    if (!urls.length) {
+      try { localStorage.setItem(COMPLETE_KEY, '1'); } catch (e) { /* ignore */ }
+      setManifestStamp(meta.stamp);
+      state.running = false;
+      state.syncKind = '';
+      state.progress = { done: 0, total: 0, failed: 0 };
+      notify();
+      return;
+    }
+
+    state.syncKind = wasComplete ? 'update' : 'install';
+    try { localStorage.removeItem(COMPLETE_KEY); } catch (e) { /* ignore */ }
+
     state.progress.total = urls.length;
     state.progress.done = 0;
     state.progress.failed = 0;
+    notify();
     let i = 0;
     const worker = async () => {
       while (i < urls.length) {
@@ -316,7 +398,9 @@
     const finished = tot > 0 && processed >= tot && !state.paused;
     if (finished && failRatio < 0.05) {
       try { localStorage.setItem(COMPLETE_KEY, '1'); } catch (e) { /* ignore */ }
+      setManifestStamp(meta.stamp);
     }
+    state.syncKind = '';
     notify();
   }
 
@@ -327,8 +411,10 @@
     await writeModeRecord(mode);
     notify();
     if (mode === 'full') {
+      // Force a missing-only sync (Options "Download all" / first choice).
       try { localStorage.removeItem(COMPLETE_KEY); } catch (e) { /* ignore */ }
-      void runFullQueue();
+      setManifestStamp('');
+      void runFullQueue({ force: true });
     } else {
       state.paused = true;
     }
@@ -353,7 +439,9 @@
     state.fsIndex = Object.create(null);
     persistFsIndex();
     state.progress = { done: 0, total: 0, failed: 0 };
+    state.syncKind = '';
     try { localStorage.removeItem(COMPLETE_KEY); } catch (e) { /* ignore */ }
+    setManifestStamp('');
     notify();
   }
 
@@ -406,6 +494,12 @@
       if (choice) choice.hidden = true;
       const prog = document.getElementById('apk-asset-progress-block');
       if (prog) prog.hidden = false;
+      const title = prog?.querySelector('.apk-asset-dl-title');
+      if (title) {
+        title.textContent = st.syncKind === 'update'
+          ? tApk('options.apkAssets.updating', 'Updating game data…')
+          : tApk('options.apkAssets.downloading', 'Downloading game data…');
+      }
       setBar(document.getElementById('apk-asset-bar'), document.getElementById('apk-asset-bar-fill'), pct);
       const lab = document.getElementById('apk-asset-bar-label');
       if (lab) {
@@ -487,7 +581,8 @@
     });
     updateOptionsStatus(getStatus());
     paintProgress(getStatus());
-    if (mode === 'full' && !isFullComplete()) void runFullQueue();
+    // Full mode: always sync missing assets on launch (install resume OR post-complete updates).
+    if (mode === 'full') void runFullQueue();
   }
 
   function syncOptionsDownloadButtons(st) {
