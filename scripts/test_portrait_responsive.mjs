@@ -25,6 +25,7 @@ const bridgeJs = fs.readFileSync(path.join(root, 'client', 'js', 'portrait-bridg
 for (const needle of [
   'tcgResolvePortraitPlayActive',
   'tcgPortraitSizeClass',
+  'tcgPortraitUiScale',
   'tcgApplyPortraitPlayState',
   'tcgPortraitTouchPrimary',
   'tcgPortraitUnmountBoard',
@@ -429,6 +430,83 @@ if (!portraitCss.includes('html.tcg-portrait-play .stamp-picker')
   fail('portrait stamp picker must sit above the board as a bottom sheet');
 } else {
   ok('portrait stamp picker is a high-z bottom sheet');
+}
+
+/* Mid-bar: fixed CSS-px height so populated hearts cannot inflate playmat crush. */
+if (!/--p-hud-h:\s*calc\(100px \* var\(--p-ui-scale/.test(portraitCss)
+    || /--p-hud-max:\s*26vh/.test(portraitCss)
+    || /--p-hud-max:\s*18vh/.test(portraitCss)
+    || /--p-hud-max:\s*22vh/.test(portraitCss)) {
+  fail('portrait HUD must use a scaled px --p-hud-h (not large vh maxes)');
+} else {
+  ok('portrait HUD uses scaled px --p-hud-h');
+}
+if (!/html\.tcg-portrait-play \.pb-hud\{[^}]*height:\s*var\(--p-hud-h/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud\{[^}]*overflow-y:hidden/.test(portraitCss)) {
+  fail('portrait .pb-hud must lock height and hide vertical overflow');
+} else {
+  ok('portrait .pb-hud locks height with overflow-y hidden');
+}
+if (!/html\.tcg-portrait-play \.pb-hud \.stage-board-hearts\{[^}]*flex-wrap:nowrap/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud \.stage-board-hearts \.heart-stat-row\{[^}]*font-size:calc\(10px \* var\(--p-ui-scale/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-hud \.stage-board-side\{[^}]*flex-direction:row/.test(portraitCss)) {
+  fail('portrait HUD hearts must stay on one dense inline row');
+} else {
+  ok('portrait HUD hearts stay on one dense inline row');
+}
+if (!/html\.tcg-portrait-play \.pb-phase-row\{[^}]*min-height:var\(--p-hud-action/.test(portraitCss)
+    || !/html\.tcg-portrait-play \.pb-phase-row\{[^}]*height:var\(--p-hud-action/.test(portraitCss)) {
+  fail('portrait phase row must reserve a stable End-Main / timer height');
+} else {
+  ok('portrait phase row reserves stable action height');
+}
+
+/** Mirror of tcgPortraitUiScale for small-phone density. */
+function uiScale(w, h, size = 'phone') {
+  if (size !== 'phone') return 1;
+  const shortSide = Math.min(w, h);
+  const longSide = Math.max(w, h);
+  let s = Math.min(shortSide / 390, longSide / 844);
+  if (shortSide <= 360) s = Math.min(s, 0.88);
+  if (shortSide <= 340 || longSide <= 680) s = Math.min(s, 0.84);
+  return Math.round(Math.max(0.82, Math.min(1, s)) * 1000) / 1000;
+}
+const scaleFixtures = [
+  { w: 390, h: 844, expect: 1, sm: false, label: 'reference phone' },
+  { w: 360, h: 780, expect: 0.88, sm: true, label: 'small Android 360' },
+  { w: 360, h: 640, expect: 0.82, sm: true, label: 'short 360×640 floors at 0.82' },
+  { w: 320, h: 568, expect: 0.82, sm: true, label: 'very small phone floors at 0.82' },
+  { w: 412, h: 915, expect: 1, sm: false, label: 'large Android phone' },
+  { w: 768, h: 1024, size: 'tablet', expect: 1, sm: false, label: 'tablet ignores phone scale' },
+];
+for (const f of scaleFixtures) {
+  const got = uiScale(f.w, f.h, f.size || 'phone');
+  if (got !== f.expect) fail(`uiScale ${f.label}: expected ${f.expect}, got ${got}`);
+  else ok(`uiScale ${f.label} → ${got}`);
+  const sm = (f.size || 'phone') === 'phone' && got < 0.95;
+  if (sm !== f.sm) fail(`phone-sm ${f.label}: expected ${f.sm}, got ${sm}`);
+  else ok(`phone-sm ${f.label} → ${sm}`);
+}
+if (!indexSrc.includes('tcg-portrait-phone-sm')
+    || !portraitCss.includes('tcg-portrait-phone-sm')
+    || !indexSrc.includes('--p-ui-scale')) {
+  fail('small-phone density class/scale must be wired in index + portrait.css');
+} else {
+  ok('small-phone density class/scale wired');
+}
+if (!portraitCss.includes('--p-live-row')
+    || !/tcg-portrait-phone-sm\{[^}]*--p-live-outline-scale:\s*calc\(0\.78 \* var\(--p-ui-scale/.test(portraitCss)
+    || !/tcg-portrait-phone-sm\{[^}]*--p-stage-outline-scale:\s*calc\(0\.62 \* var\(--p-ui-scale/.test(portraitCss)
+    || !/tcg-portrait-phone-sm\{[^}]*--p-card-w:\s*calc\(\(100vw \/ var\(--p-hand-visible\)\) \* 1\.55 \* var\(--p-ui-scale/.test(portraitCss)) {
+  fail('phone-sm must scale hand + stage/live slots with --p-ui-scale');
+} else {
+  ok('phone-sm scales hand + stage/live slots');
+}
+if (!boardJs.includes('1.55 * uiScale')
+    || !boardJs.includes('tcgPortraitUiScale') && !boardJs.includes('dataset.tcgPortraitUiScale')) {
+  fail('portrait-board syncHandVars must apply uiScale to hand cardMul');
+} else {
+  ok('portrait-board applies uiScale to hand cardMul');
 }
 
 if (process.exitCode) {

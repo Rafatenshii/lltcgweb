@@ -363,6 +363,14 @@
     const rawW = global.visualViewport?.width || global.innerWidth || board.clientWidth || 360;
     // Tablets: keep a phone-like column so the mat does not stretch edge-to-edge.
     const layoutW = size === 'tablet' ? Math.min(rawW, 720) : rawW;
+    let uiScale = 1;
+    if (size === 'phone') {
+      const rawScale = root.dataset.tcgPortraitUiScale
+        || root.style.getPropertyValue('--p-ui-scale')
+        || global.getComputedStyle?.(root)?.getPropertyValue('--p-ui-scale');
+      const parsed = parseFloat(String(rawScale || '').trim());
+      if (Number.isFinite(parsed) && parsed > 0) uiScale = parsed;
+    }
     let cardMul = 1.55;
     let mineFrac = 0.52;
     let oppFrac = 0.50;
@@ -374,9 +382,14 @@
       cardMul = 1.42;
       mineFrac = 0.54;
       oppFrac = 0.48;
+    } else {
+      // Small phones: shrink hand with the same density factor as HUD chrome.
+      cardMul = 1.55 * uiScale;
+      mineFrac = 0.52 * (0.9 + 0.1 * uiScale);
+      oppFrac = 0.50 * (0.9 + 0.1 * uiScale);
     }
     const cardSlots = 5;
-    const cardW = Math.max(44, (layoutW / cardSlots) * cardMul);
+    const cardW = Math.max(40, (layoutW / cardSlots) * cardMul);
     const cardH = cardW * (88 / 63);
     root.style.setProperty('--p-card-w', cardW.toFixed(2) + 'px');
     root.style.setProperty('--p-card-h', cardH.toFixed(2) + 'px');
