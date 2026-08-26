@@ -779,7 +779,7 @@ async function playLiveStorageWrDiscards(fromState, final, myId, opts = {}) {
     G.gameState = playback;
   } finally {
     G._liveWrDiscardInProgress = false;
-    clearWrPileAnimPending();
+    clearWrPileAnimPending(final, myId);
     if (G._animHideIids) {
       for (const iid of [...G._animHideIids]) {
         if (!(typeof liveStorageDepartureLatched === 'function'
@@ -1450,17 +1450,55 @@ function prepareLiveStorageExitDestPending(fromState, toState) {
   prepareWrPileAnimPending(fromState, toState, diffCardMoves(fromState, toState));
 }
 
-function clearWrPileAnimPending() {
+/** Repaint WR pile faces from current state (no pending filter). */
+function repaintWaitingRoomPilesFromState(state, myId) {
+  if (!state?.players) return;
+  const viewer = myId || G.playerId || state.my_id || null;
+  for (const pid of ['p1', 'p2']) {
+    const pileId = pid === viewer ? 'my-wait-pile' : 'opp-wait-pile';
+    renderWaitingRoomPile(pileId, state.players[pid]?.waiting_room, state, viewer);
+  }
+}
+
+/**
+ * Clear WR destination-hide latches. Always repaint when anything was pending —
+ * callers often clear after flights without another renderGame, which left the
+ * pile face stuck on the filtered (empty/stale) paint from prepareWrPileAnimPending
+ * (Baton Touch / Live bluffs → WR looked like cards vanished).
+ */
+function clearWrPileAnimPending(state, myId) {
+  const hadPending = !!(G._wrPilePendingIids && G._wrPilePendingIids.size);
   G._wrPilePendingIids = null;
+  if (!hadPending) return;
+  const board = state || G.gameState;
+  if (board) repaintWaitingRoomPilesFromState(board, myId || G.playerId || board.my_id);
 }
 
-function clearSuccessPileAnimPending() {
+/** Repaint Success chips from current state (no pending filter). */
+function repaintSuccessLivesFromState(state, myId) {
+  if (!state?.players || typeof renderSuccessLives !== 'function') return;
+  const viewer = myId || G.playerId || state.my_id || null;
+  for (const pid of ['p1', 'p2']) {
+    const pileId = pid === viewer ? 'my-pips' : 'opp-pips';
+    const lives = state.players[pid]?.success_lives || [];
+    renderSuccessLives(pileId, lives);
+  }
+  if (typeof tcgPortraitSyncWinCounts === 'function') {
+    try { tcgPortraitSyncWinCounts(state, viewer); } catch (_) { /* ignore */ }
+  }
+}
+
+function clearSuccessPileAnimPending(state, myId) {
+  const hadPending = !!(G._successPilePendingIids && G._successPilePendingIids.size);
   G._successPilePendingIids = null;
+  if (!hadPending) return;
+  const board = state || G.gameState;
+  if (board) repaintSuccessLivesFromState(board, myId || G.playerId || board.my_id);
 }
 
-function clearLiveStorageExitDestPending() {
-  clearWrPileAnimPending();
-  clearSuccessPileAnimPending();
+function clearLiveStorageExitDestPending(state, myId) {
+  clearWrPileAnimPending(state, myId);
+  clearSuccessPileAnimPending(state, myId);
 }
 
 /** WR cards added in this transition without a matching flight (e.g. look-pick rest → WR). */
@@ -1480,8 +1518,11 @@ function wrCardsAddedWithoutAnimMoves(prev, next, moves) {
 
 /** Force WR pile faces to match server order (clears stale pending hides from skill resolution). */
 async function refreshWaitingRoomPiles(state, myId, opts = {}) {
-  if (opts.clearPending) clearLiveStorageExitDestPending();
-  else (opts.releaseIids || []).forEach(id => {
+  if (opts.clearPending) {
+    // Null latches only — this function repaints below (avoid double paint).
+    G._wrPilePendingIids = null;
+    G._successPilePendingIids = null;
+  } else (opts.releaseIids || []).forEach(id => {
     G._wrPilePendingIids?.delete(id);
     G._successPilePendingIids?.delete(id);
   });
