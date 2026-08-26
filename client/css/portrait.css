@@ -1222,6 +1222,8 @@ html.tcg-portrait-play{
      Keep scale modest so portrait members clear the hand-fan overhang. */
   --p-stage-outline-scale: 0.62;
   --p-live-outline-scale: 0.82;
+  /* Live storage row height cap (vw); shrunk on small phones with --p-ui-scale. */
+  --p-live-row: 16vw;
   /* Defeat landscape hand-strip vars that blow cards past the field */
   --hand-strip-h: var(--p-hand-mine);
   --my-hand-card-h: var(--p-card-h);
@@ -1239,11 +1241,16 @@ html.tcg-portrait-play{
   --p-hud-max: var(--p-hud-h);
 }
 
-/* Discrete compact rail for clearly-small phones (ui-scale < 0.95). */
+/* Discrete compact rail for clearly-small phones (ui-scale < 0.95).
+   Also shrink hand / stage / live so the whole board stays proportional. */
 html.tcg-portrait-play.tcg-portrait-phone-sm{
   --p-field-min: 96px;
-  --p-stage-outline-scale: 0.58;
-  --p-live-outline-scale: 0.76;
+  --p-card-w: calc((100vw / var(--p-hand-visible)) * 1.55 * var(--p-ui-scale, 1));
+  --p-hand-mine: calc(var(--p-card-h) * 0.54);
+  --p-hand-opp: calc(var(--p-card-h) * 0.46);
+  --p-stage-outline-scale: calc(0.62 * var(--p-ui-scale, 1));
+  --p-live-outline-scale: calc(0.78 * var(--p-ui-scale, 1));
+  --p-live-row: calc(14.5vw * var(--p-ui-scale, 1));
 }
 
 /* Square foldables: reclaim vertical space so both fields stay playable. */
@@ -1621,7 +1628,7 @@ html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
   /* Live row is sized to the live card so its slack cannot become a gap;
      all spare height collects in the stage row, on the hand side. */
-  grid-template-rows: minmax(0, 1fr) minmax(0, 16vw);
+  grid-template-rows: minmax(0, 1fr) minmax(0, var(--p-live-row, 16vw));
   grid-template-areas:
     "sr sc sl"
     "l2 l1 l0";
@@ -1630,7 +1637,7 @@ html.tcg-portrait-play #screen-game .opp-mat .playmat-overlay{
 }
 html.tcg-portrait-play #screen-game .my-mat .playmat-overlay{
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 16vw) minmax(0, 1fr);
+  grid-template-rows: minmax(0, var(--p-live-row, 16vw)) minmax(0, 1fr);
   grid-template-areas:
     "l0 l1 l2"
     "sl sc sr";

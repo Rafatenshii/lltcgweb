@@ -494,6 +494,20 @@ if (!indexSrc.includes('tcg-portrait-phone-sm')
 } else {
   ok('small-phone density class/scale wired');
 }
+if (!portraitCss.includes('--p-live-row')
+    || !/tcg-portrait-phone-sm\{[^}]*--p-live-outline-scale:\s*calc\(0\.78 \* var\(--p-ui-scale/.test(portraitCss)
+    || !/tcg-portrait-phone-sm\{[^}]*--p-stage-outline-scale:\s*calc\(0\.62 \* var\(--p-ui-scale/.test(portraitCss)
+    || !/tcg-portrait-phone-sm\{[^}]*--p-card-w:\s*calc\(\(100vw \/ var\(--p-hand-visible\)\) \* 1\.55 \* var\(--p-ui-scale/.test(portraitCss)) {
+  fail('phone-sm must scale hand + stage/live slots with --p-ui-scale');
+} else {
+  ok('phone-sm scales hand + stage/live slots');
+}
+if (!boardJs.includes('1.55 * uiScale')
+    || !boardJs.includes('tcgPortraitUiScale') && !boardJs.includes('dataset.tcgPortraitUiScale')) {
+  fail('portrait-board syncHandVars must apply uiScale to hand cardMul');
+} else {
+  ok('portrait-board applies uiScale to hand cardMul');
+}
 
 if (process.exitCode) {
   console.error('\nPortrait responsive checks failed.');
