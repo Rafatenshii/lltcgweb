@@ -326,25 +326,52 @@ function bp7TakeCardsFromHand(array &$p, array $ids): array {
     return $picked;
 }
 
-/** Move $count Energy from the Energy zone back into the Energy deck. */
-function bp7ReturnEnergyToDeck(array &$state, string $pid, int $count, bool $activeOnly = false): int {
+/**
+ * Move $count Energy from the Energy zone back into the Energy deck.
+ * Prefers Active chips so the available-energy HUD actually drops (GitHub #129).
+ * $movedCards (if passed) is filled with the relocated Energy cards for log anims.
+ */
+function bp7ReturnEnergyToDeck(
+    array &$state,
+    string $pid,
+    int $count,
+    bool $activeOnly = false,
+    ?array &$movedCards = null
+): int {
     $p = &$state['players'][$pid];
-    $moved = 0;
-    foreach ($p['energy_zone'] as $i => $e) {
-        if ($moved >= $count) {
-            break;
-        }
-        if ($activeOnly && empty($e['active'])) {
-            continue;
-        }
-        unset($e['active'], $e['skip_activate_next_turn']);
-        $p['energy_deck'][] = $e;
-        unset($p['energy_zone'][$i]);
-        $moved++;
+    if (!isset($p['energy_deck']) || !is_array($p['energy_deck'])) {
+        $p['energy_deck'] = [];
     }
-    $p['energy_zone'] = array_values($p['energy_zone']);
+    $moved = 0;
+    $movedCards = [];
+    $take = static function (bool $wantActive) use (&$p, &$moved, &$movedCards, $count): void {
+        foreach ($p['energy_zone'] as $i => $e) {
+            if ($moved >= $count) {
+                return;
+            }
+            if (!is_array($e)) {
+                continue;
+            }
+            $isActive = !empty($e['active']);
+            if ($wantActive !== $isActive) {
+                continue;
+            }
+            unset($e['active'], $e['skip_activate_next_turn']);
+            $p['energy_deck'][] = $e;
+            $movedCards[] = $e;
+            unset($p['energy_zone'][$i]);
+            $moved++;
+        }
+        $p['energy_zone'] = array_values($p['energy_zone']);
+    };
+    $take(true);
+    if ($moved < $count && !$activeOnly) {
+        $take(false);
+    }
     if ($moved > 0) {
+        shuffle($p['energy_deck']);
         $p['_bp7_energy_returned_turn'] = intval($state['turn'] ?? 0);
+        unset($p);
         $state = bp7ResolveAutoEnergyReturnedToDeck($state, $pid);
     }
     return $moved;
@@ -2069,12 +2096,25 @@ function bp7ResolveEffect(array $state, string $pid, array $source, array $ab, a
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] put from the Stage into the Waiting Room.");
             $state = resolveOnLeaveStageAbilities($state, $pid, $leaving, ['self_leave' => true]);
-            $moved = bp7ReturnEnergyToDeck($state, $pid, max(1, intval($ab['energy'] ?? 1)));
+            $need = max(1, intval($ab['energy'] ?? 1));
+            $movedCards = [];
+            $moved = bp7ReturnEnergyToDeck($state, $pid, $need, false, $movedCards);
+            $anims = [];
+            foreach ($movedCards as $e) {
+                $iid = (string)($e['instance_id'] ?? '');
+                if ($iid !== '') {
+                    $anims[] = animSpec($iid, 'energy', 'energy_deck', $pid);
+                }
+            }
             if ($moved > 0) {
                 $state = addLog($state, $state['players'][$pid]['name'] .
-                    " — [$name] put $moved Energy into the Energy deck.");
+                    " — [$name] put $moved Energy into the Energy deck.", 'effect', $anims);
+            } else {
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$name] no Energy in the Energy zone to put into the Energy deck.");
             }
-            if (empty($state['pending_prompt'])) {
+            // 「その後」: WR add only if Energy actually returned.
+            if ($moved > 0 && empty($state['pending_prompt'])) {
                 $state = resolveAbilityEffect($state, $pid, $leaving, [
                     'type'    => 'add_from_wr',
                     'trigger' => $ab['trigger'] ?? 'activated',

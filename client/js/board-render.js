@@ -1934,7 +1934,8 @@ function renderHand(hand,s,myId, opts = {}){
 }
 
 function energyZoneLayoutKey(zone) {
-  return (zone || []).map(ec => ec.instance_id).join('|');
+  const list = zone || [];
+  return list.length + ':' + list.map(ec => ec.instance_id || '').join('|');
 }
 
 function layoutEnergyStack(stackEl, opts = {}) {
