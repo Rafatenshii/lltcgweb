@@ -2232,8 +2232,26 @@ global.renderPromptDiscardHandBranch = function renderPromptDiscardHandBranch(s,
   });
 };
 
+function skillRevealViewerId(myId) {
+  const g = global.G;
+  return myId || g?.playerId || g?.gameState?.my_id || null;
+}
+
+/**
+ * Public Reveal popup is opponent-only (spectators still see it).
+ * The revealing player already saw the cards in the look/hand prompt and the log.
+ */
+function shouldShowPublicSkillRevealPopup(rev, myId) {
+  if (!rev?.cards?.length) return false;
+  if (global.G?.isSpectator) return true;
+  const viewer = skillRevealViewerId(myId);
+  if (rev.pid && viewer && String(rev.pid) === String(viewer)) return false;
+  return true;
+}
+global.shouldShowPublicSkillRevealPopup = shouldShowPublicSkillRevealPopup;
+
 global.showPublicSkillRevealOverlay = function showPublicSkillRevealOverlay(rev, myId){
-  if (!rev?.cards?.length) return;
+  if (!shouldShowPublicSkillRevealPopup(rev, myId)) return;
   const ovl = el('overlay-skill-reveal');
   const grid = el('skill-reveal-grid');
   const ttl = el('skill-reveal-ttl');
@@ -2277,10 +2295,6 @@ global.showPublicSkillRevealFromState = function showPublicSkillRevealFromState(
   G._lastSkillRevealKey = key;
   G._shownSkillRevealKeys.add(key);
   G._shownSkillRevealKeys.add(idKey);
-  // Revealer already sees the cards (hand / look pile) and the log. Popup is for the opponent.
-  if (!G.isSpectator && rev.pid && myId && rev.pid === myId) {
-    return;
-  }
   showPublicSkillRevealOverlay(rev, myId);
 };
 
