@@ -42,6 +42,13 @@ if (!/live-storage-facedown/.test(indexSrc)
   ok('long-press skips face-down / unrevealed cards');
 }
 
+if (!indexSrc.includes('play-glow-valid')
+    || !indexSrc.includes('G.selCard || G.drag?.iid')) {
+  fail('long-press must yield to play-targeting on glowing stage slots');
+} else {
+  ok('long-press yields to play-targeting when a hand card is selected');
+}
+
 if (failed) {
   console.error('\nBoard long-press inspect checks failed.');
   process.exit(1);
