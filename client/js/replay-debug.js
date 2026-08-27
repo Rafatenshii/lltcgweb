@@ -104,14 +104,14 @@
       return;
     }
     try {
-      const replay = await global.exportReplayPayload(creds);
       if (typeof global.isSignedInAccount === 'function' && global.isSignedInAccount()) {
+        // Hostinger pulls slim schema-v2 from the match origin — avoid phone↔site
+        // round-tripping multi-MB frame payloads.
         const saved = await global.accountPost('replay_save', {
           room_id: creds.roomId,
           player_token: creds.token,
           preserve: true,
           kind: 'library',
-          replay,
         });
         if (saved.error) throw new Error(saved.error);
         const summary = saved.replay;
@@ -125,6 +125,7 @@
         return;
       }
 
+      const replay = await global.exportReplayPayload(creds);
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
       const room = replay.meta?.room_id || global.G.roomId || 'room';
       global.downloadJsonFile(`tcg-replay-${room}-${stamp}.json`, replay);
@@ -152,13 +153,12 @@
     }
     if (global.G) G._replayAutosavePendingRoom = creds.roomId;
     try {
-      const replay = await global.exportReplayPayload(creds);
+      // Do not client-export frames here — account API fetches from match origin.
       const saved = await global.accountPost('replay_save', {
         room_id: creds.roomId,
         player_token: creds.token,
         autosave: true,
         kind: 'autosave',
-        replay,
       });
       if (saved.error) throw new Error(saved.error);
       if (global.G) G._replayAutosavedRoom = creds.roomId;

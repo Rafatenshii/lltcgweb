@@ -8,8 +8,8 @@
 const REPLAY_SCHEMA_VERSION = 2;
 const REPLAY_SCHEMA_VERSION_MIN = 1;
 const REPLAY_LOCK_TIMEOUT = 120.0;
-/** Gzip whole payload in SQLite when uncompressed JSON exceeds this. */
-const REPLAY_STORAGE_GZIP_BYTES = 2097152;
+/** Gzip whole payload in SQLite when uncompressed JSON exceeds this (~512 KB). */
+const REPLAY_STORAGE_GZIP_BYTES = 524288;
 
 function assertReplayDebugAllowed(array $body): void {
     if (empty($body['debug_mode'])) {
@@ -82,23 +82,99 @@ function appendReplayAction(array $state, string $playerId, string $type, array 
     return $state;
 }
 
-/** Strip secrets / nested replay blobs from a board snapshot used as a frame. */
+/** Fields kept on face-up zone cards inside a frame (UI + activate). */
+const REPLAY_FRAME_CARD_KEEP = [
+    'instance_id', 'card_no', 'card_type', 'card_type_en',
+    'name', 'name_en', 'cost', 'hearts', 'blade', 'blade_hearts',
+    'abilities', 'score', 'required_hearts', 'active', 'waiting',
+    'subunit', 'group', 'special_heart', 'yell_draw_icon',
+    'stacked_members', 'stacked_energy', 'rested', 'text',
+    'entered_turn', 'abilities_used', 'markers', 'display_order',
+];
+
+/** Top-level keys dropped from every board frame (not needed for seek UI). */
+const REPLAY_FRAME_DROP_TOP = [
+    'action_log', 'replay_baseline', 'replay', 'replay_handoff', 'mode',
+    'log', 'ranked', 'phase_timer', 'phase_timer_cfg', 'mulligan_declare',
+    '_play_stat_deltas', 'stamp_pop', 'stamp_last_at', 'live_modifiers',
+    'presence', 'rate_limit', 'chat',
+];
+
+/** Slim a single card blob for frame storage. Face-down decks keep id+no only. */
+function slimReplayFrameCard($card, bool $deckStub = false) {
+    if (!is_array($card)) {
+        return $card;
+    }
+    if ($deckStub) {
+        $out = [];
+        if (isset($card['instance_id'])) {
+            $out['instance_id'] = $card['instance_id'];
+        }
+        if (isset($card['card_no'])) {
+            $out['card_no'] = $card['card_no'];
+        }
+        return $out;
+    }
+    $out = [];
+    foreach (REPLAY_FRAME_CARD_KEEP as $k) {
+        if (array_key_exists($k, $card)) {
+            $out[$k] = $card[$k];
+        }
+    }
+    // Nested stacks under members: recurse with the same keep list.
+    if (!empty($out['stacked_members']) && is_array($out['stacked_members'])) {
+        $out['stacked_members'] = array_map(
+            static fn($c) => slimReplayFrameCard($c, false),
+            $out['stacked_members']
+        );
+    }
+    if (!empty($out['stacked_energy']) && is_array($out['stacked_energy'])) {
+        $out['stacked_energy'] = array_map(
+            static fn($c) => slimReplayFrameCard($c, false),
+            $out['stacked_energy']
+        );
+    }
+    return $out;
+}
+
+/** Strip secrets / nested replay blobs / bulky catalog fields from a board snapshot. */
 function sanitizeReplayFrame(array $state): array {
     $frame = json_decode(json_encode($state), true);
     if (!is_array($frame)) {
         return [];
     }
-    unset(
-        $frame['action_log'],
-        $frame['replay_baseline'],
-        $frame['replay'],
-        $frame['replay_handoff'],
-        $frame['mode']
-    );
+    foreach (REPLAY_FRAME_DROP_TOP as $k) {
+        unset($frame[$k]);
+    }
+    $deckZones = ['main_deck' => true, 'energy_deck' => true];
+    $listZones = [
+        'hand' => true, 'waiting_room' => true, 'discard' => true,
+        'live_zone' => true, 'live_storage' => true, 'energy_zone' => true,
+        'live_success' => true, 'success_lives' => true,
+    ];
     foreach (['p1', 'p2'] as $pid) {
-        if (isset($frame['players'][$pid]) && is_array($frame['players'][$pid])) {
-            unset($frame['players'][$pid]['token']);
+        if (!isset($frame['players'][$pid]) || !is_array($frame['players'][$pid])) {
+            continue;
         }
+        unset($frame['players'][$pid]['token']);
+        $p =& $frame['players'][$pid];
+        foreach ($p as $zone => &$val) {
+            if (!is_array($val)) {
+                continue;
+            }
+            if (isset($deckZones[$zone])) {
+                $val = array_map(static fn($c) => slimReplayFrameCard($c, true), $val);
+            } elseif (isset($listZones[$zone])) {
+                $val = array_map(static fn($c) => slimReplayFrameCard($c, false), $val);
+            } elseif ($zone === 'stage') {
+                foreach ($val as $slot => $mbr) {
+                    if (is_array($mbr)) {
+                        $val[$slot] = slimReplayFrameCard($mbr, false);
+                    }
+                }
+            }
+        }
+        unset($val);
     }
     return $frame;
 }

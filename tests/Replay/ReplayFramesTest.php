@@ -26,6 +26,12 @@ final class ReplayFramesTest extends TestCase
         $this->assertCount(count($v1['actions']) + 1, $v2['frames']);
         $this->assertSame(count($v2['frames']), intval($v2['meta']['frame_count'] ?? 0));
         $this->assertArrayNotHasKey('token', $v2['frames'][0]['players']['p1'] ?? []);
+        // Slim frames: no per-frame log, no image URLs on cards.
+        $this->assertArrayNotHasKey('log', $v2['frames'][0]);
+        $hand0 = $v2['frames'][0]['players']['p1']['hand'][0] ?? null;
+        if (is_array($hand0)) {
+            $this->assertArrayNotHasKey('image', $hand0);
+        }
     }
 
     public function testExportIsAlwaysV2(): void
