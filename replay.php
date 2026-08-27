@@ -311,6 +311,72 @@ function replayTakeCardForStageRepair(array &$player, string $instanceId): ?arra
     return null;
 }
 
+/**
+ * Clear once-per-turn marks so a recorded activate_ability can re-apply after
+ * seek drift (early mark from a fizzled/soft-skipped prompt, or a missed Active Phase clear).
+ */
+function replayClearAbilityUsedForActivate(array &$state, string $pid, array $data): void {
+    $cardId = (string)($data['card_id'] ?? '');
+    if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2')) {
+        return;
+    }
+    $abilityIdx = $data['ability_index'] ?? 0;
+    $p = &$state['players'][$pid];
+    $clearOn = static function (array &$card) use ($cardId, $abilityIdx): void {
+        if (($card['instance_id'] ?? '') !== $cardId) {
+            return;
+        }
+        if (!isset($card['abilities_used']) || !is_array($card['abilities_used'])) {
+            return;
+        }
+        $keys = [];
+        if (function_exists('abilityUsedKey')) {
+            $keys[] = abilityUsedKey($cardId, $abilityIdx);
+            $keys[] = abilityUsedKey($cardId, intval($abilityIdx));
+        }
+        $keys[] = $cardId . ':' . $abilityIdx;
+        $keys[] = $cardId . ':' . intval($abilityIdx);
+        foreach ($keys as $k) {
+            unset($card['abilities_used'][$k]);
+        }
+        // Last resort: wipe all once-per-turn marks on this instance so seek continues.
+        if (!empty($card['abilities_used'])) {
+            foreach (array_keys($card['abilities_used']) as $k) {
+                if (str_starts_with((string)$k, $cardId . ':')) {
+                    unset($card['abilities_used'][$k]);
+                }
+            }
+        }
+        if (empty($card['abilities_used'])) {
+            unset($card['abilities_used']);
+        }
+    };
+    if (isset($p['stage']) && is_array($p['stage'])) {
+        foreach ($p['stage'] as &$mbr) {
+            if (is_array($mbr)) {
+                $clearOn($mbr);
+            }
+        }
+        unset($mbr);
+    }
+    if (isset($p['waiting_room']) && is_array($p['waiting_room'])) {
+        foreach ($p['waiting_room'] as &$c) {
+            if (is_array($c)) {
+                $clearOn($c);
+            }
+        }
+        unset($c);
+    }
+    if (isset($p['hand']) && is_array($p['hand'])) {
+        foreach ($p['hand'] as &$c) {
+            if (is_array($c)) {
+                $clearOn($c);
+            }
+        }
+        unset($c);
+    }
+}
+
 function replayEnsureMemberOnStage(array &$state, string $pid, string $cardId, string $preferredSlot = ''): void {
     if ($cardId === '' || ($pid !== 'p1' && $pid !== 'p2')) {
         return;
@@ -842,6 +908,7 @@ function replayLooksLikeSeekDriftError(string $msg): bool {
         'Live card no longer in storage',
         'Invalid Live card',
         'Choose a Live card',
+        'Ability already used this turn',
     ];
     foreach ($needles as $needle) {
         if (str_contains($msg, $needle)) {
@@ -908,6 +975,9 @@ function replayApplyFixForRetry(array $state, string $pid, string $type, array $
                 (string)$data['card_id'],
                 (string)($data['slot'] ?? $data['source_slot'] ?? '')
             );
+        }
+        if (str_contains($msg, 'Ability already used this turn')) {
+            replayClearAbilityUsedForActivate($state, $pid, $data);
         }
     }
     $energyNeed = replayParseActiveEnergyNeed($msg, 2);

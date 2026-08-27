@@ -227,4 +227,45 @@ final class ReplayActivateStageRepairTest extends TestCase
             'missing Energy must skip the skill, not mill the deck'
         );
     }
+
+    public function testAlreadyUsedAbilityClearsMarkAndReapplies(): void
+    {
+        $state = $this->joinedMainFirstState();
+        $member = [
+            'instance_id' => 'card_replay_once_used',
+            'card_type' => 'メンバー',
+            'name' => 'Replay Once',
+            'name_en' => 'Replay Once',
+            'group' => 'µ\'s',
+            'abilities' => [[
+                'trigger' => 'activated',
+                'type' => 'wait_self_draw',
+                'count' => 1,
+                'once_per_turn' => true,
+            ]],
+            'abilities_used' => [
+                abilityUsedKey('card_replay_once_used', 0) => true,
+            ],
+        ];
+        $state['players']['p1']['stage']['center'] = $member;
+        $state['active_player'] = 'p1';
+        $state['phase'] = 'main_first';
+        $handBefore = count($state['players']['p1']['hand'] ?? []);
+
+        $after = replayApplyRecordedAction(
+            $state,
+            'p1',
+            'activate_ability',
+            ['card_id' => 'card_replay_once_used', 'ability_index' => 0],
+            129
+        );
+
+        $this->assertIsArray($after);
+        $center = $after['players']['p1']['stage']['center'] ?? null;
+        $this->assertTrue(
+            memberIsInWait($center ?? [])
+                || count($after['players']['p1']['hand'] ?? []) > $handBefore,
+            'cleared once-per-turn mark should let recorded activate apply'
+        );
+    }
 }
