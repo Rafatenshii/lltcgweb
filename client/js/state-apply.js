@@ -1016,7 +1016,9 @@
             }
           } else {
             G._animHideIids = null;
-            if (prev && wrCardsAddedWithoutAnimMoves(prev, s, moves).length) {
+            if (G._wrPilePendingIids?.size && typeof clearWrPileAnimPending === 'function') {
+              clearWrPileAnimPending(s, G.playerId);
+            } else if (prev && wrCardsAddedWithoutAnimMoves(prev, s, moves).length) {
               void refreshWaitingRoomPiles(s, G.playerId, { clearPending: true });
             }
             flushPendingState();
@@ -1075,6 +1077,9 @@
         G.animating = false;
         releaseLivePollsAndFlush();
       }
+    }
+    if (!G.animating && typeof reconcileWrPilePending === 'function') {
+      reconcileWrPilePending(G.gameState || s, G.playerId);
     }
     flushPendingState();
     if (!replayForward && !G.animating && !G._perfSpectacleActive && s.pending_prompt?.responder === G.playerId

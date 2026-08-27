@@ -1511,6 +1511,50 @@ function clearLiveStorageExitDestPending(state, myId) {
   clearSuccessPileAnimPending(state, myId);
 }
 
+function wrCardInWaitingRoom(state, iid) {
+  if (!state?.players || !iid) return null;
+  for (const pid of ['p1', 'p2']) {
+    const card = (state.players[pid]?.waiting_room || []).find(c => c?.instance_id === iid);
+    if (card) return { pid, card };
+  }
+  return null;
+}
+
+function wrPendingFlightStillActive(iid) {
+  if (!iid) return false;
+  if (G._animHideIids?.has(iid)) return true;
+  if (typeof document !== 'undefined' && typeof CSS !== 'undefined' && CSS.escape) {
+    const node = document.querySelector(`[data-iid="${CSS.escape(iid)}"]`);
+    if (node?.classList.contains('card-arriving')) return true;
+  }
+  return false;
+}
+
+/**
+ * Drop stale WR destination-hide latches: card already in server WR with no
+ * active flight ghost. Repaints affected piles when anything was released.
+ */
+function reconcileWrPilePending(state, myId) {
+  if (G.animating || G._liveWrDiscardInProgress || G._liveRoundPlaybackActive
+      || G._perfSpectacleActive || G._liveSpectacleGateRunning) {
+    return false;
+  }
+  const pending = G._wrPilePendingIids;
+  if (!pending?.size || !state?.players) return false;
+  let released = false;
+  for (const iid of [...pending]) {
+    if (wrCardInWaitingRoom(state, iid) && !wrPendingFlightStillActive(iid)) {
+      pending.delete(iid);
+      released = true;
+    }
+  }
+  if (!released) return false;
+  if (!pending.size) G._wrPilePendingIids = null;
+  const board = state || G.gameState;
+  if (board) repaintWaitingRoomPilesFromState(board, myId || G.playerId || board.my_id);
+  return true;
+}
+
 /** WR cards added in this transition without a matching flight (e.g. look-pick rest → WR). */
 function wrCardsAddedWithoutAnimMoves(prev, next, moves) {
   if (!prev || !next) return [];

@@ -12249,6 +12249,9 @@ function abortGameplayPresentation(opts = {}) {
   G._liveRevealFlips = new Set();
   G._liveStorageRevealRunning = false;
   G.animating = false;
+  if (typeof clearLiveStorageExitDestPending === 'function') {
+    clearLiveStorageExitDestPending(G.gameState, G.playerId);
+  }
   // Must go through releaseLivePolls so SSE/poll resume — clearing the flag alone
   // left clients stuck until safety poll / refresh (post-0343150 catch-up bug).
   if (typeof releaseLivePolls === 'function') {
@@ -23592,7 +23595,8 @@ async function playAnimSpec(spec, playback, finalState, myId, delayMs = 0) {
   const playerHandReveal = spec.pid === myId && toLoc?.zone === 'hand'
     && ['main_deck', 'waiting_room', 'energy_deck'].includes(fromLoc?.zone || '');
 
-  if (toLoc?.zone === 'waiting_room') noteWrPilePendingMove(spec.iid);
+  const wrDest = toLoc?.zone === 'waiting_room';
+  if (wrDest) noteWrPilePendingMove(spec.iid);
   applyAnimOnPlayback(playback, finalState, spec, card);
   if (playerHandReveal) markHandRevealFlip(spec.iid);
   G._animHideIids = animHideIidsForMoves(prePlayback, [{
@@ -23652,6 +23656,9 @@ async function playAnimSpec(spec, playback, finalState, myId, delayMs = 0) {
   } finally {
     G._animHideIids = null;
     clearAnimHideIid(spec.iid);
+    if (wrDest && typeof clearWrPileAnimPending === 'function') {
+      clearWrPileAnimPending(finalState, myId);
+    }
   }
 }
 
@@ -24577,6 +24584,9 @@ function releaseStuckPresentation() {
   }
   clearOpponentSkillWaitLogKey();
   if (G.playerId && G.gameState) {
+    if (typeof clearLiveStorageExitDestPending === 'function') {
+      clearLiveStorageExitDestPending(G.gameState, G.playerId);
+    }
     updateOpponentSkillWaitBanner(G.gameState, G.playerId);
     updatePhaseActionButton(G.gameState, G.playerId);
     if (typeof renderGame === 'function') renderGame(G.gameState, { skipLog: true });
@@ -32377,6 +32387,8 @@ async function playTutorialTransition(fromState, toState, forward) {
     } finally {
       clearWrPileAnimPending(toState, myId);
     }
+  } else {
+    clearWrPileAnimPending(toState, myId);
   }
 
   await waitForHandShiftIdle();
