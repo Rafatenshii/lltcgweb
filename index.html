@@ -26360,7 +26360,16 @@ function fillCardDetailPanel(prefix, card, s, myId) {
       addS(t('card.blade'), printedBlade, 'icon_blade.png', bladeBonus);
     }
   }
-  if (card.score !== undefined) addS(t('card.score'), card.score, 'sp_score.png');
+  // Server may null Live scores until judge (spoiler hide). Never show the
+  // literal word "null" — fall back to printed catalog score for face-up cards.
+  {
+    const scoreShown = (card.score != null)
+      ? Number(card.score)
+      : (typeof printedLiveScore === 'function' ? printedLiveScore(card) : null);
+    if (scoreShown != null && !Number.isNaN(scoreShown)) {
+      addS(t('card.score'), scoreShown, 'sp_score.png');
+    }
+  }
   const heartBonus = stageCtx && !isLiveCard(card)
     ? memberModifierHeartGroups(stageCtx.member, s, stageCtx.pid, stageCtx.slot)
     : [];
