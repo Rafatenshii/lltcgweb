@@ -127,6 +127,47 @@ final class HeartResolutionTest extends TestCase
         $this->assertSame(['pink', 'purple'], $resolved);
     }
 
+    /**
+     * Issue #130: fixed-color Yell blades before an ALL must count toward the
+     * resolve pool, else ALL fills a color those blades already supply.
+     * Glow room 0873CF — Proof needs purple (supplied by earlier Yell), COMPASS
+     * still needs green; ALL must become green, not purple.
+     */
+    public function testAllBladeSeesPriorFixedColorYellHeartsInResolvePool(): void {
+        $proof = [
+            'required_hearts' => [
+                ['color' => 'green', 'count' => 1],
+                ['color' => 'blue', 'count' => 4],
+                ['color' => 'purple', 'count' => 1],
+                ['color' => 'any', 'count' => 4],
+            ],
+        ];
+        $compass = [
+            'required_hearts' => [
+                ['color' => 'pink', 'count' => 1],
+                ['color' => 'green', 'count' => 1],
+                ['color' => 'blue', 'count' => 7],
+                ['color' => 'any', 'count' => 7],
+            ],
+        ];
+        $birdcage = [
+            'required_hearts' => [
+                ['color' => 'blue', 'count' => 2],
+                ['color' => 'any', 'count' => 1],
+            ],
+        ];
+        $lives = [$proof, $compass, $birdcage];
+        // Stage + bonus (no purple) — purple arrives from an earlier Yell blade.
+        $pool = array_merge(array_fill(0, 14, 'blue'), ['green', 'pink']);
+
+        getHeartIconsFromBladeHeart('purple', $pool, $lives);
+        getHeartIconsFromBladeHeart('blue', $pool, $lives);
+        getHeartIconsFromBladeHeart('pink', $pool, $lives);
+        $all = getHeartIconsFromBladeHeart('all', $pool, $lives);
+
+        $this->assertSame(['green'], $all);
+    }
+
     public function testMultiLiveAnySlotsDoNotStealLaterColoredNeeds(): void {
         $reqAny = [['color' => 'any', 'count' => 5]];
         $reqRed = [['color' => 'red', 'count' => 5]];

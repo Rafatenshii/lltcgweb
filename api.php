@@ -4334,10 +4334,22 @@ function getHeartIconsFromBladeHeart(
         'all2'   => 'any', 'all_2' => 'any', 'b_heart07' => 'any', 'heart07' => 'any',
     ];
     if (isset($heartsMap[$type])) {
+        // Fixed-color Yell blades must enter the resolve pool too (#130): later ALL /
+        // gray blades prioritize colors still missing after these printed hearts.
         if (in_array($type, ['all2', 'all_2', 'b_heart07', 'heart07'], true)) {
-            return [$heartsMap[$type], $heartsMap[$type]];
+            $pair = [$heartsMap[$type], $heartsMap[$type]];
+            if ($resolvePool !== null) {
+                foreach ($pair as $c) {
+                    $resolvePool[] = normalizeHeartColor($c);
+                }
+            }
+            return $pair;
         }
-        return [$heartsMap[$type]];
+        $color = $heartsMap[$type];
+        if ($resolvePool !== null) {
+            $resolvePool[] = normalizeHeartColor($color);
+        }
+        return [$color];
     }
     return [];
 }
