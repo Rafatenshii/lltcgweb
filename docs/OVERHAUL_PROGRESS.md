@@ -9,6 +9,7 @@ Defaults: PHP rules on VPS + Redis rooms; native Web Components; Hostinger kept 
 | Part 1A — GameStore abstraction | Done | `TCG_GAME_STORE=file\|redis`, `src/Game/Store/*` |
 | Part 1B — VPS match-primary cutover | Done (flagged) | `runtime-flags.js` + `TCG_MATCH_API_PRIMARY` |
 | Part 1C — Realtime (SSE / WS note) | Done | Keep SSE; see `docs/overhaul/04-realtime.md` |
+| Replay frames (schema v2) | Done | Seek installs board snapshots; see `docs/overhaul/05-replay-frames.md` |
 | Part 1D — Hostinger PHP scope | Done (cutover) | `MATCH_WRITES_DISABLED` + `.htaccess` SetEnv; client match-primary on |
 | Part 2A — Extract CSS / JS from shell | Done | `client/css/shell-all.css`, `board-render.js`, `cpu-loop.js` |
 | Part 2B — Zone web components | Done | `<ll-*>` in `client/js/components/board-zones.js` |
