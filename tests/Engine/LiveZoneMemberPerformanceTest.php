@@ -291,4 +291,89 @@ final class LiveZoneMemberPerformanceTest extends TestCase
         $this->assertNotNull($stored);
         $this->assertSame(7, intval($stored['score'] ?? 0));
     }
+
+    /** #132 — heart check must not delete Member bluffs when rewriting live_zone. */
+    public function testHeartCheckKeepsMemberBluffInStorageOnSuccess(): void
+    {
+        $zone = [
+            $this->member('bluff15'),
+            $this->live('live1'),
+        ];
+        $state = $this->performanceState($zone);
+        $state['phase'] = 'live_performance_first';
+        $state['live_attempt'] = ['p1'];
+        $state['players']['p1']['stage']['center'] = [
+            'instance_id' => 'stage1',
+            'card_type' => 'メンバー',
+            'card_type_en' => 'Member',
+            'blade' => 0,
+            'hearts' => [
+                ['color' => 'pink', 'count' => 1],
+                ['color' => 'any', 'count' => 2],
+            ],
+            'blade_hearts' => [],
+        ];
+        $state['players']['p1']['main_deck'] = array_fill(0, 5, [
+            'instance_id' => 'pad',
+            'card_type' => 'メンバー',
+            'blade_hearts' => [],
+        ]);
+
+        $after = \resolvePerformanceHeartCheck($state, 'p1', false);
+        $iids = array_map(
+            fn($c) => $c['instance_id'] ?? '',
+            $after['players']['p1']['live_zone'] ?? []
+        );
+        $this->assertContains('bluff15', $iids, 'Member bluff must survive heart check');
+        $this->assertContains('live1', $iids);
+        $this->assertCount(0, array_filter(
+            $after['players']['p1']['waiting_room'] ?? [],
+            fn($c) => ($c['instance_id'] ?? '') === 'bluff15'
+        ), 'bluff stays in storage until outcomes discard');
+    }
+
+    public function testHeartCheckKeepsMemberBluffWhenLiveRoundFails(): void
+    {
+        $hardLive = $this->live('hard');
+        $hardLive['required_hearts'] = [
+            ['color' => 'red', 'count' => 9],
+        ];
+        $zone = [
+            $this->member('bluff15'),
+            $hardLive,
+        ];
+        $state = $this->performanceState($zone);
+        $state['phase'] = 'live_performance_first';
+        $state['live_attempt'] = ['p1'];
+        $state['players']['p1']['stage']['center'] = [
+            'instance_id' => 'stage1',
+            'card_type' => 'メンバー',
+            'card_type_en' => 'Member',
+            'blade' => 0,
+            'hearts' => [['color' => 'pink', 'count' => 1]],
+            'blade_hearts' => [],
+        ];
+        $state['players']['p1']['main_deck'] = array_fill(0, 5, [
+            'instance_id' => 'pad',
+            'card_type' => 'メンバー',
+            'blade_hearts' => [],
+        ]);
+
+        $after = \resolvePerformanceHeartCheck($state, 'p1', false);
+        $iids = array_map(
+            fn($c) => $c['instance_id'] ?? '',
+            $after['players']['p1']['live_zone'] ?? []
+        );
+        $this->assertContains('bluff15', $iids, 'Failed Live must not delete Member bluffs');
+        $this->assertNotContains('hard', $iids);
+        $wr = array_map(fn($c) => $c['instance_id'] ?? '', $after['players']['p1']['waiting_room'] ?? []);
+        $this->assertContains('hard', $wr);
+        $this->assertNotContains('bluff15', $wr);
+
+        $afterOutcomes = \queueLiveShowOutcomes($after);
+        $this->assertContains(
+            'bluff15',
+            array_map(fn($c) => $c['instance_id'] ?? '', $afterOutcomes['players']['p1']['waiting_room'] ?? [])
+        );
+    }
 }

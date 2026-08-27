@@ -3435,9 +3435,18 @@ function resolvePerformanceHeartCheck(array $state, string $pid, bool $continueA
         fn($c) => $c && isLiveTypeCard($c)
     ));
 
+    // Member bluffs stay in storage until queueLiveShowOutcomes →
+    // discardLiveZoneMembersToWaitingRoom. Rewriting live_zone to success Lives
+    // only (or clearing it on fail) used to drop those non-Live cards entirely
+    // so they never reached the Waiting Room (#132 / cost-15 bluffs).
+    $memberBluffs = array_values(array_filter(
+        $p['live_zone'] ?? [],
+        fn($c) => $c && !isLiveTypeCard($c)
+    ));
+
     $p['waiting_room'] = array_merge($p['waiting_room'], $failCards);
     if ($liveRoundSuccess) {
-        $p['live_zone'] = $successCards;
+        $p['live_zone'] = array_merge($successCards, $memberBluffs);
     } else {
         if (!empty($successCards)) {
             foreach ($successCards as $li => $lc) {
@@ -3447,7 +3456,7 @@ function resolvePerformanceHeartCheck(array $state, string $pid, bool $continueA
             }
             $p['waiting_room'] = array_merge($p['waiting_room'], $successCards);
         }
-        $p['live_zone'] = [];
+        $p['live_zone'] = $memberBluffs;
         $successCards = [];
         $remaining = $ownedHearts;
     }
