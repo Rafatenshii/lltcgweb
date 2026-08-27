@@ -1,11 +1,15 @@
 <?php
 /**
- * Debug replay: export action sequences from live rooms and step through them in
- * replay_view mode. Client must send debug_mode=true (?debug URL flag).
+ * Match replay: live rooms record baseline + action_log (schema v1 source).
+ * Exports / library / replay_view use schema v2 board frames for seek.
+ * Opening a v1 file converts once (re-sim) into frames; seek then loads frames only.
  */
 
-const REPLAY_SCHEMA_VERSION = 1;
+const REPLAY_SCHEMA_VERSION = 2;
+const REPLAY_SCHEMA_VERSION_MIN = 1;
 const REPLAY_LOCK_TIMEOUT = 120.0;
+/** Gzip whole payload in SQLite when uncompressed JSON exceeds this. */
+const REPLAY_STORAGE_GZIP_BYTES = 2097152;
 
 function assertReplayDebugAllowed(array $body): void {
     if (empty($body['debug_mode'])) {
@@ -78,20 +82,130 @@ function appendReplayAction(array $state, string $playerId, string $type, array 
     return $state;
 }
 
+/** Strip secrets / nested replay blobs from a board snapshot used as a frame. */
+function sanitizeReplayFrame(array $state): array {
+    $frame = json_decode(json_encode($state), true);
+    if (!is_array($frame)) {
+        return [];
+    }
+    unset(
+        $frame['action_log'],
+        $frame['replay_baseline'],
+        $frame['replay'],
+        $frame['replay_handoff'],
+        $frame['mode']
+    );
+    foreach (['p1', 'p2'] as $pid) {
+        if (isset($frame['players'][$pid]) && is_array($frame['players'][$pid])) {
+            unset($frame['players'][$pid]['token']);
+        }
+    }
+    return $frame;
+}
+
 function validateReplayFile(array $replay): void {
-    if (intval($replay['schema_version'] ?? 0) !== REPLAY_SCHEMA_VERSION) {
+    $ver = intval($replay['schema_version'] ?? 0);
+    if ($ver < REPLAY_SCHEMA_VERSION_MIN || $ver > REPLAY_SCHEMA_VERSION) {
         throw new Exception('Unsupported replay schema version');
     }
-    if (empty($replay['baseline']) || !is_array($replay['baseline'])) {
-        throw new Exception('Replay missing baseline state');
-    }
-    if (!isset($replay['actions']) || !is_array($replay['actions'])) {
+    $actions = $replay['actions'] ?? null;
+    if (!is_array($actions)) {
         throw new Exception('Replay missing actions array');
+    }
+    $frames = $replay['frames'] ?? null;
+    if (is_array($frames) && $frames !== []) {
+        if (count($frames) !== count($actions) + 1) {
+            throw new Exception('Replay frames length must be actions+1');
+        }
+    } else {
+        if (empty($replay['baseline']) || !is_array($replay['baseline'])) {
+            throw new Exception('Replay missing baseline state');
+        }
     }
     $saver = $replay['meta']['saver_player_id'] ?? '';
     if ($saver !== 'p1' && $saver !== 'p2') {
         throw new Exception('Replay missing saver_player_id');
     }
+}
+
+/**
+ * One-time re-sim: build board frames[0..N] from baseline + actions.
+ * Soft-skips during apply are OK — prefer a seekable frame over aborting.
+ */
+function convertReplayPayloadToV2(array $replay): array {
+    validateReplayFile($replay);
+    $actions = is_array($replay['actions'] ?? null) ? $replay['actions'] : [];
+    if (intval($replay['schema_version'] ?? 0) >= 2
+        && is_array($replay['frames'] ?? null)
+        && count($replay['frames']) === count($actions) + 1) {
+        $replay['schema_version'] = REPLAY_SCHEMA_VERSION;
+        $replay['meta'] = is_array($replay['meta'] ?? null) ? $replay['meta'] : [];
+        $replay['meta']['frame_count'] = count($replay['frames']);
+        if (empty($replay['baseline']) && !empty($replay['frames'][0])) {
+            $replay['baseline'] = $replay['frames'][0];
+        }
+        return $replay;
+    }
+    $baseline = $replay['baseline'] ?? null;
+    if (!is_array($baseline)) {
+        throw new Exception('Replay missing baseline state');
+    }
+    $p1Token = 'replay_cvt_p1';
+    $p2Token = 'replay_cvt_p2';
+    $state = replayRestoreFromBaseline($baseline, 'REPLAYCV', $p1Token, $p2Token);
+    $frames = [sanitizeReplayFrame($state)];
+    for ($i = 0; $i < count($actions); $i++) {
+        $a = $actions[$i];
+        $pid = $a['player'] ?? '';
+        $type = $a['type'] ?? '';
+        if ($pid !== 'p1' && $pid !== 'p2') {
+            throw new Exception('Replay action #' . ($i + 1) . ' has invalid player');
+        }
+        if ($type === '') {
+            throw new Exception('Replay action #' . ($i + 1) . ' missing type');
+        }
+        try {
+            $state = replayApplyRecordedAction(
+                $state,
+                $pid,
+                $type,
+                is_array($a['data'] ?? null) ? $a['data'] : [],
+                $i + 1
+            );
+        } catch (Throwable $e) {
+            // Conversion must finish — soft-skip like seek used to.
+            $state = replaySoftSkipPendingPrompt(
+                $state,
+                'convert #' . ($i + 1) . ' ' . $type . ': ' . $e->getMessage(),
+                $type
+            );
+        }
+        if (empty($state['pending_prompt']) && function_exists('flushAutoOnWaitAbilities')) {
+            $state = flushAutoOnWaitAbilities($state);
+        }
+        $frames[] = sanitizeReplayFrame($state);
+    }
+    $meta = is_array($replay['meta'] ?? null) ? $replay['meta'] : [];
+    $meta['frame_count'] = count($frames);
+    return [
+        'schema_version' => REPLAY_SCHEMA_VERSION,
+        'meta' => $meta,
+        'baseline' => sanitizeReplayFrame($baseline),
+        'actions' => $actions,
+        'frames' => $frames,
+    ];
+}
+
+function ensureReplayPayloadV2(array $replay): array {
+    validateReplayFile($replay);
+    $actions = $replay['actions'] ?? [];
+    $frames = $replay['frames'] ?? null;
+    if (intval($replay['schema_version'] ?? 0) >= 2
+        && is_array($frames)
+        && count($frames) === count($actions) + 1) {
+        return convertReplayPayloadToV2($replay);
+    }
+    return convertReplayPayloadToV2($replay);
 }
 
 function buildReplayExportPayload(array $state, string $saverPid): array {
@@ -104,8 +218,8 @@ function buildReplayExportPayload(array $state, string $saverPid): array {
         throw new Exception('Invalid saver player');
     }
     $saverName = $state['players'][$saverPid]['name'] ?? $saverPid;
-    return [
-        'schema_version' => REPLAY_SCHEMA_VERSION,
+    $v1 = [
+        'schema_version' => 1,
         'meta' => [
             'saved_at'         => gmdate('c'),
             'saver_player_id'  => $saverPid,
@@ -123,6 +237,45 @@ function buildReplayExportPayload(array $state, string $saverPid): array {
         'baseline' => $baseline,
         'actions'  => $actions,
     ];
+    return convertReplayPayloadToV2($v1);
+}
+
+/** Encode payload for SQLite / disk; gzip when large. */
+function replayPayloadEncodeForStorage(array $payload): string {
+    $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        throw new Exception('Could not encode replay payload');
+    }
+    if (strlen($json) > REPLAY_STORAGE_GZIP_BYTES && function_exists('gzcompress')) {
+        $gz = gzcompress($json, 6);
+        if ($gz !== false) {
+            return 'LLTCG_GZ1:' . base64_encode($gz);
+        }
+    }
+    return $json;
+}
+
+/** Decode payload from SQLite / disk (plain JSON or LLTCG_GZ1 gzip). */
+function replayPayloadDecodeFromStorage(string $raw): array {
+    $raw = trim($raw);
+    if (str_starts_with($raw, 'LLTCG_GZ1:')) {
+        $b64 = substr($raw, strlen('LLTCG_GZ1:'));
+        $gz = base64_decode($b64, true);
+        if ($gz === false || !function_exists('gzuncompress')) {
+            throw new Exception('Saved replay payload is invalid');
+        }
+        $json = gzuncompress($gz);
+        if ($json === false) {
+            throw new Exception('Saved replay payload is invalid');
+        }
+        $payload = json_decode($json, true);
+    } else {
+        $payload = json_decode($raw, true);
+    }
+    if (!is_array($payload)) {
+        throw new Exception('Saved replay payload is invalid');
+    }
+    return $payload;
 }
 
 function replayDurationSeconds(array $actions): int {
@@ -1108,6 +1261,30 @@ function replayRestoreFromBaseline(
     return $state;
 }
 
+/**
+ * Install a schema-v2 frame as the live room board for viewing (no re-sim).
+ *
+ * @param array $replayBag Slim replay blob kept on the room (frames, actions, …)
+ */
+function replayInstallFrame(
+    array $frame,
+    string $roomId,
+    string $p1Token,
+    string $p2Token,
+    array $replayBag,
+    string $cpuDiff = 'normal'
+): array {
+    $state = replayRestoreFromBaseline($frame, $roomId, $p1Token, $p2Token);
+    $state['cpu_difficulty'] = $cpuDiff;
+    $state['mode'] = 'replay_view';
+    $state['cpu_solo'] = true;
+    $state['replay'] = $replayBag;
+    $actions = is_array($replayBag['actions'] ?? null) ? $replayBag['actions'] : [];
+    $step = intval($replayBag['step'] ?? 0);
+    $state = replaySanitizeViewingState($state, $actions, $step);
+    return $state;
+}
+
 function replayApplyActionsThrough(array $state, array $actions, int $step): array {
     $step = max(0, min($step, count($actions)));
     for ($i = 0; $i < $step; $i++) {
@@ -1169,10 +1346,14 @@ function apiReplayStart(array $body): array {
     if (!is_array($replay)) {
         throw new Exception('replay object required');
     }
-    validateReplayFile($replay);
+    $replay = ensureReplayPayloadV2($replay);
 
-    $baseline = $replay['baseline'];
     $actions = $replay['actions'] ?? [];
+    $frames = $replay['frames'] ?? [];
+    $baseline = $replay['baseline'] ?? ($frames[0] ?? null);
+    if (!is_array($baseline) || !is_array($frames) || count($frames) !== count($actions) + 1) {
+        throw new Exception('Replay frames missing after convert');
+    }
     $saverPid = $replay['meta']['saver_player_id'] ?? 'p1';
     $cpuDiff = in_array($replay['meta']['cpu_difficulty'] ?? '', ['easy', 'normal', 'hard', 'expert'], true)
         ? $replay['meta']['cpu_difficulty'] : 'normal';
@@ -1181,20 +1362,18 @@ function apiReplayStart(array $body): array {
     $p1Token = generateToken();
     $p2Token = generateToken();
 
-    $state = replayRestoreFromBaseline($baseline, $roomId, $p1Token, $p2Token);
-    $state['cpu_difficulty'] = $cpuDiff;
-    $state['mode'] = 'replay_view';
-    $state['cpu_solo'] = true;
-    $state['replay'] = [
+    $replayBag = [
         'saver_pid' => $saverPid,
         'actions'   => $actions,
         'baseline'  => $baseline,
+        'frames'    => $frames,
         'step'      => 0,
         'handoff'   => false,
+        'schema_version' => REPLAY_SCHEMA_VERSION,
     ];
+    $state = replayInstallFrame($frames[0], $roomId, $p1Token, $p2Token, $replayBag, $cpuDiff);
     $state = addLog($state, 'Replay loaded — ' . count($actions) . ' action(s). Use replay controls to play or seek.');
-    $state['seq']++;
-    $state = replaySanitizeViewingState($state, $actions, 0);
+    $state['seq'] = intval($state['seq'] ?? 0) + 1;
 
     saveGame($roomId, $state);
 
@@ -1244,42 +1423,63 @@ function apiReplayGoto(array $body): array {
         $actions = is_array($replay['actions'] ?? null) ? $replay['actions'] : [];
         $maxStep = count($actions);
         $step = max(0, min($step, $maxStep));
+        $frames = $replay['frames'] ?? null;
         $baseline = $replay['baseline'] ?? null;
-        if (!$baseline) {
-            throw new Exception('Replay baseline missing from room');
-        }
-
         $p1Token = $state['players']['p1']['token'] ?? generateToken();
         $p2Token = $state['players']['p2']['token'] ?? generateToken();
         $cpuDiff = $state['cpu_difficulty'] ?? 'normal';
 
-        $newState = replayRestoreFromBaseline($baseline, $roomId, $p1Token, $p2Token);
-        $newState['cpu_difficulty'] = $cpuDiff;
-        $newState = replayApplyActionsThrough($newState, $actions, $step);
-        $newState = replaySanitizeViewingState($newState, $actions, $step);
+        // Legacy room without frames: materialize once from baseline+actions.
+        if (!is_array($frames) || count($frames) !== $maxStep + 1) {
+            if (!$baseline) {
+                throw new Exception('Replay baseline missing from room');
+            }
+            $converted = convertReplayPayloadToV2([
+                'schema_version' => 1,
+                'meta' => [
+                    'saver_player_id' => $replay['saver_pid'] ?? 'p1',
+                    'cpu_difficulty' => $cpuDiff,
+                ],
+                'baseline' => $baseline,
+                'actions' => $actions,
+            ]);
+            $frames = $converted['frames'];
+            $baseline = $converted['baseline'];
+        }
 
         $handoff = $wantsHandoff && $step >= $maxStep;
         if ($handoff) {
+            $newState = replayRestoreFromBaseline($frames[$step], $roomId, $p1Token, $p2Token);
+            $newState['cpu_difficulty'] = $cpuDiff;
             unset($newState['replay']);
             $newState['mode'] = null;
             $newState['replay_handoff'] = true;
             $newState['cpu_solo'] = true;
+            $newState = replaySanitizeViewingState($newState, $actions, $step);
             $newState = addLog(
                 $newState,
                 'Replay complete — you control ' . ($newState['players'][$playerId]['name'] ?? $playerId)
                 . '. CPU plays the opponent.'
             );
-            $newState['seq']++;
+            $newState['seq'] = intval($newState['seq'] ?? 0) + 1;
         } else {
-            $newState['mode'] = 'replay_view';
-            $newState['cpu_solo'] = true;
-            $newState['replay'] = [
+            $replayBag = [
                 'saver_pid' => $replay['saver_pid'],
                 'actions'   => $actions,
                 'baseline'  => $baseline,
+                'frames'    => $frames,
                 'step'      => $step,
                 'handoff'   => false,
+                'schema_version' => REPLAY_SCHEMA_VERSION,
             ];
+            $newState = replayInstallFrame(
+                $frames[$step],
+                $roomId,
+                $p1Token,
+                $p2Token,
+                $replayBag,
+                $cpuDiff
+            );
         }
 
         saveGame($roomId, $newState);
@@ -1296,9 +1496,15 @@ function apiReplayGoto(array $body): array {
 
 function enrichReplayFieldsForClient(array $filtered, array $state): array {
     if (!empty($state['replay']) && is_array($state['replay'])) {
+        $actions = $state['replay']['actions'] ?? [];
+        $frames = $state['replay']['frames'] ?? null;
+        $total = is_array($actions) ? count($actions) : 0;
+        if (is_array($frames) && count($frames) > 0) {
+            $total = max($total, count($frames) - 1);
+        }
         $filtered['replay'] = [
             'step'    => intval($state['replay']['step'] ?? 0),
-            'total'   => count($state['replay']['actions'] ?? []),
+            'total'   => $total,
             'handoff' => !empty($state['replay']['handoff']),
             'saver_pid' => $state['replay']['saver_pid'] ?? null,
         ];

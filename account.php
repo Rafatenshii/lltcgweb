@@ -1569,12 +1569,27 @@ function tcgReplayLoadOwnedRow(string $uid, int $id): array {
 }
 
 function tcgReplayPayloadFromRow(array $row): array {
-    $payload = json_decode((string)($row['payload_json'] ?? ''), true);
-    if (!is_array($payload)) {
-        throw new Exception('Saved replay payload is invalid', 500);
-    }
+    $payload = replayPayloadDecodeFromStorage((string)($row['payload_json'] ?? ''));
     validateReplayFile($payload);
-    return $payload;
+    $upgraded = ensureReplayPayloadV2($payload);
+    // Lazy rewrite v1 → v2 (and gzip large payloads) back into SQLite.
+    if (intval($payload['schema_version'] ?? 0) < REPLAY_SCHEMA_VERSION
+        || !isset($payload['frames'])
+        || (is_array($upgraded['frames'] ?? null)
+            && count($upgraded['frames']) !== count($payload['frames'] ?? []))) {
+        $id = intval($row['id'] ?? 0);
+        $uid = (string)($row['discord_id'] ?? '');
+        if ($id > 0 && $uid !== '') {
+            try {
+                $encoded = replayPayloadEncodeForStorage($upgraded);
+                tcgDb()->prepare('UPDATE tcg_replays SET payload_json = ? WHERE id = ? AND discord_id = ?')
+                    ->execute([$encoded, $id, $uid]);
+            } catch (Throwable $e) {
+                // Still return upgraded payload even if rewrite fails.
+            }
+        }
+    }
+    return $upgraded;
 }
 
 /** Keep at most $keep non-preserved (autosave) rows per user; oldest deleted. */
@@ -1664,9 +1679,9 @@ function tcgApiReplaySave(array $body): array {
             throw new Exception('Replay room mismatch', 400);
         }
         tcgAssertReplaySaveAllowedFromPayload($uid, $clientReplay);
-        $payload = $clientReplay;
+        $payload = ensureReplayPayloadV2($clientReplay);
         $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
-        $winner = $payload['baseline']['winner'] ?? null;
+        $winner = $payload['baseline']['winner'] ?? ($payload['frames'][count($payload['frames'] ?? []) - 1]['winner'] ?? null);
         $endReason = $payload['baseline']['end_reason'] ?? null;
     } else {
         $state = loadGame($roomId);
@@ -1690,6 +1705,7 @@ function tcgApiReplaySave(array $body): array {
             }
             validateReplayFile($payload);
             tcgAssertReplaySaveAllowedFromPayload($uid, $payload);
+            $payload = ensureReplayPayloadV2($payload);
             $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
             $winner = $payload['baseline']['winner'] ?? null;
             $endReason = $payload['baseline']['end_reason'] ?? null;
@@ -1711,10 +1727,7 @@ function tcgApiReplaySave(array $body): array {
     if ($playerId !== 'p1' && $playerId !== 'p2') {
         throw new Exception('Invalid saver player', 400);
     }
-    $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES);
-    if ($payloadJson === false) {
-        throw new Exception('Could not encode replay payload', 500);
-    }
+    $payloadJson = replayPayloadEncodeForStorage($payload);
 
     $meta = $payload['meta'] ?? [];
     $db = tcgDb();

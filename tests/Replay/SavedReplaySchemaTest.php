@@ -26,6 +26,7 @@ final class SavedReplaySchemaTest extends TestCase
             ],
             'baseline' => ['players' => ['p1' => [], 'p2' => []]],
             'actions' => [],
+            'frames' => [['players' => ['p1' => [], 'p2' => []]]],
         ]);
 
         $db->prepare('INSERT INTO tcg_replays (
