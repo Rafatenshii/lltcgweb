@@ -5565,6 +5565,22 @@ function activatedAbilityWrBlockReason(array $p, array $ab): ?string {
             }
             return 'no matching Member in Waiting Room.';
 
+        case 'leave_play_named_from_hand_stack_energy':
+            $names = $ab['names'] ?? [];
+            $maxCost = intval($ab['max_cost'] ?? 13);
+            foreach ($p['hand'] ?? [] as $c) {
+                if (($c['card_type'] ?? '') !== 'メンバー') {
+                    continue;
+                }
+                if (intval($c['cost'] ?? 0) > $maxCost) {
+                    continue;
+                }
+                if (cardMatchesNames($c, $names)) {
+                    return null;
+                }
+            }
+            return 'no matching Member in hand.';
+
         default:
             return null;
     }

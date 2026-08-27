@@ -2085,6 +2085,15 @@ function cpuBuildActivatePayload(pick, cpu, tier, winPressure, read) {
     const live = (cpu.hand || []).find(c => c.card_type === 'ライブ' || c.card_type_en === 'Live');
     if (live?.instance_id) payload.reveal_card_id = live.instance_id;
   }
+  if (t === 'leave_play_named_from_hand_stack_energy') {
+    const maxCost = Number(ab.max_cost ?? 13);
+    const pick = (cpu.hand || []).find(c =>
+      c && (c.card_type === 'メンバー' || c.card_type_en === 'Member')
+      && Number(c.cost ?? 0) <= maxCost
+      && typeof cardMatchesNamedHand === 'function'
+      && cardMatchesNamedHand(c, ab.names || [], false, ''));
+    if (pick?.instance_id) payload.hand_card_id = pick.instance_id;
+  }
   return payload;
 }
 

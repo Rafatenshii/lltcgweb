@@ -16301,6 +16301,14 @@ function abilityWrBlockReason(cpu, ab) {
     case 'shuffle_named_from_waiting':
       return wr.some(c => c.card_type === 'メンバー' && cardMatchesNamedHand(c, ab.names || [], false, ''))
         ? null : 'No matching Members in Waiting Room.';
+    case 'leave_play_named_from_hand_stack_energy': {
+      const maxCost = Number(ab.max_cost ?? 13);
+      const ok = (cpu.hand || []).some(c =>
+        c && (c.card_type === 'メンバー' || c.card_type_en === 'Member')
+        && Number(c.cost ?? 0) <= maxCost
+        && cardMatchesNamedHand(c, ab.names || [], false, ''));
+      return ok ? null : `No matching Member with cost ${maxCost} or less in hand.`;
+    }
     case 'discard_hand_add_live_from_wr':
       if (ab.group) {
         return wrPickMatchCountClient(cpu, { group: ab.group, filter: ab.filter || 'live' }, ab.count || 1) >= 1
@@ -28873,6 +28881,7 @@ function abilityLabel(ab){
     pay_energy_add_live_zone_from_wr:'Pay Energy · WR Live to storage',
     discard_play_self_from_wr:'Pay Energy · discard · enter from WR',
     discard_activate_energy_if_group_entered:'Discard · activate Energy',
+    leave_play_named_from_hand_stack_energy:'Leave · play named Member from hand',
   };
   return labels[ab.type]||'Activate ability';
 }
@@ -28901,13 +28910,23 @@ function getAbilityActivationNeeds(ability, s, myId){
     discard_play_self_from_wr:ability.discard??1,
     discard_activate_energy_if_group_entered:ability.discard??1,
     wait_self_discard_add_wr_live:ability.discard??1,
-    wait_self_only:'Wait self',
-    wait_self_activate_energy:'Wait · activate Energy',
-    leave_play_named_from_hand_stack_energy:'Leave · play Setsuna from hand',
-    hand_discard_for_stage_blade:'Discard self · blade ally',
   };
   if(t in map) return {discard:map[t], hearts:null};
   return null;
+}
+
+function handEligibleForLeavePlayNamed(hand, ability) {
+  const names = ability?.names || [];
+  const maxCost = Number(ability?.max_cost ?? 99);
+  return (hand || []).filter(c => {
+    if (!c || (c.card_type !== 'メンバー' && c.card_type_en !== 'Member')) return false;
+    if (Number(c.cost ?? 0) > maxCost) return false;
+    if (typeof cardMatchesNamedHand === 'function') {
+      return cardMatchesNamedHand(c, names, false, '');
+    }
+    const label = c.name_en || c.name || '';
+    return names.some(n => label === n || label.includes(n));
+  });
 }
 
 function activateAbilityFromCard(card, idx, ability, s, myId){
@@ -28949,6 +28968,22 @@ function activateAbilityFromCard(card, idx, ability, s, myId){
       msg:'Reveal 1 Live card from your hand.',
       // Keep stage member in card_id; send the revealed Live separately.
       onConfirm:(ids)=>go({reveal_card_id:ids[0]})});
+    return;
+  }
+  if(ability.type==='leave_play_named_from_hand_stack_energy'){
+    const eligible = handEligibleForLeavePlayNamed(hand, ability);
+    if(!eligible.length){
+      const max = Number(ability.max_cost ?? 13);
+      toast(`No matching Member with cost ${max} or less in hand.`, 3200);
+      return;
+    }
+    openHandPick({
+      hand: eligible,
+      count: 1,
+      title: card.name_en || card.name || 'Ability',
+      msg: `Choose 1 Member (cost ${Number(ability.max_cost ?? 13)} or less) from your hand to put onto this Stage slot.`,
+      onConfirm: (ids) => go({ hand_card_id: ids[0] }),
+    });
     return;
   }
   go({});
@@ -33848,7 +33883,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=33"></script>
+<script src="client/js/cpu-loop.js?v=34"></script>
 <script src="client/js/cpu-ai.js?v=11"></script>
 <script src="client/js/portrait-bridge.js?v=26"></script>
 <script src="client/js/portrait-deck.js?v=5"></script>
