@@ -11126,6 +11126,11 @@ function openDebugReplayScreen() {
   void refreshReplayLibrary();
 }
 
+function replaySchemaVersionSupported(ver) {
+  const v = Number(ver);
+  return v === 1 || v === 2;
+}
+
 async function onReplayFileSelected(file) {
   el('debug-replay-err').textContent = '';
   G._pendingReplayFile = null;
@@ -11134,7 +11139,9 @@ async function onReplayFileSelected(file) {
   try {
     const text = await file.text();
     const replay = JSON.parse(text);
-    if (Number(replay.schema_version) !== 1) throw new Error(t('replay.unsupportedSchema'));
+    if (!replaySchemaVersionSupported(replay.schema_version)) {
+      throw new Error(t('replay.unsupportedSchema'));
+    }
     G._pendingReplayFile = replay;
     renderReplayFileMeta(replay);
   } catch (e) {

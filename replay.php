@@ -89,7 +89,7 @@ const REPLAY_FRAME_CARD_KEEP = [
     'abilities', 'score', 'required_hearts', 'active', 'waiting',
     'subunit', 'group', 'special_heart', 'yell_draw_icon',
     'stacked_members', 'stacked_energy', 'rested', 'text',
-    'entered_turn', 'abilities_used', 'markers', 'display_order',
+    'entered_turn', 'abilities_used', 'markers', 'display_order', 'revealed',
 ];
 
 /** Top-level keys dropped from every board frame (not needed for seek UI). */
@@ -205,6 +205,88 @@ function validateReplayFile(array $replay): void {
 }
 
 /**
+ * Re-sim baseline+actions once to build cumulative log index for schema-v2 seek.
+ * Frames stay slim (no log); each installed step slices full_log[0..log_ends[step]].
+ *
+ * @return array{full_log: array, log_ends: array<int,int>}
+ */
+function buildReplayLogIndex(array $baseline, array $actions): array {
+    $p1Token = 'replay_log_p1';
+    $p2Token = 'replay_log_p2';
+    $state = replayRestoreFromBaseline($baseline, 'REPLAYLOG', $p1Token, $p2Token);
+    $logEnds = [count($state['log'] ?? [])];
+    for ($i = 0; $i < count($actions); $i++) {
+        $a = $actions[$i];
+        $pid = $a['player'] ?? '';
+        $type = $a['type'] ?? '';
+        if ($pid !== 'p1' && $pid !== 'p2') {
+            throw new Exception('Replay action #' . ($i + 1) . ' has invalid player');
+        }
+        if ($type === '') {
+            throw new Exception('Replay action #' . ($i + 1) . ' missing type');
+        }
+        try {
+            $state = replayApplyRecordedAction(
+                $state,
+                $pid,
+                $type,
+                is_array($a['data'] ?? null) ? $a['data'] : [],
+                $i + 1
+            );
+        } catch (Throwable $e) {
+            $state = replaySoftSkipPendingPrompt(
+                $state,
+                'log index #' . ($i + 1) . ' ' . $type . ': ' . $e->getMessage(),
+                $type
+            );
+        }
+        if (empty($state['pending_prompt']) && function_exists('flushAutoOnWaitAbilities')) {
+            $state = flushAutoOnWaitAbilities($state);
+        }
+        $logEnds[] = count($state['log'] ?? []);
+    }
+    return [
+        'full_log' => is_array($state['log'] ?? null) ? $state['log'] : [],
+        'log_ends' => $logEnds,
+    ];
+}
+
+/** Ensure v2 payloads carry full_log + log_ends (lazy upgrade for older exports). */
+function ensureReplayLogIndex(array $replay): array {
+    $actions = is_array($replay['actions'] ?? null) ? $replay['actions'] : [];
+    $frames = is_array($replay['frames'] ?? null) ? $replay['frames'] : [];
+    $ends = $replay['log_ends'] ?? null;
+    $full = $replay['full_log'] ?? null;
+    if (is_array($full) && is_array($ends) && count($ends) === count($frames)) {
+        return $replay;
+    }
+    if ($frames === []) {
+        return $replay;
+    }
+    $baseline = $replay['baseline'] ?? $frames[0];
+    if (!is_array($baseline)) {
+        return $replay;
+    }
+    $built = buildReplayLogIndex($baseline, $actions);
+    $replay['full_log'] = $built['full_log'];
+    $replay['log_ends'] = $built['log_ends'];
+    return $replay;
+}
+
+/** Attach cumulative game log through seek step (frames omit log to save space). */
+function replayAttachLogForStep(array $state, array $replayBag, int $step): array {
+    $full = $replayBag['full_log'] ?? null;
+    $ends = $replayBag['log_ends'] ?? null;
+    if (!is_array($full) || !is_array($ends)) {
+        return $state;
+    }
+    $step = max(0, min($step, count($ends) - 1));
+    $end = intval($ends[$step] ?? count($full));
+    $state['log'] = array_slice($full, 0, max(0, $end));
+    return $state;
+}
+
+/**
  * One-time re-sim: build board frames[0..N] from baseline + actions.
  * Soft-skips during apply are OK — prefer a seekable frame over aborting.
  */
@@ -220,7 +302,7 @@ function convertReplayPayloadToV2(array $replay): array {
         if (empty($replay['baseline']) && !empty($replay['frames'][0])) {
             $replay['baseline'] = $replay['frames'][0];
         }
-        return $replay;
+        return ensureReplayLogIndex($replay);
     }
     $baseline = $replay['baseline'] ?? null;
     if (!is_array($baseline)) {
@@ -229,6 +311,7 @@ function convertReplayPayloadToV2(array $replay): array {
     $p1Token = 'replay_cvt_p1';
     $p2Token = 'replay_cvt_p2';
     $state = replayRestoreFromBaseline($baseline, 'REPLAYCV', $p1Token, $p2Token);
+    $logEnds = [count($state['log'] ?? [])];
     $frames = [sanitizeReplayFrame($state)];
     for ($i = 0; $i < count($actions); $i++) {
         $a = $actions[$i];
@@ -260,16 +343,19 @@ function convertReplayPayloadToV2(array $replay): array {
             $state = flushAutoOnWaitAbilities($state);
         }
         $frames[] = sanitizeReplayFrame($state);
+        $logEnds[] = count($state['log'] ?? []);
     }
     $meta = is_array($replay['meta'] ?? null) ? $replay['meta'] : [];
     $meta['frame_count'] = count($frames);
-    return [
+    return ensureReplayLogIndex([
         'schema_version' => REPLAY_SCHEMA_VERSION,
         'meta' => $meta,
         'baseline' => sanitizeReplayFrame($baseline),
         'actions' => $actions,
         'frames' => $frames,
-    ];
+        'full_log' => is_array($state['log'] ?? null) ? $state['log'] : [],
+        'log_ends' => $logEnds,
+    ]);
 }
 
 function ensureReplayPayloadV2(array $replay): array {
@@ -1357,6 +1443,7 @@ function replayInstallFrame(
     $state['replay'] = $replayBag;
     $actions = is_array($replayBag['actions'] ?? null) ? $replayBag['actions'] : [];
     $step = intval($replayBag['step'] ?? 0);
+    $state = replayAttachLogForStep($state, $replayBag, $step);
     $state = replaySanitizeViewingState($state, $actions, $step);
     return $state;
 }
@@ -1443,6 +1530,8 @@ function apiReplayStart(array $body): array {
         'actions'   => $actions,
         'baseline'  => $baseline,
         'frames'    => $frames,
+        'full_log'  => $replay['full_log'] ?? [],
+        'log_ends'  => $replay['log_ends'] ?? [],
         'step'      => 0,
         'handoff'   => false,
         'schema_version' => REPLAY_SCHEMA_VERSION,
@@ -1521,6 +1610,20 @@ function apiReplayGoto(array $body): array {
             ]);
             $frames = $converted['frames'];
             $baseline = $converted['baseline'];
+            $replay['full_log'] = $converted['full_log'] ?? [];
+            $replay['log_ends'] = $converted['log_ends'] ?? [];
+        }
+
+        if (empty($replay['full_log']) || empty($replay['log_ends'])) {
+            $indexed = ensureReplayLogIndex([
+                'schema_version' => REPLAY_SCHEMA_VERSION,
+                'meta' => ['saver_player_id' => $replay['saver_pid'] ?? 'p1'],
+                'baseline' => $baseline,
+                'actions' => $actions,
+                'frames' => $frames,
+            ]);
+            $replay['full_log'] = $indexed['full_log'] ?? [];
+            $replay['log_ends'] = $indexed['log_ends'] ?? [];
         }
 
         $handoff = $wantsHandoff && $step >= $maxStep;
@@ -1531,6 +1634,7 @@ function apiReplayGoto(array $body): array {
             $newState['mode'] = null;
             $newState['replay_handoff'] = true;
             $newState['cpu_solo'] = true;
+            $newState = replayAttachLogForStep($newState, $replay, $step);
             $newState = replaySanitizeViewingState($newState, $actions, $step);
             $newState = addLog(
                 $newState,
@@ -1544,6 +1648,8 @@ function apiReplayGoto(array $body): array {
                 'actions'   => $actions,
                 'baseline'  => $baseline,
                 'frames'    => $frames,
+                'full_log'  => $replay['full_log'] ?? [],
+                'log_ends'  => $replay['log_ends'] ?? [],
                 'step'      => $step,
                 'handoff'   => false,
                 'schema_version' => REPLAY_SCHEMA_VERSION,

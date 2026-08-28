@@ -1575,6 +1575,8 @@ function tcgReplayPayloadFromRow(array $row): array {
     // Lazy rewrite v1 → v2 (and gzip large payloads) back into SQLite.
     if (intval($payload['schema_version'] ?? 0) < REPLAY_SCHEMA_VERSION
         || !isset($payload['frames'])
+        || empty($payload['full_log'])
+        || empty($payload['log_ends'])
         || (is_array($upgraded['frames'] ?? null)
             && count($upgraded['frames']) !== count($payload['frames'] ?? []))) {
         $id = intval($row['id'] ?? 0);

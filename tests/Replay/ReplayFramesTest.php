@@ -28,6 +28,9 @@ final class ReplayFramesTest extends TestCase
         $this->assertArrayNotHasKey('token', $v2['frames'][0]['players']['p1'] ?? []);
         // Slim frames: no per-frame log, no image URLs on cards.
         $this->assertArrayNotHasKey('log', $v2['frames'][0]);
+        $this->assertIsArray($v2['full_log'] ?? null);
+        $this->assertIsArray($v2['log_ends'] ?? null);
+        $this->assertSame(count($v2['frames']), count($v2['log_ends']));
         $hand0 = $v2['frames'][0]['players']['p1']['hand'][0] ?? null;
         if (is_array($hand0)) {
             $this->assertArrayNotHasKey('image', $hand0);
@@ -95,6 +98,8 @@ final class ReplayFramesTest extends TestCase
         $this->assertArrayHasKey('frames', $room['replay'] ?? []);
         $this->assertSame($mid, intval($room['replay']['step'] ?? -1));
         $this->assertCount($total + 1, $room['replay']['frames']);
+        $this->assertNotEmpty($room['log'] ?? []);
+        $this->assertGreaterThan(0, count($room['log']));
     }
 
     public function testGzipStorageRoundTrip(): void
