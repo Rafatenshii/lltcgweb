@@ -1103,15 +1103,25 @@
     }
     clearStaleCpuPromptBusyIfResolved(G.gameState || s);
     if (G.playerId) updateOpponentSkillWaitBanner(G.gameState || s, G.playerId);
-    if (!replayForward && G.isCPU && !G.animating && !(G.tutorialLive && G.tutorialHoldCpu)) {
-      doCPU(G.gameState || s);
-      armWatchdog(G.gameState || s);
-    } else if (!replayForward && G.isCPU
-        && (G.gameState || s)?.pending_prompt?.responder === (typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2')
-        && !(G.tutorialLive && G.tutorialHoldCpu)) {
+    if (!replayForward && G.isCPU && !(G.tutorialLive && G.tutorialHoldCpu)) {
+      const live = G.gameState || s;
       const cpuId = typeof cpuOpponentId === 'function' ? cpuOpponentId() : 'p2';
-      scheduleCpuResolvePrompt(G.gameState || s, (G.gameState || s).players?.[cpuId]);
-      armCpuPromptHangWatch(G.gameState || s);
+      const cpuOwnsPrompt = live?.pending_prompt?.responder === cpuId;
+      const cpuTurnLiveSet = live?.phase === 'live_set'
+        && live?.active_player === cpuId
+        && !live?.live_ready?.[cpuId]
+        && !cpuOwnsPrompt;
+      // Presentation can stay latched after the human locks in — still nudge CPU live_set.
+      const shouldRunCpu = !G.animating || cpuOwnsPrompt || cpuTurnLiveSet;
+      if (shouldRunCpu) {
+        if (cpuOwnsPrompt && typeof scheduleCpuResolvePrompt === 'function') {
+          scheduleCpuResolvePrompt(live, live.players?.[cpuId]);
+          if (typeof armCpuPromptHangWatch === 'function') armCpuPromptHangWatch(live);
+        } else if (typeof doCPU === 'function') {
+          doCPU(live);
+        }
+      }
+      if (typeof armWatchdog === 'function') armWatchdog(live);
     } else if (!replayForward && !G.isCPU && !G.isSpectator) {
       armPvPWatchdog(G.gameState || s);
     }

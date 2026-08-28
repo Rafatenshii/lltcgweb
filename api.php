@@ -1934,6 +1934,7 @@ function actionEndMain(array $state, string $pid): array {
         $state['phase'] = 'live_set';
         $state['live_ready'] = ['p1' => false, 'p2' => false];
         $state['active_player'] = $first;
+        markCpuLiveSetWait($state, $first);
         $state = addLog($state, '=== LIVE Phase ===');
         $state = addLog($state, 'LIVE Phase: place 0–3 cards (Live or Member) face-down in Live storage (draw 1 per card placed), then end LIVE Phase.');
     }
@@ -2194,12 +2195,16 @@ function actionEndLiveSet(array $state, string $pid): array {
     );
 
     if (!empty($state['live_ready']['p1']) && !empty($state['live_ready']['p2'])) {
+        clearCpuLiveSetWait($state);
         unset($state['live_ready']);
         $state = beginPerformancePhase($state);
     } else {
         $nextPid = setNextLiveSetPlayer($state);
         if ($nextPid) {
             $state = addLog($state, liveSetPhaseLog($state, $nextPid), 'info');
+            markCpuLiveSetWait($state, $nextPid);
+        } else {
+            clearCpuLiveSetWait($state);
         }
     }
     refreshPvpPhaseTimers($state);
@@ -5164,6 +5169,55 @@ function healStalledLiveShowPerformance(array $state): array {
     return continuePerformanceYellPhase($state, $pid);
 }
 
+/** Stamp/clear when the CPU seat must lock in during live_set (no phase timer). */
+function markCpuLiveSetWait(array &$state, ?string $pid): void {
+    if ($pid && isCpuPlayer($state['players'][$pid] ?? null)) {
+        $state['live_set_cpu_since'] = time();
+        return;
+    }
+    unset($state['live_set_cpu_since']);
+}
+
+function clearCpuLiveSetWait(array &$state): void {
+    unset($state['live_set_cpu_since']);
+}
+
+/**
+ * CPU live_set placement is client-driven. If presentation flags block doCPU after
+ * the human locks in, the room used to freeze until resign. Auto lock-in on polls.
+ */
+function applyCpuStuckLiveSetTimeout(array &$state): bool {
+    if (!isCpuSoloMatch($state) || ($state['status'] ?? '') !== 'playing') {
+        clearCpuLiveSetWait($state);
+        return false;
+    }
+    if (($state['phase'] ?? '') !== 'live_set' || !empty($state['pending_prompt'])) {
+        return false;
+    }
+    $pid = currentLiveSetPlayer($state);
+    if (!$pid || !isCpuPlayer($state['players'][$pid] ?? null)) {
+        return false;
+    }
+    if (!empty($state['live_ready'][$pid])) {
+        clearCpuLiveSetWait($state);
+        return false;
+    }
+    $since = intval($state['live_set_cpu_since'] ?? 0);
+    if ($since <= 0) {
+        markCpuLiveSetWait($state, $pid);
+        $state['seq'] = intval($state['seq'] ?? 0) + 1;
+        return true;
+    }
+    if (time() - $since < 20) {
+        return false;
+    }
+    $name = $state['players'][$pid]['name'] ?? $pid;
+    clearCpuLiveSetWait($state);
+    $state = addLog($state, "$name — LIVE Phase auto lock-in (CPU client timeout).", 'info');
+    $state = actionEndLiveSet($state, $pid);
+    return true;
+}
+
 /**
  * CPU prompts are resolved by the browser AI. If that client dies (background tab,
  * G.animating stuck after Baton, multi-step prompt seq skip), the room freezes
@@ -5220,6 +5274,7 @@ function applyCpuStuckPromptTimeout(array &$state): bool {
 
 /** Auto end main / live when PvP phase timers expire. Returns true if state changed. */
 function applyPhaseTimeouts(array &$state): bool {
+    $cpuLiveSetChanged = applyCpuStuckLiveSetTimeout($state);
     $cpuPromptChanged = applyCpuStuckPromptTimeout($state);
     if (!empty($state['live_show'])
         && ($state['live_show']['stage'] ?? '') !== 'done'
@@ -5243,7 +5298,7 @@ function applyPhaseTimeouts(array &$state): bool {
         return true;
     }
     if (!phaseTimerEnabled($state)) {
-        return $cpuPromptChanged;
+        return $cpuLiveSetChanged || $cpuPromptChanged;
     }
     initPhaseTimer($state);
     $now = time();

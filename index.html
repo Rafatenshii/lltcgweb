@@ -2883,7 +2883,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/presentation-guards.js?v=7"></script>
 <script src="client/js/resign-escape.js?v=1"></script>
 <script src="client/js/game-sync.js?v=60"></script>
-<script src="client/js/state-apply.js?v=71"></script>
+<script src="client/js/state-apply.js?v=72"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=9"></script>
 <script src="client/js/prompt-renderer.js?v=95"></script>
@@ -16812,6 +16812,7 @@ let G = {
   _cpuPromptTimer:null, _cpuPromptScheduled:null, _cpuResolveBusy:null,
   _cpuPromptRetryTimer:null, _cpuPromptRetryKey:null, _cpuPromptRetryCount:0,
   _cpuPromptHangTimer:null, _cpuPromptHangKey:null, _cpuPromptHangSince:0,
+  _cpuLiveSetHangTimer:null, _cpuLiveSetHangKey:null, _cpuLiveSetHangSince:0,
   animating:false,
   _logFollowTail:true,
   handPointer:null,
@@ -24364,11 +24365,13 @@ function armWatchdog(s) {
     }
     const cpuPromptStuck = live?.pending_prompt?.responder === cpuId
       || G._deferredPromptState?.pending_prompt?.responder === cpuId;
-    if (cpuPromptStuck && cpuPresentationBlocked) {
+    if ((cpuPromptStuck || stuckOnCpuLive) && cpuPresentationBlocked) {
       if (G.watchdogStuckCount >= 2) {
-        TCG_DEBUG.warn('cpu', 'watchdog release presentation for cpu prompt', sig);
+        TCG_DEBUG.warn('cpu', stuckOnCpuLive
+          ? 'watchdog release presentation for cpu live_set'
+          : 'watchdog release presentation for cpu prompt', sig);
         releaseStuckPresentation();
-        clearCpuPromptTracking();
+        if (cpuPromptStuck) clearCpuPromptTracking();
         doCPU(live);
       }
     }
@@ -24510,6 +24513,7 @@ function cpuPromptKey(s) {
 }
 
 const CPU_PROMPT_HANG_MS = 12000;
+const CPU_LIVE_SET_HANG_MS = 12000;
 const CPU_ACT_BUSY_MS = 10000;
 const PVP_OPP_PROMPT_NUDGE_MS = 5000;
 const PVP_STUCK_PRESENTATION_MS = 12000;
@@ -24709,6 +24713,62 @@ function clearCpuPromptHangWatch() {
   G._cpuPromptHangTimer = null;
   G._cpuPromptHangKey = null;
   G._cpuPromptHangSince = 0;
+}
+
+function cpuLiveSetHangKey(s) {
+  const cpuId = cpuOpponentId();
+  if (!s || s.phase !== 'live_set' || s.active_player !== cpuId || s.live_ready?.[cpuId]) return '';
+  return `${s.seq}|live_set|${cpuId}`;
+}
+
+function clearCpuLiveSetHangWatch() {
+  clearTimeout(G._cpuLiveSetHangTimer);
+  G._cpuLiveSetHangTimer = null;
+  G._cpuLiveSetHangKey = null;
+  G._cpuLiveSetHangSince = 0;
+}
+
+function armCpuLiveSetHangWatch(s) {
+  clearTimeout(G._cpuLiveSetHangTimer);
+  const key = cpuLiveSetHangKey(s);
+  if (!key || !G.isCPU || !G.cpuToken || G.isTutorial) {
+    clearCpuLiveSetHangWatch();
+    return;
+  }
+  const now = Date.now();
+  if (key !== G._cpuLiveSetHangKey) {
+    G._cpuLiveSetHangKey = key;
+    G._cpuLiveSetHangSince = now;
+  }
+  const elapsed = now - (G._cpuLiveSetHangSince || now);
+  const remaining = Math.max(0, CPU_LIVE_SET_HANG_MS - elapsed);
+  G._cpuLiveSetHangTimer = setTimeout(() => { void cpuAutoForceLiveSet(); }, remaining);
+}
+
+async function cpuAutoForceLiveSet() {
+  const s = G.gameState;
+  if (!G.isCPU || !G.cpuToken || !s || G.isTutorial) return;
+  const key = cpuLiveSetHangKey(s);
+  if (!key || key !== G._cpuLiveSetHangKey) return;
+  const cpuId = cpuOpponentId();
+  if (s.phase !== 'live_set' || s.active_player !== cpuId || s.live_ready?.[cpuId]) {
+    clearCpuLiveSetHangWatch();
+    return;
+  }
+  const hangMs = Date.now() - (G._cpuLiveSetHangSince || Date.now());
+  TCG_DEBUG.warn('cpu', 'live_set hang auto-force', { key, hangMs });
+  clearCpuLiveSetHangWatch();
+  G._cpuActBusy = false;
+  G._cpuActInflight = null;
+  G._cpuActBusySince = 0;
+  G._cpuActBusyType = null;
+  releaseStuckPresentation();
+  ensurePollHoldReleased(s);
+  if (typeof cpuLiveSet === 'function') {
+    cpuLiveSet();
+  } else {
+    doCPU(s);
+  }
 }
 
 function clearCpuPromptTracking() {
@@ -32657,6 +32717,7 @@ function freshGameGlobals() {
     _cpuPromptTimer:null, _cpuPromptScheduled:null, _cpuResolveBusy:null,
     _cpuPromptRetryTimer:null, _cpuPromptRetryKey:null, _cpuPromptRetryCount:0,
   _cpuPromptHangTimer:null, _cpuPromptHangKey:null, _cpuPromptHangSince:0,
+  _cpuLiveSetHangTimer:null, _cpuLiveSetHangKey:null, _cpuLiveSetHangSince:0,
     _cpuActBusy:false, _cpuActInflight:null, _cpuActBusySince:0, _cpuActBusyType:null,
     _cpuMainBusy:false, _cpuExpertFallbackToast:false,
     animating:false,
@@ -33883,7 +33944,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
 <script src="client/js/cpu-expert.js?v=4"></script>
-<script src="client/js/cpu-loop.js?v=34"></script>
+<script src="client/js/cpu-loop.js?v=35"></script>
 <script src="client/js/cpu-ai.js?v=11"></script>
 <script src="client/js/portrait-bridge.js?v=26"></script>
 <script src="client/js/portrait-deck.js?v=5"></script>

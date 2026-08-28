@@ -2589,9 +2589,11 @@ function doCPU(s) {
   }
   if (ph === 'live_set' && s.active_player === cpuId && !s.live_ready?.[cpuId]) {
     TCG_DEBUG.log('cpu', 'live_set', { hand: cpu.hand?.length, liveZone: cpu.live_zone?.length, diff: cpuDiff() });
+    if (typeof armCpuLiveSetHangWatch === 'function') armCpuLiveSetHangWatch(s);
     cpuSchedule(() => cpuLiveSet(), 750);
     return;
   }
+  if (typeof clearCpuLiveSetHangWatch === 'function') clearCpuLiveSetHangWatch();
   const noActionKey = `${s.turn}|${s.phase}|${s.active_player}|${s.seq}|${s.pending_prompt?.type || ''}|${s.pending_prompt?.responder || ''}`;
   TCG_DEBUG.logOnce('cpu', `no-action:${noActionKey}`, 'no action', TCG_DEBUG.snap(s));
 }
@@ -5649,6 +5651,9 @@ async function cpuAct(type,data) {
     G._cpuActBusyType = null;
     if (inflightKey && G._cpuActInflight === inflightKey) G._cpuActInflight = null;
     if (actOk) scheduleCpuContinueAfterAct(type);
+    if (type === 'end_live_set' || type === 'set_live_cards') {
+      if (typeof clearCpuLiveSetHangWatch === 'function') clearCpuLiveSetHangWatch();
+    }
     if (typeof armCpuPromptHangWatch === 'function'
         && G.gameState?.pending_prompt?.responder === cpuOpponentId()) {
       armCpuPromptHangWatch(G.gameState);
