@@ -920,6 +920,9 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
     if (function_exists('tcgAssertNotBanned')) {
         tcgAssertNotBanned($discordId);
     }
+    if (!function_exists('tcgIsPlaceholderUsername') && is_file(__DIR__ . '/auth_profile.php')) {
+        require_once __DIR__ . '/auth_profile.php';
+    }
     $db = tcgDb();
     $now = time();
     $stmt = $db->prepare('SELECT * FROM tcg_users WHERE discord_id = ?');
@@ -928,12 +931,25 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
     if ($row) {
         // Refresh Discord profile fields on login /me — not only when username changes.
         // Stale avatar CDN hashes 404 after users change/remove their Discord avatar.
-        $wantUser = array_key_exists('username', $profile)
-            && $profile['username'] !== null
-            && trim((string)$profile['username']) !== '';
+        $profileName = array_key_exists('username', $profile) ? trim((string)($profile['username'] ?? '')) : '';
+        $wantUser = $profileName !== ''
+            && !(function_exists('tcgIsPlaceholderUsername') && tcgIsPlaceholderUsername($profileName));
         $wantAvatar = array_key_exists('avatar_url', $profile);
+        $storedName = trim((string)($row['username'] ?? ''));
+        if (!$wantUser
+            && function_exists('tcgIsPlaceholderUsername')
+            && tcgIsPlaceholderUsername($storedName)
+            && function_exists('tcgBuildAuthUserProfile')) {
+            $rebuilt = tcgBuildAuthUserProfile($discordId);
+            $rebuiltName = trim((string)($rebuilt['username'] ?? ''));
+            if (!tcgIsPlaceholderUsername($rebuiltName)) {
+                $profile = array_merge($profile, $rebuilt);
+                $profileName = $rebuiltName;
+                $wantUser = true;
+            }
+        }
         if ($wantUser || $wantAvatar) {
-            $username = $wantUser ? (string)$profile['username'] : (string)($row['username'] ?? 'Player');
+            $username = $wantUser ? $profileName : (string)($row['username'] ?? 'Player');
             $avatar = $wantAvatar ? ($profile['avatar_url'] ?? null) : ($row['avatar_url'] ?? null);
             if ($username !== (string)($row['username'] ?? '')
                 || (string)($avatar ?? '') !== (string)($row['avatar_url'] ?? '')) {
@@ -955,11 +971,29 @@ function tcgEnsureUser(string $discordId, array $profile = []): array {
         }
         return $row;
     }
+    $insertName = trim((string)($profile['username'] ?? ''));
+    if ($insertName === ''
+        || (function_exists('tcgIsPlaceholderUsername') && tcgIsPlaceholderUsername($insertName))) {
+        if (function_exists('tcgBuildAuthUserProfile')) {
+            $rebuilt = tcgBuildAuthUserProfile($discordId);
+            $rebuiltName = trim((string)($rebuilt['username'] ?? ''));
+            if (!function_exists('tcgIsPlaceholderUsername') || !tcgIsPlaceholderUsername($rebuiltName)) {
+                $insertName = $rebuiltName;
+                if (empty($profile['avatar_url']) && !empty($rebuilt['avatar_url'])) {
+                    $profile['avatar_url'] = $rebuilt['avatar_url'];
+                }
+            }
+        }
+    }
+    if ($insertName === ''
+        || (function_exists('tcgIsPlaceholderUsername') && tcgIsPlaceholderUsername($insertName))) {
+        $insertName = 'Player';
+    }
     $db->prepare('INSERT INTO tcg_users (discord_id, username, avatar_url, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?)')
         ->execute([
             $discordId,
-            $profile['username'] ?? 'Player',
+            $insertName,
             $profile['avatar_url'] ?? null,
             $now,
             $now,
