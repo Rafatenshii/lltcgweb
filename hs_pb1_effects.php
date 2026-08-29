@@ -1644,7 +1644,8 @@ function flushDeferredMpExtraHeartsLiveStart(array $state): array {
         $p = &$state['players'][$pid];
         $sub = (string)($ab['subunit'] ?? '');
         $cnt = 0;
-        foreach ($p['stage'] as $mbr) {
+        $qualified = [];
+        foreach ($p['stage'] as $slot => $mbr) {
             if (!$mbr || !cardMatchesSubunit($mbr, $sub)) {
                 continue;
             }
@@ -1652,12 +1653,17 @@ function flushDeferredMpExtraHeartsLiveStart(array $state): array {
             $current = $printed + memberContinuousHeartCount($mbr, $state, $pid);
             if ($current > $printed) {
                 $cnt++;
+                $qualified[] = ($mbr['name_en'] ?? $mbr['name'] ?? $slot) . " ($slot)";
             }
         }
         if ($cnt >= 1) {
             $drawn = drawCardsForPlayer($state, $pid, 1);
             $state = addLog($state, $state['players'][$pid]['name'] .
-                " — [$name] drew $drawn ($sub with extra hearts).");
+                " — [$name] drew $drawn ($cnt $sub member(s) with extra hearts: " .
+                implode(', ', $qualified) . ').');
+        } else {
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                " — [$name] no $sub members with extra hearts (need 1+ to draw, 2+ for −2 any).");
         }
         if ($cnt >= 2) {
             $reduce = intval($ab['reduce'] ?? 2);
