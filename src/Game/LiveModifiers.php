@@ -144,6 +144,27 @@ function applyUntilLiveBladeToSourceMember(array &$state, string $pid, int $amou
     return true;
 }
 
+/** Until-Live hearts on the source Member when she is on Stage (Hime bp5-006, Zenhoui checks). */
+function applyUntilLiveHeartsToSourceMember(array &$state, string $pid, array $heartsSpec, array $source = []): bool {
+    if ($heartsSpec === []) {
+        return false;
+    }
+    $src = liveModifierSourceCard($state, $pid, $source);
+    if (!isMemberCard($src)) {
+        return false;
+    }
+    $iid = (string)($src['instance_id'] ?? '');
+    if ($iid === '' || empty($state['players'][$pid])) {
+        return false;
+    }
+    $slot = findMemberSlot($state['players'][$pid], $iid);
+    if ($slot === '' || empty($state['players'][$pid]['stage'][$slot])) {
+        return false;
+    }
+    addBonusHeartsToMember($state['players'][$pid]['stage'][$slot], $heartsSpec);
+    return true;
+}
+
 function applyModifierEffect(array $state, string $pid, array $effect, array $source = []): array {
     $state = initLiveModifiers($state);
     $type = $effect['type'] ?? '';
@@ -195,7 +216,9 @@ function applyModifierEffect(array $state, string $pid, array $effect, array $so
             break;
         case 'grant_bonus_hearts':
             if (!empty($effect['hearts'])) {
-                addBonusHeartsToModifier($state, $pid, $effect['hearts']);
+                if (!applyUntilLiveHeartsToSourceMember($state, $pid, $effect['hearts'], $source)) {
+                    addBonusHeartsToModifier($state, $pid, $effect['hearts']);
+                }
             }
             break;
         case 'blade_bonus_per_paid':

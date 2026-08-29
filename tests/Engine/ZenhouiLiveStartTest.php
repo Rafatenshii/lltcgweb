@@ -288,8 +288,8 @@ final class ZenhouiLiveStartTest extends TestCase
         $this->assertSame(6, $this->anyRequired($zenLive));
     }
 
-    /** Hime Live Start (+2 pink to player pool) + one Rurino member buff = only 1 qualifies → draw, no −2. */
-    public function testHimeLiveStartPlusOneRurinoBuffDrawsOnly(): void
+    /** Hime Live Start (+2 pink on member) + one Rurino member buff = 2 qualify → −2 any. */
+    public function testHimeLiveStartPlusOneRurinoBuffReducesAnyHearts(): void
     {
         $rLeft = $this->cardByNo('PL!HS-bp5-003-R＋', 'rLeft');
         $hime = $this->cardByNo('PL!HS-bp5-006-P', 'hime');
@@ -345,10 +345,12 @@ final class ZenhouiLiveStartTest extends TestCase
             unset($GLOBALS['TUT_PERF_MANUAL_PHASES']);
         }
 
+        $himeAfter = $state['players']['p1']['stage']['center'];
+        $this->assertCount(2, $himeAfter['bonus_hearts'] ?? [], 'Hime gains +2 pink on member');
         $this->assertNotEmpty($state['players']['p1']['stage']['left']['bonus_hearts'] ?? null);
-        $this->assertEmpty($state['players']['p1']['stage']['center']['bonus_hearts'] ?? null);
+        $this->assertSame([], \getBonusHeartsFlat($state, 'p1'), 'Hearts on Hime, not player pool');
         $zenLive = $this->findLive($state, 'zen');
-        $this->assertSame(0, intval($zenLive['hearts_color_reduction']['any'] ?? 0));
-        $this->assertSame(8, $this->anyRequired($zenLive));
+        $this->assertSame(2, intval($zenLive['hearts_color_reduction']['any'] ?? 0));
+        $this->assertSame(6, $this->anyRequired($zenLive));
     }
 }

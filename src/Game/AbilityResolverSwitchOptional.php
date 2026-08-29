@@ -67,7 +67,7 @@ function tryResolveAbilityEffectSwitchOptional(
             }
             $discarded = discardFromHandByIds($p, $ids, $state, $pid);
             if ($discarded > 0 && !empty($ab['then'])) {
-                $state = applyModifierEffect($state, $pid, $ab['then']);
+                $state = applyModifierEffect($state, $pid, $ab['then'], $source);
                 $state = addLog($state, $state['players'][$pid]['name'] .
                     " — [$name] discarded $discarded same-unit card(s) for Live Start effect.");
             }
