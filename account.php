@@ -2303,8 +2303,47 @@ function tcgApiRepairPlaceholderUsernames(array $body): array {
         throw new Exception('forbidden', 403);
     }
     require_once __DIR__ . '/auth_profile.php';
+
+    $manual = $body['updates'] ?? null;
+    if (is_array($manual) && $manual !== []) {
+        return array_merge(['success' => true], tcgApplyUsernameUpdates($manual));
+    }
+
     $result = tcgRepairPlaceholderUsernames(50);
     return array_merge(['success' => true], $result);
+}
+
+/**
+ * @param list<array{discord_id?:string,user_id?:string,username:string,avatar_url?:?string}> $updates
+ * @return array{applied:int,skipped:int}
+ */
+function tcgApplyUsernameUpdates(array $updates): array
+{
+    $db = tcgDb();
+    $now = time();
+    $applied = 0;
+    $skipped = 0;
+    foreach ($updates as $row) {
+        if (!is_array($row)) {
+            $skipped++;
+            continue;
+        }
+        $uid = trim((string)($row['discord_id'] ?? $row['user_id'] ?? ''));
+        $username = trim((string)($row['username'] ?? ''));
+        if ($uid === '' || !preg_match('/^\d{5,32}$/', $uid) || tcgIsPlaceholderUsername($username)) {
+            $skipped++;
+            continue;
+        }
+        $avatar = array_key_exists('avatar_url', $row) ? ($row['avatar_url'] ?? null) : null;
+        $stmt = $db->prepare('UPDATE tcg_users SET username = ?, avatar_url = COALESCE(?, avatar_url), updated_at = ? WHERE discord_id = ?');
+        $stmt->execute([$username, $avatar, $now, $uid]);
+        if ($stmt->rowCount() > 0) {
+            $applied++;
+        } else {
+            $skipped++;
+        }
+    }
+    return ['applied' => $applied, 'skipped' => $skipped];
 }
 
 /** Public Loveca profile for Discord /loveca profile (no auth). */

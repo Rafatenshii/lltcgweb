@@ -152,6 +152,53 @@ function tcgLookupStoredTcgUserProfile(string $userId): ?array
     }
 }
 
+function tcgLookupDiscordBotProfile(string $userId): ?array
+{
+    $token = '';
+    if (defined('TCG_DISCORD_BOT_TOKEN')) {
+        $token = trim((string)TCG_DISCORD_BOT_TOKEN);
+    }
+    if ($token === '') {
+        $env = getenv('TCG_DISCORD_BOT_TOKEN');
+        if (is_string($env) && trim($env) !== '') {
+            $token = trim($env);
+        }
+    }
+    if ($token === '' || !preg_match('/^\d{5,32}$/', $userId)) {
+        return null;
+    }
+    $url = 'https://discord.com/api/v10/users/' . rawurlencode($userId);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ['Authorization: Bot ' . $token],
+        CURLOPT_TIMEOUT => 8,
+    ]);
+    $response = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if (!is_string($response) || $response === '' || $code < 200 || $code >= 300) {
+        return null;
+    }
+    $data = json_decode($response, true);
+    if (!is_array($data)) {
+        return null;
+    }
+    $global = trim((string)($data['global_name'] ?? ''));
+    $handle = trim((string)($data['username'] ?? ''));
+    $username = !tcgIsPlaceholderUsername($handle)
+        ? $handle
+        : (!tcgIsPlaceholderUsername($global) ? $global : '');
+    if ($username === '') {
+        return null;
+    }
+    $avatarHash = isset($data['avatar']) && is_string($data['avatar']) ? $data['avatar'] : null;
+    return [
+        'username' => $username,
+        'avatar_hash' => $avatarHash,
+    ];
+}
+
 /**
  * Resolve Discord display + handle for a signed-in user id.
  *
@@ -240,6 +287,21 @@ function tcgBuildAuthUserProfile(string $userId): array
             }
             if (!$avatarUrl && !empty($stored['avatar_url'])) {
                 $avatarUrl = (string)$stored['avatar_url'];
+            }
+        }
+    }
+
+    if ((!$displayName || !$uniqueUsername) && function_exists('tcgLookupDiscordBotProfile')) {
+        $bot = tcgLookupDiscordBotProfile($userId);
+        if (is_array($bot)) {
+            if (!$displayName && !empty($bot['username'])) {
+                $displayName = (string)$bot['username'];
+            }
+            if (!$uniqueUsername && !empty($bot['username'])) {
+                $uniqueUsername = (string)$bot['username'];
+            }
+            if (!$avatarHash && !empty($bot['avatar_hash'])) {
+                $avatarHash = (string)$bot['avatar_hash'];
             }
         }
     }
