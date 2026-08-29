@@ -28,16 +28,22 @@ function tcgSiteRootPath(): string
         return $root;
     }
     $here = __DIR__;
-    if (function_exists('tcgPath')) {
-        $tcgDir = rtrim((string)tcgPath('TCG_ROOT', $here), '/\\');
-        $root = dirname($tcgDir);
-        return $root;
+    if (function_exists('tcgRepoRoot')) {
+        $repo = rtrim((string)tcgRepoRoot(), '/\\');
+        if (basename($repo) === 'tcg') {
+            $root = dirname($repo);
+            return $root;
+        }
+        if (is_file($repo . '/account.php')) {
+            $root = $repo;
+            return $root;
+        }
     }
     if (basename($here) === 'tcg') {
         $root = dirname($here);
         return $root;
     }
-    // Local repo checkout: auth_profile.php sits beside db.php under lltcgweb/.
+    // auth_profile.php at repo root beside account.php
     $root = $here;
     return $root;
 }
