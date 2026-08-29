@@ -21,6 +21,10 @@ function assertReplayExportAllowed(array $body, array $state): void {
     if (($state['status'] ?? '') === 'finished') {
         return;
     }
+    // Win overlay can appear before status flips to finished on the match host.
+    if (!empty($state['winner']) && in_array($state['winner'], ['p1', 'p2'], true)) {
+        return;
+    }
     assertReplayDebugAllowed($body);
 }
 

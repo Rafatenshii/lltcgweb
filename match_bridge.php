@@ -654,7 +654,13 @@ function tcgFetchOverflowReplayExport(string $roomId, string $token): ?array {
         'room_id' => $roomId,
         'token' => $token,
     ], 45);
-    if (!is_array($res) || empty($res['replay']) || !is_array($res['replay'])) {
+    if (!is_array($res)) {
+        return null;
+    }
+    if (!empty($res['error'])) {
+        throw new Exception((string)$res['error'], 404);
+    }
+    if (empty($res['replay']) || !is_array($res['replay'])) {
         return null;
     }
     return $res['replay'];

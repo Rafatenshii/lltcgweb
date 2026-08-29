@@ -92,6 +92,40 @@
     return r.replay;
   };
 
+  async function postReplaySave(creds, opts) {
+    const body = {
+      room_id: creds.roomId,
+      player_token: creds.token,
+      ...opts,
+    };
+    let replay = null;
+    try {
+      replay = await global.exportReplayPayload(creds);
+      body.replay = replay;
+    } catch (exportErr) {
+      // Hostinger can still pull from the match origin when client export fails
+      // (e.g. room already TTL'd on the client path).
+    }
+    const saved = await global.accountPost('replay_save', body);
+    if (saved.error) throw new Error(saved.error);
+    return { saved, replay };
+  }
+
+  async function postReplaySaveWithRetry(creds, opts, delaysMs) {
+    let lastErr = null;
+    for (let i = 0; i < delaysMs.length; i++) {
+      if (i > 0 && delaysMs[i] > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delaysMs[i]));
+      }
+      try {
+        return await postReplaySave(creds, opts);
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error(t('replay.couldNotSave'));
+  }
+
   /** End-of-match replay — account library (realtime) or JSON download. */
   global.saveReplayFile = async function saveReplayFile() {
     if (!global.replaySaveEnabled()) {
@@ -105,15 +139,10 @@
     }
     try {
       if (typeof global.isSignedInAccount === 'function' && global.isSignedInAccount()) {
-        // Hostinger pulls slim schema-v2 from the match origin — avoid phone↔site
-        // round-tripping multi-MB frame payloads.
-        const saved = await global.accountPost('replay_save', {
-          room_id: creds.roomId,
-          player_token: creds.token,
+        const { saved } = await postReplaySaveWithRetry(creds, {
           preserve: true,
           kind: 'library',
-        });
-        if (saved.error) throw new Error(saved.error);
+        }, [0, 1500, 4000]);
         const summary = saved.replay;
         if (global.G) G._replayAutosavedRoom = creds.roomId;
         global.toast(
@@ -153,13 +182,10 @@
     }
     if (global.G) G._replayAutosavePendingRoom = creds.roomId;
     try {
-      // Do not client-export frames here — account API fetches from match origin.
-      const saved = await global.accountPost('replay_save', {
-        room_id: creds.roomId,
-        player_token: creds.token,
+      const { saved } = await postReplaySaveWithRetry(creds, {
         autosave: true,
         kind: 'autosave',
-      });
+      }, [800, 2500, 6000]);
       if (saved.error) throw new Error(saved.error);
       if (global.G) G._replayAutosavedRoom = creds.roomId;
       if (opts.toast !== false) {

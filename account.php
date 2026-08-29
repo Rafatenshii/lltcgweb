@@ -1627,6 +1627,27 @@ function tcgReplayFindOwnedByRoom(string $uid, string $roomId): ?array {
     return $row ?: null;
 }
 
+/** True when a library row exists but cannot be played back (failed partial save). */
+function tcgReplayRowNeedsRepair(array $row): bool {
+    if (intval($row['action_count'] ?? 0) <= 0) {
+        return true;
+    }
+    $raw = trim((string)($row['payload_json'] ?? ''));
+    if ($raw === '') {
+        return true;
+    }
+    try {
+        $payload = replayPayloadDecodeFromStorage($raw);
+        validateReplayFile($payload);
+        if (count($payload['actions'] ?? []) === 0) {
+            return true;
+        }
+    } catch (Throwable $e) {
+        return true;
+    }
+    return false;
+}
+
 /**
  * Save finished-match replay.
  * - autosave (default when body.autosave): FIFO last 10 non-preserved
@@ -1654,6 +1675,11 @@ function tcgApiReplaySave(array $body): array {
     }
 
     $existing = tcgReplayFindOwnedByRoom($uid, $roomId);
+    if ($existing && tcgReplayRowNeedsRepair($existing)) {
+        tcgDb()->prepare('DELETE FROM tcg_replays WHERE id = ? AND discord_id = ?')
+            ->execute([intval($existing['id']), $uid]);
+        $existing = null;
+    }
     if ($existing) {
         if ($wantPreserve && empty($existing['preserved'])) {
             tcgDb()->prepare('UPDATE tcg_replays SET preserved = 1 WHERE id = ? AND discord_id = ?')
