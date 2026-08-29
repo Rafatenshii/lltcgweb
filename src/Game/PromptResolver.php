@@ -4504,7 +4504,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         unset($state['pending_prompt']);
         $state['seq']++;
         if (($state['phase'] ?? '') === 'live_start_effects') {
-            return finishLiveStartEffects($state);
+            return resumeLiveStartEffectPhase($state);
         }
         return $state;
     }

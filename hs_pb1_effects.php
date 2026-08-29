@@ -1660,15 +1660,19 @@ function flushDeferredMpExtraHeartsLiveStart(array $state): array {
                 " — [$name] drew $drawn ($sub with extra hearts).");
         }
         if ($cnt >= 2) {
+            $reduce = intval($ab['reduce'] ?? 2);
             foreach ($p['live_zone'] as &$lc) {
                 if ($lc && ($lc['instance_id'] ?? '') === $sourceId) {
-                    $lc['hearts_reduction'] = intval($lc['hearts_reduction'] ?? 0) + intval($ab['reduce'] ?? 2);
+                    if (!isset($lc['hearts_color_reduction']) || !is_array($lc['hearts_color_reduction'])) {
+                        $lc['hearts_color_reduction'] = [];
+                    }
+                    $lc['hearts_color_reduction']['any'] = intval($lc['hearts_color_reduction']['any'] ?? 0) + $reduce;
                     break;
                 }
             }
             unset($lc);
             $state = addLog($state, $state['players'][$pid]['name'] .
-                ' — [' . $name . '] Required any-color hearts -' . intval($ab['reduce'] ?? 2) . '.');
+                ' — [' . $name . '] Required any-color hearts -' . $reduce . '.');
         }
         unset($p);
     }
