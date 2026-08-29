@@ -116,6 +116,7 @@ try {
         case 'login_bonus_claim':  echo json_encode(tcgApiLoginBonusClaim($body)); break;
         case 'public_leaderboard': echo json_encode(tcgApiPublicLeaderboard($_GET + $body)); break;
         case 'public_profile':     echo json_encode(tcgApiPublicProfile($_GET + $body)); break;
+        case 'repair_placeholder_usernames': echo json_encode(tcgApiRepairPlaceholderUsernames($body)); break;
         case 'sticker_shop_catalog': echo json_encode(tcgApiStickerShopCatalog($body)); break;
         case 'sticker_shop_cards': echo json_encode(tcgApiStickerShopCards($body)); break;
         case 'convert_to_seal':    echo json_encode(tcgApiConvertToSeal($body)); break;
@@ -2285,6 +2286,25 @@ function tcgApiPublicLeaderboard(array $params): array {
         'limit' => $limit > 0 ? $limit : null,
         'leaderboard' => $leaderboard,
     ];
+}
+
+/** Operator batch repair for tcg_users rows stuck on placeholder Discord names. */
+function tcgApiRepairPlaceholderUsernames(array $body): array {
+    $secret = trim((string)($body['secret'] ?? $_SERVER['HTTP_X_TCG_INTERNAL_SECRET'] ?? ''));
+    $expected = '';
+    $local = __DIR__ . '/tcg_sync.local.php';
+    if (is_file($local)) {
+        require_once $local;
+    }
+    if (defined('TCG_INTERNAL_MATCH_SECRET')) {
+        $expected = trim((string)TCG_INTERNAL_MATCH_SECRET);
+    }
+    if ($expected === '' || $secret === '' || !hash_equals($expected, $secret)) {
+        throw new Exception('forbidden', 403);
+    }
+    require_once __DIR__ . '/auth_profile.php';
+    $result = tcgRepairPlaceholderUsernames(50);
+    return array_merge(['success' => true], $result);
 }
 
 /** Public Loveca profile for Discord /loveca profile (no auth). */
