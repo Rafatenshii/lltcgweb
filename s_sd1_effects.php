@@ -223,7 +223,7 @@ function sSd1ResolveActivatedAbility(
     if (count($ids) !== $need) {
         throw new Exception("Must discard exactly $need card(s)");
     }
-    discardFromHandByIds($p, $ids);
+    discardFromHandByIds($p, $ids, $state, $pid);
     $cfg = wrPickCfgFromAbility($ab);
     $cfg['group'] = $ab['group'] ?? 'Sunshine';
     $cfg['filter'] = 'live';

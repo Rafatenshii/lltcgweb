@@ -508,7 +508,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] put $need card(s) on deck top.");
         } else {
-            $moved = discardHandCardsByIds($ownerP, $discardIds);
+            $moved = discardHandCardsByIds($ownerP, $discardIds, $state, $owner);
             foreach ($moved as $c) {
                 $state = logEffectPutWr($state, $owner, $srcName, $c,
                     [animSpec($c['instance_id'], 'hand', 'waiting_room', $owner)]);
@@ -1277,7 +1277,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (count($ids) !== $need) {
                 throw new Exception("Must select exactly $need card(s) to discard");
             }
-            discardHandCardsByIds($ownerP, $ids);
+            discardHandCardsByIds($ownerP, $ids, $state, $owner);
             $state = applyAutoOnAllyWaitActivateBlade($state, $owner, $prompt);
             unset($state['pending_prompt']);
             $state['seq']++;
@@ -1471,7 +1471,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 throw new Exception("Must select exactly $need card(s) to discard");
             }
             if (!empty($ids)) {
-                discardFromHandByIds($ownerP, $ids);
+                discardFromHandByIds($ownerP, $ids, $state, $owner);
             }
             unset($state['pending_prompt']);
             $state = beginLookRevealPick(
@@ -2181,7 +2181,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
         if (count($ids) !== $need) {
             throw new Exception("Must select exactly $need card(s) to discard");
         }
-        discardHandCardsByIds($ownerP, $ids);
+        discardHandCardsByIds($ownerP, $ids, $state, $owner);
         unset($state['pending_prompt']);
         $ab = $prompt['ability'] ?? [];
         $then = [
@@ -2260,7 +2260,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     }
                 }
             }
-            discardHandCardsByIds($ownerP, $ids);
+            discardHandCardsByIds($ownerP, $ids, $state, $owner);
             $state = applyModifierEffect($state, $owner, [
                 'type'   => 'blade_bonus',
                 'amount' => intval($ability['blade_amount'] ?? 1),
@@ -2295,7 +2295,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (count($ids) !== $need) {
                 throw new Exception("Must select exactly $need card(s) to discard");
             }
-            discardHandCardsByIds($ownerP, $ids);
+            discardHandCardsByIds($ownerP, $ids, $state, $owner);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [" . ($prompt['source_name'] ?? 'Member') . "] discarded $need (Live Start).");
         } else {
@@ -2314,7 +2314,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (count($ids) !== $need) {
                 throw new Exception("Must select exactly $need card(s) to discard");
             }
-            discardHandCardsByIds($ownerP, $ids);
+            discardHandCardsByIds($ownerP, $ids, $state, $owner);
             $state = addLog($state, $state['players'][$owner]['name'] .
                 " — [$srcName] discarded $need (Live Start).");
         } elseif ($choice === 'return_energy') {
@@ -3160,7 +3160,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if ($discardNeed < 1 || count($ids) !== $discardNeed) {
                 throw new Exception("Must discard exactly $discardNeed card(s) from hand");
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $sourceId = $prompt['source_id'] ?? '';
             foreach ($ownerP['stage'] as &$mbr) {
                 if ($mbr && ($mbr['instance_id'] ?? '') === $sourceId) {
@@ -3205,7 +3205,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                     $state['seq']++;
                     return $state;
                 }
-                discardFromHandByIds($ownerP, $ids);
+                discardFromHandByIds($ownerP, $ids, $state, $owner);
             }
             $sourceId = $prompt['source_id'] ?? '';
             foreach ($ownerP['stage'] as &$mbr) {
@@ -3593,7 +3593,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             }
             // "Up to N" — Yes with 0 cards is a no-op (same as Skip).
             if ($n >= 1) {
-                discardFromHandByIds($ownerP, $ids);
+                discardFromHandByIds($ownerP, $ids, $state, $owner);
                 $bladePer = intval($prompt['ability']['blade_per'] ?? 1);
                 $state = applyModifierEffect($state, $owner, [
                     'type'   => 'blade_bonus',
@@ -3686,7 +3686,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
                 throw new Exception('Must discard exactly 1 Live card from hand');
             }
             $responderP = &$state['players'][$pid];
-            $discarded = discardHandCardsByIds($responderP, $discardIds);
+            $discarded = discardHandCardsByIds($responderP, $discardIds, $state, $pid);
             foreach ($discarded as $c) {
                 if (($c['card_type'] ?? '') !== 'ライブ') {
                     throw new Exception('Must discard a Live card');
@@ -3718,7 +3718,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (count($discardIds) !== 1) {
                 throw new Exception('Must discard exactly 1 card from hand');
             }
-            discardHandCardsByIds($state['players'][$pid], $discardIds);
+            discardHandCardsByIds($state['players'][$pid], $discardIds, $state, $pid);
             $state = addLog($state, $state['players'][$pid]['name'] .
                 ' — discarded 1 card (' . ($prompt['source_name'] ?? 'effect') . ').');
         } else {
@@ -4813,7 +4813,7 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             if (count($ids) !== 1) {
                 throw new Exception('Must discard exactly 1 card from hand');
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $others = listStageMemberChoices($ownerP, $group, $prompt['source_id'] ?? '');
             if (empty($others)) throw new Exception('No other group Member on Stage');
             $state['pending_prompt'] = [

@@ -666,7 +666,7 @@ function nBp5ResolveActivatedAbility(
         if (count($ids) !== intval($ab['discard'] ?? 1)) {
             throw new Exception('Must discard exactly ' . intval($ab['discard'] ?? 1) . ' card(s)');
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         startPickWrToHandPrompt(
             $state,
             $pid,
@@ -1032,7 +1032,7 @@ function nBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
                 $state['seq']++;
                 return finishPromptEffects($state);
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $look = intval($ability['look'] ?? 5);
             $top = array_splice($ownerP['main_deck'], 0, min($look, count($ownerP['main_deck'])));
             $matches = array_values(array_filter(

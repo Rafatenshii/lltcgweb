@@ -197,6 +197,124 @@ final class Issue67SkillBugsTest extends TestCase
         $this->assertSame(0, intval($state['live_modifiers']['p1']['blade_bonus'] ?? 0));
     }
 
+    public function testFantasyRurinoAutoFiresOnEffectDiscardHand(): void
+    {
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'fantasy_rurino');
+        $handCard = $this->cardByNo('PL!HS-bp1-015-N', 'hand_disc');
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 2,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => $this->basePlayers(),
+        ];
+        $state['players']['p1']['stage']['center'] = $rurino;
+        $state['players']['p1']['hand'] = [$handCard];
+        $state['pending_prompt'] = [
+            'type' => 'effect_discard_hand',
+            'owner' => 'p1',
+            'responder' => 'p1',
+            'count' => 1,
+            'source_name' => 'Very! Very! COCO Natsu',
+        ];
+
+        $state = \actionResolvePrompt($state, 'p1', ['discard_ids' => ['hand_disc']]);
+
+        $this->assertSame(
+            1,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Effect-required discard should trigger Fantasy Rurino Auto once'
+        );
+        $flat = \memberPerformanceHeartsFlat($state['players']['p1']['stage']['center']);
+        $this->assertContains('pink', $flat);
+    }
+
+    public function testFantasyRurinoAutoFiresOnOptionalDiscardSameGroup(): void
+    {
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'fantasy_rurino_ls');
+        $live = $this->cardByNo('PL!HS-bp5-006-R', 'hime_live');
+        $c1 = $this->cardByNo('PL!HS-bp1-015-N', 'hs1');
+        $c2 = $this->cardByNo('PL!HS-bp1-015-N', 'hs2');
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'live_start_effects',
+            'seq' => 1,
+            'turn' => 2,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'live_attempt' => ['p1'],
+            'log' => [],
+            'players' => $this->basePlayers(),
+        ];
+        $state['players']['p1']['stage']['center'] = $rurino;
+        $state['players']['p1']['hand'] = [$c1, $c2];
+        $state['players']['p1']['live_zone'] = [$live];
+
+        $state = \resolveAbilityEffect($state, 'p1', $live, $live['abilities'][0], [
+            'phase' => 'live_start',
+            'confirm' => true,
+            'discard_ids' => ['hs1', 'hs2'],
+        ]);
+
+        $this->assertSame(
+            1,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Live Start same-group discard should trigger Fantasy Rurino Auto'
+        );
+    }
+
+    public function testFantasyRurinoAutoMaxTwicePerTurn(): void
+    {
+        $rurino = $this->cardByNo('PL!HS-pb1-003-R', 'fantasy_rurino_cap');
+        $mate = $this->cardByNo('PL!HS-bp5-003-R＋', 'mate1');
+        $mate['subunit'] = 'みらくらぱーく!';
+        $mate2 = $this->cardByNo('PL!HS-bp5-003-R＋', 'mate2');
+        $mate2['subunit'] = 'みらくらぱーく!';
+        $mate3 = $this->cardByNo('PL!HS-bp5-003-R＋', 'mate3');
+        $mate3['subunit'] = 'みらくらぱーく!';
+
+        $state = [
+            'status' => 'playing',
+            'phase' => 'main_first',
+            'seq' => 1,
+            'turn' => 1,
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => $this->basePlayers(),
+        ];
+        $state['players']['p1']['stage']['center'] = $rurino;
+        $state['players']['p1']['main_deck'] = [
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck1'),
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck2'),
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck3'),
+            $this->cardByNo('PL!HS-bp1-023-L', 'deck4'),
+        ];
+
+        foreach (['mate1', 'mate2', 'mate3'] as $iid) {
+            $state['players']['p1']['hand'] = [$mate, $mate2, $mate3];
+            $state['pending_prompt'] = [
+                'type' => 'effect_discard_hand',
+                'owner' => 'p1',
+                'responder' => 'p1',
+                'count' => 1,
+                'source_name' => 'Test discard',
+            ];
+            $state = \actionResolvePrompt($state, 'p1', ['discard_ids' => [$iid]]);
+        }
+
+        $this->assertSame(
+            2,
+            intval($state['players']['p1']['stage']['center']['live_blade_bonus'] ?? 0),
+            'Auto is capped at +2 Blade per turn'
+        );
+    }
+
     public function testDoDoDoDefersEnergyUntilOppRoundResolved(): void
     {
         $live = $this->cardByNo('PL!HS-bp1-023-L', 'dodo');

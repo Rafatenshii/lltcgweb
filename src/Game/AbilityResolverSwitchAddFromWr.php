@@ -61,7 +61,7 @@ function tryResolveAbilityEffectSwitchAddFromWr(
                 if (count($ids) !== $need) {
                     throw new Exception("Must discard exactly $need cards from hand");
                 }
-                $moved = discardHandCardsByIds($p, $ids);
+                $moved = discardHandCardsByIds($p, $ids, $state, $pid);
                 if (count($moved) !== $need) {
                     throw new Exception("Must discard exactly $need cards from hand");
                 }

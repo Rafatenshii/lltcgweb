@@ -529,7 +529,7 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             $need = intval($ab['discard'] ?? 1);
             $ids = normalizeDiscardIds($ctx['discard_ids'] ?? []);
             if (count($ids) >= $need) {
-                discardFromHandByIds($p, array_slice($ids, 0, $need));
+                discardFromHandByIds($p, array_slice($ids, 0, $need), $state, $pid);
                 $discarded = array_slice($p['waiting_room'] ?? [], -$need);
                 $last = $discarded[count($discarded) - 1] ?? null;
                 $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");
@@ -1101,7 +1101,7 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
                     " — [$name] choose card(s) to discard.");
                 break;
             }
-            discardFromHandByIds($p, array_slice($ids, 0, $need));
+            discardFromHandByIds($p, array_slice($ids, 0, $need), $state, $pid);
             $state = addLog($state, $state['players'][$pid]['name'] .
                 " — [$name] discarded $need; choose a heart color.");
             $state = plMuseGapOpenColorThresholdReveal5ColorPrompt(
@@ -1594,7 +1594,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             throw new Exception("Must select exactly $need card(s) to discard");
         }
         $p = &$state['players'][$owner];
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $owner);
         $sourceId = (string)($prompt['source_id'] ?? '');
         $slot = $prompt['source_slot'] ?? '';
         $source = null;
@@ -1728,7 +1728,7 @@ function plMuseGapResolvePrompt(array $state, string $owner, array $prompt, stri
             throw new Exception("Must select exactly $need card(s) to discard");
         }
         $p = &$state['players'][$owner];
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $owner);
         $discarded = array_slice($p['waiting_room'] ?? [], -$need);
         $last = $discarded[count($discarded) - 1] ?? null;
         $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");

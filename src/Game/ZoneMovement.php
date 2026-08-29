@@ -16,7 +16,7 @@ function drawCardInstances(array &$p, int $count): array {
     return $drawn;
 }
 
-function discardHandCardsByIds(array &$p, array $ids): array {
+function discardHandCardsByIds(array &$p, array $ids, ?array &$notifyState = null, ?string $notifyPid = null): array {
     $moved = [];
     $idSet = array_flip($ids);
     $p['hand'] = array_values(array_filter($p['hand'], function ($c) use ($idSet, &$moved, &$p) {
@@ -28,28 +28,19 @@ function discardHandCardsByIds(array &$p, array $ids): array {
         }
         return true;
     }));
-    return $moved;
-}
-
-function discardFromHandByIds(array &$p, array $ids, ?array &$notifyState = null, ?string $notifyPid = null): int {
-    $moved = [];
-    $count = 0;
-    $p['hand'] = array_values(array_filter($p['hand'], function ($c) use ($ids, &$count, &$moved, &$p) {
-        if (in_array($c['instance_id'] ?? '', $ids, true)) {
-            $p['waiting_room'][] = $c;
-            $moved[] = $c;
-            $count++;
-            return false;
+    if (!empty($moved) && $notifyState !== null && $notifyPid !== null) {
+        if (function_exists('hsPb1NotifyHandDiscard')) {
+            hsPb1NotifyHandDiscard($notifyState, $notifyPid);
         }
-        return true;
-    }));
-    if ($count > 0 && $notifyState !== null && $notifyPid !== null) {
-        hsPb1NotifyHandDiscard($notifyState, $notifyPid);
         if (function_exists('spBp5NotifyCardsToWr')) {
             $notifyState = spBp5NotifyCardsToWr($notifyState, $notifyPid, $moved);
         }
     }
-    return $count;
+    return $moved;
+}
+
+function discardFromHandByIds(array &$p, array $ids, ?array &$notifyState = null, ?string $notifyPid = null): int {
+    return count(discardHandCardsByIds($p, $ids, $notifyState, $notifyPid));
 }
 
 /** Append cards to WR and fire main-phase auto hooks (Ren Hazuki bp5-005, etc.). */

@@ -40,7 +40,7 @@ function tryResolveAbilityEffectSwitchOptional(
                     $discardedCards[] = $c;
                 }
             }
-            $discarded = discardFromHandByIds($p, $valid);
+            $discarded = discardFromHandByIds($p, $valid, $state, $pid);
             if ($discarded > 0 && !empty($ab['then'])) {
                 $then = $ab['then'];
                 if (($then['type'] ?? '') === 'blade_bonus_per_discarded') {
@@ -65,7 +65,7 @@ function tryResolveAbilityEffectSwitchOptional(
             if (!validateSameGroupDiscard($p, $ids, $need)) {
                 throw new Exception("Must discard exactly $need cards sharing the same unit name");
             }
-            $discarded = discardFromHandByIds($p, $ids);
+            $discarded = discardFromHandByIds($p, $ids, $state, $pid);
             if ($discarded > 0 && !empty($ab['then'])) {
                 $state = applyModifierEffect($state, $pid, $ab['then']);
                 $state = addLog($state, $state['players'][$pid]['name'] .
@@ -429,7 +429,7 @@ function tryResolveAbilityEffectSwitchOptional(
             if (empty($ctx['discard_ids']) && empty($ctx['confirm'])) break;
             $ids = $ctx['discard_ids'] ?? [];
             if (!empty($ids)) {
-                discardFromHandByIds($p, $ids);
+                discardFromHandByIds($p, $ids, $state, $pid);
             } elseif (!empty($ctx['confirm'])) {
                 autoDiscardFromHand($p, intval($ab['discard'] ?? 1));
             }
@@ -479,7 +479,7 @@ function tryResolveAbilityEffectSwitchOptional(
                             : 'Must discard a Member card');
                     }
                 }
-                discardFromHandByIds($p, $ids);
+                discardFromHandByIds($p, $ids, $state, $pid);
             } else {
                 autoDiscardFromHand($p, $need);
             }
@@ -506,7 +506,7 @@ function tryResolveAbilityEffectSwitchOptional(
             if (empty($ctx['discard_ids']) && empty($ctx['confirm'])) break;
             $need = intval($ab['discard'] ?? 2);
             if (!empty($ctx['discard_ids'])) {
-                discardFromHandByIds($p, $ctx['discard_ids']);
+                discardFromHandByIds($p, $ctx['discard_ids'], $state, $pid);
             } else {
                 autoDiscardFromHand($p, $need);
             }

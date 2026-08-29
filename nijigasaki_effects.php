@@ -767,7 +767,7 @@ function nijiResolveActivatedEffectBody(
         $need = intval($ab['discard'] ?? 1);
         $ids = $data['discard_ids'] ?? [];
         if (count($ids) !== $need) throw new Exception("Must discard exactly $need card(s)");
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         startPickWrToHandPrompt(
             $state,
             $pid,
@@ -1321,7 +1321,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         if (count($ids) !== 2) {
             throw new Exception('Discard exactly 2 cards');
         }
-        discardFromHandByIds($ownerP, $ids);
+        discardFromHandByIds($ownerP, $ids, $state, $owner);
         $srcId = $prompt['source_id'] ?? '';
         $waitSlots = [];
         foreach ($ownerP['stage'] as $slot => $mbr) {
@@ -1499,7 +1499,7 @@ function nijiHandlePrompt(array $state, string $promptType, array $prompt, strin
         if ($choice === 'yes') {
             $ids = normalizeDiscardIds($data['discard_ids'] ?? []);
             if (count($ids) !== 1) throw new Exception('Discard exactly 1 card');
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $mill = intval($ability['mill'] ?? 2);
             $milled = array_splice($ownerP['main_deck'], 0, min($mill, count($ownerP['main_deck'])));
             $ownerP['waiting_room'] = array_merge($ownerP['waiting_room'], $milled);

@@ -664,7 +664,7 @@ function sBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
                 $c = $ownerP['hand'][$idx];
                 if (!empty($c['blade_hearts'])) throw new Exception('Selected cards must have no Blade hearts');
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $count = count($ids);
             $added = addFromWaitingRoomFiltered(
                 $ownerP,
@@ -802,7 +802,7 @@ function sBp5ResolvePrompt(array $state, string $owner, array $prompt, string $c
         if ($step === 'discard') {
             $ids = $data['discard_ids'] ?? [];
             if (count($ids) !== 1) throw new Exception('Discard exactly 1 card');
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $choices = $ability['heart_choices'] ?? ['green', 'yellow', 'purple'];
             $state['pending_prompt'] = [
                 'type'          => 'sbp5_live_start_discard_heart',

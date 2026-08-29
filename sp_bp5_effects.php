@@ -499,7 +499,7 @@ function spBp5ResolveActivatedAbility(
             waitMember($member, $state);
             $p['stage'][$slot] = $member;
         } elseif (!empty($data['discard_ids'])) {
-            discardFromHandByIds($p, $data['discard_ids']);
+            discardFromHandByIds($p, $data['discard_ids'], $state, $pid);
         } else {
             $discardNeed = intval($ab['discard'] ?? 1);
             $choices = ['wait'];
@@ -725,7 +725,7 @@ function spBp5ResolvePrompt(array $state, string $owner, array $prompt, string $
             if (count($ids) !== intval($ability['discard'] ?? 1)) {
                 throw new Exception('Must discard exactly ' . intval($ability['discard'] ?? 1) . ' card(s)');
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $n = activateEnergyForPlayer($ownerP, intval($ability['activate_count'] ?? 1));
             $markUsed();
             unset($state['pending_prompt']);
@@ -748,7 +748,7 @@ function spBp5ResolvePrompt(array $state, string $owner, array $prompt, string $
                     $bladeless++;
                 }
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $slot = $prompt['source_slot'] ?? 'left';
             if ($bladeless >= 1 && !empty($ownerP['stage'][$slot])) {
                 activateMemberFully($ownerP['stage'][$slot]);
@@ -945,7 +945,7 @@ function spBp5ResolvePrompt(array $state, string $owner, array $prompt, string $
             if (count($ids) !== intval($ability['discard'] ?? 1)) {
                 throw new Exception('Must discard 1 card');
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $look = intval($ability['look'] ?? 5);
             $top = array_splice($ownerP['main_deck'], 0, min($look, count($ownerP['main_deck'])));
             $group = $ability['group'] ?? 'Superstar';

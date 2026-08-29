@@ -231,7 +231,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need cards from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $cfg = wrPickCfgFromAbility($ab);
         if (empty($ab['group'])) {
             $cfg['filter'] = 'live';
@@ -367,7 +367,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need card(s) from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $drawn = drawCardsForPlayer($state, $pid, intval($ab['draw'] ?? 1));
         if (!empty($ab['once_per_turn'])) markAbilityUsed($member, $abilityIdx);
         $p['stage'][$slot] = $member;
@@ -388,7 +388,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need card(s) from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $found = revealFromDeckUntil($p, $choices[$filterKey], $state, $pid);
         $revealedPile = $p['_deck_until_revealed'] ?? [];
         unset($p['_deck_until_revealed']);
@@ -541,7 +541,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             if (count($ids) !== $need) {
                 throw new Exception("Must discard exactly $need card(s) from hand");
             }
-            discardFromHandByIds($p, $ids);
+            discardFromHandByIds($p, $ids, $state, $pid);
         }
         $subunit = $ab['require_other_subunit'] ?? '';
         if ($subunit !== '' && !stageHasOtherSubunitMember($p, $subunit, $member['instance_id'] ?? '')) {
@@ -832,7 +832,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need card(s) from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $targetSlot = $data['slot'] ?? '';
         if (!in_array($targetSlot, ['left', 'center', 'right'], true)) {
             $targetSlot = null;
@@ -862,7 +862,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need card(s) from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $pick = $data['pick'] ?? '';
         if ($pick === 'energy') {
             $activated = activateEnergyForPlayer($p, 1);
@@ -905,7 +905,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
         if (count($ids) !== $need) {
             throw new Exception("Must discard exactly $need card(s) from hand");
         }
-        discardFromHandByIds($p, $ids);
+        discardFromHandByIds($p, $ids, $state, $pid);
         $turn = intval($state['turn'] ?? 1);
         $group = $ab['group'] ?? '';
         $activated = 0;
@@ -1063,7 +1063,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
             if (count($ids) !== $need) {
                 throw new Exception("Must discard exactly $need cards from hand");
             }
-            $moved = discardHandCardsByIds($p, $ids);
+            $moved = discardHandCardsByIds($p, $ids, $state, $pid);
             if (count($moved) !== $need) {
                 throw new Exception("Must discard exactly $need cards from hand");
             }
@@ -1214,7 +1214,7 @@ function actionActivateAbility(array $state, string $pid, array $data): array {
                 $state['seq']++;
                 return $state;
             }
-            discardFromHandByIds($p, array_slice($ids, 0, $need));
+            discardFromHandByIds($p, array_slice($ids, 0, $need), $state, $pid);
             $discarded = array_slice($p['waiting_room'] ?? [], -$need);
             $last = $discarded[count($discarded) - 1] ?? null;
             $isGroup = $last && ($last['group'] ?? '') === ($ab['group'] ?? "μ's");

@@ -749,7 +749,7 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
         $ids = $data['discard_ids'] ?? [];
         $need = intval($prompt['discard_count'] ?? 1);
         if (count($ids) !== $need) throw new Exception("Discard exactly $need card(s)");
-        discardFromHandByIds($ownerP, $ids);
+        discardFromHandByIds($ownerP, $ids, $state, $owner);
         unset($state['pending_prompt']);
         $state['seq']++;
         return finishPromptEffects($state);
@@ -783,7 +783,7 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
             } else {
                 $ids = $data['discard_ids'] ?? [];
                 if (count($ids) !== 2) throw new Exception('Discard exactly 2 cards');
-                discardFromHandByIds($ownerP, $ids);
+                discardFromHandByIds($ownerP, $ids, $state, $owner);
             }
             $max = intval($ability['max_members'] ?? 2);
             $cands = array_values(array_filter(
@@ -876,7 +876,7 @@ function sBp6ResolvePrompt(array $state, string $owner, array $prompt, string $c
             if (count($ids) !== 1) {
                 throw new Exception('Discard exactly 1 card');
             }
-            discardFromHandByIds($ownerP, $ids);
+            discardFromHandByIds($ownerP, $ids, $state, $owner);
             $srcId = $prompt['source_id'] ?? '';
             $group = $ability['group'] ?? 'Sunshine';
             $plus = intval($ability['cost_plus'] ?? 2);
