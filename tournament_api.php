@@ -227,7 +227,56 @@ function tcgApiTournamentGet(array $body): array {
             : [],
         'standings' => tcgTournamentPublicStandings($entrants, $matches),
         'server_now' => time(),
+        'pr_pack_reward' => tcgTournamentPrPackRewardForViewer($id, $uid, $pub),
     ];
+}
+
+/**
+ * Champion-only PR pack reveal payload (cards from ledger after payout).
+ *
+ * @param array<string,mixed> $pub
+ * @return array<string,mixed>|null
+ */
+function tcgTournamentPrPackRewardForViewer(string $tournamentId, string $viewerId, array $pub): ?array {
+    if ((string)($pub['status'] ?? '') !== 'finished') {
+        return null;
+    }
+    $winnerId = (string)(($pub['results']['winner']['discord_id'] ?? ''));
+    if ($winnerId === '' || $winnerId !== $viewerId) {
+        return null;
+    }
+    if (empty($pub['pr_pack']['awarded']) && empty($pub['results']['pr_pack']['awarded'])) {
+        return null;
+    }
+    try {
+        $stmt = tcgDb()->prepare(
+            'SELECT meta_json FROM tcg_tournament_ledger
+             WHERE tournament_id = ? AND discord_id = ? AND kind = ?
+             ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute([$tournamentId, $viewerId, 'pr_pack_payout']);
+        $raw = $stmt->fetchColumn();
+        if (!$raw) {
+            return ['awarded' => true, 'pack_size' => TCG_TOURNAMENT_PR_PACK_SIZE, 'pending_reveal' => true];
+        }
+        $meta = json_decode((string)$raw, true);
+        if (!is_array($meta) || empty($meta['cards']) || !is_array($meta['cards'])) {
+            return ['awarded' => true, 'pack_size' => (int)($meta['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE)];
+        }
+        $cards = $meta['cards'];
+        $first = $cards[0] ?? [];
+        return [
+            'pack_size' => count($cards),
+            'cards' => $cards,
+            'card_no' => $first['card_no'] ?? null,
+            'card' => $first,
+            'converted' => !empty($first['converted']),
+            'star_gems_earned' => (int)($meta['star_gems_earned'] ?? 0),
+            'source' => 'tournament',
+        ];
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 /**
@@ -304,23 +353,62 @@ function tcgApiTournamentCreate(array $body): array {
     $settings = tcgTournamentNormalizeSettings($settings, $gameMode);
     $settings['connect_secs'] = TCG_TOURNAMENT_CONNECT_SECS;
 
+    $wantPrPack = !empty($body['pr_pack_prize']) || !empty($body['pr_pack']);
+    if ($wantPrPack) {
+        if ($maxP < TCG_TOURNAMENT_PR_PACK_MIN_CHECKINS) {
+            throw new Exception(
+                'PR pack prize requires max players ≥ ' . TCG_TOURNAMENT_PR_PACK_MIN_CHECKINS,
+                400
+            );
+        }
+        $settings['pr_pack'] = 1;
+        $settings['pr_pack_status'] = 'escrowed';
+    }
+
     $id = tcgTournamentNewId();
     $now = time();
-    tcgDb()->prepare(
-        'INSERT INTO tcg_tournaments
-         (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
-          min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
-         VALUES (?, ?, ?, "open", ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)'
-    )->execute([
-        $id, $uid, $title, $gameMode, $startAt, $checkin,
-        $minP, $maxP, $fee, tcgTournamentEncodeSettings($settings), $now, $now,
-    ]);
-
-    $row = tcgTournamentFetch($id);
-    return [
-        'success' => true,
-        'tournament' => tcgTournamentPublicRow($row ?: ['id' => $id], ['total' => 0, 'checked_in' => 0]),
-    ];
+    return tcgDbRetry(function () use (
+        $id, $uid, $title, $gameMode, $startAt, $checkin, $minP, $maxP, $fee, $settings, $now, $wantPrPack
+    ) {
+        $db = tcgDb();
+        $db->beginTransaction();
+        try {
+            if ($wantPrPack) {
+                tcgDeductCoins($uid, TCG_TOURNAMENT_PR_PACK_COST);
+                if (!tcgTournamentLedgerWrite(
+                    $id,
+                    $uid,
+                    'host_pr_pack_escrow',
+                    TCG_TOURNAMENT_PR_PACK_COST,
+                    'prpack:' . $id,
+                    ['pack_size' => TCG_TOURNAMENT_PR_PACK_SIZE]
+                )) {
+                    throw new Exception('PR pack escrow conflict', 409);
+                }
+            }
+            $db->prepare(
+                'INSERT INTO tcg_tournaments
+                 (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
+                  min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
+                 VALUES (?, ?, ?, "open", ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)'
+            )->execute([
+                $id, $uid, $title, $gameMode, $startAt, $checkin,
+                $minP, $maxP, $fee, tcgTournamentEncodeSettings($settings), $now, $now,
+            ]);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+        $row = tcgTournamentFetch($id);
+        return [
+            'success' => true,
+            'tournament' => tcgTournamentPublicRow($row ?: ['id' => $id], ['total' => 0, 'checked_in' => 0]),
+            'coins' => tcgGetCoins($uid),
+        ];
+    });
 }
 
 /** @param array<string,mixed> $body */

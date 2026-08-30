@@ -933,6 +933,43 @@
     return (results && results.winner) || null;
   }
 
+  function prPackOf(row) {
+    if (row && row.pr_pack) return row.pr_pack;
+    const results = row && row.results;
+    if (results && results.pr_pack) {
+      return {
+        enabled: true,
+        awarded: !!results.pr_pack.awarded,
+        dropped: !!results.pr_pack.dropped,
+        pack_size: Number(results.pr_pack.pack_size) || 5,
+        status: results.pr_pack.awarded ? 'awarded' : (results.pr_pack.dropped ? 'dropped' : 'none'),
+      };
+    }
+    return null;
+  }
+
+  function prPackBadgeHtml(row, opts) {
+    opts = opts || {};
+    const pr = prPackOf(row);
+    if (!pr || !pr.enabled) return '';
+    const sep = opts.sep ? metaSep() : '';
+    const cls = ' class="tournament-prpack-badge"';
+    if (pr.awarded || pr.status === 'awarded') {
+      return sep + '<span' + cls + '>' + escapeHtml(t('tournament.prPack.awarded', 'PR Pack ×{n}', {
+        n: Number(pr.pack_size) || 5,
+      })) + '</span>';
+    }
+    if (pr.dropped || pr.status === 'dropped') {
+      return sep + '<span' + cls + '>' + escapeHtml(t('tournament.prPack.dropped', 'PR pack refunded')) + '</span>';
+    }
+    if (pr.status === 'escrowed') {
+      return sep + '<span' + cls + '>' + escapeHtml(t('tournament.prPack.escrowed', 'PR pack (needs {n} check-ins)', {
+        n: Number(pr.min_checkins) || 10,
+      })) + '</span>';
+    }
+    return '';
+  }
+
   function activeCardHtml(row) {
     const fee = Number(row.entry_fee_coins) || 0;
     const count = Number(row.entrant_count) || 0;
@@ -951,6 +988,7 @@
       + escapeHtml(labelStatus(row.status)) + sep + escapeHtml(labelMode(row.game_mode))
       + sep + count + '/' + max
       + sep + escapeHtml(t('tournament.card.fee', 'fee {n}', { n: fee }))
+      + prPackBadgeHtml(row, { sep: true })
       + (specs ? (sep + escapeHtml(t('tournament.card.watching', '{n} watching', { n: specs }))) : '')
       + sep + escapeHtml(t('tournament.card.starts', 'starts {when}', { when: fmtWhen(row.start_at) }))
       + '</div>'
@@ -982,6 +1020,7 @@
       + escapeHtml(labelStatus('finished'))
       + sep + escapeHtml(labelMode(row.game_mode))
       + sep + escapeHtml(t('tournament.past.pool', 'pool {n}', { n: prize }))
+      + prPackBadgeHtml(row, { sep: true })
       + sep + escapeHtml(t('tournament.past.ended', 'ended {when}', {
         when: fmtWhen(Number((row.results && row.results.finished_at) || row.updated_at) || 0)
       }))
@@ -992,6 +1031,7 @@
           + (winnerPrize > 0
             ? sep + escapeHtml(t('tournament.past.winnerPrize', 'prize {n} Coins', { n: winnerPrize }))
             : '')
+          + prPackBadgeHtml(row, { sep: true })
         : escapeHtml(t('tournament.past.noWinner', 'No winner recorded')))
       + '</div>'
       + '<div class="tournament-card-meta tournament-past-entrants">'
@@ -1004,13 +1044,42 @@
     );
   }
 
+  function championHeroHtml(row) {
+    if (!row) return '';
+    const winner = winnerOf(row);
+    if (!winner) return '';
+    const coins = Number(winner.coins) || 0;
+    return (
+      '<section class="tournament-champion-hero" role="status" aria-live="polite">'
+      + '<div class="tournament-champion-hero-kicker">'
+      + escapeHtml(t('tournament.champion.kicker', 'Tournament champion'))
+      + '</div>'
+      + '<div class="tournament-champion-hero-main">'
+      + personChipHtml(winner.discord_id, winner.username || 'Player', winner.avatar_url)
+      + '<div class="tournament-champion-hero-copy">'
+      + '<div class="tournament-champion-hero-name">' + escapeHtml(winner.username || 'Player') + '</div>'
+      + '<div class="tournament-champion-hero-event">' + escapeHtml(row.title || '') + '</div>'
+      + '<div class="tournament-champion-hero-prizes">'
+      + (coins > 0
+        ? '<span>' + escapeHtml(t('tournament.results.winnerPrize', '+{n} Coins', { n: coins })) + '</span>'
+        : '')
+      + prPackBadgeHtml(row, { sep: coins > 0 })
+      + '</div></div></div>'
+      + '<button type="button" class="btn-ghost tournament-champion-hero-open" data-tid="'
+      + escapeAttr(row.id) + '">'
+      + escapeHtml(t('tournament.champion.view', 'View results'))
+      + '</button>'
+      + '</section>'
+    );
+  }
+
   function resultsBannerHtml(trow) {
     if (!trow || trow.status !== 'finished') return '';
     const results = trow.results;
     const winner = winnerOf(trow);
     const pool = prizePoolOf(trow);
     const places = (results && Array.isArray(results.places)) ? results.places : [];
-    let body = '<div class="tournament-results-banner" role="status">';
+    let body = '<div class="tournament-results-banner tournament-results-banner--win" role="status">';
     body += '<div class="tournament-results-title">'
       + escapeHtml(t('tournament.results.heading', 'Final results'))
       + '</div>';
@@ -1025,6 +1094,7 @@
           + escapeHtml(t('tournament.results.winnerPrize', '+{n} Coins', { n: Number(winner.coins) || 0 }))
           + '</span>';
       }
+      body += prPackBadgeHtml(trow, { sep: false });
       body += '</div>';
     }
     if (pool > 0) {
@@ -1063,6 +1133,9 @@
       return;
     }
     let html = '';
+    if (past.length && winnerOf(past[0])) {
+      html += championHeroHtml(past[0]);
+    }
     html += '<section class="tournament-list-section" aria-label="'
       + escapeAttr(t('tournament.liveHeading', 'Live & upcoming')) + '">';
     html += '<h3 class="tournament-subhead">'
@@ -1092,6 +1165,7 @@
       btn.addEventListener('click', () => openDetail(btn.getAttribute('data-tid')));
     });
     bindRemindPanels(root);
+    wireAvatarFallbacks(root);
   }
 
   async function openDetail(id) {
@@ -1106,6 +1180,10 @@
       state.detail = res;
       renderDetail();
       persistSession();
+      if (res && res.pr_pack_reward && res.pr_pack_reward.cards
+        && typeof global.queueRankedPrReward === 'function') {
+        global.queueRankedPrReward(res.pr_pack_reward);
+      }
     } catch (e) {
       const msg = e.message || String(e);
       if (/not found/i.test(msg) || /404/.test(msg)) {
@@ -1238,6 +1316,7 @@
         + '<p class="tournament-muted">'
         + escapeHtml(labelStatus(trow.status))
         + sep + escapeHtml(prizeLabel)
+        + prPackBadgeHtml(trow, { sep: true })
         + sep + escapeHtml(t('tournament.detail.watching', 'watching {n}', { n: Number(trow.spectator_count) || 0 }))
         + sep + escapeHtml(t('tournament.detail.starts', 'starts {when}', { when: fmtWhen(trow.start_at) }))
         + '</p>'
@@ -2090,6 +2169,7 @@
       max_players: Number((el('tournament-create-max') || {}).value || 8),
       entry_fee_coins: Number((el('tournament-create-fee') || {}).value || 0),
       game_mode: (el('tournament-create-mode') || {}).value || 'standard',
+      pr_pack_prize: !!(el('tournament-create-prpack') && el('tournament-create-prpack').checked),
       settings: {
         format: (el('tournament-create-format') || {}).value || 'single_elim',
         best_of: Number((el('tournament-create-bestof') || {}).value || 1),
@@ -2098,8 +2178,16 @@
         stream_delay_secs: Number((el('tournament-create-delay') || {}).value || 0),
       },
     };
+    if (body.pr_pack_prize && body.max_players < 10) {
+      body.max_players = 10;
+      const maxEl = el('tournament-create-max');
+      if (maxEl) maxEl.value = '10';
+    }
     try {
       const res = await global.accountPost('tournament_create', body);
+      if (res && typeof global.syncCoinsFromProfile === 'function') {
+        global.syncCoinsFromProfile(res);
+      }
       const id = res && res.tournament && res.tournament.id;
       if (id) await openDetail(id);
       else showView('list');
@@ -2380,7 +2468,7 @@
     stopTickLoop();
     state.tickTimer = global.setInterval(async () => {
       if (!state.open || !screenActive()) return;
-      if (state.view === 'list' && isAndroidShell()) {
+      if (state.view === 'list') {
         try { await loadList(); } catch (e) { /* ignore */ }
         return;
       }
@@ -2401,6 +2489,14 @@
         }
         state.detail = res;
         renderDetail();
+        if (res && res.tournament && res.tournament.status === 'finished') {
+          // Stay on detail so everyone sees the champion banner; also refresh list cache.
+          void loadList();
+          if (res.pr_pack_reward && res.pr_pack_reward.cards
+            && typeof global.queueRankedPrReward === 'function') {
+            global.queueRankedPrReward(res.pr_pack_reward);
+          }
+        }
       } catch (e) {
         const msg = (e && e.message) ? String(e.message) : '';
         if (/not found/i.test(msg)) {

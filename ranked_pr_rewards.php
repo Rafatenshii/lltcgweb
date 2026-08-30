@@ -62,18 +62,19 @@ function tcgRollSinglePrCard(array $cardsData): ?string {
 }
 
 /**
- * Roll and grant a PR pack (3 cards) without consuming the ranked daily PR cap.
- * Used by login bonuses and any non-ranked PR grants.
+ * Roll and grant a PR pack without consuming the ranked daily PR cap.
+ * Used by login bonuses, missions, and tournament prizes.
  *
  * @return array<string, mixed>
  */
-function tcgGrantPrPackCards(string $discordId): array {
+function tcgGrantPrPackCards(string $discordId, ?int $packSize = null): array {
+    $size = $packSize !== null ? max(1, min(15, $packSize)) : TCG_RANKED_PR_PACK_SIZE;
     if (!file_exists(CARDS_FILE)) {
         throw new Exception('Card pool unavailable');
     }
     $cardsData = json_decode((string)file_get_contents(CARDS_FILE), true) ?: [];
     $cardNos = [];
-    for ($i = 0; $i < TCG_RANKED_PR_PACK_SIZE; $i++) {
+    for ($i = 0; $i < $size; $i++) {
         $cardNo = tcgRollSinglePrCard($cardsData);
         if ($cardNo) {
             $cardNos[] = $cardNo;

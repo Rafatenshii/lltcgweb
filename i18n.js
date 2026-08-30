@@ -1574,6 +1574,15 @@
         "prizePool": "Prize pool: {n} Coins",
         "coins": "{n} Coins"
       },
+      "prPack": {
+        "awarded": "PR Pack ×{n}",
+        "dropped": "PR pack refunded",
+        "escrowed": "PR pack (needs {n} check-ins)"
+      },
+      "champion": {
+        "kicker": "Tournament champion",
+        "view": "View results"
+      },
       "card": {
         "fee": "fee {n}",
         "watching": "{n} watching",
@@ -1608,6 +1617,8 @@
         "minPlayers": "Min players",
         "maxPlayers": "Max players",
         "entryFee": "Entry fee (Coins)",
+        "prPack": "Add 5-card PR pack prize (1000 Coins)",
+        "prPackHint": "Requires 10 check-ins at start or the 1000 Coins are refunded. Winner gets the pack in addition to the coin pool.",
         "gameMode": "Game mode",
         "format": "Format",
         "matchLength": "Match length",
@@ -11450,8 +11461,21 @@
         prizePool: 'Prize pool: {n} Coins',
         coins: '{n} Coins'
       },
+      prPack: {
+        awarded: 'PR Pack ×{n}',
+        dropped: 'PR pack refunded',
+        escrowed: 'PR pack (needs {n} check-ins)'
+      },
+      champion: {
+        kicker: 'Tournament champion',
+        view: 'View results'
+      },
       detail: {
         prizePool: 'prize pool {n}'
+      },
+      field: {
+        prPack: 'Add 5-card PR pack prize (1000 Coins)',
+        prPackHint: 'Requires 10 check-ins at start or the 1000 Coins are refunded. Winner gets the pack in addition to the coin pool.'
       },
       entrant: {
         winner: 'Winner',

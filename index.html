@@ -109,7 +109,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
-<link rel="stylesheet" href="client/css/tournament.css?v=15">
+<link rel="stylesheet" href="client/css/tournament.css?v=16">
 <link rel="stylesheet" href="client/css/portrait.css?v=94">
 <link rel="stylesheet" href="client/css/social.css?v=27">
 
@@ -2178,6 +2178,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
             <label><span data-i18n="tournament.field.minPlayers">Min players</span> <input id="tournament-create-min" type="number" min="2" max="32" value="2"></label>
             <label><span data-i18n="tournament.field.maxPlayers">Max players</span> <input id="tournament-create-max" type="number" min="2" max="32" value="8"></label>
             <label><span data-i18n="tournament.field.entryFee">Entry fee (Coins)</span> <input id="tournament-create-fee" type="number" min="0" value="0"></label>
+            <label class="tournament-create-prpack">
+              <input id="tournament-create-prpack" type="checkbox">
+              <span data-i18n="tournament.field.prPack">Add 5-card PR pack prize (1000 Coins)</span>
+            </label>
+            <p class="tournament-muted tournament-create-prpack-hint" data-i18n="tournament.field.prPackHint">Requires 10 check-ins at start or the 1000 Coins are refunded. Winner gets the pack in addition to the coin pool.</p>
             <label><span data-i18n="tournament.field.gameMode">Game mode</span>
               <select id="tournament-create-mode">
                 <option value="standard" data-i18n="tournament.mode.standard">Standard</option>
@@ -2859,7 +2864,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=174"></script>
+<script src="i18n.js?v=175"></script>
 <script src="log_i18n.js?v=17"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=32"></script>
@@ -2877,7 +2882,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   } catch (e) { /* ignore */ }
 })();
 </script>
-<script src="client/js/tournament.js?v=21"></script>
+<script src="client/js/tournament.js?v=22"></script>
 <script src="client/js/sleeves.js?v=15"></script>
 <script src="client/js/playmats.js?v=8"></script>
 <script src="client/js/apk-asset-cache.js?v=8"></script>

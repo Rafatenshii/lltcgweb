@@ -376,4 +376,141 @@ final class TournamentLifecycleTest extends TestCase
         $this->assertSame($players[1], (string)$playoff[1]['p1_discord_id']);
         $this->assertSame($players[2], (string)$playoff[1]['p2_discord_id']);
     }
+
+    public function testCancelRefundsPrPackEscrow(): void
+    {
+        $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        $host = 'tt_prh_' . $suffix;
+        $tid = 'TP' . $suffix;
+        $this->tournamentIds[] = $tid;
+        $this->ensureUser($host, 5000);
+
+        $db = tcgDb();
+        $now = time();
+        $settings = tcgTournamentEncodeSettings([
+            'pr_pack' => 1,
+            'pr_pack_status' => 'escrowed',
+        ]);
+        $db->prepare(
+            'INSERT INTO tcg_tournaments
+             (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
+              min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
+             VALUES (?, ?, "PR Cancel", "open", "standard", ?, 10, 2, 16, 0, 0, ?, ?, ?)'
+        )->execute([$tid, $host, $now + 3600, $settings, $now, $now]);
+        tcgTournamentLedgerWrite($tid, $host, 'host_pr_pack_escrow', TCG_TOURNAMENT_PR_PACK_COST, 'prpack:' . $tid, [
+            'pack_size' => TCG_TOURNAMENT_PR_PACK_SIZE,
+        ]);
+        tcgDeductCoins($host, TCG_TOURNAMENT_PR_PACK_COST);
+
+        $before = tcgGetCoins($host);
+        tcgTournamentCancelAndRefund($tid, 'test_pr');
+        $this->assertSame($before + TCG_TOURNAMENT_PR_PACK_COST, tcgGetCoins($host));
+
+        $row = tcgTournamentFetch($tid);
+        $decoded = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+        $this->assertSame('dropped', (string)($decoded['pr_pack_status'] ?? ''));
+        $this->assertSame(0, (int)($row['prize_pool_coins'] ?? -1));
+    }
+
+    public function testStartDropsPrPackWhenFewerThanTenCheckins(): void
+    {
+        $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        $host = 'tt_prs_' . $suffix;
+        $tid = 'TS' . $suffix;
+        $this->tournamentIds[] = $tid;
+        $this->ensureUser($host, 5000);
+
+        $players = [];
+        for ($i = 0; $i < 4; $i++) {
+            $pid = 'tt_prc' . $i . '_' . $suffix;
+            $players[] = $pid;
+            $this->ensureUser($pid, 1000);
+        }
+
+        $db = tcgDb();
+        $now = time();
+        $settings = tcgTournamentEncodeSettings([
+            'format' => 'single_elim',
+            'pr_pack' => 1,
+            'pr_pack_status' => 'escrowed',
+        ]);
+        $db->prepare(
+            'INSERT INTO tcg_tournaments
+             (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
+              min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
+             VALUES (?, ?, "PR Drop Start", "checkin", "standard", ?, 10, 2, 16, 0, 400, ?, ?, ?)'
+        )->execute([$tid, $host, $now - 10, $settings, $now, $now]);
+        tcgTournamentLedgerWrite($tid, $host, 'host_pr_pack_escrow', TCG_TOURNAMENT_PR_PACK_COST, 'prpack:' . $tid, []);
+        tcgDeductCoins($host, TCG_TOURNAMENT_PR_PACK_COST);
+
+        foreach ($players as $pid) {
+            $db->prepare(
+                'INSERT INTO tcg_tournament_entrants
+                 (tournament_id, discord_id, status, seed, deck_snapshot, paid_coins, registered_at, checked_in_at)
+                 VALUES (?, ?, "checked_in", NULL, "{}", 0, ?, ?)'
+            )->execute([$tid, $pid, $now, $now]);
+        }
+
+        $before = tcgGetCoins($host);
+        $row = tcgTournamentFetch($tid);
+        $this->assertTrue(tcgTournamentStartBracket($tid, $row));
+
+        $this->assertSame($before + TCG_TOURNAMENT_PR_PACK_COST, tcgGetCoins($host));
+        $after = tcgTournamentFetch($tid);
+        $this->assertSame('running', (string)($after['status'] ?? ''));
+        $decoded = tcgTournamentDecodeSettings($after['settings_json'] ?? '{}');
+        $this->assertSame('dropped', (string)($decoded['pr_pack_status'] ?? ''));
+        $this->assertSame(400, (int)($after['prize_pool_coins'] ?? -1), 'coin pool must stay separate from PR escrow');
+    }
+
+    public function testPayoutAwardsPrPackInResults(): void
+    {
+        $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        $host = 'tt_pra_' . $suffix;
+        $p1 = 'tt_prw_' . $suffix;
+        $p2 = 'tt_prl_' . $suffix;
+        $tid = 'TA' . $suffix;
+        $this->tournamentIds[] = $tid;
+        $this->ensureUser($host, 5000);
+        $this->ensureUser($p1, 1000);
+        $this->ensureUser($p2, 1000);
+
+        $db = tcgDb();
+        $now = time();
+        tcgTournamentEnsureResultsColumn();
+        $settings = tcgTournamentEncodeSettings([
+            'pr_pack' => 1,
+            'pr_pack_status' => 'escrowed',
+        ]);
+        $db->prepare(
+            'INSERT INTO tcg_tournaments
+             (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
+              min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
+             VALUES (?, ?, "PR Award", "running", "standard", ?, 10, 2, 16, 0, 1000, ?, ?, ?)'
+        )->execute([$tid, $host, $now - 60, $settings, $now, $now]);
+        tcgTournamentLedgerWrite($tid, $host, 'host_pr_pack_escrow', TCG_TOURNAMENT_PR_PACK_COST, 'prpack:' . $tid, []);
+
+        foreach ([$p1, $p2] as $pid) {
+            $db->prepare(
+                'INSERT INTO tcg_tournament_entrants
+                 (tournament_id, discord_id, status, seed, deck_snapshot, paid_coins, registered_at, checked_in_at)
+                 VALUES (?, ?, "playing", NULL, "{}", 0, ?, ?)'
+            )->execute([$tid, $pid, $now, $now]);
+        }
+
+        $row = tcgTournamentFetch($tid);
+        $this->assertTrue(tcgTournamentPayoutAndFinish($tid, $row, [$p1, $p2]));
+
+        $finished = tcgTournamentFetch($tid);
+        $results = tcgTournamentResultsForRow($finished);
+        $this->assertNotNull($results);
+        $this->assertTrue(!empty($results['pr_pack']['awarded']));
+        $this->assertSame(TCG_TOURNAMENT_PR_PACK_SIZE, (int)($results['pr_pack']['pack_size'] ?? 0));
+        $decoded = tcgTournamentDecodeSettings($finished['settings_json'] ?? '{}');
+        $this->assertSame('awarded', (string)($decoded['pr_pack_status'] ?? ''));
+
+        $pub = tcgTournamentPublicRow($finished, ['total' => 2, 'checked_in' => 2]);
+        $this->assertTrue(!empty($pub['pr_pack']['awarded']));
+        $this->assertSame('awarded', (string)($pub['pr_pack']['status'] ?? ''));
+    }
 }

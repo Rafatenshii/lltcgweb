@@ -112,6 +112,16 @@ function tcgTournamentStartBracket(string $id): bool {
         return false;
     }
 
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    // PR pack needs 10 check-ins; otherwise refund host escrow and continue with coins only.
+    if (!empty($settings['pr_pack']) && (string)($settings['pr_pack_status'] ?? '') === 'escrowed') {
+        if (count($checked) < TCG_TOURNAMENT_PR_PACK_MIN_CHECKINS) {
+            tcgTournamentRefundPrPackEscrow($id, $row, 'pr_pack_min_checkin');
+            $row = tcgTournamentFetch($id) ?: $row;
+            $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+        }
+    }
+
     shuffle($checked);
     $playerIds = [];
     foreach ($checked as $i => $e) {
@@ -122,7 +132,6 @@ function tcgTournamentStartBracket(string $id): bool {
         $playerIds[] = (string)$e['discord_id'];
     }
 
-    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
     $format = (string)($settings['format'] ?? 'single_elim');
     $bestOf = (int)($settings['best_of'] ?? 1);
 
@@ -243,9 +252,25 @@ function tcgTournamentCancelAndRefund(string $id, string $reason = 'cancel'): vo
             tcgAddCoins((string)$row['host_discord_id'], $newPool);
             $newPool = 0;
         }
+        // Refund PR-pack escrow (outside coin pool) before marking cancelled.
+        $settings = tcgTournamentDecodeSettings(($fresh ?: $row)['settings_json'] ?? '{}');
+        if (!empty($settings['pr_pack']) && (string)($settings['pr_pack_status'] ?? '') === 'escrowed') {
+            $prKey = 'refund_pr_pack:' . $id;
+            if (tcgTournamentLedgerWrite(
+                $id,
+                (string)$row['host_discord_id'],
+                'refund',
+                TCG_TOURNAMENT_PR_PACK_COST,
+                $prKey,
+                ['reason' => $reason, 'kind' => 'pr_pack_escrow']
+            )) {
+                tcgAddCoins((string)$row['host_discord_id'], TCG_TOURNAMENT_PR_PACK_COST);
+            }
+            $settings['pr_pack_status'] = 'dropped';
+        }
         $db->prepare(
-            'UPDATE tcg_tournaments SET status = "cancelled", prize_pool_coins = ?, updated_at = ? WHERE id = ?'
-        )->execute([$newPool, time(), $id]);
+            'UPDATE tcg_tournaments SET status = "cancelled", prize_pool_coins = ?, settings_json = ?, updated_at = ? WHERE id = ?'
+        )->execute([$newPool, tcgTournamentEncodeSettings($settings), time(), $id]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
@@ -1484,7 +1509,7 @@ function tcgTournamentTryFinish(string $tournamentId): bool {
 }
 
 /**
- * Coin pool payout only (no cosmetic prizes).
+ * Coin pool payout + optional host-funded PR pack for the champion.
  *
  * @param array<string,mixed> $row
  * @param list<string> $places discord ids 1st..nth
@@ -1498,6 +1523,17 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
     $pool = (int)$row['prize_pool_coins'];
     $winner = $places[0];
     $percents = tcgTournamentPrizePercents(count($places));
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $prEscrowed = !empty($settings['pr_pack'])
+        && (string)($settings['pr_pack_status'] ?? '') === 'escrowed';
+    $prMeta = null;
+    if ($prEscrowed) {
+        $prMeta = ['awarded' => true, 'dropped' => false, 'pack_size' => TCG_TOURNAMENT_PR_PACK_SIZE];
+        $settings['pr_pack_status'] = 'awarded';
+    } elseif (!empty($settings['pr_pack']) && (string)($settings['pr_pack_status'] ?? '') === 'dropped') {
+        $prMeta = ['awarded' => false, 'dropped' => true, 'pack_size' => TCG_TOURNAMENT_PR_PACK_SIZE];
+    }
+
     $db = tcgDb();
     $db->beginTransaction();
     try {
@@ -1527,13 +1563,13 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
             }
         }
         $finishedAt = time();
-        $resultsPayload = tcgTournamentBuildResults($placeRows, $pool, $finishedAt);
+        $resultsPayload = tcgTournamentBuildResults($placeRows, $pool, $finishedAt, $prMeta);
         $resultsJson = json_encode($resultsPayload, JSON_UNESCAPED_UNICODE) ?: '{}';
         $db->prepare(
             'UPDATE tcg_tournaments
-             SET status = "finished", prize_pool_coins = 0, results_json = ?, updated_at = ?
+             SET status = "finished", prize_pool_coins = 0, results_json = ?, settings_json = ?, updated_at = ?
              WHERE id = ?'
-        )->execute([$resultsJson, $finishedAt, $tournamentId]);
+        )->execute([$resultsJson, tcgTournamentEncodeSettings($settings), $finishedAt, $tournamentId]);
         $db->prepare(
             'UPDATE tcg_tournament_entrants SET status = "eliminated"
              WHERE tournament_id = ? AND status = "playing" AND discord_id != ?'
@@ -1548,6 +1584,36 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
             $db->rollBack();
         }
         throw $e;
+    }
+
+    if ($prEscrowed) {
+        try {
+            if (!function_exists('tcgGrantPrPackCards')) {
+                require_once __DIR__ . '/ranked_pr_rewards.php';
+            }
+            $pack = tcgGrantPrPackCards($winner, TCG_TOURNAMENT_PR_PACK_SIZE);
+            $cardNos = [];
+            foreach (($pack['cards'] ?? []) as $c) {
+                if (is_array($c) && !empty($c['card_no'])) {
+                    $cardNos[] = (string)$c['card_no'];
+                }
+            }
+            tcgTournamentLedgerWrite(
+                $tournamentId,
+                $winner,
+                'pr_pack_payout',
+                0,
+                'pr_pack_payout:' . $tournamentId . ':' . $winner,
+                [
+                    'pack_size' => (int)($pack['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE),
+                    'card_nos' => $cardNos,
+                    'star_gems_earned' => (int)($pack['star_gems_earned'] ?? 0),
+                    'cards' => $pack['cards'] ?? [],
+                ]
+            );
+        } catch (Throwable $e) {
+            error_log('tournament PR pack grant failed ' . $tournamentId . ': ' . $e->getMessage());
+        }
     }
     return true;
 }

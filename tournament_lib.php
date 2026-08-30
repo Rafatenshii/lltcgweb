@@ -14,6 +14,10 @@ const TCG_TOURNAMENT_MIN_CHECKIN_MINS = 5;
 const TCG_TOURNAMENT_MAX_CHECKIN_MINS = 10;
 const TCG_TOURNAMENT_MIN_PLAYERS = 2;
 const TCG_TOURNAMENT_MAX_PLAYERS_CAP = 32;
+/** Optional host-funded PR pack prize (separate from coin pool). */
+const TCG_TOURNAMENT_PR_PACK_COST = 1000;
+const TCG_TOURNAMENT_PR_PACK_SIZE = 5;
+const TCG_TOURNAMENT_PR_PACK_MIN_CHECKINS = 10;
 
 /**
  * Optional Discord ID allowlist. Empty = open to everyone when tournaments are enabled.
@@ -177,7 +181,81 @@ function tcgTournamentNormalizeSettings(array $settings, ?string $gameMode = nul
     if (array_key_exists('bracket_size', $settings)) {
         $out['bracket_size'] = max(2, (int)$settings['bracket_size']);
     }
+    // Host-funded PR pack prize (escrowed separately from coin pool).
+    $prOn = !empty($settings['pr_pack']) || !empty($settings['pr_pack_prize']);
+    if ($prOn || array_key_exists('pr_pack_status', $settings)) {
+        $out['pr_pack'] = $prOn ? 1 : 0;
+        $st = (string)($settings['pr_pack_status'] ?? ($prOn ? 'escrowed' : 'none'));
+        if (!in_array($st, ['escrowed', 'dropped', 'awarded', 'none'], true)) {
+            $st = $prOn ? 'escrowed' : 'none';
+        }
+        $out['pr_pack_status'] = $st;
+    }
     return $out;
+}
+
+/**
+ * Public PR-pack prize summary for list/detail cards.
+ *
+ * @param array<string,mixed> $settings
+ * @param array<string,mixed>|null $results enriched or raw results
+ * @return array{enabled:bool,cost:int,pack_size:int,min_checkins:int,status:string,awarded:bool}|null
+ */
+function tcgTournamentPrPackPublic(array $settings, ?array $results = null): ?array {
+    $enabled = !empty($settings['pr_pack']);
+    $status = (string)($settings['pr_pack_status'] ?? ($enabled ? 'escrowed' : 'none'));
+    $fromResults = is_array($results['pr_pack'] ?? null) ? $results['pr_pack'] : null;
+    if (!$enabled && !$fromResults) {
+        return null;
+    }
+    $awarded = !empty($fromResults['awarded']) || $status === 'awarded';
+    $dropped = !empty($fromResults['dropped']) || $status === 'dropped';
+    if ($awarded) {
+        $status = 'awarded';
+    } elseif ($dropped) {
+        $status = 'dropped';
+    }
+    return [
+        'enabled' => true,
+        'cost' => TCG_TOURNAMENT_PR_PACK_COST,
+        'pack_size' => (int)($fromResults['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE),
+        'min_checkins' => TCG_TOURNAMENT_PR_PACK_MIN_CHECKINS,
+        'status' => $status,
+        'awarded' => $awarded,
+        'dropped' => $dropped,
+    ];
+}
+
+/**
+ * Refund host PR-pack escrow if still escrowed. Updates settings_json.
+ *
+ * @param array<string,mixed> $row
+ */
+function tcgTournamentRefundPrPackEscrow(string $tournamentId, array $row, string $reason): bool {
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    if (empty($settings['pr_pack']) || (string)($settings['pr_pack_status'] ?? '') !== 'escrowed') {
+        return false;
+    }
+    $host = (string)($row['host_discord_id'] ?? '');
+    if ($host === '') {
+        return false;
+    }
+    $key = 'refund_pr_pack:' . $tournamentId;
+    if (!tcgTournamentLedgerWrite($tournamentId, $host, 'refund', TCG_TOURNAMENT_PR_PACK_COST, $key, [
+        'reason' => $reason,
+        'kind' => 'pr_pack_escrow',
+    ])) {
+        // Already refunded
+        $settings['pr_pack_status'] = 'dropped';
+        tcgDb()->prepare('UPDATE tcg_tournaments SET settings_json = ?, updated_at = ? WHERE id = ?')
+            ->execute([tcgTournamentEncodeSettings($settings), time(), $tournamentId]);
+        return false;
+    }
+    tcgAddCoins($host, TCG_TOURNAMENT_PR_PACK_COST);
+    $settings['pr_pack_status'] = 'dropped';
+    tcgDb()->prepare('UPDATE tcg_tournaments SET settings_json = ?, updated_at = ? WHERE id = ?')
+        ->execute([tcgTournamentEncodeSettings($settings), time(), $tournamentId]);
+    return true;
 }
 
 /**
@@ -216,6 +294,9 @@ function tcgTournamentNotifyWebhook(string $event, array $row): void {
             $content .= "\nWinner: **" . $wName . "**";
             if ($wCoins > 0) {
                 $content .= ' (+' . $wCoins . ' Coins)';
+            }
+            if (!empty($results['pr_pack']['awarded'])) {
+                $content .= ' + PR Pack ×' . (int)($results['pr_pack']['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE);
             }
             $pool = (int)($results['prize_pool_total'] ?? 0);
             if ($pool > 0) {
@@ -415,18 +496,27 @@ function tcgTournamentDecodeResults(mixed $raw): ?array {
         return null;
     }
     usort($places, static fn($a, $b) => $a['place'] <=> $b['place']);
-    return [
+    $out = [
         'prize_pool_total' => max(0, (int)($data['prize_pool_total'] ?? 0)),
         'finished_at' => max(0, (int)($data['finished_at'] ?? 0)),
         'places' => $places,
     ];
+    if (is_array($data['pr_pack'] ?? null)) {
+        $out['pr_pack'] = [
+            'awarded' => !empty($data['pr_pack']['awarded']),
+            'dropped' => !empty($data['pr_pack']['dropped']),
+            'pack_size' => max(0, (int)($data['pr_pack']['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE)),
+        ];
+    }
+    return $out;
 }
 
 /**
  * @param list<array{discord_id:string,place:int,coins:int}> $places
- * @return array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>}
+ * @param array{awarded?:bool,dropped?:bool,pack_size?:int}|null $prPack
+ * @return array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>,pr_pack?:array{awarded:bool,dropped:bool,pack_size:int>}
  */
-function tcgTournamentBuildResults(array $places, int $prizePoolTotal, ?int $finishedAt = null): array {
+function tcgTournamentBuildResults(array $places, int $prizePoolTotal, ?int $finishedAt = null, ?array $prPack = null): array {
     $clean = [];
     foreach ($places as $p) {
         $did = trim((string)($p['discord_id'] ?? ''));
@@ -441,11 +531,19 @@ function tcgTournamentBuildResults(array $places, int $prizePoolTotal, ?int $fin
         ];
     }
     usort($clean, static fn($a, $b) => $a['place'] <=> $b['place']);
-    return [
+    $out = [
         'prize_pool_total' => max(0, $prizePoolTotal),
         'finished_at' => $finishedAt ?? time(),
         'places' => $clean,
     ];
+    if (is_array($prPack)) {
+        $out['pr_pack'] = [
+            'awarded' => !empty($prPack['awarded']),
+            'dropped' => !empty($prPack['dropped']),
+            'pack_size' => max(0, (int)($prPack['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE)),
+        ];
+    }
+    return $out;
 }
 
 /**
@@ -485,12 +583,20 @@ function tcgTournamentEnrichResults(?array $results): ?array {
         ];
     }
     $winner = $places[0] ?? null;
-    return [
+    $out = [
         'prize_pool_total' => (int)$results['prize_pool_total'],
         'finished_at' => (int)$results['finished_at'],
         'winner' => $winner,
         'places' => $places,
     ];
+    if (is_array($results['pr_pack'] ?? null)) {
+        $out['pr_pack'] = [
+            'awarded' => !empty($results['pr_pack']['awarded']),
+            'dropped' => !empty($results['pr_pack']['dropped']),
+            'pack_size' => max(0, (int)($results['pr_pack']['pack_size'] ?? TCG_TOURNAMENT_PR_PACK_SIZE)),
+        ];
+    }
+    return $out;
 }
 
 /**
@@ -1077,6 +1183,10 @@ function tcgTournamentPublicRow(array $row, ?array $counts = null): array {
         if ((string)$row['status'] === 'finished' && (int)$out['prize_pool_coins'] === 0) {
             $out['prize_pool_total'] = (int)$results['prize_pool_total'];
         }
+    }
+    $pr = tcgTournamentPrPackPublic($settings, is_array($results) ? $results : null);
+    if ($pr !== null) {
+        $out['pr_pack'] = $pr;
     }
     return $out;
 }
