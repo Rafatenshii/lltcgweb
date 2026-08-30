@@ -895,7 +895,7 @@
               });
               G.gameState = d;
               G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq ?? 0);
-              renderGame(d, { skipLog: true });
+              renderGame(d, { skipLog: true, skipPrompt: true });
               if (G.playerId && typeof updatePhaseActionButton === 'function') {
                 updatePhaseActionButton(d, G.playerId);
               }

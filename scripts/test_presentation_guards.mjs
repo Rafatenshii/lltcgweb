@@ -46,12 +46,18 @@ const afterJudgeMain = { seq: 21, phase: 'main_first', active_player: 'p1' };
 check('live_judge is a Win/Loss pipeline phase', g.isLiveWinLossPipelinePhase('live_judge'));
 check('live_show judge is in flight', g.liveShowInFlight(liveJudge));
 
-check('allow Main catch-up despite leftover Checking hearts (no live_show)', g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { heartCheckHold: true }));
+check('allow End Main despite leftover Checking hearts (no live_show)', g.mayForceApplyHeldSnapshot(
+  { seq: 4, phase: 'main_first', active_player: 'p1' },
+  { seq: 5, phase: 'main_second', active_player: 'p2' },
+  { heartCheckHold: true },
+));
 check('allow End Main despite leftover spectacle flags on settled Main', g.mayForceApplyHeldSnapshot(
   { seq: 4, phase: 'main_first', active_player: 'p1' },
   { seq: 5, phase: 'main_second', active_player: 'p2' },
   { perfSpectacle: true, heartCheckHold: true },
 ));
+check('never force-apply Main catch-up through leftover Checking hearts', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { heartCheckHold: true }));
+check('never force-apply Main catch-up through leftover empty-LIVE playback', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { liveRoundPlayback: true }));
 check('never force-apply while live_show runner owns Win/Loss', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { liveShowRunner: true }));
 check('never force-apply incoming live_judge', !g.mayForceApplyHeldSnapshot(
   { seq: 8, phase: 'live_set', active_player: 'p1' },
@@ -202,7 +208,24 @@ check('live_start/success not in needsResurface after resolve',
   !/needsResurface = \(pr\.type === 'pick_judge_success_live'[\s\S]*s\.phase === 'live_start_effects'/.test(spectacleSrc));
 check('resolved prompt identity never resurfaces',
   /_lastResolvedPromptKey === surfKey[\s\S]{0,200}return;/.test(spectacleSrc)
-  && !/needsResurface = \(pr\.type === 'pick_judge_success_live'/.test(spectacleSrc));
+  || /_lastResolvedPromptKey === logicalKey/.test(spectacleSrc));
+check('promptLogicalKey is seq-free (turn-scoped)',
+  (() => {
+    const src = fs.readFileSync(path.join(root, 'client/js/prompt-renderer.js'), 'utf8');
+    return /promptLogicalKey\s*=\s*function/.test(src)
+      && /\$\{turn\}:\$\{pr\.type\}/.test(src)
+      && !/promptLogicalKey[\s\S]{0,400}s\.seq/.test(src);
+  })());
+check('renderPrompt respects isPromptAlreadyResolved',
+  /isPromptAlreadyResolved/.test(
+    fs.readFileSync(path.join(root, 'client/js/prompt-renderer.js'), 'utf8'),
+  ));
+check('force-apply never clears lastResolvedPromptKey',
+  /Never clear _lastResolvedPromptKey/.test(applySrc)
+  && !/dismissLocalPromptChrome\('turn-advance'\)[\s\S]{0,400}G\._lastResolvedPromptKey = null/.test(applySrc));
+check('flushPending forceAdvance is turn-advance only',
+  /isTurnAdvanceSnapshot\?\.?\(G\.gameState, next\)/.test(applySrc)
+  || /guards\?\.isTurnAdvanceSnapshot/.test(applySrc));
 check('dismissLocalPromptChrome keeps lastResolvedPromptKey',
   /function dismissLocalPromptChrome\([\s\S]*?Keep _lastResolvedPromptKey/.test(spectacleSrc)
   || (/function dismissLocalPromptChrome\(/.test(spectacleSrc)

@@ -145,12 +145,12 @@
       LiveRoundDirector.abort('turn-advance');
     }
     // Force-apply must not leave an old picker open while the new board paints.
+    // Never clear _lastResolvedPromptKey — that reopened answered skills.
     if (typeof global.dismissLocalPromptChrome === 'function') {
       global.dismissLocalPromptChrome('turn-advance');
     } else {
       G._promptSubmitKey = null;
       G._resolvePromptSentKey = null;
-      G._lastResolvedPromptKey = null;
       G._lastSurfacedPromptKey = null;
       if (typeof clearDeferredPromptState === 'function') {
         clearDeferredPromptState({ skipBannerRefresh: true });
@@ -160,10 +160,13 @@
     if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
     else G._perfHeartCheckHold = false;
     if (typeof perfCloseSpectacle === 'function' && G._perfSpectacleActive) {
-      // Only when leaving settled play — applyTurnAdvanceNow is never used mid live_show.
       perfCloseSpectacle();
     } else {
       G._perfSpectacleActive = false;
+    }
+    // Seal empty-LIVE / spectacle so applyStateUpdate cannot re-present the gap.
+    if (typeof markEmptyLiveRoundPresented === 'function' && G.gameState) {
+      try { markEmptyLiveRoundPresented(G.gameState, s); } catch (_) { /* ignore */ }
     }
     G.animating = false;
     G._liveRoundPlaybackActive = false;
@@ -279,13 +282,12 @@
     }
     const guards = global.LLTCG_PRESENTATION_GUARDS;
     const holdFlags = presentationFlagsFromG();
+    // Only force-apply when presentation is actually holding AND the snapshot is a
+    // permitted turn-advance / plain Main catch-up. Do not treat leftover chrome
+    // flags alone as a reason to abort healthy skill animations.
     if (guards && guards.mayForceApplyHeldSnapshot(G.gameState, s, holdFlags)
         && (G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight
           || holdFlags.directorActive
-          || holdFlags.heartCheckHold
-          || holdFlags.perfSpectacle
-          || holdFlags.spectacleGate
-          || !!G._livePollHold
           || shouldHoldStateForLocalPrompt(s))) {
       return applyTurnAdvanceNow(s);
     }
@@ -1296,7 +1298,9 @@
     const next = q[0];
     const guards = global.LLTCG_PRESENTATION_GUARDS;
     const holdFlags = presentationFlagsFromG();
+    // Only End Main / phase handoffs abort presentation mid-flight — not board catch-up.
     const forceAdvance = !!(G._actionApplyEpoch
+      && guards?.isTurnAdvanceSnapshot?.(G.gameState, next)
       && guards?.mayForceApplyHeldSnapshot?.(G.gameState, next, holdFlags));
     if (isPresentationSuperseded() && !forceAdvance) return;
     if (G.animating && !forceAdvance) return;

@@ -4595,13 +4595,14 @@ function ensurePendingPromptSurfaced(s, myId) {
     || el('overlay-hand-pick')?.classList.contains('open')
     || el('overlay-pick')?.classList.contains('open')
   )) return;
-  // Same identity already answered this round — do not reopen after overlay close.
-  // pick_judge_success_live / WR multi-step may close the overlay while the server
-  // still waits; Live Start / Live Success only resurface via sendAct error / noop
-  // (which clears _lastResolvedPromptKey), never after a successful resolve ack.
+  // Same identity already answered this turn — do not reopen after overlay close.
+  // Compare logical (turn+type+step+…) so a seq bump after resolve cannot reopen.
+  // Mid-step WR picks change step and get a new logical key.
+  const logicalKey = typeof promptLogicalKey === 'function' ? promptLogicalKey(s) : null;
+  if (logicalKey && G._lastResolvedPromptKey === logicalKey) {
+    return;
+  }
   if (G._lastResolvedPromptKey === surfKey) {
-    // Already answered this identity — never reopen (double prompts / softlocks).
-    // Mid-step WR picks advance step on the server and get a new surfKey.
     return;
   }
   G._lastSurfacedPromptKey = surfKey;

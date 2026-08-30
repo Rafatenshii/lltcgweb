@@ -44,24 +44,38 @@
     return `${s.seq}:${pr.type}:${pr.step ?? ''}:${pr.responder ?? ''}:${src}:${abIdx}`;
   };
 
+  /**
+   * Seq-free identity for "already answered this skill this turn".
+   * Seq bumps after resolve must not reopen the same picker (force-apply / poll races).
+   */
+  global.promptLogicalKey = function promptLogicalKey(s) {
+    const pr = s?.pending_prompt;
+    if (!pr || !s) return null;
+    const src = pr.source_id || pr.card_instance_id || pr.source_instance_id || '';
+    const abIdx = pr.ability_index ?? '';
+    const turn = s.turn ?? '';
+    return `${turn}:${pr.type}:${pr.step ?? ''}:${pr.responder ?? ''}:${src}:${abIdx}`;
+  };
+
   global.promptSubmitKey = function promptSubmitKey(s) {
     return global.promptIdentityKey(s);
   };
 
   global.markPromptSubmitting = function markPromptSubmitting(s) {
-    const key = global.promptSubmitKey(s || global.G.gameState);
+    const snap = s || global.G.gameState;
+    const key = global.promptSubmitKey(snap);
     global.G._promptSubmitKey = key;
-    // Remember answered identity so ensurePendingPromptSurfaced cannot reopen it
-    // after the overlay closes (stale gate-entry snapshots).
-    if (key) global.G._lastResolvedPromptKey = key;
+    // Remember answered identity so ensurePendingPromptSurfaced / renderPrompt cannot
+    // reopen it after the overlay closes (stale gate-entry / force-apply races).
+    const logical = global.promptLogicalKey(snap);
+    if (logical) global.G._lastResolvedPromptKey = logical;
   };
 
   global.syncPromptSubmitState = function syncPromptSubmitState(s) {
     const pr = s?.pending_prompt;
     if (!pr) {
-      if (global.G._promptSubmitKey) {
-        global.G._lastResolvedPromptKey = global.G._promptSubmitKey;
-      }
+      // Prompt cleared — keep logical _lastResolvedPromptKey so a stale same-turn
+      // snapshot cannot reopen after force-apply / dismiss cleared the submit latch.
       global.G._promptSubmitKey = null;
       global.G._resolvePromptSentKey = null;
       global.G._lastSurfacedPromptKey = null;
@@ -69,21 +83,28 @@
       return;
     }
     const idKey = global.promptIdentityKey(s);
-    if (!global.G._promptSubmitKey) return;
-    if (idKey !== global.G._promptSubmitKey) {
-      // Multi-step skills (Ginko yes→pick_wr_live) and chained Live prompts must not
-      // keep the prior submit/resolved lock, or the next picker never opens.
-      global.G._lastResolvedPromptKey = null;
-      global.G._promptSubmitKey = null;
-      global.G._resolvePromptSentKey = null;
-      global.G._lastSurfacedPromptKey = null;
-    }
+    const logical = global.promptLogicalKey(s);
+    // Same logical skill still pending (seq-only bump or slow ack) — keep locks.
+    if (logical && global.G._lastResolvedPromptKey === logical) return;
+    if (global.G._promptSubmitKey && idKey === global.G._promptSubmitKey) return;
+    if (!global.G._promptSubmitKey && !global.G._lastResolvedPromptKey) return;
+    // Different skill/step — allow the next picker (Ginko yes→WR, chained Live Start).
+    global.G._lastResolvedPromptKey = null;
+    global.G._promptSubmitKey = null;
+    global.G._resolvePromptSentKey = null;
+    global.G._lastSurfacedPromptKey = null;
   };
 
   global.isPromptSubmitting = function isPromptSubmitting(s) {
     if (!global.G._promptSubmitKey) return false;
     const key = global.promptSubmitKey(s);
-    return !!key && key === global.G._promptSubmitKey;
+    if (key && key === global.G._promptSubmitKey) return true;
+    return false;
+  };
+
+  global.isPromptAlreadyResolved = function isPromptAlreadyResolved(s) {
+    const logical = global.promptLogicalKey(s);
+    return !!(logical && global.G._lastResolvedPromptKey === logical);
   };
 
   global.suppressPromptOverlaysWhileSubmitting = function suppressPromptOverlaysWhileSubmitting() {
@@ -2342,6 +2363,12 @@ global.renderPrompt = function renderPrompt(s, myId){
     const submittingSurveil = s.pending_prompt?.type === 'surveil_arrange'
       && el('overlay-surveil')?.classList.contains('open');
     if (!submittingSurveil) suppressPromptOverlaysWhileSubmitting();
+    return;
+  }
+  // Force-apply / dismiss clears submit latch but keeps logical lastResolved —
+  // never reopen the skill the player already answered this turn.
+  if (!replayReadOnly && typeof isPromptAlreadyResolved === 'function' && isPromptAlreadyResolved(s)) {
+    suppressPromptOverlaysWhileSubmitting();
     return;
   }
   if(pr) pr=ensurePromptChoices(pr);

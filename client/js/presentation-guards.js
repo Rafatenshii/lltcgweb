@@ -103,9 +103,9 @@
    * Must stay false for any Live Win/Loss / live_show cursor — aborting the
    * director there parks both players on "Checking hearts…" / Live Win/Loss Check.
    *
-   * Leftover Checking-hearts / spectacle flags after an empty LIVE or aborted
-   * presentLiveRound must NOT block End Main: that queued the board until the
-   * ~1.8s Main hysteresis and looked like "need a refresh to advance".
+   * Turn advances (phase / active player) may pierce leftover Checking-hearts /
+   * empty-LIVE chrome. Main board catch-up (hand/stage) must NOT — that aborted
+   * healthy skill animations and reopened answered prompts.
    */
   function mayForceApplyHeldSnapshot(prev, next, flags) {
     flags = flags || {};
@@ -115,14 +115,27 @@
     if (liveShowInFlight(prev) || liveShowInFlight(next)) return false;
     if (flags.liveShowRunner) return false;
     if (isLiveWinLossPipelinePhase(next.phase) && next.status !== 'finished') return false;
-    const turnOrBoard = isTurnAdvanceSnapshot(prev, next) || isMainBoardCatchupSnapshot(prev, next);
-    if (!turnOrBoard) return false;
-    // Leftover chrome on settled play: allow force-apply. Still refuse when leaving
-    // a real Win/Loss pipeline phase (not yet on settled Main / live_set).
-    if ((flags.perfSpectacle || flags.spectacleGate || flags.heartCheckHold)
-        && isLiveWinLossPipelinePhase(prev.phase)
-        && !isSettledPlayPhase(next.phase)
-        && next.status !== 'finished') {
+
+    const turnAdvance = isTurnAdvanceSnapshot(prev, next);
+    const boardCatchup = isMainBoardCatchupSnapshot(prev, next);
+    if (!turnAdvance && !boardCatchup) return false;
+
+    if (turnAdvance) {
+      // Leftover chrome on settled play: allow End Main. Still refuse when leaving
+      // a real Win/Loss pipeline phase (not yet on settled Main / live_set).
+      if ((flags.perfSpectacle || flags.spectacleGate || flags.heartCheckHold)
+          && isLiveWinLossPipelinePhase(prev.phase)
+          && !isSettledPlayPhase(next.phase)
+          && next.status !== 'finished') {
+        return false;
+      }
+      return true;
+    }
+
+    // Main board catch-up: only pierce plain On Enter / log-sync animating —
+    // never Live presentation leftovers (replays animations + reopens skills).
+    if (flags.perfSpectacle || flags.spectacleGate || flags.heartCheckHold
+        || flags.liveRoundPlayback || flags.directorActive) {
       return false;
     }
     return true;
