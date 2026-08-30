@@ -646,6 +646,30 @@
     }
   }
 
+  /** Inject PiP if an older portrait menu mount is missing it. */
+  function ensurePortraitPipMenuItem() {
+    const pop = global.document.getElementById('portrait-menu-pop');
+    if (!pop || global.document.getElementById('btn-portrait-menu-pip')) return;
+    const btn = global.document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pb-menu-item';
+    btn.id = 'btn-portrait-menu-pip';
+    btn.setAttribute('role', 'menuitem');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.hidden = true;
+    const hh = global.document.getElementById('btn-portrait-menu-hidden-hands');
+    const stamps = global.document.getElementById('btn-portrait-menu-stamps');
+    if (hh && hh.parentElement === pop) {
+      pop.insertBefore(btn, hh.nextSibling);
+    } else if (stamps && stamps.parentElement === pop) {
+      pop.insertBefore(btn, stamps);
+    } else {
+      const refreshItem = global.document.getElementById('btn-portrait-menu-refresh');
+      if (refreshItem && refreshItem.parentElement === pop) pop.insertBefore(btn, refreshItem);
+      else pop.appendChild(btn);
+    }
+  }
+
   /** Desktop Stamps lives in the sidebar; portrait chrome hides it — expose via burger. */
   function ensurePortraitStampMenuItem() {
     const pop = global.document.getElementById('portrait-menu-pop');
@@ -680,10 +704,12 @@
   function syncPortraitMenuForMode() {
     ensurePortraitRefreshMenuItem();
     ensurePortraitStampMenuItem();
+    ensurePortraitPipMenuItem();
     ensurePortraitPhaseTimerSlot();
     const spectating = !!(global.G && global.G.isSpectator);
     const pov = global.document.getElementById('btn-portrait-menu-pov');
     const hh = global.document.getElementById('btn-portrait-menu-hidden-hands');
+    const pip = global.document.getElementById('btn-portrait-menu-pip');
     const resignItem = global.document.getElementById('btn-portrait-menu-resign');
     const logItem = global.document.getElementById('btn-portrait-menu-log');
     const refreshItem = global.document.getElementById('btn-portrait-menu-refresh');
@@ -712,6 +738,15 @@
           : t('spectate.hiddenHands', 'Hidden hands'));
       hh.classList.toggle('is-active', on && !locked);
       hh.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    if (pip) {
+      pip.hidden = !spectating;
+      const pipOn = !!(global.TCGSpectatePip && global.TCGSpectatePip.isActive && global.TCGSpectatePip.isActive());
+      pip.textContent = pipOn
+        ? t('spectate.pipExit', 'Exit PiP')
+        : t('spectate.pip', 'Picture-in-Picture');
+      pip.classList.toggle('is-active', pipOn);
+      pip.setAttribute('aria-pressed', pipOn ? 'true' : 'false');
     }
     if (resignItem) {
       if (spectating) {
@@ -764,6 +799,7 @@
       '<div class="pb-menu-pop" id="portrait-menu-pop" hidden role="menu">' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-pov" role="menuitem" hidden></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-hidden-hands" role="menuitem" hidden aria-pressed="false"></button>' +
+        '<button type="button" class="pb-menu-item" id="btn-portrait-menu-pip" role="menuitem" hidden aria-pressed="false"></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-stamps" role="menuitem" hidden></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-refresh" role="menuitem"></button>' +
         '<button type="button" class="pb-menu-item" id="btn-portrait-menu-log" role="menuitem"></button>' +
@@ -1138,6 +1174,17 @@
             global.toggleSpectateHiddenHands();
           } else {
             global.document.getElementById('btn-spectate-hidden-hands')?.click();
+          }
+          syncPortraitMenuForMode();
+          return;
+        }
+        if (t.closest('#btn-portrait-menu-pip')) {
+          e.preventDefault();
+          closePortraitMenu();
+          if (global.TCGSpectatePip && typeof global.TCGSpectatePip.toggle === 'function') {
+            void global.TCGSpectatePip.toggle();
+          } else {
+            global.document.getElementById('btn-spectate-pip')?.click();
           }
           syncPortraitMenuForMode();
           return;

@@ -1517,7 +1517,18 @@
       "hiddenHandsLockedTitle": "Hand fog is set by the tournament host",
       "hiddenHandsLocked": "Hand fog (locked)",
       "delayHold": "Stream delayed — waiting until {n}s behind live",
-      "delayLive": "Stream delayed {n}s"
+      "delayLive": "Stream delayed {n}s",
+      "pip": "Picture-in-Picture",
+      "pipExit": "Exit PiP",
+      "pipTitle": "Picture-in-Picture — float the match while you multitask",
+      "pipExitTitle": "Exit Picture-in-Picture",
+      "pipPlaceholder": "Spectating in Picture-in-Picture. Close the floating window or tap below to return.",
+      "pipReturn": "Return to game",
+      "pipDrag": "Drag",
+      "pipExpand": "Full",
+      "pipExpandTitle": "Return to full game",
+      "pipInappHint": "Floating match — drag, resize, or tap Full to return",
+      "pipSpectateOnly": "Picture-in-Picture is available while spectating."
     },
     "ui": {
       "fullscreen": "Full screen",
@@ -3425,7 +3436,18 @@
       "listTitleTournament": "トーナメントを観戦",
       "hiddenHandsOn": "Hands hidden",
       "delayHold": "配信遅延 — ライブから{n}秒遅れの映像を待っています",
-      "delayLive": "配信遅延 {n}秒"
+      "delayLive": "配信遅延 {n}秒",
+      "pip": "ピクチャーインピクチャー",
+      "pipExit": "PiPを終了",
+      "pipTitle": "ピクチャーインピクチャー — 対戦を浮かべてマルチタスク",
+      "pipExitTitle": "ピクチャーインピクチャーを終了",
+      "pipPlaceholder": "PiPで観戦中です。フローティングウィンドウを閉じるか、下のボタンで戻ります。",
+      "pipReturn": "対戦に戻る",
+      "pipDrag": "ドラッグ",
+      "pipExpand": "全画面",
+      "pipExpandTitle": "通常表示に戻る",
+      "pipInappHint": "フローティング表示 — ドラッグ／リサイズ、または「全画面」で戻る",
+      "pipSpectateOnly": "ピクチャーインピクチャーは観戦中のみ使えます。"
     },
     "ui": {
       "fullscreen": "全画面",

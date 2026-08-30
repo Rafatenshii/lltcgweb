@@ -690,6 +690,22 @@ body.tcg-spectator-mode .btn-spectate-hidden-hands{display:inline-flex}
 .btn-spectate-hidden-hands:focus-visible{
   outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
 }
+.btn-spectate-pip{
+  flex:0 0 auto;width:28px;height:28px;padding:0;border-radius:8px;
+  border:1px solid rgba(186,228,255,.38);background:rgba(100,160,220,.16);
+  color:#d7f0ff;font-size:14px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+}
+body.tcg-spectator-mode .btn-spectate-pip{display:inline-flex}
+.btn-spectate-pip:hover{
+  background:rgba(100,160,220,.3);border-color:rgba(186,228,255,.6);color:#fff;
+}
+.btn-spectate-pip.is-active{
+  border-color:rgba(140,220,255,.85);background:rgba(80,180,255,.28);color:#eaf8ff;
+}
+.btn-spectate-pip:focus-visible{
+  outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
+}
 #screen-game .my-hand-strip .hcard.hand-facedown-spec{
   cursor:default;
 }

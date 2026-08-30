@@ -2055,7 +2055,8 @@ html.tcg-portrait-play .pb-hud .pbadge{
 html.tcg-portrait-play .pb-hud .pmsg,
 html.tcg-portrait-play .pb-hud .spectator-count,
 html.tcg-portrait-play .pb-hud .btn-spectate-pov,
-html.tcg-portrait-play .pb-hud .btn-spectate-hidden-hands{ display:none!important; }
+html.tcg-portrait-play .pb-hud .btn-spectate-hidden-hands,
+html.tcg-portrait-play .pb-hud .btn-spectate-pip{ display:none!important; }
 /* Burger menu already has Leave / POV / hidden hands — no floating spectate bar. */
 html.tcg-portrait-play #spectate-bar{ display:none!important; }
 html.tcg-portrait-play .pb-hud .pbtns{ display:flex; gap:4px; }

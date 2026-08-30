@@ -1327,6 +1327,79 @@ body.tcg-spectator-mode .btn-spectate-hidden-hands{display:inline-flex}
 .btn-spectate-hidden-hands:focus-visible{
   outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
 }
+.btn-spectate-pip{
+  flex:0 0 auto;width:28px;height:28px;padding:0;border-radius:8px;
+  border:1px solid rgba(186,228,255,.38);background:rgba(100,160,220,.16);
+  color:#d7f0ff;font-size:14px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+}
+body.tcg-spectator-mode .btn-spectate-pip{display:inline-flex}
+.btn-spectate-pip:hover{
+  background:rgba(100,160,220,.3);border-color:rgba(186,228,255,.6);color:#fff;
+}
+.btn-spectate-pip.is-active{
+  border-color:rgba(140,220,255,.85);background:rgba(80,180,255,.28);color:#eaf8ff;
+}
+.btn-spectate-pip:focus-visible{
+  outline:2px solid rgba(186,228,255,.75);outline-offset:2px;
+}
+.tcg-spectate-pip-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  min-height:min(52vh,420px);padding:24px 18px;text-align:center;
+  border:1px dashed rgba(186,228,255,.35);border-radius:14px;
+  background:rgba(8,18,32,.55);color:rgba(215,240,255,.92);
+}
+.tcg-spectate-pip-placeholder-msg{margin:0;max-width:28rem;line-height:1.45;font-size:14px;}
+.tcg-spectate-pip-return-btn{min-width:160px;}
+body.tcg-spectate-inapp-pip #game-viewport-frame{
+  position:fixed!important;
+  z-index:10050;
+  margin:0;
+  resize:both;
+  overflow:auto;
+  min-width:240px;min-height:180px;
+  max-width:calc(100vw - 8px);max-height:calc(100vh - 8px);
+  border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55),0 0 0 1px rgba(186,228,255,.35);
+  background:#071018;
+}
+body.tcg-spectate-inapp-pip #screen-game{
+  background:rgba(4,10,18,.72);
+}
+body.tcg-spectate-inapp-pip #screen-game::after{
+  content:attr(data-pip-hint);
+  position:fixed;left:50%;top:18%;transform:translateX(-50%);
+  z-index:10040;max-width:min(90vw,360px);padding:10px 14px;
+  border-radius:12px;background:rgba(8,18,32,.88);
+  border:1px solid rgba(186,228,255,.28);color:rgba(215,240,255,.9);
+  font-size:13px;text-align:center;pointer-events:none;
+}
+.tcg-spectate-pip-chrome{
+  position:sticky;top:0;z-index:5;
+  display:flex;align-items:center;gap:8px;
+  padding:6px 8px;background:rgba(8,18,32,.94);
+  border-bottom:1px solid rgba(186,228,255,.25);
+}
+.tcg-spectate-pip-chrome-drag{
+  cursor:grab;touch-action:none;border:0;background:transparent;color:#bae4ff;
+  font-size:14px;line-height:1;padding:4px 6px;
+}
+.tcg-spectate-pip-chrome-drag:active{cursor:grabbing;}
+.tcg-spectate-pip-chrome-label{
+  flex:1 1 auto;min-width:0;font-size:11px;font-weight:800;
+  letter-spacing:.04em;text-transform:uppercase;color:rgba(186,228,255,.88);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tcg-spectate-pip-chrome-expand,
+.tcg-spectate-pip-chrome-close{
+  flex:0 0 auto;border:1px solid rgba(186,228,255,.35);
+  background:rgba(100,160,220,.18);color:#eaf8ff;
+  border-radius:8px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;
+}
+.tcg-spectate-pip-chrome-expand:hover,
+.tcg-spectate-pip-chrome-close:hover{
+  background:rgba(100,160,220,.32);
+}
 #screen-game .my-hand-strip .hcard.hand-facedown-spec{
   cursor:default;
 }
