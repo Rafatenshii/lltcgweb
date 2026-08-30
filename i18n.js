@@ -1620,7 +1620,7 @@
         "singleElim": "Single elimination",
         "doubleElimBracket": "Double elim (Winners/Losers)",
         "doubleElimLives": "Double elim (2 lives)",
-        "swiss": "Swiss",
+        "swiss": "Swiss + playoff",
         "single_elim": "Single elimination",
         "double_elim_bracket": "Double elim (Winners/Losers)",
         "double_elim": "Double elim (2 lives)"
