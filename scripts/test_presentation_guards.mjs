@@ -140,8 +140,19 @@ check('skip yells mid-performance when hearts already resolved',
   }));
 check('skip yells mid-performance only after very long hide',
   g.shouldForceSkipLiveYellsOnTabRestore('performance', 30000, { live_show: { stage: 'performance' } }));
+check('do not seal performance on reveal/live_start tab hide',
+  !g.shouldForceSkipLiveYellsOnTabRestore('reveal', 5000, { live_show: { stage: 'reveal' } })
+  && !g.shouldForceSkipLiveYellsOnTabRestore('live_start', 5000, { live_show: { stage: 'live_start' } })
+  && !g.shouldSealLivePerformanceOnTabRestore('reveal', 5000, { live_show: { stage: 'reveal' } }));
+check('seal performance only past performance stage on tab restore',
+  g.shouldSealLivePerformanceOnTabRestore('judge', 100, { live_show: { stage: 'judge' } })
+  && !g.shouldSealLivePerformanceOnTabRestore('performance', 500, { live_show: { stage: 'performance' } }));
 check('game-sync uses shouldForceSkipLiveYellsOnTabRestore',
-  /shouldForceSkipLiveYellsOnTabRestore/.test(syncSrc));
+  /shouldForceSkipLiveYellsOnTabRestore/.test(syncSrc)
+  && /LLTCG_PRESENTATION_GUARDS/.test(syncSrc)
+  && !/TCGPresentationGuards/.test(syncSrc));
+check('pending queue preserves live_set snapshot when coalescing',
+  /liveSetSnap/.test(applySrc) && /Never drop a live_set snapshot/.test(applySrc));
 check('Bo3 spectator follow helper exists',
   /maybeFollowTournamentBo3NextSpectate/.test(indexSrc)
   && /bo3NextWait/.test(indexSrc));

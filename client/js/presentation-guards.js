@@ -261,26 +261,58 @@
   }
 
   /**
-   * Whether tab catch-up should skip yell climbs (snap chrome / Checking hearts).
-   * Mid-performance must NOT skip after a short background — that caused reports of
-   * jumping straight to hearts. Only skip when the server is past Performance, hearts
-   * are already resolved, or the tab was hidden for a very long time.
+   * Whether tab catch-up may seal yell/performance playback for this live_show stage.
+   * Must NOT seal during reveal/live_start — that skipped the whole Live round.
    */
   function shouldForceSkipLiveYellsOnTabRestore(stage, hiddenMs, board) {
     const ms = Number(hiddenMs) || 0;
-    if (stage === 'outcomes' || stage === 'judge' || stage === 'done') return true;
-    if (stage === 'performance') {
+    const st = stage || board?.live_show?.stage || null;
+    if (st === 'outcomes' || st === 'judge' || st === 'done') return true;
+    if (st === 'performance') {
       if (board && board._perf_hearts_resolved
           && typeof board._perf_hearts_resolved === 'object'
           && Object.keys(board._perf_hearts_resolved).length > 0) {
         return true;
       }
       if (board && board.phase === 'live_success_effects') return true;
+      if (board?.pending_prompt?.type === 'pick_judge_success_live') return true;
       // Very long hide — user likely missed the climb; avoid a long catch-up replay.
       if (ms >= 30000) return true;
       return false;
     }
-    return ms >= 2800;
+    if (st === 'reveal' || st === 'live_start') {
+      // Still owe reveal / Live Start — never seal on a normal alt-tab.
+      return ms >= 120000;
+    }
+    // No live_show cursor but server already on settled Main with a done round.
+    if (!st && board && isMainStablePhase(board.phase) && ms >= 2800) return true;
+    return false;
+  }
+
+  /** Whether tab catch-up may call markLiveShowPerformancePresented for this board. */
+  function shouldSealLivePerformanceOnTabRestore(stage, hiddenMs, board) {
+    const st = stage || board?.live_show?.stage || null;
+    if (st === 'outcomes' || st === 'judge' || st === 'done') return true;
+    if (st === 'performance') {
+      return shouldForceSkipLiveYellsOnTabRestore(st, hiddenMs, board);
+    }
+    return false;
+  }
+
+  /** Poll-hold watchdog: soft-release only on idle settled Main (never abort director). */
+  function livePollHoldWatchdogMayRelease(state, flags) {
+    flags = flags || {};
+    const ph = state?.phase;
+    const stage = state?.live_show?.stage;
+    const onSettledMain = isMainStablePhase(ph);
+    const liveBusy = !!(stage && stage !== 'done')
+      || ph === 'live_start_effects' || ph === 'live_performance_first'
+      || ph === 'live_performance_second' || ph === 'live_judge'
+      || ph === 'live_success_effects' || ph === 'live_set'
+      || flags.liveRoundPlayback || flags.spectacleGate
+      || flags.liveShowRunner || flags.perfSpectacle
+      || flags.directorActive;
+    return onSettledMain && !liveBusy;
   }
 
   /** Soft catch-up should escalate to hard when the fetched board left Live Start. */
@@ -319,6 +351,8 @@
     shouldResumeLiveShowRunner,
     shouldSoftTabCatchUpPreserveLivePipeline,
     shouldForceSkipLiveYellsOnTabRestore,
+    shouldSealLivePerformanceOnTabRestore,
+    livePollHoldWatchdogMayRelease,
     shouldEscalateSoftTabCatchUpToHard,
   };
 });

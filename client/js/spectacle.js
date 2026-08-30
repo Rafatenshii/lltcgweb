@@ -9427,6 +9427,16 @@ function queueStateAnnouncements(prev, s, myId, opts = {}) {
   }
   const entries = (s.log || []).slice(from);
   const emptyLiveSkip = opts.emptyLiveSkip || isEmptyLiveSkipTransition(prev, s);
+  // Batched polls can jump past live_set before the phase splash ran — honor log marker.
+  if (!enteringLiveSet && !blockBanners && !placementOpen
+      && entries.some(e => e.msg === '=== LIVE Phase ===')
+      && typeof phaseBannerCopy === 'function') {
+    const liveCopy = phaseBannerCopy('live_set', s, myId);
+    if (liveCopy?.title && !phaseBannerAlreadyShown('live_set', s)) {
+      markPhaseBannerShown('live_set', s);
+      queueCenterBanner(centerBannerForPhase('live_set', liveCopy));
+    }
+  }
   for (const entry of entries) {
     if (holdLivePlayback && shouldDeferLogBannerDuringLivePlayback(entry.msg)) continue;
     if (blockBanners && shouldDeferLogBannerDuringLivePlayback(entry.msg)) continue;

@@ -1200,17 +1200,17 @@
         // Only seal yell climbs once past Performance (or hearts already resolved /
         // very long hide). Mid-performance + brief tab-away must still replay yells.
         const stageNow = d?.live_show?.stage;
-        const guards = global.TCGPresentationGuards;
+        const guards = global.LLTCG_PRESENTATION_GUARDS;
         const forceSkipYells = (guards && typeof guards.shouldForceSkipLiveYellsOnTabRestore === 'function')
           ? guards.shouldForceSkipLiveYellsOnTabRestore(stageNow, hiddenMs, d)
           : (stageNow === 'outcomes'
             || stageNow === 'judge'
             || stageNow === 'done'
-            || (stageNow === 'performance' && hiddenMs >= 30000)
-            || (stageNow !== 'performance' && hiddenMs >= 2800));
+            || (stageNow === 'performance' && hiddenMs >= 30000));
         if (forceSkipYells
             && d?.live_show?.turn != null
-            && typeof markLiveShowPerformancePresented === 'function') {
+            && typeof markLiveShowPerformancePresented === 'function'
+            && guards?.shouldSealLivePerformanceOnTabRestore?.(stageNow, hiddenMs, d)) {
           markLiveShowPerformancePresented(d.live_show.turn);
         }
 
@@ -1307,17 +1307,17 @@
       const hardStage = d.live_show?.stage;
       // Long freeze past Performance / hearts resolved: skip yell replay.
       // Short hides still mid-performance should re-climb.
-      const hardGuards = global.TCGPresentationGuards;
+      const hardGuards = global.LLTCG_PRESENTATION_GUARDS;
       const hardForceSkipYells = (hardGuards && typeof hardGuards.shouldForceSkipLiveYellsOnTabRestore === 'function')
         ? hardGuards.shouldForceSkipLiveYellsOnTabRestore(hardStage, hardHiddenMs, d)
         : (hardStage === 'outcomes'
           || hardStage === 'judge'
           || hardStage === 'done'
-          || (hardStage === 'performance' && hardHiddenMs >= 30000)
-          || (hardStage !== 'performance' && hardHiddenMs >= 2800));
+          || (hardStage === 'performance' && hardHiddenMs >= 30000));
       if (hardForceSkipYells
           && d.live_show?.turn != null
-          && typeof markLiveShowPerformancePresented === 'function') {
+          && typeof markLiveShowPerformancePresented === 'function'
+          && hardGuards?.shouldSealLivePerformanceOnTabRestore?.(hardStage, hardHiddenMs, d)) {
         markLiveShowPerformancePresented(d.live_show.turn);
       }
 

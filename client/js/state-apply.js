@@ -1198,18 +1198,26 @@
     // Full get_state boards are large (log + zones). During Live Start / spectacle
     // holds every seq used to push another snapshot → Chrome memory spikes /
     // Page Unresponsive. Keep only the oldest still-owed board (transition prev)
-    // and the newest (authoritative catch-up).
+    // and the newest (authoritative catch-up). Never drop a live_set snapshot when
+    // the newest state already blew past LIVE placement — that skipped the phase UI.
     let oldest = null;
+    let liveSetSnap = null;
+    const isLiveSetPh = (ph) => ph === 'live_set' || ph === 'live_set_first' || ph === 'live_set_second';
     for (let i = 0; i < q.length; i++) {
       const st = q[i];
       const stSeq = st?.seq ?? 0;
       if (stSeq <= Math.min(last, boardSeq) || stSeq >= seq) continue;
+      if (isLiveSetPh(st?.phase)) liveSetSnap = st;
       if (!oldest || stSeq < (oldest.seq ?? 0)) oldest = st;
+    }
+    if (!liveSetSnap && isLiveSetPh(s?.phase)) liveSetSnap = s;
+    if (liveSetSnap && !isLiveSetPh(s?.phase) && isLiveSetPh(liveSetSnap.phase)) {
+      oldest = liveSetSnap;
     }
     G._pendingStateQueue = oldest ? [oldest, s] : [s];
   };
 
-  const LIVE_POLL_HOLD_WATCHDOG_MS = 10000;
+  const LIVE_POLL_HOLD_WATCHDOG_MS = 8000;
 
   function clearLivePollHoldWatchdog() {
     if (G._livePollHoldWatchdog) {
@@ -1223,30 +1231,44 @@
    * Never abort LiveRoundDirector / close spectacle (0343150 watchdog did that
    * and skipped Live animations / desynced clients until refresh).
    */
+  function livePollHoldWatchdogMayRelease(state) {
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    if (guards && typeof guards.livePollHoldWatchdogMayRelease === 'function') {
+      return guards.livePollHoldWatchdogMayRelease(state, {
+        liveRoundPlayback: !!G._liveRoundPlaybackActive,
+        spectacleGate: !!G._liveSpectacleGateRunning,
+        liveShowRunner: !!G._liveShowRunnerActive,
+        perfSpectacle: !!G._perfSpectacleActive,
+        directorActive: typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active,
+      });
+    }
+    const ph = state?.phase;
+    const stage = state?.live_show?.stage;
+    const onSettledMain = ph === 'main_first' || ph === 'main_second'
+      || ph === 'active_first' || ph === 'active_second';
+    const liveBusy = !!(stage && stage !== 'done')
+      || ph === 'live_start_effects' || ph === 'live_performance_first'
+      || ph === 'live_performance_second' || ph === 'live_judge'
+      || ph === 'live_success_effects' || ph === 'live_set'
+      || G._liveRoundPlaybackActive || G._liveSpectacleGateRunning
+      || G._liveShowRunnerActive || G._perfSpectacleActive
+      || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active);
+    return onSettledMain && !liveBusy;
+  }
+
   function armLivePollHoldWatchdog() {
     clearLivePollHoldWatchdog();
     G._livePollHoldWatchdog = setTimeout(function livePollHoldWatchdogTick() {
       G._livePollHoldWatchdog = null;
       if (!G._livePollHold) return;
       const s = G.gameState;
-      const ph = s?.phase;
-      const stage = s?.live_show?.stage;
-      const onSettledMain = ph === 'main_first' || ph === 'main_second'
-        || ph === 'active_first' || ph === 'active_second';
-      const liveBusy = !!(stage && stage !== 'done')
-        || ph === 'live_start_effects' || ph === 'live_performance_first'
-        || ph === 'live_performance_second' || ph === 'live_judge'
-        || ph === 'live_success_effects' || ph === 'live_set'
-        || G._liveRoundPlaybackActive || G._liveSpectacleGateRunning
-        || G._liveShowRunnerActive || G._perfSpectacleActive
-        || (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active);
-      if (!onSettledMain || liveBusy) {
-        // Still in a legal hold window — check again later, do not nuke presentation.
-        G._livePollHoldWatchdog = setTimeout(livePollHoldWatchdogTick, LIVE_POLL_HOLD_WATCHDOG_MS);
+      if (livePollHoldWatchdogMayRelease(s)) {
+        TCG_DEBUG.warn('poll', 'live poll hold watchdog — soft release on idle Main');
+        releaseLivePolls({ forceResume: true });
         return;
       }
-      TCG_DEBUG.warn('poll', 'live poll hold watchdog — soft release on idle Main');
-      releaseLivePolls({ forceResume: true });
+      // Still in a legal hold window — check again later, do not nuke presentation.
+      G._livePollHoldWatchdog = setTimeout(livePollHoldWatchdogTick, LIVE_POLL_HOLD_WATCHDOG_MS);
     }, LIVE_POLL_HOLD_WATCHDOG_MS);
   }
 
