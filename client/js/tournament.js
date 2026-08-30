@@ -1619,7 +1619,19 @@
       + escapeHtml(isPreview ? t('tournament.bracket.slot', 'Slot') : statusLabel(m))
       + '</span>';
     if (showSeries) {
-      html += '<span class="tournament-match-series">' + p1w + '–' + p2w + '</span>';
+      const gamesPlayed = p1w + p2w;
+      // Next/current game while the series is open; final game number when done.
+      const seriesRound = status === 'done'
+        ? Math.max(1, gamesPlayed)
+        : Math.min(3, gamesPlayed + 1);
+      html += '<span class="tournament-match-series" title="'
+        + escapeAttr(t('tournament.bracket.seriesTip', 'Best of 3 series score')) + '">'
+        + escapeHtml(t('tournament.bracket.seriesScore', 'Round {n} · {a}–{b}', {
+          n: seriesRound,
+          a: p1w,
+          b: p2w,
+        }))
+        + '</span>';
     }
     html += '</div>';
     html += '<div class="tournament-match-seats">';

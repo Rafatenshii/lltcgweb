@@ -463,6 +463,7 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   font-size: 12px;
   font-weight: 700;
   color: #bae4ff;
+  white-space: nowrap;
 }
 .tournament-match-seats {
   display: flex;

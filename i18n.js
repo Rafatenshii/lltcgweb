@@ -1749,7 +1749,9 @@
         "sideLosers": "Losers bracket",
         "sideGrandFinal": "Grand Final",
         "sideSwiss": "Swiss rounds",
-        "sidePlayoff": "Playoff"
+        "sidePlayoff": "Playoff",
+        "seriesScore": "Round {n} · {a}–{b}",
+        "seriesTip": "Best of 3 series score"
       },
       "formatCaption": {
         "swiss": "Swiss → single-elim playoff",
@@ -3632,7 +3634,9 @@
         "sideLosers": "敗者ブラケット",
         "sideGrandFinal": "グランドファイナル",
         "sideSwiss": "スイスラウンド",
-        "sidePlayoff": "プレーオフ"
+        "sidePlayoff": "プレーオフ",
+        "seriesScore": "ラウンド{n} · {a}–{b}",
+        "seriesTip": "ベストオブ3のシリーズスコア"
       },
       "formatCaption": {
         "swiss": "スイス → シングルエリム・プレーオフ",
