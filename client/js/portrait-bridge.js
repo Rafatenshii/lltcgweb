@@ -740,8 +740,12 @@
       hh.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     if (pip) {
-      pip.hidden = !spectating;
-      const pipOn = !!(global.TCGSpectatePip && global.TCGSpectatePip.isActive && global.TCGSpectatePip.isActive());
+      const pipApi = global.TCGSpectatePip;
+      const offered = !!(pipApi && typeof pipApi.isOffered === 'function' && pipApi.isOffered());
+      const showPip = spectating && offered;
+      pip.hidden = !showPip;
+      pip.disabled = !showPip;
+      const pipOn = !!(pipApi && pipApi.isActive && pipApi.isActive());
       pip.textContent = pipOn
         ? t('spectate.pipExit', 'Exit PiP')
         : t('spectate.pip', 'Picture-in-Picture');

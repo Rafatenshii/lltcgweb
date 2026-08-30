@@ -697,6 +697,7 @@ body.tcg-spectator-mode .btn-spectate-hidden-hands{display:inline-flex}
   display:none;align-items:center;justify-content:center;
 }
 body.tcg-spectator-mode .btn-spectate-pip{display:inline-flex}
+.btn-spectate-pip[hidden]{display:none!important}
 .btn-spectate-pip:hover{
   background:rgba(100,160,220,.3);border-color:rgba(186,228,255,.6);color:#fff;
 }

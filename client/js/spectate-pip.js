@@ -1,27 +1,25 @@
 /**
- * Spectator Picture-in-Picture:
- * - Desktop: Document Picture-in-Picture (live board moved into floating window)
- * - Fallback (mobile / unsupported): in-app resizeable floating frame
- * DOM lookups are bridged so existing getElementById/querySelector keep working.
+ * Spectator Picture-in-Picture (desktop Document PiP only).
+ * No in-app floating fallback — mobile / unsupported browsers hide the controls.
+ * DOM lookups are bridged so existing getElementById/querySelector keep working
+ * while the board lives in the PiP window.
  */
 (function (global) {
   'use strict';
 
   const PLACEHOLDER_ID = 'tcg-spectate-pip-placeholder';
-  const INAPP_CHROME_ID = 'tcg-spectate-pip-chrome';
 
   let pipWindow = null;
   let placeholderEl = null;
   let frameHomeParent = null;
   let frameHomeNext = null;
-  let mode = null; // 'document' | 'inapp' | null
+  let mode = null; // 'document' | null
   let bridgeInstalled = false;
   const orig = {
     getElementById: null,
     querySelector: null,
     querySelectorAll: null,
   };
-  let inappDrag = null;
   let onViewportResize = null;
 
   function t(key, fallback, vars) {
@@ -48,8 +46,38 @@
       && typeof global.documentPictureInPicture.requestWindow === 'function');
   }
 
+  /** Match app mobile / portrait shell detection — no Document PiP offer there. */
+  function isMobileLike() {
+    if (typeof global.tcgPortraitPlayActive === 'function' && global.tcgPortraitPlayActive()) {
+      return true;
+    }
+    if (typeof global.tcgPortraitTouchPrimary === 'function' && global.tcgPortraitTouchPrimary()) {
+      return true;
+    }
+    const ua = String(global.navigator?.userAgent || '');
+    let coarse = false;
+    let hoverNone = false;
+    try {
+      coarse = global.matchMedia('(pointer: coarse)').matches;
+      hoverNone = global.matchMedia('(hover: none)').matches;
+    } catch (e) { /* ignore */ }
+    const touchPoints = Number(global.navigator?.maxTouchPoints || 0);
+    const mobileUa = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const iPadOsDesktopUa = touchPoints > 1 && /Macintosh/i.test(ua);
+    if (mobileUa || iPadOsDesktopUa || coarse || hoverNone) return true;
+    const w = Number(global.innerWidth || 0);
+    const h = Number(global.innerHeight || 0);
+    if (w > 0 && h > 0 && w < h && Math.min(w, h) <= 920) return true;
+    return false;
+  }
+
+  /** True when we should show spectate PiP controls (desktop + Document PiP API). */
+  function isOffered() {
+    return supportsDocumentPip() && !isMobileLike();
+  }
+
   function isActive() {
-    return mode === 'document' || mode === 'inapp';
+    return mode === 'document';
   }
 
   function installDomBridge() {
@@ -174,7 +202,6 @@
     try {
       global.dispatchEvent(new Event('resize'));
     } catch (e) { /* ignore */ }
-    if (typeof global.syncBracketTreeHeights === 'function') { /* no-op for game */ }
     if (typeof global.llBoardAfterLayout === 'function') {
       try { global.llBoardAfterLayout(); } catch (e) { /* ignore */ }
     }
@@ -182,6 +209,9 @@
 
   function syncPipButton() {
     const on = isActive();
+    const offered = isOffered();
+    const spectating = !!(global.G && global.G.isSpectator);
+    const show = spectating && offered;
     const btn = global.document.getElementById('btn-spectate-pip');
     if (btn) {
       btn.classList.toggle('is-active', on);
@@ -193,99 +223,19 @@
       btn.setAttribute('aria-label', on
         ? t('spectate.pipExit', 'Exit PiP')
         : t('spectate.pip', 'Picture-in-Picture'));
-      const can = supportsDocumentPip() || true; // in-app always available while spectating
-      btn.hidden = !(global.G && global.G.isSpectator);
-      btn.disabled = !(global.G && global.G.isSpectator);
-      if (!can && !supportsDocumentPip()) {
-        /* keep enabled for in-app fallback */
-      }
+      btn.hidden = !show;
+      btn.disabled = !show;
     }
     const menu = global.document.getElementById('btn-portrait-menu-pip');
     if (menu) {
-      menu.hidden = !(global.G && global.G.isSpectator);
+      menu.hidden = !show;
+      menu.disabled = !show;
       menu.textContent = on
         ? t('spectate.pipExit', 'Exit PiP')
         : t('spectate.pip', 'Picture-in-Picture');
       menu.classList.toggle('is-active', on);
       menu.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
-  }
-
-  function removeInappChrome() {
-    global.document.getElementById(INAPP_CHROME_ID)?.remove();
-    global.document.body.classList.remove('tcg-spectate-inapp-pip');
-    global.document.getElementById('screen-game')?.removeAttribute('data-pip-hint');
-    const frame = gameFrame();
-    if (frame) {
-      frame.style.left = '';
-      frame.style.top = '';
-      frame.style.width = '';
-      frame.style.height = '';
-      frame.style.right = '';
-      frame.style.bottom = '';
-    }
-    inappDrag = null;
-  }
-
-  function attachInappChrome(frame) {
-    removeInappChrome();
-    global.document.body.classList.add('tcg-spectate-inapp-pip');
-    const chrome = global.document.createElement('div');
-    chrome.id = INAPP_CHROME_ID;
-    chrome.className = 'tcg-spectate-pip-chrome';
-    chrome.innerHTML = ''
-      + '<button type="button" class="tcg-spectate-pip-chrome-drag" aria-label="'
-      + t('spectate.pipDrag', 'Drag') + '">⋮⋮</button>'
-      + '<span class="tcg-spectate-pip-chrome-label">'
-      + t('spectate.pip', 'Picture-in-Picture') + '</span>'
-      + '<button type="button" class="tcg-spectate-pip-chrome-expand" title="'
-      + t('spectate.pipExpandTitle', 'Return to full game') + '">'
-      + t('spectate.pipExpand', 'Full') + '</button>'
-      + '<button type="button" class="tcg-spectate-pip-chrome-close" title="'
-      + t('spectate.pipExitTitle', 'Exit Picture-in-Picture') + '">✕</button>';
-    frame.prepend(chrome);
-
-    chrome.querySelector('.tcg-spectate-pip-chrome-expand')?.addEventListener('click', () => {
-      void closePip({ focusOpener: true });
-    });
-    chrome.querySelector('.tcg-spectate-pip-chrome-close')?.addEventListener('click', () => {
-      void closePip({ focusOpener: true });
-    });
-
-    const handle = chrome.querySelector('.tcg-spectate-pip-chrome-drag');
-    const onPointerDown = (ev) => {
-      if (ev.button != null && ev.button !== 0) return;
-      const rect = frame.getBoundingClientRect();
-      inappDrag = {
-        id: ev.pointerId,
-        ox: ev.clientX - rect.left,
-        oy: ev.clientY - rect.top,
-      };
-      try { handle.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-      ev.preventDefault();
-    };
-    const onPointerMove = (ev) => {
-      if (!inappDrag || inappDrag.id !== ev.pointerId) return;
-      const w = frame.offsetWidth;
-      const h = frame.offsetHeight;
-      let left = ev.clientX - inappDrag.ox;
-      let top = ev.clientY - inappDrag.oy;
-      left = Math.max(4, Math.min(global.innerWidth - w - 4, left));
-      top = Math.max(4, Math.min(global.innerHeight - h - 4, top));
-      frame.style.left = left + 'px';
-      frame.style.top = top + 'px';
-      frame.style.right = 'auto';
-      frame.style.bottom = 'auto';
-    };
-    const onPointerUp = (ev) => {
-      if (!inappDrag || inappDrag.id !== ev.pointerId) return;
-      inappDrag = null;
-      try { handle.releasePointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-    };
-    handle?.addEventListener('pointerdown', onPointerDown);
-    handle?.addEventListener('pointermove', onPointerMove);
-    handle?.addEventListener('pointerup', onPointerUp);
-    handle?.addEventListener('pointercancel', onPointerUp);
   }
 
   async function openDocumentPip(frame) {
@@ -323,33 +273,9 @@
     bumpLayout();
   }
 
-  function openInappPip(frame) {
-    mode = 'inapp';
-    const screen = global.document.getElementById('screen-game');
-    if (screen) {
-      screen.setAttribute(
-        'data-pip-hint',
-        t('spectate.pipInappHint', 'Floating match — drag, resize, or tap Full to return')
-      );
-    }
-    attachInappChrome(frame);
-    // Default floating size — resizeable via CSS resize.
-    const vw = Math.min(global.innerWidth - 16, Math.max(280, Math.round(global.innerWidth * 0.72)));
-    const vh = Math.min(global.innerHeight - 16, Math.max(200, Math.round(global.innerHeight * 0.42)));
-    frame.style.width = vw + 'px';
-    frame.style.height = vh + 'px';
-    frame.style.left = Math.max(8, global.innerWidth - vw - 12) + 'px';
-    frame.style.top = Math.max(8, global.innerHeight - vh - 12) + 'px';
-    frame.style.right = 'auto';
-    frame.style.bottom = 'auto';
-    syncPipButton();
-    bumpLayout();
-  }
-
   function finishClose(opts) {
     opts = opts || {};
     const wasActive = mode !== null || !!pipWindow || !!global.document.getElementById(PLACEHOLDER_ID)
-      || global.document.body.classList.contains('tcg-spectate-inapp-pip')
       || global.document.body.classList.contains('tcg-spectate-doc-pip');
     if (!wasActive && !opts.force) {
       syncPipButton();
@@ -364,7 +290,6 @@
       if (screen && !screen.contains(frame)) screen.appendChild(frame);
     }
     removePlaceholder();
-    removeInappChrome();
     uninstallDomBridge();
     global.document.body.classList.remove('tcg-spectate-doc-pip');
     const win = pipWindow;
@@ -381,8 +306,7 @@
   }
 
   async function closePip(opts) {
-    if (!isActive() && !global.document.body.classList.contains('tcg-spectate-doc-pip')
-      && !global.document.body.classList.contains('tcg-spectate-inapp-pip')) {
+    if (!isActive() && !global.document.body.classList.contains('tcg-spectate-doc-pip')) {
       syncPipButton();
       return;
     }
@@ -396,6 +320,10 @@
       }
       return;
     }
+    if (!isOffered()) {
+      syncPipButton();
+      return;
+    }
     const frame = gameFrame();
     if (!frame) return;
 
@@ -405,14 +333,16 @@
     }
 
     try {
-      if (supportsDocumentPip()) {
-        await openDocumentPip(frame);
-        return;
-      }
+      await openDocumentPip(frame);
     } catch (e) {
-      // Fall through to in-app floating window.
+      if (typeof global.toast === 'function') {
+        global.toast(t(
+          'spectate.pipUnavailable',
+          'Picture-in-Picture could not be opened in this browser.'
+        ), 2800);
+      }
+      syncPipButton();
     }
-    openInappPip(frame);
   }
 
   async function togglePip() {
@@ -424,10 +354,9 @@
     if (isActive()) void closePip({ focusOpener: false });
   }
 
-  // Keep button state after spectate enter/exit.
   if (!onViewportResize) {
     onViewportResize = () => {
-      if (mode === 'inapp') bumpLayout();
+      syncPipButton();
     };
     global.addEventListener('resize', onViewportResize);
   }
@@ -437,6 +366,7 @@
     open: openPip,
     close: closePip,
     isActive: isActive,
+    isOffered: isOffered,
     supportsDocumentPip: supportsDocumentPip,
     syncButton: syncPipButton,
     onLeaveSpectator: onLeaveSpectator,
