@@ -732,9 +732,10 @@
       // alone skips the win overlay and leaves later finished polls as "stale".
       if (d.status === 'finished') {
         if (typeof global.onState === 'function') {
-          global.onState(d);
+          const ret = global.onState(d);
+          if (ret && typeof ret.then === 'function') await ret;
         } else if (typeof global.applyFinishedState === 'function') {
-          void global.applyFinishedState(d, G.gameState);
+          await global.applyFinishedState(d, G.gameState);
         }
         return d;
       }
@@ -778,6 +779,34 @@
       return G.gameState || null;
     }
   };
+
+  /**
+   * Run onState; optionally wait until the painted board reaches the snapshot seq
+   * (own-action catch-up) without blocking End LIVE on a full empty-round spectacle.
+   */
+  async function dispatchOnState(d, opts = {}) {
+    let ret = null;
+    try {
+      ret = typeof onState === 'function' ? onState(d) : null;
+    } catch (e) {
+      TCG_DEBUG.warn('poll', 'onState failed', e);
+      return;
+    }
+    if (!ret || typeof ret.then !== 'function') return;
+    const waitBoard = !!opts.waitBoard;
+    const target = Number(d?.seq) || 0;
+    const failSoft = (e) => TCG_DEBUG.warn('poll', 'onState async failed', e);
+    if (!waitBoard || target <= 0) {
+      void Promise.resolve(ret).catch(failSoft);
+      return;
+    }
+    void Promise.resolve(ret).catch(failSoft);
+    const deadline = Date.now() + 2800;
+    while (Date.now() < deadline) {
+      if ((G.gameState?.seq ?? 0) >= target) return;
+      await new Promise((r) => setTimeout(r, 40));
+    }
+  }
 
   global.pullLatestState = async function pullLatestState(force, opts = {}) {
     if (isReplayViewingSync() && !opts.allowReplayPull) return;
@@ -842,7 +871,7 @@
                 G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d2.seq ?? 0));
               }
               if (G._pollFastUntil && (d2.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
-              onState(d2);
+              await dispatchOnState(d2, { waitBoard: !!(force && opts.actionEpoch) });
               return;
             }
           }
@@ -888,7 +917,7 @@
         }
         if (G._pollFastUntil && (d.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
         if (d.end_reason === 'disconnect') global._tcgSyncStats.disconnectHints++;
-        onState(d);
+        await dispatchOnState(d, { waitBoard: !!(force && opts.actionEpoch) });
       } catch (e) {
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
         if (!opts.silent) {

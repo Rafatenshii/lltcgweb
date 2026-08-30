@@ -138,6 +138,7 @@
       from: G.gameState?.phase,
       to: s.phase,
       active: s.active_player,
+      actionEpoch: G._actionApplyEpoch || null,
     });
     G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (s.seq ?? 0));
     if (typeof LiveRoundDirector !== 'undefined' && LiveRoundDirector.active) {
@@ -155,6 +156,15 @@
         clearDeferredPromptState({ skipBannerRefresh: true });
       }
     }
+    // Clear leftover Checking hearts / empty-LIVE chrome that pinned End Main.
+    if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
+    else G._perfHeartCheckHold = false;
+    if (typeof perfCloseSpectacle === 'function' && G._perfSpectacleActive) {
+      // Only when leaving settled play — applyTurnAdvanceNow is never used mid live_show.
+      perfCloseSpectacle();
+    } else {
+      G._perfSpectacleActive = false;
+    }
     G.animating = false;
     G._liveRoundPlaybackActive = false;
     G._liveSpectacleGateRunning = false;
@@ -167,7 +177,7 @@
     G._logSyncInFlight = false;
     if (typeof clearHandArrivingFlags === 'function') clearHandArrivingFlags();
     if (G._livePollHold && typeof releaseLivePolls === 'function') releaseLivePolls();
-    applyStateUpdate(s);
+    return applyStateUpdate(s);
   }
 
   global.onState = function onState(s) {
@@ -205,8 +215,7 @@
         }
       }
       TCG_DEBUG.log('state', 'apply replay snapshot', TCG_DEBUG.snap(s));
-      applyStateUpdate(s);
-      return;
+      return applyStateUpdate(s);
     }
     if(s.seq<=G.lastSeq && G.gameState) {
       const delayedSpec = !!(G.isSpectator && (s.spectate_stream_delayed || s.spectate_stream_waiting));
@@ -261,8 +270,7 @@
         return;
       }
       TCG_DEBUG.log('state', 'apply finished (immediate)', TCG_DEBUG.snap(s));
-      void applyStateUpdate(s);
-      return;
+      return applyStateUpdate(s);
     }
     if (G.rematchWaiting && s.status !== 'finished') {
       G.rematchWaiting = false;
@@ -274,9 +282,12 @@
     if (guards && guards.mayForceApplyHeldSnapshot(G.gameState, s, holdFlags)
         && (G.animating || G._liveRoundPlaybackActive || G._logSyncInFlight
           || holdFlags.directorActive
+          || holdFlags.heartCheckHold
+          || holdFlags.perfSpectacle
+          || holdFlags.spectacleGate
+          || !!G._livePollHold
           || shouldHoldStateForLocalPrompt(s))) {
-      applyTurnAdvanceNow(s);
-      return;
+      return applyTurnAdvanceNow(s);
     }
     if (shouldHoldStateForLocalPrompt(s)) {
       TCG_DEBUG.log('state', 'queue (local prompt open)', { seq: s.seq, phase: s.phase, q: (G._pendingStateQueue?.length || 0) + 1 });
@@ -309,8 +320,7 @@
           to: incomingShow?.stage,
           stageSeq: incomingShow?.stage_seq,
         });
-        applyStateUpdate(s);
-        return;
+        return applyStateUpdate(s);
       }
       TCG_DEBUG.log('state', 'queue (animating)', { seq: s.seq, phase: s.phase, q: (G._pendingStateQueue?.length || 0) + 1 });
       if (G.tutorialLive && typeof global.TutorialInteractive?.onIncomingState === 'function') {
@@ -320,7 +330,7 @@
       return;
     }
     TCG_DEBUG.log('state', 'apply', TCG_DEBUG.snap(s));
-    applyStateUpdate(s);
+    return applyStateUpdate(s);
   };
 
   global.applyFinishedState = async function applyFinishedState(s, prev) {
@@ -1275,7 +1285,6 @@
   };
 
   global.flushPendingState = function flushPendingState() {
-    if (G.animating || isPresentationSuperseded()) return;
     if (typeof global.isReplayViewing === 'function' && global.isReplayViewing() && !G._replayForwardApply) return;
     const q = G._pendingStateQueue;
     if (!q?.length) {
@@ -1284,8 +1293,15 @@
       // (onSyncStateEvent), releaseLivePolls → resumePollingTick, and explicit pulls.
       return;
     }
-    const next = q.shift();
-    TCG_DEBUG.log('state', 'flush pending', { seq: next?.seq, remaining: q.length });
+    const next = q[0];
+    const guards = global.LLTCG_PRESENTATION_GUARDS;
+    const holdFlags = presentationFlagsFromG();
+    const forceAdvance = !!(G._actionApplyEpoch
+      && guards?.mayForceApplyHeldSnapshot?.(G.gameState, next, holdFlags));
+    if (isPresentationSuperseded() && !forceAdvance) return;
+    if (G.animating && !forceAdvance) return;
+    q.shift();
+    TCG_DEBUG.log('state', 'flush pending', { seq: next?.seq, remaining: q.length, forceAdvance });
     const boardSeq = G.gameState?.seq ?? 0;
     const nextSeq = next?.seq ?? 0;
     if (next && (nextSeq > (G.lastSeq ?? 0) || nextSeq > boardSeq)) {
@@ -1294,7 +1310,11 @@
           && liveSpectaclePendingForTransition(cur, next)) {
         TCG_DEBUG.log('state', 'flush pending: spectacle still owed — apply queued state', { seq: next.seq });
       }
-      applyStateUpdate(next);
+      if (forceAdvance) {
+        void applyTurnAdvanceNow(next);
+      } else {
+        applyStateUpdate(next);
+      }
     }
     tryFlushSpectacleRecovery();
   };

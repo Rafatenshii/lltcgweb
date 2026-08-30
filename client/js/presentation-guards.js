@@ -102,16 +102,30 @@
    * Force-apply End Main / play catch-up behind leftover On Enter holds.
    * Must stay false for any Live Win/Loss / live_show cursor — aborting the
    * director there parks both players on "Checking hearts…" / Live Win/Loss Check.
+   *
+   * Leftover Checking-hearts / spectacle flags after an empty LIVE or aborted
+   * presentLiveRound must NOT block End Main: that queued the board until the
+   * ~1.8s Main hysteresis and looked like "need a refresh to advance".
    */
   function mayForceApplyHeldSnapshot(prev, next, flags) {
     flags = flags || {};
     if (!prev || !next) return false;
     if ((next.seq ?? 0) <= (prev.seq ?? 0)) return false;
-    if (liveWinLossPresentationActive(prev, flags) || liveWinLossPresentationActive(next, flags)) {
+    // Hard refuse: live_show cursor or runner still owns Win/Loss presentation.
+    if (liveShowInFlight(prev) || liveShowInFlight(next)) return false;
+    if (flags.liveShowRunner) return false;
+    if (isLiveWinLossPipelinePhase(next.phase) && next.status !== 'finished') return false;
+    const turnOrBoard = isTurnAdvanceSnapshot(prev, next) || isMainBoardCatchupSnapshot(prev, next);
+    if (!turnOrBoard) return false;
+    // Leftover chrome on settled play: allow force-apply. Still refuse when leaving
+    // a real Win/Loss pipeline phase (not yet on settled Main / live_set).
+    if ((flags.perfSpectacle || flags.spectacleGate || flags.heartCheckHold)
+        && isLiveWinLossPipelinePhase(prev.phase)
+        && !isSettledPlayPhase(next.phase)
+        && next.status !== 'finished') {
       return false;
     }
-    if (flags.perfSpectacle || flags.spectacleGate) return false;
-    return isTurnAdvanceSnapshot(prev, next) || isMainBoardCatchupSnapshot(prev, next);
+    return true;
   }
 
   function isTurnAdvanceSnapshot(prev, next) {

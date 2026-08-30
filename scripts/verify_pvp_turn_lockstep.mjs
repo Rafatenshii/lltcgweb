@@ -17,7 +17,10 @@ const PW_ROOT = process.env.PLAYWRIGHT_PATH
   || 'C:/Users/super/tools/playwright-mcp/node_modules/playwright/index.mjs';
 
 const BASE = (process.env.TCG_BASE || 'https://loveliveradio.ca/tcg/').replace(/\/?$/, '/');
-const API = `${BASE}api.php`;
+/** Match rooms live on VPS when Hostinger MATCH_WRITES_DISABLED is set. */
+const MATCH_API = (process.env.TCG_MATCH_API
+  || 'https://stream.loveliveradio.ca/tcg/api/api.php').replace(/\?.*$/, '');
+const API = MATCH_API.endsWith('.php') ? MATCH_API : `${MATCH_API.replace(/\/?$/, '/') }api.php`;
 const CACHE_BUST = process.env.TCG_NOCACHE || Date.now();
 const PAGE_URL = `${BASE}?nocache=${CACHE_BUST}&debug=live,apply,poll,sync,pvp`;
 const headed = process.argv.includes('--headed');
@@ -68,7 +71,7 @@ async function clientSnap(page) {
   return page.evaluate(() => {
     const s = window.G?.gameState;
     if (!s) return null;
-    const msg = document.querySelector('#phase-msg')?.textContent?.trim() || '';
+    const msg = document.querySelector('#phase-msg, .phase-msg, #phaseMsg, .phase-action-bar .msg')?.textContent?.trim() || '';
     return {
       seq: s.seq,
       phase: s.phase,
@@ -80,11 +83,18 @@ async function clientSnap(page) {
       prompt_responder: s.pending_prompt?.responder || null,
       my_id: window.G.playerId,
       apiOrigin: window.G.apiOrigin || null,
+      syncEnabled: !!window.G.syncEnabled,
+      syncTicket: !!window.G.syncTicket,
+      polling: !!window.G.polling,
+      animating: !!window.G.animating,
       spectacle: !!window.G._perfSpectacleActive,
       pollHold: !!window.G._livePollHold,
       runner: !!window.G._liveShowRunnerActive,
-      phaseMsg: msg.slice(0, 120),
+      playback: !!window.G._liveRoundPlaybackActive,
+      gate: !!window.G._liveSpectacleGateRunning,
+      blocked: typeof window.pollPresentationBlocked === 'function' ? !!window.pollPresentationBlocked() : null,
       lastSeq: window.G.lastSeq ?? null,
+      phaseMsg: msg.slice(0, 120),
     };
   });
 }
@@ -117,15 +127,57 @@ function sameTurnCursor(snaps) {
 }
 
 async function bootPlayer(page, session) {
+  const sess = {
+    ...session,
+    savedAt: session.savedAt || Date.now(),
+    apiOrigin: session.apiOrigin || 'overflow',
+    match_api: session.match_api || 'overflow',
+    screen: session.screen || 'game',
+  };
   await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.evaluate((sess) => {
-    sessionStorage.setItem('tcg_active_game', JSON.stringify(sess));
-  }, session);
+  await page.evaluate((payload) => {
+    sessionStorage.setItem('tcg_active_game', JSON.stringify(payload));
+    localStorage.setItem('tcg_active_game', JSON.stringify(payload));
+    try { localStorage.setItem('tcg_match_api_primary', '1'); } catch (_) { /* ignore */ }
+  }, sess);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(
-    () => typeof window.G !== 'undefined' && window.G.gameState && window.G.gameState.phase,
+    () => typeof window.G !== 'undefined'
+      && window.G.gameState
+      && window.G.gameState.phase
+      && window.G.polling,
     { timeout: 45000 },
   );
+}
+
+/** Own-turn End Main via client sendAct — board must paint without a page refresh. */
+async function clientEndMain(page) {
+  return page.evaluate(async () => {
+    const before = {
+      seq: window.G?.gameState?.seq ?? null,
+      phase: window.G?.gameState?.phase ?? null,
+      active: window.G?.gameState?.active_player ?? null,
+      lastSeq: window.G?.lastSeq ?? null,
+    };
+    if (typeof window.sendAct !== 'function') {
+      return { ok: false, error: 'sendAct missing', before };
+    }
+    await window.sendAct('end_main', {});
+    const after = {
+      seq: window.G?.gameState?.seq ?? null,
+      phase: window.G?.gameState?.phase ?? null,
+      active: window.G?.gameState?.active_player ?? null,
+      lastSeq: window.G?.lastSeq ?? null,
+      animating: !!window.G?.animating,
+      blocked: typeof window.pollPresentationBlocked === 'function'
+        ? !!window.pollPresentationBlocked()
+        : null,
+    };
+    const painted = after.seq != null
+      && after.seq === after.lastSeq
+      && (after.seq > (before.seq ?? 0) || after.phase !== before.phase || after.active !== before.active);
+    return { ok: painted, before, after };
+  });
 }
 
 async function setupRoom() {
@@ -167,9 +219,11 @@ try {
   await Promise.all([
     bootPlayer(p1Page, {
       roomId: room.roomId, token: room.p1.token, playerId: 'p1', isCPU: false, screen: 'game',
+      apiOrigin: 'overflow', match_api: 'overflow',
     }),
     bootPlayer(p2Page, {
       roomId: room.roomId, token: room.p2.token, playerId: 'p2', isCPU: false, screen: 'game',
+      apiOrigin: 'overflow', match_api: 'overflow',
     }),
   ]);
 
@@ -181,23 +235,43 @@ try {
   results.push(check);
   console.log(check.ok ? 'PASS' : 'FAIL', check.label, `skew=${check.skewMs}ms`, check.snaps?.map(snapKey));
 
-  // 2) P1 ends main → both must see live_set (or P2 main) with same cursor
-  await gameAction(room.roomId, room.p1.token, 'end_main', {});
+  // 2) Own-turn paint: active client ends Main via sendAct (no page refresh)
+  let server = await getState(room.roomId, room.p1.token);
+  const activeIsP1 = server.active_player === 'p1';
+  const actorPage = activeIsP1 ? p1Page : p2Page;
+  const actorLabel = activeIsP1 ? 'p1' : 'p2';
+  const ownPaint = await clientEndMain(actorPage);
+  results.push({
+    ok: !!ownPaint.ok,
+    label: `own-sendAct-end-main-${actorLabel}`,
+    detail: ownPaint,
+  });
+  console.log(ownPaint.ok ? 'PASS' : 'FAIL', `own-sendAct-end-main-${actorLabel}`, ownPaint);
+
   check = await waitLockstep(pages, (snaps) => (
     sameTurnCursor(snaps)
     && snaps[0].phase !== 'main_first'
     && snaps[0].active_player != null
-  ), 'after-p1-end-main', 25000);
+    && snaps.every((s) => s.lastSeq != null && s.seq === s.lastSeq)
+  ), 'after-own-end-main-lockstep', 25000);
   results.push(check);
   console.log(check.ok ? 'PASS' : 'FAIL', check.label, `skew=${check.skewMs}ms`, check.snaps?.map(s => ({
-    key: snapKey(s), phaseMsg: s?.phaseMsg, origin: s?.apiOrigin,
+    key: snapKey(s), phaseMsg: s?.phaseMsg, origin: s?.apiOrigin, lastSeq: s?.lastSeq,
   })));
 
-  // If still on P2 main, end that too to reach live_set
-  let server = await getState(room.roomId, room.p1.token);
+  // 3) Opponent-visible handoff: other player ends Main via sendAct
+  server = await getState(room.roomId, room.p1.token);
   if (server.phase === 'main_first' || server.phase === 'main_second') {
-    const tok = server.active_player === 'p1' ? room.p1.token : room.p2.token;
-    await gameAction(room.roomId, tok, 'end_main', {});
+    const secondIsP1 = server.active_player === 'p1';
+    const secondPage = secondIsP1 ? p1Page : p2Page;
+    const secondLabel = secondIsP1 ? 'p1' : 'p2';
+    const secondPaint = await clientEndMain(secondPage);
+    results.push({
+      ok: !!secondPaint.ok,
+      label: `own-sendAct-end-main-${secondLabel}-turn2`,
+      detail: secondPaint,
+    });
+    console.log(secondPaint.ok ? 'PASS' : 'FAIL', `own-sendAct-end-main-${secondLabel}-turn2`, secondPaint);
   }
 
   check = await waitLockstep(pages, (snaps) => (
@@ -208,20 +282,60 @@ try {
 
   // 3) Both end live_set empty → live_show / next main must lockstep
   server = await getState(room.roomId, room.p1.token);
-  for (let i = 0; i < 4 && server.phase === 'live_set'; i++) {
-    const pid = server.live_set_player || server.active_player;
+  for (let i = 0; i < 6 && server.phase === 'live_set'; i++) {
+    const lr = server.live_ready || {};
+    let pid = null;
+    if (!lr.p1) pid = 'p1';
+    else if (!lr.p2) pid = 'p2';
+    else break;
     const tok = pid === 'p1' ? room.p1.token : room.p2.token;
-    if (!server.live_ready?.[pid]) {
-      await gameAction(room.roomId, tok, 'end_live_set', {});
-    }
+    await gameAction(room.roomId, tok, 'end_live_set', {});
     server = await getState(room.roomId, room.p1.token);
   }
+  console.log('server after live_set ends', {
+    phase: server.phase,
+    active: server.active_player,
+    seq: server.seq,
+    live_show: server.live_show?.stage || null,
+  });
+
+  // Diagnose hang: force a client pull and dump sync flags.
+  await Promise.all(pages.map(async (page, i) => {
+    const before = await clientSnap(page);
+    const forced = await page.evaluate(async () => {
+      try {
+        if (typeof window.pullLatestState === 'function') {
+          await window.pullLatestState(true, { silent: true });
+        }
+        return {
+          ok: true,
+          lastSeq: window.G?.lastSeq,
+          phase: window.G?.gameState?.phase,
+          blocked: typeof window.pollPresentationBlocked === 'function'
+            ? !!window.pollPresentationBlocked()
+            : null,
+          syncEnabled: !!window.G?.syncEnabled,
+          polling: !!window.G?.polling,
+          hasEs: !!window.G?.syncEventSource,
+          safety: !!window.G?.syncSafetyTimer,
+          fallback: !!window.G?.syncFallbackTimer,
+          stats: typeof window.tcgSyncStatsSnapshot === 'function'
+            ? window.tcgSyncStatsSnapshot()
+            : null,
+        };
+      } catch (e) {
+        return { ok: false, error: String(e && e.message || e) };
+      }
+    });
+    const after = await clientSnap(page);
+    console.log(`force-pull P${i + 1}`, { before: snapKey(before), forced, after: snapKey(after), flags: after });
+  }));
 
   check = await waitLockstep(pages, (snaps) => {
     if (!sameTurnCursor(snaps)) return false;
     // Accept either mid live_show (same stage) or advanced past live_set together.
     return snaps[0].phase !== 'live_set' || !!snaps[0].live_show_stage;
-  }, 'post-live-set-lockstep', 30000);
+  }, 'post-live-set-lockstep', 15000);
   results.push(check);
   console.log(check.ok ? 'PASS' : 'FAIL', check.label, `skew=${check.skewMs}ms`, check.snaps?.map(s => ({
     key: snapKey(s),

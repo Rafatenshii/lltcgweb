@@ -46,8 +46,12 @@ const afterJudgeMain = { seq: 21, phase: 'main_first', active_player: 'p1' };
 check('live_judge is a Win/Loss pipeline phase', g.isLiveWinLossPipelinePhase('live_judge'));
 check('live_show judge is in flight', g.liveShowInFlight(liveJudge));
 
-check('never force-apply while heart-check hold', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { heartCheckHold: true }));
-check('never force-apply while spectacle chrome is up', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { perfSpectacle: true }));
+check('allow Main catch-up despite leftover Checking hearts (no live_show)', g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { heartCheckHold: true }));
+check('allow End Main despite leftover spectacle flags on settled Main', g.mayForceApplyHeldSnapshot(
+  { seq: 4, phase: 'main_first', active_player: 'p1' },
+  { seq: 5, phase: 'main_second', active_player: 'p2' },
+  { perfSpectacle: true, heartCheckHold: true },
+));
 check('never force-apply while live_show runner owns Win/Loss', !g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { liveShowRunner: true }));
 check('never force-apply incoming live_judge', !g.mayForceApplyHeldSnapshot(
   { seq: 8, phase: 'live_set', active_player: 'p1' },
@@ -64,7 +68,12 @@ check('never force-apply Main catch-up over live_show performance', !g.mayForceA
   mainNext,
   {},
 ));
-check('never force-apply while prev is live_judge', !g.mayForceApplyHeldSnapshot(liveJudge, afterJudgeMain, { perfSpectacle: true }));
+check('never force-apply while prev is live_judge with leftover chrome', !g.mayForceApplyHeldSnapshot(liveJudge, afterJudgeMain, { perfSpectacle: true }));
+check('allow live_set → Main despite leftover empty-LIVE playback chrome', g.mayForceApplyHeldSnapshot(
+  { seq: 6, phase: 'live_set', active_player: 'p1' },
+  { seq: 9, phase: 'main_first', active_player: 'p1' },
+  { heartCheckHold: true, perfSpectacle: false },
+));
 
 check('allow Main catch-up with only leftover G.animating', g.mayForceApplyHeldSnapshot(mainPrev, mainNext, { animating: true }));
 
@@ -87,6 +96,25 @@ check('do not unstick Main during fresh baton / log-sync gap', !g.mayUnstickStuc
 check('unstick Main after hysteresis with no flights', g.mayUnstickStuckMainPresentation(
   { phase: 'main_first' },
   { animating: true, zeroFlightMs: 2000 },
+  0,
+));
+
+check('may clear Checking hearts when live_show already cleared (3rd Success path)', g.mayClearStuckPerfSpectacle(
+  { phase: 'live_performance_first', status: 'playing' },
+  { perfSpectacle: true, heartCheckHold: true },
+));
+check('do not clear Checking hearts while live_show still in flight', !g.mayClearStuckPerfSpectacle(
+  { phase: 'live_performance_first', live_show: { stage: 'performance' } },
+  { perfSpectacle: true, heartCheckHold: true },
+));
+check('faster unstick when hide-iids stuck after baton flights', g.mayUnstickStuckMainPresentation(
+  { phase: 'main_first' },
+  { animating: true, hideIidsStuck: true, zeroFlightMs: 800 },
+  0,
+));
+check('do not fast-unstick hide-iids before short latch', !g.mayUnstickStuckMainPresentation(
+  { phase: 'main_first' },
+  { animating: true, hideIidsStuck: true, zeroFlightMs: 200 },
   0,
 ));
 
@@ -187,6 +215,13 @@ check('sendAct owns apply epoch for resolve/end_main/play',
   && /ownsApplyEpoch/.test(indexSrc));
 check('SSE deferred pull respects action apply epoch',
   /_actionApplyEpochNeedsFollowUp/.test(syncSrc));
+check('force pull waits for board catch-up (not full spectacle)',
+  /async function dispatchOnState/.test(syncSrc)
+  && /waitBoard/.test(syncSrc)
+  && /await dispatchOnState\(d, \{ waitBoard: !!\(force && opts\.actionEpoch\) \}\)/.test(syncSrc));
+check('turn-advance clears leftover Checking hearts chrome',
+  /perfClearHeartCheckHold/.test(applySrc)
+  && /apply turn-advance despite presentation hold/.test(applySrc));
 check('tab catch-up paints HUD helper',
   /function paintMatchHudAfterTabCatchUp/.test(syncSrc)
   && /clearPlaySelection/.test(syncSrc));
@@ -249,6 +284,9 @@ check('abortGameplayPresentation resumes polls via releaseLivePolls',
 check('poll gate clears chrome for finished match',
   /mayUnblockPollsForFinishedMatch/.test(syncSrc)
   && /clear leftover chrome for finished/.test(syncSrc));
+check('game-sync allows polls during heart-check / Win-Loss when live_show cleared',
+  /winLossChrome/.test(syncSrc)
+  && /Do NOT block when Checking hearts/.test(syncSrc));
 check('dropStale skips flight sweep on settled Main',
   /skipFlightSweep/.test(spectacleSrc)
   || /Never sweep card flights for settled-Main/.test(spectacleSrc));
