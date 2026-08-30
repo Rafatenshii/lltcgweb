@@ -28094,7 +28094,7 @@ function tcgClientStageHasHigherCostMember(p, self, excludeId = '') {
 
 function tcgClientCountOppWait(state, pid) {
   const opp = pid === 'p1' ? 'p2' : 'p1';
-  return Object.values(state?.players?.[opp]?.stage || {}).filter(m => m && !(m.active ?? true)).length;
+  return Object.values(state?.players?.[opp]?.stage || {}).filter(m => m && m.in_wait).length;
 }
 
 function appendClientHeartSpecColors(out, spec) {
@@ -28167,6 +28167,12 @@ function clientMemberContinuousHeartColors(member, state, pid, slot) {
       const n = tcgClientCountOppWait(state, pid) * Number(ab.amount ?? 1);
       const color = normalizeHeartColor(ab.color || 'any');
       for (let i = 0; i < n; i++) out.push(color);
+    }
+    if (type === 'heart_if_opp_wait_min') {
+      if (tcgClientCountOppWait(state, pid) >= Number(ab.min_count ?? 2)) {
+        const color = normalizeHeartColor(ab.color || 'purple');
+        for (let i = 0; i < Number(ab.count ?? 1); i++) out.push(color);
+      }
     }
     if (type === 'blade_if_exact_stage_members' && (ab.hearts || []).length) {
       if (tcgClientCountStageMembers(p) === Number(ab.count ?? 2)) {

@@ -407,7 +407,7 @@ function countCombinedEnergy(array $state): int {
 function countOppWaitMembers(array $state, string $opp): int {
     $n = 0;
     foreach ($state['players'][$opp]['stage'] ?? [] as $mbr) {
-        if ($mbr && !($mbr['active'] ?? true)) {
+        if ($mbr && memberIsInWait($mbr)) {
             $n++;
         }
     }
@@ -2974,6 +2974,15 @@ function collectContinuousPerformanceHeartGrants(array $state, string $pid): arr
                 $n = countOppWaitMembers($state, $opp) * intval($ab['amount'] ?? 1);
                 for ($i = 0; $i < $n; $i++) {
                     $memberHearts[] = $color;
+                }
+            }
+            if (($ab['type'] ?? '') === 'heart_if_opp_wait_min') {
+                $opp = ($pid === 'p1') ? 'p2' : 'p1';
+                if (countOppWaitMembers($state, $opp) >= intval($ab['min_count'] ?? 2)) {
+                    $color = normalizeHeartColor((string)($ab['color'] ?? 'any'));
+                    for ($i = 0; $i < intval($ab['count'] ?? 1); $i++) {
+                        $memberHearts[] = $color;
+                    }
                 }
             }
             $memberHearts = plMuseGapApplyContinuousHearts($state, $pid, $member, $ab, $memberHearts);

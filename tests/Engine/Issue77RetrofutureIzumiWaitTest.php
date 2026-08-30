@@ -168,6 +168,74 @@ final class Issue77RetrofutureIzumiWaitTest extends TestCase
         $this->assertFalse(memberIsInWait($state['players']['p2']['stage']['left']));
     }
 
+    public function testIzumiContinuousPurpleHeartWhenOppTwoInWait(): void {
+        $izumi = $this->cardByNo('PL!HS-bp5-016-N', 'izumi');
+        $opp1 = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_w1');
+        $opp2 = $this->cardByNo('PL!HS-bp5-008-R', 'opp_w2');
+
+        $p1 = $this->emptyPlayer('p1', 'P1');
+        $p1['stage']['center'] = $izumi;
+
+        $p2 = $this->emptyPlayer('p2', 'P2');
+        $p2['stage']['left'] = $opp1;
+        $p2['stage']['center'] = $opp2;
+        foreach (['left', 'center'] as $slot) {
+            waitMember($p2['stage'][$slot], ['turn' => 3, 'active_player' => 'p1', 'phase' => 'live_performance_first']);
+        }
+
+        $state = [
+            'room_id' => 'IZUMIHEART',
+            'status' => 'playing',
+            'seq' => 1,
+            'turn' => 3,
+            'phase' => 'live_performance_first',
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => ['p1' => $p1, 'p2' => $p2],
+        ];
+
+        $grants = collectContinuousPerformanceHeartGrants($state, 'p1');
+        $izumiGrant = null;
+        foreach ($grants as $g) {
+            if (($g['instance_id'] ?? '') === 'izumi') {
+                $izumiGrant = $g;
+                break;
+            }
+        }
+        $this->assertNotNull($izumiGrant, 'Izumi should emit a continuous heart grant');
+        $this->assertContains('purple', $izumiGrant['hearts'] ?? []);
+
+        $pool = getContinuousPerformanceHearts($state, 'p1');
+        $this->assertSame(1, count(array_filter($pool, static fn(string $c): bool => $c === 'purple')));
+    }
+
+    public function testIzumiContinuousPurpleHeartAbsentWithOneOppWait(): void {
+        $izumi = $this->cardByNo('PL!HS-bp5-016-N', 'izumi');
+        $opp1 = $this->cardByNo('PL!HS-sd1-015-SD', 'opp_w1');
+
+        $p1 = $this->emptyPlayer('p1', 'P1');
+        $p1['stage']['center'] = $izumi;
+
+        $p2 = $this->emptyPlayer('p2', 'P2');
+        $p2['stage']['left'] = $opp1;
+        waitMember($p2['stage']['left'], ['turn' => 3, 'active_player' => 'p1', 'phase' => 'live_performance_first']);
+
+        $state = [
+            'room_id' => 'IZUMIHEARTNO',
+            'status' => 'playing',
+            'seq' => 1,
+            'turn' => 3,
+            'phase' => 'live_performance_first',
+            'first_player' => 'p1',
+            'active_player' => 'p1',
+            'log' => [],
+            'players' => ['p1' => $p1, 'p2' => $p2],
+        ];
+
+        $this->assertSame([], getContinuousPerformanceHearts($state, 'p1'));
+    }
+
     public function testRetrofuturePlayChoiceOpensWrMemberPick(): void {
         $live = $this->cardByNo('PL!HS-bp5-022-L', 'retro');
         $wrMember = $this->cardByNo('PL!HS-bp5-008-R', 'wr_edel_4'); // Edel Note cost 4
