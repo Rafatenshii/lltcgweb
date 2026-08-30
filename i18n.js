@@ -1585,6 +1585,13 @@
         "kicker": "Tournament champion",
         "view": "View results"
       },
+      "featured": {
+        "kickerLive": "Live tournament",
+        "kickerCheckin": "Check-in open",
+        "kickerOpen": "Featured tournament",
+        "field": "{n}/{max} players",
+        "open": "Open event"
+      },
       "card": {
         "fee": "fee {n}",
         "watching": "{n} watching",
@@ -11474,6 +11481,13 @@
       champion: {
         kicker: 'Tournament champion',
         view: 'View results'
+      },
+      featured: {
+        kickerLive: 'Live tournament',
+        kickerCheckin: 'Check-in open',
+        kickerOpen: 'Featured tournament',
+        field: '{n}/{max} players',
+        open: 'Open event'
       },
       detail: {
         prizePool: 'prize pool {n}'

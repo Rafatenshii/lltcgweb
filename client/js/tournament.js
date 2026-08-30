@@ -1082,6 +1082,87 @@
     );
   }
 
+  function pickFeaturedOngoing(active) {
+    const flagged = (active || []).find((r) => r && r.bulletin_featured);
+    if (flagged) return flagged;
+    // Client fallback if an older API omitted the flag.
+    const rank = (st) => (st === 'running' ? 0 : st === 'checkin' ? 1 : st === 'open' ? 2 : 9);
+    let best = null;
+    let bestKey = null;
+    (active || []).forEach((row) => {
+      const sr = rank(String(row.status || ''));
+      if (sr >= 9) return;
+      const players = Number(row.entrant_count) || 0;
+      const start = Number(row.start_at) || 0;
+      const key = sr + '-' + String(999999 - players).padStart(6, '0') + '-' + String(start).padStart(10, '0');
+      if (bestKey == null || key < bestKey) {
+        bestKey = key;
+        best = row;
+      }
+    });
+    return best;
+  }
+
+  function featuredHeroHtml(row) {
+    if (!row) return '';
+    const sep = metaSep();
+    const count = Number(row.entrant_count) || 0;
+    const max = Number(row.max_players) || 0;
+    const progress = row.progress || {};
+    const summary = String(progress.summary || '').trim()
+      || labelStatus(row.status);
+    const leaders = Array.isArray(row.leaders) ? row.leaders : [];
+    const status = String(row.status || '');
+    const kicker = status === 'running'
+      ? t('tournament.featured.kickerLive', 'Live tournament')
+      : status === 'checkin'
+        ? t('tournament.featured.kickerCheckin', 'Check-in open')
+        : t('tournament.featured.kickerOpen', 'Featured tournament');
+    let leadersHtml = '';
+    if (leaders.length) {
+      leadersHtml = '<ol class="tournament-featured-leaders">'
+        + leaders.map((p, i) => {
+          const record = (status === 'running' && ((Number(p.wins) || 0) + (Number(p.losses) || 0) > 0))
+            ? (' <span class="tournament-muted">'
+              + escapeHtml(t('tournament.standings.record', '{wins}W–{losses}L', {
+                wins: Number(p.wins) || 0,
+                losses: Number(p.losses) || 0,
+              }))
+              + '</span>')
+            : '';
+          return '<li><span class="tournament-featured-rank">#' + (i + 1) + '</span> '
+            + personChipHtml(p.discord_id, p.username || 'Player', p.avatar_url)
+            + record
+            + '</li>';
+        }).join('')
+        + '</ol>';
+    }
+    return (
+      '<section class="tournament-champion-hero tournament-featured-hero" role="status" aria-live="polite">'
+      + '<div class="tournament-champion-hero-kicker">'
+      + escapeHtml(kicker)
+      + '</div>'
+      + '<div class="tournament-champion-hero-main">'
+      + '<div class="tournament-champion-hero-copy">'
+      + '<div class="tournament-champion-hero-name">' + escapeHtml(row.title || '') + '</div>'
+      + '<div class="tournament-champion-hero-event">'
+      + escapeHtml(labelStatus(row.status))
+      + sep + escapeHtml(summary)
+      + sep + escapeHtml(t('tournament.featured.field', '{n}/{max} players', {
+        n: count,
+        max: max || '—',
+      }))
+      + '</div>'
+      + leadersHtml
+      + '</div></div>'
+      + '<button type="button" class="btn-ghost tournament-champion-hero-open" data-tid="'
+      + escapeAttr(row.id) + '">'
+      + escapeHtml(t('tournament.featured.open', 'Open event'))
+      + '</button>'
+      + '</section>'
+    );
+  }
+
   function resultsBannerHtml(trow) {
     if (!trow || trow.status !== 'finished') return '';
     const results = trow.results;
@@ -1142,7 +1223,10 @@
       return;
     }
     let html = '';
-    if (past.length && winnerOf(past[0])) {
+    const featured = pickFeaturedOngoing(active);
+    if (featured) {
+      html += featuredHeroHtml(featured);
+    } else if (past.length && winnerOf(past[0])) {
       html += championHeroHtml(past[0]);
     }
     html += '<section class="tournament-list-section" aria-label="'

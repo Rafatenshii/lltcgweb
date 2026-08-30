@@ -1248,3 +1248,158 @@ function tcgTournamentPublicMatch(array $m): array {
         'p2_wins' => (int)($meta['p2_wins'] ?? 0),
     ];
 }
+
+/**
+ * Pick the bulletin hero tournament: busiest running event, else check-in/open.
+ *
+ * @param list<array<string,mixed>> $list Public tournament rows with entrant_count.
+ * @return array<string,mixed>|null
+ */
+function tcgTournamentPickBulletinFeatured(array $list): ?array {
+    if ($list === []) {
+        return null;
+    }
+    $rankStatus = static function (string $status): int {
+        return match ($status) {
+            'running' => 0,
+            'checkin' => 1,
+            'open' => 2,
+            default => 9,
+        };
+    };
+    $best = null;
+    $bestKey = null;
+    foreach ($list as $row) {
+        $status = (string)($row['status'] ?? '');
+        $sr = $rankStatus($status);
+        if ($sr >= 9) {
+            continue;
+        }
+        $players = (int)($row['entrant_count'] ?? 0);
+        $start = (int)($row['start_at'] ?? 0);
+        // Prefer higher status priority, then more players, then sooner start.
+        $key = sprintf('%d-%06d-%010d', $sr, 999999 - $players, $start);
+        if ($bestKey === null || $key < $bestKey) {
+            $bestKey = $key;
+            $best = $row;
+        }
+    }
+    return $best;
+}
+
+/**
+ * Human-readable current round / phase for the bulletin hero.
+ *
+ * @param list<array<string,mixed>> $matches Raw or public match rows.
+ * @return array{phase:string,summary:string,round:?int,side:?string,live_matches:int,ready_matches:int}
+ */
+function tcgTournamentBulletinProgress(string $status, array $settings, array $matches): array {
+    $format = (string)($settings['format'] ?? 'single_elim');
+    if ($status === 'open') {
+        return [
+            'phase' => 'open',
+            'summary' => 'Registration open',
+            'round' => null,
+            'side' => null,
+            'live_matches' => 0,
+            'ready_matches' => 0,
+        ];
+    }
+    if ($status === 'checkin') {
+        return [
+            'phase' => 'checkin',
+            'summary' => 'Check-in open',
+            'round' => null,
+            'side' => null,
+            'live_matches' => 0,
+            'ready_matches' => 0,
+        ];
+    }
+    $live = 0;
+    $ready = 0;
+    $focus = null;
+    $focusPri = 99;
+    foreach ($matches as $m) {
+        $st = (string)($m['status'] ?? '');
+        if ($st === 'live') {
+            $live++;
+        } elseif ($st === 'ready') {
+            $ready++;
+        }
+        if (!in_array($st, ['pending', 'ready', 'live'], true)) {
+            continue;
+        }
+        $pri = match ($st) {
+            'live' => 0,
+            'ready' => 1,
+            default => 2,
+        };
+        $round = (int)($m['round'] ?? 1);
+        $side = (string)($m['bracket_side'] ?? 'winners');
+        $candPri = ($pri * 1000) + $round;
+        if ($side === 'losers') {
+            $candPri += 50;
+        } elseif ($side === 'grand_final') {
+            $candPri += 80;
+        }
+        if ($candPri < $focusPri) {
+            $focusPri = $candPri;
+            $focus = $m;
+        }
+    }
+    if ($focus === null) {
+        return [
+            'phase' => 'running',
+            'summary' => $matches === [] ? 'Bracket starting' : 'Wrapping up',
+            'round' => null,
+            'side' => null,
+            'live_matches' => $live,
+            'ready_matches' => $ready,
+        ];
+    }
+    $side = (string)($focus['bracket_side'] ?? 'winners');
+    $round = (int)($focus['round'] ?? 1);
+    $same = array_values(array_filter(
+        $matches,
+        static function ($m) use ($side, $round) {
+            return (string)($m['bracket_side'] ?? 'winners') === $side
+                && (int)($m['round'] ?? 0) === $round
+                && in_array((string)($m['status'] ?? ''), ['pending', 'ready', 'live'], true);
+        }
+    ));
+    $slotCount = max(1, count($same));
+    $summary = tcgTournamentBulletinRoundLabel($side, $round, $slotCount, $format);
+    if ($live > 0) {
+        $summary .= ' · ' . $live . ' live';
+    } elseif ($ready > 0) {
+        $summary .= ' · ' . $ready . ' ready';
+    }
+    return [
+        'phase' => 'running',
+        'summary' => $summary,
+        'round' => $round,
+        'side' => $side,
+        'live_matches' => $live,
+        'ready_matches' => $ready,
+    ];
+}
+
+function tcgTournamentBulletinRoundLabel(string $side, int $round, int $slotCount, string $format): string {
+    if ($side === 'swiss') {
+        return 'Swiss · Round ' . max(1, $round);
+    }
+    if ($side === 'losers') {
+        return $slotCount === 1 ? 'Losers Final' : ('Losers · R' . max(1, $round));
+    }
+    if ($side === 'grand_final') {
+        return $round >= 2 ? 'Grand Final (Reset)' : 'Grand Final';
+    }
+    if ($slotCount === 1) {
+        return $format === 'swiss' ? 'Final' : 'Winners Final';
+    }
+    if ($slotCount === 2) {
+        return 'Semifinals';
+    }
+    return 'Round of ' . ($slotCount * 2);
+}
+

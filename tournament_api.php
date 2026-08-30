@@ -120,6 +120,17 @@ function tcgApiTournamentList(array $body): array {
         $pub['start_reminder_offsets'] = $offsetMap[$tid] ?? [];
     }
     unset($pub);
+    $featured = tcgTournamentPickBulletinFeatured($list);
+    if ($featured !== null) {
+        $fid = strtoupper((string)($featured['id'] ?? ''));
+        foreach ($list as &$pub) {
+            if (strtoupper((string)($pub['id'] ?? '')) === $fid) {
+                tcgTournamentEnrichBulletinFeatured($pub);
+                break;
+            }
+        }
+        unset($pub);
+    }
     $past = [];
     if ($status === '') {
         $pastSql = 'SELECT t.*,
@@ -383,6 +394,66 @@ function tcgTournamentPublicStandings(array $entrants, array $matches): array {
         return strcmp($a['username'], $b['username']);
     });
     return $out;
+}
+
+/**
+ * Attach bulletin_featured, progress, and leaders onto a public list row.
+ *
+ * @param array<string,mixed> $pub
+ */
+function tcgTournamentEnrichBulletinFeatured(array &$pub): void {
+    $id = strtoupper((string)($pub['id'] ?? ''));
+    if ($id === '') {
+        return;
+    }
+    $pub['bulletin_featured'] = true;
+    $settings = is_array($pub['settings'] ?? null) ? $pub['settings'] : [];
+    $status = (string)($pub['status'] ?? '');
+    $entrants = tcgTournamentFetchEntrants($id);
+    $matches = tcgTournamentFetchMatches($id);
+    $pub['progress'] = tcgTournamentBulletinProgress($status, $settings, $matches);
+    $avatars = [];
+    foreach ($entrants as $e) {
+        $avatars[(string)$e['discord_id']] = $e['avatar_url'] ?? null;
+    }
+    $leaders = [];
+    if ($status === 'running' && $matches !== []) {
+        $standings = tcgTournamentPublicStandings($entrants, $matches);
+        foreach (array_slice($standings, 0, 3) as $row) {
+            $did = (string)($row['discord_id'] ?? '');
+            $leaders[] = [
+                'discord_id' => $did,
+                'username' => (string)($row['username'] ?? 'Player'),
+                'avatar_url' => $avatars[$did] ?? null,
+                'wins' => (int)($row['wins'] ?? 0),
+                'losses' => (int)($row['losses'] ?? 0),
+                'status' => (string)($row['status'] ?? ''),
+            ];
+        }
+    } else {
+        $sorted = $entrants;
+        usort($sorted, static function ($a, $b) {
+            $sa = (string)($a['status'] ?? '');
+            $sb = (string)($b['status'] ?? '');
+            $ra = in_array($sa, ['checked_in', 'playing', 'winner'], true) ? 0 : 1;
+            $rb = in_array($sb, ['checked_in', 'playing', 'winner'], true) ? 0 : 1;
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+            return ((int)($a['registered_at'] ?? 0)) <=> ((int)($b['registered_at'] ?? 0));
+        });
+        foreach (array_slice($sorted, 0, 3) as $e) {
+            $leaders[] = [
+                'discord_id' => (string)$e['discord_id'],
+                'username' => (string)($e['username'] ?? 'Player'),
+                'avatar_url' => $e['avatar_url'] ?? null,
+                'wins' => 0,
+                'losses' => 0,
+                'status' => (string)($e['status'] ?? ''),
+            ];
+        }
+    }
+    $pub['leaders'] = $leaders;
 }
 
 /** @param array<string,mixed> $body */
