@@ -2147,17 +2147,13 @@ function actionSetLiveCards(array $state, string $pid, array $data): array {
     $cardIds = array_slice($cardIds, 0, $slotsLeft);
 
     $added = 0;
-    $cannotLive = !empty($state['live_modifiers'][$pid]['cannot_live']);
+    // cannot_live (Rurino bp2-014 etc.): Lives may still be placed in storage;
+    // they are dumped to WR as a discard before Performance and never attempt.
     foreach ($cardIds as $cid) {
         $idx = findInHand($p['hand'], $cid);
         if ($idx === false) continue;
         $c = $p['hand'][$idx];
         if (!isLiveStorageEligible($c)) continue;
-        if ($cannotLive && isLiveTypeCard($c)) {
-            throw new Exception(
-                'You cannot attempt a Live this round — place Member bluffs only in Live storage.'
-            );
-        }
         $slot = liveZoneFirstEmptySlot($p['live_zone']);
         if ($slot < 0) break;
         $c['revealed'] = false;

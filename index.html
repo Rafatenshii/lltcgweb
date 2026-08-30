@@ -30162,9 +30162,9 @@ function isLiveSetSelecting(s, myId) {
 }
 
 function isLiveHandSelectable(card, s, myId) {
+  // cannot_live still allows Live cards into storage; server dumps them to WR
+  // before Performance (treated like a discard, no Live attempt).
   if (!card || !(card.card_type === 'ライブ' || card.card_type === 'メンバー')) return false;
-  const pid = myId || G.playerId;
-  if (card.card_type === 'ライブ' && s?.live_modifiers?.[pid]?.cannot_live) return false;
   return true;
 }
 
@@ -30689,11 +30689,7 @@ function toggleLiveSelect(iid, s, myId) {
   G.liveSel = G.liveSel.filter(id => id && (s?.players?.[myId]?.hand || []).some(c => c.instance_id === id));
   const card = findHand(iid, s, myId);
   if (!isLiveHandSelectable(card, s, myId)) {
-    if (card?.card_type === 'ライブ' && s?.live_modifiers?.[myId]?.cannot_live) {
-      toast(t('toast.cannotLiveStorage', 'You cannot attempt a Live this round — Member bluffs only.'));
-    } else {
-      toast(t('toast.onlyLiveOrMember'));
-    }
+    toast(t('toast.onlyLiveOrMember'));
     return;
   }
   const slots = liveSlotsLeft(s, myId);
