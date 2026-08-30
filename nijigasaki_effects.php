@@ -864,31 +864,67 @@ function nijiResolveActivatedEffectBody(
         return $state;
     }
     if ($type === 'leave_play_named_from_hand_stack_energy') {
+        // Validate hand target before paying / leaving Stage (avoids half-applied board wipes).
+        $handId = trim((string)($data['hand_card_id'] ?? ''));
+        $played = null;
+        $handIdx = null;
+        foreach ($p['hand'] as $i => $c) {
+            if (($c['instance_id'] ?? '') !== $handId) {
+                continue;
+            }
+            if (!cardMatchesNames($c, $ab['names'] ?? [])) {
+                throw new Exception('Must choose matching Member');
+            }
+            if (intval($c['cost'] ?? 0) > intval($ab['max_cost'] ?? 13)) {
+                throw new Exception('Cost too high');
+            }
+            $played = $c;
+            $handIdx = $i;
+            break;
+        }
+        if ($played === null || $handIdx === null) {
+            throw new Exception('Choose a Member from hand');
+        }
         $energyCost = intval($ab['energy_cost'] ?? 0);
+        $stackNeed = max(0, intval($ab['energy'] ?? 1));
+        // Pay cost rests Energy in-zone; stacking can then take rested chips (need cost chips present).
+        if ($energyCost > 0 && countEnergyInZone($p) < $energyCost) {
+            throw new Exception("Need $energyCost Energy");
+        }
         if ($energyCost > 0 && !payEnergyCost($p, $energyCost)) {
             throw new Exception("Need $energyCost Energy");
         }
-        $handId = $data['hand_card_id'] ?? '';
-        $played = null;
-        foreach ($p['hand'] as $i => $c) {
-            if (($c['instance_id'] ?? '') !== $handId) continue;
-            if (!cardMatchesNames($c, $ab['names'] ?? [])) throw new Exception('Must choose matching Member');
-            if (intval($c['cost'] ?? 0) > intval($ab['max_cost'] ?? 13)) throw new Exception('Cost too high');
-            $played = $c;
-            array_splice($p['hand'], $i, 1);
-            break;
+        if ($stackNeed > 0 && countEnergyInZone($p) < $stackNeed) {
+            throw new Exception("Need $stackNeed Energy in Energy Zone to place under Member");
         }
-        if (!$played) throw new Exception('Choose a Member from hand');
-        $p['waiting_room'][] = $member;
-        $p['stage'][$slot] = $played;
+        array_splice($p['hand'], $handIdx, 1);
+        // Snapshot before clearing the slot — $member is a reference into stage[$slot].
+        $leavingMember = $member;
+        $leavingName = $leavingMember['name_en'] ?? $leavingMember['name'] ?? 'Member';
+        $p['stage'][$slot] = null;
+        // Resolve leave (return stacked Energy, on-leave triggers) on the snapshot,
+        // then append the cleaned card to WR — do not append first or WR keeps stale stacks.
+        $state = resolveOnLeaveStageAbilities($state, $pid, $leavingMember);
+        $p = &$state['players'][$pid];
+        $p['waiting_room'][] = $leavingMember;
+        mergeCardCatalogFields($played);
         clearMemberWait($played);
+        $played['entered_from_hand'] = true;
         $played['entered_turn'] = intval($state['turn'] ?? 1);
-        nijiStackEnergyUnderMember($p, $played, intval($ab['energy'] ?? 1));
         $p['stage'][$slot] = $played;
+        $placed = nijiStackEnergyUnderMember($p, $played, $stackNeed);
+        if ($stackNeed > 0 && $placed < $stackNeed) {
+            throw new Exception('Could not place Energy under Member');
+        }
+        $p['stage'][$slot] = $played;
+        // Stage play counted inside resolveOnEnterAbilities → notifyMemberEnteredStage.
+        $state = resolveOnEnterAbilities($state, $pid, $played, (string)$slot);
+        $p = &$state['players'][$pid];
+        $played = $p['stage'][$slot] ?? $played;
         $state = bp7ResolveAutoOnEnergyStackedUnderMember($state, $pid);
         $state = addLog($state, $state['players'][$pid]['name'] .
-            ' — [' . ($member['name_en'] ?? $member['name']) . '] swapped for ' .
-            ($played['name_en'] ?? $played['name']) . ' and stacked Energy.');
+            ' — [' . $leavingName . '] left Stage; played ' .
+            ($played['name_en'] ?? $played['name'] ?? 'Member') . ' from hand and stacked Energy.');
         return $state;
     }
     if ($type === 'hand_discard_for_stage_blade') {

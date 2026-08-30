@@ -147,8 +147,65 @@ final class SetsunaLeavePlayFromHandTest extends TestCase
             static fn($e) => !empty($e['active'])
         ));
         $this->assertSame(0, $active);
+        $this->assertCount(2, $p1['energy_zone']);
         $stacked = countMemberStackedEnergy($p1, $p1['stage']['center']);
         $this->assertSame(1, $stacked);
+        $this->assertTrue(!empty($p1['stage']['center']['entered_from_hand']));
+    }
+
+    public function testLeavePlayReturnsStackedEnergyAndFiresOnEnter(): void
+    {
+        $stage = $this->setsunaStage();
+        $stage['stacked_energy'] = [
+            $this->energyChip('under1', false),
+        ];
+        $handMember = $this->setsunaHand('hand_setsuna', 5);
+        $handMember['card_no'] = 'TEST-ONENTER-DRAW';
+        $handMember['abilities'] = [[
+            'trigger' => 'on_enter',
+            'type' => 'draw',
+            'count' => 1,
+        ]];
+        $state = $this->baseState($stage, [$handMember]);
+        $state['players']['p1']['main_deck'] = [[
+            'instance_id' => 'deck1',
+            'card_no' => 'PL!N-bp1-001-P',
+            'name' => '上原歩夢',
+            'name_en' => 'Ayumu Uehara',
+            'card_type' => 'メンバー',
+        ]];
+        $zoneBefore = count($state['players']['p1']['energy_zone']);
+        $after = applyAction($state, 'p1', 'activate_ability', [
+            'card_id' => 'stage_setsuna',
+            'ability_index' => 0,
+            'hand_card_id' => 'hand_setsuna',
+        ]);
+        $p1 = $after['players']['p1'];
+        $this->assertSame('hand_setsuna', $p1['stage']['center']['instance_id'] ?? null);
+        $this->assertSame('TEST-ONENTER-DRAW', $p1['stage']['center']['card_no'] ?? null);
+        // Leaving Setsuna's stacked Energy returned; chip may sit in Energy Zone (inactive).
+        $underIds = [];
+        foreach ($p1['energy_zone'] as $e) {
+            $underIds[] = (string)($e['instance_id'] ?? '');
+        }
+        $this->assertContains('under1', $underIds);
+        // Leaving Member is in WR, or was shuffled into the deck after On Enter drew the last card.
+        $leftIds = array_map(
+            static fn($c) => (string)($c['instance_id'] ?? ''),
+            array_merge($p1['waiting_room'] ?? [], $p1['main_deck'] ?? [])
+        );
+        $this->assertContains('stage_setsuna', $leftIds);
+        foreach (array_merge($p1['waiting_room'] ?? [], $p1['main_deck'] ?? []) as $c) {
+            if (($c['instance_id'] ?? '') === 'stage_setsuna') {
+                $this->assertEmpty($c['stacked_energy'] ?? []);
+            }
+        }
+        // Zone: original 3 + 1 returned from leave − 1 stacked under new = 3.
+        $this->assertCount($zoneBefore, $p1['energy_zone']);
+        $this->assertSame(1, countMemberStackedEnergy($p1, $p1['stage']['center']));
+        // On Enter draw from the Member played from hand.
+        $this->assertCount(1, $p1['hand']);
+        $this->assertSame('deck1', $p1['hand'][0]['instance_id'] ?? null);
     }
 
     public function testAbilityBlockedWithoutMatchingHandMember(): void
@@ -169,5 +226,41 @@ final class SetsunaLeavePlayFromHandTest extends TestCase
         );
         $this->assertNotNull($reason);
         $this->assertStringContainsString('hand', strtolower((string)$reason));
+    }
+
+    public function testPlayMemberOntoEmptyStage(): void
+    {
+        $card = $this->setsunaStage();
+        $card['instance_id'] = 'hand_bp3';
+        unset($card['stacked_energy']);
+        $state = $this->baseState(
+            [
+                'instance_id' => 'filler',
+                'card_no' => 'PL!N-bp1-001-P',
+                'name' => '上原歩夢',
+                'name_en' => 'Ayumu Uehara',
+                'card_type' => 'メンバー',
+                'cost' => 1,
+                'blade' => 1,
+                'hearts' => [['color' => 'pink', 'count' => 1]],
+                'abilities' => [],
+            ],
+            [$card]
+        );
+        // Need enough Energy to pay cost 9.
+        $state['players']['p1']['energy_zone'] = [];
+        for ($i = 1; $i <= 9; $i++) {
+            $state['players']['p1']['energy_zone'][] = $this->energyChip('pay' . $i, true);
+        }
+        $state['players']['p1']['stage'] = ['left' => null, 'center' => null, 'right' => null];
+        $after = applyAction($state, 'p1', 'play_member', [
+            'card_id' => 'hand_bp3',
+            'slot' => 'center',
+        ]);
+        $center = $after['players']['p1']['stage']['center'] ?? null;
+        $this->assertNotNull($center);
+        $this->assertSame('hand_bp3', $center['instance_id'] ?? null);
+        $this->assertSame('PL!N-bp3-007-R', $center['card_no'] ?? null);
+        $this->assertCount(0, $after['players']['p1']['hand']);
     }
 }
