@@ -614,7 +614,7 @@ body.tutorial-mode #sb-activatable-wrap.tut-show{outline:2px solid rgba(255,107,
   display:flex;align-items:stretch;justify-content:center;
 }
 #screen-game .game-viewport-frame .game-wide-wrap{flex:1 1 auto}
-:root{--hand-strip-h:132px;--hand-card-pad:24px;--my-hand-card-h:calc((var(--hand-strip-h) - var(--hand-card-pad)) * 1.44);--opp-hand-card-h:calc((var(--hand-strip-h) - var(--hand-card-pad)) * 1.28);--skill-hand-preserve-h:calc(max(var(--hand-strip-h),var(--my-hand-card-h)) + 30px);--skill-hand-blur-feather:min(88px,14vh);--mat-seam-h:5px;--menu-card-h:118px;--side-panel-w:440px;--playmat-gutter:880px;--playmat-aspect:1024/563;--playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2);--playmat-col-max-w:min(calc(100vw - var(--playmat-gutter)),calc(var(--playmat-mat-max-h) * 1024 / 563));--field-card-scale:1.16;--pile-fill-scale:1.14;--flight-ms:300ms;--fan-shift-ms:280ms;--energy-flip-ms:360ms}
+:root{--hand-strip-h:132px;--hand-card-pad:24px;--my-hand-card-h:calc((var(--hand-strip-h) - var(--hand-card-pad)) * 1.44);--opp-hand-card-h:calc((var(--hand-strip-h) - var(--hand-card-pad)) * 1.28);--skill-hand-preserve-h:calc(max(var(--hand-strip-h),var(--my-hand-card-h)) + 30px);--skill-hand-blur-feather:min(88px,14vh);--mat-seam-h:5px;--menu-card-h:118px;--side-panel-min-w:180px;--side-panel-max-w:440px;--side-panel-w:440px;--playmat-gutter:880px;--playmat-aspect:1024/563;--playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2);--playmat-ideal-w:calc(var(--playmat-mat-max-h) * 1024 / 563);--playmat-col-max-w:min(var(--playmat-ideal-w),calc(100vw - var(--playmat-gutter)));--field-card-scale:1.16;--pile-fill-scale:1.14;--flight-ms:300ms;--fan-shift-ms:280ms;--energy-flip-ms:360ms}
 .game-wide-wrap{
   width:100%;height:100vh;
   display:flex;align-items:center;justify-content:center;
@@ -622,6 +622,17 @@ body.tutorial-mode #sb-activatable-wrap.tut-show{outline:2px solid rgba(255,107,
   border-left:1px solid rgba(186,228,255,.08);
   border-right:1px solid rgba(186,228,255,.08);
   box-shadow:inset 0 0 80px rgba(0,0,0,.35);
+}
+/* Desktop: size panels from leftover width after height-fitted playmat (panels shrink first). */
+html:not(.tcg-mobile-viewport) #screen-game .game-wide-wrap{
+  --playmat-ideal-w:calc(var(--playmat-mat-max-h) * 1024 / 563);
+  --side-panel-w:clamp(
+    var(--side-panel-min-w, 180px),
+    calc((100vw - var(--playmat-ideal-w)) / 2),
+    var(--side-panel-max-w, 440px)
+  );
+  --playmat-gutter:calc(2 * var(--side-panel-w));
+  --playmat-col-max-w:min(var(--playmat-ideal-w), calc(100vw - var(--playmat-gutter)));
 }
 .playmat-column{
   flex:0 0 auto;
@@ -735,8 +746,8 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
   -webkit-touch-callout:none;touch-action:manipulation;
 }
 .side-panel{
-  flex:0 0 var(--side-panel-w);width:var(--side-panel-w);
-  min-width:var(--side-panel-w);max-width:var(--side-panel-w);
+  flex:1 1 var(--side-panel-w);width:var(--side-panel-w);
+  min-width:var(--side-panel-min-w, 180px);max-width:var(--side-panel-w);
   height:100vh;
   background:var(--ui-panel-bg);
   backdrop-filter:blur(12px);
@@ -749,8 +760,10 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
    The playmat remains height-fitted so cards never overlap the hand strips. */
 @media (min-width:1000px) and (min-aspect-ratio:16/10) {
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-wide-wrap{
-    --side-panel-w:min(600px,max(clamp(280px,23vw,440px),calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
+    --side-panel-max-w:600px;
+    --side-panel-w:min(600px,max(clamp(280px,23vw,440px),calc((100vw - var(--playmat-ideal-w)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
+    --playmat-col-max-w:min(var(--playmat-ideal-w), calc(100vw - var(--playmat-gutter)));
   }
 }
 @media (min-width:1000px) and (min-aspect-ratio:16/10) and (max-height:1100px) {
@@ -774,9 +787,10 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
     --opp-hand-card-h:calc(var(--hand-strip-h) * 1.32);
     --hand-safe-inline:8px;
     --playmat-mat-max-h:calc((100vh - 2 * var(--hand-strip-h) - var(--mat-seam-h) - 8px) / 2 - 14px);
-    --side-panel-w:min(440px,max(280px,calc((100vw - (var(--playmat-mat-max-h) * 1024 / 563)) / 2)));
+    --playmat-ideal-w:calc(var(--playmat-mat-max-h) * 1024 / 563);
+    --side-panel-w:min(440px,max(280px,calc((100vw - var(--playmat-ideal-w)) / 2)));
     --playmat-gutter:calc(2 * var(--side-panel-w));
-    --playmat-col-max-w:min(calc(100vw - var(--playmat-gutter)),calc(var(--playmat-mat-max-h) * 1024 / 563));
+    --playmat-col-max-w:min(var(--playmat-ideal-w), calc(100vw - var(--playmat-gutter)));
   }
   html:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .hand-strip{
     padding-inline:var(--hand-safe-inline);
@@ -793,6 +807,18 @@ html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .hand-fan{
   }
 }
 .side-panel.side-left{padding-bottom:12px}
+/* Square / nearly-square desktop windows: tighter panel chrome so thin rails stay readable. */
+@media (min-width:700px) and (max-aspect-ratio:5/4){
+  html:not(.tcg-mobile-viewport) #screen-game .side-panel{
+    padding:10px 8px;gap:8px;
+  }
+  html:not(.tcg-mobile-viewport) #screen-game .side-panel .statgrid{
+    gap:4px;margin-bottom:8px;
+  }
+  html:not(.tcg-mobile-viewport) #screen-game .stage-board-panel h4{
+    font-size:13px;margin-bottom:6px;
+  }
+}
 html:not(.tcg-mobile-viewport):not(.tcg-portrait-play) #screen-game .side-panel.side-left{
   position:relative;
 }
@@ -2284,8 +2310,15 @@ html.tcg-mobile-viewport body.perf-spectacle-active #center-banner{
 
 /* ── Sub-1080p desktop: log hidden; radio / phase / resign in left pane; playmat fills viewport ── */
 html.tcg-compact-desktop:not(.tcg-mobile-viewport) #screen-game .game-viewport-frame .game-wide-wrap{
-  --side-panel-w:min(320px, 28vw);
+  --side-panel-min-w:160px;
+  --side-panel-max-w:min(320px, 28vw);
+  --side-panel-w:clamp(
+    var(--side-panel-min-w),
+    calc((100vw - var(--playmat-ideal-w)) / 2),
+    var(--side-panel-max-w)
+  );
   --playmat-gutter:calc(2 * var(--side-panel-w));
+  --playmat-col-max-w:min(var(--playmat-ideal-w), calc(100vw - var(--playmat-gutter)));
 }
 html.tcg-compact-desktop:not(.tcg-mobile-viewport) #screen-game .game-viewport-frame .side-panel.side-left .card-hover-panel{
   display:none!important;
@@ -2331,12 +2364,12 @@ html.tcg-desktop-scaled:not(.tcg-mobile-viewport) #screen-game .game-viewport-fr
   height:100%;min-height:0;
 }
 html.tcg-desktop-scaled:not(.tcg-mobile-viewport):not(.tcg-compact-desktop) #screen-game .game-viewport-frame .game-wide-wrap{
-  --side-panel-w:calc(440px * var(--desktop-ui-scale, 1));
-  --playmat-gutter:calc(2 * var(--side-panel-w));
+  --side-panel-min-w:calc(180px * var(--desktop-ui-scale, 1));
+  --side-panel-max-w:calc(440px * var(--desktop-ui-scale, 1));
 }
 html.tcg-desktop-scaled:not(.tcg-mobile-viewport).tcg-compact-desktop #screen-game .game-viewport-frame .game-wide-wrap{
-  --side-panel-w:min(calc(320px * var(--desktop-ui-scale, 1)), 28vw);
-  --playmat-gutter:calc(2 * var(--side-panel-w));
+  --side-panel-min-w:calc(160px * var(--desktop-ui-scale, 1));
+  --side-panel-max-w:min(calc(320px * var(--desktop-ui-scale, 1)), 28vw);
 }
 
 .playmat-img{
