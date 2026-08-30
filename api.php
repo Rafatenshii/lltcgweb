@@ -1331,8 +1331,22 @@ function apiSeedRankedRoom(array $body): array {
     if (empty($state['seq'])) {
         $state['seq'] = 1;
     }
+    $incomingSeq = intval($state['seq'] ?? 1);
+    $existing = loadGame($roomId);
+    if (is_array($existing)) {
+        $existSeq = intval($existing['seq'] ?? 0);
+        // Re-migrate / rejoin must not rewind a live overflow room to a stale Hostinger seed.
+        if ($existSeq > $incomingSeq) {
+            return [
+                'ok' => true,
+                'room_id' => $roomId,
+                'seq' => $existSeq,
+                'skipped' => 'existing_ahead',
+            ];
+        }
+    }
     saveGame($roomId, $state);
-    return ['ok' => true, 'room_id' => $roomId, 'seq' => intval($state['seq'] ?? 1)];
+    return ['ok' => true, 'room_id' => $roomId, 'seq' => $incomingSeq];
 }
 
 function ping(array $body): array {
@@ -5825,8 +5839,17 @@ function loadGame(string $roomId): ?array {
 function saveGame(string $roomId, array $state): void {
     tcgResolveGameStore()->save($roomId, $state);
     if (($state['mode'] ?? '') === 'tournament') {
-        require_once __DIR__ . '/tournament_spectate.php';
-        tcgTournamentRecordDelayedSnapshot($roomId, $state);
+        // Spectate delay ring writes file I/O — defer until the room lock is released
+        // so peer actions (placement / End LIVE) are not blocked under contention.
+        if (!empty($GLOBALS['__tcg_sync_defer'])) {
+            if (!isset($GLOBALS['__tcg_delay_pending']) || !is_array($GLOBALS['__tcg_delay_pending'])) {
+                $GLOBALS['__tcg_delay_pending'] = [];
+            }
+            $GLOBALS['__tcg_delay_pending'][$roomId] = $state;
+        } else {
+            require_once __DIR__ . '/tournament_spectate.php';
+            tcgTournamentRecordDelayedSnapshot($roomId, $state);
+        }
     }
     if (!isPvpMatch($state)) {
         return;
@@ -5851,6 +5874,21 @@ function withLock(string $roomId, callable $fn, ?float $timeoutSec = null): mixe
     } finally {
         $GLOBALS['__tcg_sync_defer'] = max(0, intval($GLOBALS['__tcg_sync_defer'] ?? 1) - 1);
         if (intval($GLOBALS['__tcg_sync_defer'] ?? 0) === 0) {
+            $delayPending = $GLOBALS['__tcg_delay_pending'] ?? [];
+            $GLOBALS['__tcg_delay_pending'] = [];
+            if (is_array($delayPending) && $delayPending) {
+                require_once __DIR__ . '/tournament_spectate.php';
+                foreach ($delayPending as $rid => $snap) {
+                    if (!is_array($snap)) {
+                        continue;
+                    }
+                    try {
+                        tcgTournamentRecordDelayedSnapshot((string)$rid, $snap);
+                    } catch (Throwable $e) {
+                        // Spectate delay must never fail the player action that already committed.
+                    }
+                }
+            }
             $pending = $GLOBALS['__tcg_sync_pending'] ?? [];
             $GLOBALS['__tcg_sync_pending'] = [];
             if (is_array($pending)) {

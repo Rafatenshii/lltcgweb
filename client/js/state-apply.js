@@ -210,12 +210,24 @@
     }
     if(s.seq<=G.lastSeq && G.gameState) {
       const delayedSpec = !!(G.isSpectator && (s.spectate_stream_delayed || s.spectate_stream_waiting));
-      const sameBoard = (s.seq === (G.gameState.seq ?? 0))
-        && !!s.spectate_stream_waiting === !!G.gameState.spectate_stream_waiting;
-      if (!delayedSpec || sameBoard) {
-        TCG_DEBUG.logOnce('state', `stale:${s.seq}`, 'skip stale', { incoming: s.seq, last: G.lastSeq });
-        if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
-        return;
+      const boardSeq = G.gameState.seq ?? 0;
+      const incomingSeq = s.seq ?? 0;
+      // applyStateUpdate bumps lastSeq before log-sync commits the board. Do not treat
+      // that window as "already applied" or the client stays stale until a full refresh.
+      if (boardSeq < incomingSeq) {
+        TCG_DEBUG.warn('state', 'catch-up: board behind lastSeq', {
+          boardSeq,
+          last: G.lastSeq,
+          incoming: incomingSeq,
+        });
+      } else {
+        const sameBoard = (incomingSeq === boardSeq)
+          && !!s.spectate_stream_waiting === !!G.gameState.spectate_stream_waiting;
+        if (!delayedSpec || sameBoard) {
+          TCG_DEBUG.logOnce('state', `stale:${s.seq}`, 'skip stale', { incoming: s.seq, last: G.lastSeq });
+          if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
+          return;
+        }
       }
     }
     // Spectators use the same queue/apply path as players so LIVE reveal + Performance
@@ -1131,10 +1143,13 @@
   };
 
   global.enqueuePendingState = function enqueuePendingState(s) {
-    if (!s || s.seq <= G.lastSeq) return;
-    const q = G._pendingStateQueue || [];
+    if (!s) return;
     const seq = s.seq ?? 0;
+    const boardSeq = G.gameState?.seq ?? 0;
     const last = G.lastSeq ?? 0;
+    // Allow queue when the board is still behind even if lastSeq was bumped early.
+    if (seq <= last && seq <= boardSeq) return;
+    const q = G._pendingStateQueue || [];
     // Full get_state boards are large (log + zones). During Live Start / spectacle
     // holds every seq used to push another snapshot → Chrome memory spikes /
     // Page Unresponsive. Keep only the oldest still-owed board (transition prev)
@@ -1143,7 +1158,7 @@
     for (let i = 0; i < q.length; i++) {
       const st = q[i];
       const stSeq = st?.seq ?? 0;
-      if (stSeq <= last || stSeq >= seq) continue;
+      if (stSeq <= Math.min(last, boardSeq) || stSeq >= seq) continue;
       if (!oldest || stSeq < (oldest.seq ?? 0)) oldest = st;
     }
     G._pendingStateQueue = oldest ? [oldest, s] : [s];
@@ -1241,7 +1256,9 @@
     }
     const next = q.shift();
     TCG_DEBUG.log('state', 'flush pending', { seq: next?.seq, remaining: q.length });
-    if (next && next.seq > G.lastSeq) {
+    const boardSeq = G.gameState?.seq ?? 0;
+    const nextSeq = next?.seq ?? 0;
+    if (next && (nextSeq > (G.lastSeq ?? 0) || nextSeq > boardSeq)) {
       const cur = G.gameState;
       if (cur && typeof liveSpectaclePendingForTransition === 'function'
           && liveSpectaclePendingForTransition(cur, next)) {

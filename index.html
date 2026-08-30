@@ -2893,8 +2893,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=7"></script>
 <script src="client/js/resign-escape.js?v=1"></script>
-<script src="client/js/game-sync.js?v=60"></script>
-<script src="client/js/state-apply.js?v=72"></script>
+<script src="client/js/game-sync.js?v=61"></script>
+<script src="client/js/state-apply.js?v=73"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=11"></script>
 <script src="client/js/prompt-renderer.js?v=95"></script>
@@ -33547,7 +33547,9 @@ async function sendAct(type,data){
   if (isReplayViewing()) return;
   if(!G.roomId||!G.token) return;
   const phaseAdvance = type === 'end_main' || type === 'end_live_set';
-  const boardCatchup = type === 'play_member' || type === 'activate_ability';
+  // Force board catch-up after placement / live lock-in — same stale-seq trap as play_member.
+  const boardCatchup = type === 'play_member' || type === 'activate_ability'
+    || type === 'set_live_cards';
   if (phaseAdvance && G._phaseAdvanceInFlight) return;
   if (type === 'resign') abortGameplayPresentation();
   if ((type === 'end_main' || type === 'end_live_set' || type === 'play_member'
@@ -33599,6 +33601,17 @@ async function sendAct(type,data){
       } else if (phaseAdvance || boardCatchup) {
         if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
         await pullLatestState(true, { silent: true, actionEpoch: true });
+        // Action ACK seq can race ahead of a skipped/queued get_state apply.
+        const ackSeq = Number(res?.seq) || 0;
+        const boardSeq = G.gameState?.seq ?? 0;
+        if (ackSeq > boardSeq) {
+          TCG_DEBUG.warn('action', 'sendAct board still behind ack — re-pull', {
+            type, ackSeq, boardSeq, lastSeq: G.lastSeq,
+          });
+          if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
+          G.lastSeq = Math.min(G.lastSeq ?? 0, boardSeq);
+          await pullLatestState(true, { silent: true, actionEpoch: true });
+        }
       } else {
         await pullLatestState(false, { silent: type === 'send_stamp' });
       }
