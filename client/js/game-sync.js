@@ -1197,13 +1197,17 @@
           }
         }
 
-        // Only seal yell climbs after a long freeze or once the server is past
-        // Performance — otherwise restore replays the yell animation.
+        // Only seal yell climbs once past Performance (or hearts already resolved /
+        // very long hide). Mid-performance + brief tab-away must still replay yells.
         const stageNow = d?.live_show?.stage;
-        const forceSkipYells = hiddenMs >= 2800
-          || stageNow === 'outcomes'
-          || stageNow === 'judge'
-          || stageNow === 'done';
+        const guards = global.TCGPresentationGuards;
+        const forceSkipYells = (guards && typeof guards.shouldForceSkipLiveYellsOnTabRestore === 'function')
+          ? guards.shouldForceSkipLiveYellsOnTabRestore(stageNow, hiddenMs, d)
+          : (stageNow === 'outcomes'
+            || stageNow === 'judge'
+            || stageNow === 'done'
+            || (stageNow === 'performance' && hiddenMs >= 30000)
+            || (stageNow !== 'performance' && hiddenMs >= 2800));
         if (forceSkipYells
             && d?.live_show?.turn != null
             && typeof markLiveShowPerformancePresented === 'function') {
@@ -1230,6 +1234,9 @@
           if (typeof stopPoll === 'function') stopPoll();
           if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();
           if (typeof showWin === 'function') showWin(d);
+          if (isSpec && typeof maybeFollowTournamentBo3NextSpectate === 'function') {
+            void maybeFollowTournamentBo3NextSpectate(d);
+          }
           return true;
         }
 
@@ -1298,12 +1305,16 @@
 
       const hardHiddenMs = hiddenMs;
       const hardStage = d.live_show?.stage;
-      // Long freeze / already past Performance: skip yell replay. Short hides still
-      // mid-performance should re-climb (restoreLiveShowSpectacleAfterTabVisible).
-      const hardForceSkipYells = hardHiddenMs >= 2800
-        || hardStage === 'outcomes'
-        || hardStage === 'judge'
-        || hardStage === 'done';
+      // Long freeze past Performance / hearts resolved: skip yell replay.
+      // Short hides still mid-performance should re-climb.
+      const hardGuards = global.TCGPresentationGuards;
+      const hardForceSkipYells = (hardGuards && typeof hardGuards.shouldForceSkipLiveYellsOnTabRestore === 'function')
+        ? hardGuards.shouldForceSkipLiveYellsOnTabRestore(hardStage, hardHiddenMs, d)
+        : (hardStage === 'outcomes'
+          || hardStage === 'judge'
+          || hardStage === 'done'
+          || (hardStage === 'performance' && hardHiddenMs >= 30000)
+          || (hardStage !== 'performance' && hardHiddenMs >= 2800));
       if (hardForceSkipYells
           && d.live_show?.turn != null
           && typeof markLiveShowPerformancePresented === 'function') {
@@ -1346,6 +1357,9 @@
         if (typeof stopPoll === 'function') stopPoll();
         if (isSpec && typeof clearSpectatorSession === 'function') clearSpectatorSession();
         if (typeof showWin === 'function') showWin(d);
+        if (isSpec && typeof maybeFollowTournamentBo3NextSpectate === 'function') {
+          void maybeFollowTournamentBo3NextSpectate(d);
+        }
         return true;
       }
 

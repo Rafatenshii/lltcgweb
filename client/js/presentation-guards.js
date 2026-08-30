@@ -260,6 +260,29 @@
     return false;
   }
 
+  /**
+   * Whether tab catch-up should skip yell climbs (snap chrome / Checking hearts).
+   * Mid-performance must NOT skip after a short background — that caused reports of
+   * jumping straight to hearts. Only skip when the server is past Performance, hearts
+   * are already resolved, or the tab was hidden for a very long time.
+   */
+  function shouldForceSkipLiveYellsOnTabRestore(stage, hiddenMs, board) {
+    const ms = Number(hiddenMs) || 0;
+    if (stage === 'outcomes' || stage === 'judge' || stage === 'done') return true;
+    if (stage === 'performance') {
+      if (board && board._perf_hearts_resolved
+          && typeof board._perf_hearts_resolved === 'object'
+          && Object.keys(board._perf_hearts_resolved).length > 0) {
+        return true;
+      }
+      if (board && board.phase === 'live_success_effects') return true;
+      // Very long hide — user likely missed the climb; avoid a long catch-up replay.
+      if (ms >= 30000) return true;
+      return false;
+    }
+    return ms >= 2800;
+  }
+
   /** Soft catch-up should escalate to hard when the fetched board left Live Start. */
   function shouldEscalateSoftTabCatchUpToHard(fetched, opts) {
     opts = opts || {};
@@ -295,6 +318,7 @@
     mayClearStuckPerfSpectacle,
     shouldResumeLiveShowRunner,
     shouldSoftTabCatchUpPreserveLivePipeline,
+    shouldForceSkipLiveYellsOnTabRestore,
     shouldEscalateSoftTabCatchUpToHard,
   };
 });

@@ -1528,7 +1528,9 @@
       "pipExpand": "Full",
       "pipExpandTitle": "Return to full game",
       "pipInappHint": "Floating match — drag, resize, or tap Full to return",
-      "pipSpectateOnly": "Picture-in-Picture is available while spectating."
+      "pipSpectateOnly": "Picture-in-Picture is available while spectating.",
+      "bo3NextWait": "Game over — waiting for the next game…",
+      "bo3NextJoin": "Spectating next game…"
     },
     "ui": {
       "fullscreen": "Full screen",
@@ -3447,7 +3449,9 @@
       "pipExpand": "全画面",
       "pipExpandTitle": "通常表示に戻る",
       "pipInappHint": "フローティング表示 — ドラッグ／リサイズ、または「全画面」で戻る",
-      "pipSpectateOnly": "ピクチャーインピクチャーは観戦中のみ使えます。"
+      "pipSpectateOnly": "ピクチャーインピクチャーは観戦中のみ使えます。",
+      "bo3NextWait": "対局終了 — 次のゲームを待っています…",
+      "bo3NextJoin": "次のゲームを観戦します…"
     },
     "ui": {
       "fullscreen": "全画面",

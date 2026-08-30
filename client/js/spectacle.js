@@ -3348,6 +3348,17 @@ function shouldDeferPromptForLivePresentation(s, myId) {
   if (!pr || pr.responder !== myId) return false;
   // Success-Live pick must not softlock Win/Loss behind a stuck spectacle flag.
   if (pr.type === 'pick_judge_success_live') {
+    const heartsDone = typeof liveShowHeartsResolvedFromBoard === 'function'
+      && liveShowHeartsResolvedFromBoard(s);
+    const pastPerf = typeof liveShowStageAtLeast === 'function'
+      && liveShowStageAtLeast(s, 'outcomes');
+    const stageGone = !s.live_show || s.live_show.stage === 'done';
+    const wlrPhase = s.phase === 'live_judge' || s.phase === 'live_success_effects';
+    if (heartsDone || pastPerf || stageGone || wlrPhase) {
+      G._liveRoundPostSpectacleReady = true;
+      if (typeof perfClearHeartCheckHold === 'function') perfClearHeartCheckHold();
+      return false;
+    }
     if (G._perfSpectacleActive && !G._liveRoundPostSpectacleReady) return true;
     return false;
   }
@@ -8569,18 +8580,36 @@ async function presentOneLiveShowBeat(prev, next, myId, stage) {
   const perfPrev = buildPerfSpectaclePrev(prev, next) || prev || next;
   // Performance yell/hearts: once per show. Later outcomes/judge still animate.
   if (stage === 'performance' && liveShowPerformancePresentedForBoard(next, prev)) {
-    TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
-    await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
-    // Hearts may already be logged (Live Success prompt parked on performance).
-    // Re-arming Checking hearts here softlocks the splash against the log.
-    const isObserver = !!G.isSpectator
-      || (typeof isReplayViewing === 'function' && isReplayViewing());
-    if (isObserver || liveShowHeartsResolvedFromBoard(next)) {
-      perfClearHeartCheckHold();
+    const phasePastYells = G._perfSpectaclePhase
+      && G._perfSpectaclePhase !== 'closed'
+      && perfPhaseIdx(G._perfSpectaclePhase) >= perfPhaseIdx('yell_opp');
+    // Sticky seal without a completed climb → unmark and play yells (skip→hearts bug).
+    if (!phasePastYells && !liveShowHeartsResolvedFromBoard(next)) {
+      TCG_DEBUG.log('live', 'performance seal without yell climb — replaying', { showTurn });
+      if (typeof unmarkLiveShowPerformancePresented === 'function') {
+        unmarkLiveShowPerformancePresented(showTurn);
+      } else if (G._liveShowPerfPresentedTurns && showTurn != null) {
+        G._liveShowPerfPresentedTurns.delete(showTurn);
+      }
+      const roundKey = typeof liveShowRoundKey === 'function' ? liveShowRoundKey(next, prev) : null;
+      if (roundKey != null && G._liveShowPerfPresentedRounds) {
+        G._liveShowPerfPresentedRounds.delete(roundKey);
+      }
+      // Fall through to animated climb below.
     } else {
-      perfShowHeartCheckHold();
+      TCG_DEBUG.log('live', 'skip duplicate performance beat', { showTurn });
+      await perfSeekPhase(perfPrev, next, myId, 'yell_opp', { forward: true, animate: false });
+      // Hearts may already be logged (Live Success prompt parked on performance).
+      // Re-arming Checking hearts here softlocks the splash against the log.
+      const isObserver = !!G.isSpectator
+        || (typeof isReplayViewing === 'function' && isReplayViewing());
+      if (isObserver || liveShowHeartsResolvedFromBoard(next)) {
+        perfClearHeartCheckHold();
+      } else {
+        perfShowHeartCheckHold();
+      }
+      return;
     }
-    return;
   }
   // Outcomes already shown while a Live Success prompt held stage=performance.
   if (stage === 'outcomes' && liveShowOutcomesPresentedForBoard(next, prev)) {
@@ -8890,11 +8919,13 @@ async function presentServerLiveShowStage(prev, next, myId) {
       if (show.stage === 'performance') {
         const waitStart = performance.now();
         const minBridgeMs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 280 : 650;
+        // Allow server heal / opponent ack enough time — 4s was cutting into PvP
+        // softlocks when hearts were slow to land.
         while (
           !G._perfSpectacleAborted
           && advanced
           && (advanced.live_show?.stage === 'performance')
-          && (performance.now() - waitStart < 4000)
+          && (performance.now() - waitStart < 8000)
         ) {
           await perfSleep(120);
           const again = await fetchLiveShowStateNow({
@@ -8905,9 +8936,23 @@ async function presentServerLiveShowStage(prev, next, myId) {
           if (again && (again.seq ?? 0) >= (advanced.seq ?? 0)) advanced = again;
           if (['outcomes', 'judge', 'done'].includes(advanced?.live_show?.stage)) break;
           if (liveShowHeartsResolvedFromBoard(advanced)) break;
+          // Win/Loss Success pick parked on performance — stop waiting on hearts splash.
+          if (advanced?.pending_prompt?.type === 'pick_judge_success_live') break;
         }
         const elapsed = performance.now() - waitStart;
         if (elapsed < minBridgeMs) await perfSleep(minBridgeMs - elapsed);
+        if (advanced && liveShowHeartsResolvedFromBoard(advanced)) {
+          perfClearHeartCheckHold();
+          G._liveRoundPostSpectacleReady = true;
+        }
+        if (advanced?.pending_prompt?.type === 'pick_judge_success_live'
+            && advanced.pending_prompt.responder === myId) {
+          perfClearHeartCheckHold();
+          G._liveRoundPostSpectacleReady = true;
+          if (typeof ensurePendingPromptSurfaced === 'function') {
+            ensurePendingPromptSurfaced(advanced, myId);
+          }
+        }
       }
       if (!advanced) break;
       if ((advanced.seq ?? 0) < (board.seq ?? 0)) break;

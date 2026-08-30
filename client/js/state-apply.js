@@ -408,6 +408,9 @@
         flushPostLiveLogBanners(prev, s, G.playerId);
       }
       showWin(s);
+      if (typeof maybeFollowTournamentBo3NextSpectate === 'function') {
+        void maybeFollowTournamentBo3NextSpectate(s);
+      }
       return;
     }
     G.lastSeq = s.seq;

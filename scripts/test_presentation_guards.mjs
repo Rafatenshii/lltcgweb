@@ -128,6 +128,27 @@ check('may clear spectacle on finished match-end live_judge', g.mayClearStuckPer
   { status: 'finished', phase: 'live_judge' },
   { perfSpectacle: true },
 ));
+
+check('do not skip yells mid-performance after brief tab hide',
+  !g.shouldForceSkipLiveYellsOnTabRestore('performance', 2800, { live_show: { stage: 'performance' } }));
+check('skip yells once stage is outcomes',
+  g.shouldForceSkipLiveYellsOnTabRestore('outcomes', 100, { live_show: { stage: 'outcomes' } }));
+check('skip yells mid-performance when hearts already resolved',
+  g.shouldForceSkipLiveYellsOnTabRestore('performance', 500, {
+    live_show: { stage: 'performance' },
+    _perf_hearts_resolved: { p1: true },
+  }));
+check('skip yells mid-performance only after very long hide',
+  g.shouldForceSkipLiveYellsOnTabRestore('performance', 30000, { live_show: { stage: 'performance' } }));
+check('game-sync uses shouldForceSkipLiveYellsOnTabRestore',
+  /shouldForceSkipLiveYellsOnTabRestore/.test(syncSrc));
+check('Bo3 spectator follow helper exists',
+  /maybeFollowTournamentBo3NextSpectate/.test(indexSrc)
+  && /bo3NextWait/.test(indexSrc));
+check('WLR Success pick not deferred after hearts resolved',
+  /pick_judge_success_live[\s\S]{0,400}liveShowHeartsResolvedFromBoard/.test(spectacleSrc));
+check('performance seal without yell climb replays',
+  /performance seal without yell climb/.test(spectacleSrc));
 check('may clear spectacle on promptless post-cursor live_judge', g.mayClearStuckPerfSpectacle(
   { phase: 'live_judge' },
   { perfSpectacle: true },
