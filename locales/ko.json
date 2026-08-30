@@ -1587,7 +1587,10 @@
       "sideGrandFinal": "그랜드 파이널",
       "sideSwiss": "스위스 라운드",
       "seriesScore": "라운드 {n} · {a}–{b}",
-      "seriesTip": "Best of 3 시리즈 스코어"
+      "seriesTip": "Best of 3 시리즈 스코어",
+      "watchReplay": "리플레이 보기",
+      "watchGame": "G{n} 보기",
+      "watchTip": "저장된 토너먼트 경기 시청"
     },
     "formatCaption": {
       "swiss": "스위스 라운드",

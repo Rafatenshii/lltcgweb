@@ -1751,7 +1751,10 @@
         "sideSwiss": "Swiss rounds",
         "sidePlayoff": "Playoff",
         "seriesScore": "Round {n} · {a}–{b}",
-        "seriesTip": "Best of 3 series score"
+        "seriesTip": "Best of 3 series score",
+        "watchReplay": "Watch Replay",
+        "watchGame": "Watch G{n}",
+        "watchTip": "Watch the recorded tournament game"
       },
       "formatCaption": {
         "swiss": "Swiss → single-elim playoff",
@@ -1823,7 +1826,8 @@
         "pickStartSoon": "Pick a start time at least 1 minute from now",
         "experimentPassword": "Enter an experiment password",
         "joinHelperMissing": "Join helper missing",
-        "spectateHelperMissing": "Spectate helper missing"
+        "spectateHelperMissing": "Spectate helper missing",
+        "replayHelperMissing": "Replay helper missing"
       },
       "toast": {
         "noMatchReady": "No tournament match ready"
@@ -3636,7 +3640,10 @@
         "sideSwiss": "スイスラウンド",
         "sidePlayoff": "プレーオフ",
         "seriesScore": "ラウンド{n} · {a}–{b}",
-        "seriesTip": "ベストオブ3のシリーズスコア"
+        "seriesTip": "ベストオブ3のシリーズスコア",
+        "watchReplay": "リプレイを見る",
+        "watchGame": "G{n}を見る",
+        "watchTip": "記録されたトーナメント対戦を見る"
       },
       "formatCaption": {
         "swiss": "スイス → シングルエリム・プレーオフ",
@@ -3706,7 +3713,8 @@
         "pickStartSoon": "開始時刻は現在から1分以上先を選んでください",
         "experimentPassword": "実験パスワードを入力してください",
         "joinHelperMissing": "参加ヘルパーがありません",
-        "spectateHelperMissing": "観戦ヘルパーがありません"
+        "spectateHelperMissing": "観戦ヘルパーがありません",
+        "replayHelperMissing": "リプレイヘルパーがありません"
       },
       "toast": {
         "noMatchReady": "トーナメント試合の準備ができていません"

@@ -1563,7 +1563,10 @@
       "sideGrandFinal": "รอบชิงชนะเลิศ",
       "sideSwiss": "รอบสวิส",
       "seriesScore": "รอบ {n} · {a}–{b}",
-      "seriesTip": "คะแนนซีรีส์ Best of 3"
+      "seriesTip": "คะแนนซีรีส์ Best of 3",
+      "watchReplay": "ดูรีเพลย์",
+      "watchGame": "ดู G{n}",
+      "watchTip": "ดูเกมทัวร์นาเมนต์ที่บันทึกไว้"
     },
     "formatCaption": {
       "swiss": "รอบสวิส",

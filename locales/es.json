@@ -1563,7 +1563,10 @@
       "sideGrandFinal": "Gran final",
       "sideSwiss": "Rondas suizas",
       "seriesScore": "Ronda {n} · {a}–{b}",
-      "seriesTip": "Marcador de serie al mejor de 3"
+      "seriesTip": "Marcador de serie al mejor de 3",
+      "watchReplay": "Ver replay",
+      "watchGame": "Ver G{n}",
+      "watchTip": "Ver la partida de torneo grabada"
     },
     "formatCaption": {
       "swiss": "Rondas suizas",

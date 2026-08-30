@@ -153,6 +153,8 @@ try {
         case 'tournament_join_match': echo json_encode(tcgApiTournamentJoinMatch($body)); break;
         case 'tournament_apply_result': echo json_encode(tcgApiTournamentApplyResult($body)); break;
         case 'tournament_eligible_decks': echo json_encode(tcgApiTournamentEligibleDecks($body)); break;
+        case 'tournament_replay_get': echo json_encode(tcgApiTournamentReplayGet($body)); break;
+        case 'tournament_replay_start': echo json_encode(tcgApiTournamentReplayStart($body)); break;
         case 'timezone_set':          echo json_encode(tcgApiTimezoneSet($body)); break;
         case 'social_profile':        echo json_encode(tcgApiSocialGetProfile($body)); break;
         case 'social_stats':          echo json_encode(tcgApiSocialGetStats($body)); break;

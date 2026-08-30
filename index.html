@@ -109,7 +109,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
-<link rel="stylesheet" href="client/css/tournament.css?v=19">
+<link rel="stylesheet" href="client/css/tournament.css?v=20">
 <link rel="stylesheet" href="client/css/portrait.css?v=94">
 <link rel="stylesheet" href="client/css/social.css?v=27">
 
@@ -2864,7 +2864,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=179"></script>
+<script src="i18n.js?v=180"></script>
 <script src="log_i18n.js?v=17"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=32"></script>
@@ -2882,7 +2882,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   } catch (e) { /* ignore */ }
 })();
 </script>
-<script src="client/js/tournament.js?v=25"></script>
+<script src="client/js/tournament.js?v=26"></script>
 <script src="client/js/sleeves.js?v=15"></script>
 <script src="client/js/playmats.js?v=8"></script>
 <script src="client/js/apk-asset-cache.js?v=8"></script>
@@ -14547,6 +14547,26 @@ async function spectateTournamentRoom(roomId) {
   }
 }
 window.tcgSpectateTournamentRoom = spectateTournamentRoom;
+
+/** Past-bracket / finished tournament game — start Hostinger replay_view from public archive. */
+async function watchTournamentReplay(replayId) {
+  const id = Number(replayId);
+  if (!(id > 0)) return;
+  try {
+    if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
+    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
+    G._spectateReturnScreen = 'tournament';
+    const started = await accountPost('tournament_replay_start', { replay_id: id });
+    if (started.error) throw new Error(started.error);
+    const payload = started.replay;
+    if (!payload) throw new Error(t('replay.payloadMissing'));
+    await bootReplayFromPayload(started, payload);
+  } catch (e) {
+    if (typeof tcgClearApiOriginLock === 'function') tcgClearApiOriginLock();
+    toast(e.message || String(e), 3200);
+  }
+}
+window.tcgWatchTournamentReplay = watchTournamentReplay;
 
 function startRankedPoll() {
   A.rankedPollScheduled = true;

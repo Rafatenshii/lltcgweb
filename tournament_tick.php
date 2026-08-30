@@ -327,6 +327,24 @@ function tcgTournamentRecordGameResult(string $matchId, string $winnerDiscordId,
         'at' => time(),
     ];
 
+    // Durable public + personal replays while room tokens are still on the match row.
+    if ($roomId !== '' && function_exists('tcgTournamentArchiveFinishedGameReplay')) {
+        try {
+            $replayId = tcgTournamentArchiveFinishedGameReplay(
+                $m,
+                $roomId,
+                $winnerDiscordId,
+                $reason,
+                count($meta['games'])
+            );
+            if ($replayId) {
+                $meta['games'][count($meta['games']) - 1]['replay_id'] = (int)$replayId;
+            }
+        } catch (Throwable $e) {
+            // Never block bracket progression on archive failure (connect forfeits, expired rooms).
+        }
+    }
+
     $need = (int)ceil($bestOf / 2);
     $seriesOver = $bestOf === 1
         || (int)$meta['p1_wins'] >= $need

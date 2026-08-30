@@ -1587,7 +1587,10 @@
       "sideGrandFinal": "总决赛",
       "sideSwiss": "瑞士轮",
       "seriesScore": "第 {n} 局 · {a}–{b}",
-      "seriesTip": "三局两胜系列分"
+      "seriesTip": "三局两胜系列分",
+      "watchReplay": "观看回放",
+      "watchGame": "观看 G{n}",
+      "watchTip": "观看已保存的锦标赛对局"
     },
     "formatCaption": {
       "swiss": "瑞士轮",

@@ -589,3 +589,59 @@ function tcgApiTournamentUpdate(array $body): array {
 
     return tcgApiTournamentGet(array_merge($body, ['tournament_id' => $id]));
 }
+
+/**
+ * Load a public tournament game replay payload (any signed-in viewer).
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApiTournamentReplayGet(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgRequireTournamentsEnabled($uid);
+    $id = (int)($body['replay_id'] ?? $_GET['replay_id'] ?? 0);
+    $row = function_exists('tcgTournamentReplayLoad') ? tcgTournamentReplayLoad($id) : null;
+    if (!$row) {
+        throw new Exception('Replay not found', 404);
+    }
+    if (!function_exists('replayPayloadDecodeFromStorage') || !function_exists('validateReplayFile')) {
+        throw new Exception('Replay helpers unavailable', 500);
+    }
+    $payload = replayPayloadDecodeFromStorage((string)($row['payload_json'] ?? ''));
+    validateReplayFile($payload);
+    $payload = ensureReplayPayloadV2($payload);
+    return [
+        'success' => true,
+        'summary' => tcgTournamentReplayPublicSummary($row),
+        'replay' => $payload,
+    ];
+}
+
+/**
+ * Start a replay_view room from a public tournament archive.
+ *
+ * @param array<string,mixed> $body
+ * @return array<string,mixed>
+ */
+function tcgApiTournamentReplayStart(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    tcgRequireTournamentsEnabled($uid);
+    $id = (int)($body['replay_id'] ?? 0);
+    $row = function_exists('tcgTournamentReplayLoad') ? tcgTournamentReplayLoad($id) : null;
+    if (!$row) {
+        throw new Exception('Replay not found', 404);
+    }
+    if (!function_exists('replayPayloadDecodeFromStorage') || !function_exists('apiReplayStart')) {
+        throw new Exception('Replay helpers unavailable', 500);
+    }
+    $payload = replayPayloadDecodeFromStorage((string)($row['payload_json'] ?? ''));
+    validateReplayFile($payload);
+    $payload = ensureReplayPayloadV2($payload);
+    $started = apiReplayStart(['replay' => $payload]);
+    return [
+        'success' => true,
+        'summary' => tcgTournamentReplayPublicSummary($row),
+        'replay' => $payload,
+    ] + $started;
+}
+

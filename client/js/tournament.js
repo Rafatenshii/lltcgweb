@@ -1651,11 +1651,33 @@
     }
     html += '</div>';
     html += '<div class="tournament-match-card-foot">';
+    const replayGames = (!isPreview && Array.isArray(m.games))
+      ? m.games.filter((g) => g && Number(g.replay_id) > 0)
+      : [];
     if (canSpec) {
       html += '<button type="button" class="tournament-spec-btn" data-spec="' + escapeAttr(m.room_id) + '"'
         + ' title="' + escapeAttr(t('tournament.bracket.spectateTip', 'Watch this match as a spectator (non-players welcome)')) + '">'
         + '<span class="tournament-spec-btn-icon" aria-hidden="true">👁</span> '
         + escapeHtml(t('tournament.bracket.spectate', 'Spectate')) + '</button>';
+    } else if (replayGames.length) {
+      html += '<div class="tournament-replay-btns">';
+      replayGames.forEach((g, idx) => {
+        const n = idx + 1;
+        const label = replayGames.length > 1
+          ? t('tournament.bracket.watchGame', 'Watch G{n}', { n: n })
+          : t('tournament.bracket.watchReplay', 'Watch Replay');
+        html += '<button type="button" class="tournament-spec-btn tournament-replay-btn" data-replay="'
+          + escapeAttr(String(g.replay_id)) + '"'
+          + ' title="' + escapeAttr(t('tournament.bracket.watchTip', 'Watch the recorded tournament game')) + '">'
+          + '<span class="tournament-spec-btn-icon" aria-hidden="true">▶</span> '
+          + escapeHtml(label) + '</button>';
+      });
+      html += '</div>';
+      if (!isPreview && status === 'done' && m.winner_discord_id) {
+        html += '<span class="tournament-muted tournament-match-winner-line">'
+          + escapeHtml(t('tournament.bracket.winner', 'Winner: {name}', { name: nameFor(m.winner_discord_id) }))
+          + '</span>';
+      }
     } else if (!isPreview && status === 'done' && m.winner_discord_id) {
       html += '<span class="tournament-muted">'
         + escapeHtml(t('tournament.bracket.winner', 'Winner: {name}', { name: nameFor(m.winner_discord_id) }))
@@ -1952,6 +1974,9 @@
 
     root.querySelectorAll('[data-spec]').forEach((node) => {
       node.addEventListener('click', () => spectateRoom(node.getAttribute('data-spec')));
+    });
+    root.querySelectorAll('[data-replay]').forEach((node) => {
+      node.addEventListener('click', () => watchTournamentReplay(node.getAttribute('data-replay')));
     });
     const orientBtn = root.querySelector('[data-orient-toggle]');
     if (orientBtn) {
@@ -2574,6 +2599,21 @@
       return;
     }
     setErr(t('tournament.err.spectateHelperMissing', 'Spectate helper missing'));
+  }
+
+  function watchTournamentReplay(replayId) {
+    const id = Number(replayId);
+    if (!(id > 0)) return;
+    if (typeof global.tcgWatchTournamentReplay === 'function') {
+      const tid = state.detail && state.detail.tournament && state.detail.tournament.id;
+      if (tid) pinDetailSession(tid);
+      state.open = false;
+      stopTickLoop();
+      setSky(false);
+      void global.tcgWatchTournamentReplay(id);
+      return;
+    }
+    setErr(t('tournament.err.replayHelperMissing', 'Replay helper missing'));
   }
 
   function startTickLoop() {

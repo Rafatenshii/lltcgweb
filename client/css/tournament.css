@@ -465,6 +465,17 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   color: #bae4ff;
   white-space: nowrap;
 }
+.tournament-replay-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.tournament-match-winner-line {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+}
 .tournament-match-seats {
   display: flex;
   flex-direction: column;

@@ -1230,6 +1230,21 @@ function tcgTournamentPublicMatch(array $m): array {
     $meta = function_exists('tcgTournamentDecodeMatchMeta')
         ? tcgTournamentDecodeMatchMeta($m['meta_json'] ?? '{}')
         : ['p1_wins' => 0, 'p2_wins' => 0, 'best_of' => 1, 'games' => []];
+    $gamesOut = [];
+    foreach (($meta['games'] ?? []) as $g) {
+        if (!is_array($g)) {
+            continue;
+        }
+        $rid = isset($g['room_id']) && $g['room_id'] !== '' ? (string)$g['room_id'] : null;
+        $replayId = isset($g['replay_id']) ? (int)$g['replay_id'] : 0;
+        $gamesOut[] = [
+            'room_id' => $rid,
+            'winner_discord_id' => isset($g['winner_discord_id']) && $g['winner_discord_id'] !== ''
+                ? (string)$g['winner_discord_id'] : null,
+            'replay_id' => $replayId > 0 ? $replayId : null,
+            'at' => isset($g['at']) ? (int)$g['at'] : null,
+        ];
+    }
     return [
         'id' => (string)$m['id'],
         'tournament_id' => (string)$m['tournament_id'],
@@ -1246,6 +1261,7 @@ function tcgTournamentPublicMatch(array $m): array {
         'best_of' => (int)($meta['best_of'] ?? 1),
         'p1_wins' => (int)($meta['p1_wins'] ?? 0),
         'p2_wins' => (int)($meta['p2_wins'] ?? 0),
+        'games' => $gamesOut,
     ];
 }
 
