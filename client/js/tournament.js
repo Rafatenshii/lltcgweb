@@ -122,7 +122,9 @@
       checked_in: ['tournament.entrant.checked_in', 'Checked in'],
       no_show: ['tournament.entrant.no_show', 'No-show'],
       eliminated: ['tournament.entrant.eliminated', 'Eliminated'],
+      playing: ['tournament.entrant.active', 'Active'],
       active: ['tournament.entrant.active', 'Active'],
+      winner: ['tournament.entrant.winner', 'Winner'],
     };
     const hit = map[k];
     return hit ? t(hit[0], hit[1]) : String(raw || '');

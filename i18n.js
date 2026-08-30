@@ -1784,7 +1784,8 @@
         "checked_in": "Checked in",
         "no_show": "No-show",
         "eliminated": "Eliminated",
-        "active": "Active"
+        "active": "Active",
+        "winner": "Winner"
       },
       "err": {
         "cancelled": "This tournament was cancelled.",
@@ -3662,7 +3663,8 @@
         "checked_in": "チェックイン済",
         "no_show": "ノーショー",
         "eliminated": "敗退",
-        "active": "出場中"
+        "active": "出場中",
+        "winner": "優勝"
       },
       "err": {
         "cancelled": "このトーナメントは中止されました。",
@@ -5424,7 +5426,8 @@
         "checked_in": "Check-in hecho",
         "no_show": "No presentado",
         "eliminated": "Eliminado",
-        "active": "Activo"
+        "active": "Activo",
+        "winner": "Campeón"
       },
       "err": {
         "cancelled": "Este torneo fue cancelado.",
@@ -7261,7 +7264,8 @@
         "checked_in": "체크인됨",
         "no_show": "노쇼",
         "eliminated": "탈락",
-        "active": "활성"
+        "active": "활성",
+        "winner": "우승"
       },
       "err": {
         "cancelled": "이 토너먼트가 취소되었습니다.",
@@ -9098,7 +9102,8 @@
         "checked_in": "已签到",
         "no_show": "缺席",
         "eliminated": "已淘汰",
-        "active": "进行中"
+        "active": "进行中",
+        "winner": "冠军"
       },
       "err": {
         "cancelled": "此锦标赛已取消。",
@@ -10911,7 +10916,8 @@
         "checked_in": "เช็คอินแล้ว",
         "no_show": "ไม่มา",
         "eliminated": "ตกรอบ",
-        "active": "ใช้งานอยู่"
+        "active": "ใช้งานอยู่",
+        "winner": "แชมป์"
       },
       "err": {
         "cancelled": "ทัวร์นาเมนต์นี้ถูกยกเลิกแล้ว",
@@ -11434,6 +11440,10 @@
       },
       detail: {
         prizePool: 'prize pool {n}'
+      },
+      entrant: {
+        winner: 'Winner',
+        active: 'Active'
       }
     },
     hub: {

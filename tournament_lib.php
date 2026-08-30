@@ -474,6 +474,44 @@ function tcgTournamentEnrichResults(?array $results): ?array {
     ];
 }
 
+/**
+ * Finished events used to leave the champion as status "playing".
+ * Normalize champion → winner and any leftover playing → eliminated.
+ */
+function tcgTournamentRepairFinishedEntrantStatuses(string $tournamentId, ?array $row = null): void {
+    $tournamentId = strtoupper(trim($tournamentId));
+    if ($tournamentId === '') {
+        return;
+    }
+    $row = $row ?? tcgTournamentFetch($tournamentId);
+    if (!$row || (string)($row['status'] ?? '') !== 'finished') {
+        return;
+    }
+    $results = tcgTournamentResultsForRow($row);
+    $winnerId = '';
+    if (is_array($results) && is_array($results['winner'] ?? null)) {
+        $winnerId = trim((string)($results['winner']['discord_id'] ?? ''));
+    }
+    if ($winnerId === '' && is_array($results) && !empty($results['places'][0]['discord_id'])) {
+        $winnerId = trim((string)$results['places'][0]['discord_id']);
+    }
+    try {
+        if ($winnerId !== '') {
+            tcgDb()->prepare(
+                'UPDATE tcg_tournament_entrants SET status = "winner"
+                 WHERE tournament_id = ? AND discord_id = ?
+                   AND status IN ("playing","eliminated")'
+            )->execute([$tournamentId, $winnerId]);
+        }
+        tcgDb()->prepare(
+            'UPDATE tcg_tournament_entrants SET status = "eliminated"
+             WHERE tournament_id = ? AND status = "playing"'
+        )->execute([$tournamentId]);
+    } catch (Throwable $e) {
+        // best-effort repair
+    }
+}
+
 /** Reconstruct + persist results for finished events that predate results_json. */
 function tcgTournamentBackfillResultsFromLedger(string $tournamentId): ?array {
     tcgTournamentEnsureResultsColumn();

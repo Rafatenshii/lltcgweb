@@ -42,7 +42,7 @@ function tcgApiTournamentHub(array $body = []): array {
                 (SELECT COUNT(*) FROM tcg_tournament_entrants e WHERE e.tournament_id = t.id) AS entrant_count,
                 (SELECT 1 FROM tcg_tournament_entrants e2
                   WHERE e2.tournament_id = t.id AND e2.discord_id = ?
-                    AND e2.status IN ("registered","checked_in","playing","eliminated")
+                    AND e2.status IN ("registered","checked_in","playing","eliminated","winner")
                   LIMIT 1) AS i_am_entrant
          FROM tcg_tournaments t
          WHERE t.status IN ("open","checkin","running")
@@ -81,7 +81,7 @@ function tcgApiTournamentList(array $body): array {
     $sql = 'SELECT t.*,
             (SELECT COUNT(*) FROM tcg_tournament_entrants e WHERE e.tournament_id = t.id) AS entrant_count,
             (SELECT COUNT(*) FROM tcg_tournament_entrants e
-             WHERE e.tournament_id = t.id AND e.status IN ("checked_in","playing","eliminated")) AS checked_in_count
+             WHERE e.tournament_id = t.id AND e.status IN ("checked_in","playing","eliminated","winner")) AS checked_in_count
             FROM tcg_tournaments t WHERE 1=1';
     $params = [];
     if ($status !== '') {
@@ -125,7 +125,7 @@ function tcgApiTournamentList(array $body): array {
         $pastSql = 'SELECT t.*,
             (SELECT COUNT(*) FROM tcg_tournament_entrants e WHERE e.tournament_id = t.id) AS entrant_count,
             (SELECT COUNT(*) FROM tcg_tournament_entrants e
-             WHERE e.tournament_id = t.id AND e.status IN ("checked_in","playing","eliminated")) AS checked_in_count
+             WHERE e.tournament_id = t.id AND e.status IN ("checked_in","playing","eliminated","winner")) AS checked_in_count
             FROM tcg_tournaments t WHERE t.status = "finished"';
         $pastParams = [];
         if ($gameMode !== '') {
@@ -136,12 +136,14 @@ function tcgApiTournamentList(array $body): array {
         $pastStmt = tcgDb()->prepare($pastSql);
         $pastStmt->execute($pastParams);
         foreach ($pastStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $tidPast = (string)$row['id'];
+            tcgTournamentRepairFinishedEntrantStatuses($tidPast, $row);
             $pub = tcgTournamentPublicRow($row, [
                 'total' => (int)($row['entrant_count'] ?? 0),
                 'checked_in' => (int)($row['checked_in_count'] ?? 0),
             ]);
             $pub['server_now'] = $now;
-            $ents = tcgTournamentFetchEntrants((string)$row['id']);
+            $ents = tcgTournamentFetchEntrants($tidPast);
             $pub['entrants'] = array_map(
                 static fn($e) => [
                     'discord_id' => (string)$e['discord_id'],
@@ -174,6 +176,9 @@ function tcgApiTournamentGet(array $body): array {
     if (!$row) {
         throw new Exception('Tournament not found', 404);
     }
+    if ((string)($row['status'] ?? '') === 'finished') {
+        tcgTournamentRepairFinishedEntrantStatuses($id, $row);
+    }
     $entrants = tcgTournamentFetchEntrants($id);
     $matches = tcgTournamentFetchMatches($id);
     $me = null;
@@ -185,7 +190,7 @@ function tcgApiTournamentGet(array $body): array {
     }
     $checked = 0;
     foreach ($entrants as $e) {
-        if (in_array((string)$e['status'], ['checked_in', 'playing', 'eliminated'], true)) {
+        if (in_array((string)$e['status'], ['checked_in', 'playing', 'eliminated', 'winner'], true)) {
             $checked++;
         }
     }
@@ -230,6 +235,17 @@ function tcgApiTournamentGet(array $body): array {
  * @param list<array<string,mixed>> $matches
  * @return list<array{discord_id:string,username:string,wins:int,losses:int,status:string}>
  */
+function tcgTournamentStandingsStatusRank(string $status): int {
+    return match ($status) {
+        'winner' => 0,
+        'playing', 'checked_in', 'active' => 1,
+        'eliminated' => 2,
+        'registered' => 3,
+        'no_show' => 4,
+        default => 5,
+    };
+}
+
 function tcgTournamentPublicStandings(array $entrants, array $matches): array {
     $records = function_exists('tcgTournamentRecordsFromMatches')
         ? tcgTournamentRecordsFromMatches($matches)
@@ -246,6 +262,11 @@ function tcgTournamentPublicStandings(array $entrants, array $matches): array {
         ];
     }
     usort($out, static function ($a, $b) {
+        $ra = tcgTournamentStandingsStatusRank((string)$a['status']);
+        $rb = tcgTournamentStandingsStatusRank((string)$b['status']);
+        if ($ra !== $rb) {
+            return $ra <=> $rb;
+        }
         if ($a['wins'] !== $b['wins']) {
             return $b['wins'] <=> $a['wins'];
         }

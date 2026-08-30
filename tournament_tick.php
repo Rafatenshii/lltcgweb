@@ -1243,6 +1243,10 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
             'UPDATE tcg_tournament_entrants SET status = "eliminated"
              WHERE tournament_id = ? AND status = "playing" AND discord_id != ?'
         )->execute([$tournamentId, $winner]);
+        $db->prepare(
+            'UPDATE tcg_tournament_entrants SET status = "winner"
+             WHERE tournament_id = ? AND discord_id = ? AND status IN ("playing","eliminated")'
+        )->execute([$tournamentId, $winner]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {

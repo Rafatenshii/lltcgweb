@@ -180,11 +180,31 @@ final class TournamentLifecycleTest extends TestCase
         $this->assertSame(1000, (int)($pub['prize_pool_total'] ?? 0));
         $this->assertSame($p1, (string)($pub['results']['winner']['discord_id'] ?? ''));
 
+        $ents = tcgTournamentFetchEntrants($tid);
+        $byId = [];
+        foreach ($ents as $e) {
+            $byId[(string)$e['discord_id']] = (string)$e['status'];
+        }
+        $this->assertSame('winner', $byId[$p1] ?? '');
+        $this->assertSame('eliminated', $byId[$p2] ?? '');
+
         $profile = tcgTournamentProfileSummary($p1, 5);
         $this->assertSame(1, (int)$profile['events_played']);
         $this->assertNotEmpty($profile['placements']);
         $this->assertSame(1, (int)$profile['placements'][0]['place']);
         $this->assertSame(700, (int)$profile['placements'][0]['coins']);
         $this->assertSame($tid, (string)$profile['placements'][0]['tournament_id']);
+    }
+
+    public function testStandingsPutEliminatedAboveNoShows(): void {
+        require_once dirname(__DIR__, 2) . '/tournament_api.php';
+        $standings = tcgTournamentPublicStandings([
+            ['discord_id' => 'n1', 'username' => 'NoShow', 'status' => 'no_show'],
+            ['discord_id' => 'e1', 'username' => 'ElimA', 'status' => 'eliminated'],
+            ['discord_id' => 'e2', 'username' => 'ElimB', 'status' => 'eliminated'],
+            ['discord_id' => 'w1', 'username' => 'Champ', 'status' => 'winner'],
+        ], []);
+        $ids = array_map(static fn($r) => $r['discord_id'], $standings);
+        $this->assertSame(['w1', 'e1', 'e2', 'n1'], $ids);
     }
 }
