@@ -270,6 +270,7 @@ function tcgApiTournamentJoinMatch(array $body): array {
         'player_token' => $isP1 ? (string)($m['p1_token'] ?? '') : (string)($m['p2_token'] ?? ''),
         'player_id' => $isP1 ? 'p1' : 'p2',
         'match_id' => (string)$m['id'],
+        'tournament_id' => $id,
         'mode' => 'tournament',
         'match_api' => 'overflow',
     ];

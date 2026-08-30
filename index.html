@@ -5304,6 +5304,9 @@ function saveActiveGameSession() {
     cpuToken: G.cpuToken || null,
     cpuDifficulty: normalizeCpuDifficultyClient(G.cpuDifficulty),
     mode: G.gameState?.mode || null,
+    tournamentId: G._tournamentReturnId
+      || G.gameState?.tournament?.id
+      || null,
     screen,
     replayMode: !!G.replayMode,
     replayHandoff: !!G.replayHandoff,
@@ -5379,6 +5382,9 @@ function saveSpectatorSession() {
       p1Name: G._spectateP1Name || null,
       p2Name: G._spectateP2Name || null,
       returnScreen: G._spectateReturnScreen || 'lobby',
+      tournamentId: G._tournamentReturnId
+        || G.gameState?.tournament?.id
+        || null,
       viewAs: spectatorBoardPid('p1'),
       apiOrigin: G.apiOrigin === 'overflow' ? 'overflow' : 'hostinger',
     }));
@@ -5714,6 +5720,7 @@ async function reconnectToGame(saved, opts = {}) {
     G.isCPU = !!(saved.isCPU || s.cpu_solo);
     G.cpuToken = saved.cpuToken || null;
     G.cpuPlayerId = G.isCPU ? (G.playerId === 'p1' ? 'p2' : 'p1') : null;
+    if (saved.tournamentId) G._tournamentReturnId = String(saved.tournamentId).toUpperCase();
     syncCpuDifficultyFromState(s, saved);
     if (saved.replayMode && !saved.replayHandoff) {
       G.replayMode = true;
@@ -5734,6 +5741,8 @@ async function reconnectToGame(saved, opts = {}) {
     }
     prepareClientReconnectState(s);
     G.gameState = s;
+    const reconTid = tournamentIdFromGameState(s);
+    if (reconTid) G._tournamentReturnId = reconTid;
     applyReplayStateFromPoll(s);
     const waiting = saved.screen === 'waiting' && s.status === 'waiting';
     if (waiting) {
@@ -5793,6 +5802,7 @@ async function reconnectToSpectator(saved, opts = {}) {
     }
     G.isSpectator = true;
     G._spectateReturnScreen = saved.returnScreen || 'lobby';
+    if (saved.tournamentId) G._tournamentReturnId = String(saved.tournamentId).toUpperCase();
     G._spectateP1Name = saved.p1Name || null;
     G._spectateP2Name = saved.p2Name || null;
     G.roomId = saved.roomId;
@@ -14487,6 +14497,11 @@ async function enterTournamentMatch(st) {
   G.playerId = st.player_id || 'p1';
   G.isCPU = false;
   G.isSpectator = false;
+  const tid = st.tournament_id || st.tournamentId || null;
+  if (tid) G._tournamentReturnId = String(tid).toUpperCase();
+  if (window.TCGTournamentUI?.pinDetailSession && G._tournamentReturnId) {
+    try { window.TCGTournamentUI.pinDetailSession(G._tournamentReturnId); } catch (e) { /* ignore */ }
+  }
   try { saveActiveGameSession(); } catch (e) { /* ignore */ }
   showScr('game');
   startPoll();
@@ -16800,7 +16815,7 @@ let G = {
   roomId:null, token:null, cpuToken:null, playerId:null, isCPU:false, cpuDifficulty:'easy',
   replayMode:false, replayHandoff:false, replayStep:0, replayTotal:0, replayPlaying:false, replayPlayTimer:null,
   replayTimeline:null, replayLoadedMeta:null, _replaySeekWasScrub:false, _replayForwardApply:false, _replayLastAppliedStep:0,
-  isSpectator:false, spectatorViewAs:'p1', spectateHiddenHands:false, _spectateReturnScreen:'lobby', _spectateP1Name:null, _spectateP2Name:null,
+  isSpectator:false, spectatorViewAs:'p1', spectateHiddenHands:false, _spectateReturnScreen:'lobby', _tournamentReturnId:null, _spectateP1Name:null, _spectateP2Name:null,
   cpuPlayerId:null,
   _pendingReplayFile:null,
   gameState:null, allCards:{}, starterDecks:{},
@@ -32804,6 +32819,8 @@ function freshGameGlobals() {
     rematchWaiting:false,
     rematchRequested:false,
     _replayAutosavedRoom:null,
+    _tournamentReturnId:null,
+    _spectateReturnScreen:'lobby',
   };
 }
 
@@ -32892,6 +32909,10 @@ async function abandonDeadMatchSession(opts = {}) {
   const silent = !!opts.silent;
   const forceResign = !!opts.forceResign;
   const saved = (typeof readActiveGameSession === 'function') ? readActiveGameSession() : null;
+  const wasTournament = (G.gameState?.mode || saved?.mode) === 'tournament';
+  const tournamentId = wasTournament
+    ? (G._tournamentReturnId || saved?.tournamentId || tournamentIdFromGameState() || readPinnedTournamentUiSessionId())
+    : '';
   const roomId = G.roomId || saved?.roomId || null;
   const token = G.token || saved?.token || null;
   const preferred = (G.apiOrigin === 'overflow' || saved?.apiOrigin === 'overflow'
@@ -32949,6 +32970,12 @@ async function abandonDeadMatchSession(opts = {}) {
   const authEl = el('auth-status');
   if (authEl) authEl.setAttribute('data-auth-boot', 'done');
   if (typeof window.__tcgClearAuthBootGuard === 'function') window.__tcgClearAuthBootGuard();
+  if (wasTournament && openTournamentReturnMenu(tournamentId)) {
+    if (!silent) {
+      toast(t('toast.leftDeadMatch') || 'That match no longer exists — returned to the menu.', 3200);
+    }
+    return;
+  }
   if (A.profile) enterHub(A.profile);
   else if (getAuthToken()) {
     // Signed in but profile not ready — stay on title with a clear status, not reconnect spam.
@@ -33037,8 +33064,13 @@ function onWinReturnToMenu() {
   if (G.lastRankedPrReward && typeof queueRankedPrReward === 'function') {
     queueRankedPrReward(G.lastRankedPrReward);
   }
+  const wasTournament = (G.lastFinishedMode || G.gameState?.mode) === 'tournament';
+  const tournamentId = resolveTournamentReturnId();
   endGameSession();
   G = freshGameGlobals();
+  if (wasTournament && openTournamentReturnMenu(tournamentId)) {
+    return;
+  }
   (async () => {
     try {
       const me = await accountGet('me');
@@ -33065,6 +33097,51 @@ async function onWinViewLeaderboard() {
 }
 
 // ── SPECTATE ─────────────────────────────────────────
+const TCG_TOURNAMENT_UI_SESSION_KEY = 'tcg_tournament_ui_session';
+
+function tournamentIdFromGameState(st) {
+  const id = (st || G.gameState)?.tournament?.id;
+  return id ? String(id).toUpperCase() : '';
+}
+
+function readPinnedTournamentUiSessionId() {
+  try {
+    const raw = sessionStorage.getItem(TCG_TOURNAMENT_UI_SESSION_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    const tid = parsed?.tournamentId;
+    return tid ? String(tid).toUpperCase() : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function resolveTournamentReturnId() {
+  const fromState = tournamentIdFromGameState();
+  if (fromState) return fromState;
+  if (G._tournamentReturnId) return String(G._tournamentReturnId).toUpperCase();
+  try {
+    const saved = readActiveGameSession();
+    if (saved?.tournamentId) return String(saved.tournamentId).toUpperCase();
+  } catch (e) { /* ignore */ }
+  try {
+    const spec = readSpectatorSession();
+    if (spec?.tournamentId) return String(spec.tournamentId).toUpperCase();
+  } catch (e) { /* ignore */ }
+  return readPinnedTournamentUiSessionId();
+}
+
+function openTournamentReturnMenu(tournamentId) {
+  if (!window.TCGTournamentUI?.open) return false;
+  const tid = tournamentId ? String(tournamentId).toUpperCase() : resolveTournamentReturnId();
+  if (tid) {
+    window.TCGTournamentUI.open({ view: 'detail', tournamentId: tid });
+  } else {
+    window.TCGTournamentUI.open();
+  }
+  return true;
+}
+
 function spectateEsc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -33148,7 +33225,7 @@ async function openSpectateList(category) {
   openM('overlay-spectate-list');
   try {
     if (cat === 'tournament' && typeof tcgLockApiOrigin === 'function') {
-      tcgLockApiOrigin('hostinger');
+      tcgLockApiOrigin('overflow');
     }
     const res = await apiPost('spectate_list', { category: cat });
     renderSpectateMatchList(res.matches || []);
@@ -33164,7 +33241,7 @@ async function joinSpectateMatch(roomId) {
   if (errEl) errEl.textContent = '';
   try {
     if (G._spectateReturnScreen === 'tournament' && typeof tcgLockApiOrigin === 'function') {
-      tcgLockApiOrigin('hostinger');
+      tcgLockApiOrigin('overflow');
     }
     const res = await apiPost('spectate_join', { room_id: roomId });
     captureSyncMeta(res);
@@ -33256,6 +33333,8 @@ async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
   if (barLabel) barLabel.textContent = t('spectate.barNames', { p1: p1Name || 'P1', p2: p2Name || 'P2' });
   prepareClientReconnectState(s);
   G.gameState = s;
+  const bootTid = tournamentIdFromGameState(s);
+  if (bootTid) G._tournamentReturnId = bootTid;
   showScr('game');
   renderGame(s, { skipLog: true, skipPrompt: true });
   if (s.live_show?.stage && s.live_show.stage !== 'done'
@@ -33362,6 +33441,8 @@ function toggleSpectatorPerspective() {
 async function leaveSpectatorMode(opts = {}) {
   const roomId = G.roomId;
   const token = G.token;
+  const ret = G._spectateReturnScreen || 'lobby';
+  const tournamentId = resolveTournamentReturnId();
   const explicitLeave = opts.explicitLeave !== false;
   if (explicitLeave && G.isSpectator && roomId && token) {
     try { await apiPost('spectate_leave', { room_id: roomId, token }, { silent: true }); } catch (e) {}
@@ -33385,9 +33466,8 @@ async function leaveSpectatorMode(opts = {}) {
   G.lastSeq = 0;
   abortGameplayPresentation();
   if (opts.toastMsg) toast(opts.toastMsg, 3200);
-  const ret = G._spectateReturnScreen || 'lobby';
-  if (ret === 'tournament' && window.TCGTournamentUI?.open) {
-    window.TCGTournamentUI.open();
+  if (ret === 'tournament') {
+    if (!openTournamentReturnMenu(tournamentId)) showScr('lobby');
   } else if (ret === 'ranked') {
     showScr('ranked');
   } else {

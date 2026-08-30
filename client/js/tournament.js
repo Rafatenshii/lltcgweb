@@ -339,6 +339,18 @@
     });
   }
 
+  function pinDetailSession(tid) {
+    const id = String(tid || '').trim().toUpperCase();
+    if (!id) return;
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        open: true,
+        view: 'detail',
+        tournamentId: id,
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
   function persistSession() {
     try {
       if (!state.open) {
@@ -1459,11 +1471,12 @@
         await global.accountPost('tournament_tick', { tournament_id: tid });
       } else if (act === 'join') {
         const join = await global.accountPost('tournament_join_match', { tournament_id: tid });
+        pinDetailSession(tid);
         if (typeof global.tcgEnterTournamentMatch === 'function') {
           state.open = false;
           stopTickLoop();
           setSky(false);
-          await global.tcgEnterTournamentMatch(join);
+          await global.tcgEnterTournamentMatch(Object.assign({}, join, { tournament_id: tid }));
           return;
         }
         setErr(t('tournament.err.joinHelperMissing', 'Join helper missing'));
@@ -2011,6 +2024,8 @@
 
   function spectateRoom(roomId) {
     if (typeof global.tcgSpectateTournamentRoom === 'function') {
+      const tid = state.detail && state.detail.tournament && state.detail.tournament.id;
+      if (tid) pinDetailSession(tid);
       state.open = false;
       stopTickLoop();
       setSky(false);
@@ -2166,6 +2181,7 @@
   global.TCGTournamentUI = {
     open: openScreen,
     close: closeToHub,
+    pinDetailSession: pinDetailSession,
     closeQuiet: function () {
       // Leaving the screen without ← Hub — keep session so refresh can resume.
       state.open = false;
