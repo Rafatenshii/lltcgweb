@@ -1692,7 +1692,8 @@
       },
       "standingsHeading": "Standings",
       "standings": {
-        "record": "{wins}W–{losses}L"
+        "record": "{wins}W–{losses}L",
+        "omw": "OMW {n}%"
       },
       "action": {
         "register": "Register",
@@ -1797,6 +1798,8 @@
         "checked_in": "Checked in",
         "no_show": "No-show",
         "eliminated": "Eliminated",
+        "cutOmw": "Cut (opp. win %)",
+        "cutSwiss": "Cut (Swiss)",
         "active": "Active",
         "winner": "Winner"
       },
@@ -11479,7 +11482,13 @@
       },
       entrant: {
         winner: 'Winner',
-        active: 'Active'
+        active: 'Active',
+        cutOmw: 'Cut (opp. win %)',
+        cutSwiss: 'Cut (Swiss)',
+        eliminated: 'Eliminated'
+      },
+      standings: {
+        omw: 'OMW {n}%'
       }
     },
     hub: {

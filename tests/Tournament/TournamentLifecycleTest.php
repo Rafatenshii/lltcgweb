@@ -36,6 +36,7 @@ final class TournamentLifecycleTest extends TestCase
         }
         tcgDbEnsureColumn(tcgDb(), 'tcg_tournament_matches', 'bracket_side', "TEXT NOT NULL DEFAULT 'winners'");
         tcgDbEnsureColumn(tcgDb(), 'tcg_tournament_matches', 'meta_json', "TEXT NOT NULL DEFAULT '{}'");
+        tcgTournamentEnsureEntrantElimReasonColumn();
         // Older DBs / re-run of legacy 017 may leave the pre-phase3 unique index.
         tcgDb()->exec('DROP INDEX IF EXISTS idx_tcg_tournament_matches_slot');
         tcgDb()->exec(

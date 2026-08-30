@@ -460,6 +460,16 @@ function tcgTournamentEnsureResultsColumn(): void {
     tcgDbEnsureColumn(tcgDb(), 'tcg_tournaments', 'results_json', "TEXT NOT NULL DEFAULT ''");
 }
 
+/** Swiss cut note: swiss_omw | swiss_cut | null */
+function tcgTournamentEnsureEntrantElimReasonColumn(): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    tcgDbEnsureColumn(tcgDb(), 'tcg_tournament_entrants', 'elim_reason', "TEXT NOT NULL DEFAULT ''");
+}
+
 /**
  * @return array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>}|null
  */
@@ -1204,6 +1214,10 @@ function tcgTournamentPublicEntrant(array $e, bool $includeDeck = false): array 
         'checked_in_at' => isset($e['checked_in_at']) && $e['checked_in_at'] !== null
             ? (int)$e['checked_in_at'] : null,
     ];
+    $reason = trim((string)($e['elim_reason'] ?? ''));
+    if ($reason !== '') {
+        $out['elim_reason'] = $reason;
+    }
     if ($includeDeck) {
         $snap = json_decode((string)($e['deck_snapshot'] ?? '{}'), true);
         $out['deck_snapshot'] = is_array($snap) ? $snap : null;

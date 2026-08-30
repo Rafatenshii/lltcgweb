@@ -221,14 +221,54 @@ function tcgApiTournamentGet(array $body): array {
         'matches' => array_map('tcgTournamentPublicMatch', $matches),
         'bracket_preview' => (count($matches) === 0)
             ? tcgTournamentBracketPreview(
-                max((int)$row['max_players'], max(2, count($entrants))),
-                (string)(tcgTournamentDecodeSettings($row['settings_json'] ?? '{}')['format'] ?? 'single_elim')
+                tcgTournamentPreviewPlayerCap($row, $entrants, $checked),
+                (string)(tcgTournamentDecodeSettings($row['settings_json'] ?? '{}')['format'] ?? 'single_elim'),
+                tcgTournamentPreviewPlayoffSize($row, $entrants, $checked)
             )
             : [],
         'standings' => tcgTournamentPublicStandings($entrants, $matches),
         'server_now' => time(),
         'pr_pack_reward' => tcgTournamentPrPackRewardForViewer($id, $uid, $pub),
     ];
+}
+
+/**
+ * Estimate field size for empty-bracket preview (prefer live signups over max_players).
+ *
+ * @param array<string,mixed> $row
+ * @param list<array<string,mixed>> $entrants
+ */
+function tcgTournamentPreviewPlayerCap(array $row, array $entrants, int $checkedIn): int {
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    if (!empty($settings['showed_up'])) {
+        return max(2, (int)$settings['showed_up']);
+    }
+    if ($checkedIn >= 2) {
+        return $checkedIn;
+    }
+    $n = count($entrants);
+    if ($n >= 2) {
+        return $n;
+    }
+    return max(2, (int)($row['max_players'] ?? 2));
+}
+
+/**
+ * @param array<string,mixed> $row
+ * @param list<array<string,mixed>> $entrants
+ */
+function tcgTournamentPreviewPlayoffSize(array $row, array $entrants, int $checkedIn): ?int {
+    $settings = tcgTournamentDecodeSettings($row['settings_json'] ?? '{}');
+    $format = (string)($settings['format'] ?? 'single_elim');
+    if ($format !== 'swiss') {
+        return null;
+    }
+    if (!empty($settings['playoff_size']) && in_array((int)$settings['playoff_size'], [2, 4], true)
+        && !empty($settings['showed_up'])) {
+        return (int)$settings['playoff_size'];
+    }
+    $cap = tcgTournamentPreviewPlayerCap($row, $entrants, $checkedIn);
+    return tcgTournamentSwissPlayoffSize($cap);
 }
 
 /**
@@ -296,19 +336,32 @@ function tcgTournamentStandingsStatusRank(string $status): int {
 }
 
 function tcgTournamentPublicStandings(array $entrants, array $matches): array {
+    $swissMatches = array_values(array_filter(
+        $matches,
+        static fn($m) => (string)($m['bracket_side'] ?? '') === 'swiss'
+    ));
+    $useSwiss = $swissMatches !== [];
     $records = function_exists('tcgTournamentRecordsFromMatches')
-        ? tcgTournamentRecordsFromMatches($matches)
+        ? tcgTournamentRecordsFromMatches($useSwiss ? $swissMatches : $matches, $useSwiss ? 'swiss' : null)
         : [];
     $out = [];
     foreach ($entrants as $e) {
         $id = (string)$e['discord_id'];
-        $out[] = [
+        $row = [
             'discord_id' => $id,
             'username' => (string)($e['username'] ?? 'Player'),
             'wins' => (int)($records[$id]['wins'] ?? 0),
             'losses' => (int)($records[$id]['losses'] ?? 0),
             'status' => (string)($e['status'] ?? ''),
         ];
+        $reason = trim((string)($e['elim_reason'] ?? ''));
+        if ($reason !== '') {
+            $row['elim_reason'] = $reason;
+        }
+        if ($useSwiss && function_exists('tcgTournamentOmwPercent')) {
+            $row['omw'] = round(tcgTournamentOmwPercent($id, $records, $swissMatches, 'swiss'), 4);
+        }
+        $out[] = $row;
     }
     usort($out, static function ($a, $b) {
         $ra = tcgTournamentStandingsStatusRank((string)$a['status']);
@@ -321,6 +374,11 @@ function tcgTournamentPublicStandings(array $entrants, array $matches): array {
         }
         if ($a['losses'] !== $b['losses']) {
             return $a['losses'] <=> $b['losses'];
+        }
+        $oa = (float)($a['omw'] ?? 0.0);
+        $ob = (float)($b['omw'] ?? 0.0);
+        if (abs($oa - $ob) > 0.0000001) {
+            return $ob <=> $oa;
         }
         return strcmp($a['username'], $b['username']);
     });

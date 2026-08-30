@@ -162,6 +162,113 @@ function tcgTournamentSortByRecord(array $playerIds, array $records): array {
 }
 
 /**
+ * Opponents faced in completed matches (byes excluded).
+ *
+ * @param list<array<string,mixed>> $matches
+ * @return list<string>
+ */
+function tcgTournamentOpponentsFromMatches(string $playerId, array $matches, ?string $sideOnly = 'swiss'): array {
+    $playerId = (string)$playerId;
+    if ($playerId === '') {
+        return [];
+    }
+    $seen = [];
+    $out = [];
+    foreach ($matches as $m) {
+        if ((string)($m['status'] ?? '') !== 'done') {
+            continue;
+        }
+        if ($sideOnly !== null && (string)($m['bracket_side'] ?? '') !== $sideOnly) {
+            continue;
+        }
+        $p1 = (string)($m['p1_discord_id'] ?? '');
+        $p2 = (string)($m['p2_discord_id'] ?? '');
+        if ($p2 === '') {
+            continue; // bye
+        }
+        $opp = '';
+        if ($p1 === $playerId) {
+            $opp = $p2;
+        } elseif ($p2 === $playerId) {
+            $opp = $p1;
+        }
+        if ($opp === '' || isset($seen[$opp])) {
+            continue;
+        }
+        $seen[$opp] = true;
+        $out[] = $opp;
+    }
+    return $out;
+}
+
+/**
+ * Opponent match-win % (OMW): average of opponents' win rates (wins / games).
+ * Byes ignored. Players with no opponents get 0.
+ *
+ * @param array<string,array{wins:int,losses:int}> $records
+ * @param list<array<string,mixed>> $matches
+ */
+function tcgTournamentOmwPercent(
+    string $playerId,
+    array $records,
+    array $matches,
+    ?string $sideOnly = 'swiss'
+): float {
+    $opps = tcgTournamentOpponentsFromMatches($playerId, $matches, $sideOnly);
+    if ($opps === []) {
+        return 0.0;
+    }
+    $sum = 0.0;
+    foreach ($opps as $opp) {
+        $w = (int)($records[$opp]['wins'] ?? 0);
+        $l = (int)($records[$opp]['losses'] ?? 0);
+        $games = $w + $l;
+        $sum += $games > 0 ? ($w / $games) : 0.0;
+    }
+    return $sum / count($opps);
+}
+
+/**
+ * Swiss standing order: wins desc, losses asc, OMW desc, then id.
+ *
+ * @param list<string> $playerIds
+ * @param array<string,array{wins:int,losses:int}> $records
+ * @param list<array<string,mixed>> $matches
+ * @return list<string>
+ */
+function tcgTournamentSortBySwissStanding(
+    array $playerIds,
+    array $records,
+    array $matches,
+    ?string $sideOnly = 'swiss'
+): array {
+    $playerIds = array_values(array_filter(array_map('strval', $playerIds), static fn($id) => $id !== ''));
+    $omw = [];
+    foreach ($playerIds as $id) {
+        $omw[$id] = tcgTournamentOmwPercent($id, $records, $matches, $sideOnly);
+    }
+    usort($playerIds, static function ($a, $b) use ($records, $omw) {
+        $wa = (int)($records[$a]['wins'] ?? 0);
+        $wb = (int)($records[$b]['wins'] ?? 0);
+        if ($wa !== $wb) {
+            return $wb <=> $wa;
+        }
+        $la = (int)($records[$a]['losses'] ?? 0);
+        $lb = (int)($records[$b]['losses'] ?? 0);
+        if ($la !== $lb) {
+            return $la <=> $lb;
+        }
+        $oa = (float)($omw[$a] ?? 0.0);
+        $ob = (float)($omw[$b] ?? 0.0);
+        if (abs($oa - $ob) > 0.0000001) {
+            return $ob <=> $oa;
+        }
+        return strcmp($a, $b);
+    });
+    return $playerIds;
+}
+
+/**
  * Prior unordered pairs from completed matches (for Swiss rematch avoidance).
  *
  * @param list<array<string,mixed>> $matches
@@ -188,7 +295,7 @@ function tcgTournamentPriorPairsFromMatches(array $matches): array {
  *
  * @return list<array{round:int,bracket_slot:int,label:string,bracket_side:string}>
  */
-function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_elim'): array {
+function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_elim', ?int $playoffSize = null): array {
     $format = in_array($format, ['single_elim', 'double_elim', 'double_elim_bracket', 'swiss'], true)
         ? $format
         : 'single_elim';
@@ -207,7 +314,13 @@ function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_el
                 ];
             }
         }
-        $cut = tcgTournamentSwissPlayoffSize($n);
+        $cut = $playoffSize !== null && in_array($playoffSize, [2, 4], true)
+            ? $playoffSize
+            : tcgTournamentSwissPlayoffSize($n);
+        // Never preview a top-4 when the estimated field is ≤8.
+        if ($n < 9) {
+            $cut = 2;
+        }
         if ($cut === 2) {
             $out[] = [
                 'round' => 1,

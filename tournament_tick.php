@@ -1150,16 +1150,13 @@ function tcgTournamentSeedSwissPlayoff(
     if (count($playing) >= 2) {
         $pool = $playing;
     }
-    $ranked = tcgTournamentSortByRecord($pool, $records);
+    $ranked = tcgTournamentSortBySwissStanding($pool, $records, $swissMatches, 'swiss');
     if (count($ranked) < 2) {
         return;
     }
 
     $showedUp = (int)($settings['showed_up'] ?? count($ranked));
-    $cut = (int)($settings['playoff_size'] ?? tcgTournamentSwissPlayoffSize($showedUp));
-    if (!in_array($cut, [2, 4], true)) {
-        $cut = tcgTournamentSwissPlayoffSize($showedUp);
-    }
+    $cut = tcgTournamentSwissPlayoffSize($showedUp);
     $cut = min($cut, count($ranked));
     if ($cut < 2) {
         return;
@@ -1171,13 +1168,24 @@ function tcgTournamentSeedSwissPlayoff(
 
     $seeds = array_slice($ranked, 0, $cut);
     $cutSet = array_fill_keys($seeds, true);
+    tcgTournamentEnsureEntrantElimReasonColumn();
     foreach ($entrants as $e) {
         $pid = (string)$e['discord_id'];
         if ((string)$e['status'] === 'playing' && !isset($cutSet[$pid])) {
+            $reason = 'swiss_cut';
+            $pw = (int)($records[$pid]['wins'] ?? 0);
+            $pl = (int)($records[$pid]['losses'] ?? 0);
+            foreach ($seeds as $sid) {
+                if ((int)($records[$sid]['wins'] ?? 0) === $pw
+                    && (int)($records[$sid]['losses'] ?? 0) === $pl) {
+                    $reason = 'swiss_omw';
+                    break;
+                }
+            }
             tcgDb()->prepare(
-                'UPDATE tcg_tournament_entrants SET status = "eliminated"
+                'UPDATE tcg_tournament_entrants SET status = "eliminated", elim_reason = ?
                  WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
-            )->execute([$tournamentId, $pid]);
+            )->execute([$reason, $tournamentId, $pid]);
         }
     }
 
@@ -1372,7 +1380,7 @@ function tcgTournamentTryFinish(string $tournamentId): bool {
                     $semiLosers[] = $l;
                 }
             }
-            $semiLosers = tcgTournamentSortByRecord($semiLosers, $swissRec);
+            $semiLosers = tcgTournamentSortBySwissStanding($semiLosers, $swissRec, $matches, 'swiss');
             if (!empty($semiLosers)) {
                 $places[] = $semiLosers[0];
             }

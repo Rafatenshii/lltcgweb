@@ -115,13 +115,22 @@
     return rulesTemplateInfo(raw).label;
   }
 
-  function labelEntrantStatus(raw) {
+  function labelEntrantStatus(raw, elimReason) {
     const k = String(raw || '').toLowerCase();
+    const reason = String(elimReason || '').toLowerCase();
+    if (k === 'eliminated') {
+      if (reason === 'swiss_omw') {
+        return t('tournament.entrant.cutOmw', 'Cut (opp. win %)');
+      }
+      if (reason === 'swiss_cut') {
+        return t('tournament.entrant.cutSwiss', 'Cut (Swiss)');
+      }
+      return t('tournament.entrant.eliminated', 'Eliminated');
+    }
     const map = {
       registered: ['tournament.entrant.registered', 'Registered'],
       checked_in: ['tournament.entrant.checked_in', 'Checked in'],
       no_show: ['tournament.entrant.no_show', 'No-show'],
-      eliminated: ['tournament.entrant.eliminated', 'Eliminated'],
       playing: ['tournament.entrant.active', 'Active'],
       active: ['tournament.entrant.active', 'Active'],
       winner: ['tournament.entrant.winner', 'Winner'],
@@ -1377,7 +1386,9 @@
         + personChipHtml(e.discord_id, e.username || e.discord_id, e.avatar_url)
         + (e.seed != null ? '<span class="tournament-seed">#' + e.seed + '</span>' : '')
         + '</span>'
-        + '<span class="tournament-entrant-status">' + escapeHtml(labelEntrantStatus(e.status)) + '</span>'
+        + '<span class="tournament-entrant-status">'
+        + escapeHtml(labelEntrantStatus(e.status, e.elim_reason))
+        + '</span>'
         + '</li>'
       )).join('') || '<li class="tournament-muted">' + escapeHtml(t('tournament.entrantsEmpty', 'No entrants')) + '</li>';
       wireAvatarFallbacks(list);
@@ -1716,7 +1727,12 @@
           wins: r.wins,
           losses: r.losses,
         }))
-        + (r.status ? (' · ' + escapeHtml(labelEntrantStatus(r.status))) : '')
+        + (r.omw != null
+          ? (' · ' + escapeHtml(t('tournament.standings.omw', 'OMW {n}%', {
+            n: Math.round(Number(r.omw) * 100),
+          })))
+          : '')
+        + (r.status ? (' · ' + escapeHtml(labelEntrantStatus(r.status, r.elim_reason))) : '')
         + '</span></li>'
       )).join('')
       + '</ol>';
