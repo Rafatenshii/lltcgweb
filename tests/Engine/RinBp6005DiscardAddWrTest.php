@@ -7,8 +7,9 @@ namespace LLTCG\Tests\Engine;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Rin PL!-bp6-005 On Enter: discard 2 to add up to 1 Member with a Yellow Blade
- * heart and up to 1 Live requiring a Yellow heart from the Waiting Room.
+ * Rin PL!-bp6-005 On Enter: discard 2 to add up to 1 Member with a Yellow
+ * printed heart and up to 1 Live requiring a Yellow heart from the Waiting Room.
+ * JP: 黄ハートを持つ — not Blade heart.
  */
 final class RinBp6005DiscardAddWrTest extends TestCase
 {
@@ -23,8 +24,9 @@ final class RinBp6005DiscardAddWrTest extends TestCase
             'cost' => 11,
             'abilities' => [[
                 'trigger' => 'on_enter',
-                'type' => 'optional_discard2_add_wr_blade_member_and_heart_live',
+                'type' => 'optional_discard2_add_wr_heart_member_and_heart_live',
                 'discard' => 2,
+                'heart_color' => 'yellow',
             ]],
         ];
     }
@@ -76,7 +78,7 @@ final class RinBp6005DiscardAddWrTest extends TestCase
         ];
     }
 
-    private function wrMember(string $id, array $bladeHearts): array
+    private function wrMember(string $id, array $hearts, array $bladeHearts = []): array
     {
         return [
             'instance_id' => $id,
@@ -85,6 +87,7 @@ final class RinBp6005DiscardAddWrTest extends TestCase
             'group' => "μ's",
             'cost' => 5,
             'blade' => 1,
+            'hearts' => $hearts,
             'blade_hearts' => $bladeHearts,
         ];
     }
@@ -110,11 +113,37 @@ final class RinBp6005DiscardAddWrTest extends TestCase
         ]);
     }
 
-    public function testDiscardTwoThenPicksYellowBladeMemberAndYellowHeartLive(): void
+    public function testCatalogUsesPrintedYellowHeartNotBlade(): void
+    {
+        $data = json_decode((string) file_get_contents((string) constant('CARDS_FILE')), true);
+        foreach (['PL!-bp6-005-R', 'PL!-bp6-005-P'] as $no) {
+            $card = null;
+            foreach ($data['cards'] ?? [] as $c) {
+                if (($c['card_no'] ?? '') === $no) {
+                    $card = $c;
+                    break;
+                }
+            }
+            $this->assertNotNull($card, $no);
+            $ab = ($card['abilities'] ?? [])[0] ?? [];
+            $this->assertSame(
+                'optional_discard2_add_wr_heart_member_and_heart_live',
+                $ab['type'] ?? null,
+                $no
+            );
+            $this->assertSame('yellow', $ab['heart_color'] ?? null, $no);
+            $this->assertStringContainsString('Yellow heart', (string)($card['text'] ?? ''), $no);
+            $this->assertStringNotContainsString('Blade heart', (string)($card['text'] ?? ''), $no);
+        }
+    }
+
+    public function testDiscardTwoThenPicksYellowHeartMemberAndYellowHeartLive(): void
     {
         $state = $this->baseState([
-            $this->wrMember('mem_yellow', ['yellow']),
-            $this->wrMember('mem_pink', ['pink']),
+            // Printed yellow heart only — Blade yellow must NOT qualify alone.
+            $this->wrMember('mem_yellow', [['color' => 'yellow', 'count' => 1]]),
+            $this->wrMember('mem_blade_only', [], ['yellow']),
+            $this->wrMember('mem_pink', [['color' => 'pink', 'count' => 1]]),
             $this->wrLive('live_yellow', 'yellow'),
             $this->wrLive('live_red', 'red'),
         ]);
@@ -160,7 +189,7 @@ final class RinBp6005DiscardAddWrTest extends TestCase
     public function testSkippingLiveStepStillAddsMemberAndClearsPrompt(): void
     {
         $state = $this->baseState([
-            $this->wrMember('mem_yellow', ['yellow']),
+            $this->wrMember('mem_yellow', [['color' => 'yellow', 'count' => 1]]),
             $this->wrLive('live_yellow', 'yellow'),
         ]);
         $state = $this->enterRin($state);
@@ -180,7 +209,7 @@ final class RinBp6005DiscardAddWrTest extends TestCase
     public function testStepWithoutCandidatesIsSkipped(): void
     {
         $state = $this->baseState([
-            $this->wrMember('mem_pink', ['pink']),
+            $this->wrMember('mem_pink', [['color' => 'pink', 'count' => 1]]),
             $this->wrLive('live_yellow', 'yellow'),
         ]);
         $state = $this->enterRin($state);
@@ -195,7 +224,7 @@ final class RinBp6005DiscardAddWrTest extends TestCase
     public function testNoPromptWhenWaitingRoomHasNoMatch(): void
     {
         $state = $this->baseState([
-            $this->wrMember('mem_pink', ['pink']),
+            $this->wrMember('mem_pink', [['color' => 'pink', 'count' => 1]]),
             $this->wrLive('live_red', 'red'),
         ]);
         $state = $this->enterRin($state);
@@ -204,14 +233,18 @@ final class RinBp6005DiscardAddWrTest extends TestCase
 
     public function testNoPromptWhenHandTooSmallToPayCost(): void
     {
-        $state = $this->baseState([$this->wrMember('mem_yellow', ['yellow'])], 1);
+        $state = $this->baseState([
+            $this->wrMember('mem_yellow', [['color' => 'yellow', 'count' => 1]]),
+        ], 1);
         $state = $this->enterRin($state);
         $this->assertArrayNotHasKey('pending_prompt', $state);
     }
 
     public function testDecliningTheOptionalCostKeepsHand(): void
     {
-        $state = $this->baseState([$this->wrMember('mem_yellow', ['yellow'])]);
+        $state = $this->baseState([
+            $this->wrMember('mem_yellow', [['color' => 'yellow', 'count' => 1]]),
+        ]);
         $state = $this->enterRin($state);
         $state = \actionResolvePrompt($state, 'p1', ['choice' => 'no']);
 

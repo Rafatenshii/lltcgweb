@@ -33,6 +33,7 @@ function plMuseGapEffectTypes(): array {
         'reveal_hand_named_stack_under',
         'play_stacked_member_from_under',
         'optional_discard2_add_wr_blade_member_and_heart_live',
+        'optional_discard2_add_wr_heart_member_and_heart_live',
         'mandatory_discard_color_threshold_reveal5',
         'reveal_top_draw_live_score_if_no_blade',
         'wait_self_activate_other_member',
@@ -1050,11 +1051,19 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
             break;
 
         case 'optional_discard2_add_wr_blade_member_and_heart_live':
+        case 'optional_discard2_add_wr_heart_member_and_heart_live':
             if (!empty($state['pending_prompt'])) break;
             $discard = max(1, intval($ab['discard'] ?? 2));
             if (count($p['hand'] ?? []) < $discard) break;
-            $then = plMuseGapBladeMemberHeartLiveThen($ab);
+            $usePrintedHeart = ($ab['type'] ?? '') === 'optional_discard2_add_wr_heart_member_and_heart_live';
+            $then = $usePrintedHeart
+                ? plMuseGapHeartMemberHeartLiveThen($ab)
+                : plMuseGapBladeMemberHeartLiveThen($ab);
             if (!plMuseGapWrPickSequenceHasCandidate($p, $then['steps'])) break;
+            $colorLabel = ucfirst((string)($then['color'] ?? 'yellow'));
+            $memberLabel = $usePrintedHeart
+                ? "$colorLabel heart"
+                : "$colorLabel Blade heart";
             $state['pending_prompt'] = buildInternalOptionalDiscardConfirmPrompt(
                 $state,
                 $pid,
@@ -1063,8 +1072,8 @@ function plMuseGapResolveEffect(array $state, string $pid, array $source, array 
                     'type'    => 'optional_discard_prompt',
                     'discard' => $discard,
                     'prompt'  => "Put $discard cards from your hand into the Waiting Room: add up to 1 Member with a "
-                        . ucfirst($then['color']) . ' Blade heart and up to 1 Live requiring a '
-                        . ucfirst($then['color']) . ' heart from your Waiting Room to your hand?',
+                        . $memberLabel . ' and up to 1 Live requiring a '
+                        . $colorLabel . ' heart from your Waiting Room to your hand?',
                     'then'    => $then,
                 ],
                 $name,
@@ -1209,6 +1218,32 @@ function plMuseGapBladeMemberHeartLiveThen(array $ab): array {
                 'step'   => 'pick_member',
                 'cfg'    => ['filter' => 'member', 'blade_heart_color' => $color],
                 'prompt' => "Choose up to 1 Member with a $label Blade heart from your Waiting Room to add to your hand (or skip).",
+            ],
+            [
+                'step'   => 'pick_live',
+                'cfg'    => [
+                    'filter'                   => 'live',
+                    'min_required_hearts'      => 1,
+                    'min_required_heart_color' => $color,
+                ],
+                'prompt' => "Choose up to 1 Live requiring a $label heart from your Waiting Room to add to your hand (or skip).",
+            ],
+        ],
+    ];
+}
+
+/** Same as blade variant, but Member filter is printed heart color (not Blade heart). */
+function plMuseGapHeartMemberHeartLiveThen(array $ab): array {
+    $color = (string)($ab['heart_color'] ?? $ab['color'] ?? 'yellow');
+    $label = ucfirst($color);
+    return [
+        'type'  => 'add_wr_heart_member_and_heart_live',
+        'color' => $color,
+        'steps' => [
+            [
+                'step'   => 'pick_member',
+                'cfg'    => ['filter' => 'member', 'heart_color' => $color],
+                'prompt' => "Choose up to 1 Member with a $label heart from your Waiting Room to add to your hand (or skip).",
             ],
             [
                 'step'   => 'pick_live',

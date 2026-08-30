@@ -487,6 +487,15 @@ function wrPickCfgFromAbility(array $ab): array {
     if (!empty($ab['blade_heart_color'])) {
         $cfg['blade_heart_color'] = (string)$ab['blade_heart_color'];
     }
+    if (!empty($ab['heart_color'])) {
+        $cfg['heart_color'] = (string)$ab['heart_color'];
+    }
+    if (!empty($ab['heart_colors']) && is_array($ab['heart_colors'])) {
+        $cfg['heart_colors'] = array_values(array_filter(array_map('strval', $ab['heart_colors'])));
+    }
+    if (!empty($ab['require_score_icon'])) {
+        $cfg['require_score_icon'] = true;
+    }
     return $cfg;
 }
 

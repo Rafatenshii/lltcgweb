@@ -2980,6 +2980,15 @@ body.deck-card-preview #modal-card{z-index:970}
 }
 .rule-kw-label{font-weight:700}
 .rule-kw:hover,.rule-kw:focus-visible{border-bottom-color:rgba(255,255,255,.55)}
+/* Full-line FAQ / rules reminders — not part of skill body */
+.card-hover-panel .hc-text .rule-hint,
+.ctxt .rule-hint,
+.prompt-effect-text .rule-hint,
+.stage-ability-desc .rule-hint{
+  color:rgba(148,163,184,.92);
+  font-style:italic;
+  font-weight:400;
+}
 .skill-type-icons{
   display:inline-flex;align-items:center;flex-shrink:0;flex-wrap:nowrap;
   height:1.05em;margin-right:3px;line-height:0;

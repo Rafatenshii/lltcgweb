@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=103">
+<link rel="stylesheet" href="client/css/shell-all.css?v=104">
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -16275,6 +16275,24 @@ function cardMatchesWrPickClient(card, cfg) {
     });
     if (!ok) return false;
   }
+  if (cfg.heart_color) {
+    const hearts = card.hearts || [];
+    const ok = hearts.some(h => (h.color || h) === cfg.heart_color || (h.color || h) === 'any');
+    if (!ok) return false;
+  }
+  if (Array.isArray(cfg.heart_colors) && cfg.heart_colors.length) {
+    const hearts = card.hearts || [];
+    const ok = cfg.heart_colors.some(want =>
+      hearts.some(h => (h.color || h) === want || (h.color || h) === 'any')
+    );
+    if (!ok) return false;
+  }
+  if (cfg.require_score_icon) {
+    const n = typeof cardYellScoreIconCount === 'function'
+      ? cardYellScoreIconCount(card)
+      : (card.yell_score_icon ? 1 : 0);
+    if (n < 1) return false;
+  }
   if (cfg.min_required_hearts != null && countRequiredHearts(card) < cfg.min_required_hearts) return false;
   if (cfg.min_required_heart_color) {
     if ((card.card_type || '') !== 'ライブ' && card.card_type_en !== 'Live') return false;
@@ -16392,9 +16410,11 @@ function abilityWrBlockReason(cpu, ab) {
       return wrPickMatchCountClient(cpu, {
         group: ab.group || 'Sunshine',
         filter: 'live',
-        min_score: ab.min_score ?? 1,
+        ...(ab.require_score_icon
+          ? { require_score_icon: true }
+          : { min_score: ab.min_score ?? 1 }),
       }, 1) >= 1
-        ? null : 'No scored Live card in Waiting Room.';
+        ? null : 'No Score +1 Live card in Waiting Room.';
     case 'wait_self_add_wr':
       if (!ab.group && !ab.filter) return wr.length >= (ab.count || 1) ? null : 'No matching card in Waiting Room.';
       return wrPickMatchCountClient(cpu, { group: ab.group || '', filter: ab.filter || '' }, ab.count || 1) >= (ab.count || 1)
@@ -26319,6 +26339,15 @@ function renderCardRulesText(text, container) {
   const bracketRe = getRuleKwBracketPattern();
   lines.forEach((line, lineIdx) => {
     if (lineIdx > 0) container.appendChild(document.createElement('br'));
+    const trimmed = line.trim();
+    // Full-line FAQ / rules reminders: "(…)" or "（…）"
+    if (/^[（(].+[）)]$/.test(trimmed) && trimmed.length >= 3) {
+      const hint = document.createElement('span');
+      hint.className = 'rule-hint';
+      hint.textContent = trimmed;
+      container.appendChild(hint);
+      return;
+    }
     let last = 0;
     let match;
     while ((match = bracketRe.exec(line)) !== null) {
@@ -29338,6 +29367,10 @@ function wrPickCfgFromPrompt(pr) {
     min_required_hearts: pr?.wr_pick_cfg?.min_required_hearts ?? pr?.ability?.min_required_hearts,
     min_required_heart_color: pr?.wr_pick_cfg?.min_required_heart_color ?? pr?.ability?.min_required_heart_color,
     blade_heart_color: pr?.wr_pick_cfg?.blade_heart_color ?? pr?.ability?.blade_heart_color,
+    heart_color: pr?.wr_pick_cfg?.heart_color ?? pr?.ability?.heart_color,
+    heart_colors: pr?.wr_pick_cfg?.heart_colors ?? pr?.ability?.heart_colors,
+    require_score_icon: !!(pr?.wr_pick_cfg?.require_score_icon ?? pr?.ability?.require_score_icon),
+    min_score: pr?.wr_pick_cfg?.min_score ?? pr?.ability?.min_score,
     subunit: pr?.wr_pick_cfg?.subunit ?? pr?.subunit ?? pr?.ability?.subunit ?? '',
   };
 }

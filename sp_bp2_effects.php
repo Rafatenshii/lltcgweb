@@ -12,6 +12,7 @@ function spBp2EffectTypes(): array {
         'auto_area_move_energy_wait',
         'auto_on_center_move_choose',
         'auto_on_move_to_center_subunit_heart',
+        'auto_on_move_to_center_subunit_blade',
         'auto_stack_wr_group_member_under',
         'auto_yell_mill_extra_yell',
         'auto_yell_no_blade_heart',
@@ -72,6 +73,7 @@ function spBp2HandlerTypes(): array {
     return [
         'auto_on_center_move_choose',
         'auto_on_move_to_center_subunit_heart',
+        'auto_on_move_to_center_subunit_blade',
         'auto_stack_wr_group_member_under',
         'continuous_negate_stage_member_abilities',
         'cost_per_stacked_group_member',
@@ -547,23 +549,40 @@ function spBp2TriggerMoveToCenterHeart(array $state, string $pid, array $movedMe
             continue;
         }
         mergeCardCatalogFields($observer);
-        foreach ($observer['abilities'] ?? [] as $ab) {
+        foreach ($observer['abilities'] ?? [] as $idx => $ab) {
             if (($ab['trigger'] ?? '') !== 'auto') {
                 continue;
             }
-            if (($ab['type'] ?? '') !== 'auto_on_move_to_center_subunit_heart') {
+            $type = $ab['type'] ?? '';
+            if ($type !== 'auto_on_move_to_center_subunit_heart'
+                && $type !== 'auto_on_move_to_center_subunit_blade') {
                 continue;
             }
             if (($ab['subunit'] ?? '') !== '' && ($ab['subunit'] ?? '') !== $subunit) {
                 continue;
             }
+            if (!empty($ab['once_per_turn']) && isAbilityUsed($observer, $idx)) {
+                continue;
+            }
             if (spBp2StageMemberAbilitiesSuppressed($state, $pid)) {
                 continue;
             }
-            addBonusHeartsToModifier($state, $pid, $ab['hearts'] ?? [['color' => 'any', 'count' => 1]]);
+            if (!empty($ab['once_per_turn'])) {
+                markAbilityUsed($observer, $idx);
+                $p['stage'][$slot] = $observer;
+            }
             $mName = $observer['name_en'] ?? $observer['name'] ?? 'Member';
-            $state = addLog($state, $state['players'][$pid]['name'] .
-                " — [$mName] gained bonus heart ($subunit moved to Center).");
+            if ($type === 'auto_on_move_to_center_subunit_blade') {
+                $blade = max(1, intval($ab['blade'] ?? $ab['amount'] ?? 4));
+                $observer['live_blade_bonus'] = intval($observer['live_blade_bonus'] ?? 0) + $blade;
+                $p['stage'][$slot] = $observer;
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$mName] gained +$blade Blade ($subunit moved to Center).");
+            } else {
+                addBonusHeartsToModifier($state, $pid, $ab['hearts'] ?? [['color' => 'any', 'count' => 1]]);
+                $state = addLog($state, $state['players'][$pid]['name'] .
+                    " — [$mName] gained bonus heart ($subunit moved to Center).");
+            }
         }
     }
     unset($observer);
@@ -857,6 +876,7 @@ function spBp2ResolveEffect(array $state, string $pid, array $source, array $ab,
             break;
         case 'auto_on_center_move_choose':
         case 'auto_on_move_to_center_subunit_heart':
+        case 'auto_on_move_to_center_subunit_blade':
         case 'auto_stack_wr_group_member_under':
             break;
     }
@@ -1230,11 +1250,11 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             $choices = ['energy', 'hearts'];
             $labels = [
                 'Put 1 Energy from your Energy deck into Wait',
-                'Grant 2 hearts of your choice to another Liella! Member on Stage',
+                'Grant 2 Purple hearts to another Liella! Member on Stage',
             ];
             if ($noBladeMember) {
                 $choices[] = 'both';
-                $labels[] = 'Both — Energy into Wait and grant 2 hearts';
+                $labels[] = 'Both — Energy into Wait and grant 2 Purple hearts';
             }
             $state['pending_prompt'] = [
                 'type'            => 'spbp2_discard_liella_choice',
@@ -1292,7 +1312,7 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
                         'source_name'   => $srcName,
                         'candidates'    => $candidates,
                         'did_energy'    => $doEnergy,
-                        'prompt'        => "Choose 1 other $group Member to grant 2 hearts until this Live ends.",
+                        'prompt'        => "Choose 1 other $group Member to grant 2 Purple hearts until this Live ends.",
                         'ability'       => $prompt['ability'] ?? [],
                     ];
                     $state['seq']++;
@@ -1318,7 +1338,10 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             if (!isset($mbr['bonus_hearts'])) {
                 $mbr['bonus_hearts'] = [];
             }
-            $mbr['bonus_hearts'][] = ['color' => 'any', 'count' => 2];
+            $abCfg = $prompt['ability'] ?? [];
+            $heartColor = (string)($abCfg['heart_color'] ?? 'purple');
+            $heartCount = max(1, intval($abCfg['heart_count'] ?? 2));
+            $mbr['bonus_hearts'][] = ['color' => $heartColor, 'count' => $heartCount];
             $ownerP['stage'][$memberSlot] = $mbr;
             if ($slot !== '' && !empty($ownerP['stage'][$slot])) {
                 markAbilityUsed($ownerP['stage'][$slot], $abIdx);
@@ -1326,8 +1349,8 @@ function spBp2ResolvePrompt(array $state, string $owner, array $prompt, string $
             unset($state['pending_prompt']);
             $state['seq']++;
             $state = addLog($state, $state['players'][$owner]['name'] .
-                ' — [' . $srcName . '] granted 2 hearts to ' .
-                ($mbr['name_en'] ?? $mbr['name']) . '.');
+                ' — [' . $srcName . '] granted ' . $heartCount . ' ' . $heartColor .
+                ' heart(s) to ' . ($mbr['name_en'] ?? $mbr['name']) . '.');
             return finishPromptEffects($state);
         }
     }

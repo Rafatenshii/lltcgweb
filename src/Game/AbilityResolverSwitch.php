@@ -191,6 +191,7 @@ function resolveAbilityEffectSwitch(
 
     if (in_array($type, [
         'member_hearts_as_blade',
+        'replace_member_hearts_color',
         'negate_self_live_success_if_group_hearts',
     ], true)) {
         return tryResolveAbilityEffectSwitchMemberHeartsLiveSuccess($state, $pid, $source, $ab, $ctx, $type, $p, $name);

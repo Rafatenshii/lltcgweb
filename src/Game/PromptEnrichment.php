@@ -1529,7 +1529,10 @@ function resolveOptionalDiscardPromptChoice(
                 ];
                 $state['seq']++;
                 return $state;
-            } elseif (($then['type'] ?? '') === 'add_wr_blade_member_and_heart_live') {
+            } elseif (in_array($then['type'] ?? '', [
+                'add_wr_blade_member_and_heart_live',
+                'add_wr_heart_member_and_heart_live',
+            ], true)) {
                 $state = plMuseGapOpenWrPickSequence(
                     $state,
                     $owner,

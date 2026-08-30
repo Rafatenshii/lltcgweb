@@ -1486,17 +1486,13 @@ function cardMatchesLookPick(array $card, array $cfg): bool {
         return false;
     }
     $heartColors = $cfg['heart_colors'] ?? [];
+    if (empty($heartColors) && !empty($cfg['heart_color'])) {
+        $heartColors = [(string)$cfg['heart_color']];
+    }
     if (!empty($heartColors)) {
-        $cardColors = [];
-        foreach ($card['hearts'] ?? [] as $hg) {
-            $c = $hg['color'] ?? '';
-            if ($c !== '') {
-                $cardColors[$c] = true;
-            }
-        }
         $hasHeart = false;
         foreach ($heartColors as $c) {
-            if (isset($cardColors[$c])) {
+            if (memberHasHeartColor($card, (string)$c)) {
                 $hasHeart = true;
                 break;
             }
@@ -5053,6 +5049,26 @@ function cardMatchesWrPick(array $card, array $cfg): bool {
     if (!cardMatchesGroup($card, $group, $filter)) return false;
     if (!empty($cfg['blade_heart_color'])
         && !cardHasBladeHeartColor($card, (string)$cfg['blade_heart_color'])) {
+        return false;
+    }
+    if (!empty($cfg['heart_color'])
+        && !memberHasHeartColor($card, (string)$cfg['heart_color'])) {
+        return false;
+    }
+    $heartColors = $cfg['heart_colors'] ?? [];
+    if (!empty($heartColors) && is_array($heartColors)) {
+        $ok = false;
+        foreach ($heartColors as $hc) {
+            if (memberHasHeartColor($card, (string)$hc)) {
+                $ok = true;
+                break;
+            }
+        }
+        if (!$ok) {
+            return false;
+        }
+    }
+    if (!empty($cfg['require_score_icon']) && cardYellScoreIconCount($card) < 1) {
         return false;
     }
     if (($filter === 'member' || ($card['card_type'] ?? '') === 'メンバー')

@@ -28,6 +28,22 @@ function tryResolveAbilityEffectSwitchMemberHeartsLiveSuccess(
                 ucfirst($ab['color'] ?? 'blue') . ' Blade hearts until this Live ends.');
             break;
 
+        case 'replace_member_hearts_color':
+            foreach ($p['stage'] as $slot => &$mbr) {
+                if ($mbr && ($mbr['instance_id'] ?? '') === ($source['instance_id'] ?? '')) {
+                    $color = normalizeHeartColor((string)($ab['color'] ?? 'green'));
+                    $mbr['replaced_hearts'] = [$color];
+                    unset($mbr['hearts_as_blade_color']);
+                    $p['stage'][$slot] = $mbr;
+                    break;
+                }
+            }
+            unset($mbr);
+            $state = addLog($state, $state['players'][$pid]['name'] .
+                ' — [' . $name . '] printed hearts become ' .
+                ucfirst($ab['color'] ?? 'green') . ' until this Live ends.');
+            break;
+
         case 'negate_self_live_success_if_group_hearts':
             $heartColor = (string)($ab['heart_color'] ?? '');
             if (sumGroupStageHearts($p, $ab['group'] ?? 'Sunshine', $heartColor)

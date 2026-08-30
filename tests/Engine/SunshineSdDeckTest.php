@@ -184,15 +184,16 @@ final class SunshineSdDeckTest extends TestCase
             'discard_ids' => ['d1', 'd2'],
         ]);
         $this->assertSame('pick_wr_to_hand', $state['pending_prompt']['type'] ?? null);
+        $this->assertTrue(!empty($state['pending_prompt']['wr_pick_cfg']['require_score_icon']));
         $candIds = array_column($state['pending_prompt']['candidates'] ?? [], 'instance_id');
+        // スコアを持つ = Score +1 icon, not numeric Live score.
         $this->assertContains('wr_live_a', $candIds);
-        $this->assertContains('wr_live_b', $candIds);
+        $this->assertNotContains('wr_live_b', $candIds);
 
-        $state = \actionResolvePrompt($state, 'p1', ['card_id' => 'wr_live_b']);
+        $state = \actionResolvePrompt($state, 'p1', ['card_id' => 'wr_live_a']);
         $handIds = array_column($state['players']['p1']['hand'], 'instance_id');
-        $this->assertContains('wr_live_b', $handIds);
-        $this->assertNotContains('wr_live_a', $handIds);
-        $this->assertContains('wr_live_a', array_column($state['players']['p1']['waiting_room'], 'instance_id'));
+        $this->assertContains('wr_live_a', $handIds);
+        $this->assertContains('wr_live_b', array_column($state['players']['p1']['waiting_room'], 'instance_id'));
     }
 
     public function testRubySd009LiveStartRevealDeckBladePrompt(): void

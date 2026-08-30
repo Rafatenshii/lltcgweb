@@ -227,7 +227,13 @@ function sSd1ResolveActivatedAbility(
     $cfg = wrPickCfgFromAbility($ab);
     $cfg['group'] = $ab['group'] ?? 'Sunshine';
     $cfg['filter'] = 'live';
-    $cfg['min_score'] = intval($ab['min_score'] ?? 1);
+    // Score +1 icon (スコアを持つ) vs numeric Live score — prefer require_score_icon when set.
+    if (!empty($ab['require_score_icon'])) {
+        $cfg['require_score_icon'] = true;
+        unset($cfg['min_score']);
+    } else {
+        $cfg['min_score'] = intval($ab['min_score'] ?? 1);
+    }
     $added = addFromWaitingRoomWithChoice(
         $state,
         $pid,
@@ -239,7 +245,9 @@ function sSd1ResolveActivatedAbility(
         false
     );
     if ($added === 0) {
-        throw new Exception('No scored Aqours Live card in Waiting Room');
+        throw new Exception(!empty($ab['require_score_icon'])
+            ? 'No Aqours Live with a Score +1 icon in Waiting Room'
+            : 'No scored Aqours Live card in Waiting Room');
     }
     // null => pick_wr_to_hand prompt opened (once_per_turn already marked).
     if ($added === null) {
