@@ -5647,6 +5647,7 @@ async function perfRevealYellCardFromDeck(chip, deckEl, isMine, pace = 1) {
 
 async function perfFlyMemberHeartToPanel(fromEl, heartsEl, color, opts = {}) {
   const pace = opts.pace ?? 1;
+  const flyEpoch = G._perfHeartFlyEpoch || 0;
   if (!heartsEl || G._perfSpectacleAborted) return;
   let sx;
   let sy;
@@ -5674,21 +5675,33 @@ async function perfFlyMemberHeartToPanel(fromEl, heartsEl, color, opts = {}) {
   fromEl?.classList?.add('perf-member-heart-pulse');
   sfxPlayCard('hearts_gain', { volume: 0.34 });
   await perfSleepYell(40, pace);
-  if (G._perfSpectacleAborted) { fly.remove(); fromEl?.classList?.remove('perf-member-heart-pulse'); return; }
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) {
+    fly.remove();
+    fromEl?.classList?.remove('perf-member-heart-pulse');
+    return;
+  }
   const to = perfHeartFlyTargetRect(heartsEl, display);
   const tx = to.left + to.width / 2;
   const ty = to.top + to.height / 2;
   fly.style.transform = `translate(calc(-50% + ${tx - sx}px), calc(-50% + ${ty - sy}px)) scale(1.12)`;
   await perfSleepYell(560, pace);
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) {
+    fly.remove();
+    fromEl?.classList?.remove('perf-member-heart-pulse');
+    return;
+  }
   fly.style.opacity = '0';
   await perfSleepYell(100, pace);
   fly.remove();
   fromEl?.classList?.remove('perf-member-heart-pulse');
+  // Tab catch-up can clear aborted mid-flight — refuse to land on a newer paint.
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) return;
   perfIncrementHeartStat(heartsEl, display);
 }
 
 async function perfFlyBladeHeartToPanel(fromEl, heartsEl, color, chip, displayColor = null, opts = {}) {
   const pace = opts.pace ?? 1;
+  const flyEpoch = G._perfHeartFlyEpoch || 0;
   if (!heartsEl || G._perfSpectacleAborted) return;
   const origin = perfYellBladeHeartOrigin(fromEl, chip);
   if (!origin) return;
@@ -5714,16 +5727,18 @@ async function perfFlyBladeHeartToPanel(fromEl, heartsEl, color, chip, displayCo
   fromEl?.remove?.();
   sfxPlayCard('hearts_gain', { volume: 0.34 });
   await perfSleepYell(40, pace);
-  if (G._perfSpectacleAborted) { fly.remove(); return; }
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) { fly.remove(); return; }
   const to = perfHeartFlyTargetRect(heartsEl, color);
   const tx = to.left + to.width / 2;
   const ty = to.top + to.height / 2;
   fly.style.transform = `translate(calc(-50% + ${tx - sx}px), calc(-50% + ${ty - sy}px)) scale(1.12)`;
   await perfSleepYell(560, pace);
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) { fly.remove(); return; }
   fly.style.opacity = '0';
   await perfSleepYell(100, pace);
   fly.remove();
   if (bladeWrap && !bladeWrap.childElementCount) bladeWrap.remove();
+  if (G._perfSpectacleAborted || flyEpoch !== (G._perfHeartFlyEpoch || 0)) return;
   perfIncrementHeartStat(heartsEl, color);
 }
 
@@ -6873,6 +6888,8 @@ function perfJudgeSoloLine(ctx) {
 
 function bumpLiveShowRunnerEpoch() {
   G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+  // Invalidate in-flight heart flies so they cannot land on a later tab-restore paint.
+  G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
   return G._liveShowRunnerEpoch;
 }
 
@@ -7167,6 +7184,8 @@ function perfSetYellSideInstant(ctx, pid, showAllCards) {
       if (!G._perfYellScoreAccum) perfResetYellEffectAccumulators();
       G._perfYellScoreAccum[pid] = yellScoreTotal;
       const livesRow = el(isMine ? 'perf-mine-lives' : 'perf-opp-lives');
+      // Tab restore / seek can call instant paint repeatedly — replace, don't stack.
+      livesRow?.querySelectorAll?.('.perf-yell-score-total')?.forEach((n) => n.remove());
       const badge = perfMkYellScoreTotalBadge(yellScoreTotal);
       badge.classList.add('show');
       livesRow?.appendChild(badge);
@@ -8168,8 +8187,11 @@ async function restoreLiveShowSpectacleAfterTabVisible(board, myId, opts = {}) {
   const stage = board?.live_show?.stage;
   if (!liveShowSpectacleChromeStage(stage)) {
     if (G._perfSpectacleActive) perfCloseSpectacle();
+    G._perfSpectacleAborted = false;
     return;
   }
+  // Invalidate any heart-fly promises from the aborted climb before reopening chrome.
+  G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
   G._perfSpectacleAborted = false;
   const showTurn = liveShowTurnFromBoards(board, null);
   const phasePastYells = typeof perfPhaseIdx === 'function'

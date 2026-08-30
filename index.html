@@ -2893,7 +2893,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/discord-presence.js?v=12"></script>
 <script src="client/js/presentation-guards.js?v=7"></script>
 <script src="client/js/resign-escape.js?v=1"></script>
-<script src="client/js/game-sync.js?v=61"></script>
+<script src="client/js/game-sync.js?v=62"></script>
 <script src="client/js/state-apply.js?v=73"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=11"></script>
@@ -30802,10 +30802,13 @@ function gameResignedBy(s) {
 }
 
 function shouldPlaySuccessLiveTriumph(prev, s) {
-  if (!s || s.status !== 'finished' || !s.winner) return false;
+  if (!s || s.status !== 'finished') return false;
   if (gameResignedBy(s)) return false;
   if (prev?.status === 'finished') return false;
-  const winner = s.winner;
+  const winner = (typeof resolveFinishedWinnerPid === 'function'
+    ? resolveFinishedWinnerPid(s)
+    : null) || s.winner;
+  if (!winner) return false;
   const n = (s.players?.[winner]?.success_lives || []).length;
   if (n !== 3) return false;
   const prevN = (prev?.players?.[winner]?.success_lives || []).length;
@@ -30813,7 +30816,9 @@ function shouldPlaySuccessLiveTriumph(prev, s) {
 }
 
 async function playSuccessLiveTriumphCelebration(s, myId) {
-  const winner = s.winner;
+  const winner = (typeof resolveFinishedWinnerPid === 'function'
+    ? resolveFinishedWinnerPid(s)
+    : null) || s.winner;
   const prefix = winner === myId ? 'my' : 'opp';
   // Ensure finished board (incl. 3 Success Live chips) is painted before we look for chips.
   if (typeof renderGame === 'function') {
@@ -30923,6 +30928,21 @@ function syncWinRankedPrReward(s, win) {
 }
 
 // ── WIN ──────────────────────────────────────────────
+/** Prefer Success Live counts for game wins — corrects stale/mismatched winner fields. */
+function resolveFinishedWinnerPid(s) {
+  if (!s) return null;
+  const resignedBy = typeof gameResignedBy === 'function' ? gameResignedBy(s) : (s.resigned_by || null);
+  const reason = String(s.end_reason || '');
+  if (resignedBy || reason === 'resign' || reason === 'disconnect' || reason === 'timeout') {
+    return s.winner || null;
+  }
+  const p1n = (s.players?.p1?.success_lives || []).length;
+  const p2n = (s.players?.p2?.success_lives || []).length;
+  if (p1n >= 3 && p2n < 3) return 'p1';
+  if (p2n >= 3 && p1n < 3) return 'p2';
+  return s.winner || null;
+}
+
 function showWin(s){
   dismissAllGameplayOverlays();
   if (typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
@@ -30931,6 +30951,18 @@ function showWin(s){
   const isSpec = !!G.isSpectator;
   const myId = isSpec ? null : (s.my_id || G.playerId);
   if (myId) G.playerId = myId;
+  const winnerPid = resolveFinishedWinnerPid(s);
+  if (winnerPid && s.winner && winnerPid !== s.winner) {
+    TCG_DEBUG.warn('win', 'winner field disagrees with Success Lives — using lives', {
+      field: s.winner,
+      resolved: winnerPid,
+      p1: (s.players?.p1?.success_lives || []).length,
+      p2: (s.players?.p2?.success_lives || []).length,
+    });
+    s = { ...s, winner: winnerPid };
+  } else if (winnerPid && !s.winner) {
+    s = { ...s, winner: winnerPid };
+  }
   // Require a real seat + winner — null===null must not count as a win.
   const win = !!(myId && s.winner && s.winner === myId);
   const wName=s.players?.[s.winner]?.name||'?';
@@ -34111,7 +34143,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=108"></script>
+<script src="client/js/spectacle.js?v=109"></script>
 <script src="client/js/board-render.js?v=46"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>

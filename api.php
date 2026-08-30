@@ -3913,14 +3913,30 @@ function completeLiveRoundTurnAdvance(array $state, array $meta): array {
         $state['_prev_turn_live_result'] = $prevResults;
     }
 
+    $reachers = [];
     foreach (['p1', 'p2'] as $pid) {
         if (count($state['players'][$pid]['success_lives']) >= 3) {
-            $state['status'] = 'finished';
-            $state['winner'] = $pid;
-            $state = addLog($state, '🎉 ' . $state['players'][$pid]['name'] . ' WINS with 3 successful Lives!');
-            $state['seq']++;
-            return $state;
+            $reachers[] = $pid;
         }
+    }
+    if (!empty($reachers)) {
+        $matchWinner = $reachers[0];
+        // If both somehow hit 3 in one finalize, prefer who placed Success this turn.
+        if (count($reachers) > 1 && !empty($successPlacedBy) && is_array($successPlacedBy)) {
+            for ($i = count($successPlacedBy) - 1; $i >= 0; $i--) {
+                $cand = $successPlacedBy[$i];
+                if (in_array($cand, $reachers, true)) {
+                    $matchWinner = $cand;
+                    break;
+                }
+            }
+        }
+        $state['status'] = 'finished';
+        $state['winner'] = $matchWinner;
+        $state['end_reason'] = $state['end_reason'] ?? 'game';
+        $state = addLog($state, '🎉 ' . $state['players'][$matchWinner]['name'] . ' WINS with 3 successful Lives!');
+        $state['seq']++;
+        return $state;
     }
 
     if ($kind !== 'empty' && count($successPlacedBy) === 1) {

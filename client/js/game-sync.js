@@ -1072,7 +1072,10 @@
         }
 
         if (typeof bumpLiveShowRunnerEpoch === 'function') bumpLiveShowRunnerEpoch();
-        else G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+        else {
+          G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+          G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
+        }
         if (G._perfSpectacleAbort) {
           G._perfSpectacleAbort();
           G._perfSpectacleAborted = true;
@@ -1132,14 +1135,18 @@
           markLiveShowPerformancePresented(d.live_show.turn);
         }
 
-        G._perfSpectacleAborted = false;
+        // Keep _perfSpectacleAborted true until restore clears it — otherwise
+        // in-flight heart flies land on the restored panel (duplicate counts).
         if (typeof restoreLiveShowSpectacleAfterTabVisible === 'function' && d) {
           await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId, {
             forceSkipYells,
             hiddenMs,
           });
-        } else if (typeof perfOpenSpectacle === 'function') {
-          perfOpenSpectacle();
+        } else {
+          G._perfSpectacleAborted = false;
+          if (typeof perfOpenSpectacle === 'function') {
+            perfOpenSpectacle();
+          }
         }
 
         paintMatchHudAfterTabCatchUp(d, isSpec);
@@ -1248,7 +1255,9 @@
       if (typeof liveShowSpectacleChromeStage === 'function'
           && liveShowSpectacleChromeStage(d.live_show?.stage)
           && typeof restoreLiveShowSpectacleAfterTabVisible === 'function') {
-        G._perfSpectacleAborted = false;
+        if (typeof bumpLiveShowRunnerEpoch === 'function') bumpLiveShowRunnerEpoch();
+        else G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
+        G._perfSpectacleAborted = true;
         await restoreLiveShowSpectacleAfterTabVisible(d, G.playerId, {
           forceSkipYells: hardForceSkipYells,
           hiddenMs: hardHiddenMs,
