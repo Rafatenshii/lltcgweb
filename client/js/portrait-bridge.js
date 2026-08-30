@@ -1033,9 +1033,10 @@
           return true;
         }
       }
-      const resign = global.document.getElementById('btn-resign');
-      if (resign) {
-        resign.click();
+      // System / edge back during a live match: soft-refresh the client so stuck
+      // players can recover. Resign stays on the portrait menu / #btn-resign only.
+      if (global.G && (global.G.roomId || global.G.isTutorial || global.G.replayMode)) {
+        reloadPortraitApp();
         return true;
       }
     }
