@@ -701,12 +701,16 @@
       pov.textContent = t('spectate.switchPerspective', 'Switch perspective');
     }
     if (hh) {
-      hh.hidden = !spectating;
+      const locked = !!(global.G && global.G.spectateHiddenHandsLocked);
+      hh.hidden = !spectating || locked;
+      hh.disabled = locked;
       const on = !!(global.G && global.G.spectateHiddenHands);
-      hh.textContent = on
-        ? t('spectate.hiddenHandsOn', 'Show hands')
-        : t('spectate.hiddenHands', 'Hidden hands');
-      hh.classList.toggle('is-active', on);
+      hh.textContent = locked
+        ? t('spectate.hiddenHandsLocked', 'Hand fog (locked)')
+        : (on
+          ? t('spectate.hiddenHandsOn', 'Show hands')
+          : t('spectate.hiddenHands', 'Hidden hands'));
+      hh.classList.toggle('is-active', on && !locked);
       hh.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     if (resignItem) {
@@ -1126,6 +1130,10 @@
         }
         if (t.closest('#btn-portrait-menu-hidden-hands')) {
           e.preventDefault();
+          if (global.G && global.G.spectateHiddenHandsLocked) {
+            closePortraitMenu();
+            return;
+          }
           if (typeof global.toggleSpectateHiddenHands === 'function') {
             global.toggleSpectateHiddenHands();
           } else {

@@ -1514,6 +1514,8 @@
       "hiddenHandsOn": "Hands hidden",
       "hiddenHandsOnTitle": "Spectator fog: hands are hidden",
       "hiddenHandsTitle": "Hide both players’ hands while spectating",
+      "hiddenHandsLockedTitle": "Hand fog is set by the tournament host",
+      "hiddenHandsLocked": "Hand fog (locked)",
       "delayHold": "Stream delayed — waiting until {n}s behind live",
       "delayLive": "Stream delayed {n}s"
     },
@@ -11498,6 +11500,10 @@
         promoSub: '{title} · prize {prize} · {n} entered',
         joinedSub: '{title} · {n} entered'
       }
+    },
+    spectate: {
+      hiddenHandsLockedTitle: 'Hand fog is set by the tournament host',
+      hiddenHandsLocked: 'Hand fog (locked)'
     }
   };
   var I18N_SOCIAL_LOCALES = {

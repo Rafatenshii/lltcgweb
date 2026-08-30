@@ -2864,7 +2864,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=176"></script>
+<script src="i18n.js?v=177"></script>
 <script src="log_i18n.js?v=17"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=32"></script>
@@ -5163,6 +5163,7 @@ async function consumeLovecaSpectateInvite() {
   try {
     const res = await apiPost('spectate_join', { room_id: roomId });
     if (typeof captureSyncMeta === 'function') captureSyncMeta(res);
+    applySpectateJoinFog(res);
     await bootSpectatorSession({
       roomId: res.room_id,
       token: res.spectator_token,
@@ -5823,6 +5824,11 @@ async function reconnectToSpectator(saved, opts = {}) {
     G.isCPU = false;
     G.cpuToken = null;
     G.cpuPlayerId = null;
+    if ((s.mode === 'tournament' || saved.returnScreen === 'tournament' || saved.tournamentId)
+        && !G.spectateHiddenHandsLocked) {
+      const hidden = (typeof s.spectate_hidden_hands === 'boolean') ? !!s.spectate_hidden_hands : true;
+      lockSpectateHiddenHands(hidden, { rerender: false });
+    }
   document.body.classList.add('tcg-spectator-mode');
   syncSpectateHiddenHandsUi();
   const bar = el('spectate-bar');
@@ -14527,12 +14533,8 @@ async function spectateTournamentRoom(roomId) {
     if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('overflow');
     G._spectateReturnScreen = 'tournament';
     const r = await apiPost('spectate_join', { room_id: id });
-    // Default hidden for tournament; open_hands rooms send spectate_hidden_hands:false.
-    if (typeof r.spectate_hidden_hands === 'boolean') {
-      setSpectateHiddenHands(!!r.spectate_hidden_hands);
-    } else {
-      setSpectateHiddenHands(true);
-    }
+    // Tournament fog is host-locked; open_hands rooms send spectate_hidden_hands:false.
+    applySpectateJoinFog(Object.assign({}, r, { mode: 'tournament', category: 'tournament' }));
     await bootSpectatorSession({
       roomId: r.room_id || id,
       token: r.spectator_token,
@@ -16826,7 +16828,7 @@ let G = {
   roomId:null, token:null, cpuToken:null, playerId:null, isCPU:false, cpuDifficulty:'easy',
   replayMode:false, replayHandoff:false, replayStep:0, replayTotal:0, replayPlaying:false, replayPlayTimer:null,
   replayTimeline:null, replayLoadedMeta:null, _replaySeekWasScrub:false, _replayForwardApply:false, _replayLastAppliedStep:0,
-  isSpectator:false, spectatorViewAs:'p1', spectateHiddenHands:false, _spectateReturnScreen:'lobby', _tournamentReturnId:null, _spectateP1Name:null, _spectateP2Name:null,
+  isSpectator:false, spectatorViewAs:'p1', spectateHiddenHands:false, spectateHiddenHandsLocked:false, _spectateReturnScreen:'lobby', _tournamentReturnId:null, _spectateP1Name:null, _spectateP2Name:null,
   cpuPlayerId:null,
   _pendingReplayFile:null,
   gameState:null, allCards:{}, starterDecks:{},
@@ -33256,11 +33258,7 @@ async function joinSpectateMatch(roomId) {
     }
     const res = await apiPost('spectate_join', { room_id: roomId });
     captureSyncMeta(res);
-    if (typeof res.spectate_hidden_hands === 'boolean') {
-      setSpectateHiddenHands(!!res.spectate_hidden_hands);
-    } else if (res.mode === 'tournament' || res.category === 'tournament') {
-      setSpectateHiddenHands(true);
-    }
+    applySpectateJoinFog(res);
     await bootSpectatorSession({
       roomId: res.room_id,
       token: res.spectator_token,
@@ -33280,12 +33278,14 @@ function abortSpectatorBootUi() {
   clearSpectatorSession();
   document.body.classList.remove('tcg-spectator-mode');
   document.body.classList.remove('tcg-spectator-hidden-hands');
+  document.body.classList.remove('tcg-spectator-fog-locked');
   const bar = el('spectate-bar');
   if (bar) bar.hidden = true;
   G.isSpectator = false;
   G.spectatorViewAs = 'p1';
   G._spectateP1Name = null;
   G._spectateP2Name = null;
+  G.spectateHiddenHandsLocked = false;
   G.roomId = null;
   G.token = null;
   G.gameState = null;
@@ -33344,6 +33344,13 @@ async function bootSpectatorSession({ roomId, token, p1Name, p2Name, viewAs }) {
   if (barLabel) barLabel.textContent = t('spectate.barNames', { p1: p1Name || 'P1', p2: p2Name || 'P2' });
   prepareClientReconnectState(s);
   G.gameState = s;
+  // Lock fog once state confirms tournament (covers list joins / invites).
+  if ((s.mode === 'tournament' || tournamentIdFromGameState(s)) && !G.spectateHiddenHandsLocked) {
+    const hidden = (typeof s.spectate_hidden_hands === 'boolean') ? !!s.spectate_hidden_hands : true;
+    lockSpectateHiddenHands(hidden, { rerender: false });
+  } else {
+    syncSpectateHiddenHandsUi();
+  }
   const bootTid = tournamentIdFromGameState(s);
   if (bootTid) G._tournamentReturnId = bootTid;
   showScr('game');
@@ -33375,6 +33382,7 @@ function readSpectateHiddenHandsPref() {
 
 function initSpectateHiddenHandsPreference() {
   G.spectateHiddenHands = readSpectateHiddenHandsPref();
+  G.spectateHiddenHandsLocked = false;
   syncSpectateHiddenHandsUi();
 }
 
@@ -33383,26 +33391,40 @@ function spectatorHandsHidden() {
   return !!(G.isSpectator && G.spectateHiddenHands);
 }
 
+/** Host fog setting locks spectator hand visibility (no client toggle). */
+function isSpectateHiddenHandsLocked() {
+  return !!(G.isSpectator && G.spectateHiddenHandsLocked);
+}
+
 function syncSpectateHiddenHandsUi() {
   const on = spectatorHandsHidden();
+  const locked = isSpectateHiddenHandsLocked();
   document.body.classList.toggle('tcg-spectator-hidden-hands', on);
+  document.body.classList.toggle('tcg-spectator-fog-locked', locked);
   const btn = el('btn-spectate-hidden-hands');
   if (btn) {
+    btn.hidden = locked;
+    btn.disabled = locked;
     btn.classList.toggle('is-active', !!G.spectateHiddenHands);
     btn.setAttribute('aria-pressed', G.spectateHiddenHands ? 'true' : 'false');
-    const title = G.spectateHiddenHands
-      ? (typeof t === 'function' ? t('spectate.hiddenHandsOnTitle') : 'Hidden hands on — tap to show hands')
-      : (typeof t === 'function' ? t('spectate.hiddenHandsTitle') : 'Hidden hands (tournament view)');
+    const title = locked
+      ? (typeof t === 'function' ? t('spectate.hiddenHandsLockedTitle') : 'Hand fog is set by the tournament host')
+      : (G.spectateHiddenHands
+        ? (typeof t === 'function' ? t('spectate.hiddenHandsOnTitle') : 'Hidden hands on — tap to show hands')
+        : (typeof t === 'function' ? t('spectate.hiddenHandsTitle') : 'Hidden hands (tournament view)'));
     btn.title = title;
     btn.setAttribute('aria-label', typeof t === 'function' ? t('spectate.hiddenHands') : 'Hidden hands');
   }
   if (typeof tcgPortraitSyncMenu === 'function') tcgPortraitSyncMenu();
 }
 
-function setSpectateHiddenHands(on, { rerender = true } = {}) {
+function setSpectateHiddenHands(on, { rerender = true, force = false } = {}) {
+  if (G.spectateHiddenHandsLocked && !force) return;
   G.spectateHiddenHands = !!on;
-  try { localStorage.setItem(SPECTATE_HIDDEN_HANDS_KEY, G.spectateHiddenHands ? '1' : '0'); }
-  catch (e) { /* ignore */ }
+  if (!G.spectateHiddenHandsLocked) {
+    try { localStorage.setItem(SPECTATE_HIDDEN_HANDS_KEY, G.spectateHiddenHands ? '1' : '0'); }
+    catch (e) { /* ignore */ }
+  }
   syncSpectateHiddenHandsUi();
   if (rerender && G.isSpectator && G.gameState) {
     try { clearMatHands(); } catch (e) { /* ignore */ }
@@ -33410,8 +33432,37 @@ function setSpectateHiddenHands(on, { rerender = true } = {}) {
   }
 }
 
+/** Apply room fog and prevent spectators from overriding it (tournaments). */
+function lockSpectateHiddenHands(on, { rerender = true } = {}) {
+  G.spectateHiddenHandsLocked = true;
+  setSpectateHiddenHands(!!on, { rerender, force: true });
+}
+
+function unlockSpectateHiddenHands() {
+  G.spectateHiddenHandsLocked = false;
+  syncSpectateHiddenHandsUi();
+}
+
+function applySpectateJoinFog(res) {
+  const isTournament = !!(res
+    && (res.mode === 'tournament'
+      || res.category === 'tournament'
+      || G._spectateReturnScreen === 'tournament'));
+  if (isTournament) {
+    const hidden = (typeof res?.spectate_hidden_hands === 'boolean')
+      ? !!res.spectate_hidden_hands
+      : true;
+    lockSpectateHiddenHands(hidden, { rerender: false });
+    return;
+  }
+  G.spectateHiddenHandsLocked = false;
+  if (typeof res?.spectate_hidden_hands === 'boolean') {
+    setSpectateHiddenHands(!!res.spectate_hidden_hands, { rerender: false, force: true });
+  }
+}
+
 function toggleSpectateHiddenHands() {
-  if (!G.isSpectator) return;
+  if (!G.isSpectator || G.spectateHiddenHandsLocked) return;
   setSpectateHiddenHands(!G.spectateHiddenHands);
 }
 
@@ -33463,6 +33514,7 @@ async function leaveSpectatorMode(opts = {}) {
   el('overlay-win')?.classList.remove('open');
   document.body.classList.remove('tcg-spectator-mode');
   document.body.classList.remove('tcg-spectator-hidden-hands');
+  document.body.classList.remove('tcg-spectator-fog-locked');
   const bar = el('spectate-bar');
   if (bar) bar.hidden = true;
   G.isSpectator = false;
@@ -33471,6 +33523,7 @@ async function leaveSpectatorMode(opts = {}) {
   G._portraitPileCounts = null;
   G._spectateP1Name = null;
   G._spectateP2Name = null;
+  G.spectateHiddenHandsLocked = false;
   G.roomId = null;
   G.token = null;
   G.gameState = null;
@@ -34053,7 +34106,7 @@ function mkNoImg(card){
 <script src="client/js/cpu-expert.js?v=4"></script>
 <script src="client/js/cpu-loop.js?v=35"></script>
 <script src="client/js/cpu-ai.js?v=11"></script>
-<script src="client/js/portrait-bridge.js?v=27"></script>
+<script src="client/js/portrait-bridge.js?v=28"></script>
 <script src="client/js/portrait-deck.js?v=5"></script>
 <script src="client/js/portrait-board.js?v=23"></script>
 <script>void bootApp();</script>
