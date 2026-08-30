@@ -129,4 +129,22 @@ final class ReplayFramesTest extends TestCase
         $this->assertSame(REPLAY_SCHEMA_VERSION, $v2['schema_version']);
         $this->assertCount(count($replay['actions']) + 1, $v2['frames']);
     }
+
+    public function testStripReplayForTransferDropsFramesAndReconverts(): void
+    {
+        $v1 = $this->fixtureV1();
+        $v2 = convertReplayPayloadToV2($v1);
+        $this->assertNotEmpty($v2['frames'] ?? []);
+
+        $slim = stripReplayForTransfer($v2);
+        $this->assertTrue(isReplayTransferSlim($slim));
+        $this->assertSame(1, intval($slim['schema_version'] ?? 0));
+        $this->assertArrayNotHasKey('frames', $slim);
+        $this->assertArrayNotHasKey('full_log', $slim);
+
+        validateReplayFile($slim);
+        $restored = ensureReplayPayloadV2($slim);
+        $this->assertSame(REPLAY_SCHEMA_VERSION, intval($restored['schema_version'] ?? 0));
+        $this->assertCount(count($slim['actions']) + 1, $restored['frames'] ?? []);
+    }
 }

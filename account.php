@@ -1642,6 +1642,12 @@ function tcgReplayRowNeedsRepair(array $row): bool {
         if (count($payload['actions'] ?? []) === 0) {
             return true;
         }
+        $actions = $payload['actions'] ?? [];
+        $frames = $payload['frames'] ?? [];
+        if (is_array($frames) && $frames !== []
+            && count($frames) !== count($actions) + 1) {
+            return true;
+        }
     } catch (Throwable $e) {
         return true;
     }
@@ -1701,13 +1707,14 @@ function tcgApiReplaySave(array $body): array {
     $endReason = null;
     $state = null;
     $clientReplay = $body['replay'] ?? null;
-    if (is_array($clientReplay)) {
+    if (is_array($clientReplay) && $clientReplay !== []) {
         validateReplayFile($clientReplay);
         $metaRoom = strtoupper(trim((string)($clientReplay['meta']['room_id'] ?? '')));
         if ($metaRoom !== '' && $metaRoom !== $roomId) {
             throw new Exception('Replay room mismatch', 400);
         }
         tcgAssertReplaySaveAllowedFromPayload($uid, $clientReplay);
+        // Slim v1 transfer (no frames) or legacy full v2 — convert once on Hostinger.
         $payload = ensureReplayPayloadV2($clientReplay);
         $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
         $winner = $payload['baseline']['winner'] ?? ($payload['frames'][count($payload['frames'] ?? []) - 1]['winner'] ?? null);
@@ -1728,23 +1735,19 @@ function tcgApiReplaySave(array $body): array {
             $endReason = $state['end_reason'] ?? null;
         } else {
             require_once __DIR__ . '/match_bridge.php';
-            $payload = tcgFetchOverflowReplayExport($roomId, $token);
-            if (!$payload) {
-                throw new Exception('Room not found', 404);
-            }
+            $payload = tcgFetchOverflowReplayExportWithRetry($roomId, $token);
             validateReplayFile($payload);
             tcgAssertReplaySaveAllowedFromPayload($uid, $payload);
             $payload = ensureReplayPayloadV2($payload);
             $playerId = (string)($payload['meta']['saver_player_id'] ?? '');
             $winner = $payload['baseline']['winner'] ?? null;
             $endReason = $payload['baseline']['end_reason'] ?? null;
-            if (($payload['baseline']['status'] ?? '') !== 'finished'
-                && ($payload['meta']['phase'] ?? '') !== 'finished'
-                && ($payload['baseline']['phase'] ?? '') !== 'finished') {
-                // Export is only allowed after finish on the match host; still accept
-                // if actions exist (status may be live_judge at terminal).
-                if (($winner === null || $winner === '') && empty($payload['baseline']['winner'])) {
-                    throw new Exception('Replay can only be saved after the match finishes', 400);
+            $frames = is_array($payload['frames'] ?? null) ? $payload['frames'] : [];
+            if (($winner === null || $winner === '') && $frames !== []) {
+                $last = $frames[count($frames) - 1];
+                if (is_array($last)) {
+                    $winner = $last['winner'] ?? $winner;
+                    $endReason = $last['end_reason'] ?? $endReason;
                 }
             }
         }

@@ -92,23 +92,45 @@
     return r.replay;
   };
 
-  async function postReplaySave(creds, opts) {
+  /** Slim v1 upload — baseline + actions only; Hostinger builds schema v2. */
+  global.stripReplayForTransfer = function stripReplayForTransfer(replay) {
+    return {
+      schema_version: 1,
+      meta: replay?.meta || {},
+      baseline: replay?.baseline,
+      actions: replay?.actions || [],
+    };
+  };
+
+  function isRetryableReplaySaveError(err) {
+    if (!err) return false;
+    if (err.retryable) return true;
+    const status = Number(err.httpStatus) || 0;
+    if (status === 503) return true;
+    const msg = String(err.message || '');
+    return /Room not found|not finished|not ready|export not ready|host unreachable|503|Server busy|Lock timeout/i.test(msg);
+  }
+
+  async function postReplaySave(creds, opts, allowSlimFallback) {
     const body = {
       room_id: creds.roomId,
       player_token: creds.token,
       ...opts,
     };
-    let replay = null;
     try {
-      replay = await global.exportReplayPayload(creds);
-      body.replay = replay;
-    } catch (exportErr) {
-      // Hostinger can still pull from the match origin when client export fails
-      // (e.g. room already TTL'd on the client path).
+      const saved = await global.accountPost('replay_save', body);
+      if (saved.error) throw new Error(saved.error);
+      return { saved, replay: null };
+    } catch (serverErr) {
+      if (!allowSlimFallback || !isRetryableReplaySaveError(serverErr)) {
+        throw serverErr;
+      }
+      const replay = await global.exportReplayPayload(creds);
+      body.replay = global.stripReplayForTransfer(replay);
+      const saved = await global.accountPost('replay_save', body);
+      if (saved.error) throw new Error(saved.error);
+      return { saved, replay };
     }
-    const saved = await global.accountPost('replay_save', body);
-    if (saved.error) throw new Error(saved.error);
-    return { saved, replay };
   }
 
   async function postReplaySaveWithRetry(creds, opts, delaysMs) {
@@ -118,12 +140,18 @@
         await new Promise((resolve) => setTimeout(resolve, delaysMs[i]));
       }
       try {
-        return await postReplaySave(creds, opts);
+        return await postReplaySave(creds, opts, false);
       } catch (e) {
         lastErr = e;
+        if (!isRetryableReplaySaveError(e)) {
+          throw e;
+        }
       }
     }
-    throw lastErr || new Error(t('replay.couldNotSave'));
+    if (lastErr && !isRetryableReplaySaveError(lastErr)) {
+      throw lastErr;
+    }
+    return postReplaySave(creds, opts, true);
   }
 
   /** End-of-match replay — account library (realtime) or JSON download. */

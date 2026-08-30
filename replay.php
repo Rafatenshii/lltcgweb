@@ -208,6 +208,22 @@ function validateReplayFile(array $replay): void {
     }
 }
 
+/** Client→Hostinger upload: baseline + actions only (no multi-MB frames). */
+function isReplayTransferSlim(array $replay): bool {
+    $frames = $replay['frames'] ?? null;
+    return !is_array($frames) || $frames === [];
+}
+
+/** Strip v2 frames/log for small POST fallback; Hostinger builds v2 once. */
+function stripReplayForTransfer(array $replay): array {
+    return [
+        'schema_version' => 1,
+        'meta'           => is_array($replay['meta'] ?? null) ? $replay['meta'] : [],
+        'baseline'       => $replay['baseline'] ?? null,
+        'actions'        => is_array($replay['actions'] ?? null) ? $replay['actions'] : [],
+    ];
+}
+
 /**
  * Re-sim baseline+actions once to build cumulative log index for schema-v2 seek.
  * Frames stay slim (no log); each installed step slices full_log[0..log_ends[step]].

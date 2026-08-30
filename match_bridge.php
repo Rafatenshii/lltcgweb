@@ -643,11 +643,41 @@ function tcgOverflowHttpPostJson(string $url, array $payload, int $timeoutSec = 
  *
  * @return array<string,mixed>|null Replay file payload
  */
+function tcgReplayExportErrorIsRetryable(Throwable $e): bool {
+    $code = intval($e->getCode());
+    if ($code === 503) {
+        return true;
+    }
+    $msg = strtolower($e->getMessage());
+    return str_contains($msg, 'not finished')
+        || str_contains($msg, 'no recorded actions')
+        || str_contains($msg, 'room not found')
+        || str_contains($msg, 'not ready')
+        || str_contains($msg, 'match host')
+        || str_contains($msg, 'export not ready');
+}
+
 function tcgFetchOverflowReplayExport(string $roomId, string $token): ?array {
     $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
     $token = trim($token);
     if ($roomId === '' || $token === '') {
         return null;
+    }
+    $testCounter = getenv('TCG_TEST_OVERFLOW_COUNTER');
+    $testPayload = getenv('TCG_TEST_OVERFLOW_PAYLOAD');
+    if (is_string($testCounter) && $testCounter !== ''
+        && is_string($testPayload) && $testPayload !== '' && is_file($testPayload)) {
+        $count = is_file($testCounter) ? (int)file_get_contents($testCounter) : 0;
+        file_put_contents($testCounter, (string)($count + 1));
+        $failUntil = max(0, (int)(getenv('TCG_TEST_OVERFLOW_FAIL_UNTIL') ?: '0'));
+        if ($count < $failUntil) {
+            throw new Exception('Replay not finished yet', 503);
+        }
+        $decoded = json_decode((string)file_get_contents($testPayload), true);
+        if (!is_array($decoded)) {
+            throw new Exception('Mock payload invalid', 500);
+        }
+        return $decoded;
     }
     $url = tcgOverflowMatchApiBase() . '/api.php?action=replay_export';
     $res = tcgOverflowHttpPostJson($url, [
@@ -655,15 +685,54 @@ function tcgFetchOverflowReplayExport(string $roomId, string $token): ?array {
         'token' => $token,
     ], 45);
     if (!is_array($res)) {
-        return null;
+        throw new Exception('Match export not ready (host unreachable)', 503);
     }
     if (!empty($res['error'])) {
-        throw new Exception((string)$res['error'], 404);
+        $errMsg = (string)$res['error'];
+        $retryable = str_contains(strtolower($errMsg), 'not finished')
+            || str_contains(strtolower($errMsg), 'no recorded actions')
+            || str_contains(strtolower($errMsg), 'room not found');
+        throw new Exception($errMsg, $retryable ? 503 : 404);
     }
     if (empty($res['replay']) || !is_array($res['replay'])) {
-        return null;
+        throw new Exception('Match export not ready yet', 503);
     }
     return $res['replay'];
+}
+
+/**
+ * Hostinger → VPS replay_export with backoff (autosave often races finish).
+ *
+ * @param array<int,int> $delaysMs
+ * @return array<string,mixed>
+ */
+function tcgFetchOverflowReplayExportWithRetry(
+    string $roomId,
+    string $token,
+    array $delaysMs = [0, 400, 1200, 3000, 6000]
+): array {
+    $lastErr = null;
+    foreach (array_values($delaysMs) as $i => $delay) {
+        if ($i > 0 && $delay > 0) {
+            usleep($delay * 1000);
+        }
+        try {
+            $payload = tcgFetchOverflowReplayExport($roomId, $token);
+            if (is_array($payload)) {
+                return $payload;
+            }
+            $lastErr = new Exception('Match export not ready yet', 503);
+        } catch (Throwable $e) {
+            $lastErr = $e;
+            if (!tcgReplayExportErrorIsRetryable($e)) {
+                throw $e;
+            }
+        }
+    }
+    if ($lastErr instanceof Throwable) {
+        throw $lastErr;
+    }
+    throw new Exception('Room not found', 404);
 }
 
 function tcgResignRankedRoomOnVps(string $roomId, string $token): bool {
