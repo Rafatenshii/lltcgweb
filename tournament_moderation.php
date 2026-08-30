@@ -161,6 +161,76 @@ function tcgApiTournamentReport(array $body): array {
     return tcgApiTournamentTick(array_merge($body, ['tournament_id' => $id]));
 }
 
+/**
+ * Move a legacy Hostinger-file tournament room onto VPS Redis when match writes are cut over.
+ */
+function tcgTournamentMigrateRoomToVps(string $roomId, string $p1Token, string $p2Token): bool {
+    require_once __DIR__ . '/match_bridge.php';
+    $token = trim($p1Token) !== '' ? trim($p1Token) : trim($p2Token);
+    if ($roomId === '' || $token === '') {
+        return false;
+    }
+    $probe = tcgProbeOverflowRankedRoom($roomId, $token);
+    if ($probe === 'live' || $probe === 'finished') {
+        return true;
+    }
+    if (!function_exists('loadGame')) {
+        if (!defined('TCG_API_LIB_ONLY')) {
+            define('TCG_API_LIB_ONLY', true);
+        }
+        require_once __DIR__ . '/api.php';
+    }
+    try {
+        $state = loadGame($roomId);
+    } catch (Throwable $e) {
+        return false;
+    }
+    if (!is_array($state) || ($state['mode'] ?? '') !== 'tournament') {
+        return false;
+    }
+    if (!isset($state['tournament']) || !is_array($state['tournament'])) {
+        $state['tournament'] = [];
+    }
+    $state['tournament']['match_api'] = 'overflow';
+    return tcgSeedRankedRoomToVps($state);
+}
+
+/** @param array<string,mixed> $body */
+function tcgApiTournamentApplyResult(array $body): array {
+    require_once __DIR__ . '/match_bridge.php';
+    tcgRequireInternalMatchSecret();
+    require_once __DIR__ . '/tournament_tick.php';
+
+    $matchId = strtoupper(trim((string)($body['match_id'] ?? '')));
+    $roomId = strtoupper(trim((string)($body['room_id'] ?? '')));
+    $winnerDid = trim((string)($body['winner_discord_id'] ?? ''));
+    $reason = trim((string)($body['end_reason'] ?? 'game')) ?: 'game';
+
+    if ($matchId === '' && $roomId !== '') {
+        $stmt = tcgDb()->prepare(
+            'SELECT id FROM tcg_tournament_matches WHERE room_id = ? AND status IN ("ready","live","done") LIMIT 1'
+        );
+        $stmt->execute([$roomId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $matchId = $row ? (string)$row['id'] : '';
+    }
+    if ($matchId === '' || $winnerDid === '') {
+        throw new Exception('match_id and winner_discord_id required', 400);
+    }
+
+    tcgTournamentRecordGameResult($matchId, $winnerDid, $reason);
+
+    $stmt = tcgDb()->prepare('SELECT tournament_id FROM tcg_tournament_matches WHERE id = ?');
+    $stmt->execute([$matchId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $tid = $row ? (string)($row['tournament_id'] ?? '') : '';
+    if ($tid !== '') {
+        tcgTournamentAdvanceCompletedRounds($tid);
+        tcgTournamentTryFinish($tid);
+    }
+    return ['success' => true];
+}
+
 /** @param array<string,mixed> $body */
 function tcgApiTournamentJoinMatch(array $body): array {
     $uid = tcgRequireAuthUser($body);
@@ -189,6 +259,11 @@ function tcgApiTournamentJoinMatch(array $body): array {
             'UPDATE tcg_tournament_matches SET status = "live", updated_at = ? WHERE id = ? AND status = "ready"'
         )->execute([time(), (string)$m['id']]);
     }
+    tcgTournamentMigrateRoomToVps(
+        (string)$m['room_id'],
+        (string)($m['p1_token'] ?? ''),
+        (string)($m['p2_token'] ?? '')
+    );
     return [
         'success' => true,
         'room_id' => (string)$m['room_id'],
@@ -196,7 +271,7 @@ function tcgApiTournamentJoinMatch(array $body): array {
         'player_id' => $isP1 ? 'p1' : 'p2',
         'match_id' => (string)$m['id'],
         'mode' => 'tournament',
-        'match_api' => 'local',
+        'match_api' => 'overflow',
     ];
 }
 
@@ -220,12 +295,17 @@ function tcgGetActiveTournamentGame(string $discordId): ?array {
         return null;
     }
     $isP1 = (string)($m['p1_discord_id'] ?? '') === $discordId;
+    tcgTournamentMigrateRoomToVps(
+        (string)$m['room_id'],
+        (string)($m['p1_token'] ?? ''),
+        (string)($m['p2_token'] ?? '')
+    );
     return [
         'room_id' => (string)$m['room_id'],
         'player_token' => $isP1 ? (string)($m['p1_token'] ?? '') : (string)($m['p2_token'] ?? ''),
         'player_id' => $isP1 ? 'p1' : 'p2',
         'mode' => 'tournament',
-        'match_api' => 'local',
+        'match_api' => 'overflow',
         'tournament_id' => (string)$m['tournament_id'],
         'match_id' => (string)$m['id'],
         'game_mode' => TCG_GAME_MODE_STANDARD,

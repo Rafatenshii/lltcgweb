@@ -5998,9 +5998,7 @@ async function runReconnectQueue() {
             rankedEmptyConfirmed = false;
             // Real server match found — show reconnect UI before joining.
             updateReconnectBanner(attempt);
-            const rankedOnOverflow = (active.mode === 'tournament')
-              ? false
-              : ((active.match_api || 'overflow') !== 'hostinger');
+            const rankedOnOverflow = (active.match_api || 'overflow') !== 'hostinger';
             if (await reconnectToGame({
               roomId: active.room_id,
               token: active.player_token,
@@ -6010,8 +6008,6 @@ async function runReconnectQueue() {
               screen: 'game',
               mode: active.mode || 'ranked',
               match_api: rankedOnOverflow ? 'overflow' : 'hostinger',
-              // New ranked rooms are VPS Redis; legacy drain rows may still be Hostinger files.
-              // Tournament local rooms use file/Redis GameStore on the account host.
               apiOrigin: rankedOnOverflow ? 'overflow' : 'hostinger',
             }, {
               hostingerOnly: !rankedOnOverflow,
@@ -14471,7 +14467,7 @@ async function enterRankedMatch(st) {
   startPoll();
 }
 
-/** Local tournament seat — GameStore on account host (not VPS overflow). */
+/** Tournament match — VPS Redis when match-primary is on (same as ranked). */
 async function enterTournamentMatch(st) {
   if (!st?.room_id || !st?.player_token) {
     const readyMsg = (typeof LLTCG_I18N !== 'undefined' && LLTCG_I18N.t)
@@ -14484,7 +14480,7 @@ async function enterTournamentMatch(st) {
   }
   try { stopPoll(); } catch (e) { /* ignore */ }
   if (typeof tcgLockApiOrigin === 'function') {
-    tcgLockApiOrigin('hostinger');
+    tcgLockApiOrigin('overflow');
   }
   G.roomId = st.room_id;
   G.token = st.player_token;
@@ -14497,12 +14493,12 @@ async function enterTournamentMatch(st) {
 }
 window.tcgEnterTournamentMatch = enterTournamentMatch;
 
-/** Tournament Spec — rooms on Hostinger; lock origin before spectate_join. */
+/** Tournament Spec — rooms on VPS overflow; lock origin before spectate_join. */
 async function spectateTournamentRoom(roomId) {
   const id = String(roomId || '').toUpperCase();
   if (!id) return;
   try {
-    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('hostinger');
+    if (typeof tcgLockApiOrigin === 'function') tcgLockApiOrigin('overflow');
     G._spectateReturnScreen = 'tournament';
     const r = await apiPost('spectate_join', { room_id: id });
     // Default hidden for tournament; open_hands rooms send spectate_hidden_hands:false.

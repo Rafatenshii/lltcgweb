@@ -321,6 +321,100 @@ function tcgSeedRankedRoomToVps(array $state): bool {
 }
 
 /**
+ * Fetch full room state from VPS get_state (Hostinger tick / migration).
+ *
+ * @return array<string,mixed>|null
+ */
+function tcgFetchOverflowRoomState(string $roomId, string $token): ?array {
+    $roomId = strtoupper(preg_replace('/[^A-Z0-9]/', '', $roomId) ?? '');
+    $token = trim($token);
+    if ($roomId === '' || $token === '') {
+        return null;
+    }
+    if (tcgOverflowProbeUnavailable()) {
+        return null;
+    }
+    $url = tcgOverflowMatchApiBase() . '/api.php?action=get_state'
+        . '&room_id=' . rawurlencode($roomId)
+        . '&token=' . rawurlencode($token)
+        . '&seq=0&poll=0&resume=1';
+    $raw = null;
+    $code = 0;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 6,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    } else {
+        $ctx = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $code = (int)$m[1];
+        }
+    }
+    if (!is_string($raw) || $code < 200 || $code >= 500) {
+        tcgNoteOverflowProbeFailure();
+        return null;
+    }
+    tcgNoteOverflowProbeSuccess();
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded) || !empty($decoded['error'])) {
+        return null;
+    }
+    if (empty($decoded['my_id']) && empty($decoded['status'])) {
+        return null;
+    }
+    return $decoded;
+}
+
+/**
+ * @param array<string,mixed> $state
+ */
+function tcgPostTournamentApplyResultToHostinger(array &$state): bool {
+    $meta = is_array($state['tournament'] ?? null) ? $state['tournament'] : [];
+    if (!empty($meta['applied'])) {
+        return true;
+    }
+    $p1 = is_array($state['players']['p1'] ?? null) ? $state['players']['p1'] : [];
+    $p2 = is_array($state['players']['p2'] ?? null) ? $state['players']['p2'] : [];
+    $winnerPid = $state['winner'] ?? null;
+    $winnerDid = '';
+    if ($winnerPid === 'p1') {
+        $winnerDid = (string)($p1['discord_id'] ?? '');
+    } elseif ($winnerPid === 'p2') {
+        $winnerDid = (string)($p2['discord_id'] ?? '');
+    }
+    if ($winnerDid === '') {
+        return false;
+    }
+    $payload = [
+        'room_id' => (string)($state['room_id'] ?? ''),
+        'match_id' => (string)($meta['match_id'] ?? ''),
+        'tournament_id' => (string)($meta['id'] ?? ''),
+        'winner_discord_id' => $winnerDid,
+        'winner' => $winnerPid,
+        'end_reason' => (string)($state['end_reason'] ?? 'game'),
+    ];
+    $res = tcgMatchBridgeHttpPostJson(tcgHostingerAccountActionUrl('tournament_apply_result'), $payload, 30);
+    if (!is_array($res) || empty($res['success'])) {
+        return false;
+    }
+    if (!isset($state['tournament']) || !is_array($state['tournament'])) {
+        $state['tournament'] = [];
+    }
+    $state['tournament']['applied'] = true;
+    return true;
+}
+
+/**
  * @param array<string,mixed> $state
  */
 function tcgPostRankedApplyResultToHostinger(array &$state): bool {
@@ -499,7 +593,7 @@ function tcgProbeOverflowRankedRoom(string $roomId, string $token): string {
     if (($decoded['status'] ?? '') === 'finished') {
         return $memo[$memoKey] = 'finished';
     }
-    if (!empty($decoded['my_id']) || ($decoded['mode'] ?? '') === 'ranked') {
+    if (!empty($decoded['my_id']) || in_array((string)($decoded['mode'] ?? ''), ['ranked', 'tournament'], true)) {
         return $memo[$memoKey] = 'live';
     }
     return $memo[$memoKey] = 'unknown';

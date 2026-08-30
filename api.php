@@ -1308,18 +1308,26 @@ function apiSeedRankedRoom(array $body): array {
         throw new Exception('state.room_id required', 400);
     }
     $state['room_id'] = $roomId;
-    if (($state['mode'] ?? '') !== 'ranked') {
-        throw new Exception('state.mode must be ranked', 400);
+    $mode = (string)($state['mode'] ?? '');
+    if (!in_array($mode, ['ranked', 'tournament'], true)) {
+        throw new Exception('state.mode must be ranked or tournament', 400);
     }
     $p1 = $state['players']['p1'] ?? null;
     $p2 = $state['players']['p2'] ?? null;
     if (!is_array($p1) || !is_array($p2) || empty($p1['token']) || empty($p2['token'])) {
-        throw new Exception('ranked state requires both player tokens', 400);
+        throw new Exception('match state requires both player tokens', 400);
     }
-    if (!isset($state['ranked']) || !is_array($state['ranked'])) {
-        $state['ranked'] = [];
+    if ($mode === 'ranked') {
+        if (!isset($state['ranked']) || !is_array($state['ranked'])) {
+            $state['ranked'] = [];
+        }
+        $state['ranked']['match_api'] = 'overflow';
+    } else {
+        if (!isset($state['tournament']) || !is_array($state['tournament'])) {
+            $state['tournament'] = [];
+        }
+        $state['tournament']['match_api'] = 'overflow';
     }
-    $state['ranked']['match_api'] = 'overflow';
     if (empty($state['seq'])) {
         $state['seq'] = 1;
     }

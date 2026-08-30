@@ -428,6 +428,35 @@ function tcgTournamentEnsureApi(): void {
     require_once __DIR__ . '/api.php';
 }
 
+/**
+ * @param array<string,mixed> $matchRow
+ * @return array<string,mixed>|null
+ */
+function tcgTournamentLoadRoomState(array $matchRow): ?array {
+    $roomId = (string)($matchRow['room_id'] ?? '');
+    if ($roomId === '') {
+        return null;
+    }
+    tcgTournamentEnsureApi();
+    try {
+        $state = loadGame($roomId);
+        if (is_array($state) && ($state['mode'] ?? '') === 'tournament') {
+            return $state;
+        }
+    } catch (Throwable $e) {
+        // fall through to VPS
+    }
+    require_once __DIR__ . '/match_bridge.php';
+    $p1Token = (string)($matchRow['p1_token'] ?? '');
+    $p2Token = (string)($matchRow['p2_token'] ?? '');
+    $token = $p1Token !== '' ? $p1Token : $p2Token;
+    if ($token === '') {
+        return null;
+    }
+    $remote = tcgFetchOverflowRoomState($roomId, $token);
+    return is_array($remote) ? $remote : null;
+}
+
 function tcgTournamentApplyRoomResults(string $tournamentId): void {
     tcgTournamentEnsureApi();
     $matches = tcgTournamentFetchMatches($tournamentId);
@@ -439,7 +468,7 @@ function tcgTournamentApplyRoomResults(string $tournamentId): void {
         if ($roomId === '') {
             continue;
         }
-        $state = loadGame($roomId);
+        $state = tcgTournamentLoadRoomState($m);
         if (!$state || ($state['status'] ?? '') !== 'finished') {
             continue;
         }
@@ -467,7 +496,7 @@ function tcgTournamentApplyConnectForfeits(string $tournamentId, int $now): void
             continue;
         }
         $roomId = (string)($m['room_id'] ?? '');
-        $state = $roomId !== '' ? loadGame($roomId) : null;
+        $state = $roomId !== '' ? tcgTournamentLoadRoomState($m) : null;
         $p1Connected = false;
         $p2Connected = false;
         if (is_array($state)) {
@@ -619,7 +648,11 @@ function tcgTournamentCreateRoomPair(
     ], null);
 
     $state['phase_timer_cfg'] = ['enabled' => true, 'duration' => defined('PHASE_TIMER_MAX') ? PHASE_TIMER_MAX : 90];
-    saveGame($roomId, $state);
+    $state['tournament']['match_api'] = 'overflow';
+    require_once __DIR__ . '/match_bridge.php';
+    if (!tcgSeedRankedRoomToVps($state)) {
+        return null;
+    }
 
     $deadline = time() + TCG_TOURNAMENT_CONNECT_SECS;
     tcgDb()->prepare(
@@ -1210,6 +1243,15 @@ function tcgOnTournamentGameFinished(array &$state): void {
     $meta = is_array($state['tournament'] ?? null) ? $state['tournament'] : [];
     $tid = strtoupper(trim((string)($meta['id'] ?? '')));
     if ($tid === '' || !tcgTournamentsEnabled()) {
+        return;
+    }
+    $remoteApply = (($meta['match_api'] ?? '') === 'overflow')
+        || (function_exists('tcgMissionShouldWriteOnHostinger') && tcgMissionShouldWriteOnHostinger());
+    if ($remoteApply) {
+        require_once __DIR__ . '/match_bridge.php';
+        if (!tcgPostTournamentApplyResultToHostinger($state)) {
+            return;
+        }
         return;
     }
     try {
