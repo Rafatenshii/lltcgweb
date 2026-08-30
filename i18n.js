@@ -2837,8 +2837,8 @@
       "noMemberInHand": "手札にメンバーカードがありません",
       "enterNumber0to99": "0〜99の数字を入力してください",
       "noYellMill": "ミルできるエールカードがありません。",
-      "cardNotEligible": "That card is not eligible.",
-      "onePerGroup": "Pick one per group."
+      "cardNotEligible": "そのカードは対象外です。",
+      "onePerGroup": "グループごとに1枚選んでください。"
     },
     "skill": {
       "alreadyUsed": "このターンは使用済み",
@@ -4418,8 +4418,8 @@
       "noMemberInHand": "No hay carta de Miembro en la mano",
       "enterNumber0to99": "Introduce un número del 0 al 99",
       "noYellMill": "No hay cartas Yell para enviar al molino.",
-      "cardNotEligible": "That card is not eligible.",
-      "onePerGroup": "Pick one per group."
+      "cardNotEligible": "Esa carta no es elegible.",
+      "onePerGroup": "Elige una por grupo."
     },
     "skill": {
       "alreadyUsed": "Ya usado este turno",
@@ -6210,8 +6210,8 @@
       "noMemberInHand": "손패에 멤버 카드가 없습니다",
       "enterNumber0to99": "0부터 99 사이의 숫자를 입력하세요",
       "noYellMill": "밀할 Yell 카드가 없습니다.",
-      "cardNotEligible": "That card is not eligible.",
-      "onePerGroup": "Pick one per group."
+      "cardNotEligible": "해당 카드는 대상이 아닙니다.",
+      "onePerGroup": "그룹당 하나씩 선택하세요."
     },
     "skill": {
       "alreadyUsed": "이번 턴에 이미 사용함",
@@ -8016,8 +8016,8 @@
       "noMemberInHand": "手牌中没有成员卡",
       "enterNumber0to99": "请输入 0 到 99 的数字",
       "noYellMill": "没有可送入磨牌区的Yell卡。",
-      "cardNotEligible": "That card is not eligible.",
-      "onePerGroup": "Pick one per group."
+      "cardNotEligible": "该卡不符合条件。",
+      "onePerGroup": "每个团体选择一张。"
     },
     "skill": {
       "alreadyUsed": "本回合已使用",
@@ -9812,8 +9812,8 @@
       "noMemberInHand": "ไม่มีการ์ดสมาชิกในมือ",
       "enterNumber0to99": "ใส่ตัวเลข 0 ถึง 99",
       "noYellMill": "ไม่มีการ์ด Yell ที่จะมิลได้",
-      "cardNotEligible": "That card is not eligible.",
-      "onePerGroup": "Pick one per group."
+      "cardNotEligible": "การ์ดนี้ไม่เข้าเงื่อนไข",
+      "onePerGroup": "เลือกอย่างละหนึ่งต่อกลุ่ม"
     },
     "skill": {
       "alreadyUsed": "ใช้ไปแล้วในเทิร์นนี้",
