@@ -28430,6 +28430,12 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
         bonus += Number(ab.amount ?? 0);
       }
     }
+    if (type === 'blade_if_solo_stage') {
+      // Mirror hsApplySoloStageBlade — Waited Members still occupy Stage.
+      if (tcgClientCountStageMembers(p) <= 1) {
+        bonus += Number(ab.amount ?? 2);
+      }
+    }
     if (type === 'lose_blade_if_solo_stage') {
       if (tcgClientCountStageMembers(p) <= 1) {
         bonus -= Number(ab.amount ?? 1);
