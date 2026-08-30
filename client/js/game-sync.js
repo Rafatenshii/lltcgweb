@@ -349,10 +349,13 @@
     return cpuHumanOwnsInput() ? 1100 : 280;
   }
 
-  function getStateUrl(extraQs) {
+  function getStateUrl(extraQs, sinceSeqOverride) {
+    const since = (sinceSeqOverride != null && Number.isFinite(Number(sinceSeqOverride)))
+      ? Number(sinceSeqOverride)
+      : (G.lastSeq ?? 0);
     let url = `${gameApiBase()}?action=get_state&room_id=${encodeURIComponent(G.roomId)}`
-      + `&token=${encodeURIComponent(G.token)}&seq=${encodeURIComponent(String(G.lastSeq ?? 0))}`
-      + `&since_seq=${encodeURIComponent(String(G.lastSeq ?? 0))}&poll=0`;
+      + `&token=${encodeURIComponent(G.token)}&seq=${encodeURIComponent(String(since))}`
+      + `&since_seq=${encodeURIComponent(String(since))}&poll=0`;
     if (extraQs) url += extraQs;
     return url;
   }
@@ -808,15 +811,41 @@
         // since_seq=lastSeq fetch returns unchanged and the board stays stale forever.
         const boardSeq = G.gameState?.seq ?? 0;
         const last = G.lastSeq ?? 0;
-        if (force && boardSeq < last) {
-          TCG_DEBUG.warn('poll', 'force pull: rewind since_seq to board', { boardSeq, last });
-          G.lastSeq = boardSeq;
+        // Force catch-up: query from the painted board seq (not lastSeq), so an
+        // early lastSeq bump cannot make the server answer "unchanged".
+        let sinceForFetch = last;
+        if (force) {
+          sinceForFetch = Math.min(boardSeq, last);
+          if (boardSeq < last) {
+            TCG_DEBUG.warn('poll', 'force pull: rewind since_seq to board', { boardSeq, last });
+            G.lastSeq = boardSeq;
+          }
         }
         const forceQs = force ? '&force=1' : '';
-        const r = await fetch(getStateUrl(forceQs));
+        const r = await fetch(getStateUrl(forceQs, sinceForFetch));
         const d = await parseGameApiResponse(r);
         if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
         if (isUnchangedStatePayload(d)) {
+          // force=1 should not short-circuit on the server; if it still does and
+          // the painted board is behind the ack seq, hard-rewind and retry once.
+          const reported = Number(d.seq);
+          if (force && Number.isFinite(reported) && boardSeq < reported) {
+            TCG_DEBUG.warn('poll', 'force pull unchanged while board behind — hard rewind', {
+              boardSeq, last: G.lastSeq, reported,
+            });
+            G.lastSeq = boardSeq;
+            const r2 = await fetch(getStateUrl('&force=1', Math.max(0, boardSeq - 1)));
+            const d2 = await parseGameApiResponse(r2);
+            if (!pollResponseStillCurrent(pollEpoch, pollRoomId)) return;
+            if (!isUnchangedStatePayload(d2)) {
+              if (force && d2.status === 'finished') {
+                G._pendingStateQueue = (G._pendingStateQueue || []).filter(st => (st.seq ?? 0) > (d2.seq ?? 0));
+              }
+              if (G._pollFastUntil && (d2.seq ?? 0) > (G.lastSeq ?? 0)) G._pollFastUntil = 0;
+              onState(d2);
+              return;
+            }
+          }
           noteUnchangedSeq(d);
           if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
           return;
@@ -829,6 +858,23 @@
           // Hung presentation can advance lastSeq before committing gameState.
           // Still apply when the board is behind the fetched snapshot.
           if ((d.seq ?? 0) <= (G.gameState.seq ?? 0)) {
+            // Seq matches but own-action catch-up may still need a re-paint
+            // (gameState was assigned without renderGame).
+            if (opts.actionEpoch && typeof renderGame === 'function') {
+              TCG_DEBUG.warn('poll', 'force pull: re-paint board at matched seq', {
+                seq: d.seq, phase: d.phase,
+              });
+              G.gameState = d;
+              G.lastSeq = Math.max(G.lastSeq ?? 0, d.seq ?? 0);
+              renderGame(d, { skipLog: true });
+              if (G.playerId && typeof updatePhaseActionButton === 'function') {
+                updatePhaseActionButton(d, G.playerId);
+              }
+              if (G.playerId && typeof updateLiveSetButton === 'function') {
+                updateLiveSetButton(d, G.playerId);
+              }
+              return;
+            }
             TCG_DEBUG.logOnce('poll', `force-stale:${d.seq}`, 'skip force pull stale', { incoming: d.seq, last: G.lastSeq });
             if (typeof tryFlushSpectacleRecovery === 'function') tryFlushSpectacleRecovery();
             return;

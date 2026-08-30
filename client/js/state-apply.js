@@ -230,6 +230,16 @@
         }
       }
     }
+    // Same seq already mid-apply (lastSeq not bumped until paint) — do not re-enter.
+    if (G._applyInFlightSeq != null && (s.seq ?? 0) <= G._applyInFlightSeq
+        && (G.gameState?.seq ?? 0) < (s.seq ?? 0)) {
+      enqueuePendingState(s);
+      return;
+    }
+    if (G._applyInFlightSeq != null && (s.seq ?? 0) <= G._applyInFlightSeq
+        && (G.gameState?.seq ?? 0) >= (s.seq ?? 0)) {
+      return;
+    }
     // Spectators use the same queue/apply path as players so LIVE reveal + Performance
     // spectacle can run. Do not force-clear animating / poll hold here.
     if (G.isSpectator) clearPvPWatchdog();
@@ -493,7 +503,11 @@
     ensurePerfSpectacleNotStaleDone(prev, s);
     maybeToastWrFizzleFromLog(newEntries);
 
-    G.lastSeq = s.seq;
+    // Do NOT bump lastSeq here. Advancing it before gameState/render commits made
+    // force get_state answer "unchanged" while the board was still the prior seq
+    // (own-turn actions required a full page refresh). commitServerBoardToUi and
+    // the paint paths below advance lastSeq when the UI actually catches up.
+    G._applyInFlightSeq = Math.max(G._applyInFlightSeq ?? 0, s.seq ?? 0);
     G.playerId = G.isSpectator
       ? ((G.spectatorViewAs === 'p1' || G.spectatorViewAs === 'p2') ? G.spectatorViewAs : (s.view_as || 'p1'))
       : (s.my_id || G.playerId);
@@ -505,6 +519,7 @@
     stashPerfYellRevealCache(s);
     if (s.status === 'waiting') {
       G.gameState = s;
+      G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
       updateWaitingTimerInfo(s.phase_timer_cfg);
       showScr('waiting');
       return;
@@ -590,6 +605,7 @@
     const commitServerBoardToUi = (board) => {
       if (!board) return;
       G.gameState = board;
+      G.lastSeq = Math.max(G.lastSeq ?? 0, board.seq ?? 0);
       renderGame(board, {
         skipLog: true,
         skipPrompt: skipPromptForLive || replayForward,
@@ -805,11 +821,18 @@
       G.animating = true;
       try {
         await playLogSyncedSequence(prev, s, newEntries, G.playerId);
-        if (!G.gameState || (G.gameState.seq ?? 0) < (s.seq ?? 0)) {
+        if (!G.gameState || (G.gameState.seq ?? 0) < (s.seq ?? 0)
+            || G.gameState.phase !== s.phase
+            || G.gameState.active_player !== s.active_player) {
           G.gameState = s;
+          if (typeof renderGame === 'function') {
+            renderGame(s, { skipLog: true });
+          }
         }
+        G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
       } finally {
         G.animating = false;
+        G._applyInFlightSeq = null;
         flushPendingState();
       }
     } else {
@@ -970,6 +993,7 @@
           captureFlightArtClones(moves, G.playerId, animPrev);
           prepareWrPileAnimPending(animPrev, s, moves);
           G.gameState = s;
+          G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
           renderGame(s, { skipHand: deferHand, skipOppHand: deferOppHand });
           // Keep round-scoped departure latches so newer-seq paints cannot invent
           // ghost Live→WR/Success flights after the first owned handoff.
@@ -1140,6 +1164,12 @@
     if (G.tutorialLive && typeof global.TutorialInteractive?.onStateApplied === 'function') {
       global.TutorialInteractive.onStateApplied(G.gameState || s, prev);
     }
+    // If the painted board reached this snapshot, observe its seq; otherwise leave
+    // lastSeq behind so the next force pull cannot short-circuit as unchanged.
+    if ((G.gameState?.seq ?? 0) >= (s.seq ?? 0)) {
+      G.lastSeq = Math.max(G.lastSeq ?? 0, s.seq ?? 0);
+    }
+    if (G._applyInFlightSeq === (s.seq ?? 0)) G._applyInFlightSeq = null;
   };
 
   global.enqueuePendingState = function enqueuePendingState(s) {

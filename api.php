@@ -841,9 +841,10 @@ function getStatePolling(): void {
         }
 
         // Client already has this seq and nothing mutated — skip filter/encode.
-        // force=1 still runs side effects above; if seq did not move, do not
-        // re-encode the full ~200KB snapshot (watchdog / duplicate catch-up).
-        if (!$mutated && $lastSeq > 0 && $lastSeq === $curSeq) {
+        // force=1 must NEVER short-circuit: the client uses it when lastSeq was
+        // advanced before the board painted (own-turn actions). Returning
+        // unchanged there leaves the UI stale until a full page refresh.
+        if (!$forceFull && !$mutated && $lastSeq > 0 && $lastSeq === $curSeq) {
             echo json_encode(['ok' => true, 'unchanged' => true, 'seq' => $curSeq]);
             return;
         }
