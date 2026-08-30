@@ -57,6 +57,39 @@ final class TournamentPhase3Test extends TestCase
         $swiss = tcgTournamentBracketPreview(4, 'swiss');
         $this->assertNotEmpty($swiss);
         $this->assertSame('swiss', $swiss[0]['bracket_side']);
+        $swissPlayoff = array_values(array_filter($swiss, static fn($x) => ($x['bracket_side'] ?? '') === 'winners'));
+        $this->assertCount(1, $swissPlayoff); // ≤8 → final only
+
+        $swiss9 = tcgTournamentBracketPreview(9, 'swiss');
+        $cut9 = array_values(array_filter($swiss9, static fn($x) => ($x['bracket_side'] ?? '') === 'winners'));
+        $this->assertCount(3, $cut9); // 2 semis + final
+    }
+
+    public function testSwissPlayoffSizeByShowedUp(): void
+    {
+        $this->assertSame(2, tcgTournamentSwissPlayoffSize(2));
+        $this->assertSame(2, tcgTournamentSwissPlayoffSize(8));
+        $this->assertSame(4, tcgTournamentSwissPlayoffSize(9));
+        $this->assertSame(4, tcgTournamentSwissPlayoffSize(16));
+    }
+
+    public function testNormalizeKeepsSwissRuntimeFields(): void
+    {
+        $n = tcgTournamentNormalizeSettings([
+            'format' => 'swiss',
+            'swiss_rounds' => 3,
+            'showed_up' => 8,
+            'playoff_size' => 2,
+            'swiss_phase' => 'playoff',
+        ]);
+        $this->assertSame(3, $n['swiss_rounds']);
+        $this->assertSame(8, $n['showed_up']);
+        $this->assertSame(2, $n['playoff_size']);
+        $this->assertSame('playoff', $n['swiss_phase']);
+        $encoded = tcgTournamentEncodeSettings($n);
+        $decoded = tcgTournamentDecodeSettings($encoded);
+        $this->assertSame(3, $decoded['swiss_rounds']);
+        $this->assertSame(2, $decoded['playoff_size']);
     }
 
     public function testRecordsFromMatches(): void
@@ -67,17 +100,41 @@ final class TournamentPhase3Test extends TestCase
                 'winner_discord_id' => 'A',
                 'p1_discord_id' => 'A',
                 'p2_discord_id' => 'B',
+                'bracket_side' => 'swiss',
             ],
             [
                 'status' => 'done',
                 'winner_discord_id' => 'C',
                 'p1_discord_id' => 'C',
                 'p2_discord_id' => 'A',
+                'bracket_side' => 'swiss',
+            ],
+            [
+                'status' => 'done',
+                'winner_discord_id' => 'A',
+                'p1_discord_id' => 'A',
+                'p2_discord_id' => 'C',
+                'bracket_side' => 'winners',
             ],
         ]);
-        $this->assertSame(1, $recs['A']['wins']);
-        $this->assertSame(1, $recs['A']['losses']);
-        $this->assertSame(1, $recs['B']['losses']);
-        $this->assertSame(1, $recs['C']['wins']);
+        $this->assertSame(2, $recs['A']['wins']);
+        $swissOnly = tcgTournamentRecordsFromMatches([
+            [
+                'status' => 'done',
+                'winner_discord_id' => 'A',
+                'p1_discord_id' => 'A',
+                'p2_discord_id' => 'B',
+                'bracket_side' => 'swiss',
+            ],
+            [
+                'status' => 'done',
+                'winner_discord_id' => 'A',
+                'p1_discord_id' => 'A',
+                'p2_discord_id' => 'C',
+                'bracket_side' => 'winners',
+            ],
+        ], 'swiss');
+        $this->assertSame(1, $swissOnly['A']['wins']);
+        $this->assertArrayNotHasKey('C', $swissOnly);
     }
 }

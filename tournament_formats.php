@@ -34,6 +34,11 @@ function tcgTournamentSwissRoundCount(int $playerCount): int {
     return max(3, min(5, $rounds));
 }
 
+/** Top-cut size after Swiss: ≤8 → final (top 2); ≥9 showed up → top 4. */
+function tcgTournamentSwissPlayoffSize(int $showedUp): int {
+    return $showedUp >= 9 ? 4 : 2;
+}
+
 /**
  * Pair players for a Swiss round. Prefer similar records; avoid rematches when possible.
  *
@@ -99,10 +104,13 @@ function tcgTournamentBuildSwissPairings(array $playerIds, array $records, array
  * @param list<array<string,mixed>> $matches
  * @return array<string,array{wins:int,losses:int}>
  */
-function tcgTournamentRecordsFromMatches(array $matches): array {
+function tcgTournamentRecordsFromMatches(array $matches, ?string $sideOnly = null): array {
     $out = [];
     foreach ($matches as $m) {
         if ((string)($m['status'] ?? '') !== 'done') {
+            continue;
+        }
+        if ($sideOnly !== null && (string)($m['bracket_side'] ?? '') !== $sideOnly) {
             continue;
         }
         $w = (string)($m['winner_discord_id'] ?? '');
@@ -129,6 +137,31 @@ function tcgTournamentRecordsFromMatches(array $matches): array {
 }
 
 /**
+ * Sort player ids by Swiss (or overall) record: wins desc, losses asc, then id.
+ *
+ * @param list<string> $playerIds
+ * @param array<string,array{wins:int,losses:int}> $records
+ * @return list<string>
+ */
+function tcgTournamentSortByRecord(array $playerIds, array $records): array {
+    $playerIds = array_values(array_filter(array_map('strval', $playerIds), static fn($id) => $id !== ''));
+    usort($playerIds, static function ($a, $b) use ($records) {
+        $wa = (int)($records[$a]['wins'] ?? 0);
+        $wb = (int)($records[$b]['wins'] ?? 0);
+        if ($wa !== $wb) {
+            return $wb <=> $wa;
+        }
+        $la = (int)($records[$a]['losses'] ?? 0);
+        $lb = (int)($records[$b]['losses'] ?? 0);
+        if ($la !== $lb) {
+            return $la <=> $lb;
+        }
+        return strcmp($a, $b);
+    });
+    return $playerIds;
+}
+
+/**
  * Prior unordered pairs from completed matches (for Swiss rematch avoidance).
  *
  * @param list<array<string,mixed>> $matches
@@ -137,6 +170,10 @@ function tcgTournamentRecordsFromMatches(array $matches): array {
 function tcgTournamentPriorPairsFromMatches(array $matches): array {
     $pairs = [];
     foreach ($matches as $m) {
+        if ((string)($m['bracket_side'] ?? 'swiss') === 'winners') {
+            // Playoff rematches are fine / expected; don't block Swiss pairing.
+            continue;
+        }
         $p1 = (string)($m['p1_discord_id'] ?? '');
         $p2 = (string)($m['p2_discord_id'] ?? '');
         if ($p1 !== '' && $p2 !== '') {
@@ -169,6 +206,34 @@ function tcgTournamentBracketPreview(int $playerCap, string $format = 'single_el
                     'bracket_side' => 'swiss',
                 ];
             }
+        }
+        $cut = tcgTournamentSwissPlayoffSize($n);
+        if ($cut === 2) {
+            $out[] = [
+                'round' => 1,
+                'bracket_slot' => 0,
+                'label' => '',
+                'bracket_side' => 'winners',
+            ];
+        } else {
+            $out[] = [
+                'round' => 1,
+                'bracket_slot' => 0,
+                'label' => '',
+                'bracket_side' => 'winners',
+            ];
+            $out[] = [
+                'round' => 1,
+                'bracket_slot' => 1,
+                'label' => '',
+                'bracket_side' => 'winners',
+            ];
+            $out[] = [
+                'round' => 2,
+                'bracket_slot' => 0,
+                'label' => '',
+                'bracket_side' => 'winners',
+            ];
         }
         return $out;
     }

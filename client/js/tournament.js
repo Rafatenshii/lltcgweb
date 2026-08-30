@@ -1350,7 +1350,9 @@
 
   function formatCaption(format) {
     const f = String(format || 'single_elim');
-    if (f === 'swiss') return t('tournament.formatCaption.swiss', 'Swiss rounds');
+    if (f === 'swiss') {
+      return t('tournament.formatCaption.swiss', 'Swiss → single-elim playoff');
+    }
     if (f === 'double_elim') return t('tournament.formatCaption.doubleElimLives', 'Double elim (2 lives)');
     if (f === 'double_elim_bracket') {
       return t('tournament.formatCaption.doubleElimBracket', 'Double elim (Winners/Losers)');
@@ -1358,9 +1360,10 @@
     return t('tournament.formatCaption.singleElim', 'Single elimination');
   }
 
-  function roundLabel(side, round, slotCount, isPreview) {
+  function roundLabel(side, round, slotCount, isPreview, format) {
     const s = String(side || 'winners');
     const r = Number(round) || 1;
+    const f = String(format || 'single_elim');
     if (s === 'swiss') return t('tournament.round.swiss', 'Swiss · Round {n}', { n: r });
     if (s === 'losers') {
       return slotCount === 1
@@ -1372,7 +1375,10 @@
         ? t('tournament.round.grandFinalReset', 'Grand Final (Reset)')
         : t('tournament.round.grandFinal', 'Grand Final');
     }
-    if (slotCount === 1) return t('tournament.round.winnersFinal', 'Winners Final');
+    if (slotCount === 1) {
+      if (f === 'swiss') return t('tournament.round.final', 'Final');
+      return t('tournament.round.winnersFinal', 'Winners Final');
+    }
     if (slotCount === 2) return t('tournament.round.semifinals', 'Semifinals');
     return t('tournament.round.roundOf', 'Round of {n}', { n: slotCount * 2 });
   }
@@ -1386,11 +1392,13 @@
     return st;
   }
 
-  function bracketSideTitle(side) {
+  function bracketSideTitle(side, format) {
     const s = String(side || 'winners');
+    const f = String(format || 'single_elim');
     if (s === 'losers') return t('tournament.bracket.sideLosers', 'Losers bracket');
     if (s === 'grand_final') return t('tournament.bracket.sideGrandFinal', 'Grand Final');
     if (s === 'swiss') return t('tournament.bracket.sideSwiss', 'Swiss rounds');
+    if (f === 'swiss') return t('tournament.bracket.sidePlayoff', 'Playoff');
     return t('tournament.bracket.sideWinners', 'Winners bracket');
   }
 
@@ -1669,7 +1677,7 @@
       groups[k].items.sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
     });
 
-    const sideOrder = { winners: 0, swiss: 0, losers: 1, grand_final: 2 };
+    const sideOrder = { swiss: 0, winners: 1, losers: 2, grand_final: 3 };
     const sides = [];
     const sideMap = {};
     Object.keys(groups).forEach((k) => {
@@ -1729,13 +1737,13 @@
       const treeClass = useTree ? ' tournament-bracket-side--tree' : '';
       html += '<section class="tournament-bracket-side' + treeClass + '" data-side="'
         + escapeAttr(sideBlock.side) + '">';
-      if (sides.length > 1 || format === 'double_elim_bracket') {
+      if (sides.length > 1 || format === 'double_elim_bracket' || format === 'swiss') {
         html += '<h5 class="tournament-bracket-side-title">'
-          + escapeHtml(bracketSideTitle(sideBlock.side)) + '</h5>';
+          + escapeHtml(bracketSideTitle(sideBlock.side, format)) + '</h5>';
       }
       html += '<div class="tournament-bracket-rounds">';
       sideBlock.rounds.forEach((g) => {
-        const label = g.label || roundLabel(g.side, g.round, g.items.length, isPreview);
+        const label = g.label || roundLabel(g.side, g.round, g.items.length, isPreview, format);
         html += '<div class="tournament-bracket-round" data-side="' + escapeAttr(g.side)
           + '" data-round="' + escapeAttr(String(g.round)) + '">';
         html += '<div class="tournament-bracket-round-label">' + escapeHtml(label) + '</div>';

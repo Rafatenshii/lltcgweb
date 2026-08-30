@@ -146,7 +146,11 @@ function tcgTournamentStartBracket(string $id): bool {
 
     // Persist swiss target rounds / classic DE bracket size for finish checks.
     if ($format === 'swiss') {
-        $settings['swiss_rounds'] = tcgTournamentSwissRoundCount(count($playerIds));
+        $n = count($playerIds);
+        $settings['swiss_rounds'] = tcgTournamentSwissRoundCount($n);
+        $settings['showed_up'] = $n;
+        $settings['playoff_size'] = tcgTournamentSwissPlayoffSize($n);
+        $settings['swiss_phase'] = 'swiss';
         tcgDb()->prepare('UPDATE tcg_tournaments SET settings_json = ?, updated_at = ? WHERE id = ?')
             ->execute([tcgTournamentEncodeSettings($settings), $now, $id]);
     } elseif (tcgTournamentIsClassicDoubleElim($format)) {
@@ -355,7 +359,14 @@ function tcgTournamentFinalizeMatchSeries(array $m, string $winnerDiscordId, arr
 
     if ($loser !== '') {
         if ($format === 'swiss') {
-            // Swiss keeps everyone active until scheduled rounds finish.
+            $side = (string)($m['bracket_side'] ?? 'swiss');
+            // Swiss stage keeps everyone active; playoff (winners) eliminates.
+            if ($side === 'winners') {
+                tcgDb()->prepare(
+                    'UPDATE tcg_tournament_entrants SET status = "eliminated"
+                     WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
+                )->execute([$tournamentId, $loser]);
+            }
         } elseif ($format === 'double_elim') {
             $all = tcgTournamentFetchMatches($tournamentId);
             $records = tcgTournamentRecordsFromMatches($all);
@@ -675,6 +686,9 @@ function tcgTournamentAdvanceCompletedRounds(string $tournamentId): void {
 
     if ($format === 'swiss' || $format === 'double_elim') {
         tcgTournamentAdvanceSwissOrDouble($tournamentId, $format, $settings, $bestOf);
+        if ($format === 'swiss') {
+            tcgTournamentAdvanceSwissPlayoff($tournamentId, $bestOf);
+        }
         tcgTournamentSeedPendingRooms($tournamentId);
         return;
     }
@@ -939,7 +953,8 @@ function tcgTournamentAdvanceClassicDoubleElim(string $tournamentId, array $sett
 }
 
 /**
- * Swiss: fixed round count. Double elim (2 lives): re-pair while 2+ players have &lt;2 losses.
+ * Swiss: fixed round count, then single-elim playoff (top 2 or top 4).
+ * Double elim (2 lives): re-pair while 2+ players have &lt;2 losses.
  *
  * @param array<string,mixed> $settings
  */
@@ -953,6 +968,69 @@ function tcgTournamentAdvanceSwissOrDouble(
     if (!$matches) {
         return;
     }
+
+    if ($format === 'swiss') {
+        // Only Swiss-side rounds drive Swiss re-pair / playoff seed.
+        $swissMatches = array_values(array_filter(
+            $matches,
+            static fn($m) => (string)($m['bracket_side'] ?? 'swiss') === 'swiss'
+        ));
+        if (!$swissMatches) {
+            return;
+        }
+        $maxRound = 0;
+        foreach ($swissMatches as $m) {
+            $maxRound = max($maxRound, (int)$m['round']);
+        }
+        $roundMatches = array_values(array_filter(
+            $swissMatches,
+            static fn($m) => (int)$m['round'] === $maxRound
+        ));
+        if (!$roundMatches) {
+            return;
+        }
+        foreach ($roundMatches as $m) {
+            if ((string)$m['status'] !== 'done' || empty($m['winner_discord_id'])) {
+                return;
+            }
+        }
+        $nextExisting = array_values(array_filter(
+            $swissMatches,
+            static fn($m) => (int)$m['round'] === ($maxRound + 1)
+        ));
+        if ($nextExisting) {
+            return;
+        }
+
+        $entrants = tcgTournamentFetchEntrants($tournamentId);
+        $records = tcgTournamentRecordsFromMatches($swissMatches, 'swiss');
+        $active = [];
+        foreach ($entrants as $e) {
+            if ((string)$e['status'] === 'playing') {
+                $active[] = (string)$e['discord_id'];
+            }
+        }
+        $showedUp = (int)($settings['showed_up'] ?? count($active));
+        $target = (int)($settings['swiss_rounds'] ?? tcgTournamentSwissRoundCount(max(2, $showedUp)));
+        if ($maxRound >= $target) {
+            tcgTournamentSeedSwissPlayoff($tournamentId, $settings, $bestOf, $swissMatches, $entrants);
+            return;
+        }
+
+        $pairings = tcgTournamentBuildSwissPairings(
+            $active,
+            $records,
+            tcgTournamentPriorPairsFromMatches($swissMatches)
+        );
+        $created = time();
+        $nextRound = $maxRound + 1;
+        foreach ($pairings as $slot => $pair) {
+            tcgTournamentInsertMatchRow($tournamentId, $nextRound, (int)$slot, 'swiss', $pair, $bestOf, $created);
+        }
+        return;
+    }
+
+    // double_elim (2 lives) — original path
     $maxRound = 0;
     foreach ($matches as $m) {
         $maxRound = max($maxRound, (int)$m['round']);
@@ -986,24 +1064,15 @@ function tcgTournamentAdvanceSwissOrDouble(
             continue;
         }
         $pid = (string)$e['discord_id'];
-        if ($format === 'double_elim' && (int)($records[$pid]['losses'] ?? 0) >= 2) {
+        if ((int)($records[$pid]['losses'] ?? 0) >= 2) {
             continue;
         }
         $active[] = $pid;
     }
-
-    if ($format === 'swiss') {
-        $target = (int)($settings['swiss_rounds'] ?? tcgTournamentSwissRoundCount(count($active)));
-        if ($maxRound >= $target) {
-            return;
-        }
-    } elseif ($format === 'double_elim') {
-        if (count($active) <= 1) {
-            return;
-        }
+    if (count($active) <= 1) {
+        return;
     }
 
-    $side = $format === 'swiss' ? 'swiss' : 'winners';
     $pairings = tcgTournamentBuildSwissPairings(
         $active,
         $records,
@@ -1012,7 +1081,207 @@ function tcgTournamentAdvanceSwissOrDouble(
     $created = time();
     $nextRound = $maxRound + 1;
     foreach ($pairings as $slot => $pair) {
-        tcgTournamentInsertMatchRow($tournamentId, $nextRound, (int)$slot, $side, $pair, $bestOf, $created);
+        tcgTournamentInsertMatchRow($tournamentId, $nextRound, (int)$slot, 'winners', $pair, $bestOf, $created);
+    }
+}
+
+/**
+ * After Swiss rounds: seed top-2 final or top-4 semis (1v4, 2v3).
+ *
+ * @param array<string,mixed> $settings
+ * @param list<array<string,mixed>> $swissMatches
+ * @param list<array<string,mixed>> $entrants
+ */
+function tcgTournamentSeedSwissPlayoff(
+    string $tournamentId,
+    array $settings,
+    int $bestOf,
+    array $swissMatches,
+    array $entrants
+): void {
+    $all = tcgTournamentFetchMatches($tournamentId);
+    foreach ($all as $m) {
+        if ((string)($m['bracket_side'] ?? '') === 'winners') {
+            return; // already seeded
+        }
+    }
+
+    $records = tcgTournamentRecordsFromMatches($swissMatches, 'swiss');
+    $pool = [];
+    foreach ($entrants as $e) {
+        $st = (string)($e['status'] ?? '');
+        if (in_array($st, ['playing', 'eliminated'], true)) {
+            // Prefer currently playing; include anyone who competed in Swiss.
+            $pool[] = (string)$e['discord_id'];
+        }
+    }
+    // Prefer players still marked playing for the cut.
+    $playing = [];
+    foreach ($entrants as $e) {
+        if ((string)$e['status'] === 'playing') {
+            $playing[] = (string)$e['discord_id'];
+        }
+    }
+    if (count($playing) >= 2) {
+        $pool = $playing;
+    }
+    $ranked = tcgTournamentSortByRecord($pool, $records);
+    if (count($ranked) < 2) {
+        return;
+    }
+
+    $showedUp = (int)($settings['showed_up'] ?? count($ranked));
+    $cut = (int)($settings['playoff_size'] ?? tcgTournamentSwissPlayoffSize($showedUp));
+    if (!in_array($cut, [2, 4], true)) {
+        $cut = tcgTournamentSwissPlayoffSize($showedUp);
+    }
+    $cut = min($cut, count($ranked));
+    if ($cut < 2) {
+        return;
+    }
+    // If we planned top 4 but only 2–3 remain, fall back to top 2 final.
+    if ($cut === 4 && count($ranked) < 4) {
+        $cut = 2;
+    }
+
+    $seeds = array_slice($ranked, 0, $cut);
+    $cutSet = array_fill_keys($seeds, true);
+    foreach ($entrants as $e) {
+        $pid = (string)$e['discord_id'];
+        if ((string)$e['status'] === 'playing' && !isset($cutSet[$pid])) {
+            tcgDb()->prepare(
+                'UPDATE tcg_tournament_entrants SET status = "eliminated"
+                 WHERE tournament_id = ? AND discord_id = ? AND status = "playing"'
+            )->execute([$tournamentId, $pid]);
+        }
+    }
+
+    $created = time();
+    if ($cut === 2) {
+        tcgTournamentInsertMatchRow(
+            $tournamentId,
+            1,
+            0,
+            'winners',
+            ['p1' => $seeds[0], 'p2' => $seeds[1], 'bye' => null],
+            $bestOf,
+            $created
+        );
+    } else {
+        // Semis: 1v4 and 2v3
+        tcgTournamentInsertMatchRow(
+            $tournamentId,
+            1,
+            0,
+            'winners',
+            ['p1' => $seeds[0], 'p2' => $seeds[3], 'bye' => null],
+            $bestOf,
+            $created
+        );
+        tcgTournamentInsertMatchRow(
+            $tournamentId,
+            1,
+            1,
+            'winners',
+            ['p1' => $seeds[1], 'p2' => $seeds[2], 'bye' => null],
+            $bestOf,
+            $created
+        );
+    }
+
+    $settings['swiss_phase'] = 'playoff';
+    $settings['playoff_size'] = $cut;
+    tcgDb()->prepare('UPDATE tcg_tournaments SET settings_json = ?, updated_at = ? WHERE id = ?')
+        ->execute([tcgTournamentEncodeSettings($settings), time(), $tournamentId]);
+}
+
+/** Advance Swiss playoff winners-bracket (semis → final). */
+function tcgTournamentAdvanceSwissPlayoff(string $tournamentId, int $bestOf): void {
+    $matches = tcgTournamentFetchMatches($tournamentId);
+    $playoff = array_values(array_filter(
+        $matches,
+        static fn($m) => (string)($m['bracket_side'] ?? '') === 'winners'
+    ));
+    if (count($playoff) < 2) {
+        // Top-2 final is a single match — nothing to advance.
+        return;
+    }
+    $byRound = [];
+    $maxRound = 1;
+    foreach ($playoff as $m) {
+        $r = (int)$m['round'];
+        $maxRound = max($maxRound, $r);
+        $byRound[$r][] = $m;
+    }
+    for ($r = 1; $r <= $maxRound; $r++) {
+        $roundMatches = $byRound[$r] ?? [];
+        if (!$roundMatches) {
+            continue;
+        }
+        $allDone = true;
+        foreach ($roundMatches as $m) {
+            if ((string)$m['status'] !== 'done' || empty($m['winner_discord_id'])) {
+                $allDone = false;
+                break;
+            }
+        }
+        if (!$allDone || count($roundMatches) === 1) {
+            continue;
+        }
+        $nextRound = $r + 1;
+        $nextExisting = $byRound[$nextRound] ?? [];
+        usort($roundMatches, static fn($a, $b) => (int)$a['bracket_slot'] <=> (int)$b['bracket_slot']);
+        $winners = [];
+        foreach ($roundMatches as $m) {
+            $winners[] = (string)$m['winner_discord_id'];
+        }
+        $needed = (int)(count($winners) / 2);
+        if ($needed < 1) {
+            continue;
+        }
+        if (count($nextExisting) === 0) {
+            $created = time();
+            for ($i = 0; $i < $needed; $i++) {
+                $wp1 = $winners[$i * 2] ?? null;
+                $wp2 = $winners[$i * 2 + 1] ?? null;
+                tcgTournamentInsertMatchRow(
+                    $tournamentId,
+                    $nextRound,
+                    $i,
+                    'winners',
+                    ['p1' => $wp1, 'p2' => $wp2, 'bye' => null],
+                    $bestOf,
+                    $created
+                );
+            }
+            $all = tcgTournamentFetchMatches($tournamentId);
+            $byRound = [];
+            $maxRound = $nextRound;
+            foreach ($all as $mm) {
+                if ((string)($mm['bracket_side'] ?? '') !== 'winners') {
+                    continue;
+                }
+                $rr = (int)$mm['round'];
+                $byRound[$rr][] = $mm;
+                $maxRound = max($maxRound, $rr);
+            }
+        } else {
+            usort($nextExisting, static fn($a, $b) => (int)$a['bracket_slot'] <=> (int)$b['bracket_slot']);
+            for ($i = 0; $i < $needed; $i++) {
+                $wp1 = $winners[$i * 2] ?? null;
+                $wp2 = $winners[$i * 2 + 1] ?? null;
+                $nm = $nextExisting[$i] ?? null;
+                if (!$nm) {
+                    continue;
+                }
+                if ((string)($nm['status'] ?? '') === 'pending'
+                    && (empty($nm['p1_discord_id']) || empty($nm['p2_discord_id']))) {
+                    tcgDb()->prepare(
+                        'UPDATE tcg_tournament_matches SET p1_discord_id = ?, p2_discord_id = ?, updated_at = ? WHERE id = ?'
+                    )->execute([$wp1, $wp2, time(), $nm['id']]);
+                }
+            }
+        }
     }
 }
 
@@ -1030,33 +1299,59 @@ function tcgTournamentTryFinish(string $tournamentId): bool {
 
     $places = [];
     if ($format === 'swiss') {
-        $maxRound = 0;
-        foreach ($matches as $m) {
-            $maxRound = max($maxRound, (int)$m['round']);
+        $playoff = array_values(array_filter(
+            $matches,
+            static fn($m) => (string)($m['bracket_side'] ?? '') === 'winners'
+        ));
+        if (!$playoff) {
+            return false; // Swiss not cut yet
         }
-        $target = (int)($settings['swiss_rounds'] ?? $maxRound);
-        if ($maxRound < $target) {
+        $maxPr = 0;
+        foreach ($playoff as $m) {
+            $maxPr = max($maxPr, (int)$m['round']);
+        }
+        $finals = array_values(array_filter(
+            $playoff,
+            static fn($m) => (int)$m['round'] === $maxPr
+        ));
+        if (count($finals) !== 1) {
             return false;
         }
-        foreach ($matches as $m) {
-            if ((int)$m['round'] === $maxRound
-                && ((string)$m['status'] !== 'done' || empty($m['winner_discord_id']))) {
-                return false;
+        $final = $finals[0];
+        if ((string)$final['status'] !== 'done' || empty($final['winner_discord_id'])) {
+            return false;
+        }
+        $winner = (string)$final['winner_discord_id'];
+        $p1 = (string)($final['p1_discord_id'] ?? '');
+        $p2 = (string)($final['p2_discord_id'] ?? '');
+        $runner = ($winner === $p1) ? $p2 : (($winner === $p2) ? $p1 : '');
+        if ($winner !== '') {
+            $places[] = $winner;
+        }
+        if ($runner !== '') {
+            $places[] = $runner;
+        }
+        // 3rd: best Swiss record among playoff semi losers (top-4 cut).
+        if ((int)($settings['playoff_size'] ?? 0) >= 4) {
+            $swissRec = tcgTournamentRecordsFromMatches($matches, 'swiss');
+            $semiLosers = [];
+            foreach ($playoff as $m) {
+                if ((int)$m['round'] !== 1 || (string)$m['status'] !== 'done') {
+                    continue;
+                }
+                $w = (string)($m['winner_discord_id'] ?? '');
+                $a = (string)($m['p1_discord_id'] ?? '');
+                $b = (string)($m['p2_discord_id'] ?? '');
+                $l = ($w === $a) ? $b : (($w === $b) ? $a : '');
+                if ($l !== '' && !in_array($l, $places, true)) {
+                    $semiLosers[] = $l;
+                }
+            }
+            $semiLosers = tcgTournamentSortByRecord($semiLosers, $swissRec);
+            if (!empty($semiLosers)) {
+                $places[] = $semiLosers[0];
             }
         }
-        $records = tcgTournamentRecordsFromMatches($matches);
-        $ids = array_keys($records);
-        usort($ids, static function ($a, $b) use ($records) {
-            $wa = (int)($records[$a]['wins'] ?? 0);
-            $wb = (int)($records[$b]['wins'] ?? 0);
-            if ($wa !== $wb) {
-                return $wb <=> $wa;
-            }
-            $la = (int)($records[$a]['losses'] ?? 0);
-            $lb = (int)($records[$b]['losses'] ?? 0);
-            return $la <=> $lb;
-        });
-        $places = array_slice($ids, 0, 3);
     } elseif ($format === 'double_elim') {
         foreach ($matches as $m) {
             if ((string)$m['status'] !== 'done') {

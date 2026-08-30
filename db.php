@@ -809,6 +809,7 @@ function tcgDbEnsureTournamentSchema(PDO $db): void {
         tournament_id TEXT NOT NULL,
         round INTEGER NOT NULL,
         bracket_slot INTEGER NOT NULL,
+        bracket_side TEXT NOT NULL DEFAULT \'winners\',
         p1_discord_id TEXT,
         p2_discord_id TEXT,
         room_id TEXT,
@@ -817,12 +818,16 @@ function tcgDbEnsureTournamentSchema(PDO $db): void {
         status TEXT NOT NULL DEFAULT \'pending\',
         winner_discord_id TEXT,
         connect_deadline_at INTEGER,
+        meta_json TEXT NOT NULL DEFAULT \'{}\',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (tournament_id) REFERENCES tcg_tournaments(id) ON DELETE CASCADE
     )');
-    $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_tournament_matches_slot
-        ON tcg_tournament_matches(tournament_id, round, bracket_slot)');
+    tcgDbEnsureColumn($db, 'tcg_tournament_matches', 'bracket_side', "TEXT NOT NULL DEFAULT 'winners'");
+    tcgDbEnsureColumn($db, 'tcg_tournament_matches', 'meta_json', "TEXT NOT NULL DEFAULT '{}'");
+    $db->exec('DROP INDEX IF EXISTS idx_tcg_tournament_matches_slot');
+    $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tcg_tournament_matches_slot3
+        ON tcg_tournament_matches(tournament_id, bracket_side, round, bracket_slot)');
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournament_matches_room
         ON tcg_tournament_matches(room_id)');
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_ledger (

@@ -151,7 +151,7 @@ function tcgTournamentNormalizeSettings(array $settings, ?string $gameMode = nul
     if ($bestOf !== 3) {
         $bestOf = 1;
     }
-    return [
+    $out = [
         'connect_secs' => max(30, (int)($settings['connect_secs'] ?? TCG_TOURNAMENT_CONNECT_SECS)),
         'fog' => $fog,
         'stream_delay_secs' => $delay,
@@ -159,6 +159,25 @@ function tcgTournamentNormalizeSettings(array $settings, ?string $gameMode = nul
         'format' => $format,
         'best_of' => $bestOf,
     ];
+    // Runtime fields set at bracket start / advance — must survive encode/decode.
+    if (array_key_exists('swiss_rounds', $settings)) {
+        $out['swiss_rounds'] = max(1, min(8, (int)$settings['swiss_rounds']));
+    }
+    if (array_key_exists('showed_up', $settings)) {
+        $out['showed_up'] = max(0, (int)$settings['showed_up']);
+    }
+    if (array_key_exists('playoff_size', $settings)) {
+        $ps = (int)$settings['playoff_size'];
+        $out['playoff_size'] = in_array($ps, [2, 4], true) ? $ps : 2;
+    }
+    if (array_key_exists('swiss_phase', $settings)) {
+        $phase = (string)$settings['swiss_phase'];
+        $out['swiss_phase'] = in_array($phase, ['swiss', 'playoff'], true) ? $phase : 'swiss';
+    }
+    if (array_key_exists('bracket_size', $settings)) {
+        $out['bracket_size'] = max(2, (int)$settings['bracket_size']);
+    }
+    return $out;
 }
 
 /**

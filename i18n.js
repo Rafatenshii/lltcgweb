@@ -1727,10 +1727,11 @@
         "sideWinners": "Winners bracket",
         "sideLosers": "Losers bracket",
         "sideGrandFinal": "Grand Final",
-        "sideSwiss": "Swiss rounds"
+        "sideSwiss": "Swiss rounds",
+        "sidePlayoff": "Playoff"
       },
       "formatCaption": {
-        "swiss": "Swiss rounds",
+        "swiss": "Swiss → single-elim playoff",
         "doubleElimLives": "Double elim (2 lives)",
         "doubleElimBracket": "Double elim (Winners/Losers)",
         "singleElim": "Single elimination"
@@ -1742,6 +1743,7 @@
         "grandFinal": "Grand Final",
         "grandFinalReset": "Grand Final (Reset)",
         "winnersFinal": "Winners Final",
+        "final": "Final",
         "semifinals": "Semifinals",
         "roundOf": "Round of {n}"
       },
@@ -3606,10 +3608,11 @@
         "sideWinners": "勝者ブラケット",
         "sideLosers": "敗者ブラケット",
         "sideGrandFinal": "グランドファイナル",
-        "sideSwiss": "スイスラウンド"
+        "sideSwiss": "スイスラウンド",
+        "sidePlayoff": "プレーオフ"
       },
       "formatCaption": {
-        "swiss": "スイスラウンド",
+        "swiss": "スイス → シングルエリム・プレーオフ",
         "doubleElimLives": "ダブルエリム（2ライフ）",
         "doubleElimBracket": "ダブルエリム（勝者／敗者）",
         "singleElim": "シングルエリミネーション"
@@ -3621,6 +3624,7 @@
         "grandFinal": "グランドファイナル",
         "grandFinalReset": "グランドファイナル（リセット）",
         "winnersFinal": "勝者決勝",
+        "final": "決勝",
         "semifinals": "準決勝",
         "roundOf": "{n}人ラウンド"
       },
@@ -5369,10 +5373,11 @@
         "sideWinners": "Cuadro de ganadores",
         "sideLosers": "Cuadro de perdedores",
         "sideGrandFinal": "Gran final",
-        "sideSwiss": "Rondas suizas"
+        "sideSwiss": "Rondas suizas",
+        "sidePlayoff": "Playoff"
       },
       "formatCaption": {
-        "swiss": "Rondas suizas",
+        "swiss": "Suizo → playoff eliminación simple",
         "doubleElimLives": "Doble elim (2 vidas)",
         "doubleElimBracket": "Doble elim (Ganadores/Perdedores)",
         "singleElim": "Eliminación simple"
@@ -5384,6 +5389,7 @@
         "grandFinal": "Gran final",
         "grandFinalReset": "Gran final (reset)",
         "winnersFinal": "Final de ganadores",
+        "final": "Final",
         "semifinals": "Semifinales",
         "roundOf": "Ronda de {n}"
       },
@@ -7207,10 +7213,11 @@
         "sideWinners": "승자 브래킷",
         "sideLosers": "패자 브래킷",
         "sideGrandFinal": "그랜드 파이널",
-        "sideSwiss": "스위스 라운드"
+        "sideSwiss": "스위스 라운드",
+        "sidePlayoff": "플레이오프"
       },
       "formatCaption": {
-        "swiss": "스위스 라운드",
+        "swiss": "스위스 → 싱글 엘리미네이션 플레이오프",
         "doubleElimLives": "더블 엘림 (2라이프)",
         "doubleElimBracket": "더블 엘림 (승자/패자)",
         "singleElim": "싱글 엘리미네이션"
@@ -7222,6 +7229,7 @@
         "grandFinal": "그랜드 파이널",
         "grandFinalReset": "그랜드 파이널 (리셋)",
         "winnersFinal": "승자 결승",
+        "final": "결승",
         "semifinals": "준결승",
         "roundOf": "{n}강"
       },
@@ -9045,10 +9053,11 @@
         "sideWinners": "胜者组",
         "sideLosers": "败者组",
         "sideGrandFinal": "总决赛",
-        "sideSwiss": "瑞士轮"
+        "sideSwiss": "瑞士轮",
+        "sidePlayoff": "附加赛"
       },
       "formatCaption": {
-        "swiss": "瑞士轮",
+        "swiss": "瑞士轮 → 单败附加赛",
         "doubleElimLives": "双败（2命）",
         "doubleElimBracket": "双败（胜者/败者）",
         "singleElim": "单败淘汰"
@@ -9060,6 +9069,7 @@
         "grandFinal": "总决赛",
         "grandFinalReset": "总决赛（重置）",
         "winnersFinal": "胜者决赛",
+        "final": "决赛",
         "semifinals": "半决赛",
         "roundOf": "{n}强"
       },
@@ -10859,10 +10869,11 @@
         "sideWinners": "สายผู้ชนะ",
         "sideLosers": "สายผู้แพ้",
         "sideGrandFinal": "รอบชิงชนะเลิศ",
-        "sideSwiss": "รอบสวิส"
+        "sideSwiss": "รอบสวิส",
+        "sidePlayoff": "เพลย์ออฟ"
       },
       "formatCaption": {
-        "swiss": "รอบสวิส",
+        "swiss": "สวิส → เพลย์ออฟคัดออกเดี่ยว",
         "doubleElimLives": "คัดออกคู่ (2 ชีวิต)",
         "doubleElimBracket": "คัดออกคู่ (ฝ่ายชนะ/แพ้)",
         "singleElim": "คัดออกเดี่ยว"
@@ -10874,6 +10885,7 @@
         "grandFinal": "ชิงชนะเลิศ",
         "grandFinalReset": "ชิงชนะเลิศ (รีเซ็ต)",
         "winnersFinal": "ชิงฝ่ายชนะ",
+        "final": "ชิงชนะเลิศ",
         "semifinals": "รอบรองชนะเลิศ",
         "roundOf": "รอบ {n} คน"
       },
