@@ -33613,11 +33613,12 @@ async function sendAct(type,data){
   }
   try {
     const res = await apiPost('action',{room_id:G.roomId,token:G.token,type,data}, {
-      silent: type === 'send_stamp' || phaseAdvance,
+      silent: type === 'send_stamp' || phaseAdvance || boardCatchup,
     });
-    // Duplicate resolve_prompt that the server treated as a no-op must not latch
-    // the client into a permanently unclickable prompt.
-    if (type === 'resolve_prompt' && res && res.noop) {
+    // Duplicate resolve_prompt / LIVE lock that the server treated as a no-op must not
+    // latch the client into a permanently unclickable prompt / End LIVE button.
+    if ((type === 'resolve_prompt' || type === 'end_live_set' || type === 'set_live_cards')
+        && res && res.noop) {
       G._resolvePromptSentKey = null;
       G._lastResolvedPromptKey = null;
       G._promptSubmitKey = null;
@@ -33691,13 +33692,19 @@ async function sendAct(type,data){
     const msg = e.message || '';
     const status = e.httpStatus || 0;
     const staleTurn = phaseAdvance && /not your turn/i.test(msg);
-    const alreadyLiveLocked = type === 'end_live_set' && /already locked/i.test(msg);
-    if (staleTurn || alreadyLiveLocked) {
+    const alreadyLiveLocked = (type === 'end_live_set' || type === 'set_live_cards')
+      && /already locked/i.test(msg);
+    const leftLivePhase = (type === 'end_live_set' || type === 'set_live_cards')
+      && /not in live phase/i.test(msg);
+    if (staleTurn || alreadyLiveLocked || leftLivePhase) {
       // First click already advanced the server; the board never caught up.
       if (typeof releaseStuckPresentation === 'function') releaseStuckPresentation();
       try { if (G.polling) await pullLatestState(true, { silent: true, actionEpoch: true }); } catch (_) {}
       flushPendingState();
-      if (G.gameState && G.playerId) updatePhaseActionButton(G.gameState, G.playerId);
+      if (G.gameState && G.playerId) {
+        updatePhaseActionButton(G.gameState, G.playerId);
+        if (typeof updateLiveSetButton === 'function') updateLiveSetButton(G.gameState, G.playerId);
+      }
       return;
     }
     if (phaseAdvance && typeof reportApiError === 'function') {

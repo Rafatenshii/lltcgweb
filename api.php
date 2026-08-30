@@ -997,9 +997,9 @@ function handleAction(array $body): array {
         $prevSeq = intval($state['seq'] ?? 0);
         $state = captureReplayBaselineIfNeeded($state);
         $state = applyAction($state, $playerId, $type, $data);
-        // Stale/duplicate resolve_prompt: leave game state untouched (no replay
-        // record, no save) so the client just resyncs to the current seq.
-        if (!empty($state['_resolve_prompt_noop'])) {
+        // Stale/duplicate resolve_prompt / LIVE lock-in: leave game state untouched
+        // (no replay record, no save) so the client just resyncs to the current seq.
+        if (!empty($state['_resolve_prompt_noop']) || !empty($state['_live_set_noop'])) {
             return ['ok' => true, 'seq' => $state['seq'], 'noop' => true];
         }
         if (intval($state['seq'] ?? 0) > $prevSeq
@@ -2080,14 +2080,17 @@ function liveSetPhaseLog(array $state, string $pid): string {
 
 function actionSetLiveCards(array $state, string $pid, array $data): array {
     if (($state['phase'] ?? '') !== 'live_set') {
-        throw new Exception('Not in LIVE Phase');
+        // Client board lag after End LIVE / Performance advance — treat as already done.
+        $state['_live_set_noop'] = true;
+        return $state;
     }
     ensureLiveSetReadyState($state);
     if (currentLiveSetPlayer($state) !== $pid) {
         throw new Exception('Not your turn');
     }
     if (!empty($state['live_ready'][$pid])) {
-        throw new Exception('Already locked in LIVE selection');
+        $state['_live_set_noop'] = true;
+        return $state;
     }
 
     $cardIds = $data['card_ids'] ?? [];
@@ -2191,7 +2194,9 @@ function actionSetLiveCards(array $state, string $pid, array $data): array {
 
 function actionEndLiveSet(array $state, string $pid): array {
     if (($state['phase'] ?? '') !== 'live_set') {
-        throw new Exception('Not in LIVE Phase');
+        // Double-click / heal / stale board after the first lock already advanced.
+        $state['_live_set_noop'] = true;
+        return $state;
     }
     ensureLiveSetReadyState($state);
     if (currentLiveSetPlayer($state) !== $pid) {
@@ -2199,7 +2204,8 @@ function actionEndLiveSet(array $state, string $pid): array {
     }
     assertNoPendingPromptForPhaseAdvance($state);
     if (!empty($state['live_ready'][$pid])) {
-        throw new Exception('Already locked in LIVE selection');
+        $state['_live_set_noop'] = true;
+        return $state;
     }
 
     $name = $state['players'][$pid]['name'];
