@@ -129,4 +129,62 @@ final class TournamentLifecycleTest extends TestCase
         $this->assertSame('checkin', (string)($row['status'] ?? ''));
         $this->assertContains('entered_checkin', $out['events'] ?? []);
     }
+
+    public function testPayoutPersistsResultsAndProfileSummary(): void
+    {
+        $suffix = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        $host = 'tt_host3_' . $suffix;
+        $p1 = 'tt_win_' . $suffix;
+        $p2 = 'tt_sec_' . $suffix;
+        $tid = 'TR' . $suffix;
+        $this->tournamentIds[] = $tid;
+        $this->ensureUser($host, 5000);
+        $this->ensureUser($p1, 1000);
+        $this->ensureUser($p2, 1000);
+
+        $db = tcgDb();
+        $now = time();
+        tcgTournamentEnsureResultsColumn();
+        $db->prepare(
+            'INSERT INTO tcg_tournaments
+             (id, host_discord_id, title, status, game_mode, start_at, checkin_mins,
+              min_players, max_players, entry_fee_coins, prize_pool_coins, settings_json, created_at, updated_at)
+             VALUES (?, ?, "Finals Night", "running", "standard", ?, 10, 2, 8, 0, 1000, "{}", ?, ?)'
+        )->execute([$tid, $host, $now - 60, $now, $now]);
+
+        foreach ([$p1, $p2] as $pid) {
+            $db->prepare(
+                'INSERT INTO tcg_tournament_entrants
+                 (tournament_id, discord_id, status, seed, deck_snapshot, paid_coins, registered_at, checked_in_at)
+                 VALUES (?, ?, "playing", NULL, "{}", 0, ?, ?)'
+            )->execute([$tid, $pid, $now, $now]);
+        }
+
+        $row = tcgTournamentFetch($tid);
+        $this->assertNotNull($row);
+        $ok = tcgTournamentPayoutAndFinish($tid, $row, [$p1, $p2]);
+        $this->assertTrue($ok);
+
+        $finished = tcgTournamentFetch($tid);
+        $this->assertSame('finished', (string)($finished['status'] ?? ''));
+        $this->assertSame(0, (int)($finished['prize_pool_coins'] ?? -1));
+        $results = tcgTournamentResultsForRow($finished);
+        $this->assertNotNull($results);
+        $this->assertSame(1000, (int)$results['prize_pool_total']);
+        $this->assertSame($p1, (string)($results['winner']['discord_id'] ?? ''));
+        $this->assertSame(700, (int)($results['winner']['coins'] ?? 0));
+        $this->assertCount(2, $results['places']);
+        $this->assertSame(300, (int)$results['places'][1]['coins']);
+
+        $pub = tcgTournamentPublicRow($finished, ['total' => 2, 'checked_in' => 2]);
+        $this->assertSame(1000, (int)($pub['prize_pool_total'] ?? 0));
+        $this->assertSame($p1, (string)($pub['results']['winner']['discord_id'] ?? ''));
+
+        $profile = tcgTournamentProfileSummary($p1, 5);
+        $this->assertSame(1, (int)$profile['events_played']);
+        $this->assertNotEmpty($profile['placements']);
+        $this->assertSame(1, (int)$profile['placements'][0]['place']);
+        $this->assertSame(700, (int)$profile['placements'][0]['coins']);
+        $this->assertSame($tid, (string)$profile['placements'][0]['tournament_id']);
+    }
 }

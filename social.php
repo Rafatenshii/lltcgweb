@@ -1046,6 +1046,16 @@ function tcgApiSocialGetProfile(array $body): array {
     $isSelf = $viewer === $target;
     $friendStatus = $isSelf ? 'self' : tcgSocialFriendStatus($viewer, $target);
     $friends = $friendStatus === 'friends';
+    $tournamentSummary = null;
+    try {
+        require_once __DIR__ . '/tournament_lib.php';
+        if (!function_exists('tcgTournamentStatsSummaryForUser')) {
+            require_once __DIR__ . '/tournament_stats.php';
+        }
+        $tournamentSummary = tcgTournamentProfileSummary($target, 8);
+    } catch (Throwable $e) {
+        $tournamentSummary = null;
+    }
     return [
         'success' => true,
         'is_self' => $isSelf,
@@ -1065,6 +1075,7 @@ function tcgApiSocialGetProfile(array $body): array {
             'unranked_games' => intval($user['unranked_games'] ?? 0),
             'showcase' => tcgSocialShowcase($target),
             'featured_deck' => tcgSocialFeaturedDeckPayload($user, $viewer, $friends),
+            'tournament' => $tournamentSummary,
         ],
     ];
 }

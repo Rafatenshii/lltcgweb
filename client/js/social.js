@@ -422,6 +422,47 @@
     return `<button type="button" class="social-friend-id" data-copy="${esc(id)}">${esc(tt('profile.friendId', 'Friend ID'))}: ${esc(id)}</button>`;
   }
 
+  function placeLabel(place) {
+    const n = Number(place) || 0;
+    if (n === 1) return tt('tournament.place.first', '1st');
+    if (n === 2) return tt('tournament.place.second', '2nd');
+    if (n === 3) return tt('tournament.place.third', '3rd');
+    return tt('tournament.place.nth', '{n}th', { n: n });
+  }
+
+  function tournamentSectionHtml(p) {
+    const tr = p.tournament;
+    if (!tr || typeof tr !== 'object') return '';
+    const wins = Number(tr.match_wins) || 0;
+    const losses = Number(tr.match_losses) || 0;
+    const coins = Number(tr.coins_earned) || 0;
+    const events = Number(tr.events_played) || 0;
+    const places = Array.isArray(tr.placements) ? tr.placements : [];
+    let list = '';
+    if (!places.length) {
+      list = `<p class="social-vis-hint">${esc(tt('profile.tournamentEmpty', 'No tournament placements yet.'))}</p>`;
+    } else {
+      list = '<ul class="social-tournament-list">' + places.map((row) => {
+        const title = row.title || row.tournament_id || 'Tournament';
+        const place = placeLabel(row.place);
+        const prize = Number(row.coins) || 0;
+        const prizeBit = prize > 0
+          ? ` · ${esc(tt('profile.tournamentPrize', '{n} Coins', { n: prize }))}`
+          : '';
+        return `<li><span class="social-tournament-place">${esc(place)}</span>`
+          + `<span class="social-tournament-title">${esc(title)}</span>${prizeBit}</li>`;
+      }).join('') + '</ul>';
+    }
+    return `
+      <h4>${esc(tt('profile.tournament', 'Tournaments'))}</h4>
+      <p>${esc(tt('profile.tournamentRecord', 'Tournament matches'))}: ${wins}–${losses}
+         · ${esc(tt('profile.tournamentEvents', 'Events'))}: ${events}
+         · ${esc(tt('profile.tournamentCoins', 'Coins earned'))}: ${coins}</p>
+      <h5 class="social-tournament-sub">${esc(tt('profile.tournamentPlacements', 'Recent placements'))}</h5>
+      ${list}
+    `;
+  }
+
   function renderProfile(data) {
     const p = data.profile || {};
     const self = !!data.is_self;
@@ -480,6 +521,7 @@
         </div>` : ''}
       <p>${tt('profile.rankedWl', 'Ranked')}: ${ranked.wins || 0}–${ranked.losses || 0}
          · ${tt('profile.unranked', 'Unranked games')}: ${p.unranked_games || 0}</p>
+      ${tournamentSectionHtml(p)}
       <button type="button" class="btn-ghost" id="btn-profile-stats">${tt('profile.gameStats', 'Game stats')}</button>
       <h4>${tt('profile.featuredDeck', 'Featured deck')}</h4>
       ${self && _editing ? `<div class="field"><label for="profile-deck-vis">${tt('profile.visibility', 'Visibility')}</label>

@@ -500,6 +500,44 @@ body.social-overlay-open #modal-card.open {
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 .social-hist-mode { flex: 0 0 auto; font-size: 11px; opacity: 0.78; }
+.social-tournament-sub {
+  margin: 8px 0 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.social-tournament-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.social-tournament-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 20, 48, 0.22);
+  font-size: 0.92rem;
+}
+.social-tournament-place {
+  flex: 0 0 auto;
+  font-weight: 800;
+  color: #ffe9a8;
+  min-width: 2.4em;
+}
+.social-tournament-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
 .social-result {
   flex: 0 0 auto;
   min-width: 3.2em;

@@ -1199,6 +1199,7 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
     if (!$places) {
         return false;
     }
+    tcgTournamentEnsureResultsColumn();
     $pool = (int)$row['prize_pool_coins'];
     $winner = $places[0];
     $percents = tcgTournamentPrizePercents(count($places));
@@ -1206,12 +1207,21 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
     $db->beginTransaction();
     try {
         $paidOut = 0;
+        $placeRows = [];
         foreach ($places as $i => $did) {
             $pct = $percents[$i] ?? 0;
             $amount = (int)floor($pool * $pct / 100);
             if ($i === count($places) - 1) {
                 $amount = $pool - $paidOut;
             }
+            if ($amount < 0) {
+                $amount = 0;
+            }
+            $placeRows[] = [
+                'discord_id' => $did,
+                'place' => $i + 1,
+                'coins' => $amount,
+            ];
             if ($amount <= 0) {
                 continue;
             }
@@ -1221,9 +1231,14 @@ function tcgTournamentPayoutAndFinish(string $tournamentId, array $row, array $p
                 $paidOut += $amount;
             }
         }
+        $finishedAt = time();
+        $resultsPayload = tcgTournamentBuildResults($placeRows, $pool, $finishedAt);
+        $resultsJson = json_encode($resultsPayload, JSON_UNESCAPED_UNICODE) ?: '{}';
         $db->prepare(
-            'UPDATE tcg_tournaments SET status = "finished", prize_pool_coins = 0, updated_at = ? WHERE id = ?'
-        )->execute([time(), $tournamentId]);
+            'UPDATE tcg_tournaments
+             SET status = "finished", prize_pool_coins = 0, results_json = ?, updated_at = ?
+             WHERE id = ?'
+        )->execute([$resultsJson, $finishedAt, $tournamentId]);
         $db->prepare(
             'UPDATE tcg_tournament_entrants SET status = "eliminated"
              WHERE tournament_id = ? AND status = "playing" AND discord_id != ?'

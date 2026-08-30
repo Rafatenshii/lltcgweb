@@ -69,7 +69,46 @@ function tcgApiTournamentList(array $body): array {
         $pub['start_reminder_offsets'] = $offsetMap[$tid] ?? [];
     }
     unset($pub);
-    return ['success' => true, 'tournaments' => $list, 'server_now' => $now];
+    $past = [];
+    if ($status === '') {
+        $pastSql = 'SELECT t.*,
+            (SELECT COUNT(*) FROM tcg_tournament_entrants e WHERE e.tournament_id = t.id) AS entrant_count,
+            (SELECT COUNT(*) FROM tcg_tournament_entrants e
+             WHERE e.tournament_id = t.id AND e.status IN ("checked_in","playing","eliminated")) AS checked_in_count
+            FROM tcg_tournaments t WHERE t.status = "finished"';
+        $pastParams = [];
+        if ($gameMode !== '') {
+            $pastSql .= ' AND t.game_mode = ?';
+            $pastParams[] = tcgNormalizeGameMode($gameMode);
+        }
+        $pastSql .= ' ORDER BY t.updated_at DESC LIMIT 40';
+        $pastStmt = tcgDb()->prepare($pastSql);
+        $pastStmt->execute($pastParams);
+        foreach ($pastStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $pub = tcgTournamentPublicRow($row, [
+                'total' => (int)($row['entrant_count'] ?? 0),
+                'checked_in' => (int)($row['checked_in_count'] ?? 0),
+            ]);
+            $pub['server_now'] = $now;
+            $ents = tcgTournamentFetchEntrants((string)$row['id']);
+            $pub['entrants'] = array_map(
+                static fn($e) => [
+                    'discord_id' => (string)$e['discord_id'],
+                    'username' => (string)($e['username'] ?? 'Player'),
+                    'avatar_url' => $e['avatar_url'] ?? null,
+                    'status' => (string)($e['status'] ?? ''),
+                ],
+                $ents
+            );
+            $past[] = $pub;
+        }
+    }
+    return [
+        'success' => true,
+        'tournaments' => $list,
+        'past_tournaments' => $past,
+        'server_now' => $now,
+    ];
 }
 
 /** @param array<string,mixed> $body */

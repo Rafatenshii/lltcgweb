@@ -188,7 +188,22 @@ function tcgTournamentNotifyWebhook(string $event, array $row): void {
     if ($id !== '') {
         $content .= "\nID `" . $id . "`";
     }
-    if ($start > 0) {
+    if ($event === 'finished') {
+        $results = tcgTournamentResultsForRow($row);
+        $winner = is_array($results) ? ($results['winner'] ?? null) : null;
+        if (is_array($winner)) {
+            $wName = (string)($winner['username'] ?? 'Player');
+            $wCoins = (int)($winner['coins'] ?? 0);
+            $content .= "\nWinner: **" . $wName . "**";
+            if ($wCoins > 0) {
+                $content .= ' (+' . $wCoins . ' Coins)';
+            }
+            $pool = (int)($results['prize_pool_total'] ?? 0);
+            if ($pool > 0) {
+                $content .= "\nPrize pool: " . $pool . ' Coins';
+            }
+        }
+    } elseif ($start > 0) {
         $content .= "\nStarts <t:" . $start . ":f>";
     }
     $content .= "\n" . $link;
@@ -336,8 +351,274 @@ function tcgTournamentAssertHost(array $row, string $uid): void {
     }
 }
 
+function tcgTournamentEnsureResultsColumn(): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    tcgDbEnsureColumn(tcgDb(), 'tcg_tournaments', 'results_json', "TEXT NOT NULL DEFAULT ''");
+}
+
+/**
+ * @return array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>}|null
+ */
+function tcgTournamentDecodeResults(mixed $raw): ?array {
+    if (is_array($raw)) {
+        $data = $raw;
+    } else {
+        $s = trim((string)$raw);
+        if ($s === '') {
+            return null;
+        }
+        $data = json_decode($s, true);
+    }
+    if (!is_array($data) || empty($data['places']) || !is_array($data['places'])) {
+        return null;
+    }
+    $places = [];
+    foreach ($data['places'] as $p) {
+        if (!is_array($p)) {
+            continue;
+        }
+        $did = trim((string)($p['discord_id'] ?? ''));
+        $place = (int)($p['place'] ?? 0);
+        if ($did === '' || $place < 1) {
+            continue;
+        }
+        $places[] = [
+            'discord_id' => $did,
+            'place' => $place,
+            'coins' => max(0, (int)($p['coins'] ?? 0)),
+        ];
+    }
+    if ($places === []) {
+        return null;
+    }
+    usort($places, static fn($a, $b) => $a['place'] <=> $b['place']);
+    return [
+        'prize_pool_total' => max(0, (int)($data['prize_pool_total'] ?? 0)),
+        'finished_at' => max(0, (int)($data['finished_at'] ?? 0)),
+        'places' => $places,
+    ];
+}
+
+/**
+ * @param list<array{discord_id:string,place:int,coins:int}> $places
+ * @return array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>}
+ */
+function tcgTournamentBuildResults(array $places, int $prizePoolTotal, ?int $finishedAt = null): array {
+    $clean = [];
+    foreach ($places as $p) {
+        $did = trim((string)($p['discord_id'] ?? ''));
+        $place = (int)($p['place'] ?? 0);
+        if ($did === '' || $place < 1) {
+            continue;
+        }
+        $clean[] = [
+            'discord_id' => $did,
+            'place' => $place,
+            'coins' => max(0, (int)($p['coins'] ?? 0)),
+        ];
+    }
+    usort($clean, static fn($a, $b) => $a['place'] <=> $b['place']);
+    return [
+        'prize_pool_total' => max(0, $prizePoolTotal),
+        'finished_at' => $finishedAt ?? time(),
+        'places' => $clean,
+    ];
+}
+
+/**
+ * @param array{prize_pool_total:int,finished_at:int,places:list<array{discord_id:string,place:int,coins:int}>}|null $results
+ * @return array{prize_pool_total:int,finished_at:int,winner:?array{discord_id:string,username:string,avatar_url:?string,place:int,coins:int},places:list<array{discord_id:string,username:string,avatar_url:?string,place:int,coins:int}>}|null
+ */
+function tcgTournamentEnrichResults(?array $results): ?array {
+    if ($results === null || empty($results['places'])) {
+        return null;
+    }
+    $ids = [];
+    foreach ($results['places'] as $p) {
+        $ids[] = (string)$p['discord_id'];
+    }
+    $ids = array_values(array_unique(array_filter($ids)));
+    $users = [];
+    if ($ids) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = tcgDb()->prepare(
+            "SELECT discord_id, username, avatar_url FROM tcg_users WHERE discord_id IN ($placeholders)"
+        );
+        $stmt->execute($ids);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $u) {
+            $users[(string)$u['discord_id']] = $u;
+        }
+    }
+    $places = [];
+    foreach ($results['places'] as $p) {
+        $did = (string)$p['discord_id'];
+        $u = $users[$did] ?? [];
+        $places[] = [
+            'discord_id' => $did,
+            'username' => (string)($u['username'] ?? 'Player'),
+            'avatar_url' => $u['avatar_url'] ?? null,
+            'place' => (int)$p['place'],
+            'coins' => (int)$p['coins'],
+        ];
+    }
+    $winner = $places[0] ?? null;
+    return [
+        'prize_pool_total' => (int)$results['prize_pool_total'],
+        'finished_at' => (int)$results['finished_at'],
+        'winner' => $winner,
+        'places' => $places,
+    ];
+}
+
+/** Reconstruct + persist results for finished events that predate results_json. */
+function tcgTournamentBackfillResultsFromLedger(string $tournamentId): ?array {
+    tcgTournamentEnsureResultsColumn();
+    $row = tcgTournamentFetch($tournamentId);
+    if (!$row || (string)($row['status'] ?? '') !== 'finished') {
+        return null;
+    }
+    $existing = tcgTournamentDecodeResults($row['results_json'] ?? '');
+    if ($existing) {
+        return $existing;
+    }
+    $stmt = tcgDb()->prepare(
+        'SELECT discord_id, amount, meta_json FROM tcg_tournament_ledger
+         WHERE tournament_id = ? AND kind = ? ORDER BY created_at ASC'
+    );
+    $stmt->execute([$tournamentId, 'payout']);
+    $places = [];
+    $total = 0;
+    $finishedAt = (int)($row['updated_at'] ?? time());
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $led) {
+        $meta = json_decode((string)($led['meta_json'] ?? '{}'), true);
+        $place = is_array($meta) ? (int)($meta['place'] ?? 0) : 0;
+        $did = trim((string)($led['discord_id'] ?? ''));
+        $amount = max(0, (int)($led['amount'] ?? 0));
+        if ($did === '' || $place < 1) {
+            continue;
+        }
+        $places[] = ['discord_id' => $did, 'place' => $place, 'coins' => $amount];
+        $total += $amount;
+    }
+    if ($places === []) {
+        return null;
+    }
+    $payload = tcgTournamentBuildResults($places, $total, $finishedAt);
+    try {
+        tcgDb()->prepare('UPDATE tcg_tournaments SET results_json = ? WHERE id = ?')
+            ->execute([json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '{}', $tournamentId]);
+    } catch (Throwable $e) {
+        // Still return decoded payload for this response.
+    }
+    return $payload;
+}
+
+/** @param array<string,mixed> $row */
+function tcgTournamentResultsForRow(array $row): ?array {
+    tcgTournamentEnsureResultsColumn();
+    $decoded = tcgTournamentDecodeResults($row['results_json'] ?? '');
+    if (!$decoded && (string)($row['status'] ?? '') === 'finished') {
+        $decoded = tcgTournamentBackfillResultsFromLedger((string)($row['id'] ?? ''));
+    }
+    return tcgTournamentEnrichResults($decoded);
+}
+
+/**
+ * Career summary + recent placements for social profile.
+ *
+ * @return array{
+ *   match_wins:int,match_losses:int,coins_earned:int,events_played:int,
+ *   placements:list<array{tournament_id:string,title:string,place:int,coins:int,finished_at:int,prize_pool_total:int}>
+ * }
+ */
+function tcgTournamentProfileSummary(string $discordId, int $placementLimit = 8): array {
+    $discordId = trim($discordId);
+    $empty = [
+        'match_wins' => 0,
+        'match_losses' => 0,
+        'coins_earned' => 0,
+        'events_played' => 0,
+        'placements' => [],
+    ];
+    if ($discordId === '') {
+        return $empty;
+    }
+    tcgTournamentEnsureResultsColumn();
+    $stats = function_exists('tcgTournamentStatsSummaryForUser')
+        ? tcgTournamentStatsSummaryForUser($discordId, 0)
+        : ['match_wins' => 0, 'match_losses' => 0, 'coins_earned' => 0];
+    $played = 0;
+    try {
+        $c = tcgDb()->prepare(
+            'SELECT COUNT(*) FROM tcg_tournament_entrants e
+             INNER JOIN tcg_tournaments t ON t.id = e.tournament_id
+             WHERE e.discord_id = ? AND t.status = ?'
+        );
+        $c->execute([$discordId, 'finished']);
+        $played = (int)$c->fetchColumn();
+    } catch (Throwable $e) {
+        $played = 0;
+    }
+    $placementLimit = max(0, min(20, $placementLimit));
+    $placements = [];
+    if ($placementLimit > 0) {
+        try {
+            $stmt = tcgDb()->prepare(
+                'SELECT t.id, t.title, t.updated_at, t.results_json
+                 FROM tcg_tournament_entrants e
+                 INNER JOIN tcg_tournaments t ON t.id = e.tournament_id
+                 WHERE e.discord_id = ? AND t.status = ?
+                 ORDER BY t.updated_at DESC
+                 LIMIT ?'
+            );
+            $stmt->execute([$discordId, 'finished', $placementLimit * 3]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $trow) {
+                $results = tcgTournamentResultsForRow($trow);
+                if (!$results) {
+                    continue;
+                }
+                $mine = null;
+                foreach ($results['places'] as $p) {
+                    if ((string)$p['discord_id'] === $discordId) {
+                        $mine = $p;
+                        break;
+                    }
+                }
+                if (!$mine) {
+                    continue;
+                }
+                $placements[] = [
+                    'tournament_id' => (string)$trow['id'],
+                    'title' => (string)($trow['title'] ?? 'Tournament'),
+                    'place' => (int)$mine['place'],
+                    'coins' => (int)$mine['coins'],
+                    'finished_at' => (int)($results['finished_at'] ?: ($trow['updated_at'] ?? 0)),
+                    'prize_pool_total' => (int)$results['prize_pool_total'],
+                ];
+                if (count($placements) >= $placementLimit) {
+                    break;
+                }
+            }
+        } catch (Throwable $e) {
+            $placements = [];
+        }
+    }
+    return [
+        'match_wins' => (int)($stats['match_wins'] ?? 0),
+        'match_losses' => (int)($stats['match_losses'] ?? 0),
+        'coins_earned' => (int)($stats['coins_earned'] ?? 0),
+        'events_played' => $played,
+        'placements' => $placements,
+    ];
+}
+
 /** @return array<string,mixed>|null */
 function tcgTournamentFetch(string $id): ?array {
+    tcgTournamentEnsureResultsColumn();
     $stmt = tcgDb()->prepare('SELECT * FROM tcg_tournaments WHERE id = ?');
     $stmt->execute([$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -731,6 +1012,14 @@ function tcgTournamentPublicRow(array $row, ?array $counts = null): array {
     if ($counts !== null) {
         $out['entrant_count'] = (int)($counts['total'] ?? 0);
         $out['checked_in_count'] = (int)($counts['checked_in'] ?? 0);
+    }
+    $results = tcgTournamentResultsForRow($row);
+    if ($results !== null) {
+        $out['results'] = $results;
+        // Prefer stored prize total after finish (live pool is zeroed on payout).
+        if ((string)$row['status'] === 'finished' && (int)$out['prize_pool_coins'] === 0) {
+            $out['prize_pool_total'] = (int)$results['prize_pool_total'];
+        }
     }
     return $out;
 }

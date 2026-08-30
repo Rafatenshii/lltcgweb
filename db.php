@@ -315,6 +315,10 @@ function tcgDbMigrate(PDO $db): void {
         tcgTournamentStatsEnsureSchema($db);
     });
 
+    tcgDbRunMigrationOnce($db, 'tournament_results_20260830', function (PDO $db): void {
+        tcgDbEnsureColumn($db, 'tcg_tournaments', 'results_json', "TEXT NOT NULL DEFAULT ''");
+    });
+
     // Account timezone for tournament scheduling UI (was only in full bootstrap).
     tcgDbRunMigrationOnce($db, 'preferred_timezone_20260821', function (PDO $db): void {
         tcgDbEnsureColumn($db, 'tcg_users', 'preferred_timezone', "TEXT NOT NULL DEFAULT 'Asia/Tokyo'");
@@ -777,10 +781,12 @@ function tcgDbEnsureTournamentSchema(PDO $db): void {
         entry_fee_coins INTEGER NOT NULL DEFAULT 0,
         prize_pool_coins INTEGER NOT NULL DEFAULT 0,
         settings_json TEXT NOT NULL DEFAULT \'{}\',
+        results_json TEXT NOT NULL DEFAULT \'\',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (host_discord_id) REFERENCES tcg_users(discord_id)
     )');
+    tcgDbEnsureColumn($db, 'tcg_tournaments', 'results_json', "TEXT NOT NULL DEFAULT ''");
     $db->exec('CREATE INDEX IF NOT EXISTS idx_tcg_tournaments_status_start
         ON tcg_tournaments(status, start_at)');
     $db->exec('CREATE TABLE IF NOT EXISTS tcg_tournament_entrants (

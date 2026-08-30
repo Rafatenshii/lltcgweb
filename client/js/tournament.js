@@ -9,6 +9,7 @@
     open: false,
     view: 'list',
     list: [],
+    pastList: [],
     detail: null,
     tickTimer: null,
     loading: false,
@@ -670,6 +671,7 @@
       if (state.filterMode) body.game_mode = state.filterMode;
       const res = await global.accountPost('tournament_list', body);
       state.list = (res && res.tournaments) || [];
+      state.pastList = (res && res.past_tournaments) || [];
       renderList();
       maybeRemindCheckins(state.list, res && res.server_now);
     } catch (e) {
@@ -724,45 +726,183 @@
     });
   }
 
+  function placeLabel(place) {
+    const n = Number(place) || 0;
+    if (n === 1) return t('tournament.place.first', '1st');
+    if (n === 2) return t('tournament.place.second', '2nd');
+    if (n === 3) return t('tournament.place.third', '3rd');
+    return t('tournament.place.nth', '{n}th', { n: n });
+  }
+
+  function prizePoolOf(row) {
+    const live = Number(row && row.prize_pool_coins) || 0;
+    if (live > 0) return live;
+    const stored = Number(row && row.prize_pool_total) || 0;
+    if (stored > 0) return stored;
+    const results = row && row.results;
+    return Number(results && results.prize_pool_total) || 0;
+  }
+
+  function winnerOf(row) {
+    const results = row && row.results;
+    return (results && results.winner) || null;
+  }
+
+  function activeCardHtml(row) {
+    const fee = Number(row.entry_fee_coins) || 0;
+    const count = Number(row.entrant_count) || 0;
+    const max = Number(row.max_players) || 0;
+    const specs = Number(row.spectator_count) || 0;
+    const fog = (row.settings && row.settings.fog) || 'hidden_hands';
+    const delay = Number((row.settings && row.settings.stream_delay_secs) || 0);
+    const rulesKey = (row.settings && row.settings.rules_template) || 'standard';
+    const remind = startRemindPanelHtml(row.id, startRemindOffsetsOf(row), row.status);
+    const sep = metaSep();
+    return (
+      '<div class="tournament-card-wrap">'
+      + '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
+      + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
+      + '<div class="tournament-card-meta">'
+      + escapeHtml(labelStatus(row.status)) + sep + escapeHtml(labelMode(row.game_mode))
+      + sep + count + '/' + max
+      + sep + escapeHtml(t('tournament.card.fee', 'fee {n}', { n: fee }))
+      + (specs ? (sep + escapeHtml(t('tournament.card.watching', '{n} watching', { n: specs }))) : '')
+      + sep + escapeHtml(t('tournament.card.starts', 'starts {when}', { when: fmtWhen(row.start_at) }))
+      + '</div>'
+      + '<div class="tournament-card-meta tournament-card-settings">'
+      + escapeHtml(labelRules(rulesKey))
+      + sep + escapeHtml(t('tournament.card.fog', 'fog {fog}', { fog: labelFog(fog, true) }))
+      + sep + escapeHtml(t('tournament.card.delay', 'delay {n}s', { n: delay }))
+      + '</div></button>'
+      + remind
+      + '</div>'
+    );
+  }
+
+  function pastCardHtml(row) {
+    const sep = metaSep();
+    const winner = winnerOf(row);
+    const prize = prizePoolOf(row);
+    const winnerPrize = winner ? (Number(winner.coins) || 0) : 0;
+    const ents = Array.isArray(row.entrants) ? row.entrants : [];
+    const entrantBits = ents.slice(0, 8).map((e) => escapeHtml(e.username || e.discord_id || 'Player')).join(', ');
+    const more = ents.length > 8
+      ? sep + escapeHtml(t('tournament.past.moreEntrants', '+{n} more', { n: ents.length - 8 }))
+      : '';
+    return (
+      '<div class="tournament-card-wrap tournament-card-wrap--past">'
+      + '<button type="button" class="tournament-card tournament-card--past" data-tid="' + escapeAttr(row.id) + '">'
+      + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
+      + '<div class="tournament-card-meta">'
+      + escapeHtml(labelStatus('finished'))
+      + sep + escapeHtml(labelMode(row.game_mode))
+      + sep + escapeHtml(t('tournament.past.pool', 'pool {n}', { n: prize }))
+      + sep + escapeHtml(t('tournament.past.ended', 'ended {when}', {
+        when: fmtWhen(Number((row.results && row.results.finished_at) || row.updated_at) || 0)
+      }))
+      + '</div>'
+      + '<div class="tournament-card-meta tournament-past-winner">'
+      + (winner
+        ? escapeHtml(t('tournament.past.winner', 'Winner: {name}', { name: winner.username || 'Player' }))
+          + (winnerPrize > 0
+            ? sep + escapeHtml(t('tournament.past.winnerPrize', 'prize {n} Coins', { n: winnerPrize }))
+            : '')
+        : escapeHtml(t('tournament.past.noWinner', 'No winner recorded')))
+      + '</div>'
+      + '<div class="tournament-card-meta tournament-past-entrants">'
+      + escapeHtml(t('tournament.past.entered', 'Entered ({n}): {names}', {
+        n: ents.length,
+        names: entrantBits || '—'
+      }))
+      + more
+      + '</div></button></div>'
+    );
+  }
+
+  function resultsBannerHtml(trow) {
+    if (!trow || trow.status !== 'finished') return '';
+    const results = trow.results;
+    const winner = winnerOf(trow);
+    const pool = prizePoolOf(trow);
+    const places = (results && Array.isArray(results.places)) ? results.places : [];
+    let body = '<div class="tournament-results-banner" role="status">';
+    body += '<div class="tournament-results-title">'
+      + escapeHtml(t('tournament.results.heading', 'Final results'))
+      + '</div>';
+    if (winner) {
+      body += '<div class="tournament-results-winner">'
+        + personChipHtml(winner.discord_id, winner.username || 'Player', winner.avatar_url)
+        + '<span class="tournament-results-winner-label">'
+        + escapeHtml(t('tournament.results.winner', 'Champion'))
+        + '</span>';
+      if ((Number(winner.coins) || 0) > 0) {
+        body += '<span class="tournament-results-prize">'
+          + escapeHtml(t('tournament.results.winnerPrize', '+{n} Coins', { n: Number(winner.coins) || 0 }))
+          + '</span>';
+      }
+      body += '</div>';
+    }
+    if (pool > 0) {
+      body += '<p class="tournament-muted">'
+        + escapeHtml(t('tournament.results.prizePool', 'Prize pool: {n} Coins', { n: pool }))
+        + '</p>';
+    }
+    if (places.length) {
+      body += '<ol class="tournament-results-places">';
+      places.forEach((p) => {
+        body += '<li>'
+          + '<span class="tournament-results-place">' + escapeHtml(placeLabel(p.place)) + '</span> '
+          + personChipHtml(p.discord_id, p.username || 'Player', p.avatar_url)
+          + ((Number(p.coins) || 0) > 0
+            ? '<span class="tournament-results-coins">'
+              + escapeHtml(t('tournament.results.coins', '{n} Coins', { n: Number(p.coins) || 0 }))
+              + '</span>'
+            : '')
+          + '</li>';
+      });
+      body += '</ol>';
+    }
+    body += '</div>';
+    return body;
+  }
+
   function renderList() {
     const root = el('tournament-list');
     if (!root) return;
-    if (!state.list.length) {
+    const active = state.list || [];
+    const past = state.pastList || [];
+    if (!active.length && !past.length) {
       root.innerHTML = '<p class="tournament-muted">'
         + escapeHtml(t('tournament.listEmpty', 'No open tournaments yet. Create one to get started.'))
         + '</p>';
       return;
     }
-    const sep = metaSep();
-    root.innerHTML = state.list.map((row) => {
-      const fee = Number(row.entry_fee_coins) || 0;
-      const count = Number(row.entrant_count) || 0;
-      const max = Number(row.max_players) || 0;
-      const specs = Number(row.spectator_count) || 0;
-      const fog = (row.settings && row.settings.fog) || 'hidden_hands';
-      const delay = Number((row.settings && row.settings.stream_delay_secs) || 0);
-      const rulesKey = (row.settings && row.settings.rules_template) || 'standard';
-      const remind = startRemindPanelHtml(row.id, startRemindOffsetsOf(row), row.status);
-      return (
-        '<div class="tournament-card-wrap">'
-        + '<button type="button" class="tournament-card" data-tid="' + escapeAttr(row.id) + '">'
-        + '<div class="tournament-card-title">' + escapeHtml(row.title) + '</div>'
-        + '<div class="tournament-card-meta">'
-        + escapeHtml(labelStatus(row.status)) + sep + escapeHtml(labelMode(row.game_mode))
-        + sep + count + '/' + max
-        + sep + escapeHtml(t('tournament.card.fee', 'fee {n}', { n: fee }))
-        + (specs ? (sep + escapeHtml(t('tournament.card.watching', '{n} watching', { n: specs }))) : '')
-        + sep + escapeHtml(t('tournament.card.starts', 'starts {when}', { when: fmtWhen(row.start_at) }))
-        + '</div>'
-        + '<div class="tournament-card-meta tournament-card-settings">'
-        + escapeHtml(labelRules(rulesKey))
-        + sep + escapeHtml(t('tournament.card.fog', 'fog {fog}', { fog: labelFog(fog, true) }))
-        + sep + escapeHtml(t('tournament.card.delay', 'delay {n}s', { n: delay }))
-        + '</div></button>'
-        + remind
-        + '</div>'
-      );
-    }).join('');
+    let html = '';
+    html += '<section class="tournament-list-section" aria-label="'
+      + escapeAttr(t('tournament.liveHeading', 'Live & upcoming')) + '">';
+    html += '<h3 class="tournament-subhead">'
+      + escapeHtml(t('tournament.liveHeading', 'Live & upcoming')) + '</h3>';
+    if (!active.length) {
+      html += '<p class="tournament-muted">'
+        + escapeHtml(t('tournament.listEmpty', 'No open tournaments yet. Create one to get started.'))
+        + '</p>';
+    } else {
+      html += active.map(activeCardHtml).join('');
+    }
+    html += '</section>';
+    html += '<section class="tournament-list-section tournament-list-section--past" aria-label="'
+      + escapeAttr(t('tournament.past.heading', 'Past tournaments')) + '">';
+    html += '<h3 class="tournament-subhead">'
+      + escapeHtml(t('tournament.past.heading', 'Past tournaments')) + '</h3>';
+    if (!past.length) {
+      html += '<p class="tournament-muted">'
+        + escapeHtml(t('tournament.past.empty', 'No finished tournaments yet.'))
+        + '</p>';
+    } else {
+      html += past.map(pastCardHtml).join('');
+    }
+    html += '</section>';
+    root.innerHTML = html;
     root.querySelectorAll('[data-tid]').forEach((btn) => {
       btn.addEventListener('click', () => openDetail(btn.getAttribute('data-tid')));
     });
@@ -895,8 +1035,13 @@
       const format = (trow.settings && trow.settings.format) || 'single_elim';
       const bestOf = Number((trow.settings && trow.settings.best_of) || 1);
       const delay = Number((trow.settings && trow.settings.stream_delay_secs) || 0);
+      const prizeShown = prizePoolOf(trow);
+      const prizeLabel = trow.status === 'finished'
+        ? t('tournament.detail.prizePool', 'prize pool {n}', { n: prizeShown })
+        : t('tournament.detail.prize', 'prize {n}', { n: prizeShown });
       head.innerHTML =
         '<h3 class="tournament-subhead">' + escapeHtml(trow.title) + '</h3>'
+        + resultsBannerHtml(trow)
         + '<div class="tournament-host-row">'
         + '<span class="tournament-muted">' + escapeHtml(t('tournament.detail.host', 'Host')) + '</span> '
         + personChipHtml(
@@ -907,7 +1052,7 @@
         + '</div>'
         + '<p class="tournament-muted">'
         + escapeHtml(labelStatus(trow.status))
-        + sep + escapeHtml(t('tournament.detail.prize', 'prize {n}', { n: Number(trow.prize_pool_coins) || 0 }))
+        + sep + escapeHtml(prizeLabel)
         + sep + escapeHtml(t('tournament.detail.watching', 'watching {n}', { n: Number(trow.spectator_count) || 0 }))
         + sep + escapeHtml(t('tournament.detail.starts', 'starts {when}', { when: fmtWhen(trow.start_at) }))
         + '</p>'

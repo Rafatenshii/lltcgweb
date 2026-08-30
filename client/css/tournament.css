@@ -51,6 +51,72 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   flex-direction: column;
   gap: 8px;
 }
+.tournament-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.tournament-list-section--past {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.tournament-card--past {
+  background: rgba(0, 12, 32, 0.35);
+}
+.tournament-past-winner {
+  font-weight: 700;
+  color: #ffe9a8;
+}
+.tournament-past-entrants {
+  opacity: 0.9;
+  line-height: 1.35;
+}
+.tournament-results-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 214, 120, 0.55);
+  background: linear-gradient(135deg, rgba(80, 48, 8, 0.45), rgba(20, 40, 72, 0.4));
+}
+.tournament-results-title {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.tournament-results-winner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 6px;
+}
+.tournament-results-winner-label {
+  font-weight: 800;
+  color: #ffe9a8;
+}
+.tournament-results-prize,
+.tournament-results-coins {
+  font-weight: 700;
+  opacity: 0.95;
+}
+.tournament-results-places {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tournament-results-places li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.tournament-results-place {
+  min-width: 2.4em;
+  font-weight: 800;
+}
 .tournament-card {
   text-align: left;
   border: 1px solid rgba(255, 255, 255, 0.28);
