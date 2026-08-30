@@ -18,6 +18,9 @@
     timezone: 'Asia/Tokyo',
     registerTid: null,
     registerOpts: null,
+    hubUpcoming: [],
+    hubServerSkew: 0,
+    hubFocus: null,
   };
 
   const TIMEZONE_OPTIONS = [
@@ -172,14 +175,15 @@
         btn.classList.add('llc-menu-hover', 'llc-menu-accent-violet');
         btn.classList.remove('llc-menu-accent-gold', 'llc-menu-accent-purple');
         const sub = btn.querySelector('.llc-menu-item-sub');
-        if (sub) {
+        if (sub && !state.hubFocus) {
           sub.setAttribute('data-i18n', cfg.live);
           sub.textContent = t(cfg.live, 'Events & brackets');
         }
       } else {
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
-        btn.classList.remove('llc-menu-hover', 'llc-menu-accent-violet', 'llc-menu-accent-gold');
+        btn.classList.remove('llc-menu-hover', 'llc-menu-accent-violet', 'llc-menu-accent-gold', 'llc-menu-tournament-glow');
+        clearHubCountdownUi(btn);
         const sub = btn.querySelector('.llc-menu-item-sub');
         if (sub) {
           sub.setAttribute('data-i18n', cfg.soon);
@@ -187,6 +191,183 @@
         }
       }
     });
+    if (enabled) {
+      void refreshHubCountdown();
+    } else {
+      stopHubCountdownTick();
+      state.hubFocus = null;
+      state.hubUpcoming = [];
+    }
+  }
+
+  function clearHubCountdownUi(btn) {
+    if (!btn) return;
+    const cd = btn.querySelector('.llc-menu-tournament-cd');
+    if (cd) {
+      cd.hidden = true;
+      cd.textContent = '';
+    }
+    btn.classList.remove('llc-menu-tournament-glow');
+  }
+
+  function hubNowSec() {
+    return Math.floor(Date.now() / 1000) + (Number(state.hubServerSkew) || 0);
+  }
+
+  function ymdInTimezone(unixSec, timeZone) {
+    try {
+      const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timeZone || 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      return fmt.format(new Date((Number(unixSec) || 0) * 1000));
+    } catch (e) {
+      const d = new Date((Number(unixSec) || 0) * 1000);
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  function formatCountdownParts(remainSec) {
+    let rem = Math.max(0, Math.floor(Number(remainSec) || 0));
+    const days = Math.floor(rem / 86400);
+    rem %= 86400;
+    const hours = Math.floor(rem / 3600);
+    rem %= 3600;
+    const mins = Math.floor(rem / 60);
+    const secs = rem % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return t(
+      'hub.tournament.countdown',
+      '{d}d {h}h {m}m {s}s',
+      { d: days, h: pad(hours), m: pad(mins), s: pad(secs) }
+    );
+  }
+
+  function pickHubFocus(upcoming, nowSec) {
+    const list = Array.isArray(upcoming) ? upcoming.slice() : [];
+    list.sort((a, b) => (Number(a.start_at) || 0) - (Number(b.start_at) || 0));
+    const joined = list.filter((row) => !!row.i_am_entrant
+      && ['open', 'checkin', 'running'].includes(String(row.status || '')));
+    if (joined.length) {
+      // Prefer soonest that has not finished; running/checkin still shown.
+      const focus = joined[0];
+      return { mode: 'joined', row: focus };
+    }
+    const tz = state.timezone || 'Asia/Tokyo';
+    const today = ymdInTimezone(nowSec, tz);
+    const promos = list.filter((row) => !row.i_am_entrant
+      && ['open', 'checkin'].includes(String(row.status || ''))
+      && ymdInTimezone(row.start_at, tz) === today
+      && (Number(row.start_at) || 0) >= nowSec - 3600);
+    if (promos.length) {
+      return { mode: 'promo', row: promos[0] };
+    }
+    return null;
+  }
+
+  function paintHubCountdown() {
+    const focus = state.hubFocus;
+    const buttons = [
+      { id: 'btn-hub-tournament', cdId: 'hub-tournament-cd', subId: 'hub-tournament-sub', live: 'hub.tournament.subLive' },
+      { id: 'btn-auth-tournament', cdId: 'auth-tournament-cd', subId: 'auth-tournament-sub', live: 'auth.tournament.subLive' },
+    ];
+    buttons.forEach((cfg) => {
+      const btn = el(cfg.id);
+      if (!btn || btn.disabled) return;
+      const cd = el(cfg.cdId) || btn.querySelector('.llc-menu-tournament-cd');
+      const sub = el(cfg.subId) || btn.querySelector('.llc-menu-item-sub');
+      if (!focus || !focus.row) {
+        if (cd) { cd.hidden = true; cd.textContent = ''; }
+        btn.classList.remove('llc-menu-tournament-glow');
+        if (sub) {
+          sub.setAttribute('data-i18n', cfg.live);
+          sub.textContent = t(cfg.live, 'Events & brackets');
+        }
+        return;
+      }
+      const row = focus.row;
+      const startAt = Number(row.start_at) || 0;
+      const now = hubNowSec();
+      const remain = startAt - now;
+      const live = String(row.status) === 'running' || remain <= 0;
+      if (cd) {
+        cd.hidden = false;
+        cd.textContent = live
+          ? t('hub.tournament.liveNow', 'LIVE')
+          : formatCountdownParts(remain);
+      }
+      btn.classList.add('llc-menu-tournament-glow');
+      if (sub) {
+        sub.removeAttribute('data-i18n');
+        if (focus.mode === 'promo') {
+          sub.textContent = t(
+            'hub.tournament.promoSub',
+            '{title} · prize {prize} · {n} entered',
+            {
+              title: row.title || row.id,
+              prize: Number(row.prize_pool_coins) || 0,
+              n: Number(row.entrant_count) || 0,
+            }
+          );
+        } else {
+          sub.textContent = t(
+            'hub.tournament.joinedSub',
+            '{title} · {n} entered',
+            {
+              title: row.title || row.id,
+              n: Number(row.entrant_count) || 0,
+            }
+          );
+        }
+      }
+    });
+  }
+
+  let hubCdTimer = null;
+  let hubFetchTimer = null;
+
+  function stopHubCountdownTick() {
+    if (hubCdTimer) {
+      clearInterval(hubCdTimer);
+      hubCdTimer = null;
+    }
+    if (hubFetchTimer) {
+      clearInterval(hubFetchTimer);
+      hubFetchTimer = null;
+    }
+  }
+
+  function startHubCountdownTick() {
+    if (!hubCdTimer) {
+      hubCdTimer = setInterval(paintHubCountdown, 1000);
+    }
+    if (!hubFetchTimer) {
+      hubFetchTimer = setInterval(() => { void refreshHubCountdown(); }, 45000);
+    }
+  }
+
+  async function refreshHubCountdown() {
+    if (!global.TCG_TOURNAMENTS_ENABLED) return;
+    try {
+      if (typeof global.accountPost !== 'function') return;
+      const res = await global.accountPost('tournament_hub', {});
+      if (!res || !res.success || !res.enabled) {
+        state.hubFocus = null;
+        state.hubUpcoming = [];
+        paintHubCountdown();
+        return;
+      }
+      const serverNow = Number(res.server_now) || Math.floor(Date.now() / 1000);
+      state.hubServerSkew = serverNow - Math.floor(Date.now() / 1000);
+      state.hubUpcoming = res.upcoming || [];
+      state.hubFocus = pickHubFocus(state.hubUpcoming, hubNowSec());
+      paintHubCountdown();
+      startHubCountdownTick();
+    } catch (e) {
+      // Auth / network — keep last paint if any.
+    }
   }
 
   async function refreshServerFlag() {
@@ -652,6 +833,8 @@
     if (state.view === 'list') renderList();
     if (state.view === 'detail') renderDetail();
     if (datePicker.open) renderCalendarGrid();
+    state.hubFocus = pickHubFocus(state.hubUpcoming, hubNowSec());
+    paintHubCountdown();
     try {
       await global.accountPost('timezone_set', { timezone: tz });
       if (global.A) {
@@ -1594,8 +1777,10 @@
         return;
       } else if (act === 'unregister') {
         await global.accountPost('tournament_unregister', { tournament_id: tid });
+        void refreshHubCountdown();
       } else if (act === 'checkin') {
         await global.accountPost('tournament_checkin', { tournament_id: tid });
+        void refreshHubCountdown();
       } else if (act === 'deposit') {
         const raw = global.prompt(
           t('tournament.prompt.deposit', 'Coins to deposit into prize vault:'),
@@ -1768,6 +1953,7 @@
     else if (deck.type === 'preset') body.deck_slot = deck.slot;
     try {
       await global.accountPost('tournament_register', body);
+      void refreshHubCountdown();
       await openDetail(tid);
     } catch (e) {
       setErr(e.message || String(e));
@@ -2305,6 +2491,7 @@
     refreshServerFlag();
     if (global.LLTCG_I18N && typeof global.LLTCG_I18N.onLocaleChange === 'function') {
       global.LLTCG_I18N.onLocaleChange(() => {
+        paintHubCountdown();
         if (!screenActive()) return;
         applyTournamentStaticI18n();
         refreshActiveView();
@@ -2313,6 +2500,7 @@
     global.addEventListener('tcg:auth-ready', () => {
       refreshServerFlag();
       syncTimezoneFromProfile();
+      void refreshHubCountdown();
     });
     setTimeout(() => { refreshServerFlag(); }, 1500);
   }
@@ -2337,6 +2525,7 @@
     consumeDeepLink: consumeTournamentDeepLink,
     refreshFlag: refreshServerFlag,
     applyEnabled: applyEnabled,
+    refreshHubCountdown: refreshHubCountdown,
     onAvatarError: onAvatarError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

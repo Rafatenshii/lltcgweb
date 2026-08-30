@@ -20,6 +20,57 @@ function tcgApiTournamentEnabled(array $body = []): array {
     return ['success' => true, 'enabled' => tcgUserMayUseTournaments($uid)];
 }
 
+/**
+ * Lightweight hub preview: upcoming events with whether the viewer entered.
+ * Client picks joined countdown vs day-of promo.
+ *
+ * @param array<string,mixed> $body
+ */
+function tcgApiTournamentHub(array $body = []): array {
+    $now = time();
+    $uid = null;
+    try {
+        $uid = tcgRequireAuthUser($body);
+    } catch (Throwable $e) {
+        return ['success' => true, 'enabled' => false, 'upcoming' => [], 'server_now' => $now];
+    }
+    if (!tcgUserMayUseTournaments($uid)) {
+        return ['success' => true, 'enabled' => false, 'upcoming' => [], 'server_now' => $now];
+    }
+    $stmt = tcgDb()->prepare(
+        'SELECT t.id, t.title, t.status, t.start_at, t.prize_pool_coins, t.checkin_mins,
+                (SELECT COUNT(*) FROM tcg_tournament_entrants e WHERE e.tournament_id = t.id) AS entrant_count,
+                (SELECT 1 FROM tcg_tournament_entrants e2
+                  WHERE e2.tournament_id = t.id AND e2.discord_id = ?
+                    AND e2.status IN ("registered","checked_in","playing","eliminated")
+                  LIMIT 1) AS i_am_entrant
+         FROM tcg_tournaments t
+         WHERE t.status IN ("open","checkin","running")
+         ORDER BY t.start_at ASC
+         LIMIT 40'
+    );
+    $stmt->execute([$uid]);
+    $upcoming = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $upcoming[] = [
+            'id' => (string)$row['id'],
+            'title' => (string)$row['title'],
+            'status' => (string)$row['status'],
+            'start_at' => (int)$row['start_at'],
+            'checkin_mins' => (int)$row['checkin_mins'],
+            'prize_pool_coins' => (int)$row['prize_pool_coins'],
+            'entrant_count' => (int)($row['entrant_count'] ?? 0),
+            'i_am_entrant' => !empty($row['i_am_entrant']),
+        ];
+    }
+    return [
+        'success' => true,
+        'enabled' => true,
+        'upcoming' => $upcoming,
+        'server_now' => $now,
+    ];
+}
+
 /** @param array<string,mixed> $body */
 function tcgApiTournamentList(array $body): array {
     $uid = tcgRequireAuthUser($body);

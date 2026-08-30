@@ -133,6 +133,7 @@ try {
         case 'presence_action_mint': echo json_encode(tcgApiPresenceActionMint($body)); break;
         case 'presence_action_redeem': echo json_encode(tcgApiPresenceActionRedeem($body)); break;
         case 'tournament_enabled':   echo json_encode(tcgApiTournamentEnabled($body)); break;
+        case 'tournament_hub':       echo json_encode(tcgApiTournamentHub($body)); break;
         case 'tournament_list':      echo json_encode(tcgApiTournamentList($body)); break;
         case 'tournament_get':       echo json_encode(tcgApiTournamentGet($body)); break;
         case 'tournament_create':    echo json_encode(tcgApiTournamentCreate($body)); break;

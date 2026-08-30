@@ -127,8 +127,13 @@
         "title": "Stickers"
       },
       "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
+        "sub": "Coming Soon",
+        "subLive": "Events & brackets",
+        "title": "Tournament Mode",
+        "countdown": "{d}d {h}h {m}m {s}s",
+        "liveNow": "LIVE",
+        "promoSub": "{title} · prize {prize} · {n} entered",
+        "joinedSub": "{title} · {n} entered"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -1994,6 +1999,15 @@
         "sub": "Loveca v1.2をダウンロードし、提供元不明のアプリを許可してからAPKを開いてください。"
       },
       "tournamentModeSubLive": "イベント＆ブラケット",
+      "tournament": {
+        "sub": "近日公開",
+        "subLive": "イベント＆ブラケット",
+        "title": "トーナメントモード",
+        "countdown": "{d}日 {h}時間 {m}分 {s}秒",
+        "liveNow": "LIVE",
+        "promoSub": "{title} · 賞金 {prize} · 参加者 {n}人",
+        "joinedSub": "{title} · 参加者 {n}人"
+      },
       "booster": {
         "sub": "Open packs from your collection",
         "title": "Boosters"
@@ -2025,10 +2039,6 @@
       "sticker": {
         "sub": "Convert spare cards",
         "title": "Stickers"
-      },
-      "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -3802,6 +3812,15 @@
       "stickerShopSub": "Canjea sellos por cartas de tus sobres",
       "officialVideo": "Vídeo oficial de 8 min ↗",
       "tournamentModeSubLive": "Eventos y brackets",
+      "tournament": {
+        "sub": "Próximamente",
+        "subLive": "Eventos y brackets",
+        "title": "Modo torneo",
+        "countdown": "{d}d {h}h {m}m {s}s",
+        "liveNow": "EN VIVO",
+        "promoSub": "{title} · premio {prize} · {n} inscritos",
+        "joinedSub": "{title} · {n} inscritos"
+      },
       "loginBonus": "Bonus",
       "apk": {
         "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
@@ -3843,10 +3862,6 @@
       "sticker": {
         "sub": "Convert spare cards",
         "title": "Stickers"
-      },
-      "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -5610,6 +5625,15 @@
       "stickerShopSub": "실을 팩 카드로 교환",
       "officialVideo": "공식 8분 영상 ↗",
       "tournamentModeSubLive": "이벤트 & 브래킷",
+      "tournament": {
+        "sub": "곧 공개",
+        "subLive": "이벤트 & 브래킷",
+        "title": "토너먼트 모드",
+        "countdown": "{d}일 {h}시간 {m}분 {s}초",
+        "liveNow": "LIVE",
+        "promoSub": "{title} · 상금 {prize} · 참가 {n}명",
+        "joinedSub": "{title} · 참가 {n}명"
+      },
       "loginBonus": "로그인",
       "apk": {
         "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
@@ -5651,10 +5675,6 @@
       "sticker": {
         "sub": "Convert spare cards",
         "title": "Stickers"
-      },
-      "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -7442,6 +7462,15 @@
       "stickerShopSub": "用印章兑换你补充包中的卡牌",
       "officialVideo": "官方8分钟视频 ↗",
       "tournamentModeSubLive": "赛事与对阵表",
+      "tournament": {
+        "sub": "即将推出",
+        "subLive": "赛事与对阵表",
+        "title": "锦标赛模式",
+        "countdown": "{d}天 {h}时 {m}分 {s}秒",
+        "liveNow": "进行中",
+        "promoSub": "{title} · 奖池 {prize} · {n} 人报名",
+        "joinedSub": "{title} · {n} 人报名"
+      },
       "loginBonus": "登录",
       "apk": {
         "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
@@ -7483,10 +7512,6 @@
       "sticker": {
         "sub": "Convert spare cards",
         "title": "Stickers"
-      },
-      "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -9274,6 +9299,15 @@
       "tournamentModeSub": "เร็ว ๆ นี้",
       "officialVideo": "วิดีโอทางการ 8 นาที ↗",
       "tournamentModeSubLive": "อีเวนต์และแบร็กเก็ต",
+      "tournament": {
+        "sub": "เร็ว ๆ นี้",
+        "subLive": "อีเวนต์และแบร็กเก็ต",
+        "title": "โหมดทัวร์นาเมนต์",
+        "countdown": "{d}วัน {h}ชม. {m}น. {s}วิ",
+        "liveNow": "LIVE",
+        "promoSub": "{title} · รางวัล {prize} · เข้าแข่ง {n} คน",
+        "joinedSub": "{title} · เข้าแข่ง {n} คน"
+      },
       "loginBonus": "โบนัส",
       "apk": {
         "sub": "Download Loveca v1.2, allow unknown apps, then open the APK.",
@@ -9315,10 +9349,6 @@
       "sticker": {
         "sub": "Convert spare cards",
         "title": "Stickers"
-      },
-      "tournament": {
-        "subLive": "Live events",
-        "title": "Tournaments"
       },
       "tutorial": {
         "officialVideo": "Official 8-min video ↗",
@@ -11177,6 +11207,10 @@
     tour.title = pickLocalizedText(isEn, tour.title, enHub.tournament && enHub.tournament.title, loc.hub.tournamentMode);
     tour.sub = pickLocalizedText(isEn, tour.sub, enHub.tournament && enHub.tournament.sub, loc.hub.tournamentModeSub);
     tour.subLive = pickLocalizedText(isEn, tour.subLive, enHub.tournament && enHub.tournament.subLive, loc.hub.tournamentModeSubLive);
+    tour.countdown = pickLocalizedText(isEn, tour.countdown, enHub.tournament && enHub.tournament.countdown, '{d}d {h}h {m}m {s}s');
+    tour.liveNow = pickLocalizedText(isEn, tour.liveNow, enHub.tournament && enHub.tournament.liveNow, 'LIVE');
+    tour.promoSub = pickLocalizedText(isEn, tour.promoSub, enHub.tournament && enHub.tournament.promoSub, '{title} · prize {prize} · {n} entered');
+    tour.joinedSub = pickLocalizedText(isEn, tour.joinedSub, enHub.tournament && enHub.tournament.joinedSub, '{title} · {n} entered');
     loc.auth.tournament = loc.auth.tournament || {};
     loc.auth.tournament.title = pickLocalizedText(isEn, loc.auth.tournament.title, STRINGS.en.auth && STRINGS.en.auth.tournament && STRINGS.en.auth.tournament.title, tour.title);
     loc.auth.tournament.sub = pickLocalizedText(isEn, loc.auth.tournament.sub, STRINGS.en.auth && STRINGS.en.auth.tournament && STRINGS.en.auth.tournament.sub, tour.sub);
@@ -11400,6 +11434,14 @@
       },
       detail: {
         prizePool: 'prize pool {n}'
+      }
+    },
+    hub: {
+      tournament: {
+        countdown: '{d}d {h}h {m}m {s}s',
+        liveNow: 'LIVE',
+        promoSub: '{title} · prize {prize} · {n} entered',
+        joinedSub: '{title} · {n} entered'
       }
     }
   };

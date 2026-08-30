@@ -824,3 +824,54 @@ body.tcg-tournament-sky #llc-sky-bg .llc-sky-base {
   opacity: 0.92;
   margin: 0 0 4px;
 }
+
+/* Hub / auth menu — tournament countdown + glow */
+.llc-menu-item-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.llc-menu-item-title-row .llc-menu-item-title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.llc-menu-tournament-cd {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffe8f4;
+  text-shadow: 0 0 8px rgba(255, 150, 210, 0.65);
+  white-space: nowrap;
+}
+.llc-menu-item.llc-menu-tournament-glow {
+  animation: llcTournamentGlow 2.2s ease-in-out infinite;
+  border-color: rgba(220, 170, 255, 0.75);
+}
+@keyframes llcTournamentGlow {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow:
+      0 0 0 1px rgba(200, 150, 255, 0.4),
+      0 0 16px rgba(160, 100, 255, 0.45),
+      0 0 28px rgba(255, 120, 190, 0.28);
+  }
+  50% {
+    filter: brightness(1.06);
+    box-shadow:
+      0 0 0 1px rgba(230, 190, 255, 0.55),
+      0 0 22px rgba(180, 120, 255, 0.62),
+      0 0 36px rgba(255, 140, 200, 0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .llc-menu-item.llc-menu-tournament-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgba(200, 150, 255, 0.45),
+      0 0 14px rgba(160, 100, 255, 0.4);
+  }
+}

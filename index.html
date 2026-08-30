@@ -109,7 +109,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
-<link rel="stylesheet" href="client/css/tournament.css?v=14">
+<link rel="stylesheet" href="client/css/tournament.css?v=15">
 <link rel="stylesheet" href="client/css/portrait.css?v=94">
 <link rel="stylesheet" href="client/css/social.css?v=27">
 
@@ -219,8 +219,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         </button>
         <button class="llc-menu-item llc-menu-hover llc-menu-accent-violet" id="btn-auth-tournament" type="button">
           <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="auth.tournament.title">Tournament Mode</span>
-            <span class="llc-menu-item-sub" data-i18n="auth.tournament.subLive">Events & brackets</span>
+            <span class="llc-menu-item-title-row">
+              <span class="llc-menu-item-title" data-i18n="auth.tournament.title">Tournament Mode</span>
+              <span class="llc-menu-tournament-cd" id="auth-tournament-cd" hidden aria-live="polite"></span>
+            </span>
+            <span class="llc-menu-item-sub" data-i18n="auth.tournament.subLive" id="auth-tournament-sub">Events & brackets</span>
           </span>
         </button>
         <button class="llc-menu-item llc-menu-hover llc-menu-accent-blue" id="btn-auth-deck-experiment" type="button">
@@ -739,8 +742,11 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         </div>
         <button class="llc-menu-item llc-menu-hover llc-menu-accent-violet" id="btn-hub-tournament" type="button">
           <span class="llc-menu-item-body">
-            <span class="llc-menu-item-title" data-i18n="hub.tournament.title">Tournament Mode</span>
-            <span class="llc-menu-item-sub" data-i18n="hub.tournament.subLive">Events & brackets</span>
+            <span class="llc-menu-item-title-row">
+              <span class="llc-menu-item-title" data-i18n="hub.tournament.title">Tournament Mode</span>
+              <span class="llc-menu-tournament-cd" id="hub-tournament-cd" hidden aria-live="polite"></span>
+            </span>
+            <span class="llc-menu-item-sub" data-i18n="hub.tournament.subLive" id="hub-tournament-sub">Events & brackets</span>
           </span>
         </button>
         <div class="llc-menu-row">
@@ -2853,7 +2859,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=170"></script>
+<script src="i18n.js?v=171"></script>
 <script src="log_i18n.js?v=17"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=32"></script>
@@ -2871,7 +2877,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   } catch (e) { /* ignore */ }
 })();
 </script>
-<script src="client/js/tournament.js?v=18"></script>
+<script src="client/js/tournament.js?v=19"></script>
 <script src="client/js/sleeves.js?v=15"></script>
 <script src="client/js/playmats.js?v=8"></script>
 <script src="client/js/apk-asset-cache.js?v=8"></script>
