@@ -3992,10 +3992,34 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
 
 function handleSpectatorPollError(msg) {
   if (!G.isSpectator) return false;
-  const fallback = (global.LLTCG_I18N && typeof global.LLTCG_I18N.t === 'function')
-    ? global.LLTCG_I18N.t('spectate.sessionEnded')
-    : 'Spectator session ended.';
-  void leaveSpectatorMode({ toastMsg: msg || fallback });
+  const text = String(msg || '');
+  // Transient get_state / delay-ring 400s during Live must not eject the viewer.
+  // Only end the session when the room or spectator token is actually gone.
+  const fatal = /room not found/i.test(text)
+    || /invalid spectator/i.test(text)
+    || /not a spectator/i.test(text)
+    || /spectator.*(expired|invalid|unknown)/i.test(text)
+    || /unauthorized/i.test(text)
+    || /forbidden/i.test(text);
+  if (!fatal) {
+    if (typeof TCG_DEBUG !== 'undefined' && TCG_DEBUG.warn) {
+      TCG_DEBUG.warn('poll', 'spectator pull non-fatal — keep watching', text);
+    }
+    return true;
+  }
+  // spectacle.js is a top-level browser script (not an IIFE with `global`).
+  const fallback = (typeof t === 'function')
+    ? t('spectate.sessionEnded', 'Spectator session ended.')
+    : ((typeof window !== 'undefined' && window.LLTCG_I18N && typeof window.LLTCG_I18N.t === 'function')
+      ? window.LLTCG_I18N.t('spectate.sessionEnded')
+      : 'Spectator session ended.');
+  try {
+    void leaveSpectatorMode({ toastMsg: text || fallback });
+  } catch (e) {
+    if (typeof TCG_DEBUG !== 'undefined' && TCG_DEBUG.warn) {
+      TCG_DEBUG.warn('poll', 'leaveSpectatorMode failed', e);
+    }
+  }
   return true;
 }
 
