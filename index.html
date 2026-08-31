@@ -26164,6 +26164,81 @@ function stripAllBladeHeartsRulesReminder(text) {
   return s.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+const CARD_RULES_MODIFIER_LABELS = new Set([
+  'Once per turn', 'Once per Turn', 'Twice per turn', 'Twice per Turn',
+  'Center', 'Left Side', 'Right Side',
+  'Una vez por turno', 'Dos veces por turno', 'Centro', 'Lado izquierdo', 'Lado derecho',
+  'Uma vez por turno', 'Duas vezes por turno', 'Lado Esquerdo', 'Lado Direito',
+  '턴에 1회', '턴당 2회', '센터', '왼쪽', '오른쪽',
+  '每回合1次', '每回合2次', '中央', '左侧', '右侧',
+  'เทิร์นละ 1 ครั้ง', 'เทิร์นละ 2 ครั้ง', 'เซ็นเตอร์', 'ฝั่งซ้าย', 'ฝั่งขวา',
+  'ターン1回', 'ターン2回', 'センター', '左サイド', '右サイド',
+]);
+
+function transferCardRulesLineBreaks(reference, target) {
+  if (!reference || !target) return null;
+  const refRe = /\[[^\]]+\]/g;
+  const refStarts = [];
+  let m;
+  while ((m = refRe.exec(reference)) !== null) refStarts.push(m.index);
+  const tgtStarts = [];
+  refRe.lastIndex = 0;
+  while ((m = refRe.exec(target)) !== null) tgtStarts.push(m.index);
+  if (!refStarts.length || refStarts.length !== tgtStarts.length) return null;
+  const breaks = new Set();
+  for (let i = 1; i < refStarts.length; i++) {
+    if (refStarts[i] > 0 && reference[refStarts[i] - 1] === '\n') breaks.add(tgtStarts[i]);
+  }
+  let out = '';
+  for (let i = 0; i < target.length; i++) {
+    if (breaks.has(i)) out += '\n';
+    out += target[i];
+  }
+  if (reference.includes('\n•') && out.includes('•') && (out.match(/\n•/g) || []).length < (reference.match(/\n•/g) || []).length) {
+    out = out.replace(/(?<=[.!?"'）\)])\s*•/g, '\n•');
+    if ((out.match(/\n•/g) || []).length < (reference.match(/\n•/g) || []).length) {
+      out = out.replace(/(?<!\n)•/g, '\n•');
+    }
+  }
+  return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function insertCardRulesLineBreaks(text) {
+  if (!text?.trim()) return text || '';
+  let s = text.replace(/(?<=[.!?"'）\)])\s*•/g, '\n•');
+  s = s.replace(/(?<=[/])\s*(?=\[)/g, '\n');
+  const breaks = new Set();
+  const re = /\[([^\]]+)\]/g;
+  let match;
+  while ((match = re.exec(s)) !== null) {
+    const label = match[1];
+    if (CARD_RULES_MODIFIER_LABELS.has(label)) continue;
+    const pos = match.index;
+    if (pos === 0 || s[pos - 1] === '\n') continue;
+    const prev = s[pos - 1];
+    const before = s.slice(0, pos).trimEnd();
+    if (before.endsWith(']') && !'.!?。/'.includes(prev)) continue;
+    if ('.!?。/'.includes(prev)) breaks.add(pos);
+  }
+  if (!breaks.size) return s.replace(/\n{3,}/g, '\n\n').trim();
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    if (breaks.has(i)) out += '\n';
+    out += s[i];
+  }
+  return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function formatCardRulesLineBreaks(text, card) {
+  if (!text) return '';
+  const ref = (card?.text_es || '').trim();
+  if (ref.includes('\n')) {
+    const transferred = transferCardRulesLineBreaks(ref, text);
+    if (transferred) return transferred;
+  }
+  return insertCardRulesLineBreaks(text);
+}
+
 function cardRulesDisplayText(card) {
   if (!card) return '';
   const en = stripAllBladeHeartsRulesReminder(card.text || '');
@@ -26172,12 +26247,14 @@ function cardRulesDisplayText(card) {
   const ko = stripAllBladeHeartsRulesReminder(card.text_ko || '');
   const zh = stripAllBladeHeartsRulesReminder(card.text_zh || '');
   const th = stripAllBladeHeartsRulesReminder(card.text_th || '');
+  const pt = stripAllBladeHeartsRulesReminder(card.text_pt || '');
   const loc = getLocale();
-  if (loc === 'es') return es || en;
-  if (loc === 'ko') return ko || en;
-  if (loc === 'zh') return zh || en;
-  if (loc === 'th') return th || en;
-  if (loc !== 'ja') return en || jp;
+  if (loc === 'es') return formatCardRulesLineBreaks(es || en, card);
+  if (loc === 'ko') return formatCardRulesLineBreaks(ko || en, card);
+  if (loc === 'zh') return formatCardRulesLineBreaks(zh || en, card);
+  if (loc === 'th') return formatCardRulesLineBreaks(th || en, card);
+  if (loc === 'pt') return formatCardRulesLineBreaks(pt || en, card);
+  if (loc !== 'ja') return formatCardRulesLineBreaks(en || jp, card);
   if (!jp) return en;
   if (jp.match(getRuleKwBracketPattern())) return jp;
 

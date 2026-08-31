@@ -10,6 +10,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from card_text_line_breaks import format_card_rules_text  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 CARDS_PATH = ROOT / "cards.json"
 DEFAULT_CSV = ROOT / "exports" / "loveca_sheet_latest.csv"
@@ -72,7 +76,9 @@ def main() -> int:
         if len(samples) < 8:
             samples.append((no, old[:80], new_text[:80]))
         if args.apply:
-            card["text_pt"] = new_text
+            ref = (card.get("text_es") or "").strip()
+            ref_use = ref if "\n" in ref else None
+            card["text_pt"] = format_card_rules_text(new_text.strip(), ref_use)
 
     for no in by_no:
         if no not in sheet:

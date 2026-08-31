@@ -276,7 +276,7 @@ function getCards(): string {
         return json_encode(['cards' => [], 'starter_decks' => []]);
     }
 
-    // Optional locale trim: keep English `text` + one locale body (text_ja/es/ko/zh/th).
+    // Optional locale trim: keep English `text` + one locale body (text_jp/es/ko/zh/th/pt).
     // Full multi-locale cards.json is ~4MB; trimming unused oracle text avoids client
     // fetch timeouts that leave G.allCards empty and grey out deck Save.
     $locale = strtolower(trim((string)($_GET['locale'] ?? '')));
@@ -284,7 +284,7 @@ function getCards(): string {
         $rawAll = file_get_contents(CARDS_FILE);
         return ($rawAll !== false && $rawAll !== '') ? $rawAll : json_encode(['cards' => [], 'starter_decks' => []]);
     }
-    if (!in_array($locale, ['en', 'ja', 'es', 'ko', 'zh', 'th'], true)) {
+    if (!in_array($locale, ['en', 'ja', 'es', 'ko', 'zh', 'th', 'pt'], true)) {
         $locale = 'en';
     }
 
@@ -321,7 +321,7 @@ function getCards(): string {
         } elseif ($locale !== 'en') {
             $keepKeys[] = 'text_' . $locale;
         }
-        $dropKeys = ['text_jp', 'text_es', 'text_ko', 'text_zh', 'text_th'];
+        $dropKeys = ['text_jp', 'text_es', 'text_ko', 'text_zh', 'text_th', 'text_pt'];
 
         foreach ($data['cards'] as &$card) {
             if (!is_array($card)) {
