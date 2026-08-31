@@ -3653,6 +3653,14 @@ body.deck-card-preview #modal-card{z-index:970}
   font-style:italic;
   font-weight:400;
 }
+.rule-inline-icon,
+.hc-text .hicon.rule-inline-icon,
+.hc-text .ticon.rule-inline-icon,
+.hc-text .bicon.rule-inline-icon,
+.prompt-effect-text .rule-inline-icon,
+.stage-ability-desc .rule-inline-icon{
+  height:1.05em;width:auto;vertical-align:-0.15em;display:inline-block;
+}
 .skill-type-icons{
   display:inline-flex;align-items:center;flex-shrink:0;flex-wrap:nowrap;
   height:1.05em;margin-right:3px;line-height:0;

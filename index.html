@@ -105,7 +105,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Kalnia:wght@500&family=Libre+Baskerville:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+Thai:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="client/css/shell-all.css?v=104">
+<link rel="stylesheet" href="client/css/shell-all.css?v=105">
 <link rel="stylesheet" href="client/css/prompts.css?v=4">
 <link rel="stylesheet" href="client/css/sleeves.css?v=24">
 <link rel="stylesheet" href="client/css/playmats.css?v=6">
@@ -2902,7 +2902,8 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="client/js/state-apply.js?v=78"></script>
 <script src="client/js/stamps.js?v=21"></script>
 <script src="client/js/replay-debug.js?v=11"></script>
-<script src="client/js/prompt-renderer.js?v=96"></script>
+<script src="client/js/rule-text-icons.js?v=1"></script>
+<script src="client/js/prompt-renderer.js?v=97"></script>
 <script src="client/js/tutorial-interactive.js?v=25"></script>
 <!-- Early auth guard: separate script so a main-bundle parse error cannot leave auth stuck forever. -->
 <script>
@@ -26281,7 +26282,7 @@ function appendRuleKwSpan(container, label, kwKey) {
   container.appendChild(span);
 }
 
-function appendPlainTextWithYell(container, text) {
+function appendPlainTextWithYellOnly(container, text) {
   if (!text) return;
   let last = 0;
   const re = new RegExp(
@@ -26308,6 +26309,15 @@ function appendPlainTextWithYell(container, text) {
   if (last < text.length) {
     container.appendChild(document.createTextNode(text.slice(last)));
   }
+}
+
+function appendPlainTextWithYell(container, text) {
+  if (!text) return;
+  if (typeof appendPlainTextWithInlineIcons === 'function' && /<[^>]+>/.test(text)) {
+    appendPlainTextWithInlineIcons(container, text, appendPlainTextWithYellOnly);
+    return;
+  }
+  appendPlainTextWithYellOnly(container, text);
 }
 
 function renderCardRulesText(text, container) {

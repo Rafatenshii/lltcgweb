@@ -1078,12 +1078,37 @@ function isLocalizedPromptLocale(loc) {
   return loc === 'ja' || loc === 'es' || loc === 'ko' || loc === 'zh' || loc === 'th';
 }
 
+/** Normalize card/prompt copy for matching tagged EN vs server prose. */
+function ruleTextComparable(s) {
+  if (typeof normalizeRuleTextForCompare === 'function') {
+    return normalizeRuleTextForCompare(s);
+  }
+  if (typeof stripRuleInlineTags === 'function') {
+    return stripRuleInlineTags(s).replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function promptTextMatchesCardLine(raw, cardLine) {
+  const r = ruleTextComparable(raw);
+  const line = ruleTextComparable(cardLine);
+  if (!r || !line) return false;
+  if (r === line) return true;
+  const prefix = line.slice(0, Math.min(24, line.length));
+  if (prefix.length >= 6 && r.includes(prefix)) return true;
+  const linePrefix = line.slice(0, Math.min(40, line.length));
+  if (linePrefix.length >= 6 && r.replace(/\?$/, '').startsWith(linePrefix)) return true;
+  return false;
+}
+
 /** Prefer printed ability text in the active locale when the server sent English effect/prompt. */
 function localizedAbilityLineForPrompt(text, pr, s) {
   const card = findPromptSourceCard(pr, s);
   const idx = card ? promptAbilityIndex(card, pr) : -1;
   if (!(card && idx >= 0)) {
-    if (card && text && text === (card.text || '').trim()) return cardRulesDisplayText(card);
+    if (card && text && ruleTextComparable(text) === ruleTextComparable(card.text || '')) {
+      return cardRulesDisplayText(card);
+    }
     return null;
   }
   const fromAbility = abilityRulesTextFor(card, idx);
@@ -1091,14 +1116,13 @@ function localizedAbilityLineForPrompt(text, pr, s) {
   const raw = String(text || '').trim();
   const effectEn = (pr?.effect_text || '').trim();
   const abPrompt = String(pr?.ability?.prompt || card.abilities?.[idx]?.prompt || '').trim();
-  const enLine = (card.text || '').split(/\n/).map(l => l.trim()).find(l => l && raw.includes(l.slice(0, Math.min(24, l.length))));
+  const enLine = (card.text || '').split(/\n/).map(l => l.trim()).find(l => l && promptTextMatchesCardLine(raw, l));
   const promptMatch = !!abPrompt && (
-    raw === abPrompt
-    || raw === `${abPrompt}?`
-    || abPrompt.startsWith(raw.replace(/\?$/, ''))
-    || raw.replace(/\?$/, '').startsWith(abPrompt.slice(0, Math.min(40, abPrompt.length)))
+    ruleTextComparable(raw) === ruleTextComparable(abPrompt)
+    || ruleTextComparable(raw) === ruleTextComparable(`${abPrompt}?`)
+    || promptTextMatchesCardLine(raw, abPrompt)
   );
-  if (!raw || raw === effectEn || promptMatch || enLine) {
+  if (!raw || ruleTextComparable(raw) === ruleTextComparable(effectEn) || promptMatch || enLine) {
     if (raw.endsWith('?') && !/[?？]$/.test(fromAbility)) {
       return fromAbility.replace(/[。．.]$/, '') + (getLocale() === 'zh' || getLocale() === 'ja' ? '？' : '?');
     }
