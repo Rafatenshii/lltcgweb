@@ -28,6 +28,7 @@ LOCALE_FILES = {
     "ko": ROOT / "tutorial_ko.json",
     "zh": ROOT / "tutorial_zh.json",
     "th": ROOT / "tutorial_th.json",
+    "pt": ROOT / "tutorial_pt.json",
 }
 
 
@@ -86,7 +87,7 @@ def main() -> int:
             ", ".join(missing[:30]),
             file=sys.stderr,
         )
-    if leaks and args.locale in ("es", "ko", "zh", "th"):
+    if leaks and args.locale in ("es", "ko", "zh", "th", "pt"):
         ok = False
         print(
             f"{args.locale}: {len(leaks)} step(s) with English game terms:",

@@ -10,6 +10,7 @@
   var _tutorialKo = null;
   var _tutorialZh = null;
   var _tutorialTh = null;
+  var _tutorialPt = null;
 
   var STRINGS = {
   "en": {
@@ -12343,7 +12344,7 @@
       "next": "Avançar →",
       "finish": "Concluir",
       "intro_welcome": "Olá! Eu sou a **Shibuya Kanon**. Boas-vindas ao tutorial do **Love Live! Official Card Game**!",
-      "intro_what": "Este é um jogo de cartas para **dois jogadores** sobre **school idols**! Você vai recrutar **Membros** para o seu Palco, gerenciar **Energia** e realizar **Lives** para brilhar mais que seu adversário.",
+      "intro_what": "Este é um jogo de cartas para **dois jogadores** sobre **ídolos escolares**! Você vai recrutar **Membros** para o seu Palco, gerenciar **Energia** e realizar **Lives** para brilhar mais que seu adversário.",
       "intro_goal": "**Condição de vitória:** Realizar **3 Lives** bem-sucedidas antes do seu adversário. Quando sua **Live** é bem-sucedida, ela vai para a **zona de cartas Live Bem-Sucedidas** — o primeiro a chegar a três vence a partida!",
       "intro_decks": "Este jogo usa três tipos de cartas: **Membro**, **Live** e **Energia**. Cada jogador tem um **Deck Principal** de **60** cartas (**48 Membros** e **12 Lives**) e um **Deck de Energia** de **12** cartas de **Energia**.",
       "intro_card_member": "As cartas **Membro** são as idols que vão se apresentar no Palco. Pague a **Energia** equivalente ao custo para jogá-las da sua mão. Cada Membro tem uma quantidade de **Corações** coloridos (na vertical) usados ao realizar Lives. Há também **Blades** (ícones de penlight redondos) e **Corações de Blade** (corações deitados), mas focaremos no coração vertical por enquanto. A Shiki aqui tem **1 coração roxo**.",
@@ -12359,7 +12360,7 @@
       "setup_coin": "Antes do jogo começar, um **cara ou coroa** escolhe o vencedor — que **decide** quem começa. Fique atento a isso no início de cada partida!",
       "setup_coin_p1": "...**Liella!** começa!",
       "setup_coin_p2": "Agora podemos ver nossa **mão inicial!**",
-      "setup_mulligan": "Você começa com **6** cartas. Se não estiver satisfeito com as cartas que tirou, esta tela dá a oportunidade de trocar quantas cartas quiser e comprar substitutas (Chamamos isso de **mulligan**).",
+      "setup_mulligan": "Você começa com **6** cartas. Se não estiver satisfeito com as cartas que tirou, esta tela dá a oportunidade de trocar quantas cartas quiser e comprar substitutas (chamamos isso de **troca de mão**).",
       "setup_mull_p1": "Fluxo do jogo: **Fase Principal** -> **Fase de LIVE** -> **Fase de Performance** -> Repetir.",
       "setup_mull_p2": "**Fase Principal!**. Uma nova carta foi comprada do seu deck.",
       "t1_structure": "A cada **Fase Principal**, o primeiro jogador joga, depois o segundo — é onde você joga Membros... e usa habilidades. Você pressionará **Encerrar Fase Principal** aqui quando terminar suas ações.",
@@ -15216,6 +15217,7 @@
     else if (loc === 'ko') packedPortrait = fromPack(_tutorialKo);
     else if (loc === 'zh') packedPortrait = fromPack(_tutorialZh);
     else if (loc === 'th') packedPortrait = fromPack(_tutorialTh);
+    else if (loc === 'pt') packedPortrait = fromPack(_tutorialPt);
     if (packedPortrait) return packedPortrait;
     if (portrait && step.dialogue_portrait) return step.dialogue_portrait;
     if (loc === 'ja') {
@@ -15242,6 +15244,11 @@
       if (_tutorialTh && _tutorialTh[step.id]) return _tutorialTh[step.id];
       var thTranslated = t('tutorial.' + step.id);
       if (thTranslated !== 'tutorial.' + step.id) return thTranslated;
+    }
+    if (loc === 'pt') {
+      if (_tutorialPt && _tutorialPt[step.id]) return _tutorialPt[step.id];
+      var ptTranslated = t('tutorial.' + step.id);
+      if (ptTranslated !== 'tutorial.' + step.id) return ptTranslated;
     }
     return step.dialogue || '';
   }
@@ -15462,6 +15469,23 @@
       });
   }
 
+  function loadTutorialPt() {
+    if (_tutorialPt) return Promise.resolve(_tutorialPt);
+    return fetch('./tutorial_pt.json?v=2', { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('tutorial_pt HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        _tutorialPt = data && typeof data === 'object' ? data : {};
+        return _tutorialPt;
+      })
+      .catch(function () {
+        _tutorialPt = {};
+        return _tutorialPt;
+      });
+  }
+
   function initLocale(onChange) {
     if (typeof onChange === 'function') onLocaleChange(onChange);
     var curLoc = getLocale();
@@ -15506,6 +15530,7 @@
     void loadTutorialKo();
     void loadTutorialZh();
     void loadTutorialTh();
+    void loadTutorialPt();
   }
 
   function initLocaleUi() {
@@ -15534,6 +15559,7 @@
     loadTutorialKo: loadTutorialKo,
     loadTutorialZh: loadTutorialZh,
     loadTutorialTh: loadTutorialTh,
+    loadTutorialPt: loadTutorialPt,
     tutorialDialogue: tutorialDialogue,
     initLocale: initLocale,
     initLocaleUi: initLocaleUi,
