@@ -98,6 +98,7 @@ sfx_manifest.json
 !/scripts/merge_text_en.py
 !/scripts/merge_text_pt.py
 !/scripts/inject_i18n_pt.py
+!/scripts/apply_news_pt.py
 !/scripts/validate_text_en_tags.py
 audit_tutorial_browser.js
 build_tutorial.php
