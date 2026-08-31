@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge icon-tagged EN card rules from sheet CSV into cards.json text field."""
+"""Merge icon-tagged PT card rules from sheet CSV into cards.json text_pt field."""
 
 from __future__ import annotations
 
@@ -23,14 +23,19 @@ def load_sheet(path: Path) -> dict[str, str]:
         out: dict[str, str] = {}
         for row in reader:
             no = (row.get("card_no") or row.get("card_number") or "").strip()
-            en = (row.get("text_en_edited") or row.get("Special Info [EN]") or "").strip()
-            if no and en:
-                out[no] = en
+            pt = (
+                row.get("text_br_edited")
+                or row.get("Special Info [BR]")
+                or row.get("text_pt")
+                or ""
+            ).strip()
+            if no and pt:
+                out[no] = pt
         return out
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Merge EN sheet into cards.json")
+    parser = argparse.ArgumentParser(description="Merge PT sheet into cards.json text_pt")
     parser.add_argument("csv", nargs="?", type=Path, default=DEFAULT_CSV)
     parser.add_argument("--dry-run", action="store_true", help="Report diff only")
     parser.add_argument("--apply", action="store_true", help="Write cards.json")
@@ -40,7 +45,7 @@ def main() -> int:
 
     if not args.csv.is_file():
         print(f"Missing CSV: {args.csv}", file=sys.stderr)
-        print("Run: python scripts/fetch_loveca_en_sheet.py", file=sys.stderr)
+        print("Run: python scripts/fetch_loveca_sheet.py", file=sys.stderr)
         return 1
     if not CARDS_PATH.is_file():
         print("Missing cards.json", file=sys.stderr)
@@ -59,7 +64,7 @@ def main() -> int:
         if not card:
             unknown += 1
             continue
-        old = (card.get("text") or "").strip()
+        old = (card.get("text_pt") or "").strip()
         if old == new_text.strip():
             unchanged += 1
             continue
@@ -67,14 +72,14 @@ def main() -> int:
         if len(samples) < 8:
             samples.append((no, old[:80], new_text[:80]))
         if args.apply:
-            card["text"] = new_text
+            card["text_pt"] = new_text
 
     for no in by_no:
         if no not in sheet:
             skipped += 1
 
-    print(f"Sheet rows with EN: {len(sheet)}")
-    print(f"Updated: {updated}  Unchanged: {unchanged}  Skipped (no sheet EN): {skipped}  Unknown id: {unknown}")
+    print(f"Sheet rows with PT: {len(sheet)}")
+    print(f"Updated: {updated}  Unchanged: {unchanged}  Skipped (no sheet PT): {skipped}  Unknown id: {unknown}")
     if samples:
         print("\nSample changes:")
         for no, old, new in samples:

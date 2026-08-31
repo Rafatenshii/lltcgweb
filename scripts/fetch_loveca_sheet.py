@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download live EN card text from the Loveca translation Google Sheet."""
+"""Download live EN + BR card text from the Loveca translation Google Sheet."""
 
 from __future__ import annotations
 
@@ -23,6 +23,12 @@ TEXT_EN_HEADERS = (
     "Special Info [EN]",
     "text_en",
     "Special Info EN",
+)
+TEXT_BR_HEADERS = (
+    "text_br_edited",
+    "Special Info [BR]",
+    "text_br",
+    "Special Info BR",
 )
 
 
@@ -56,28 +62,33 @@ def write_normalized_csv(raw: bytes, out_path: Path) -> dict[str, int]:
     headers = list(reader.fieldnames)
     col_no = pick_column(headers, CARD_NO_HEADERS)
     col_en = pick_column(headers, TEXT_EN_HEADERS)
+    col_br = pick_column(headers, TEXT_BR_HEADERS)
     if not col_no:
         raise SystemExit(f"Missing card id column in: {headers}")
-    if not col_en:
-        raise SystemExit(f"Missing EN text column in: {headers}")
+    if not col_en and not col_br:
+        raise SystemExit(f"Missing EN/BR text columns in: {headers}")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    stamped = EXPORTS / f"loveca_en_sheet_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
+    stamped = EXPORTS / f"loveca_sheet_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
     rows_out: list[dict[str, str]] = []
-    stats = {"rows": 0, "with_en": 0}
+    stats = {"rows": 0, "with_en": 0, "with_br": 0}
     for row in reader:
         no = (row.get(col_no) or "").strip()
         if not no:
             continue
-        en = (row.get(col_en) or "").strip()
-        rows_out.append({"card_no": no, "text_en_edited": en})
+        en = (row.get(col_en) or "").strip() if col_en else ""
+        br = (row.get(col_br) or "").strip() if col_br else ""
+        rows_out.append({"card_no": no, "text_en_edited": en, "text_br_edited": br})
         stats["rows"] += 1
         if en:
             stats["with_en"] += 1
+        if br:
+            stats["with_br"] += 1
 
+    fieldnames = ["card_no", "text_en_edited", "text_br_edited"]
     for path in (out_path, stamped):
         with path.open("w", encoding="utf-8", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=["card_no", "text_en_edited"])
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows_out)
 
@@ -85,7 +96,7 @@ def write_normalized_csv(raw: bytes, out_path: Path) -> dict[str, int]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fetch Loveca EN sheet CSV")
+    parser = argparse.ArgumentParser(description="Fetch Loveca EN+BR sheet CSV")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="Normalized output CSV")
     parser.add_argument("--url", default=EXPORT_URL, help="Google Sheets CSV export URL")
     args = parser.parse_args()
@@ -97,7 +108,10 @@ def main() -> int:
         return 1
 
     stats = write_normalized_csv(raw, args.out)
-    print(f"Fetched {stats['rows']} rows ({stats['with_en']} with text_en_edited)")
+    print(
+        f"Fetched {stats['rows']} rows "
+        f"({stats['with_en']} with text_en_edited, {stats['with_br']} with text_br_edited)"
+    )
     print(f"Wrote {args.out}")
     return 0
 

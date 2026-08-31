@@ -26,7 +26,7 @@ Apply the same rules when mirroring copy to `tutorial_ja.json` or localized `tut
 
 ## i18n (required for all player-visible text)
 
-Supported locales live in `i18n.js` (`LOCALES`, **en** + **ja** + **es** + **ko** + **zh** + **th**). **Every new or changed player-facing string must ship in all locales in the same change** — not English-only.
+Supported locales live in `i18n.js` (`LOCALES`, **en** + **ja** + **es** + **ko** + **zh** + **th** + **pt**). **Every new or changed player-facing string must ship in all locales in the same change** — not English-only.
 
 ### Korean (required — do not skip)
 
@@ -68,33 +68,46 @@ Infrastructure (`LOCALE_ORDER`, `inject_i18n_th.py`, `inject_i18n_th_maps.py`, `
 
 See `docs/locales/TH_PROGRESS.md` and `docs/locales/TH_NAMES.md`.
 
+### Brazilian Portuguese / pt-BR (required — do not skip)
+
+Brazilian Portuguese (`pt`, `document.documentElement.lang = 'pt-BR'`) is a **first-class locale**, same enforcement as Korean, Chinese, and Thai. **Every new or changed player-facing string must include Portuguese in the same change** — menus, missions, toasts, overlays, news posts, logs, stamps, and JS-built UI. Do not ship en+ja+es+ko+zh+th without `pt`.
+
+| Surface | Portuguese files / fields |
+|---------|---------------------------|
+| UI strings | `locales/pt.json` → `python scripts/inject_i18n_pt.py` → `STRINGS.pt` |
+| Card rules text | `cards.json` → `text_pt` (brackets: `[Ao Entrar]`, `[Início de Live]`, `[Ativado]`, `[Sempre]`, `[Uma vez por turno]`, `[Centro]`, …) |
+| Logs / prompts | `log_i18n.js` PT rules (`localizeLogMessagePt` / `localizePromptTextPt`) |
+| Tutorial | **English fallback** until `tutorial_pt.json` ships — UI chrome still requires `STRINGS.pt.tutorial.*` keys for parity |
+
+Character names stay **English** (same as Spanish). Source sheet column: `text_br_edited` → merge via `python scripts/merge_text_pt.py`.
+
 ### Where strings go
 
-| Surface | English source | JA / ES / KO / ZH / TH |
+| Surface | English source | JA / ES / KO / ZH / TH / PT |
 |---------|----------------|-------------------------|
-| Menus, screens, buttons, toasts, overlays | `i18n.js` → `STRINGS.en.*` | Matching `STRINGS.ja.*` / `STRINGS.es.*` / `STRINGS.ko.*` / `STRINGS.zh.*` / `STRINGS.th.*` |
-| **Sticker Shop** (hub tile, shop screen, seal guide, deck convert-to-seal, related toasts/missions) | `STRINGS.en.hub.stickerShop*` + `STRINGS.en.sticker.*` (+ `toast.signInStickerShop` / `toast.sticker*`) | Same keys in **every** locale pack via `locales/{es,ko,zh,th}.json` → `inject_i18n_*.py`. Hub HTML uses `hub.sticker.title` / `hub.sticker.sub` (aliased from `hub.stickerShop` / `hub.stickerShopSub` in `mergeLocaleAliases`). |
-| Static HTML labels | `data-i18n="dotted.key"` | Same key in `STRINGS.ja`, `STRINGS.es`, `STRINGS.ko`, `STRINGS.zh`, and `STRINGS.th` |
+| Menus, screens, buttons, toasts, overlays | `i18n.js` → `STRINGS.en.*` | Matching `STRINGS.ja.*` / `STRINGS.es.*` / `STRINGS.ko.*` / `STRINGS.zh.*` / `STRINGS.th.*` / `STRINGS.pt.*` |
+| **Sticker Shop** (hub tile, shop screen, seal guide, deck convert-to-seal, related toasts/missions) | `STRINGS.en.hub.stickerShop*` + `STRINGS.en.sticker.*` (+ `toast.signInStickerShop` / `toast.sticker*`) | Same keys in **every** locale pack via `locales/{es,ko,zh,th,pt}.json` → `inject_i18n_*.py`. Hub HTML uses `hub.sticker.title` / `hub.sticker.sub` (aliased from `hub.stickerShop` / `hub.stickerShopSub` in `mergeLocaleAliases`). |
+| Static HTML labels | `data-i18n="dotted.key"` | Same key in `STRINGS.ja`, `STRINGS.es`, `STRINGS.ko`, `STRINGS.zh`, `STRINGS.th`, and `STRINGS.pt` |
 | JS-built UI | `t('dotted.key', { vars })` | Same |
 | Interactive tutorial bubbles | `tutorial.json` dialogue | `tutorial_ja.json` / `tutorial_es.json` / `tutorial_ko.json` / `tutorial_zh.json` / **`tutorial_th.json`** |
 | Legacy slideshow tutorial | `tutorial.*` | `tutorial.*` in all STRINGS packs **and/or** tutorial_*.json |
-| Title-screen news posts | `news.json` | `en` / `ja` / `es` / `ko` / `zh` / **`th`** on each post |
-| Server log lines | `log_i18n.js` | JA / ES / KO / ZH / **TH** rules + `STRINGS.*.log` |
-| Card skill oracle text | `cards.json` `text` | `text_jp` / `text_es` / `text_ko` / `text_zh` / **`text_th`** with localized skill brackets matching `skillKw` |
+| Title-screen news posts | `news.json` | `en` / `ja` / `es` / `ko` / `zh` / `th` / `pt` on each post |
+| Server log lines | `log_i18n.js` | JA / ES / KO / ZH / TH / PT rules + `STRINGS.*.log` |
+| Card skill oracle text | `cards.json` `text` | `text_jp` / `text_es` / `text_ko` / `text_zh` / `text_th` / `text_pt` with localized skill brackets matching `skillKw` |
 
 ### Checklist before finishing a feature with text
 
-1. Add **`STRINGS.en` + `STRINGS.ja` + `STRINGS.es` + `STRINGS.ko` + `STRINGS.zh` + `STRINGS.th`** keys (or matching `tutorial_*.json` for interactive tutorial steps).
+1. Add **`STRINGS.en` + `STRINGS.ja` + `STRINGS.es` + `STRINGS.ko` + `STRINGS.zh` + `STRINGS.th` + `STRINGS.pt`** keys (or matching `tutorial_*.json` for interactive tutorial steps).
 2. Wire HTML via **`data-i18n`** or JS via **`t()`** — avoid raw English in templates.
 3. If UI is rebuilt on locale change, ensure **`refreshDynamicI18n()`** (or `onLocaleChange`) refreshes it.
 4. Bump **`?v=`** on `i18n.js` / `tutorial_*.json` / `log_i18n.js` when those files change.
-5. Run **`python scripts/extract_i18n_en.py`** then **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, zh, **th** against en). Sticker Shop belongs in this check (`sticker.*`, `hub.stickerShop*`, sticker toasts/missions) — do not leave those EN/JA-only.
+5. Run **`python scripts/extract_i18n_en.py`** then **`php scripts/validate_i18n.php`** after locale JSON changes (checks es, ko, zh, th, pt against en). Sticker Shop belongs in this check (`sticker.*`, `hub.stickerShop*`, sticker toasts/missions) — do not leave those EN/JA-only.
 6. For **interactive tutorial** steps:
    - Curate under **`locales/{locale}.json` → `tutorial.*`** (or `TUTORIAL_EXACT_OVERRIDES`).
    - Run **`python scripts/build_tutorial_locale_json.py --locale {locale}`**.
    - Run **`python scripts/validate_tutorial_i18n.py --locale {locale}`** (es/ko/zh/**th** leak checks).
    - Translate game terms/skill keywords; **do not** translate character names, group brands (Liella!, μ's), or Live/song titles in tutorial dialogue.
-7. For **new/changed card rules text**: populate **`text_es` + `text_ko` + `text_zh` + `text_th`** in the same change (localized brackets; quoted names use locale name maps for ko/zh/th).
+7. For **new/changed card rules text**: populate **`text_es` + `text_ko` + `text_zh` + `text_th` + `text_pt`** in the same change (localized brackets; quoted names use locale name maps for ko/zh/th; pt keeps English names).
 
 ### Korean specifics
 
@@ -120,14 +133,14 @@ See `docs/locales/TH_PROGRESS.md` and `docs/locales/TH_NAMES.md`.
 ### Do not
 
 - Ship new menus, replay UI, error popups, or tutorial lines in English only.
-- Add `data-i18n` without Japanese, Spanish, Korean, Chinese, **and Thai** strings.
-- Rely on English fallback for JA/ES/KO/ZH/**TH** tutorial step ids.
-- Ship new printed abilities without `text_es` / `text_ko` / `text_zh` / **`text_th`**.
+- Add `data-i18n` without Japanese, Spanish, Korean, Chinese, Thai, **and Portuguese** strings.
+- Rely on English fallback for JA/ES/KO/ZH/TH/**PT** tutorial step ids (interactive tutorial stays EN for pt until `tutorial_pt.json`).
+- Ship new printed abilities without `text_es` / `text_ko` / `text_zh` / `text_th` / **`text_pt`**.
 
 ### Title-screen news posts (`news.json`)
 
 - Explain **what changes for the player** — gameplay, deck building, ranked/casual rules, balance.
 - Use **card names and point values**, not file paths, repo names, deploy steps, or dev jargon.
 - Do **not** mention `news.json`, Hostinger, git, APIs, or implementation details.
-- Ship **en + ja + es + ko + zh + th** for every post title and body in the same change.
+- Ship **en + ja + es + ko + zh + th + pt** for every post title and body in the same change.
 - **Card IDs** in post body are auto-linked — use exact catalog `card_no` values.

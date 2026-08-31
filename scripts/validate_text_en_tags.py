@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate icon tags in cards.json English rules text."""
+"""Validate icon tags in cards.json rules text (English text + text_pt)."""
 
 from __future__ import annotations
 
@@ -34,13 +34,14 @@ ALLOWED_TAGS = {
 }
 
 TAG_RE = re.compile(r"<([^>/]+)>")
-BRACKET_KW_RE = re.compile(
-    r"\[(On Enter|On Leave|On Play|Live Start|Live Success|Activated|Always|Continuous|"
-    r"Once per turn|Twice per turn|Automatic|Auto|Center)\]",
-    re.IGNORECASE,
-)
 MIXED_BLADE_RE = re.compile(r"\+?\d+\s*Blade.*<blade>|<blade>.*\+?\d+\s*Blade", re.IGNORECASE)
-MIXED_ENERGY_RE = re.compile(r"Pay\s+\d+\s+Energy.*<energy>|<energy>.*Pay\s+\d+\s+Energy", re.IGNORECASE)
+MIXED_ENERGY_RE = re.compile(
+    r"Pay\s+\d+\s+Energy.*<energy>|<energy>.*Pay\s+\d+\s+Energy", re.IGNORECASE
+)
+MIXED_BLADE_PT_RE = re.compile(r"\+?\d+\s*Blade.*<blade>|<blade>.*\+?\d+\s*Blade", re.IGNORECASE)
+MIXED_ENERGY_PT_RE = re.compile(
+    r"Pague\s+\d+\s+Energia.*<energy>|<energy>.*Pague\s+\d+\s+Energia", re.IGNORECASE
+)
 
 NOTE_CARDS = {
     "PL!-bp5-014-N",
@@ -60,6 +61,32 @@ NOTE_CARDS = {
     "PL!S-sd1-007-SD",
 }
 
+TEXT_FIELDS = ("text", "text_pt")
+
+
+def check_text(no: str, text: str, field: str, errors: list[str], warnings: list[str]) -> bool:
+    if not text:
+        return False
+    has_tags = "<" in text
+    for m in TAG_RE.finditer(text):
+        tag = m.group(1)
+        if tag not in ALLOWED_TAGS:
+            errors.append(f"{no}: unknown tag <{tag}> in {field}")
+    stripped = TAG_RE.sub("", text)
+    if "<" in stripped or ">" in stripped:
+        errors.append(f"{no}: malformed angle brackets in {field}")
+    if field == "text":
+        if MIXED_BLADE_RE.search(text):
+            warnings.append(f"{no}: mixed prose Blade and <blade> tag in {field}")
+        if MIXED_ENERGY_RE.search(text):
+            warnings.append(f"{no}: mixed prose Energy and <energy> tag in {field}")
+    elif field == "text_pt":
+        if MIXED_BLADE_PT_RE.search(text):
+            warnings.append(f"{no}: mixed prose Blade and <blade> tag in {field}")
+        if MIXED_ENERGY_PT_RE.search(text):
+            warnings.append(f"{no}: mixed prose Energia and <energy> tag in {field}")
+    return has_tags
+
 
 def main() -> int:
     data = json.loads(CARDS_PATH.read_text(encoding="utf-8"))
@@ -69,23 +96,12 @@ def main() -> int:
 
     for card in data.get("cards") or []:
         no = card.get("card_no") or "?"
-        text = card.get("text") or ""
-        if not text:
-            continue
-        if "<" in text:
-            tagged_cards += 1
-        for m in TAG_RE.finditer(text):
-            tag = m.group(1)
-            if tag not in ALLOWED_TAGS:
-                errors.append(f"{no}: unknown tag <{tag}>")
-        # stray < not part of allowed tag
-        stripped = TAG_RE.sub("", text)
-        if "<" in stripped or ">" in stripped:
-            errors.append(f"{no}: malformed angle brackets in text")
-        if MIXED_BLADE_RE.search(text):
-            warnings.append(f"{no}: mixed prose Blade and <blade> tag")
-        if MIXED_ENERGY_RE.search(text):
-            warnings.append(f"{no}: mixed prose Energy and <energy> tag")
+        for field in TEXT_FIELDS:
+            text = card.get(field) or ""
+            if check_text(no, text, field, errors, warnings) and field == "text":
+                tagged_cards += 1
+            elif check_text(no, text, field, errors, warnings) and field == "text_pt":
+                tagged_cards += 1
 
     for no in NOTE_CARDS:
         found = next((c for c in data["cards"] if c.get("card_no") == no), None)
@@ -94,7 +110,8 @@ def main() -> int:
         elif not (found.get("text") or "").strip():
             errors.append(f"{no}: note-card has empty text")
 
-    print(f"Checked {len(data.get('cards') or [])} cards; {tagged_cards} with inline tags")
+    pt_count = sum(1 for c in data.get("cards") or [] if (c.get("text_pt") or "").strip())
+    print(f"Checked {len(data.get('cards') or [])} cards; {tagged_cards} with inline tags; {pt_count} with text_pt")
     if warnings:
         print(f"WARN ({len(warnings)}):")
         for w in warnings[:20]:
