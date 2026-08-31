@@ -6,7 +6,7 @@ USE_VPS_API
 # Hostinger marker: disable live match writes (VPS match-primary cutover)
 MATCH_WRITES_DISABLED
 
-# Secrets & local config
+data/fcm_server_key.txt
 .env
 .env.*
 !.env.example
@@ -93,6 +93,9 @@ sfx_manifest.json
 !/scripts/validate_playmats_catalog.py
 !/scripts/reclassify_playmat_catalog.py
 !/scripts/import_1999_playmats.py
+!/scripts/fetch_loveca_en_sheet.py
+!/scripts/merge_text_en.py
+!/scripts/validate_text_en_tags.py
 audit_tutorial_browser.js
 build_tutorial.php
 build_tutorial.py
