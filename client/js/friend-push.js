@@ -211,10 +211,15 @@
       var btn = document.getElementById(id);
       if (!btn || btn._tcgPushTestBound) return;
       btn._tcgPushTestBound = true;
-      btn.addEventListener('click', function () { void sendTestPush(); });
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void sendTestPush();
+      });
     });
   }
 
+  function getPushPlugin() {
     try {
       if (global.Capacitor && global.Capacitor.Plugins && global.Capacitor.Plugins.PushNotifications) {
         return global.Capacitor.Plugins.PushNotifications;

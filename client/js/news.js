@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  const NEWS_JSON = './news.json?v=37';
+  const NEWS_JSON = './news.json?v=38';
   const LAST_SEEN_KEY = 'lltcg.news.lastSeenNewestId';
   /** Matches catalog card_no tokens in news copy (PL!… / LL-…). */
   const NEWS_CARD_ID_RE = /(PL![A-Za-z0-9!＋._-]+|LL-[A-Za-z0-9!＋._-]+|PL!-[A-Za-z0-9!＋._-]+)/g;
@@ -122,9 +122,13 @@
     return !!(id && sessionNewIdSet().has(id));
   }
 
+  function newsFabButtons() {
+    return document.querySelectorAll('.news-fab[aria-controls="overlay-news"]');
+  }
+
   function applyNewsFabState(hasNew) {
     const label = t('news.newBadge');
-    document.querySelectorAll('.news-fab').forEach((btn) => {
+    newsFabButtons().forEach((btn) => {
       btn.classList.toggle('news-fab--new', !!hasNew);
       const badge = btn.querySelector('.news-fab-badge');
       if (badge) {
@@ -388,7 +392,7 @@
   };
 
   function bindUi() {
-    document.querySelectorAll('.news-fab').forEach((btn) => {
+    newsFabButtons().forEach((btn) => {
       if (btn.dataset.newsBound) return;
       btn.dataset.newsBound = '1';
       btn.addEventListener('click', () => void global.openNewsOverlay());
