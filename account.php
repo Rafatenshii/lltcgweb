@@ -172,6 +172,7 @@ try {
         case 'social_notice_ack':     echo json_encode(tcgApiSocialNoticeAck($body)); break;
         case 'push_register':         echo json_encode(tcgApiPushRegister($body)); break;
         case 'push_unregister':       echo json_encode(tcgApiPushUnregister($body)); break;
+        case 'push_test':             echo json_encode(tcgApiPushTest($body)); break;
         case 'match_invite':          echo json_encode(tcgApiMatchInvite($body)); break;
         case 'match_invites_pending': echo json_encode(tcgApiMatchInvitesPending($body)); break;
         case 'match_invite_accept':   echo json_encode(tcgApiMatchInviteRespond($body, true)); break;

@@ -169,7 +169,52 @@
     }
   }
 
-  function getPushPlugin() {
+  function isOwnerAccount() {
+    return !!(global.A && global.A.user && global.A.user.is_social_mod);
+  }
+
+  function syncPushTestFab() {
+    var show = isAndroidShell() && isOwnerAccount();
+    ['btn-push-test-hub', 'btn-push-test-auth'].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) btn.hidden = !show;
+    });
+  }
+
+  async function sendTestPush() {
+    try {
+      var res = await accountPost('push_test', {});
+      if (!res || !res.success) {
+        toast(t('friendPush.testFailed', 'Test push failed.'), 4000);
+        return;
+      }
+      if (!res.fcm_configured) {
+        toast(t('friendPush.testNoFcm', 'FCM is not configured on the server.'), 5000);
+        return;
+      }
+      if (!res.tokens) {
+        toast(t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.'), 5500);
+        return;
+      }
+      if (res.sent > 0) {
+        toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
+        return;
+      }
+      toast(t('friendPush.testSendFailed', 'Token saved but FCM send returned 0 — check server key / Firebase.'), 5500);
+    } catch (e) {
+      toast((e && e.message) || t('friendPush.testFailed', 'Test push failed.'), 4200);
+    }
+  }
+
+  function bindPushTestFab() {
+    ['btn-push-test-hub', 'btn-push-test-auth'].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (!btn || btn._tcgPushTestBound) return;
+      btn._tcgPushTestBound = true;
+      btn.addEventListener('click', function () { void sendTestPush(); });
+    });
+  }
+
     try {
       if (global.Capacitor && global.Capacitor.Plugins && global.Capacitor.Plugins.PushNotifications) {
         return global.Capacitor.Plugins.PushNotifications;
@@ -412,8 +457,12 @@
   }
 
   captureFromUrl();
-  document.addEventListener('DOMContentLoaded', bindLobby);
+  document.addEventListener('DOMContentLoaded', function () {
+    bindLobby();
+    bindPushTestFab();
+  });
   bindLobby();
+  bindPushTestFab();
 
   global.LLTCG_FRIEND_PUSH = {
     captureFromUrl: captureFromUrl,
@@ -423,5 +472,7 @@
     openInvitePicker: openInvitePicker,
     applyQueueDeepLink: applyQueueDeepLink,
     applyTournamentDeepLink: applyTournamentDeepLink,
+    syncPushTestFab: syncPushTestFab,
+    sendTestPush: sendTestPush,
   };
 })(window);

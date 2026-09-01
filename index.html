@@ -201,6 +201,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         </div>
       </div>
       <div class="logo-row-side logo-row-side--right">
+        <button type="button" class="news-fab push-test-fab" id="btn-push-test-auth" hidden aria-label="Test push notification">
+          <span class="news-fab-icon push-test-fab-icon" aria-hidden="true">↗</span>
+          <span class="news-fab-label">Push</span>
+        </button>
         <button type="button" class="news-fab" aria-haspopup="dialog" aria-controls="overlay-news" data-i18n-aria-label="news.label">
           <span class="news-fab-badge" data-i18n="news.newBadge" hidden>New!</span>
           <span class="news-fab-icon" aria-hidden="true">!</span>
@@ -609,6 +613,10 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
         </div>
       </div>
       <div class="logo-row-side logo-row-side--right">
+        <button type="button" class="news-fab push-test-fab" id="btn-push-test-hub" hidden aria-label="Test push notification">
+          <span class="news-fab-icon push-test-fab-icon" aria-hidden="true">↗</span>
+          <span class="news-fab-label">Push</span>
+        </button>
         <button type="button" class="news-fab" aria-haspopup="dialog" aria-controls="overlay-news" data-i18n-aria-label="news.label">
           <span class="news-fab-badge" data-i18n="news.newBadge" hidden>New!</span>
           <span class="news-fab-icon" aria-hidden="true">!</span>
@@ -2885,7 +2893,7 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=34"></script>
 <script src="client/js/social.js?v=29"></script>
-<script src="client/js/friend-push.js?v=4"></script>
+<script src="client/js/friend-push.js?v=5"></script>
 <script src="client/js/runtime-flags.js?v=5"></script>
 <script src="client/js/api-client.js?v=36"></script>
 <script>
@@ -6601,6 +6609,7 @@ function enterHub(me) {
   if (typeof schedulePendingRankedPrReward === 'function') schedulePendingRankedPrReward();
   if (window.TCGLoginBonus?.scheduleHubLoginBonus) window.TCGLoginBonus.scheduleHubLoginBonus();
   if (window.TCGLoginBonus?.syncHubButton) window.TCGLoginBonus.syncHubButton();
+  try { window.LLTCG_FRIEND_PUSH?.syncPushTestFab?.(); } catch (e) { /* ignore */ }
 }
 
 function renderStarterOptions(opts) {

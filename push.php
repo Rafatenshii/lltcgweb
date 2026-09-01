@@ -243,6 +243,34 @@ function tcgApiPushUnregister(array $body): array {
     return ['success' => true];
 }
 
+/** Owner-only: send a test notification to the caller's registered device tokens. */
+function tcgApiPushTest(array $body): array {
+    $uid = tcgRequireAuthUser($body);
+    if (!tcgSocialIsOwner($uid)) {
+        throw new Exception('Forbidden', 403);
+    }
+    $tokens = tcgPushTokensForUser($uid);
+    $key = tcgPushFcmServerKey();
+    $sent = 0;
+    if ($key !== '' && $tokens) {
+        $sent = tcgPushSendFcm(
+            $tokens,
+            'Loveca test',
+            'Push test — if you see this, notifications work.',
+            [
+                'type' => 'test',
+                'url' => tcgPushDeepLink([]),
+            ]
+        );
+    }
+    return [
+        'success' => true,
+        'sent' => $sent,
+        'tokens' => count($tokens),
+        'fcm_configured' => $key !== '',
+    ];
+}
+
 function tcgApiMatchInvite(array $body): array {
     $uid = tcgRequireAuthUser($body);
     require_once __DIR__ . '/game_mode.php';
