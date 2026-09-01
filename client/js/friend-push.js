@@ -7,8 +7,12 @@
   var LOVECA_FRIEND_QUEUE_KEY = 'tcg_friend_queue';
   var LOVECA_FRIEND_INVITE_KEY = 'tcg_friend_invite';
   var LOVECA_TOURNAMENT_KEY = 'tcg_tournament_open';
+  var PUSH_OPT_IN_KEY = 'tcg_push_notifications_opt_in';
+  var PUSH_TOKEN_KEY = 'tcg_push_last_token';
   var pollTimer = null;
   var seenInviteIds = {};
+  var pushListenersBound = false;
+  var pushResumeBound = false;
 
   function t(key, fallback, vars) {
     try {
@@ -228,6 +232,159 @@
     return null;
   }
 
+  function isPushOptedIn() {
+    try {
+      return localStorage.getItem(PUSH_OPT_IN_KEY) !== '0';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function setPushOptedIn(on) {
+    try {
+      localStorage.setItem(PUSH_OPT_IN_KEY, on ? '1' : '0');
+    } catch (e) { /* ignore */ }
+  }
+
+  function savePushToken(token) {
+    try {
+      if (token) localStorage.setItem(PUSH_TOKEN_KEY, token);
+      else localStorage.removeItem(PUSH_TOKEN_KEY);
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadPushToken() {
+    try {
+      return localStorage.getItem(PUSH_TOKEN_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async function getPushPermission() {
+    var Push = getPushPlugin();
+    if (!Push || typeof Push.checkPermissions !== 'function') return 'unknown';
+    try {
+      var perm = await Push.checkPermissions();
+      return (perm && perm.receive) || 'prompt';
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
+  async function requestPushPermission() {
+    var Push = getPushPlugin();
+    if (!Push || typeof Push.requestPermissions !== 'function') return 'denied';
+    try {
+      var perm = await Push.requestPermissions();
+      return (perm && perm.receive) || 'denied';
+    } catch (e) {
+      return 'denied';
+    }
+  }
+
+  function bindPushListenersOnce() {
+    if (pushListenersBound) return;
+    var Push = getPushPlugin();
+    if (!Push || !Push.addListener) return;
+    pushListenersBound = true;
+    Push.addListener('registration', function (token) {
+      if (!isPushOptedIn() || !token || !token.value) return;
+      savePushToken(token.value);
+      if (!global.A || !global.A.user) return;
+      void accountPost('push_register', { token: token.value, platform: 'android' }).catch(function () {});
+    });
+    Push.addListener('registrationError', function () { /* ignore */ });
+    Push.addListener('pushNotificationActionPerformed', function (ev) {
+      var data = (ev && ev.notification && ev.notification.data) || {};
+      handlePushData(data);
+    });
+    Push.addListener('pushNotificationReceived', function (ev) {
+      var data = (ev && ev.data) || (ev && ev.notification && ev.notification.data) || {};
+      if (data && data.type === 'friend_invite') renderInviteBanner(data);
+    });
+    try {
+      var App = global.Capacitor.Plugins.App;
+      if (App && App.addListener && !App._tcgPushUrlBound) {
+        App._tcgPushUrlBound = true;
+        App.addListener('appUrlOpen', function (ev) {
+          var url = (ev && ev.url) || '';
+          if (!url) return;
+          try {
+            var u = new URL(url);
+            var lane = (u.searchParams.get('friend_queue') || '').trim();
+            var mode = (u.searchParams.get('game_mode') || '').trim();
+            var invite = (u.searchParams.get('friend_invite') || '').trim();
+            var tournament = (u.searchParams.get('tournament') || '').trim().toUpperCase();
+            if (lane === 'ranked' || lane === 'unranked') {
+              sessionStorage.setItem(LOVECA_FRIEND_QUEUE_KEY, JSON.stringify({
+                lane: lane,
+                game_mode: mode || 'standard',
+              }));
+              applyQueueDeepLink();
+            }
+            if (invite) {
+              sessionStorage.setItem(LOVECA_FRIEND_INVITE_KEY, invite);
+              void consumePendingInvite();
+            }
+            if (tournament && /^[A-Z0-9]{6,16}$/.test(tournament)) {
+              sessionStorage.setItem(LOVECA_TOURNAMENT_KEY, tournament);
+              applyTournamentDeepLink();
+            }
+          } catch (err) { /* ignore */ }
+        });
+      }
+    } catch (e2) { /* App plugin optional */ }
+  }
+
+  function bindPushResumeOnce() {
+    if (pushResumeBound || !isAndroidShell()) return;
+    try {
+      var App = global.Capacitor && global.Capacitor.Plugins && global.Capacitor.Plugins.App;
+      if (!App || !App.addListener) return;
+      pushResumeBound = true;
+      App.addListener('resume', function () {
+        if (!isPushOptedIn()) return;
+        void registerNativePush();
+        syncPushOptionsUi();
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  async function unregisterNativePush() {
+    var token = loadPushToken();
+    if (token && global.A && global.A.user) {
+      await accountPost('push_unregister', { token: token }).catch(function () {});
+    }
+    savePushToken('');
+  }
+
+  async function activateNativePush(opts) {
+    opts = opts || {};
+    if (!isAndroidShell() || global.LOVECA_FCM_REGISTER !== true) {
+      return { ok: false, reason: 'unsupported' };
+    }
+    if (!isPushOptedIn()) return { ok: false, reason: 'opt_out' };
+    var Push = getPushPlugin();
+    if (!Push) return { ok: false, reason: 'no_plugin' };
+
+    bindPushListenersOnce();
+
+    var perm = await getPushPermission();
+    if (perm !== 'granted') {
+      if (!opts.requestPermission) {
+        return { ok: false, reason: 'needs_permission', permission: perm };
+      }
+      perm = await requestPushPermission();
+      if (perm !== 'granted') {
+        return { ok: false, reason: 'denied', permission: perm };
+      }
+    }
+
+    await Push.register();
+    return { ok: true, permission: perm };
+  }
+
   function handlePushData(data) {
     if (!data) return;
     var type = String(data.type || '');
@@ -252,61 +409,75 @@
     }
   }
 
-  async function registerNativePush() {
-    var Push = getPushPlugin();
-    if (!Push || !isAndroidShell()) return;
+  async function registerNativePush(opts) {
+    if (!isAndroidShell()) return { ok: false, reason: 'unsupported' };
+    if (!isPushOptedIn()) return { ok: false, reason: 'opt_out' };
     try {
-      var perm = await Push.requestPermissions();
-      if (perm.receive !== 'granted') return;
-      /* v1.2 APK has the push plugin but no google-services.json.
-         Push.register() → FirebaseMessaging.getInstance() crashes the whole app. */
-      if (global.LOVECA_FCM_REGISTER === true) {
-        await Push.register();
+      var result = await activateNativePush(Object.assign({ requestPermission: false }, opts || {}));
+      syncPushOptionsUi();
+      return result;
+    } catch (e) {
+      return { ok: false, reason: 'error' };
+    }
+  }
+
+  async function enablePushFromOptions() {
+    setPushOptedIn(true);
+    var result = await activateNativePush({ requestPermission: true });
+    syncPushOptionsUi();
+    if (result.ok) {
+      toast(t('options.pushNotificationsOn', 'On — Loveca can notify you about friend queues and invites.'), 3600);
+    } else if (result.reason === 'denied') {
+      toast(t('friendPush.permissionDenied', 'Notifications are blocked. Enable them in Android Settings → Apps → Loveca → Notifications.'), 5500);
+    }
+    return result;
+  }
+
+  async function disablePushFromOptions() {
+    setPushOptedIn(false);
+    await unregisterNativePush();
+    syncPushOptionsUi();
+  }
+
+  function syncPushOptionsUi() {
+    var row = document.getElementById('options-push-notifications-row');
+    var chk = document.getElementById('chk-push-notifications');
+    var status = document.getElementById('options-push-notifications-status');
+    if (row) row.hidden = !isAndroidShell();
+    if (!isAndroidShell()) return;
+    void getPushPermission().then(function (perm) {
+      var optedIn = isPushOptedIn();
+      var enabled = optedIn && perm === 'granted';
+      if (chk) chk.checked = enabled;
+      if (!status) return;
+      if (!optedIn) {
+        status.textContent = t('options.pushNotificationsOff', 'Off — enable to get alerts when friends queue or invite you.');
+      } else if (perm === 'granted') {
+        status.textContent = t('options.pushNotificationsOn', 'On — Loveca can notify you about friend queues and invites.');
+      } else if (perm === 'denied') {
+        status.textContent = t('options.pushNotificationsDenied', 'Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.');
+      } else {
+        status.textContent = t('options.pushNotificationsTap', 'Tap the switch to allow notification permission.');
       }
-      Push.addListener('registration', function (token) {
-        if (!token || !token.value) return;
-        void accountPost('push_register', { token: token.value, platform: 'android' }).catch(function () {});
-      });
-      Push.addListener('pushNotificationActionPerformed', function (ev) {
-        var data = (ev && ev.notification && ev.notification.data) || {};
-        handlePushData(data);
-      });
-      Push.addListener('pushNotificationReceived', function (ev) {
-        var data = (ev && ev.data) || (ev && ev.notification && ev.notification.data) || {};
-        if (data && data.type === 'friend_invite') renderInviteBanner(data);
-      });
-      try {
-        var App = global.Capacitor.Plugins.App;
-        if (App && App.addListener) {
-          App.addListener('appUrlOpen', function (ev) {
-            var url = (ev && ev.url) || '';
-            if (!url) return;
-            try {
-              var u = new URL(url);
-              var lane = (u.searchParams.get('friend_queue') || '').trim();
-              var mode = (u.searchParams.get('game_mode') || '').trim();
-              var invite = (u.searchParams.get('friend_invite') || '').trim();
-              var tournament = (u.searchParams.get('tournament') || '').trim().toUpperCase();
-              if (lane === 'ranked' || lane === 'unranked') {
-                sessionStorage.setItem(LOVECA_FRIEND_QUEUE_KEY, JSON.stringify({
-                  lane: lane,
-                  game_mode: mode || 'standard',
-                }));
-                applyQueueDeepLink();
-              }
-              if (invite) {
-                sessionStorage.setItem(LOVECA_FRIEND_INVITE_KEY, invite);
-                void consumePendingInvite();
-              }
-              if (tournament && /^[A-Z0-9]{6,16}$/.test(tournament)) {
-                sessionStorage.setItem(LOVECA_TOURNAMENT_KEY, tournament);
-                applyTournamentDeepLink();
-              }
-            } catch (err) { /* ignore */ }
+    });
+  }
+
+  function bindPushOptionsUi() {
+    var chk = document.getElementById('chk-push-notifications');
+    if (chk && !chk._tcgPushBound) {
+      chk._tcgPushBound = true;
+      chk.addEventListener('change', function () {
+        if (chk.checked) {
+          void enablePushFromOptions().then(function (result) {
+            if (!result.ok) chk.checked = false;
           });
+        } else {
+          void disablePushFromOptions();
         }
-      } catch (e2) { /* App plugin optional */ }
-    } catch (e) { /* plugin missing until APK rebuild */ }
+      });
+    }
+    bindPushResumeOnce();
+    syncPushOptionsUi();
   }
 
   function bannerRoot() {
@@ -465,9 +636,11 @@
   document.addEventListener('DOMContentLoaded', function () {
     bindLobby();
     bindPushTestFab();
+    bindPushOptionsUi();
   });
   bindLobby();
   bindPushTestFab();
+  bindPushOptionsUi();
 
   global.LLTCG_FRIEND_PUSH = {
     captureFromUrl: captureFromUrl,
@@ -479,5 +652,8 @@
     applyTournamentDeepLink: applyTournamentDeepLink,
     syncPushTestFab: syncPushTestFab,
     sendTestPush: sendTestPush,
+    syncPushOptionsUi: syncPushOptionsUi,
+    bindPushOptionsUi: bindPushOptionsUi,
+    isPushOptedIn: isPushOptedIn,
   };
 })(window);

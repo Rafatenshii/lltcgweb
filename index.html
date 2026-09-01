@@ -877,6 +877,13 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
           <p class="account-lead" id="options-discord-presence-status" data-i18n="options.discordPresenceOff">Off — enable to share menus, matches, and queue status on Discord.</p>
           <button type="button" class="btn-out" id="btn-discord-presence-link" hidden data-i18n="options.discordPresenceLink">Link Discord for Presence</button>
         </div>
+        <div id="options-push-notifications-row" class="options-discord-presence" hidden>
+          <label class="options-toggle">
+            <input type="checkbox" id="chk-push-notifications">
+            <span data-i18n="options.pushNotifications">Push notifications (Android)</span>
+          </label>
+          <p class="account-lead" id="options-push-notifications-status" data-i18n="options.pushNotificationsOff">Off — enable to get alerts when friends queue or invite you.</p>
+        </div>
         <div id="options-apk-assets-row" class="options-apk-assets" hidden>
           <h3 data-i18n="options.apkAssets.title">Game data (Android)</h3>
           <p class="account-lead" data-i18n="options.apkAssets.lead">Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.</p>
@@ -2889,12 +2896,12 @@ if (/[?&]debug(?:=|&|$)/.test(location.search)) {
   </div>
 </div>
 
-<script src="i18n.js?v=186"></script>
+<script src="i18n.js?v=187"></script>
 <script src="log_i18n.js?v=18"></script>
 <script src="sfx.js?v=19"></script>
 <script src="client/js/news.js?v=39"></script>
 <script src="client/js/social.js?v=29"></script>
-<script src="client/js/friend-push.js?v=6"></script>
+<script src="client/js/friend-push.js?v=7"></script>
 <script src="client/js/runtime-flags.js?v=5"></script>
 <script src="client/js/api-client.js?v=36"></script>
 <script>
@@ -34122,6 +34129,7 @@ function showScr(n){
   }
   if (n === 'options') {
     try { window.LLTCG_DISCORD_PRESENCE?.syncOptionsUi?.(); } catch (e) { /* ignore */ }
+    try { window.LLTCG_FRIEND_PUSH?.syncPushOptionsUi?.(); } catch (e) { /* ignore */ }
   }
   try { window.LLTCG_DISCORD_PRESENCE?.refresh?.(); } catch (e) { /* ignore */ }
   tcgUpdatePhoneFsUI();

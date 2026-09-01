@@ -641,6 +641,11 @@
       "discordPresenceLink": "Link Discord for Presence",
       "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
       "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "pushNotifications": "Push notifications (Android)",
+      "pushNotificationsOff": "Off — enable to get alerts when friends queue or invite you.",
+      "pushNotificationsOn": "On — Loveca can notify you about friend queues and invites.",
+      "pushNotificationsDenied": "Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.",
+      "pushNotificationsTap": "Tap the switch to allow notification permission.",
       "apkAssets": {
         "title": "Game data (Android)",
         "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
@@ -1109,7 +1114,8 @@
       "acceptInvite": "Accept",
       "declineInvite": "Decline",
       "inviteSent": "Invite sent to {name}",
-      "noFriends": "Add friends first from the Friends tab."
+      "noFriends": "Add friends first from the Friends tab.",
+      "permissionDenied": "Notifications are blocked. Enable them in Android Settings → Apps → Loveca → Notifications."
     },
     "skill": {
       "alreadyUsed": "Already used this turn",
@@ -2676,6 +2682,11 @@
       "discordPresence": "Discord Rich Presence（Android）",
       "discordPresenceOff": "オフ — 有効にするとメニューや対戦状況を Discord に表示できます。",
       "discordPresenceOn": "オン — Discord 起動中に Loveca の状況が共有されます。",
+      "pushNotifications": "プッシュ通知（Android）",
+      "pushNotificationsOff": "オフ — フレンドのキューや招待を通知で受け取れます。",
+      "pushNotificationsOn": "オン — フレンドのキューや招待を Loveca から通知します。",
+      "pushNotificationsDenied": "Android の設定でブロックされています — 設定 → アプリ → Loveca → 通知 から許可してください。",
+      "pushNotificationsTap": "スイッチをタップして通知の許可を求めてください。",
       "apkAssets": {
         "title": "ゲームデータ（Android）",
         "lead": "カード絵とコスメをこの端末に保存できます。アプリ本体は小さく、全ダウンロードは約1.3 GBの空き容量を使います。対戦には通信が必要です。",
@@ -4318,6 +4329,11 @@
       "discordPresenceLink": "Link Discord for Presence",
       "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
       "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "pushNotifications": "Push notifications (Android)",
+      "pushNotificationsOff": "Off — enable to get alerts when friends queue or invite you.",
+      "pushNotificationsOn": "On — Loveca can notify you about friend queues and invites.",
+      "pushNotificationsDenied": "Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.",
+      "pushNotificationsTap": "Tap the switch to allow notification permission.",
       "apkAssets": {
         "title": "Game data (Android)",
         "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
@@ -6144,6 +6160,11 @@
       "discordPresenceLink": "Link Discord for Presence",
       "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
       "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "pushNotifications": "Push notifications (Android)",
+      "pushNotificationsOff": "Off — enable to get alerts when friends queue or invite you.",
+      "pushNotificationsOn": "On — Loveca can notify you about friend queues and invites.",
+      "pushNotificationsDenied": "Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.",
+      "pushNotificationsTap": "Tap the switch to allow notification permission.",
       "apkAssets": {
         "title": "Game data (Android)",
         "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
@@ -7985,6 +8006,11 @@
       "discordPresenceLink": "Link Discord for Presence",
       "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
       "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "pushNotifications": "Push notifications (Android)",
+      "pushNotificationsOff": "Off — enable to get alerts when friends queue or invite you.",
+      "pushNotificationsOn": "On — Loveca can notify you about friend queues and invites.",
+      "pushNotificationsDenied": "Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.",
+      "pushNotificationsTap": "Tap the switch to allow notification permission.",
       "apkAssets": {
         "title": "Game data (Android)",
         "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
@@ -9815,6 +9841,11 @@
       "discordPresenceLink": "Link Discord for Presence",
       "discordPresenceOff": "Off — turn on to show menu/match status on Discord.",
       "discordPresenceOn": "On — shares Loveca status while Discord is running.",
+      "pushNotifications": "Push notifications (Android)",
+      "pushNotificationsOff": "Off — enable to get alerts when friends queue or invite you.",
+      "pushNotificationsOn": "On — Loveca can notify you about friend queues and invites.",
+      "pushNotificationsDenied": "Blocked in Android settings — open Settings → Apps → Loveca → Notifications to allow.",
+      "pushNotificationsTap": "Tap the switch to allow notification permission.",
       "apkAssets": {
         "title": "Game data (Android)",
         "lead": "Card art and cosmetics can be stored on this device. The app file stays small; a full download uses about 1.3 GB of phone storage. Matches still need a network connection.",
@@ -11746,6 +11777,11 @@
       "discordPresenceLink": "Vincular Discord para Presence",
       "discordPresenceOff": "Desligado — ative para mostrar o status do menu/partida no Discord.",
       "discordPresenceOn": "Ligado — compartilha o status do Loveca enquanto o Discord estiver em execução.",
+      "pushNotifications": "Notificações push (Android)",
+      "pushNotificationsOff": "Desligado — ative para receber alertas quando amigos entrarem na fila ou convidarem você.",
+      "pushNotificationsOn": "Ligado — o Loveca pode avisar sobre filas e convites de amigos.",
+      "pushNotificationsDenied": "Bloqueado nas configurações do Android — abra Configurações → Apps → Loveca → Notificações para permitir.",
+      "pushNotificationsTap": "Toque no interruptor para permitir notificações.",
       "apkAssets": {
         "title": "Dados do jogo (Android)",
         "lead": "Artes das cartas e cosméticos podem ser armazenados neste dispositivo. O arquivo do app permanece pequeno; um download completo usa cerca de 1,3 GB do armazenamento do celular. Partidas ainda exigem conexão de rede.",
@@ -13453,35 +13489,35 @@
       profile: { noTitles: '称号はまだありません', emptyBio: '自己紹介はまだありません。', bioLocked: '自己紹介は編集できません。', showcase: 'ショーケース', rankedWl: 'ランク', unranked: 'カジュアル対戦数', tournament: 'トーナメント', tournamentRecord: 'トーナメント対戦', tournamentEvents: '大会数', tournamentCoins: '獲得コイン', tournamentPlacements: '最近の順位', tournamentPrize: '{n} コイン', tournamentEmpty: 'トーナメントの順位はまだありません。', gameStats: '対戦統計', featuredDeck: '公開デッキ', visPrivate: '非公開', visFriends: 'フレンドのみ', visPublic: '公開', useEquipped: '装備中のデッキ', save: '保存', report: '通報', reported: '通報を送りました。', deckHidden: 'このデッキは非公開です。', types: 'メンバー / ライブ / エネルギー', byMode: 'モード別', opponents: 'よく対戦した相手', idols: 'よく使ったメンバー', history: '対戦履歴', friendId: 'フレンドID', copied: 'コピーしました', edit: '編集', bio: '自己紹介', deckDesc: 'デッキ説明', visibility: '公開設定', openDeck: 'デッキを見る', closeDeck: '閉じる', members: 'メンバー', lives: 'ライブ', energy: 'エネルギー', cost: 'コスト', bladeHearts: 'ブレードハート', bladeHeartCount: 'ブレードハートの数', hearts: 'ハート', showcaseHint: '枠をタップして所持カードから選びます。', searchCollection: 'コレクションを検索', clearSlot: '枠を空にする', reportAsk: '理由を選んでください。モデレーターが確認します。', reportReasonBio: 'プロフィール／デッキ説明', reportReasonAlt: 'リーダーボードのサブ垢悪用', reportConfirm: '通報する', modeRanked: 'ランク', modeCasual: 'カジュアル', modeMatch: 'マッチ', games: '試合', units: 'よく使ったユニット', noOwnedCards: '該当する所持カードがありません。' },
       friends: { view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', yourCode: 'あなたのコード', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '追加', addFromProfile: 'フレンド申請を送る', requestSent: 'フレンド申請を送りました', alreadyFriends: 'フレンド', view: '見る', accept: '承認', decline: '拒否', remove: '削除', incoming: '受信', outgoing: '送信', tabFriends: 'フレンド', tabRequests: '申請', tabRecent: '最近', recentHint: '最近対戦したプレイヤー' },
       profileMod: { title: '通報', warns: '警告', clearBio: '自己紹介を消去', warn: '警告', lockBio: '自己紹介をロック', dismiss: '却下', empty: '未処理の通報はありません。', ban: 'アカウントをBAN', banConfirm: 'このDiscordアカウントをBANしますか？記録は消去され、対戦相手の勝敗からも除外され、サインインできなくなります。解除用のスナップショットは保持されます。', banlist: 'BANリスト', unban: 'BAN解除して復元', unbanConfirm: 'BANを解除してスナップショットを復元しますか？', emptyBans: 'BAN中のアカウントはありません。', warnNoticeTitle: 'アカウント警告', warnNoticeAlt: 'リーダーボードのサブ垢悪用で警告されました。', warnNoticeBio: 'プロフィールまたはデッキ説明で警告されました。', warnNoticeOk: 'OK', bannedSignIn: 'このDiscordアカウントはLovecaからBANされています。' },
-      friendPush: { queueTapHint: 'プレイする場合はキューに参加してください。', inviteExpired: 'その招待は期限切れです。', aFriend: 'フレンド', inviteBody: '{name} が {mode} マッチに招待しています！', acceptInvite: '承認', declineInvite: '拒否', inviteSent: '{name} に招待を送りました', noFriends: '先にフレンドタブからフレンドを追加してください。' }
+      friendPush: { queueTapHint: 'プレイする場合はキューに参加してください。', inviteExpired: 'その招待は期限切れです。', aFriend: 'フレンド', inviteBody: '{name} が {mode} マッチに招待しています！', acceptInvite: '承認', declineInvite: '拒否', inviteSent: '{name} に招待を送りました', noFriends: '先にフレンドタブからフレンドを追加してください。', permissionDenied: '通知がブロックされています。Android の 設定 → アプリ → Loveca → 通知 から許可してください。' }
     },
     es: {
       social: { profile: 'Perfil', friends: 'Amigos', close: 'Cerrar', loading: 'Cargando…', error: 'Algo salió mal', signInHint: 'Inicia sesión con Discord para usar Perfil y Amigos', moderation: 'Moderación', menu: 'Menú' },
       profile: { noTitles: 'Aún no hay títulos', emptyBio: 'Sin biografía.', bioLocked: 'La biografía está bloqueada.', showcase: 'Destacadas', rankedWl: 'Clasificatoria', unranked: 'Partidas casuales', tournament: 'Torneos', tournamentRecord: 'Partidas de torneo', tournamentEvents: 'Eventos', tournamentCoins: 'Monedas ganadas', tournamentPlacements: 'Puestos recientes', tournamentPrize: '{n} monedas', tournamentEmpty: 'Aún no hay puestos de torneo.', gameStats: 'Estadísticas', featuredDeck: 'Mazo destacado', visPrivate: 'Privado', visFriends: 'Amigos', visPublic: 'Público', useEquipped: 'Mazo equipado', save: 'Guardar', report: 'Reportar', reported: 'Reporte enviado.', deckHidden: 'Este mazo es privado.', types: 'Miembro / Live / Energía', byMode: 'Por modo', opponents: 'Rivales más frecuentes', idols: 'Ídolos más usadas', history: 'Historial', friendId: 'ID de amigo', copied: 'Copiado', edit: 'Editar', bio: 'Bio', deckDesc: 'Descripción del mazo', visibility: 'Visibilidad', openDeck: 'Ver mazo completo', closeDeck: 'Ocultar mazo', members: 'Miembro', lives: 'Live', energy: 'Energía', cost: 'Coste', bladeHearts: 'Corazones blade', bladeHeartCount: 'Corazones blade', hearts: 'Corazones', hearts: 'Corazones', showcaseHint: 'Toca un espacio para elegir una carta de tu colección.', searchCollection: 'Buscar colección', clearSlot: 'Vaciar espacio', reportAsk: 'Elige un motivo. Los moderadores lo revisarán.', reportReasonBio: 'Bio de perfil/mazo', reportReasonAlt: 'Abuso de cuentas alt en la clasificación', reportConfirm: 'Sí, reportar', modeRanked: 'Clasificatoria', modeCasual: 'Casual', modeMatch: 'Partida', games: 'partidas', units: 'Unidades más usadas', noOwnedCards: 'No hay cartas coincidentes en tu colección.' },
       friends: { view: 'Ver', accept: 'Aceptar', decline: 'Rechazar', remove: 'Quitar', incoming: 'Entrantes', outgoing: 'Salientes', yourCode: 'Tu código', tabFriends: 'Amigos', tabRequests: 'Solicitudes', tabRecent: 'Recientes', recentHint: 'Usuarios contra los que has jugado recientemente', codePlaceholder: 'LCXXXXXX', add: 'Añadir', addFromProfile: 'Enviar solicitud de amistad', requestSent: 'Solicitud enviada', alreadyFriends: 'Amigos', view: 'Ver', accept: 'Aceptar', decline: 'Rechazar', remove: 'Quitar', incoming: 'Entrantes', outgoing: 'Salientes', tabFriends: 'Amigos', tabRequests: 'Solicitudes', tabRecent: 'Recientes' },
       profileMod: { title: 'Reportes', warns: 'Avisos', clearBio: 'Borrar bio', warn: 'Avisar', lockBio: 'Bloquear bio', dismiss: 'Descartar', empty: 'No hay reportes abiertos.', ban: 'Banear cuenta', banConfirm: '¿Banear esta cuenta de Discord? Se borran los registros, los rivales pierden V–D contra ella y no podrá iniciar sesión. Se guarda una copia para desbanear.', banlist: 'Lista de baneos', unban: 'Desbanear y restaurar', unbanConfirm: '¿Desbanear esta cuenta y restaurar su copia?', emptyBans: 'No hay cuentas baneadas.', warnNoticeTitle: 'Advertencia de cuenta', warnNoticeAlt: 'Fuiste advertido por abuso de cuentas alt en la clasificación.', warnNoticeBio: 'Fuiste advertido por tu biografía de perfil o mazo.', warnNoticeOk: 'OK', bannedSignIn: 'Esta cuenta de Discord está baneada de Loveca.' },
-      friendPush: { queueTapHint: 'Únete a la cola si quieres jugar.', inviteExpired: 'Esa invitación expiró.', aFriend: 'Un amigo', inviteBody: '¡{name} te ha invitado a una partida {mode}!', acceptInvite: 'Aceptar', declineInvite: 'Rechazar', inviteSent: 'Invitación enviada a {name}', noFriends: 'Añade amigos primero desde la pestaña Amigos.' }
+      friendPush: { queueTapHint: 'Únete a la cola si quieres jugar.', inviteExpired: 'Esa invitación expiró.', aFriend: 'Un amigo', inviteBody: '¡{name} te ha invitado a una partida {mode}!', acceptInvite: 'Aceptar', declineInvite: 'Rechazar', inviteSent: 'Invitación enviada a {name}', noFriends: 'Añade amigos primero desde la pestaña Amigos.', permissionDenied: 'Notificaciones bloqueadas. Actívalas en Ajustes de Android → Apps → Loveca → Notificaciones.' }
     },
     ko: {
       social: { profile: '프로필', friends: '친구', close: '닫기', loading: '불러오는 중…', error: '문제가 발생했습니다', signInHint: '프로필과 친구는 Discord 로그인 후 사용할 수 있습니다', moderation: '관리', menu: '메뉴' },
       profile: { noTitles: '칭호가 아직 없습니다', emptyBio: '소개가 없습니다.', bioLocked: '소개를 수정할 수 없습니다.', showcase: '쇼케이스', rankedWl: '랭크', unranked: '캐주얼 판수', tournament: '토너먼트', tournamentRecord: '토너먼트 전적', tournamentEvents: '참가 대회', tournamentCoins: '획득 코인', tournamentPlacements: '최근 순위', tournamentPrize: '{n} 코인', tournamentEmpty: '토너먼트 순위가 아직 없습니다.', gameStats: '전적', featuredDeck: '대표 덱', visPrivate: '비공개', visFriends: '친구만', visPublic: '공개', useEquipped: '장착 중인 덱', save: '저장', report: '신고', reported: '신고가 접수되었습니다.', deckHidden: '이 덱은 비공개입니다.', types: '멤버 / 라이브 / 에너지', byMode: '모드별', opponents: '자주 만난 상대', idols: '많이 쓴 멤버', history: '대전 기록', friendId: '친구 ID', copied: '복사됨', edit: '편집', bio: '소개', deckDesc: '덱 설명', visibility: '공개 설정', openDeck: '전체 덱 보기', closeDeck: '덱 숨기기', members: '멤버', lives: '라이브', energy: '에너지', cost: '코스트', bladeHearts: '블레이드 하트', bladeHeartCount: '블레이드 하트', hearts: '하트', showcaseHint: '칸을 눌러 보유 카드에서 고르세요.', searchCollection: '컬렉션 검색', clearSlot: '칸 비우기', reportAsk: '사유를 선택하세요. 관리자가 검토합니다.', reportReasonBio: '프로필/덱 소개', reportReasonAlt: '리더보드 부계정 악용', reportConfirm: '신고하기', modeRanked: '랭크', modeCasual: '캐주얼', modeMatch: '매치', games: '판', units: '많이 쓴 유닛', noOwnedCards: '조건에 맞는 보유 카드가 없습니다.' },
       friends: { view: '보기', accept: '수락', decline: '거절', remove: '삭제', incoming: '받은 요청', outgoing: '보낸 요청', yourCode: '내 코드', tabFriends: '친구', tabRequests: '요청', tabRecent: '최근', recentHint: '최근에 대전한 플레이어', codePlaceholder: 'LCXXXXXX', add: '추가', addFromProfile: '친구 요청 보내기', requestSent: '친구 요청을 보냈습니다', alreadyFriends: '친구', view: '보기', accept: '수락', decline: '거절', remove: '삭제', incoming: '받은 요청', outgoing: '보낸 요청', tabFriends: '친구', tabRequests: '요청', tabRecent: '최근' },
       profileMod: { title: '신고', warns: '경고', clearBio: '소개 삭제', warn: '경고', lockBio: '소개 잠금', dismiss: '닫기', empty: '열린 신고가 없습니다.', ban: '계정 차단', banConfirm: '이 Discord 계정을 차단할까요? 기록이 삭제되고, 상대와의 대전 승패도 제거되며 로그인할 수 없습니다. 해제용 스냅샷은 보관됩니다.', banlist: '차단 목록', unban: '차단 해제 및 복원', unbanConfirm: '차단을 해제하고 스냅샷을 복원할까요?', emptyBans: '차단된 계정이 없습니다.', warnNoticeTitle: '계정 경고', warnNoticeAlt: '리더보드 부계정 악용으로 경고되었습니다.', warnNoticeBio: '프로필 또는 덱 소개로 경고되었습니다.', warnNoticeOk: 'OK', bannedSignIn: '이 Discord 계정은 Loveca에서 차단되었습니다.' },
-      friendPush: { queueTapHint: '플레이하려면 큐에 참가하세요.', inviteExpired: '그 초대는 만료되었습니다.', aFriend: '친구', inviteBody: '{name}님이 {mode} 매치에 초대했습니다!', acceptInvite: '수락', declineInvite: '거절', inviteSent: '{name}에게 초대를 보냈습니다', noFriends: '먼저 친구 탭에서 친구를 추가하세요.' }
+      friendPush: { queueTapHint: '플레이하려면 큐에 참가하세요.', inviteExpired: '그 초대는 만료되었습니다.', aFriend: '친구', inviteBody: '{name}님이 {mode} 매치에 초대했습니다!', acceptInvite: '수락', declineInvite: '거절', inviteSent: '{name}에게 초대를 보냈습니다', noFriends: '먼저 친구 탭에서 친구를 추가하세요.', permissionDenied: '알림이 차단되었습니다. Android 설정 → 앱 → Loveca → 알림에서 허용하세요.' }
     },
     zh: {
       social: { profile: '个人资料', friends: '好友', close: '关闭', loading: '加载中…', error: '出错了', signInHint: '登录 Discord 后可使用个人资料和好友', moderation: '管理', menu: '菜单' },
       profile: { noTitles: '暂无称号', emptyBio: '还没有简介。', bioLocked: '简介已锁定。', showcase: '展示', rankedWl: '排位', unranked: '休闲场次', tournament: '锦标赛', tournamentRecord: '锦标赛对局', tournamentEvents: '参赛场次', tournamentCoins: '获得金币', tournamentPlacements: '近期名次', tournamentPrize: '{n} 金币', tournamentEmpty: '暂无锦标赛名次。', gameStats: '对战统计', featuredDeck: '展示卡组', visPrivate: '私密', visFriends: '仅好友', visPublic: '公开', useEquipped: '当前装备卡组', save: '保存', report: '举报', reported: '已提交举报。', deckHidden: '该卡组未公开。', types: '成员 / Live / 能量', byMode: '按模式', opponents: '常对战对手', idols: '常用成员', history: '对战记录', friendId: '好友 ID', copied: '已复制', edit: '编辑', bio: '简介', deckDesc: '卡组说明', visibility: '可见性', openDeck: '查看完整卡组', closeDeck: '隐藏卡组', members: '成员', lives: 'Live', energy: '能量', cost: '费用', bladeHearts: '利刃之心', bladeHeartCount: '利刃之心', hearts: '心形', showcaseHint: '点按栏位从收藏中选择卡片。', searchCollection: '搜索收藏', clearSlot: '清空栏位', reportAsk: '请选择原因。管理员会审核。', reportReasonBio: '资料/卡组简介', reportReasonAlt: '排行榜小号滥用', reportConfirm: '确认举报', modeRanked: '排位', modeCasual: '休闲', modeMatch: '对战', games: '场', units: '常用组合', noOwnedCards: '收藏中没有符合的卡片。' },
       friends: { view: '查看', accept: '接受', decline: '拒绝', remove: '删除', incoming: '收到', outgoing: '已发送', yourCode: '你的代码', tabFriends: '好友', tabRequests: '申请', tabRecent: '最近', codePlaceholder: 'LCXXXXXX', add: '添加', addFromProfile: '发送好友申请', requestSent: '已发送好友申请', alreadyFriends: '好友', view: '查看', accept: '接受', decline: '拒绝', remove: '删除', incoming: '收到', outgoing: '已发送', tabFriends: '好友', tabRequests: '申请', tabRecent: '最近', recentHint: '你最近对战过的玩家' },
       profileMod: { title: '举报', warns: '警告', clearBio: '清空简介', warn: '警告', lockBio: '锁定简介', dismiss: '忽略', empty: '暂无待处理举报。', ban: '封禁账号', banConfirm: '封禁此 Discord 账号？记录将被清除，对手与其的对战胜负也会移除，且无法登录。会保留快照以便解封。', banlist: '封禁列表', unban: '解封并恢复', unbanConfirm: '解封此账号并恢复快照？', emptyBans: '暂无封禁账号。', warnNoticeTitle: '账号警告', warnNoticeAlt: '你因排行榜小号滥用受到警告。', warnNoticeBio: '你因个人资料或卡组简介受到警告。', warnNoticeOk: '确定', bannedSignIn: '此 Discord 账号已被 Loveca 封禁。' },
-      friendPush: { queueTapHint: '若要游玩请加入队列。', inviteExpired: '该邀请已过期。', aFriend: '好友', inviteBody: '{name} 邀请你进行 {mode} 对战！', acceptInvite: '接受', declineInvite: '拒绝', inviteSent: '已向 {name} 发送邀请', noFriends: '请先在好友标签页添加好友。' }
+      friendPush: { queueTapHint: '若要游玩请加入队列。', inviteExpired: '该邀请已过期。', aFriend: '好友', inviteBody: '{name} 邀请你进行 {mode} 对战！', acceptInvite: '接受', declineInvite: '拒绝', inviteSent: '已向 {name} 发送邀请', noFriends: '请先在好友标签页添加好友。', permissionDenied: '通知已被阻止。请在 Android 设置 → 应用 → Loveca → 通知 中启用。' }
     },
     th: {
       social: { profile: 'โปรไฟล์', friends: 'เพื่อน', close: 'ปิด', loading: 'กำลังโหลด…', error: 'เกิดข้อผิดพลาด', signInHint: 'เข้าสู่ระบบ Discord เพื่อใช้โปรไฟล์และเพื่อน', moderation: 'ผู้ดูแล', menu: 'เมนู' },
       profile: { noTitles: 'ยังไม่มีตำแหน่ง', emptyBio: 'ยังไม่มีประวัติ', bioLocked: 'ล็อกการแก้ไขประวัติแล้ว', showcase: 'โชว์เคส', rankedWl: 'แรงก์', unranked: 'เกมแคชชวล', tournament: 'ทัวร์นาเมนต์', tournamentRecord: 'แมตช์ทัวร์นาเมนต์', tournamentEvents: 'จำนวนรายการ', tournamentCoins: 'เหรียญที่ได้', tournamentPlacements: 'อันดับล่าสุด', tournamentPrize: '{n} เหรียญ', tournamentEmpty: 'ยังไม่มีอันดับทัวร์นาเมนต์', gameStats: 'สถิติ', featuredDeck: 'เด็คแนะนำ', visPrivate: 'ส่วนตัว', visFriends: 'เพื่อน', visPublic: 'สาธารณะ', useEquipped: 'เด็คที่สวมอยู่', save: 'บันทึก', report: 'รายงาน', reported: 'ส่งรายงานแล้ว', deckHidden: 'เด็คนี้เป็นส่วนตัว', types: 'สมาชิก / ไลฟ์ / เอนเนอร์จี', byMode: 'ตามโหมด', opponents: 'คู่ต่อสู้ที่เจอบ่อย', idols: 'ไอดอลที่ใช้บ่อย', history: 'ประวัติการแข่ง', friendId: 'รหัสเพื่อน', copied: 'คัดลอกแล้ว', edit: 'แก้ไข', bio: 'ประวัติ', deckDesc: 'คำอธิบายเด็ค', visibility: 'การมองเห็น', openDeck: 'ดูเด็คทั้งหมด', closeDeck: 'ซ่อนเด็ค', members: 'สมาชิก', lives: 'ไลฟ์', energy: 'เอนเนอร์จี', cost: 'ต้นทุน', bladeHearts: 'เบลดฮาร์ต', bladeHeartCount: 'เบลดฮาร์ต', hearts: 'ฮาร์ต', showcaseHint: 'แตะช่องเพื่อเลือกการ์ดจากคอลเลกชัน', searchCollection: 'ค้นหาคอลเลกชัน', clearSlot: 'ล้างช่อง', reportAsk: 'เลือกเหตุผล ผู้ดูแลจะตรวจสอบ', reportReasonBio: 'โปรไฟล์/คำอธิบายเด็ค', reportReasonAlt: 'ใช้บัญชีสำรองโกงลีดเดอร์บอร์ด', reportConfirm: 'ใช่ รายงาน', modeRanked: 'แรงก์', modeCasual: 'แคชชวล', modeMatch: 'แมตช์', games: 'เกม', units: 'ยูนิตที่ใช้บ่อย', noOwnedCards: 'ไม่มีการ์ดที่ตรงในคอลเลกชัน' },
       friends: { view: 'ดู', accept: 'ยอมรับ', decline: 'ปฏิเสธ', remove: 'ลบ', incoming: 'ขาเข้า', outgoing: 'ขาออก', yourCode: 'รหัสของคุณ', tabFriends: 'เพื่อน', tabRequests: 'คำขอ', tabRecent: 'ล่าสุด', recentHint: 'ผู้เล่นที่คุณเพิ่งแข่งด้วย', codePlaceholder: 'LCXXXXXX', add: 'เพิ่ม', addFromProfile: 'ส่งคำขอเป็นเพื่อน', requestSent: 'ส่งคำขอเป็นเพื่อนแล้ว', alreadyFriends: 'เพื่อน', view: 'ดู', accept: 'ยอมรับ', decline: 'ปฏิเสธ', remove: 'ลบ', incoming: 'ขาเข้า', outgoing: 'ขาออก', tabFriends: 'เพื่อน', tabRequests: 'คำขอ', tabRecent: 'ล่าสุด' },
       profileMod: { title: 'รายงาน', warns: 'คำเตือน', clearBio: 'ล้างประวัติ', warn: 'เตือน', lockBio: 'ล็อกประวัติ', dismiss: 'ปิด', empty: 'ไม่มีรายงานค้าง', ban: 'แบนบัญชี', banConfirm: 'แบนบัญชี Discord นี้หรือไม่? ข้อมูลจะถูกลบ คู่ต่อสู้จะเสีย W–L จากเกมกับบัญชีนี้ และไม่สามารถเข้าสู่ระบบได้ จะเก็บสแนปชอตไว้เพื่อปลดแบน', banlist: 'รายการแบน', unban: 'ปลดแบนและกู้คืน', unbanConfirm: 'ปลดแบนบัญชีนี้และกู้คืนสแนปชอตหรือไม่?', emptyBans: 'ไม่มีบัญชีที่ถูกแบน', warnNoticeTitle: 'คำเตือนบัญชี', warnNoticeAlt: 'คุณได้รับคำเตือนเรื่องใช้บัญชีสำรองโกงลีดเดอร์บอร์ด', warnNoticeBio: 'คุณได้รับคำเตือนเรื่องโปรไฟล์หรือคำอธิบายเด็ค', warnNoticeOk: 'ตกลง', bannedSignIn: 'บัญชี Discord นี้ถูกแบนจาก Loveca' },
-      friendPush: { queueTapHint: 'เข้าร่วมคิวหากต้องการเล่น', inviteExpired: 'คำเชิญนั้นหมดอายุแล้ว', aFriend: 'เพื่อน', inviteBody: '{name} เชิญคุณแข่ง {mode}!', acceptInvite: 'ยอมรับ', declineInvite: 'ปฏิเสธ', inviteSent: 'ส่งคำเชิญถึง {name} แล้ว', noFriends: 'เพิ่มเพื่อนก่อนจากแท็บเพื่อน' }
+      friendPush: { queueTapHint: 'เข้าร่วมคิวหากต้องการเล่น', inviteExpired: 'คำเชิญนั้นหมดอายุแล้ว', aFriend: 'เพื่อน', inviteBody: '{name} เชิญคุณแข่ง {mode}!', acceptInvite: 'ยอมรับ', declineInvite: 'ปฏิเสธ', inviteSent: 'ส่งคำเชิญถึง {name} แล้ว', noFriends: 'เพิ่มเพื่อนก่อนจากแท็บเพื่อน', permissionDenied: 'การแจ้งเตือนถูกบล็อก — เปิดใช้ใน Android Settings → Apps → Loveca → Notifications' }
     }
   };
   function deepFillI18n(target, src) {
