@@ -494,15 +494,25 @@ function tcgPushNotifyFriendsQueued(string $fromId, string $lane, string $gameMo
     }
 }
 
+function tcgApiPushDeviceToken(array $body): string {
+    foreach (['fcm_token', 'push_token', 'device_token', 'token'] as $key) {
+        $tok = trim((string)($body[$key] ?? ''));
+        if ($tok !== '') {
+            return $tok;
+        }
+    }
+    return '';
+}
+
 function tcgApiPushRegister(array $body): array {
     $uid = tcgRequireAuthUser($body);
-    tcgPushRegisterToken($uid, (string)($body['token'] ?? ''), (string)($body['platform'] ?? 'android'));
+    tcgPushRegisterToken($uid, tcgApiPushDeviceToken($body), (string)($body['platform'] ?? 'android'));
     return ['success' => true];
 }
 
 function tcgApiPushUnregister(array $body): array {
     $uid = tcgRequireAuthUser($body);
-    tcgPushUnregisterToken($uid, trim((string)($body['token'] ?? '')));
+    tcgPushUnregisterToken($uid, tcgApiPushDeviceToken($body));
     return ['success' => true];
 }
 

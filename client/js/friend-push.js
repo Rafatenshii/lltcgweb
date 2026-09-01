@@ -221,6 +221,11 @@
       });
     }
     if (result.reason === 'sync_failed') {
+      if (result.error) {
+        return t('friendPush.testSyncFailedDetail', 'Could not save push token: {err}', {
+          err: String(result.error).slice(0, 120),
+        });
+      }
       return t('friendPush.testSyncFailed', 'Got a device token but could not save it — check your connection and try again.');
     }
     return t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.');
@@ -254,7 +259,7 @@
           return;
         }
         if (!res.tokens) {
-          toast(pushSetupHint(setup), 6500);
+          toast(t('friendPush.testStillNoToken', 'Device token saved locally but not on server — tap PUSH again.'), 6500);
           return;
         }
       }
@@ -352,13 +357,13 @@
 
   async function syncPushTokenToServer(token) {
     token = String(token || loadPushToken() || '').trim();
-    if (!token || !isPushOptedIn()) return false;
-    if (!global.A || !global.A.user) return false;
+    if (!token || !isPushOptedIn()) return { ok: false, error: 'no_token' };
+    if (!global.A || !global.A.user) return { ok: false, error: 'not_logged_in' };
     try {
-      await accountPost('push_register', { token: token, platform: 'android' });
-      return true;
+      await accountPost('push_register', { fcm_token: token, platform: 'android' });
+      return { ok: true };
     } catch (e) {
-      return false;
+      return { ok: false, error: (e && e.message) || 'register failed' };
     }
   }
 
@@ -475,7 +480,7 @@
   async function unregisterNativePush() {
     var token = loadPushToken();
     if (token && global.A && global.A.user) {
-      await accountPost('push_unregister', { token: token }).catch(function () {});
+      await accountPost('push_unregister', { fcm_token: token }).catch(function () {});
     }
     savePushToken('');
   }
@@ -524,8 +529,9 @@
 
     var synced = await syncPushTokenToServer(token);
     return {
-      ok: synced,
-      reason: synced ? 'ok' : 'sync_failed',
+      ok: !!synced.ok,
+      reason: synced.ok ? 'ok' : 'sync_failed',
+      error: synced.error || '',
       token: token,
       permission: perm,
     };
@@ -566,7 +572,7 @@
       }, opts || {}));
       if (!result.ok && loadPushToken()) {
         var synced = await syncPushTokenToServer();
-        if (synced) result = { ok: true, reason: 'synced_cached', token: loadPushToken(), permission: perm };
+        if (synced.ok) result = { ok: true, reason: 'synced_cached', token: loadPushToken(), permission: perm };
       }
       syncPushOptionsUi();
       return result;

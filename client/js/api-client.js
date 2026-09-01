@@ -478,13 +478,24 @@
   };
 
   async function accountPostOnce(urls, action, body) {
-    const token = global.getAuthToken();
+    const authToken = global.getAuthToken();
+    const payload = { ...body };
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) {
+      headers['X-Auth-Token'] = authToken;
+      // push_register/unregister use body for the FCM device token — never replace with auth JWT.
+      if (action === 'push_register' || action === 'push_unregister') {
+        payload.auth_token = authToken;
+      } else if (!payload.token) {
+        payload.token = authToken;
+      }
+    }
     let r;
     try {
       r = await global.fetchWithTimeout(urls.ACCOUNT_API + '?action=' + encodeURIComponent(action), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
-        body: JSON.stringify({ ...body, token }),
+        headers,
+        body: JSON.stringify(payload),
       });
     } catch (e) {
       if (e && typeof e === 'object' && !e.httpStatus) e.httpStatus = 0;
