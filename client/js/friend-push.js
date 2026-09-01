@@ -200,7 +200,7 @@
         toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
         return;
       }
-      toast(t('friendPush.testSendFailed', 'Token saved but FCM send returned 0 — check server key / Firebase.'), 5500);
+      toast(t('friendPush.testSendFailed', 'Token saved but FCM send returned 0 — check Firebase service account on the server.'), 5500);
     } catch (e) {
       toast((e && e.message) || t('friendPush.testFailed', 'Test push failed.'), 4200);
     }

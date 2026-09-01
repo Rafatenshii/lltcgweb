@@ -2,8 +2,12 @@
 /**
  * FCM tokens + friend queue/invite notifications (Android Loveca shell).
  *
- * Set TCG_FCM_SERVER_KEY or data/fcm_server_key.txt (gitignored). Without a key,
- * tokens still register and in-app invite polling works; pushes are no-ops.
+ * Server send credentials (pick one):
+ * - FCM HTTP v1 (recommended): service account JSON via TCG_FCM_SERVICE_ACCOUNT or
+ *   data/fcm_service_account.json (gitignored).
+ * - Legacy server key (deprecated): TCG_FCM_SERVER_KEY or data/fcm_server_key.txt.
+ *
+ * Without credentials, tokens still register and in-app invite polling works; pushes are no-ops.
  */
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/social.php';
@@ -78,6 +82,197 @@ function tcgPushFcmServerKey(): string {
     return '';
 }
 
+/** @return array<string,mixed>|null */
+function tcgPushFcmServiceAccount(): ?array {
+    $path = trim((string)getenv('TCG_FCM_SERVICE_ACCOUNT'));
+    if ($path === '') {
+        $path = (defined('TCG_DATA_DIR') ? TCG_DATA_DIR : (__DIR__ . '/data/')) . 'fcm_service_account.json';
+    }
+    if (!is_file($path)) {
+        return null;
+    }
+    $json = json_decode((string)file_get_contents($path), true);
+    if (!is_array($json)) {
+        return null;
+    }
+    $email = trim((string)($json['client_email'] ?? ''));
+    $key = trim((string)($json['private_key'] ?? ''));
+    $project = trim((string)($json['project_id'] ?? ''));
+    if ($email === '' || $key === '' || $project === '') {
+        return null;
+    }
+    return [
+        'client_email' => $email,
+        'private_key' => $key,
+        'project_id' => $project,
+    ];
+}
+
+function tcgPushFcmConfigured(): bool {
+    return tcgPushFcmServiceAccount() !== null || tcgPushFcmServerKey() !== '';
+}
+
+function tcgPushFcmBase64Url(string $raw): string {
+    return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+}
+
+function tcgPushFcmAccessToken(): ?string {
+    $sa = tcgPushFcmServiceAccount();
+    if ($sa === null) {
+        return null;
+    }
+    $cachePath = (defined('TCG_DATA_DIR') ? TCG_DATA_DIR : (__DIR__ . '/data/')) . 'fcm_oauth_cache.json';
+    $now = time();
+    if (is_file($cachePath)) {
+        $cache = json_decode((string)file_get_contents($cachePath), true);
+        if (is_array($cache)) {
+            $tok = trim((string)($cache['access_token'] ?? ''));
+            $exp = intval($cache['expires_at'] ?? 0);
+            if ($tok !== '' && $exp > ($now + 60)) {
+                return $tok;
+            }
+        }
+    }
+    $header = tcgPushFcmBase64Url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'], JSON_UNESCAPED_SLASHES));
+    $claims = tcgPushFcmBase64Url(json_encode([
+        'iss' => $sa['client_email'],
+        'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'iat' => $now,
+        'exp' => $now + 3600,
+    ], JSON_UNESCAPED_SLASHES));
+    $input = $header . '.' . $claims;
+    $sig = '';
+    if (!openssl_sign($input, $sig, $sa['private_key'], OPENSSL_ALGO_SHA256)) {
+        error_log('tcgPushFcmAccessToken: openssl_sign failed');
+        return null;
+    }
+    $jwt = $input . '.' . tcgPushFcmBase64Url($sig);
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+            'content' => http_build_query([
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion' => $jwt,
+            ]),
+            'timeout' => 8,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $raw = @file_get_contents('https://oauth2.googleapis.com/token', false, $ctx);
+    if ($raw === false) {
+        return null;
+    }
+    $json = json_decode($raw, true);
+    $token = trim((string)($json['access_token'] ?? ''));
+    $expiresIn = intval($json['expires_in'] ?? 0);
+    if ($token === '' || $expiresIn <= 0) {
+        error_log('tcgPushFcmAccessToken: token exchange failed: ' . substr($raw, 0, 200));
+        return null;
+    }
+    @file_put_contents($cachePath, json_encode([
+        'access_token' => $token,
+        'expires_at' => $now + $expiresIn,
+    ], JSON_UNESCAPED_SLASHES));
+    return $token;
+}
+
+/**
+ * @param array<string,string> $data
+ */
+function tcgPushSendFcmV1(string $token, string $title, string $body, array $data): bool {
+    $sa = tcgPushFcmServiceAccount();
+    $access = tcgPushFcmAccessToken();
+    if ($sa === null || $access === null) {
+        return false;
+    }
+    $payload = [
+        'message' => [
+            'token' => $token,
+            'notification' => [
+                'title' => $title,
+                'body' => $body,
+            ],
+            'data' => array_map('strval', $data),
+            'android' => ['priority' => 'HIGH'],
+        ],
+    ];
+    $url = 'https://fcm.googleapis.com/v1/projects/' . rawurlencode($sa['project_id']) . '/messages:send';
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Authorization: Bearer {$access}\r\nContent-Type: application/json; charset=UTF-8\r\n",
+            'content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'timeout' => 6,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $raw = @file_get_contents($url, false, $ctx);
+    if ($raw === false) {
+        return false;
+    }
+    $json = json_decode($raw, true);
+    if (!empty($json['name'])) {
+        return true;
+    }
+    $err = '';
+    if (is_array($json['error'] ?? null)) {
+        $err = (string)($json['error']['message'] ?? '');
+        $details = $json['error']['details'] ?? [];
+        if (is_array($details)) {
+            foreach ($details as $detail) {
+                if (!is_array($detail)) {
+                    continue;
+                }
+                $code = (string)($detail['errorCode'] ?? '');
+                if ($code === 'UNREGISTERED' || $code === 'INVALID_ARGUMENT') {
+                    tcgDb()->prepare('DELETE FROM tcg_push_tokens WHERE token = ?')->execute([$token]);
+                    break;
+                }
+            }
+        }
+    }
+    if ($err !== '') {
+        error_log('tcgPushSendFcmV1: ' . $err);
+    }
+    return false;
+}
+
+function tcgPushSendFcmLegacy(string $token, string $title, string $body, array $data, string $key): bool {
+    $payload = [
+        'to' => $token,
+        'priority' => 'high',
+        'notification' => [
+            'title' => $title,
+            'body' => $body,
+            'sound' => 'default',
+        ],
+        'data' => array_map('strval', $data),
+    ];
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Authorization: key={$key}\r\nContent-Type: application/json\r\n",
+            'content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'timeout' => 4,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $raw = @file_get_contents('https://fcm.googleapis.com/fcm/send', false, $ctx);
+    if ($raw === false) {
+        return false;
+    }
+    $json = json_decode($raw, true);
+    if (!empty($json['success'])) {
+        return true;
+    }
+    if (!empty($json['results'][0]['error']) && in_array($json['results'][0]['error'], ['NotRegistered', 'InvalidRegistration'], true)) {
+        tcgDb()->prepare('DELETE FROM tcg_push_tokens WHERE token = ?')->execute([$token]);
+    }
+    return false;
+}
+
 function tcgPushGameModeLabel(string $mode): string {
     $mode = tcgNormalizeGameMode($mode);
     return match ($mode) {
@@ -140,40 +335,18 @@ function tcgPushTokensForUser(string $discordId): array {
  * @param array<string,string> $data
  */
 function tcgPushSendFcm(array $tokens, string $title, string $body, array $data): int {
-    $key = tcgPushFcmServerKey();
-    if ($key === '' || empty($tokens)) {
+    if (empty($tokens) || !tcgPushFcmConfigured()) {
         return 0;
     }
+    $useV1 = tcgPushFcmServiceAccount() !== null;
+    $legacyKey = $useV1 ? '' : tcgPushFcmServerKey();
     $sent = 0;
     foreach ($tokens as $token) {
-        $payload = [
-            'to' => $token,
-            'priority' => 'high',
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-            ],
-            'data' => array_map('strval', $data),
-        ];
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Authorization: key={$key}\r\nContent-Type: application/json\r\n",
-                'content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
-                'timeout' => 4,
-                'ignore_errors' => true,
-            ],
-        ]);
-        $raw = @file_get_contents('https://fcm.googleapis.com/fcm/send', false, $ctx);
-        if ($raw === false) {
-            continue;
-        }
-        $json = json_decode($raw, true);
-        if (!empty($json['success'])) {
+        $ok = $useV1
+            ? tcgPushSendFcmV1($token, $title, $body, $data)
+            : tcgPushSendFcmLegacy($token, $title, $body, $data, $legacyKey);
+        if ($ok) {
             $sent++;
-        } elseif (!empty($json['results'][0]['error']) && in_array($json['results'][0]['error'], ['NotRegistered', 'InvalidRegistration'], true)) {
-            tcgDb()->prepare('DELETE FROM tcg_push_tokens WHERE token = ?')->execute([$token]);
         }
     }
     return $sent;
@@ -250,9 +423,9 @@ function tcgApiPushTest(array $body): array {
         throw new Exception('Forbidden', 403);
     }
     $tokens = tcgPushTokensForUser($uid);
-    $key = tcgPushFcmServerKey();
+    $configured = tcgPushFcmConfigured();
     $sent = 0;
-    if ($key !== '' && $tokens) {
+    if ($configured && $tokens) {
         $sent = tcgPushSendFcm(
             $tokens,
             'Loveca test',
@@ -267,7 +440,7 @@ function tcgApiPushTest(array $body): array {
         'success' => true,
         'sent' => $sent,
         'tokens' => count($tokens),
-        'fcm_configured' => $key !== '',
+        'fcm_configured' => $configured,
     ];
 }
 
