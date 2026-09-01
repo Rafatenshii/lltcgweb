@@ -6930,6 +6930,12 @@ function bumpLiveShowRunnerEpoch() {
 }
 
 function perfCloseSpectacle() {
+  // Invalidate in-flight heart/yell flies before clearing panels — otherwise async
+  // landings after close/reopen double heart counts (issue #135 / tab catch-up).
+  const wasActive = !!G._perfSpectacleActive;
+  if (wasActive) {
+    G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
+  }
   // Preserve an existing abort latch. Calling the abort hook below always flips
   // the flag on — without this, tab/softlock aborts cleared the latch and
   // in-flight yell/heart flies resumed over a visible playmat.
@@ -8006,6 +8012,8 @@ async function perfSeekPhase(prev, next, myId, targetPhase, { forward = true, an
   }
   perfOpenSpectacle();
   let aborted = false;
+  // New animated climb — drop any heart flies still resolving from a prior close/seek.
+  G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
   G._perfSpectacleAborted = false;
   G._perfSpectacleAbort = () => {
     aborted = true;

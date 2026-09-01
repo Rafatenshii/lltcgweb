@@ -12286,7 +12286,11 @@ function abortStuckLiveRoundPlayback(reason) {
 
 function abortGameplayPresentation(opts = {}) {
   if (!opts.skipAbortFlag) G._presentationAborted = true;
-  G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+  if (typeof bumpLiveShowRunnerEpoch === 'function') bumpLiveShowRunnerEpoch();
+  else {
+    G._liveShowRunnerEpoch = (G._liveShowRunnerEpoch || 0) + 1;
+    G._perfHeartFlyEpoch = (G._perfHeartFlyEpoch || 0) + 1;
+  }
   if (typeof LiveRoundDirector !== 'undefined') {
     LiveRoundDirector.abort(opts.softReplayForward ? 'softReplayForward' : 'abortGameplay');
   }
@@ -34453,7 +34457,7 @@ function mkNoImg(card){
 }
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
-<script src="client/js/spectacle.js?v=113"></script>
+<script src="client/js/spectacle.js?v=114"></script>
 <script src="client/js/board-render.js?v=46"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
