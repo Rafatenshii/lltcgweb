@@ -1319,10 +1319,12 @@ function hsPb1ResolvePrompt(array $state, string $owner, array $prompt, string $
         if ($targetSlot === '' || $srcSlot === '') throw new Exception('Choose target area');
         $src = $ownerP['stage'][$srcSlot] ?? null;
         $tgt = $ownerP['stage'][$targetSlot] ?? null;
-        if (!$src || !$tgt) throw new Exception('Invalid Position Change');
+        if (!$src || !$tgt) {
+            throw new Exception('Invalid Position Change');
+        }
         // Position Change: swap areas; moved Members do not become Active.
-        $ownerP['stage'][$srcSlot] = $tgt;
-        $ownerP['stage'][$targetSlot] = $src;
+        // Must run auto area-move hooks (e.g. Hime bp5-014 blade_if_entered_or_moved).
+        $state = applyStagePositionChange($state, $owner, $srcSlot, $targetSlot, $src);
         $state = applyModifierEffect($state, $owner, [
             'type'   => 'blade_bonus',
             'amount' => intval($prompt['blade'] ?? 1),
