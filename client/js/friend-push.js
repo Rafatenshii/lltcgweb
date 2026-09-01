@@ -185,6 +185,21 @@
     });
   }
 
+  function isStaleFcmTokenError(err) {
+    return /not a valid fcm registration token|registration token is not a valid|not registered|unregistered/i.test(String(err || ''));
+  }
+
+  async function refreshNativePushToken() {
+    var Push = getPushPlugin();
+    if (!Push) return { ok: false, reason: 'no_plugin' };
+    bindPushListenersOnce();
+    await unregisterNativePush();
+    try {
+      if (typeof Push.unregister === 'function') await Push.unregister();
+    } catch (e) { /* ignore */ }
+    return activateNativePush({ requestPermission: false });
+  }
+
   async function sendTestPush() {
     try {
       var res = await accountPost('push_test', {});
@@ -202,6 +217,30 @@
       }
       if (res.sent > 0) {
         toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
+        return;
+      }
+      if (res.fcm_error && isStaleFcmTokenError(res.fcm_error)) {
+        toast(t('friendPush.testRefreshingToken', 'Stale push token — refreshing from Firebase…'), 4200);
+        var reg = await refreshNativePushToken();
+        if (!reg.ok) {
+          toast(t('friendPush.testNeedApk', 'Install Loveca v1.2.1+ and turn notifications on in Options.'), 6500);
+          return;
+        }
+        await new Promise(function (resolve) { setTimeout(resolve, 2800); });
+        var retry = await accountPost('push_test', {});
+        if (retry && retry.sent > 0) {
+          toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: retry.sent }), 3600);
+          return;
+        }
+        if (retry && !retry.tokens) {
+          toast(t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.'), 5500);
+          return;
+        }
+        if (retry && retry.fcm_error) {
+          toast(t('friendPush.testSendFailedDetail', 'FCM failed: {err}', { err: String(retry.fcm_error).slice(0, 180) }), 6500);
+          return;
+        }
+        toast(t('friendPush.testRetryPush', 'New token registered — tap PUSH once more.'), 5000);
         return;
       }
       if (res.fcm_error) {

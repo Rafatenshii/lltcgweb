@@ -283,11 +283,14 @@ function tcgPushSendFcmV1(string $token, string $title, string $body, array $dat
                 }
                 $code = (string)($detail['errorCode'] ?? '');
                 if ($code === 'UNREGISTERED' || $code === 'INVALID_ARGUMENT') {
-                    tcgDb()->prepare('DELETE FROM tcg_push_tokens WHERE token = ?')->execute([$token]);
+                    tcgPushDropToken($token);
                     break;
                 }
             }
         }
+    }
+    if ($err !== '' && tcgPushFcmErrorInvalidatesToken($err)) {
+        tcgPushDropToken($token);
     }
     if ($err !== '') {
         error_log('tcgPushSendFcmV1: ' . $err);
@@ -351,10 +354,38 @@ function tcgPushDeepLink(array $query): string {
     return 'https://loveliveradio.ca/tcg/' . ($q !== '' ? '?' . $q : '');
 }
 
+function tcgPushLooksLikeFcmToken(string $token): bool {
+    $token = trim($token);
+    return $token !== ''
+        && strlen($token) >= 80
+        && strlen($token) <= 4096
+        && preg_match('/^[a-zA-Z0-9_:-]+$/', $token) === 1;
+}
+
+function tcgPushFcmErrorInvalidatesToken(string $err): bool {
+    $e = strtolower(trim($err));
+    if ($e === '') {
+        return false;
+    }
+    return str_contains($e, 'not a valid fcm registration token')
+        || str_contains($e, 'registration token is not a valid')
+        || str_contains($e, 'not registered')
+        || str_contains($e, 'unregistered');
+}
+
+function tcgPushDropToken(string $token): void {
+    $token = trim($token);
+    if ($token === '') {
+        return;
+    }
+    tcgPushEnsureSchema();
+    tcgDb()->prepare('DELETE FROM tcg_push_tokens WHERE token = ?')->execute([$token]);
+}
+
 function tcgPushRegisterToken(string $discordId, string $token, string $platform = 'android'): void {
     tcgPushEnsureSchema();
     $token = trim($token);
-    if ($token === '' || strlen($token) > 4096) {
+    if (!tcgPushLooksLikeFcmToken($token)) {
         throw new Exception('Invalid push token', 400);
     }
     $platform = strtolower(trim($platform)) === 'web' ? 'web' : 'android';
@@ -488,6 +519,7 @@ function tcgApiPushTest(array $body): array {
     $oauthOk = !$useV1 || tcgPushFcmAccessToken() !== null;
     $sent = 0;
     tcgPushSetLastFcmError('');
+    $tokensBefore = count($tokens);
     if ($configured && $tokens && $oauthOk) {
         $sent = tcgPushSendFcm(
             $tokens,
@@ -499,11 +531,14 @@ function tcgApiPushTest(array $body): array {
             ]
         );
     }
+    $tokensAfter = count(tcgPushTokensForUser($uid));
     $err = tcgPushLastFcmError();
     return [
         'success' => true,
         'sent' => $sent,
-        'tokens' => count($tokens),
+        'tokens' => $tokensAfter,
+        'tokens_cleared' => $tokensBefore > $tokensAfter,
+        'token_invalid' => $err !== '' && tcgPushFcmErrorInvalidatesToken($err),
         'fcm_configured' => $configured,
         'fcm_v1' => $useV1,
         'oauth_ok' => $oauthOk,
