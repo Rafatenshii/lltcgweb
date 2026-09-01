@@ -2322,8 +2322,12 @@ html.tcg-mobile-viewport #perf-spectacle .perf-judge-duel{
 }
 html.tcg-mobile-viewport #perf-spectacle .perf-verdict{font-size:5cqw}
 html.tcg-mobile-viewport #toast{
-  position:fixed;top:max(12px, env(safe-area-inset-top, 0px));left:50%;
-  transform:translateX(-50%) translateY(-65px);
+  top:auto;
+  bottom:max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+  left:50%;
+  transform:translateX(-50%) translateY(calc(100% + 28px));
+  width:min(94vw, 420px);
+  max-width:min(94vw, 420px);
   z-index:9060;
 }
 html.tcg-mobile-viewport #toast.show{
@@ -3858,13 +3862,15 @@ body.deck-card-preview #modal-card{z-index:970}
 .zthumb:hover{transform:translateY(-4px);border-color:var(--pink)}
 
 /* Toast — hidden off-screen until .show; :empty avoids a blank pill if something toggles show without text */
-.toast{position:fixed;top:18px;left:50%;
-  transform:translateX(-50%) translateY(-65px);
+.toast{position:fixed;top:max(18px, env(safe-area-inset-top, 0px));left:50%;
+  transform:translateX(-50%) translateY(calc(-100% - 24px));
   background:linear-gradient(135deg,var(--pink-d),var(--pink-dd));
-  color:#fff;font-family:'Fredoka One',cursive;font-size:15px;
-  padding:11px 22px;border-radius:40px;
+  color:#fff;font-family:'Fredoka One',cursive;font-size:clamp(12px, 3.5vw, 15px);
+  padding:10px 18px;border-radius:14px;
   box-shadow:0 6px 22px rgba(214,51,132,.42);
-  z-index:5000;white-space:nowrap;
+  z-index:5000;max-width:min(92vw, 420px);width:max-content;
+  white-space:normal;text-align:center;line-height:1.35;
+  word-break:break-word;overflow-wrap:anywhere;box-sizing:border-box;
   transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .toast:empty{display:none}
 .toast.show{transform:translateX(-50%) translateY(0)}

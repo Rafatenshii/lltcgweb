@@ -3506,3 +3506,28 @@ html.tcg-portrait-play.tcg-portrait-tablet #screen-game .z-my-stage-right{
   max-height: 100%;
   height: auto;
 }
+
+/* Toast — portrait/APK: sit above bottom chrome, wrap long FCM errors, avoid notification shade */
+html.tcg-portrait-play #toast,
+html.tcg-android-apk #toast{
+  top:auto;
+  bottom:max(92px, calc(env(safe-area-inset-bottom, 0px) + 76px), calc(var(--tcg-chrome-bottom, 0px) + 68px));
+  left:50%;
+  right:auto;
+  width:min(94vw, 420px);
+  max-width:min(94vw, 420px);
+  transform:translateX(-50%) translateY(calc(100% + 28px));
+  font-size:clamp(11px, 3.2vw, 14px);
+  padding:10px 14px;
+  line-height:1.4;
+  border-radius:12px;
+  z-index:9060;
+}
+html.tcg-portrait-play #toast.show,
+html.tcg-android-apk #toast.show{
+  transform:translateX(-50%) translateY(0);
+}
+body.missions-overlay-open html.tcg-portrait-play #toast,
+body.news-overlay-open html.tcg-portrait-play #toast{
+  z-index:8900;
+}
