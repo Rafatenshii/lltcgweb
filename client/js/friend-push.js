@@ -13,6 +13,8 @@
   var seenInviteIds = {};
   var pushListenersBound = false;
   var pushResumeBound = false;
+  var pushRegWaiters = [];
+  var lastPushRegError = '';
 
   function t(key, fallback, vars) {
     try {
@@ -197,11 +199,39 @@
     try {
       if (typeof Push.unregister === 'function') await Push.unregister();
     } catch (e) { /* ignore */ }
-    return activateNativePush({ requestPermission: false });
+    return activateNativePush({ requestPermission: true, timeoutMs: 8000 });
+  }
+
+  function pushSetupHint(result) {
+    if (!result) {
+      return t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.');
+    }
+    if (result.reason === 'opt_out') {
+      return t('friendPush.testOptOut', 'Turn on push notifications in Options first.');
+    }
+    if (result.reason === 'denied') {
+      return t('friendPush.permissionDenied', 'Notifications are blocked. Enable them in Android Settings → Apps → Loveca → Notifications.');
+    }
+    if (result.reason === 'no_plugin' || result.reason === 'unsupported') {
+      return t('friendPush.testNeedApk', 'Install Loveca v1.2.1+ and turn notifications on in Options.');
+    }
+    if (result.reason === 'registration_error' && result.error) {
+      return t('friendPush.testRegFailed', 'Firebase registration failed: {err}', {
+        err: String(result.error).slice(0, 120),
+      });
+    }
+    if (result.reason === 'sync_failed') {
+      return t('friendPush.testSyncFailed', 'Got a device token but could not save it — check your connection and try again.');
+    }
+    return t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.');
   }
 
   async function sendTestPush() {
     try {
+      if (!isPushOptedIn()) {
+        toast(pushSetupHint({ reason: 'opt_out' }), 5500);
+        return;
+      }
       var res = await accountPost('push_test', {});
       if (!res || !res.success) {
         toast(t('friendPush.testFailed', 'Test push failed.'), 4000);
@@ -212,8 +242,21 @@
         return;
       }
       if (!res.tokens) {
-        toast(t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.'), 5500);
-        return;
+        toast(t('friendPush.testRegistering', 'Registering push token…'), 2800);
+        var setup = await activateNativePush({ requestPermission: true, timeoutMs: 8000 });
+        if (!setup.ok) {
+          toast(pushSetupHint(setup), 6500);
+          return;
+        }
+        res = await accountPost('push_test', {});
+        if (!res || !res.success) {
+          toast(t('friendPush.testFailed', 'Test push failed.'), 4000);
+          return;
+        }
+        if (!res.tokens) {
+          toast(pushSetupHint(setup), 6500);
+          return;
+        }
       }
       if (res.sent > 0) {
         toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
@@ -223,17 +266,16 @@
         toast(t('friendPush.testRefreshingToken', 'Stale push token — refreshing from Firebase…'), 4200);
         var reg = await refreshNativePushToken();
         if (!reg.ok) {
-          toast(t('friendPush.testNeedApk', 'Install Loveca v1.2.1+ and turn notifications on in Options.'), 6500);
+          toast(pushSetupHint(reg), 6500);
           return;
         }
-        await new Promise(function (resolve) { setTimeout(resolve, 2800); });
         var retry = await accountPost('push_test', {});
         if (retry && retry.sent > 0) {
           toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: retry.sent }), 3600);
           return;
         }
         if (retry && !retry.tokens) {
-          toast(t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.'), 5500);
+          toast(pushSetupHint(reg), 6500);
           return;
         }
         if (retry && retry.fcm_error) {
@@ -308,6 +350,34 @@
     }
   }
 
+  async function syncPushTokenToServer(token) {
+    token = String(token || loadPushToken() || '').trim();
+    if (!token || !isPushOptedIn()) return false;
+    if (!global.A || !global.A.user) return false;
+    try {
+      await accountPost('push_register', { token: token, platform: 'android' });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function waitForPushRegistration(ms) {
+    var cached = loadPushToken();
+    if (cached) return Promise.resolve(cached);
+    return new Promise(function (resolve) {
+      var settled = false;
+      function finish(val) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(String(val || loadPushToken() || '').trim());
+      }
+      var timer = setTimeout(function () { finish(''); }, ms || 6000);
+      pushRegWaiters.push(finish);
+    });
+  }
+
   async function getPushPermission() {
     var Push = getPushPlugin();
     if (!Push || typeof Push.checkPermissions !== 'function') return 'unknown';
@@ -337,11 +407,15 @@
     pushListenersBound = true;
     Push.addListener('registration', function (token) {
       if (!isPushOptedIn() || !token || !token.value) return;
+      lastPushRegError = '';
       savePushToken(token.value);
-      if (!global.A || !global.A.user) return;
-      void accountPost('push_register', { token: token.value, platform: 'android' }).catch(function () {});
+      void syncPushTokenToServer(token.value);
+      pushRegWaiters.splice(0).forEach(function (finish) { finish(token.value); });
     });
-    Push.addListener('registrationError', function () { /* ignore */ });
+    Push.addListener('registrationError', function (err) {
+      lastPushRegError = String((err && (err.error || err.message)) || 'Push registration failed');
+      pushRegWaiters.splice(0).forEach(function (finish) { finish(''); });
+    });
     Push.addListener('pushNotificationActionPerformed', function (ev) {
       var data = (ev && ev.notification && ev.notification.data) || {};
       handlePushData(data);
@@ -416,20 +490,45 @@
     if (!Push) return { ok: false, reason: 'no_plugin' };
 
     bindPushListenersOnce();
+    lastPushRegError = '';
 
     var perm = await getPushPermission();
-    if (perm !== 'granted') {
+    if (perm === 'denied') {
       if (!opts.requestPermission) {
-        return { ok: false, reason: 'needs_permission', permission: perm };
-      }
-      perm = await requestPushPermission();
-      if (perm !== 'granted') {
         return { ok: false, reason: 'denied', permission: perm };
       }
+      perm = await requestPushPermission();
+      if (perm === 'denied') {
+        return { ok: false, reason: 'denied', permission: perm };
+      }
+    } else if (perm !== 'granted' && opts.requestPermission) {
+      perm = await requestPushPermission();
     }
 
-    await Push.register();
-    return { ok: true, permission: perm };
+    try {
+      await Push.register();
+    } catch (e) {
+      lastPushRegError = (e && e.message) || 'register failed';
+      return { ok: false, reason: 'registration_error', error: lastPushRegError, permission: perm };
+    }
+
+    var token = await waitForPushRegistration(opts.timeoutMs || 6000);
+    if (!token) {
+      return {
+        ok: false,
+        reason: lastPushRegError ? 'registration_error' : 'no_token',
+        error: lastPushRegError,
+        permission: perm,
+      };
+    }
+
+    var synced = await syncPushTokenToServer(token);
+    return {
+      ok: synced,
+      reason: synced ? 'ok' : 'sync_failed',
+      token: token,
+      permission: perm,
+    };
   }
 
   function handlePushData(data) {
@@ -460,7 +559,15 @@
     if (!isAndroidShell()) return { ok: false, reason: 'unsupported' };
     if (!isPushOptedIn()) return { ok: false, reason: 'opt_out' };
     try {
-      var result = await activateNativePush(Object.assign({ requestPermission: false }, opts || {}));
+      var perm = await getPushPermission();
+      var result = await activateNativePush(Object.assign({
+        requestPermission: perm === 'denied' || perm === 'prompt',
+        timeoutMs: 8000,
+      }, opts || {}));
+      if (!result.ok && loadPushToken()) {
+        var synced = await syncPushTokenToServer();
+        if (synced) result = { ok: true, reason: 'synced_cached', token: loadPushToken(), permission: perm };
+      }
       syncPushOptionsUi();
       return result;
     } catch (e) {
