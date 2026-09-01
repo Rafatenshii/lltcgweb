@@ -204,6 +204,14 @@
         toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
         return;
       }
+      if (res.fcm_error) {
+        toast(t('friendPush.testSendFailedDetail', 'FCM failed: {err}', { err: String(res.fcm_error).slice(0, 180) }), 6500);
+        return;
+      }
+      if (res.oauth_ok === false) {
+        toast(t('friendPush.testOAuthFailed', 'FCM OAuth failed — check service account JSON on the server.'), 5500);
+        return;
+      }
       toast(t('friendPush.testSendFailed', 'Token saved but FCM send returned 0 — check Firebase service account on the server.'), 5500);
     } catch (e) {
       toast((e && e.message) || t('friendPush.testFailed', 'Test push failed.'), 4200);

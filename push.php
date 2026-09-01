@@ -112,6 +112,54 @@ function tcgPushFcmConfigured(): bool {
     return tcgPushFcmServiceAccount() !== null || tcgPushFcmServerKey() !== '';
 }
 
+function tcgPushSetLastFcmError(string $message): void {
+    $GLOBALS['tcg_push_last_fcm_error'] = trim($message);
+}
+
+function tcgPushLastFcmError(): string {
+    return trim((string)($GLOBALS['tcg_push_last_fcm_error'] ?? ''));
+}
+
+/** POST body to URL; prefers curl when available (Hostinger-safe). */
+function tcgPushHttpPost(string $url, array $headers, string $body, int $timeoutSec = 8): ?string {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeoutSec),
+            CURLOPT_TIMEOUT => $timeoutSec,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if (!is_string($raw)) {
+            return null;
+        }
+        if ($code >= 400) {
+            tcgPushSetLastFcmError('HTTP ' . $code . ': ' . substr(trim($raw), 0, 240));
+        }
+        return $raw;
+    }
+    $headerLines = implode("\r\n", $headers);
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => $headerLines . "\r\n",
+            'content' => $body,
+            'timeout' => $timeoutSec,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $raw = @file_get_contents($url, false, $ctx);
+    return is_string($raw) ? $raw : null;
+}
+
 function tcgPushFcmBase64Url(string $raw): string {
     return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
 }
@@ -119,8 +167,10 @@ function tcgPushFcmBase64Url(string $raw): string {
 function tcgPushFcmAccessToken(): ?string {
     $sa = tcgPushFcmServiceAccount();
     if ($sa === null) {
+        tcgPushSetLastFcmError('No FCM service account configured');
         return null;
     }
+    tcgPushSetLastFcmError('');
     $cachePath = (defined('TCG_DATA_DIR') ? TCG_DATA_DIR : (__DIR__ . '/data/')) . 'fcm_oauth_cache.json';
     $now = time();
     if (is_file($cachePath)) {
@@ -144,31 +194,35 @@ function tcgPushFcmAccessToken(): ?string {
     $input = $header . '.' . $claims;
     $sig = '';
     if (!openssl_sign($input, $sig, $sa['private_key'], OPENSSL_ALGO_SHA256)) {
+        $msg = 'OAuth JWT sign failed — check service account private_key in fcm_service_account.json';
         error_log('tcgPushFcmAccessToken: openssl_sign failed');
+        tcgPushSetLastFcmError($msg);
         return null;
     }
     $jwt = $input . '.' . tcgPushFcmBase64Url($sig);
-    $ctx = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
-            'content' => http_build_query([
-                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                'assertion' => $jwt,
-            ]),
-            'timeout' => 8,
-            'ignore_errors' => true,
-        ],
-    ]);
-    $raw = @file_get_contents('https://oauth2.googleapis.com/token', false, $ctx);
-    if ($raw === false) {
+    $raw = tcgPushHttpPost(
+        'https://oauth2.googleapis.com/token',
+        ['Content-Type: application/x-www-form-urlencoded'],
+        http_build_query([
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion' => $jwt,
+        ]),
+        8
+    );
+    if ($raw === null) {
+        tcgPushSetLastFcmError('OAuth token request failed (network or curl)');
         return null;
     }
     $json = json_decode($raw, true);
     $token = trim((string)($json['access_token'] ?? ''));
     $expiresIn = intval($json['expires_in'] ?? 0);
     if ($token === '' || $expiresIn <= 0) {
-        error_log('tcgPushFcmAccessToken: token exchange failed: ' . substr($raw, 0, 200));
+        $err = trim((string)($json['error_description'] ?? $json['error'] ?? ''));
+        if ($err === '') {
+            $err = substr(trim($raw), 0, 200);
+        }
+        error_log('tcgPushFcmAccessToken: token exchange failed: ' . $err);
+        tcgPushSetLastFcmError('OAuth failed: ' . $err);
         return null;
     }
     @file_put_contents($cachePath, json_encode([
@@ -199,17 +253,19 @@ function tcgPushSendFcmV1(string $token, string $title, string $body, array $dat
         ],
     ];
     $url = 'https://fcm.googleapis.com/v1/projects/' . rawurlencode($sa['project_id']) . '/messages:send';
-    $ctx = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Authorization: Bearer {$access}\r\nContent-Type: application/json; charset=UTF-8\r\n",
-            'content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            'timeout' => 6,
-            'ignore_errors' => true,
+    $raw = tcgPushHttpPost(
+        $url,
+        [
+            'Authorization: Bearer ' . $access,
+            'Content-Type: application/json; charset=UTF-8',
         ],
-    ]);
-    $raw = @file_get_contents($url, false, $ctx);
-    if ($raw === false) {
+        json_encode($payload, JSON_UNESCAPED_UNICODE) ?: '{}',
+        6
+    );
+    if ($raw === null) {
+        if (tcgPushLastFcmError() === '') {
+            tcgPushSetLastFcmError('FCM send request failed (network)');
+        }
         return false;
     }
     $json = json_decode($raw, true);
@@ -235,6 +291,9 @@ function tcgPushSendFcmV1(string $token, string $title, string $body, array $dat
     }
     if ($err !== '') {
         error_log('tcgPushSendFcmV1: ' . $err);
+        tcgPushSetLastFcmError($err);
+    } elseif (tcgPushLastFcmError() === '') {
+        tcgPushSetLastFcmError('FCM rejected the message (unknown error)');
     }
     return false;
 }
@@ -424,8 +483,12 @@ function tcgApiPushTest(array $body): array {
     }
     $tokens = tcgPushTokensForUser($uid);
     $configured = tcgPushFcmConfigured();
+    $sa = tcgPushFcmServiceAccount();
+    $useV1 = $sa !== null;
+    $oauthOk = !$useV1 || tcgPushFcmAccessToken() !== null;
     $sent = 0;
-    if ($configured && $tokens) {
+    tcgPushSetLastFcmError('');
+    if ($configured && $tokens && $oauthOk) {
         $sent = tcgPushSendFcm(
             $tokens,
             'Loveca test',
@@ -436,11 +499,16 @@ function tcgApiPushTest(array $body): array {
             ]
         );
     }
+    $err = tcgPushLastFcmError();
     return [
         'success' => true,
         'sent' => $sent,
         'tokens' => count($tokens),
         'fcm_configured' => $configured,
+        'fcm_v1' => $useV1,
+        'oauth_ok' => $oauthOk,
+        'fcm_project' => $useV1 ? (string)($sa['project_id'] ?? '') : '',
+        'fcm_error' => $err !== '' ? $err : null,
     ];
 }
 
