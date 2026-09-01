@@ -40,6 +40,7 @@
     var fromCap = !!(window.Capacitor && (window.Capacitor.isNativePlatform
       ? window.Capacitor.isNativePlatform()
       : window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android'));
+    if (fromUa || fromCap) window.LOVECA_FCM_REGISTER = true;
     var ls = null;
     try { ls = localStorage.getItem('tcg_portrait_play'); } catch (e) {}
     if (fromQueryOff && playQ === 'auto') {
