@@ -264,7 +264,7 @@
         }
       }
       if (res.sent > 0) {
-        toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: res.sent }), 3600);
+        toast(t('friendPush.testSent', 'Test push sent ({n} device). Background the app to see the system notification — or watch for an in-app toast if Loveca is open.', { n: res.sent }), 5200);
         return;
       }
       if (res.fcm_error && isStaleFcmTokenError(res.fcm_error)) {
@@ -405,6 +405,26 @@
     }
   }
 
+  async function ensurePushChannel(Push) {
+    if (!Push || typeof Push.createChannel !== 'function') return;
+    try {
+      await Push.createChannel({
+        id: 'loveca_friends',
+        name: 'Friend queue & invites',
+        description: 'When friends queue or invite you to a match',
+        importance: 5,
+        visibility: 1,
+        vibration: true,
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  function pushNotificationText(ev) {
+    var body = (ev && ev.body) || (ev && ev.notification && ev.notification.body) || '';
+    var title = (ev && ev.title) || (ev && ev.notification && ev.notification.title) || '';
+    return String(body || title || '').trim();
+  }
+
   function bindPushListenersOnce() {
     if (pushListenersBound) return;
     var Push = getPushPlugin();
@@ -427,7 +447,16 @@
     });
     Push.addListener('pushNotificationReceived', function (ev) {
       var data = (ev && ev.data) || (ev && ev.notification && ev.notification.data) || {};
-      if (data && data.type === 'friend_invite') renderInviteBanner(data);
+      var text = pushNotificationText(ev);
+      if (data && data.type === 'test') {
+        toast(text || t('friendPush.testReceived', 'Test push received — notifications are working.'), 4500);
+        return;
+      }
+      if (data && data.type === 'friend_invite') {
+        renderInviteBanner(data);
+        return;
+      }
+      if (text) toast(text, 4200);
     });
     try {
       var App = global.Capacitor.Plugins.App;
@@ -511,6 +540,7 @@
     }
 
     try {
+      await ensurePushChannel(Push);
       await Push.register();
     } catch (e) {
       lastPushRegError = (e && e.message) || 'register failed';

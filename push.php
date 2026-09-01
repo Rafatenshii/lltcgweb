@@ -249,7 +249,13 @@ function tcgPushSendFcmV1(string $token, string $title, string $body, array $dat
                 'body' => $body,
             ],
             'data' => array_map('strval', $data),
-            'android' => ['priority' => 'HIGH'],
+            'android' => [
+                'priority' => 'HIGH',
+                'notification' => [
+                    'channel_id' => 'loveca_friends',
+                    'sound' => 'default',
+                ],
+            ],
         ],
     ];
     $url = 'https://fcm.googleapis.com/v1/projects/' . rawurlencode($sa['project_id']) . '/messages:send';
