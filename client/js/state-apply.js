@@ -343,12 +343,11 @@
       global.closeM('overlay-prompt');
       global.closeM('overlay-hand-pick');
     }
-    G._livePostRevealBoard = null;
+    const heldPostRevealBoard = G._livePostRevealBoard;
     G._liveStorageOutcomePending = false;
     G._liveStorageOutcomesPlayedKey = null;
     G._liveStorageOutcomesPlayedBluffKey = null;
     G._liveStorageOutcomesPlayedLiveKey = null;
-    if (typeof resetMovementLedger === 'function') resetMovementLedger();
     G._promptSubmitKey = null;
     G._resolvePromptSentKey = null;
     G._lastResolvedPromptKey = null;
@@ -383,6 +382,13 @@
           G._liveSpectacleGateRunning = false;
         }
       }
+
+      if (!resigned && typeof global.playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+        await global.playOwedLiveStorageOutcomesBeforeFinish(
+          G._livePostRevealBoard || heldPostRevealBoard || prev, s, G.playerId);
+      }
+      G._livePostRevealBoard = null;
+      if (typeof resetMovementLedger === 'function') resetMovementLedger();
 
       abortGameplayPresentation();
       stopPoll();
@@ -439,6 +445,13 @@
         G._liveSpectacleGateRunning = false;
       }
     }
+
+    if (!resigned && typeof global.playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+      await global.playOwedLiveStorageOutcomesBeforeFinish(
+        G._livePostRevealBoard || heldPostRevealBoard || prev, s, G.playerId);
+    }
+    G._livePostRevealBoard = null;
+    if (typeof resetMovementLedger === 'function') resetMovementLedger();
 
     abortGameplayPresentation();
     const rematchSettings = typeof global.captureRematchSettings === 'function'

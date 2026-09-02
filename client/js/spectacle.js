@@ -3275,6 +3275,15 @@ async function maybePlayFinalLiveRoundPresentation(prev, next, newEntries) {
     if (liveSpectacleDoneForTurn(showTurn)) {
       // Spectators seal on judge without closing — clear chrome so finish UI is not blocked.
       if (G._perfSpectacleActive && typeof perfCloseSpectacle === 'function') perfCloseSpectacle();
+      // Performance may be sealed while Live→Success flights are still owed (e.g. 3rd Success win).
+      if (typeof playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+        G.animating = true;
+        try {
+          await playOwedLiveStorageOutcomesBeforeFinish(G._livePostRevealBoard || prev, next, G.playerId);
+        } finally {
+          G.animating = false;
+        }
+      }
       return true;
     }
     if (!settled) {
@@ -3290,7 +3299,21 @@ async function maybePlayFinalLiveRoundPresentation(prev, next, newEntries) {
     }
   }
   const plan = liveRoundPresentationPlan(prev, next);
-  if (!plan.needsLiveReveal && !plan.wantsSpectacle && !plan.wantsEmptyRound) return false;
+  const storageOwed = typeof liveStorageStillNeedsOutcomeExits === 'function'
+    && liveStorageStillNeedsOutcomeExits(G._livePostRevealBoard || prev, next);
+  if (!plan.needsLiveReveal && !plan.wantsSpectacle && !plan.wantsEmptyRound && !storageOwed) return false;
+  if (!plan.needsLiveReveal && !plan.wantsSpectacle && !plan.wantsEmptyRound && storageOwed) {
+    G.animating = true;
+    try {
+      if (typeof playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+        await playOwedLiveStorageOutcomesBeforeFinish(G._livePostRevealBoard || prev, next, G.playerId);
+      }
+      return true;
+    } finally {
+      G.animating = false;
+      releaseLivePollsAndFlush();
+    }
+  }
   TCG_DEBUG.log('live', 'maybePlayFinalLiveRoundPresentation', plan, TCG_DEBUG.trans(prev, next));
   G.animating = true;
   try {
@@ -3599,6 +3622,9 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
   }
   const allowFinishedSpectacle = next?.status === 'finished' && wantsSpectacle;
   if (isPresentationSuperseded() || (next?.status === 'finished' && !allowFinishedSpectacle)) {
+    if (next?.status === 'finished' && typeof playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+      await playOwedLiveStorageOutcomesBeforeFinish(G._livePostRevealBoard || prev, next, myId);
+    }
     return { reveal: false, spectacle: false, empty: false };
   }
   if (!needsLiveReveal && !wantsSpectacle && !emptySkip) {
@@ -3609,6 +3635,12 @@ async function presentLiveRound(prev, next, myId, opts = {}) {
       G._liveRoundPostSpectacleReady = true;
       await awaitResolvePostLivePrompts(prev, next, myId, opts);
       ensurePendingPromptSurfaced(G.gameState || next, myId);
+    }
+    const storageOwed = typeof liveStorageStillNeedsOutcomeExits === 'function'
+      && liveStorageStillNeedsOutcomeExits(G._livePostRevealBoard || prev, next);
+    if (storageOwed && typeof playOwedLiveStorageOutcomesBeforeFinish === 'function') {
+      await playOwedLiveStorageOutcomesBeforeFinish(G._livePostRevealBoard || prev, next, myId);
+      return { reveal: false, spectacle: false, empty: false, storageOutcomes: true };
     }
     TCG_DEBUG.log('live', 'presentLiveRound skip (no plan)', plan);
     return { reveal: false, spectacle: false, empty: false };
