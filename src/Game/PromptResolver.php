@@ -2431,18 +2431,24 @@ function actionResolvePromptDispatch(array $state, string $pid, array $data): ar
             $other['moved_this_turn'] = true;
             $other['moved_from_slot'] = $srcSlot;
             $ownerP['stage'][$srcSlot] = $other;
-            $state = resolveAutoAreaMoveAbilities($state, $owner, $other['instance_id'] ?? '', $srcSlot);
         }
         $member['moved_this_turn'] = true;
         $member['moved_from_slot'] = $srcSlot;
         $ownerP['stage'][$slot] = $member;
-        $state = resolveAutoAreaMoveAbilities($state, $owner, $srcId, $srcSlot);
+        $sourceName = $prompt['source_name'] ?? 'Member';
+        // Drop the swap prompt before observer autos (e.g. Tomari pb2-022 on move to Center).
+        unset($state['pending_prompt']);
+        if ($other) {
+            $state = resolveAutoAreaMoveAbilities($state, $owner, $other['instance_id'] ?? '', $srcSlot);
+        }
+        if (empty($state['pending_prompt'])) {
+            $state = resolveAutoAreaMoveAbilities($state, $owner, $srcId, $srcSlot);
+        }
         if (function_exists('spBp2ClearEffectAreaMove')) {
             spBp2ClearEffectAreaMove($state);
         }
         $state = addLog($state, $state['players'][$owner]['name'] .
-            " — [" . ($prompt['source_name'] ?? 'Member') . "] moved to $slot.");
-        unset($state['pending_prompt']);
+            " — [$sourceName] moved to $slot.");
         $state['seq']++;
         $state = finishPromptEffects($state);
         return $state;

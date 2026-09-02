@@ -539,6 +539,7 @@ function spBp2TriggerMoveToCenterHeart(array $state, string $pid, array $movedMe
     if ($toSlot !== 'center' || !empty($state['pending_prompt'])) {
         return $state;
     }
+    mergeCardCatalogFields($movedMember);
     $subunit = $movedMember['subunit'] ?? '';
     if ($subunit === '') {
         return $state;
