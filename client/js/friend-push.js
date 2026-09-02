@@ -175,148 +175,6 @@
     }
   }
 
-  function isOwnerAccount() {
-    return !!(global.A && global.A.user && global.A.user.is_social_mod);
-  }
-
-  function syncPushTestFab() {
-    var show = isAndroidShell() && isOwnerAccount();
-    ['btn-push-test-hub', 'btn-push-test-auth'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) btn.hidden = !show;
-    });
-  }
-
-  function isStaleFcmTokenError(err) {
-    return /not a valid fcm registration token|registration token is not a valid|not registered|unregistered/i.test(String(err || ''));
-  }
-
-  async function refreshNativePushToken() {
-    var Push = getPushPlugin();
-    if (!Push) return { ok: false, reason: 'no_plugin' };
-    bindPushListenersOnce();
-    await unregisterNativePush();
-    try {
-      if (typeof Push.unregister === 'function') await Push.unregister();
-    } catch (e) { /* ignore */ }
-    return activateNativePush({ requestPermission: true, timeoutMs: 8000 });
-  }
-
-  function pushSetupHint(result) {
-    if (!result) {
-      return t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.');
-    }
-    if (result.reason === 'opt_out') {
-      return t('friendPush.testOptOut', 'Turn on push notifications in Options first.');
-    }
-    if (result.reason === 'denied') {
-      return t('friendPush.permissionDenied', 'Notifications are blocked. Enable them in Android Settings → Apps → Loveca → Notifications.');
-    }
-    if (result.reason === 'no_plugin' || result.reason === 'unsupported') {
-      return t('friendPush.testNeedApk', 'Install Loveca v1.2.1+ and turn notifications on in Options.');
-    }
-    if (result.reason === 'registration_error' && result.error) {
-      return t('friendPush.testRegFailed', 'Firebase registration failed: {err}', {
-        err: String(result.error).slice(0, 120),
-      });
-    }
-    if (result.reason === 'sync_failed') {
-      if (result.error) {
-        return t('friendPush.testSyncFailedDetail', 'Could not save push token: {err}', {
-          err: String(result.error).slice(0, 120),
-        });
-      }
-      return t('friendPush.testSyncFailed', 'Got a device token but could not save it — check your connection and try again.');
-    }
-    return t('friendPush.testNoToken', 'No push token registered yet — allow notifications and reopen the app.');
-  }
-
-  async function sendTestPush() {
-    try {
-      if (!isPushOptedIn()) {
-        toast(pushSetupHint({ reason: 'opt_out' }), 5500);
-        return;
-      }
-      var res = await accountPost('push_test', {});
-      if (!res || !res.success) {
-        toast(t('friendPush.testFailed', 'Test push failed.'), 4000);
-        return;
-      }
-      if (!res.fcm_configured) {
-        toast(t('friendPush.testNoFcm', 'FCM is not configured on the server.'), 5000);
-        return;
-      }
-      if (!res.tokens) {
-        toast(t('friendPush.testRegistering', 'Registering push token…'), 2800);
-        var setup = await activateNativePush({ requestPermission: true, timeoutMs: 8000 });
-        if (!setup.ok) {
-          toast(pushSetupHint(setup), 6500);
-          return;
-        }
-        res = await accountPost('push_test', {});
-        if (!res || !res.success) {
-          toast(t('friendPush.testFailed', 'Test push failed.'), 4000);
-          return;
-        }
-        if (!res.tokens) {
-          toast(t('friendPush.testStillNoToken', 'Device token saved locally but not on server — tap PUSH again.'), 6500);
-          return;
-        }
-      }
-      if (res.sent > 0) {
-        toast(t('friendPush.testSent', 'Test push sent ({n} device). Background the app to see the system notification — or watch for an in-app toast if Loveca is open.', { n: res.sent }), 5200);
-        return;
-      }
-      if (res.fcm_error && isStaleFcmTokenError(res.fcm_error)) {
-        toast(t('friendPush.testRefreshingToken', 'Stale push token — refreshing from Firebase…'), 4200);
-        var reg = await refreshNativePushToken();
-        if (!reg.ok) {
-          toast(pushSetupHint(reg), 6500);
-          return;
-        }
-        var retry = await accountPost('push_test', {});
-        if (retry && retry.sent > 0) {
-          toast(t('friendPush.testSent', 'Test push sent ({n} device).', { n: retry.sent }), 3600);
-          return;
-        }
-        if (retry && !retry.tokens) {
-          toast(pushSetupHint(reg), 6500);
-          return;
-        }
-        if (retry && retry.fcm_error) {
-          toast(t('friendPush.testSendFailedDetail', 'FCM failed: {err}', { err: String(retry.fcm_error).slice(0, 180) }), 6500);
-          return;
-        }
-        toast(t('friendPush.testRetryPush', 'New token registered — tap PUSH once more.'), 5000);
-        return;
-      }
-      if (res.fcm_error) {
-        toast(t('friendPush.testSendFailedDetail', 'FCM failed: {err}', { err: String(res.fcm_error).slice(0, 180) }), 6500);
-        return;
-      }
-      if (res.oauth_ok === false) {
-        toast(t('friendPush.testOAuthFailed', 'FCM OAuth failed — check service account JSON on the server.'), 5500);
-        return;
-      }
-      toast(t('friendPush.testSendFailed', 'Token saved but FCM send returned 0 — check Firebase service account on the server.'), 5500);
-    } catch (e) {
-      toast((e && e.message) || t('friendPush.testFailed', 'Test push failed.'), 4200);
-    }
-  }
-
-  function bindPushTestFab() {
-    ['btn-push-test-hub', 'btn-push-test-auth'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (!btn || btn._tcgPushTestBound) return;
-      btn._tcgPushTestBound = true;
-      btn.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        void sendTestPush();
-      });
-    });
-  }
-
   function getPushPlugin() {
     try {
       if (global.Capacitor && global.Capacitor.Plugins && global.Capacitor.Plugins.PushNotifications) {
@@ -825,11 +683,9 @@
   captureFromUrl();
   document.addEventListener('DOMContentLoaded', function () {
     bindLobby();
-    bindPushTestFab();
     bindPushOptionsUi();
   });
   bindLobby();
-  bindPushTestFab();
   bindPushOptionsUi();
 
   global.LLTCG_FRIEND_PUSH = {
@@ -840,8 +696,6 @@
     openInvitePicker: openInvitePicker,
     applyQueueDeepLink: applyQueueDeepLink,
     applyTournamentDeepLink: applyTournamentDeepLink,
-    syncPushTestFab: syncPushTestFab,
-    sendTestPush: sendTestPush,
     syncPushOptionsUi: syncPushOptionsUi,
     bindPushOptionsUi: bindPushOptionsUi,
     isPushOptedIn: isPushOptedIn,

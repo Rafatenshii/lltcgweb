@@ -5375,10 +5375,6 @@ body:has(#screen-game.active) #casual-search-float{top:68px}
   border:1px solid rgba(255,255,255,.55);box-shadow:0 2px 10px rgba(255,107,168,.55);
   pointer-events:none}
 .news-fab-badge[hidden]{display:none!important}
-.push-test-fab-icon{
-  background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(255,167,64,.94);
-  border-color:rgba(255,220,160,.75)}
-.push-test-fab:hover .push-test-fab-icon{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.34)}
 .news-fab--new .news-fab-icon{
   background:url("../../bg/ptn.png") top center/200px 200px repeat,rgba(255,107,168,.94);
   border-color:rgba(255,179,209,.85);
