@@ -28642,8 +28642,38 @@ function clientMemberContinuousBladeBonus(member, state, pid, slot) {
     if (type === 'continuous_hearts_in_slot' && (ab.slot || '') === slot) {
       // hearts only — no blade
     }
+    if (type === 'blade_bonus_if_center') {
+      const memberSlot = slot || tcgClientMemberStageSlot(p, member);
+      if (memberSlot === 'center') {
+        bonus += Number(ab.amount ?? 0);
+      }
+    }
+    if (type === 'continuous_blade_in_slot') {
+      const needSlot = ab.slot || '';
+      const memberSlot = slot || tcgClientMemberStageSlot(p, member);
+      if (needSlot !== '' && memberSlot === needSlot) {
+        bonus += Number(ab.amount ?? 0);
+      }
+    }
+    if (type === 'continuous_blade_bonus') {
+      if (ab.center_only) {
+        const memberSlot = slot || tcgClientMemberStageSlot(p, member);
+        if (memberSlot !== 'center') continue;
+      }
+      bonus += Number(ab.amount ?? 1);
+    }
   }
   return bonus;
+}
+
+function tcgClientMemberStageSlot(p, member) {
+  if (!p || !member) return '';
+  const iid = member.instance_id || '';
+  if (!iid) return '';
+  for (const [s, m] of Object.entries(p.stage || {})) {
+    if (m && m.instance_id === iid) return s;
+  }
+  return '';
 }
 
 function estimateYellBladePrinted(s, pid) {
