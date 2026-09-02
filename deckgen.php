@@ -14,10 +14,17 @@ const DECKGEN_ENERGY_SLOTS = 12;
 const DECKGEN_MAX_COPIES   = 4;
 const DECKGEN_MAX_ENERGY_COPIES = 12;
 
-/** Same card for the 4-copy rule: base printing and trailing + / ＋ share a slot. */
+/** Same card for the 4-copy rule: base number, trailing + / ＋, and parallel printings (DUO, PP, …) share a slot. */
 function tcgDeckCopyIdentity(string $cardNo): string {
     $no = str_replace('＋', '+', trim($cardNo));
-    $stripped = preg_replace('/\++$/', '', $no);
+    $no = preg_replace('/\++$/', '', $no) ?? $no;
+    if ($no === '') {
+        return trim($cardNo);
+    }
+    // Parallel suffixes encoded in card_no (not just trailing +).
+    $no = preg_replace('/-(DUO|PP|SRL|SECS|SECL|SECE|PE2|P2|LLE)$/', '', $no) ?? $no;
+    // Alternate rarity printings of the same collector number share one copy bucket.
+    $stripped = preg_replace('/-(SD2|SD|N|R|L|P|SEC|PR|CL|PE|RM|RE|AR|SRE)$/', '', $no);
     return ($stripped !== null && $stripped !== '') ? $stripped : $no;
 }
 

@@ -8359,10 +8359,14 @@ function countInDeck(cardNo) {
   return A.deckMain.filter(n => n === cardNo).length + A.deckEnergy.filter(n => n === cardNo).length;
 }
 
-/** Base printing and trailing + / ＋ share the 4-copy (or 12 energy) slot. */
+/** Base printing, trailing + / ＋, and parallel printings (DUO, PP, …) share the 4-copy (or 12 energy) slot. */
 function deckCopyIdentity(cardNo) {
-  const no = String(cardNo || '').replace(/＋/g, '+').trim();
-  return no.replace(/\++$/, '') || no;
+  let no = String(cardNo || '').replace(/＋/g, '+').trim();
+  no = no.replace(/\++$/, '') || no;
+  if (!no) return String(cardNo || '').trim();
+  no = no.replace(/-(DUO|PP|SRL|SECS|SECL|SECE|PE2|P2|LLE)$/, '');
+  const stripped = no.replace(/-(SD2|SD|N|R|L|P|SEC|PR|CL|PE|RM|RE|AR|SRE)$/, '');
+  return stripped || no;
 }
 
 function countInDeckIdentity(cardNo) {

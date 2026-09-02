@@ -146,4 +146,35 @@ final class DeckValidateTest extends TestCase
         $okResult = tcgValidateDeckLists([], $ok, $this->cardMap, null, true);
         $this->assertTrue($okResult['valid'], implode('; ', $okResult['errors']));
     }
+
+    public function testDuoPrintingSharesFourCopyLimitWithRare(): void
+    {
+        $duo = 'PL!SP-pb2-000-DUO';
+        $rare = 'PL!SP-pb2-000-R';
+        $this->assertArrayHasKey($duo, $this->cardMap);
+        $this->assertArrayHasKey($rare, $this->cardMap);
+        $this->assertSame(tcgDeckCopyIdentity($duo), tcgDeckCopyIdentity($rare));
+        $main = array_merge(array_fill(0, 3, $duo), array_fill(0, 2, $rare));
+        $result = tcgValidateDeckLists($main, [], $this->cardMap, null, true);
+        $this->assertFalse($result['valid']);
+        $this->assertTrue(
+            (bool) preg_grep('/Too many copies of .+ including alternate versions/', $result['errors']),
+            implode('; ', $result['errors'])
+        );
+        $ok = array_merge(array_fill(0, 2, $duo), array_fill(0, 2, $rare));
+        $okResult = tcgValidateDeckLists($ok, [], $this->cardMap, null, true);
+        $this->assertTrue($okResult['valid'], implode('; ', $okResult['errors']));
+    }
+
+    public function testParallelRarityPrintingsShareFourCopyLimit(): void
+    {
+        $p = 'PL!N-bp1-003-P';
+        $sec = 'PL!N-bp1-003-SEC';
+        $this->assertArrayHasKey($p, $this->cardMap);
+        $this->assertArrayHasKey($sec, $this->cardMap);
+        $this->assertSame(tcgDeckCopyIdentity($p), tcgDeckCopyIdentity($sec));
+        $main = array_merge(array_fill(0, 3, $p), array_fill(0, 2, $sec));
+        $result = tcgValidateDeckLists($main, [], $this->cardMap, null, true);
+        $this->assertFalse($result['valid']);
+    }
 }
