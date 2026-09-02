@@ -9,16 +9,48 @@
 
   const PLACEHOLDER_ID = 'tcg-spectate-pip-placeholder';
 
+  /** Game overlays outside #game-viewport-frame — must follow the board into PiP. */
+  const PIP_OVERLAY_IDS = [
+    'overlay-mull',
+    'overlay-live',
+    'overlay-prompt',
+    'overlay-skill-reveal',
+    'overlay-pick',
+    'overlay-hand-pick',
+    'overlay-heart',
+    'overlay-surveil',
+    'overlay-zone',
+    'overlay-coin',
+    'center-banner',
+    'opp-skill-wait',
+    'live-judge-overlay',
+    'perf-spectacle',
+    'card-flight-layer',
+    'modal-card',
+  ];
+
+  /** Mirror presentation body classes onto the PiP document (not tcg-spectate-doc-pip). */
+  const PIP_SYNC_BODY_CLASSES = [
+    'perf-spectacle-active',
+    'prompt-board-peek',
+    'prompt-board-peek-holding',
+  ];
+
   let pipWindow = null;
   let placeholderEl = null;
   let frameHomeParent = null;
   let frameHomeNext = null;
+  const overlayHomes = [];
   let mode = null; // 'document' | null
   let bridgeInstalled = false;
+  let bodyBridgeInstalled = false;
+  let docClassObserver = null;
   const orig = {
     getElementById: null,
     querySelector: null,
     querySelectorAll: null,
+    appendChild: null,
+    insertBefore: null,
   };
   let onViewportResize = null;
 
@@ -115,6 +147,104 @@
     bridgeInstalled = false;
   }
 
+  function rememberOverlayHome(el) {
+    if (!el || overlayHomes.some((h) => h.el === el)) return;
+    overlayHomes.push({
+      el,
+      parent: el.parentNode,
+      next: el.nextSibling,
+    });
+  }
+
+  function moveOverlaysToPip(pipBody) {
+    PIP_OVERLAY_IDS.forEach((id) => {
+      const node = orig.getElementById
+        ? orig.getElementById.call(global.document, id)
+        : global.document.getElementById(id);
+      if (!node || !pipBody) return;
+      rememberOverlayHome(node);
+      pipBody.appendChild(node);
+    });
+  }
+
+  function restoreOverlayHomes() {
+    overlayHomes.forEach(({ el, parent, next }) => {
+      if (!el || !parent) return;
+      if (next && next.parentNode === parent) {
+        parent.insertBefore(el, next);
+      } else {
+        parent.appendChild(el);
+      }
+    });
+    overlayHomes.length = 0;
+  }
+
+  function pipUiBody() {
+    const pd = pipDoc();
+    return pd && pd.body ? pd.body : null;
+  }
+
+  function installBodyBridge() {
+    if (bodyBridgeInstalled) return;
+    bodyBridgeInstalled = true;
+    orig.appendChild = Node.prototype.appendChild;
+    orig.insertBefore = Node.prototype.insertBefore;
+
+    Node.prototype.appendChild = function (child) {
+      if (bodyBridgeInstalled && mode === 'document' && this === global.document.body) {
+        const pb = pipUiBody();
+        if (pb) return orig.appendChild.call(pb, child);
+      }
+      return orig.appendChild.call(this, child);
+    };
+    Node.prototype.insertBefore = function (child, ref) {
+      if (bodyBridgeInstalled && mode === 'document' && this === global.document.body) {
+        const pb = pipUiBody();
+        if (pb) return orig.insertBefore.call(pb, child, ref);
+      }
+      return orig.insertBefore.call(this, child, ref);
+    };
+  }
+
+  function uninstallBodyBridge() {
+    if (!bodyBridgeInstalled) return;
+    Node.prototype.appendChild = orig.appendChild;
+    Node.prototype.insertBefore = orig.insertBefore;
+    bodyBridgeInstalled = false;
+  }
+
+  function syncPipDocClasses() {
+    const pd = pipDoc();
+    if (!pd) return;
+    pd.documentElement.className = global.document.documentElement.className;
+    const pipBody = pd.body;
+    if (!pipBody) return;
+    PIP_SYNC_BODY_CLASSES.forEach((cls) => {
+      pipBody.classList.toggle(cls, global.document.body.classList.contains(cls));
+    });
+  }
+
+  function installDocClassSync() {
+    uninstallDocClassSync();
+    syncPipDocClasses();
+    docClassObserver = new MutationObserver(syncPipDocClasses);
+    docClassObserver.observe(global.document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    docClassObserver.observe(global.document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+
+  function uninstallDocClassSync() {
+    if (docClassObserver) {
+      docClassObserver.disconnect();
+      docClassObserver = null;
+    }
+  }
+
   function copyStyleSheets(targetDoc) {
     [...global.document.styleSheets].forEach((styleSheet) => {
       try {
@@ -140,6 +270,13 @@
       'body.tcg-doc-pip-body #game-viewport-frame{',
       'flex:1 1 auto;min-height:0;width:100%;height:100%;',
       'max-width:none;max-height:none;border-radius:0;box-shadow:none;',
+      '}',
+      'body.tcg-doc-pip-body #perf-spectacle,',
+      'body.tcg-doc-pip-body #card-flight-layer,',
+      'body.tcg-doc-pip-body #center-banner,',
+      'body.tcg-doc-pip-body #live-judge-overlay,',
+      'body.tcg-doc-pip-body #opp-skill-wait{',
+      'position:fixed;inset:0;max-width:none;max-height:none;',
       '}',
       '@media all and (display-mode: picture-in-picture){',
       'body{margin:0;}',
@@ -250,13 +387,18 @@
     });
 
     installDomBridge();
+    installBodyBridge();
     copyStyleSheets(pipWindow.document);
     pipWindow.document.documentElement.className = global.document.documentElement.className;
-    pipWindow.document.body.className = (global.document.body.className || '') + ' tcg-doc-pip-body tcg-spectator-mode';
+    pipWindow.document.body.className = (global.document.body.className || '')
+      .replace(/\btcg-spectate-doc-pip\b/g, '').trim()
+      + ' tcg-doc-pip-body tcg-spectator-mode';
 
     rememberFrameHome(frame);
     ensurePlaceholder(frameHomeParent || global.document.getElementById('screen-game') || global.document.body);
     pipWindow.document.body.append(frame);
+    moveOverlaysToPip(pipWindow.document.body);
+    installDocClassSync();
 
     const onPageHide = () => {
       pipWindow = null;
@@ -283,6 +425,8 @@
     }
     const frame = gameFrame()
       || (pipDoc() && pipDoc().getElementById('game-viewport-frame'));
+    uninstallDocClassSync();
+    restoreOverlayHomes();
     if (frame && frameHomeParent) {
       restoreFrameHome(frame);
     } else if (frame && !global.document.getElementById('game-viewport-frame')) {
@@ -290,6 +434,7 @@
       if (screen && !screen.contains(frame)) screen.appendChild(frame);
     }
     removePlaceholder();
+    uninstallBodyBridge();
     uninstallDomBridge();
     global.document.body.classList.remove('tcg-spectate-doc-pip');
     const win = pipWindow;
