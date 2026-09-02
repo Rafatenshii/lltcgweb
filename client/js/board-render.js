@@ -2368,6 +2368,12 @@ function renderLiveSlots(prefix, zone, isMe, pid){
     }
 
     if (!card) {
+      const ghostIid = existingCard?.dataset?.iid || existingCard?.parentElement?.dataset?.iid;
+      if (ghostIid && typeof liveStorageDepartureLatched === 'function'
+          && liveStorageDepartureLatched(ghostIid, s?.turn ?? s?.live_show?.turn)) {
+        e.innerHTML = '';
+        continue;
+      }
       // Mid-reveal / WR flight may still own the shell; otherwise ghost flips from the
       // previous Live round survive into Main when the server zone is already empty.
       const flipBusy = existingCard?.classList.contains('live-storage-flip')
@@ -2375,8 +2381,15 @@ function renderLiveSlots(prefix, zone, isMe, pid){
           || ((G._liveStorageRevealAnimCount || 0) > 0)
           || (G._liveRoundPlaybackActive && G._liveRevealFlips?.size));
       if (flipBusy && !(existingCard?.dataset?.iid && liveStorageDepartureLatched(existingCard.dataset.iid))) continue;
-      if (existingCard?.classList.contains('card-arriving') && G._liveWrDiscardInProgress
-          && !(existingCard?.dataset?.iid && liveStorageDepartureLatched(existingCard.dataset.iid))) continue;
+      if (existingCard?.classList.contains('card-arriving')) {
+        const arrIid = existingCard?.dataset?.iid;
+        if (arrIid && typeof liveStorageDepartureLatched === 'function'
+            && liveStorageDepartureLatched(arrIid, s?.turn ?? s?.live_show?.turn)) {
+          e.innerHTML = '';
+          continue;
+        }
+        if (G._liveWrDiscardInProgress) continue;
+      }
       e.innerHTML='';
       continue;
     }

@@ -22089,15 +22089,33 @@ function postLiveRevealOutcomeMoves(prev, final) {
 async function playPostLiveRevealOutcomes(fromState, final, myId) {
   const moves = postLiveRevealOutcomeMoves(fromState, final);
   if (!moves.length) return false;
+  const playback = deepCloneState(fromState);
   const prevRects = collectCardRects();
   const handBefore = collectHandSlotRects();
-  G._animHideIids = animHideIidsForMoves(fromState, moves);
-  prepareWrPileAnimPending(fromState, final, moves);
+  G._animHideIids = animHideIidsForMoves(playback, moves);
+  prepareWrPileAnimPending(playback, final, moves);
   // Apply hide classes before concurrent flights so Success/WR dests + sources stay blank.
   moves.forEach(m => { if (m.iid) setCardArriving(m.iid, true); });
   try {
-    await playCardMoveAnimations(fromState, final, prevRects, myId, handBefore, collectHandSlotRects(), moves);
+    await playCardMoveAnimations(playback, final, prevRects, myId, handBefore, collectHandSlotRects(), moves);
+    for (const m of moves) {
+      const pid = m.from?.pid;
+      const iid = m.iid;
+      if (!pid || !iid) continue;
+      playback.players[pid].live_zone = (playback.players[pid].live_zone || [])
+        .filter(c => liveCardIidKey(c?.instance_id) !== liveCardIidKey(iid));
+    }
+    G.gameState = playback;
   } finally {
+    for (const m of moves) {
+      if (!m.iid) continue;
+      if (typeof markLiveStorageSourceGone === 'function') {
+        markLiveStorageSourceGone(m.iid, m.from, myId);
+      }
+    }
+    if (typeof syncLiveStorageSlotsFromState === 'function') {
+      syncLiveStorageSlotsFromState(final, myId);
+    }
     if (typeof clearLiveStorageExitDestPending === 'function') {
       clearLiveStorageExitDestPending(final, myId);
     } else {
@@ -22111,9 +22129,6 @@ async function playPostLiveRevealOutcomes(fromState, final, myId) {
     }
     G._animHideIids = null;
     clearHandArrivingFlags();
-    if (typeof syncLiveStorageSlotsFromState === 'function') {
-      syncLiveStorageSlotsFromState(final, myId);
-    }
   }
   return true;
 }
@@ -34492,7 +34507,7 @@ function mkNoImg(card){
 </script>
 <script src="client/js/live-round-director.js?v=3"></script>
 <script src="client/js/spectacle.js?v=114"></script>
-<script src="client/js/board-render.js?v=46"></script>
+<script src="client/js/board-render.js?v=47"></script>
 <script src="client/js/components/board-zones.js?v=1"></script>
 <script src="client/js/cpu-meta-weights.js?v=6"></script>
 <script src="client/js/cpu-eval.js?v=6"></script>
